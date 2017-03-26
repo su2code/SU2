@@ -459,7 +459,6 @@ void CFluidIteration::Preprocess(COutput *output,
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   
   bool fsi = config_container[val_iZone]->GetFSI_Simulation();
-  bool turbomachinery = config_container[val_iZone]->GetBoolTurbomachinery();
   unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
 
   

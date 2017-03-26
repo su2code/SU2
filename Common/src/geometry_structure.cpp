@@ -9880,12 +9880,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
       }
     }
 
-    //	 check if the value are ordered correctly
-    //	  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-    //	  	if(rank == MASTER_NODE){
-    //	  		cout << setprecision(16)<<  iSpan +1 << " with a value of " <<SpanWiseValue[marker_flag-1][iSpan]<< " at flag " << marker_flag <<endl;
-    //	  	}
-    //	  }
+
     if(marker_flag == OUTFLOW){
       if(nSpanWiseSections[INFLOW -1] != nSpanWiseSections[OUTFLOW - 1]){
         if(rank == MASTER_NODE){
@@ -9905,18 +9900,16 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
 }
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-  unsigned long  iPoint, jPoint = 0, jVertex, kVertex, **ordered, **disordered, **oldVertex3D, oldVertex, iInternalVertex;
+  unsigned long  iPoint, **ordered, **disordered, **oldVertex3D, iInternalVertex;
   unsigned long nVert, nVertMax;
   unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, iSize, kSize, jSize;
   su2double min, max, *coord, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  int  globalindex;
   bool **checkAssign;
   min = 10.0E+06;
 
-  su2double *ymin_loc, radius, minAngCoord;
-  int *nVertex_loc;
+  su2double radius;
   long iVertex, iSpanVertex, jSpanVertex, kSpanVertex;
   int *nTotVertex_gb, *nVertexSpanHalo;
   su2double **x_loc, **y_loc, **z_loc, **angCoord_loc, **deltaAngCoord_loc, **angPitch, **deltaAngPitch, *minAngPitch, *maxAngPitch;
@@ -9924,11 +9917,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  su2double ymin[size], MyMinAngCoord, MyMin, MyMax;
+  su2double MyMin, MyMax;
   su2double *x_gb = NULL, *y_gb = NULL, *z_gb = NULL, *angCoord_gb = NULL, *deltaAngCoord_gb = NULL;
   bool *checkAssign_gb =NULL;
-
-  int nvertex_glob[size], nvertex_out[size];
   unsigned long My_nVert;
 
 #endif
@@ -9945,14 +9936,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   minAngPitch        = new su2double[nSpanWiseSections[marker_flag-1]];
   maxAngPitch        = new su2double[nSpanWiseSections[marker_flag-1]];
 
-
-  ymin_loc    = new su2double[nSpanWiseSections[marker_flag-1]];
-  nVertex_loc = new int[nSpanWiseSections[marker_flag-1]];
   nTotVertex_gb = new int[nSpanWiseSections[marker_flag-1]];
   nVertexSpanHalo = new int[nSpanWiseSections[marker_flag-1]];
   for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-    ymin_loc[iSpan]= 10.0E+05*(rank+1);
-    nVertex_loc[iSpan] = -1;
     nTotVertex_gb[iSpan] = -1;
     nVertexSpanHalo[iSpan] = 0;
     minAngPitch[iSpan]= 10.0E+06;
@@ -10353,12 +10339,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   }
                 }
               }
-
-
-              /*--- each span and for each processor store auxiliary information that will be used for global pitch ordering ---*/
-              ymin_loc[iSpan]    = min;
-              nVertex_loc[iSpan] = nVertexSpan[iMarker][iSpan];
-
             }
 
             for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
@@ -10651,8 +10631,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   delete [] TurboNormal;
   delete [] unitnormal;
   delete [] NormalArea;
-  delete [] ymin_loc;
-  delete []	 nVertex_loc;
   delete [] x_loc;
   delete [] y_loc;
   delete [] z_loc;

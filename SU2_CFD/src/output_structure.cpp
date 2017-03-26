@@ -4495,7 +4495,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
 
     su2double dummy = 0.0, *Coord;
-    unsigned short iVar, iMarker, iMarker_Monitoring, iDim;
+    unsigned short iVar, iMarker_Monitoring;
     
     unsigned long LinSolvIter = 0, iPointMaxResid;
     su2double timeiter = timeused/su2double(iExtIter+1);
@@ -4920,7 +4920,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
     bool In_DualTime_2 = (Unsteady && DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
     bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
-    bool inlet, outlet, mixing;
 
     /*--- Header frequency: analogy for dynamic structural analysis ---*/
     /*--- DualTime_Iteration is a bool we receive, which is true if it comes from FEM_StructuralIteration and false from SU2_CFD ---*/
@@ -10174,201 +10173,201 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
 void COutput::WriteTutboPerfConvHistory(CConfig *config){
 
-	unsigned short iMarker_Monitoring;
-	string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
-	unsigned short nZone       = config->GetnZone();
+  unsigned short iMarker_Monitoring;
+  string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
+  unsigned short nZone       = config->GetnZone();
 
-	unsigned short nBladesRow, nStages;
-	unsigned short iStage;
-	nBladesRow = config->GetnMarker_Turbomachinery();
-	nStages    = int(nBladesRow/2);
+  unsigned short nBladesRow, nStages;
+  unsigned short iStage;
+  nBladesRow = config->GetnMarker_Turbomachinery();
+  nStages    = int(nBladesRow/2);
 
-	cout << endl << "------------------------- Turbomachinery Summary ------------------------" << endl;
-	cout << endl;
-	for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Turbomachinery(); iMarker_Monitoring++){
-		cout << endl << "----------------------------- Blade " << iMarker_Monitoring + 1 << " -----------------------------------" << endl;
-		inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring);
-		outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(iMarker_Monitoring);
-		if(iMarker_Monitoring == 0){
-			cout << "BC Inlet convergence monitoring marker " << inMarker_Tag << " : "<<endl;
-			cout << endl;
-			cout << "     Inlet Total Enthalpy" << "     Inlet Total Enthalpy BC" << "     err(%)" <<  endl;
-			cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
-			cout.width(25); cout << TotalEnthalpyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
-			cout.width(25); cout << abs((TotalEnthalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - TotalEnthalpyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/TotalEnthalpyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
-			cout << endl;
-			cout << endl;
-			cout << "     Inlet Entropy" << "            Inlet Entropy BC" << "            err(%)" <<  endl;
-			cout.width(25); cout << EntropyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
-			cout.width(25); cout << EntropyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
-			cout.width(25); cout << abs((EntropyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - EntropyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/EntropyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
-			cout << endl;
-			cout << endl;
-			cout << "     Inlet Absolute Angle" << "     Inlet Absolute Angle BC" << "     err(%)" <<  endl;
-			cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
-			cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
-			cout.width(25); cout << abs((AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
-			cout << endl;
-			cout << endl;
-		}
-		if(iMarker_Monitoring == config->GetnMarker_Turbomachinery() -1 ){
-			// if BC outlet
-			cout << "BC outlet convergence monitoring  marker " << outMarker_Tag << " : "<<endl;
-			cout << endl;
-			cout << "     Outlet Pressure" << "          Outlet Pressure BC" << "          err(%)" <<  endl;
-			cout.width(25); cout << PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetPressure_Ref();
-			cout.width(25); cout << PressureOut_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetPressure_Ref();
-			cout.width(25); cout << abs((PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - PressureOut_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/PressureOut_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
-			cout << endl;
-			cout << endl;
-		}
+  cout << endl << "------------------------- Turbomachinery Summary ------------------------" << endl;
+  cout << endl;
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Turbomachinery(); iMarker_Monitoring++){
+    cout << endl << "----------------------------- Blade " << iMarker_Monitoring + 1 << " -----------------------------------" << endl;
+    inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring);
+    outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(iMarker_Monitoring);
+    if(iMarker_Monitoring == 0){
+      cout << "BC Inlet convergence monitoring marker " << inMarker_Tag << " : "<<endl;
+      cout << endl;
+      cout << "     Inlet Total Enthalpy" << "     Inlet Total Enthalpy BC" << "     err(%)" <<  endl;
+      cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+      cout.width(25); cout << TotalEnthalpyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+      cout.width(25); cout << abs((TotalEnthalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - TotalEnthalpyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/TotalEnthalpyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Inlet Entropy" << "            Inlet Entropy BC" << "            err(%)" <<  endl;
+      cout.width(25); cout << EntropyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+      cout.width(25); cout << EntropyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+      cout.width(25); cout << abs((EntropyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - EntropyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/EntropyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Inlet Absolute Angle" << "     Inlet Absolute Angle BC" << "     err(%)" <<  endl;
+      cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+      cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+      cout.width(25); cout << abs((AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+      cout << endl;
+      cout << endl;
+    }
+    if(iMarker_Monitoring == config->GetnMarker_Turbomachinery() -1 ){
+      // if BC outlet
+      cout << "BC outlet convergence monitoring  marker " << outMarker_Tag << " : "<<endl;
+      cout << endl;
+      cout << "     Outlet Pressure" << "          Outlet Pressure BC" << "          err(%)" <<  endl;
+      cout.width(25); cout << PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetPressure_Ref();
+      cout.width(25); cout << PressureOut_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetPressure_Ref();
+      cout.width(25); cout << abs((PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - PressureOut_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/PressureOut_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+      cout << endl;
+      cout << endl;
+    }
 
-		cout << "Convergence monitoring for integral quantities between markers " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
-		cout << endl;
-		cout << "     Inlet Mass Flow " << "         Outlet Mass Flow" << "            err(%)" <<  endl;
-		cout.width(25); cout << MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetVelocity_Ref()*config->GetDensity_Ref();
-		cout.width(25); cout << MassFlowOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetVelocity_Ref()*config->GetDensity_Ref();
-		cout.width(25); cout << abs((MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - MassFlowOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
-		cout << endl;
-		cout << endl;
-		//if(stator)
-		//cout << "     Inlet Total Enthalpy " << "    Outlet Total Enthalpy" << "     err(%)" <<  endl;
-		//else
-		cout << "     Inlet Total Rothalpy " << "    Outlet Total Rothalpy" << "       err(%)" <<  endl;
-		cout.width(25); cout << RothalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
-		cout.width(25); cout << RothalpyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
-		cout.width(25); cout << abs((RothalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - RothalpyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/RothalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
-		cout << endl;
-		cout << endl;
-		cout << "Blade performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
-		cout << endl;
-		cout << "     Total Pressure Loss(%)" << "   Kinetic Energy Loss(%)" << "      Entropy Generation(%)" << endl;
-		cout.width(25); cout << TotalPressureLoss[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
-		cout.width(25); cout << KineticEnergyLoss[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
-		cout.width(25); cout << EntropyGen[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
-		cout << endl;
-		cout << endl;
-		cout << "     Total Inlet Enthalpy" << "     Eulerian Work" << "               Pressure Ratio" <<  endl;
-		cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
-		cout.width(25); cout << EulerianWork[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
-		cout.width(25); cout << PressureRatio[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
-		cout << endl;
-		cout << endl;
-		cout << "     Inlet Entropy" << "            Outlet Entropy" << "             Outlet Is. Enthalpy" <<  endl;
-		cout.width(25); cout << EntropyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
-		cout.width(25); cout << EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
-		cout.width(25); cout << EnthalpyOutIs[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
-		cout << endl;
-		cout << endl;
-		cout << "Cinematic quantities between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
-		cout << endl;
-		cout << "     Inlet Mach"<< "               Inlet Normal Mach" << "            Inlet Tang. Mach" << endl;
-		cout.width(25); cout << sqrt(MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0]*MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0] +MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]*MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]);
-		cout.width(25); cout << MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0];
-		cout.width(25); cout << MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1];
-		cout << endl;
-		cout << endl;
-		cout << "     Outlet Mach"<< "              Outlet Normal Mach" << "           Outlet Tang. Mach" << endl;
-		cout.width(25); cout << sqrt(MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0]*MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0] +MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]*MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]);
-		cout.width(25); cout << MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0];
-		cout.width(25); cout << MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1];cout << endl;
-		cout << endl;
-		cout << "     Inlet Flow Angle" << "         Outlet flow Angle  " << endl;
-		cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
-		cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
-		cout << endl;
-		cout << endl;
-		// if gridmov
-		cout << "     Inlet Abs Flow Angle" << "     Outlet Abs Flow Angle  " << endl;
-		cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
-		cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
-		cout << endl;
-		cout << endl << "-------------------------------------------------------------------------" << endl;
-		cout << endl;
-		if(nZone > 0 && iMarker_Monitoring < config->GetnMarker_Turbomachinery() -1){
-			cout << endl << "---------- Mixing-Plane Interface between Blade " << iMarker_Monitoring + 1 << " and Blade " << iMarker_Monitoring + 2 << " -----------" << endl;
-			cout << endl;
-			inMarkerTag_Mix = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring + 1);
-			cout << "Convergence monitoring for the outlet  " << outMarker_Tag << " and the inlet  "<< inMarkerTag_Mix << " : "<<endl;
-			cout << endl;
-			cout << "     Outlet Density " << "          Inlet Density" << "               err(%)" <<  endl;
-			cout.width(25); cout << DensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetDensity_Ref();
-			cout.width(25); cout << DensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring + 1)]*config->GetDensity_Ref();
-			cout.width(25); cout << abs((DensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)] - DensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/DensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)])*100.0;
-			cout << endl;
-			cout << endl;
-			cout << "     Outlet Pressure " << "         Inlet Pressure" << "              err(%)" <<  endl;
-			cout.width(25); cout << PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetPressure_Ref();
-			cout.width(25); cout << PressureIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)]*config->GetPressure_Ref();
-			cout.width(25); cout << abs((PressureIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)] - PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/PressureIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)])*100.0;
-			cout << endl;
-			cout << endl;
-			cout << "     Outlet Normal Velocity " << "  Inlet Normal Velocity" << "       err(%)" <<  endl;
-			cout.width(25); cout << TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0]*config->GetVelocity_Ref();
-			cout.width(25); cout << TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][0]*config->GetVelocity_Ref();
-			cout.width(25); cout << abs((TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][0] - TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0])/TurboVelocityIn[iMarker_Monitoring+1][config->GetnSpan_iZones(iMarker_Monitoring +1)][0])*100.0;
-			cout << endl;
-			cout << endl;
-			cout << "     Outlet Tang. Velocity " << "   Inlet Tang. Velocity" << "        err(%)" <<  endl;
-			cout.width(25); cout << TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]*config->GetVelocity_Ref();
-			cout.width(25); cout << TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][1]*config->GetVelocity_Ref();
-			cout.width(25); cout << abs((TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][1] - TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1])/TurboVelocityIn[iMarker_Monitoring+1][config->GetnSpan_iZones(iMarker_Monitoring +1)][1])*100.0;
-			cout << endl;
-			cout << endl;
-			cout << "     Outlet Entropy " << "         Inlet Entropy" << "              err(%)" <<  endl;
-			cout.width(25); cout << EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
-			cout.width(25); cout << EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
-			cout.width(25); cout << abs((EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
-			cout << endl;
-			cout << endl << "-------------------------------------------------------------------------" << endl;
-			cout << endl;
-		}
+    cout << "Convergence monitoring for integral quantities between markers " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+    cout << endl;
+    cout << "     Inlet Mass Flow " << "         Outlet Mass Flow" << "            err(%)" <<  endl;
+    cout.width(25); cout << MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetVelocity_Ref()*config->GetDensity_Ref();
+    cout.width(25); cout << MassFlowOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetVelocity_Ref()*config->GetDensity_Ref();
+    cout.width(25); cout << abs((MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - MassFlowOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+    cout << endl;
+    cout << endl;
+    //if(stator)
+    //cout << "     Inlet Total Enthalpy " << "    Outlet Total Enthalpy" << "     err(%)" <<  endl;
+    //else
+    cout << "     Inlet Total Rothalpy " << "    Outlet Total Rothalpy" << "       err(%)" <<  endl;
+    cout.width(25); cout << RothalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+    cout.width(25); cout << RothalpyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+    cout.width(25); cout << abs((RothalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - RothalpyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/RothalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+    cout << endl;
+    cout << endl;
+    cout << "Blade performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+    cout << endl;
+    cout << "     Total Pressure Loss(%)" << "   Kinetic Energy Loss(%)" << "      Entropy Generation(%)" << endl;
+    cout.width(25); cout << TotalPressureLoss[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
+    cout.width(25); cout << KineticEnergyLoss[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
+    cout.width(25); cout << EntropyGen[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
+    cout << endl;
+    cout << endl;
+    cout << "     Total Inlet Enthalpy" << "     Eulerian Work" << "               Pressure Ratio" <<  endl;
+    cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+    cout.width(25); cout << EulerianWork[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+    cout.width(25); cout << PressureRatio[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+    cout << endl;
+    cout << endl;
+    cout << "     Inlet Entropy" << "            Outlet Entropy" << "             Outlet Is. Enthalpy" <<  endl;
+    cout.width(25); cout << EntropyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+    cout.width(25); cout << EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+    cout.width(25); cout << EnthalpyOutIs[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+    cout << endl;
+    cout << endl;
+    cout << "Cinematic quantities between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+    cout << endl;
+    cout << "     Inlet Mach"<< "               Inlet Normal Mach" << "            Inlet Tang. Mach" << endl;
+    cout.width(25); cout << sqrt(MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0]*MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0] +MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]*MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]);
+    cout.width(25); cout << MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0];
+    cout.width(25); cout << MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1];
+    cout << endl;
+    cout << endl;
+    cout << "     Outlet Mach"<< "              Outlet Normal Mach" << "           Outlet Tang. Mach" << endl;
+    cout.width(25); cout << sqrt(MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0]*MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0] +MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]*MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]);
+    cout.width(25); cout << MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0];
+    cout.width(25); cout << MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1];cout << endl;
+    cout << endl;
+    cout << "     Inlet Flow Angle" << "         Outlet flow Angle  " << endl;
+    cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+    cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+    cout << endl;
+    cout << endl;
+    // if gridmov
+    cout << "     Inlet Abs Flow Angle" << "     Outlet Abs Flow Angle  " << endl;
+    cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+    cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+    cout << endl;
+    cout << endl << "-------------------------------------------------------------------------" << endl;
+    cout << endl;
+    if(nZone > 0 && iMarker_Monitoring < config->GetnMarker_Turbomachinery() -1){
+      cout << endl << "---------- Mixing-Plane Interface between Blade " << iMarker_Monitoring + 1 << " and Blade " << iMarker_Monitoring + 2 << " -----------" << endl;
+      cout << endl;
+      inMarkerTag_Mix = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring + 1);
+      cout << "Convergence monitoring for the outlet  " << outMarker_Tag << " and the inlet  "<< inMarkerTag_Mix << " : "<<endl;
+      cout << endl;
+      cout << "     Outlet Density " << "          Inlet Density" << "               err(%)" <<  endl;
+      cout.width(25); cout << DensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetDensity_Ref();
+      cout.width(25); cout << DensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring + 1)]*config->GetDensity_Ref();
+      cout.width(25); cout << abs((DensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)] - DensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/DensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Outlet Pressure " << "         Inlet Pressure" << "              err(%)" <<  endl;
+      cout.width(25); cout << PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetPressure_Ref();
+      cout.width(25); cout << PressureIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)]*config->GetPressure_Ref();
+      cout.width(25); cout << abs((PressureIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)] - PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/PressureIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Outlet Normal Velocity " << "  Inlet Normal Velocity" << "       err(%)" <<  endl;
+      cout.width(25); cout << TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0]*config->GetVelocity_Ref();
+      cout.width(25); cout << TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][0]*config->GetVelocity_Ref();
+      cout.width(25); cout << abs((TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][0] - TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0])/TurboVelocityIn[iMarker_Monitoring+1][config->GetnSpan_iZones(iMarker_Monitoring +1)][0])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Outlet Tang. Velocity " << "   Inlet Tang. Velocity" << "        err(%)" <<  endl;
+      cout.width(25); cout << TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]*config->GetVelocity_Ref();
+      cout.width(25); cout << TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][1]*config->GetVelocity_Ref();
+      cout.width(25); cout << abs((TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][1] - TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1])/TurboVelocityIn[iMarker_Monitoring+1][config->GetnSpan_iZones(iMarker_Monitoring +1)][1])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Outlet Entropy " << "         Inlet Entropy" << "              err(%)" <<  endl;
+      cout.width(25); cout << EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+      cout.width(25); cout << EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+      cout.width(25); cout << abs((EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
+      cout << endl;
+      cout << endl << "-------------------------------------------------------------------------" << endl;
+      cout << endl;
+    }
 
-	}
-	if(nZone > 1){
-		/*--- Stage Performance ---*/
-		for(iStage = 0; iStage < nStages; iStage++ ){
-			cout << endl << "----------------------------- Stage " << iStage + 1 << " -----------------------------------" << endl;
-			inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(iStage*2);
-			outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(iStage*2+1);
-			cout << "Stage performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
-			cout << endl;
-			cout << "     Total-Total Eff.(%)" << "      Total-Static Eff.(%)" << "      Entropy Generation(%)" << endl;
-			cout.width(25); cout << TotalTotalEfficiency[nBladesRow + iStage][nSpanWiseSections]*100.0;
-			cout.width(25); cout << TotalStaticEfficiency[nBladesRow + iStage][nSpanWiseSections]*100.0;
-			cout.width(25); cout << EntropyGen[nBladesRow + iStage][nSpanWiseSections]*100.0;
-			cout << endl;
-			cout << endl;
-			cout << "     Pressure Ratio " << "          Outlet Is. Enthalpy" << "       In-Out MassFlow Diff (%)" <<  endl;
-			cout.width(25); cout << PressureRatio[nBladesRow + iStage][nSpanWiseSections];
-			cout.width(25); cout << EnthalpyOutIs[nBladesRow + iStage][nSpanWiseSections]*config->GetEnergy_Ref();
-			cout.width(25); cout << abs((MassFlowIn[nBladesRow + iStage][nSpanWiseSections] - MassFlowOut[nBladesRow + iStage][nSpanWiseSections])/MassFlowIn[nBladesRow + iStage][nSpanWiseSections])*100.0;
-		}
-		cout << endl;
-		cout << endl << "-------------------------------------------------------------------------" << endl;
-		cout << endl;
+  }
+  if(nZone > 1){
+    /*--- Stage Performance ---*/
+    for(iStage = 0; iStage < nStages; iStage++ ){
+      cout << endl << "----------------------------- Stage " << iStage + 1 << " -----------------------------------" << endl;
+      inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(iStage*2);
+      outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(iStage*2+1);
+      cout << "Stage performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+      cout << endl;
+      cout << "     Total-Total Eff.(%)" << "      Total-Static Eff.(%)" << "      Entropy Generation(%)" << endl;
+      cout.width(25); cout << TotalTotalEfficiency[nBladesRow + iStage][nSpanWiseSections]*100.0;
+      cout.width(25); cout << TotalStaticEfficiency[nBladesRow + iStage][nSpanWiseSections]*100.0;
+      cout.width(25); cout << EntropyGen[nBladesRow + iStage][nSpanWiseSections]*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Pressure Ratio " << "          Outlet Is. Enthalpy" << "       In-Out MassFlow Diff (%)" <<  endl;
+      cout.width(25); cout << PressureRatio[nBladesRow + iStage][nSpanWiseSections];
+      cout.width(25); cout << EnthalpyOutIs[nBladesRow + iStage][nSpanWiseSections]*config->GetEnergy_Ref();
+      cout.width(25); cout << abs((MassFlowIn[nBladesRow + iStage][nSpanWiseSections] - MassFlowOut[nBladesRow + iStage][nSpanWiseSections])/MassFlowIn[nBladesRow + iStage][nSpanWiseSections])*100.0;
+    }
+    cout << endl;
+    cout << endl << "-------------------------------------------------------------------------" << endl;
+    cout << endl;
 
-		/*--- Full Machine Performance ---*/
-		// if(turbine)
-		cout << endl << "---------------------------- Turbine ------------------------------------" << endl;
-		inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(0);
-		outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(nBladesRow-1);
-		cout << "Turbine performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
-		cout << endl;
-		cout << "     Total-Total Eff.(%)" << "      Total-Static Eff.(%)" << "      Entropy Generation(%)" << endl;
-		cout.width(25); cout << TotalTotalEfficiency[nBladesRow + nStages][nSpanWiseSections]*100.0;
-		cout.width(25); cout << TotalStaticEfficiency[nBladesRow + nStages][nSpanWiseSections]*100.0;
-		cout.width(25); cout << EntropyGen[nBladesRow + nStages][nSpanWiseSections]*100.0;
-		cout << endl;
-		cout << endl;
-		cout << "     Pressure Ratio " << "          Outlet Is. Enthalpy" << "       In-Out MassFlow Diff (%)" <<  endl;
-		cout.width(25); cout << PressureRatio[nBladesRow + nStages][nSpanWiseSections];
-		cout.width(25); cout << EnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]*config->GetEnergy_Ref();;
-		cout.width(25); cout << abs((MassFlowIn[nBladesRow + nStages][nSpanWiseSections] - MassFlowOut[nBladesRow + nStages][nSpanWiseSections])/MassFlowIn[nBladesRow + nStages][nSpanWiseSections])*100.0;
-		cout << endl;
-		cout << endl << "-------------------------------------------------------------------------" << endl;
-		cout << endl;
-	}
+    /*--- Full Machine Performance ---*/
+    // if(turbine)
+    cout << endl << "---------------------------- Turbine ------------------------------------" << endl;
+    inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(0);
+    outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(nBladesRow-1);
+    cout << "Turbine performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+    cout << endl;
+    cout << "     Total-Total Eff.(%)" << "      Total-Static Eff.(%)" << "      Entropy Generation(%)" << endl;
+    cout.width(25); cout << TotalTotalEfficiency[nBladesRow + nStages][nSpanWiseSections]*100.0;
+    cout.width(25); cout << TotalStaticEfficiency[nBladesRow + nStages][nSpanWiseSections]*100.0;
+    cout.width(25); cout << EntropyGen[nBladesRow + nStages][nSpanWiseSections]*100.0;
+    cout << endl;
+    cout << endl;
+    cout << "     Pressure Ratio " << "          Outlet Is. Enthalpy" << "       In-Out MassFlow Diff (%)" <<  endl;
+    cout.width(25); cout << PressureRatio[nBladesRow + nStages][nSpanWiseSections];
+    cout.width(25); cout << EnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]*config->GetEnergy_Ref();;
+    cout.width(25); cout << abs((MassFlowIn[nBladesRow + nStages][nSpanWiseSections] - MassFlowOut[nBladesRow + nStages][nSpanWiseSections])/MassFlowIn[nBladesRow + nStages][nSpanWiseSections])*100.0;
+    cout << endl;
+    cout << endl << "-------------------------------------------------------------------------" << endl;
+    cout << endl;
+  }
 
 }
 
@@ -10380,14 +10379,10 @@ void COutput::SpanwiseFile(CGeometry ***geometry,
                            CConfig **config,
                            unsigned short val_iZone) {
 
-  bool turbo = config[val_iZone]->GetBoolTurbomachinery();
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
-  unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
-  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nZone       = config[val_iZone]->GetnZone();
 
-  unsigned short iVar, iMarker, iMarker_Monitoring, iDim, iSpan;
-  unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
+  unsigned short iMarker_Monitoring, iDim, iSpan;
 
   unsigned long iExtIter = config[val_iZone]->GetExtIter();
 
