@@ -729,7 +729,7 @@ inline su2double CConfig::GetRotation_Rate_Z(unsigned short val_iZone) { return 
 
 inline su2double CConfig::GetFinalRotation_Rate_Z(unsigned short val_iZone) { return  FinalRotation_Rate_Z[val_iZone]; }
 
-inline su2double CConfig::SetRotation_Rate_Z(su2double newRotation_Rate_Z, unsigned short val_iZone) { Rotation_Rate_Z[val_iZone] = newRotation_Rate_Z; }
+inline void CConfig::SetRotation_Rate_Z(su2double newRotation_Rate_Z, unsigned short val_iZone) { Rotation_Rate_Z[val_iZone] = newRotation_Rate_Z; }
 
 inline su2double CConfig::GetPitching_Omega_X(unsigned short val_iZone) { return  Pitching_Omega_X[val_iZone]; }
 
