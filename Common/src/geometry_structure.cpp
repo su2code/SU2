@@ -10576,8 +10576,14 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
         myfile.width(20); myfile << y_loc[iSpan][iSpanVertex];
         myfile.width(20); myfile << z_loc[iSpan][iSpanVertex];
         myfile.width(20); myfile << radius;
-        myfile.width(20); myfile << angCoord_loc[iSpan][iSpanVertex]*180.0/PI_NUMBER;
-        myfile.width(20); myfile << deltaAngCoord_loc[iSpan][iSpanVertex]*180.0/PI_NUMBER;
+        if (nDim ==2 && config->GetKind_TurboMachinery(val_iZone)){
+          myfile.width(20); myfile << angCoord_loc[iSpan][iSpanVertex];
+          myfile.width(20); myfile << deltaAngCoord_loc[iSpan][iSpanVertex];
+        }
+        else{
+          myfile.width(20); myfile << angCoord_loc[iSpan][iSpanVertex]*180.0/PI_NUMBER;
+          myfile.width(20); myfile << deltaAngCoord_loc[iSpan][iSpanVertex]*180.0/PI_NUMBER;
+        }
         myfile.width(20); myfile << rank_loc[iSpan][iSpanVertex]<<endl;
       }
       myfile << endl;
