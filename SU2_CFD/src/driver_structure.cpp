@@ -3737,17 +3737,6 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
           if (!adjoint) {
             U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
             Source[iVar] += U[iVar]*D[iZone][jZone];
-
-            if (implicit) {
-              U_old[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
-              deltaU = U[iVar] - U_old[iVar];
-              //              if (deltaU != 0)
-              //                cout << "DELTA U:    " << deltaU << endl ;
-              Source[iVar] += deltaU*D[iZone][jZone];
-              //              Source[iVar] += 0.*D[iZone][jZone];
-            }
-
-
           }
 
           else {
