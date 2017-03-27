@@ -127,6 +127,8 @@ CDriver::CDriver(char* confFile,
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
     geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
 
+    CGeometry *geometry_test = new CPhysicalGeometry(geometry_aux, config_container[iZone], true);
+
     /*--- Deallocate the memory of geometry_aux ---*/
 
     delete geometry_aux;
