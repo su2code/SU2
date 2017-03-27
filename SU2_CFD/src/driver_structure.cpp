@@ -132,6 +132,7 @@ CDriver::CDriver(char* confFile,
     /*--- Deallocate the memory of geometry_aux ---*/
 
     delete geometry_aux;
+    delete geometry_test;
 
     /*--- Add the Send/Receive boundaries ---*/
 

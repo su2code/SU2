@@ -4368,7 +4368,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   nLocal_Pris = 0;
   nLocal_Pyra = 0;
 
-  Local_Color = NULL;
   Coords = NULL;
   Conn_Line = NULL;
   Conn_BoundTria = NULL;
@@ -4417,7 +4416,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
 
   /*--- Free memory associated with the redistribution of points and elems. ---*/
 
-  if (Local_Color != NULL) delete [] Local_Color;
+  Color_List.clear();
 
   if (Coords != NULL) delete [] Coords;
 
@@ -4457,7 +4456,7 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
   MPI_Status status;
   int ind;
 #endif
-  unsigned long iPoint, jPoint, iElem, Global_Index, iProcessor;
+  unsigned long iPoint, iNeighbor, jPoint, iElem, iProcessor;
   unsigned short iNode, jNode;
 
   /*--- First, create a complete list of the points on this rank (including
@@ -4498,7 +4497,6 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
 
   vector<vector<unsigned long> > Neighbors;
   Neighbors.resize(LocalPoints.size());
-
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
       iPoint = Global2Local[geometry->elem[iElem]->GetNode(iNode)];
@@ -4538,26 +4536,27 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
    that were needed to perform the coloring. ---*/
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (jPoint = 0; jPoint < Neighbors[iPoint].size(); jPoint++) {
+    for (iNeighbor = 0; iNeighbor < Neighbors[iPoint].size(); iNeighbor++) {
+
+      /*--- Global ID of the neighbor ---*/
+
+      jPoint = Neighbors[iPoint][iNeighbor];
 
       /*--- Search for the processor that owns this neighbor. ---*/
 
-      iProcessor = Neighbors[iPoint][jPoint]/geometry->npoint_procs[0];
-
+      iProcessor = jPoint/geometry->npoint_procs[0];
       if (iProcessor >= (unsigned long)size)
         iProcessor = (unsigned long)size-1;
-      if (Neighbors[iPoint][jPoint] >= geometry->nPoint_Linear[iProcessor])
-        while(Neighbors[iPoint][jPoint] >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
+      if (jPoint >= geometry->nPoint_Linear[iProcessor])
+        while(jPoint >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
       else
-        while(Neighbors[iPoint][jPoint] <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
+        while(jPoint <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
 
       /*--- If we have not visted this node yet, increment our
        number of points that must be sent to a particular proc. ---*/
 
-      Global_Index = geometry->node[iPoint]->GetGlobalIndex();
-
-      if (nPoint_Flag[iProcessor] != (int)Global_Index) {
-        nPoint_Flag[iProcessor] = (int)Global_Index;
+      if (nPoint_Flag[iProcessor] != (int)iPoint) {
+        nPoint_Flag[iProcessor] = (int)iPoint;
         nPoint_Send[iProcessor+1]++;
       }
 
@@ -4594,14 +4593,12 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
   /*--- Allocate arrays for sending the global ID. ---*/
 
   unsigned long *idSend = new unsigned long[nPoint_Send[size]];
-  for (int ii = 0; ii < nPoint_Send[size]; ii++)
-    idSend[ii] = 0;
+  for (int ii = 0; ii < nPoint_Send[size]; ii++) idSend[ii] = 0;
 
   /*--- Allocate memory to hold the colors that we are sending. ---*/
 
   unsigned long *colorSend = new unsigned long[nPoint_Send[size]];
-  for (int ii = 0; ii < nPoint_Send[size]; ii++)
-    colorSend[ii] = 0;
+  for (int ii = 0; ii < nPoint_Send[size]; ii++) colorSend[ii] = 0;
 
   /*--- Create an index variable to keep track of our index
    positions as we load up the send buffer. ---*/
@@ -4612,31 +4609,33 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
   /*--- Now load up our buffers with the Global IDs and colors. ---*/
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (jPoint = 0; jPoint < Neighbors[iPoint].size(); jPoint++) {
+    for (iNeighbor = 0; iNeighbor < Neighbors[iPoint].size(); iNeighbor++) {
+
+      /*--- Global ID of the neighbor ---*/
+
+      jPoint = Neighbors[iPoint][iNeighbor];
 
       /*--- Search for the processor that owns this neighbor ---*/
 
-      iProcessor = Neighbors[iPoint][jPoint]/geometry->npoint_procs[0];
+      iProcessor = jPoint/geometry->npoint_procs[0];
       if (iProcessor >= (unsigned long)size)
         iProcessor = (unsigned long)size-1;
-      if (Neighbors[iPoint][jPoint] >= geometry->nPoint_Linear[iProcessor])
-        while(Neighbors[iPoint][jPoint] >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
+      if (jPoint >= geometry->nPoint_Linear[iProcessor])
+        while(jPoint >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
       else
-        while(Neighbors[iPoint][jPoint] <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
+        while(jPoint <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
 
       /*--- If we have not visted this node yet, increment our
-       number of points that must be sent to a particular proc. ---*/
+       counters and load up the global ID and color. ---*/
 
-      Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+      if (nPoint_Flag[iProcessor] != (int)iPoint) {
 
-      if (nPoint_Flag[iProcessor] != (int)Global_Index) {
-
-        nPoint_Flag[iProcessor] = (int)Global_Index;
+        nPoint_Flag[iProcessor] = (int)iPoint;
         unsigned long nn = index[iProcessor];
 
         /*--- Load the data values. ---*/
 
-        idSend[nn]    = Global_Index;
+        idSend[nn]    = geometry->node[iPoint]->GetGlobalIndex();
         colorSend[nn] = geometry->node[iPoint]->GetColor();
 
         /*--- Increment the index by the message length ---*/
@@ -4768,7 +4767,6 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
    communicated in the routine above, but since we are storing in a map,
    it will simply overwrite the same entries. ---*/
 
-  map<unsigned long, unsigned long> Color_List;
   for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
     Color_List[idRecv[ii]] = colorRecv[ii];
   }
@@ -6015,7 +6013,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         ending_node[i]   = starting_node[i] + npoint_procs[i];
         nPoint_Linear[i] = nPoint_Linear[i-1] + npoint_procs[i-1];
       }
-      nPoint_Linear[size] = nPoint;
+      nPoint_Linear[size] = Global_nPoint;
 
       /*--- Here we check if a point in the mesh file lies in the domain
        and if so, then store it on the local processor. We only create enough
