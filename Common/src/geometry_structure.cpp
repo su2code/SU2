@@ -91,6 +91,7 @@ CGeometry::CGeometry(void) {
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
+  nPoint_Linear = NULL;
   
 }
 
@@ -163,6 +164,7 @@ CGeometry::~CGeometry(void) {
   if (starting_node != NULL) delete [] starting_node;
   if (ending_node   != NULL) delete [] ending_node;
   if (npoint_procs  != NULL) delete [] npoint_procs;
+  if (nPoint_Linear != NULL) delete [] nPoint_Linear;
   
 }
 
@@ -1317,6 +1319,7 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
+  nPoint_Linear = NULL;
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
@@ -1328,6 +1331,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
+  nPoint_Linear = NULL;
   
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -1458,6 +1462,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
+  nPoint_Linear = NULL;
 
   /*--- Local variables and counters for the following communications. ---*/
   
@@ -4336,6 +4341,97 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
 }
 
+CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool val_flag) {
+
+  /*--- Initialize several class data members for later. ---*/
+
+  Local_to_Global_Point  = NULL;
+  Local_to_Global_Marker = NULL;
+  Global_to_Local_Marker = NULL;
+
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
+  nPoint_Linear = NULL;
+
+  nLocal_Point = 0;
+  nLocal_PointDomain = 0;
+  nLocal_PointGhost = 0;
+  nLocal_PointPeriodic = 0;
+  nLocal_Line = 0;
+  nLocal_BoundTria = 0;
+  nLocal_BoundQuad = 0;
+  nLocal_Tria = 0;
+  nLocal_Quad = 0;
+  nLocal_Tetr = 0;
+  nLocal_Hexa = 0;
+  nLocal_Pris = 0;
+  nLocal_Pyra = 0;
+
+  Local_Color = NULL;
+  Coords = NULL;
+  Conn_Line = NULL;
+  Conn_BoundTria = NULL;
+  Conn_BoundQuad = NULL;
+  Conn_Tria = NULL;
+  Conn_Quad = NULL;
+  Conn_Tetr = NULL;
+  Conn_Hexa = NULL;
+  Conn_Pris = NULL;
+  Conn_Pyra = NULL;
+
+  nDim = geometry->GetnDim();
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (rank == MASTER_NODE && size > SINGLE_NODE)
+    cout << "Communicating partition data and creating halo layers." << endl;
+
+  /*--- Do something to distribute the partition coloring better? ---*/
+
+  DistributeColoring(geometry, config);
+
+  /*--- Distribute the point information to all ranks based on the coloring. ---*/
+
+  //DistributePoints();
+
+  /*--- Distribute the element information to all ranks based on coloring. ---*/
+
+  //DistributeConnectivity( type, ...);
+
+  /*--- Now load all of the geomtric information into place for the class. ---*/
+
+  // Set major counters
+
+  // Load points
+
+  // Load elements
+
+  // Load boundaries
+
+
+  /*--- Free memory associated with the redistribution of points and elems. ---*/
+
+  if (Local_Color != NULL) delete [] Local_Color;
+
+  if (Coords != NULL) delete [] Coords;
+
+  if (nLocal_Line > 0      && Conn_Line      != NULL) delete [] Conn_Line;
+  if (nLocal_BoundTria > 0 && Conn_BoundTria != NULL) delete [] Conn_BoundTria;
+  if (nLocal_BoundQuad > 0 && Conn_BoundQuad != NULL) delete [] Conn_BoundQuad;
+  if (nLocal_Tria > 0 && Conn_Tria != NULL) delete [] Conn_Tria;
+  if (Conn_Quad != NULL) delete [] Conn_Quad;
+  if (Conn_Tetr != NULL) delete [] Conn_Tetr;
+  if (Conn_Hexa != NULL) delete [] Conn_Hexa;
+  if (Conn_Pris != NULL) delete [] Conn_Pris;
+  if (Conn_Pyra != NULL) delete [] Conn_Pyra;
+
+}
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
   
@@ -4345,10 +4441,383 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   
 }
 
+void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config) {
 
+  /*--- To start, each linear partition carries the color only for the
+   owned nodes (nPoint), but we have repeated elems on each linear partition.
+   We need to complete the coloring information such that the repeated
+   points on each rank also have their color values. ---*/
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &size);
+  MPI_Request *send_req, *recv_req;
+  MPI_Status status;
+  int ind;
+#endif
+  unsigned long iPoint, jPoint, iElem, Global_Index, iProcessor;
+  unsigned short iNode, jNode;
+
+  bool *RepeatedElem = new bool[geometry->GetnElem()];
+
+  /*--- Create a mapping of global to local index in the aux geometry class. ---*/
+
+  map<unsigned long, unsigned long> Global2Local;
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+  /*--- Loop over all of the local elements and find any shared elements. 
+   Shared elements have at least one point outside of the original linear
+   partitioning. These elements will require some communication of colors. ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+    /*--- Check if the element is entirely owned by this rank. ---*/
+
+    RepeatedElem[iElem] = false;
+    for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+
+      /*--- Get the global index of the node and check if it falls in our
+       linear partition of owned nodes. If not, add to the list for
+       communication. ---*/
+
+      Global_Index = geometry->elem[iElem]->GetNode(iNode);
+      if ((Global_Index <  geometry->starting_node[rank]) &&
+          (Global_Index >= geometry->ending_node[rank])){
+        RepeatedElem[iElem] = true;
+        break;
+      }
+
+    }
+  }
+
+  /*--- Prepare structures for communication. ---*/
+
+  int *nPoint_Send = new int[size+1]; nPoint_Send[0] = 0;
+  int *nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
+  int *nPoint_Flag = new int[size];
+
+  for (int ii=0; ii < size; ii++) {
+    nPoint_Send[ii] = 0;
+    nPoint_Recv[ii] = 0;
+    nPoint_Flag[ii]= -1;
+  }
+  nPoint_Send[size] = 0; nPoint_Recv[size] = 0;
+
+  /*--- Traverse through the list of repeated elements and prepare to
+   communicate the colors for any owned nodes to the ranks that contain
+   the repeated elements. ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    if (RepeatedElem[iElem]) {
+
+      /*--- Logic to identify which nodes of these elements we own
+       and to whom the coloring must be communicated. ---*/
+
+      for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+
+        /*--- Get the global index of the current point. ---*/
+
+        Global_Index = geometry->elem[iElem]->GetNode(iNode);
+
+        /*--- If our current rank owns this node check the other nodes to
+         decide where we should send the color. To simplify the logic, we
+         will allow for sending to our own rank, as duplicates in the list
+         will be removed later. ---*/
+
+        if ((Global_Index >= geometry->starting_node[rank]) &&
+            (Global_Index <  geometry->ending_node[rank])){
+
+          for (jNode = 0; jNode < geometry->elem[iElem]->GetnNodes(); jNode++) {
+            if (jNode != iNode) {
+
+              jPoint = geometry->elem[iElem]->GetNode(jNode);
+
+              /*--- Search for the processor that owns this point ---*/
+
+              iProcessor = jPoint/npoint_procs[0];
+              if (iProcessor >= (unsigned long)size)
+                iProcessor = (unsigned long)size-1;
+              if (jPoint >= nPoint_Linear[iProcessor])
+                while(jPoint >= nPoint_Linear[iProcessor+1]) iProcessor++;
+              else
+                while(jPoint <  nPoint_Linear[iProcessor])   iProcessor--;
+
+              /*--- If we have not visted this node yet, increment our
+               number of points that must be sent to a particular proc. ---*/
+              
+              if (nPoint_Flag[iProcessor] != (int)Global_Index) {
+                nPoint_Flag[iProcessor] = (int)Global_Index;
+                nPoint_Send[iProcessor+1]++;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Communicate the number of nodes to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many points it will receive from each other processor. ---*/
+
+#ifdef HAVE_MPI
+  MPI_Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
+               &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+#else
+  nPoint_Recv[1] = nPoint_Send[1];
+#endif
+
+  /*--- Prepare to send colors. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+
+  int nSends = 0, nRecvs = 0;
+  for (int ii=0; ii < size; ii++) nPoint_Flag[ii] = -1;
+
+  for (int ii = 0; ii < size; ii++) {
+    if ((ii != rank) && (nPoint_Send[ii+1] > 0)) nSends++;
+    if ((ii != rank) && (nPoint_Recv[ii+1] > 0)) nRecvs++;
+
+    nPoint_Send[ii+1] += nPoint_Send[ii];
+    nPoint_Recv[ii+1] += nPoint_Recv[ii];
+  }
+
+  /*--- Allocate arrays for sending the global ID. ---*/
+
+  unsigned long *idSend = new unsigned long[nPoint_Send[size]];
+  for (int ii = 0; ii < nPoint_Send[size]; ii++)
+    idSend[ii] = 0;
+
+  /*--- Allocate memory to hold the colors that we are sending. ---*/
+
+  unsigned long *colorSend = NULL;
+  colorSend = new unsigned long[nPoint_Send[size]];
+  for (int ii = 0; ii < nPoint_Send[size]; ii++)
+    colorSend[ii] = 0;
+
+  /*--- Create an index variable to keep track of our index
+   positions as we load up the send buffer. ---*/
+
+  unsigned long *index = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) index[ii] = nPoint_Send[ii];
+
+  /*--- Now load up our buffers with the Global IDs and colors. ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    if (RepeatedElem[iElem]) {
+
+      /*--- Logic to identify which nodes of these elements we own
+       and to whom the coloring must be communicated. ---*/
+
+      for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+
+        /*--- Get the global index of the current point. ---*/
+
+        Global_Index = geometry->elem[iElem]->GetNode(iNode);
+
+        /*--- If our current rank owns this node check the other nodes to
+         decide where we should send the color. To simplify the logic, we
+         will allow for sending to our own rank, as duplicates in the list
+         will be removed later. ---*/
+
+        if ((Global_Index >= geometry->starting_node[rank]) &&
+            (Global_Index <  geometry->ending_node[rank])){
+
+          for (jNode = 0; jNode < geometry->elem[iElem]->GetnNodes(); jNode++) {
+            if (jNode != iNode) {
+
+              jPoint = geometry->elem[iElem]->GetNode(jNode);
+
+              /*--- Search for the processor that owns this point ---*/
+
+              iProcessor = jPoint/npoint_procs[0];
+              if (iProcessor >= (unsigned long)size)
+                iProcessor = (unsigned long)size-1;
+              if (jPoint >= nPoint_Linear[iProcessor])
+                while(jPoint >= nPoint_Linear[iProcessor+1]) iProcessor++;
+              else
+                while(jPoint <  nPoint_Linear[iProcessor])   iProcessor--;
+
+              /*--- If we have not visted this node yet, increment our
+               number of points that must be sent to a particular proc. ---*/
+
+              if (nPoint_Flag[iProcessor] != (int)Global_Index) {
+
+                nPoint_Flag[iProcessor] = (int)Global_Index;
+                unsigned long nn = index[iProcessor];
+
+                /*--- Load the data values. ---*/
+
+                idSend[nn]    = Global_Index;
+                colorSend[nn] = geometry->node[Global2Local[Global_Index]]->GetColor();
+
+                cout << " ID: " << idSend[nn] << "   Color: " << colorSend[nn] << endl;
+                /*--- Increment the index by the message length ---*/
+                
+                index[iProcessor]++;
+
+              }
+
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Free memory after loading up the send buffer. ---*/
+
+  delete [] index;
+
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+
+  unsigned long *colorRecv = new unsigned long[nPoint_Recv[size]];
+  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
+    colorRecv[ii] = 0;
+
+  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]];
+  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
+    idRecv[ii] = 0;
+
+#ifdef HAVE_MPI
+  /*--- We need double the number of messages to send both the conn.
+   and the global IDs. ---*/
+
+  send_req = new MPI_Request[2*nSends];
+  recv_req = new MPI_Request[2*nRecvs];
+
+  unsigned long iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
+      int ll     = nPoint_Recv[ii];
+      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
+      int count  = kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(colorRecv[ll]), count, MPI_DOUBLE, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+      iMessage++;
+    }
+  }
+
+  /*--- Launch the non-blocking sends of the connectivity. ---*/
+
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
+      int ll = nPoint_Send[ii];
+      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count  = kk;
+      int dest = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(colorSend[ll]), count, MPI_DOUBLE, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage]));
+      iMessage++;
+    }
+  }
+
+  /*--- Repeat the process to communicate the global IDs. ---*/
+
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
+      int ll     = nPoint_Recv[ii];
+      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
+      int count  = kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+      iMessage++;
+    }
+  }
+
+  /*--- Launch the non-blocking sends of the global IDs. ---*/
+
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
+      int ll = nPoint_Send[ii];
+      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count  = kk;
+      int dest   = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+      iMessage++;
+    }
+  }
+#endif
+
+  /*--- Copy my own rank's data into the recv buffer directly. ---*/
+
+  int mm = nPoint_Recv[rank];
+  int ll = nPoint_Send[rank];
+  int kk = nPoint_Send[rank+1];
+
+  for (int nn=ll; nn<kk; nn++, mm++) colorRecv[mm] = colorSend[nn];
+
+  mm = nPoint_Recv[rank];
+  ll = nPoint_Send[rank];
+  kk = nPoint_Send[rank+1];
+
+  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
+
+  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
+
+#ifdef HAVE_MPI
+  int number = 2*nSends;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, send_req, &ind, &status);
+
+  number = 2*nRecvs;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, recv_req, &ind, &status);
+
+  delete [] send_req;
+  delete [] recv_req;
+#endif
+
+  /*--- Store the complete color map for this rank in class data. Now,
+   each rank has a color value for all owned nodes as well as any repeated
+   grid points on the rank. Note that there may be repeats that are 
+   communicated in the routine above, but since we are storing in a map,
+   it will simply overwrite the same entries. ---*/
+   
+   map<unsigned long, unsigned long> Color_List;
+   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+     cout << geometry->node[iPoint]->GetColor() << endl;
+     Color_List[geometry->node[iPoint]->GetGlobalIndex()] = geometry->node[iPoint]->GetColor();
+   }
+
+  for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
+    Color_List[idRecv[ii]] = colorRecv[ii];
+  }
+
+  /*--- Free temporary memory from communications ---*/
+
+  delete [] colorSend;
+  delete [] colorRecv;
+  delete [] idSend;
+  delete [] idRecv;
+  delete [] nPoint_Recv;
+  delete [] nPoint_Send;
+  delete [] nPoint_Flag;
+
+  delete [] RepeatedElem;
+
+}
 
 void CPhysicalGeometry::SetSendReceive(CConfig *config) {
-  
+
   unsigned short Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
   unsigned long iVertex, LocalNode;
   unsigned short nMarker_Max = config->GetnMarker_Max();
@@ -5377,7 +5846,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   starting_node = new unsigned long[size];
   ending_node   = new unsigned long[size];
   npoint_procs  = new unsigned long[size];
-  
+  nPoint_Linear = new unsigned long[size+1];
+
   /*--- Open grid file ---*/
   
   strcpy (cstr, val_mesh_filename.c_str());
@@ -5570,11 +6040,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       nPoint = npoint_procs[rank];
       starting_node[0] = 0;
       ending_node[0]   = starting_node[0] + npoint_procs[0];
+      nPoint_Linear[0] = 0;
       for (unsigned long i = 1; i < (unsigned long)size; i++) {
         starting_node[i] = ending_node[i-1];
-        ending_node[i]   = starting_node[i] + npoint_procs[i] ;
+        ending_node[i]   = starting_node[i] + npoint_procs[i];
+        nPoint_Linear[i] = nPoint_Linear[i-1] + npoint_procs[i-1];
       }
-      
+      nPoint_Linear[size] = nPoint;
+
       /*--- Here we check if a point in the mesh file lies in the domain
        and if so, then store it on the local processor. We only create enough
        space in the node container for the local nodes at this point. ---*/
@@ -6949,8 +7422,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   starting_node = new unsigned long[size];
   ending_node   = new unsigned long[size];
   npoint_procs  = new unsigned long[size];
-  
-  unsigned long *nPoint_Linear = new unsigned long[size+1];
+  nPoint_Linear = new unsigned long[size+1];
+
   unsigned long *nElem_Linear  = new unsigned long[size];
   
   unsigned long *elemB = new unsigned long[size];

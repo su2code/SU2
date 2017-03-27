@@ -146,6 +146,7 @@ public:
   unsigned long *starting_node;
   unsigned long *ending_node;
   unsigned long *npoint_procs;
+  unsigned long *nPoint_Linear;
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
   idx_t * adjacency;
@@ -957,6 +958,31 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
 
+  int *Local_Color;
+  unsigned long nLocal_Point,
+  nLocal_PointDomain,
+  nLocal_PointGhost,
+  nLocal_PointPeriodic,
+  nLocal_Line,
+  nLocal_BoundTria,
+  nLocal_BoundQuad,
+  nLocal_Tria,
+  nLocal_Quad,
+  nLocal_Tetr,
+  nLocal_Hexa,
+  nLocal_Pris,
+  nLocal_Pyra;
+  su2double *Coords;
+  int *Conn_Line;
+  int *Conn_BoundTria;
+  int *Conn_BoundQuad;
+  int *Conn_Tria;
+  int *Conn_Quad;
+  int *Conn_Tetr;
+  int *Conn_Hexa;
+  int *Conn_Pris;
+  int *Conn_Pyra;
+
 public:
   
 	/*!
@@ -985,12 +1011,29 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   CPhysicalGeometry(CGeometry *geometry, CConfig *config);
-  
+
+  /*!
+   * \overload
+   * \brief Accepts a geometry container holding a linearly partitioned grid
+   *        with coloring performed by ParMETIS, and this routine distributes
+   *        the points and cells to all partitions based on the coloring.
+   * \param[in] geometry - Definition of the geometry container holding the initial linear partitions of the grid + coloring.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool val_flag);
+
 	/*!
 	 * \brief Destructor of the class.
 	 */
 	~CPhysicalGeometry(void);
-  
+
+  /*!
+   * \brief Distributes the coloring from ParMETIS so that each rank has complete information about the local grid points.
+   * \param[in] geometry - Definition of the geometry container holding the initial linear partitions of the grid + coloring.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void DistributeColoring(CGeometry *geometry, CConfig *config);
+
   /*!
 	 * \brief Set the send receive boundaries of the grid.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1036,7 +1079,6 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-    
 
   /*!
    * \brief Reads the geometry of the grid and adjust the boundary
