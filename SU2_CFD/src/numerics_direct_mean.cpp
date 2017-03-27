@@ -2432,7 +2432,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
     U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
   }
   U_i[nDim+1] = Density_i*Energy_i; U_j[nDim+1] = Density_j*Energy_j;
-  
+
   /*--- Roe-averaged variables at interface between i & j ---*/
   
   R = sqrt(fabs(Density_j/Density_i));
@@ -2500,10 +2500,11 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   
   for (iDim = 0; iDim < nDim; iDim++)
     Lambda[iDim] = ProjVelocity;
-  
+
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
   
+
   /*--- Compute absolute value with Mavriplis' entropy correction ---*/
   
   MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
@@ -2543,7 +2544,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
       
       val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
-      
+
       if (implicit) {
         val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
         val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
@@ -2633,7 +2634,6 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
   /*--- Face area (norm or the normal vector) ---*/
-
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
   Area += Normal[iDim]*Normal[iDim];
@@ -2692,7 +2692,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
   }
   U_i[nDim+1] = Density_i*Energy_i; U_j[nDim+1] = Density_j*Energy_j;
 
-//  /*--- Roe-averaged variables at interface between i & j ---*/
+  /*--- Roe-averaged variables at interface between i & j ---*/
 
     ComputeRoeAverage();
 
@@ -2708,6 +2708,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
     }
 
     RoeSoundSpeed = sqrt(RoeSoundSpeed2);
+
 
   /*--- Compute ProjFlux_i ---*/
   GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
@@ -2743,6 +2744,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
+
 
   /*--- Compute absolute value with Mavriplis' entropy correction ---*/
 

@@ -57,7 +57,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                        (config[iZone]->GetKind_Solver() == RANS)                          ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_EULER)                ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)        ||
-                       (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS));
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS)                 ||
+                       (config[iZone]->GetKind_Solver() == TWO_PHASE_EULER)               ||
+                       (config[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES)       ||
+                       (config[iZone]->GetKind_Solver() == TWO_PHASE_RANS));
   const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short RecursiveParam = config[iZone]->GetMGCycle();
   
@@ -84,7 +87,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
       
       SetRestricted_Solution(RUNTIME_TURB_SYS, solver_container[iZone][iMGLevel][SolContainer_Position], solver_container[iZone][iMGLevel+1][SolContainer_Position], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
 
-//       SetRestricted_Solution(RUNTIME_2PHASE_SYS, solver_container[iZone][iMGLevel][SolContainer_Position], solver_container[iZone][iMGLevel+1][SolContainer_Position], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+       SetRestricted_Solution(RUNTIME_2PHASE_SYS, solver_container[iZone][iMGLevel][SolContainer_Position], solver_container[iZone][iMGLevel+1][SolContainer_Position], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
 
       
       SetRestricted_EddyVisc(RUNTIME_TURB_SYS, solver_container[iZone][iMGLevel][SolContainer_Position], solver_container[iZone][iMGLevel+1][SolContainer_Position], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
@@ -831,14 +834,14 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
     }
   }
 
-/*  //--- If 2phase model, copy the 2phase variables to the coarse levels ---//
+  //--- If 2phase model, copy the 2phase variables to the coarse levels ---//
 
   if (RunTime_EqSystem == RUNTIME_2PHASE_SYS) {
     for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
       SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
     }
   }
-  */
+
 }
 
 void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {

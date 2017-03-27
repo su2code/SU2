@@ -77,8 +77,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
   
-
-  
   /*--- Compute source term residuals ---*/
 
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
@@ -517,6 +515,8 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       
     }
     
+
+
     /*--- Do not apply any convergence criteria of the number
      of iterations is less than a particular value ---*/
     

@@ -88,6 +88,7 @@ protected:
   unsigned short nSecondaryVar, nSecondaryVarGrad;    /*!< \brief Number of variables of the problem,
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
+//  su2double Source, Radius, LiquidFraction, Enthalpy_Liquid;
 
 public:
   
@@ -2052,19 +2053,14 @@ public:
 
   virtual void      SetSource(su2double S)   ;
 
-  virtual void      SetMassSource(su2double S)   ;
-
   virtual void      SetLiqEnthalpy(su2double h);
-
-  virtual void      SetLiquidEnthalpy(su2double h);
 
   virtual void      SetRadius(su2double R);
 
-  virtual void      SetAverageRadius(su2double R);
-
   virtual void      SetLiquidFrac(su2double Y);
 
-  virtual void      SetLiquidFraction(su2double Y);
+  virtual su2double* GetLiquidPrim();
+
 
 
 };
@@ -3129,13 +3125,6 @@ public:
    */
   void SetThermalConductivity (su2double k);
 
-  void SetMassSource(su2double S) ;
-
-  void SetLiquidEnthalpy(su2double h) ;
-
-  void SetLiquidFraction(su2double Y);
-
-  void SetAverageRadius(su2double R);
 };
 
 /*!
@@ -3744,6 +3733,8 @@ public:
 
   void      SetLiquidFrac(su2double Y);
 
+  su2double* GetLiquidPrim();
+
 };
 
 /*!
@@ -3965,7 +3956,7 @@ public:
 class C2phase_HillVariable : public C2phaseVariable {
 
 protected:
-	su2double R, y, N, rho_m, V_l, P, T, rho, h;
+	su2double R, y, N, rho_m, P, T, rho, h;
 
 public:
   /*!
@@ -3983,7 +3974,8 @@ public:
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  C2phase_HillVariable(su2double val_R, su2double val_N, su2double rho_m, CConfig *config);
+  C2phase_HillVariable(su2double val_R, su2double val_N, su2double rho_m, unsigned short nDim,
+		  unsigned short nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.

@@ -107,7 +107,7 @@ inline void CNumerics::ComputeResidual(su2double *val_resconv, su2double *val_re
                    
                    // for 2phase
                    
-inline void CNumerics::ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i) {}
+inline void CNumerics::ComputeResidual_HeatMassTransfer(su2double S, su2double h, su2double Y,  su2double *Residual, su2double **Jacobian_i) {}
 
 inline void CNumerics::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, 
                    su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, 

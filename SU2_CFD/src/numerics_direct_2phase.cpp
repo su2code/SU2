@@ -116,7 +116,7 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
   
 }
 
-void  CUpw_2phaseHill_Rus::ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i) {
+void  CUpw_2phaseHill_Rus::ComputeResidual_HeatMassTransfer(su2double S, su2double h, su2double Y, su2double *Residual, su2double **Jacobian_i) {
 
 	unsigned short iVar;
 
@@ -137,13 +137,14 @@ void  CUpw_2phaseHill_Rus::ComputeResidual_HeatMassTransfer(su2double *Primitive
 	    }
 	  }
 
-	Residual[0] = Primitive[sizeof Primitive -4] * Volume;
+
+	Residual[0] = S * Volume;
 
 	for (iDim=0; iDim< nDim; iDim++) {
-		Residual  [iDim+1] = Primitive[sizeof Primitive-4] * Primitive[iDim + 1] * Volume;
+		Residual  [iDim+1] = S * V_i[iDim + 1] * Volume;
 	}
 
-	Residual[nDim] = Primitive[sizeof Primitive-4] * (Primitive[sizeof Primitive-3] + 0.5*q_ij) * Volume;
+	Residual[nDim] = S * (h + 0.5*q_ij) * Volume;
 
 	for (iVar=0; iVar< nVar; iVar++) {
 		for (iVar=0; iVar< nVar; iVar++) {
@@ -153,7 +154,7 @@ void  CUpw_2phaseHill_Rus::ComputeResidual_HeatMassTransfer(su2double *Primitive
 
 }
 
-void CUpw_2phaseHill_Rus::ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, su2double *val_liquid_j, CConfig *config) {
+void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_Residual, su2double **val_Jacobian_i, su2double *val_liquid_i, su2double *V, CConfig *config) {
 
 	unsigned short iVar, jVar;
 
@@ -183,14 +184,11 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *Residual, su2double **Jacob
 
 	// compute the source terms
 
-	Residual[0] = Density_mixture_i*Nucleation_rate;
-	Residual[1] = Density_mixture_i*Nucleation_rate*Critical_radius + Density_mixture_i*Growth_rate*Two_phaseVar_i[0];
-	Residual[2] = Density_mixture_i*Nucleation_rate*pow(Critical_radius,2) + 2.0*Density_mixture_i*Growth_rate*Two_phaseVar_i[1];
-	Residual[3] = Density_mixture_i*Nucleation_rate*pow(Critical_radius,3) + 3.0*Density_mixture_i*Growth_rate*Two_phaseVar_i[2];
+	val_Residual[0] = Density_mixture_i*Nucleation_rate;
+	val_Residual[1] = Density_mixture_i*Nucleation_rate*Critical_radius + Density_mixture_i*Growth_rate*Two_phaseVar_i[0];
+	val_Residual[2] = Density_mixture_i*Nucleation_rate*pow(Critical_radius,2) + 2.0*Density_mixture_i*Growth_rate*Two_phaseVar_i[1];
+	val_Residual[3] = Density_mixture_i*Nucleation_rate*pow(Critical_radius,3) + 3.0*Density_mixture_i*Growth_rate*Two_phaseVar_i[2];
 
-	for (iVar=0; iVar< nVar; iVar++) {
-		Residual[iVar] = Residual[iVar]*Volume;
-	}
 
 	// compute the Jacobians of the source terms
 
@@ -198,13 +196,13 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *Residual, su2double **Jacob
 
 		for (iVar = 0; iVar < nVar; iVar++) {
 			for (jVar = 0; jVar < nVar; jVar++) {
-				Jacobian_i[iVar][jVar] = 0.0;
+				val_Jacobian_i[iVar][jVar] = 0.0;
 			}
 		}
 
-		Jacobian_i[1][0] = Density_mixture_i*Growth_rate*Volume;
-		Jacobian_i[2][1] = 2.0*Density_mixture_i*Growth_rate*Volume;
-		Jacobian_i[3][2] = 3.0*Density_mixture_i*Growth_rate*Volume;
+		val_Jacobian_i[1][0] = Density_mixture_i*Growth_rate;
+		val_Jacobian_i[2][1] = 2.0*Density_mixture_i*Growth_rate;
+		val_Jacobian_i[3][2] = 3.0*Density_mixture_i*Growth_rate;
 
 	}
 

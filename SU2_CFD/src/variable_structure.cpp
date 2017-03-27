@@ -52,6 +52,8 @@ CVariable::CVariable(void) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   
+ // Source =0; Radius=0; LiquidFraction=0; Enthalpy_Liquid=0;
+
 }
 
 CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
@@ -71,6 +73,8 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   
+//  Source =0; Radius=0; LiquidFraction=0; Enthalpy_Liquid=0;
+
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
    restart files into solution files (SU2_SOL). ---*/
@@ -131,6 +135,8 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     Solution_time_n1 = new su2double [nVar];
   }
   
+//  Source =0; Radius=0; LiquidFraction=0; Enthalpy_Liquid=0;
+
 }
 
 CVariable::~CVariable(void) {

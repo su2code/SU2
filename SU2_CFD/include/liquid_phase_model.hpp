@@ -171,7 +171,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CWater();
+  CWater(CConfig *config);
   
   /*!
    * \brief Destructor of the class.

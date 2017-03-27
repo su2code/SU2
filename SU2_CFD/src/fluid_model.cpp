@@ -90,7 +90,7 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
 
 void CFluidModel::SetLiquidPhaseModel (CConfig *config) {
 
-    Liquid_Prop = new CWater();
+    Liquid_Prop = new CWater(config);
 
 }
 

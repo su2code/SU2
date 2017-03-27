@@ -33,7 +33,7 @@
 #include "../include/liquid_phase_model.hpp"
 
 
-CLiquidModel::CLiquidModel(void) {
+CLiquidModel::CLiquidModel() {
 
   /*--- Attributes initialization ---*/
 
@@ -43,10 +43,6 @@ CLiquidModel::CLiquidModel(void) {
   Tsat   = 0.0;
   Psat   = 0.0;
   sigma  = 0.0;
-
-
-  Gas_Constant = config->GetGas_Constant();
-  Tstar = config->GetTemperature_Critical();
 
 }
 
@@ -104,7 +100,7 @@ void CLiquidModel::SetRadius(su2double *Two_Phase_Var) {
 
 
 
-CWater::CWater() : CLiquidModel() {
+CWater::CWater(CConfig *config) : CLiquidModel() {
 
 	coeff_saturation  = new su2double [10];
 	coeff_latent_heat = new su2double [4];
@@ -133,6 +129,9 @@ CWater::CWater() : CLiquidModel() {
     Fsat = 0;
     Gsat = 0;
     Hsat = 0;
+
+    Gas_Constant = config->GetGas_Constant();
+    Tstar = config->GetTemperature_Critical();
 
 }
 

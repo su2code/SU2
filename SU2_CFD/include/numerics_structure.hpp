@@ -422,7 +422,7 @@ public:
      * \param[in] val_turbvar_i - Value of the 2phase variable at point i.
      * \param[in] val_turbvar_j - Value of the 2phase variable at point j.
      */
-    void Set2phaseVar(su2double *val_2phasevar_i, su2double *val_2phasevar_j);
+   void Set2phaseVar(su2double *val_2phasevar_i, su2double *val_2phasevar_j);
 
   /*!
    * \brief Set the value of the turbulent variable.
@@ -443,7 +443,7 @@ public:
      * \param[in] val_turbvar_grad_i - Gradient of the 2phase variable at point i.
      * \param[in] val_turbvar_grad_j - Gradient of the 2phase variable at point j.
      */
-    void Set2phaseVarGradient(su2double **val_2phasevar_grad_i, su2double **val_2phasevar_grad_j);
+  void Set2phaseVarGradient(su2double **val_2phasevar_grad_i, su2double **val_2phasevar_grad_j);
 
   /*!
    * \brief Set the gradient of the turbulent variables.
@@ -1440,7 +1440,7 @@ public:
   su2double  GetGrowth_Rate ();
 
 
-  virtual void       ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
+  virtual void       ComputeResidual_HeatMassTransfer(su2double S, su2double h, su2double Y, su2double *Residual, su2double **Jacobian_i);
 
   virtual void       ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double *val_liquid_i,
 		  su2double *val_liquid_j, CConfig *config);
@@ -2322,7 +2322,7 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 
-  void ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
+  void ComputeResidual_HeatMassTransfer(su2double S, su2double h, su2double Y, su2double *Residual, su2double **Jacobian_i);
 
   void ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, su2double *val_liquid_j, CConfig *config);
 
@@ -2369,8 +2369,6 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 
   void ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
-
-  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, CConfig *config);
 
 };
 

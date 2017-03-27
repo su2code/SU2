@@ -71,25 +71,25 @@ C2phaseVariable::SetRadius(su2double R)     {Radius = R;};
 C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction = Y; };
 */
 
+
 C2phaseVariable::~C2phaseVariable(void) {
-	if (Primitive_Liquid != NULL) delete [] Primitive_Liquid;
+
 }
 
 
 
 C2phase_HillVariable::C2phase_HillVariable(void) : C2phaseVariable() {
 
-	//V_l = new su2double [9];
 }
 
-C2phase_HillVariable::C2phase_HillVariable(su2double val_R, su2double val_N, su2double rho_m, CConfig *config): C2phaseVariable() {
+C2phase_HillVariable::C2phase_HillVariable(su2double val_R, su2double val_N, su2double rho_m, unsigned short nDim,
+		unsigned short nVar, CConfig *config): C2phaseVariable(nDim, nVar, config) {
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
 
   /*--- Initialization of variables ---*/
-  
+
   Solution[0] = rho_m * val_N;                Solution_Old[0] = rho_m * val_N;
   Solution[1] = rho_m * val_N*val_R;          Solution_Old[1] = rho_m * val_N*val_R;
   Solution[2] = rho_m * val_N*pow(val_R, 2);  Solution_Old[2] = rho_m * val_N*pow(val_R, 2);
@@ -109,8 +109,8 @@ C2phase_HillVariable::C2phase_HillVariable(su2double val_R, su2double val_N, su2
 
 C2phase_HillVariable::~C2phase_HillVariable(void) {
 
-	//if (V_l != NULL) delete [] V_l;
-  
+	if (Primitive_Liquid != NULL) delete [] Primitive_Liquid;
+
 }
 
 void C2phase_HillVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2double G) {

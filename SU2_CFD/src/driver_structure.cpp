@@ -816,7 +816,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
     
     /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
-    if (euler) {
+    if (euler && !two_phase) {
       if (compressible) {
         solver_container[iMGlevel][FLOW_SOL] = new CEulerSolver(geometry[iMGlevel], config, iMGlevel);
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
@@ -825,6 +825,15 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][FLOW_SOL] = new CIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
+    }
+
+    if (euler && two_phase) {
+        if (compressible) {
+          solver_container[iMGlevel][FLOW_SOL] = new CEulerSolver(geometry[iMGlevel], config, iMGlevel);
+        }
+        if (incompressible) {
+          solver_container[iMGlevel][FLOW_SOL] = new CIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
+        }
     }
     if (ns) {
       if (compressible) {
@@ -858,6 +867,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (two_phase) {
       if (hill_rus || hill_ausm) {
         solver_container[iMGlevel][TWO_PHASE_SOL] = new C2phase_HillSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[iMGlevel][TWO_PHASE_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
     }
     if (poisson) {
@@ -1022,9 +1034,8 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     }
   
   if (two_phase)
-    switch (config->GetKind_Turb_Model()) {
+    switch (config->GetKind_2phase_Model()) {
       case HILL_RUS:     hill_rus  = true;     break;
-      case HILL_AUSM:    hill_ausm = true;     break;
     }
 
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
@@ -1601,7 +1612,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     }
   }
   
-  if (turbulent) {
+  if (two_phase) {
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
 
@@ -1611,7 +1622,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           if (hill_rus) numerics_container[iMGlevel][TWO_PHASE_SOL][CONV_TERM] = new CUpw_2phaseHill_Rus(nDim, nVar_2phase, config);
-          else cout << "Convective scheme not implemented (2phase)." << endl; exit(EXIT_FAILURE);
           //          else if (hill_ausm) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpw_2phaseHill_Ausm(nDim, nVar_Turb, config);
         }
         break;

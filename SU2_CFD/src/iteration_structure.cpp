@@ -512,12 +512,21 @@ void CFluidIteration::Iterate(COutput *output,
     case EULER: case DISC_ADJ_EULER:
       config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
       
+    case TWO_PHASE_EULER:
+    	config_container[val_iZone]->SetGlobalParam(TWO_PHASE_EULER, RUNTIME_FLOW_SYS, ExtIter); break;
+
     case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
       config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
       
+    case TWO_PHASE_NAVIER_STOKES:
+          config_container[val_iZone]->SetGlobalParam(TWO_PHASE_NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
+
     case RANS: case DISC_ADJ_RANS:
       config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;
       
+    case TWO_PHASE_RANS:
+          config_container[val_iZone]->SetGlobalParam(TWO_PHASE_RANS, RUNTIME_FLOW_SYS, ExtIter); break;
+
   }
   
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
@@ -526,7 +535,21 @@ void CFluidIteration::Iterate(COutput *output,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
   
   
+  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
+	  (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+      (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS)) {
+
+    /*--- Solve the 2phase model ---*/
+
+    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_2PHASE_SYS, ExtIter);
+    integration_container[val_iZone][TWO_PHASE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                     config_container, RUNTIME_2PHASE_SYS, IntIter, val_iZone);
+
+
+  }
+
   if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
+	  (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) ||
       (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
     
     /*--- Solve the turbulence model ---*/
@@ -546,14 +569,6 @@ void CFluidIteration::Iterate(COutput *output,
     
   }
   
-    /*--- Solve two-phase model ---*/
-
-  	  if (config_container[val_iZone]->GetKind_2phase_Model() != NONE)  {
-
-  		  config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_2PHASE_SYS, ExtIter);
-	  integration_container[val_iZone][TWO_PHASE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-																	   config_container, RUNTIME_2PHASE_SYS, IntIter, val_iZone);
-  }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
   
@@ -605,20 +620,24 @@ void CFluidIteration::Update(COutput *output,
       integration_container[val_iZone][FLOW_SOL]->SetConvergence(false);
     }
     
+
+    /*--- Update dual time solver for the 2-phase model ---*/
+    if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
+    	(config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+        (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS)) {
+      integration_container[val_iZone][TWO_PHASE_SOL]->SetDualTime_Solver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0][TWO_PHASE_SOL], config_container[val_iZone], MESH_0);
+      integration_container[val_iZone][TWO_PHASE_SOL]->SetConvergence(false);
+    }
+
     /*--- Update dual time solver for the turbulence model ---*/
     
     if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
+    	(config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) ||
         (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
       integration_container[val_iZone][TURB_SOL]->SetDualTime_Solver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0][TURB_SOL], config_container[val_iZone], MESH_0);
       integration_container[val_iZone][TURB_SOL]->SetConvergence(false);
     }
     
-    /*--- Update dual time solver for the 2-phase model ---*/
-
-    if (config_container[val_iZone]->GetKind_2phase_Model() != NONE)  {
-      integration_container[val_iZone][TWO_PHASE_SOL]->SetDualTime_Solver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0][TWO_PHASE_SOL], config_container[val_iZone], MESH_0);
-      integration_container[val_iZone][TWO_PHASE_SOL]->SetConvergence(false);
-    }
 
     /*--- Update dual time solver for the transition model ---*/
     
