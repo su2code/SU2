@@ -4452,7 +4452,7 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_rank(MPI_COMM_WORLD, &size);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Request *send_req, *recv_req;
   MPI_Status status;
   int ind;
@@ -4460,38 +4460,63 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
   unsigned long iPoint, jPoint, iElem, Global_Index, iProcessor;
   unsigned short iNode, jNode;
 
-  bool *RepeatedElem = new bool[geometry->GetnElem()];
+  /*--- First, create a complete list of the points on this rank (including
+   repeats) and their neighbors so that we can efficiently loop through the
+   points and decide how to distribute the colors. ---*/
 
-  /*--- Create a mapping of global to local index in the aux geometry class. ---*/
-
-  map<unsigned long, unsigned long> Global2Local;
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
-
-  /*--- Loop over all of the local elements and find any shared elements. 
-   Shared elements have at least one point outside of the original linear
-   partitioning. These elements will require some communication of colors. ---*/
+  vector<unsigned long> LocalPoints;
+  vector<unsigned long>::iterator it;
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-
-    /*--- Check if the element is entirely owned by this rank. ---*/
-
-    RepeatedElem[iElem] = false;
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
-
-      /*--- Get the global index of the node and check if it falls in our
-       linear partition of owned nodes. If not, add to the list for
-       communication. ---*/
-
-      Global_Index = geometry->elem[iElem]->GetNode(iNode);
-      if ((Global_Index <  geometry->starting_node[rank]) &&
-          (Global_Index >= geometry->ending_node[rank])){
-        RepeatedElem[iElem] = true;
-        break;
-      }
-
+      LocalPoints.push_back(geometry->elem[iElem]->GetNode(iNode));
     }
+  }
+
+  /*--- Sort the list and remove duplicates. ---*/
+
+  sort(LocalPoints.begin(), LocalPoints.end());
+  it = unique(LocalPoints.begin(), LocalPoints.end());
+  LocalPoints.resize(it - LocalPoints.begin());
+
+  /*--- Create a global to local mapping that includes the unowned points. ---*/
+
+  map<unsigned long, unsigned long> Global2Local;
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+  jPoint = geometry->GetnPoint();
+  for (iPoint = 0; iPoint < LocalPoints.size(); iPoint++) {
+    if ((LocalPoints[iPoint] <  geometry->starting_node[rank]) &&
+        (LocalPoints[iPoint] >= geometry->ending_node[rank])){
+      Global2Local[LocalPoints[iPoint]] = jPoint;
+      jPoint++;
+    }
+  }
+
+  /*--- Now create the neighbor lists for each owned node. ---*/
+
+  vector<vector<unsigned long> > Neighbors;
+  Neighbors.resize(LocalPoints.size());
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+      iPoint = Global2Local[geometry->elem[iElem]->GetNode(iNode)];
+      for (jNode = 0; jNode < geometry->elem[iElem]->GetnNodes(); jNode++) {
+        if (jNode != iNode) {
+          jPoint = geometry->elem[iElem]->GetNode(jNode);
+          Neighbors[iPoint].push_back(jPoint);
+        }
+      }
+    }
+  }
+
+  /*--- Post-process the neighbor lists. ---*/
+
+  for (iPoint = 0; iPoint < LocalPoints.size(); iPoint++) {
+    sort(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
+    it = unique(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
+    Neighbors[iPoint].resize(it - Neighbors[iPoint].begin());
   }
 
   /*--- Prepare structures for communication. ---*/
@@ -4507,56 +4532,35 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
   }
   nPoint_Send[size] = 0; nPoint_Recv[size] = 0;
 
-  /*--- Traverse through the list of repeated elements and prepare to
-   communicate the colors for any owned nodes to the ranks that contain
-   the repeated elements. ---*/
+  /*--- Loop over the owned points and check all the neighbors for unowned
+   points. The colors of all owned points will be communicated to any ranks
+   that will require them, which is due to the repeated points/elements
+   that were needed to perform the coloring. ---*/
 
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    if (RepeatedElem[iElem]) {
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    for (jPoint = 0; jPoint < Neighbors[iPoint].size(); jPoint++) {
 
-      /*--- Logic to identify which nodes of these elements we own
-       and to whom the coloring must be communicated. ---*/
+      /*--- Search for the processor that owns this neighbor. ---*/
 
-      for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+      iProcessor = Neighbors[iPoint][jPoint]/geometry->npoint_procs[0];
 
-        /*--- Get the global index of the current point. ---*/
+      if (iProcessor >= (unsigned long)size)
+        iProcessor = (unsigned long)size-1;
+      if (Neighbors[iPoint][jPoint] >= geometry->nPoint_Linear[iProcessor])
+        while(Neighbors[iPoint][jPoint] >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
+      else
+        while(Neighbors[iPoint][jPoint] <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
 
-        Global_Index = geometry->elem[iElem]->GetNode(iNode);
+      /*--- If we have not visted this node yet, increment our
+       number of points that must be sent to a particular proc. ---*/
 
-        /*--- If our current rank owns this node check the other nodes to
-         decide where we should send the color. To simplify the logic, we
-         will allow for sending to our own rank, as duplicates in the list
-         will be removed later. ---*/
+      Global_Index = geometry->node[iPoint]->GetGlobalIndex();
 
-        if ((Global_Index >= geometry->starting_node[rank]) &&
-            (Global_Index <  geometry->ending_node[rank])){
-
-          for (jNode = 0; jNode < geometry->elem[iElem]->GetnNodes(); jNode++) {
-            if (jNode != iNode) {
-
-              jPoint = geometry->elem[iElem]->GetNode(jNode);
-
-              /*--- Search for the processor that owns this point ---*/
-
-              iProcessor = jPoint/npoint_procs[0];
-              if (iProcessor >= (unsigned long)size)
-                iProcessor = (unsigned long)size-1;
-              if (jPoint >= nPoint_Linear[iProcessor])
-                while(jPoint >= nPoint_Linear[iProcessor+1]) iProcessor++;
-              else
-                while(jPoint <  nPoint_Linear[iProcessor])   iProcessor--;
-
-              /*--- If we have not visted this node yet, increment our
-               number of points that must be sent to a particular proc. ---*/
-              
-              if (nPoint_Flag[iProcessor] != (int)Global_Index) {
-                nPoint_Flag[iProcessor] = (int)Global_Index;
-                nPoint_Send[iProcessor+1]++;
-              }
-            }
-          }
-        }
+      if (nPoint_Flag[iProcessor] != (int)Global_Index) {
+        nPoint_Flag[iProcessor] = (int)Global_Index;
+        nPoint_Send[iProcessor+1]++;
       }
+
     }
   }
 
@@ -4595,8 +4599,7 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
 
   /*--- Allocate memory to hold the colors that we are sending. ---*/
 
-  unsigned long *colorSend = NULL;
-  colorSend = new unsigned long[nPoint_Send[size]];
+  unsigned long *colorSend = new unsigned long[nPoint_Send[size]];
   for (int ii = 0; ii < nPoint_Send[size]; ii++)
     colorSend[ii] = 0;
 
@@ -4608,64 +4611,37 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
 
   /*--- Now load up our buffers with the Global IDs and colors. ---*/
 
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    if (RepeatedElem[iElem]) {
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    for (jPoint = 0; jPoint < Neighbors[iPoint].size(); jPoint++) {
 
-      /*--- Logic to identify which nodes of these elements we own
-       and to whom the coloring must be communicated. ---*/
+      /*--- Search for the processor that owns this neighbor ---*/
 
-      for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+      iProcessor = Neighbors[iPoint][jPoint]/geometry->npoint_procs[0];
+      if (iProcessor >= (unsigned long)size)
+        iProcessor = (unsigned long)size-1;
+      if (Neighbors[iPoint][jPoint] >= geometry->nPoint_Linear[iProcessor])
+        while(Neighbors[iPoint][jPoint] >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
+      else
+        while(Neighbors[iPoint][jPoint] <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
 
-        /*--- Get the global index of the current point. ---*/
+      /*--- If we have not visted this node yet, increment our
+       number of points that must be sent to a particular proc. ---*/
 
-        Global_Index = geometry->elem[iElem]->GetNode(iNode);
+      Global_Index = geometry->node[iPoint]->GetGlobalIndex();
 
-        /*--- If our current rank owns this node check the other nodes to
-         decide where we should send the color. To simplify the logic, we
-         will allow for sending to our own rank, as duplicates in the list
-         will be removed later. ---*/
+      if (nPoint_Flag[iProcessor] != (int)Global_Index) {
 
-        if ((Global_Index >= geometry->starting_node[rank]) &&
-            (Global_Index <  geometry->ending_node[rank])){
+        nPoint_Flag[iProcessor] = (int)Global_Index;
+        unsigned long nn = index[iProcessor];
 
-          for (jNode = 0; jNode < geometry->elem[iElem]->GetnNodes(); jNode++) {
-            if (jNode != iNode) {
+        /*--- Load the data values. ---*/
 
-              jPoint = geometry->elem[iElem]->GetNode(jNode);
+        idSend[nn]    = Global_Index;
+        colorSend[nn] = geometry->node[iPoint]->GetColor();
 
-              /*--- Search for the processor that owns this point ---*/
+        /*--- Increment the index by the message length ---*/
 
-              iProcessor = jPoint/npoint_procs[0];
-              if (iProcessor >= (unsigned long)size)
-                iProcessor = (unsigned long)size-1;
-              if (jPoint >= nPoint_Linear[iProcessor])
-                while(jPoint >= nPoint_Linear[iProcessor+1]) iProcessor++;
-              else
-                while(jPoint <  nPoint_Linear[iProcessor])   iProcessor--;
-
-              /*--- If we have not visted this node yet, increment our
-               number of points that must be sent to a particular proc. ---*/
-
-              if (nPoint_Flag[iProcessor] != (int)Global_Index) {
-
-                nPoint_Flag[iProcessor] = (int)Global_Index;
-                unsigned long nn = index[iProcessor];
-
-                /*--- Load the data values. ---*/
-
-                idSend[nn]    = Global_Index;
-                colorSend[nn] = geometry->node[Global2Local[Global_Index]]->GetColor();
-
-                cout << " ID: " << idSend[nn] << "   Color: " << colorSend[nn] << endl;
-                /*--- Increment the index by the message length ---*/
-                
-                index[iProcessor]++;
-
-              }
-
-            }
-          }
-        }
+        index[iProcessor]++;
       }
     }
   }
@@ -4702,7 +4678,7 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
       int count  = kk;
       int source = ii;
       int tag    = ii + 1;
-      SU2_MPI::Irecv(&(colorRecv[ll]), count, MPI_DOUBLE, source, tag,
+      SU2_MPI::Irecv(&(colorRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
                      MPI_COMM_WORLD, &(recv_req[iMessage]));
       iMessage++;
     }
@@ -4718,7 +4694,7 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
       int count  = kk;
       int dest = ii;
       int tag    = rank + 1;
-      SU2_MPI::Isend(&(colorSend[ll]), count, MPI_DOUBLE, dest, tag,
+      SU2_MPI::Isend(&(colorSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
                      MPI_COMM_WORLD, &(send_req[iMessage]));
       iMessage++;
     }
@@ -4788,16 +4764,11 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
 
   /*--- Store the complete color map for this rank in class data. Now,
    each rank has a color value for all owned nodes as well as any repeated
-   grid points on the rank. Note that there may be repeats that are 
+   grid points on the rank. Note that there may be repeats that are
    communicated in the routine above, but since we are storing in a map,
    it will simply overwrite the same entries. ---*/
-   
-   map<unsigned long, unsigned long> Color_List;
-   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-     cout << geometry->node[iPoint]->GetColor() << endl;
-     Color_List[geometry->node[iPoint]->GetGlobalIndex()] = geometry->node[iPoint]->GetColor();
-   }
 
+  map<unsigned long, unsigned long> Color_List;
   for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
     Color_List[idRecv[ii]] = colorRecv[ii];
   }
@@ -4811,8 +4782,6 @@ void CPhysicalGeometry::DistributeColoring(CGeometry *geometry, CConfig *config)
   delete [] nPoint_Recv;
   delete [] nPoint_Send;
   delete [] nPoint_Flag;
-
-  delete [] RepeatedElem;
 
 }
 
