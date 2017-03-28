@@ -270,7 +270,7 @@ CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
   if (Solution_Vel          != NULL) delete [] Solution_Vel;
   if (Solution_Accel        != NULL) delete [] Solution_Accel;
 
-  if (Solution_time_n       != NULL) delete [] Solution_time_n;
+//  if (Solution_time_n       != NULL) delete [] Solution_time_n;
   if (Solution_Vel_time_n   != NULL) delete [] Solution_Vel_time_n;
   if (Solution_Accel_time_n != NULL) delete [] Solution_Accel_time_n;
 

@@ -1482,6 +1482,10 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
   switch (config_container[val_iZone]->GetKind_ObjFunc()){
     case REFERENCE_GEOMETRY:
+      if (config_container[val_iZone]->GetDV_FEA() == YOUNG_MODULUS ){
+        solver_container[val_iZone][MESH_0][FEA_SOL]->Stiffness_Penalty(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0],
+          numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+      }
       solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_OFRefGeom(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone]);
       break;
     case REFERENCE_NODE:
@@ -2823,6 +2827,38 @@ CDiscAdjFEAIteration::CDiscAdjFEAIteration(CConfig *config) : CIteration(config)
 
   fem_iteration = new CFEM_StructuralAnalysis(config);
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  // TEMPORARY output only for standalone structural problems
+  if ((!config->GetFSI_Simulation()) && (rank == MASTER_NODE)){
+
+    bool de_effects = config->GetDE_Effects();
+    unsigned short iVar;
+
+    /*--- Header of the temporary output file ---*/
+    ofstream myfile_res;
+    myfile_res.open ("Results_Reverse_Adjoint.txt");
+
+    myfile_res << "Obj_Func" << " ";
+    for (iVar = 0; iVar < config->GetnElasticityMod(); iVar++)
+        myfile_res << "Sens_E_" << iVar << "\t";
+
+    for (iVar = 0; iVar < config->GetnPoissonRatio(); iVar++)
+      myfile_res << "Sens_Nu_" << iVar << "\t";
+
+    if (de_effects){
+        for (iVar = 0; iVar < config->GetnElectric_Field(); iVar++)
+          myfile_res << "Sens_EField_" << iVar << "\t";
+    }
+
+    myfile_res << endl;
+
+    myfile_res.close();
+  }
+
 }
 
 CDiscAdjFEAIteration::~CDiscAdjFEAIteration(void) { }
@@ -3051,66 +3087,35 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
   /*--- Global sensitivities ---*/
   solver_container[val_iZone][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[val_iZone][MESH_0],config_container[val_iZone]);
 
-//  if (((ExtIter+1 >= config_container[val_iZone]->GetnExtIter()) || (integration_container[val_iZone][ADJFEA_SOL]->GetConvergence()) ||
-//      ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))) || (dynamic)){
-//
-//    /*--- Record one mean flow iteration with geometry variables as input ---*/
-//
-//    SetRecording(output, integration_container, geometry_container, solver_container, numerics_container,
-//                 config_container, surface_movement, volume_grid_movement, FFDBox, val_iZone, GEOMETRY_VARIABLES);
-//
-//    /*--- Set the adjoint values of the flow and objective function ---*/
-//
-//    InitializeAdjoint(solver_container, geometry_container, config_container, val_iZone);
-//
-//    /*--- Run the adjoint computation ---*/
-//
-//    AD::ComputeAdjoint();
-//
-//    /*--- Extract the sensitivities (adjoint of node coordinates) ---*/
-//
-//    solver_container[val_iZone][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[val_iZone][MESH_0],config_container[val_iZone]);
-//
-//  }
-
   // TEMPORARY output only for standalone structural problems
   if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
 
+    unsigned short iVar;
 
     bool de_effects = config_container[val_iZone]->GetDE_Effects();
 
     /*--- Header of the temporary output file ---*/
     ofstream myfile_res;
-    myfile_res.open ("Results_Reverse_Adjoint.txt");
-
-//    myfile_res << scientific << "Young_Mod" << " ";
-    myfile_res << "Obj_Func" << " ";
-    myfile_res << "Sens_E" << " ";
-    myfile_res << "Sens_Nu" << " ";
-    if (de_effects){
-      /*--- Number of electric field variables ---*/
-      unsigned short nEField = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnEField();
-
-      for (unsigned short iEField; iEField < nEField; iEField++) myfile_res << "Sens_EF_" << iEField << " ";
-
-    }
-
-    myfile_res << endl;
+    myfile_res.open ("Results_Reverse_Adjoint.txt", ios::app);
 
     myfile_res.precision(15);
 
-//    myfile_res << scientific << config_container[val_iZone]->GetElasticyMod() << " ";
-    myfile_res << scientific << solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << " ";
-    myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0) << " ";
-    myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0) << " ";
+    myfile_res << config_container[val_iZone]->GetExtIter() << "\t";
+
+    myfile_res << scientific << solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << "\t";
+
+    for (iVar = 0; iVar < config_container[val_iZone]->GetnElasticityMod(); iVar++)
+        myfile_res << scientific << solver_container[ZONE_0][MESH_0][ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
+    for (iVar = 0; iVar < config_container[val_iZone]->GetnPoissonRatio(); iVar++)
+        myfile_res << scientific << solver_container[ZONE_0][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Nu(iVar) << "\t";
 
     if (de_effects){
-      /*--- Number of electric field variables ---*/
-      unsigned short nEField = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnEField();
+        for (iVar = 0; iVar < config_container[val_iZone]->GetnElectric_Field(); iVar++)
+          myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetTotal_Sens_EField(iVar) << "\t";
+    }
 
-      for (unsigned short iEField; iEField < nEField; iEField++)
-        myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(iEField) << " ";
-
+    for (iVar = 0; iVar < solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnDVFEA(); iVar++){
+      myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetTotal_Sens_DVFEA(iVar) << "\t";
     }
 
     myfile_res << endl;
@@ -3123,41 +3128,51 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
 
     /*--- Header of the temporary output file ---*/
     ofstream myfile_res;
+    bool outputDVFEA = false;
 
     switch (config_container[val_iZone]->GetDV_FEA()) {
       case YOUNG_MODULUS:
         myfile_res.open("grad_young.opt");
+        outputDVFEA = true;
         break;
       case POISSON_RATIO:
         myfile_res.open("grad_poisson.opt");
+        outputDVFEA = true;
         break;
       case DENSITY_VAL:
       case DEAD_WEIGHT:
         myfile_res.open("grad_density.opt");
+        outputDVFEA = true;
         break;
       case ELECTRIC_FIELD:
         myfile_res.open("grad_efield.opt");
+        outputDVFEA = true;
         break;
       default:
-        myfile_res.open("grad.opt");
+        outputDVFEA = false;
         break;
     }
 
-    unsigned short iDV;
-    unsigned short nDV = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnDVFEA();
+    if (outputDVFEA){
 
-    myfile_res << "INDEX" << "\t" << "GRAD" << endl;
+      unsigned short iDV;
+      unsigned short nDV = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnDVFEA();
 
-    myfile_res.precision(15);
+      myfile_res << "INDEX" << "\t" << "GRAD" << endl;
 
-    for (iDV = 0; iDV < nDV; iDV++){
-      myfile_res << iDV;
-      myfile_res << "\t";
-      myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_DVFEA(iDV);
-      myfile_res << endl;
+      myfile_res.precision(15);
+
+      for (iDV = 0; iDV < nDV; iDV++){
+        myfile_res << iDV;
+        myfile_res << "\t";
+        myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_DVFEA(iDV);
+        myfile_res << endl;
+      }
+
+      myfile_res.close();
+
     }
 
-    myfile_res.close();
   }
 
 }

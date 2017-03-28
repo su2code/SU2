@@ -104,6 +104,8 @@ inline void CSolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_con
 
 inline void CSolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
+inline su2double CSolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config) { return 0.0; }
+
 inline void CSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { }
 
 inline void CSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
@@ -593,6 +595,10 @@ inline su2double CSolver::GetTke_Inf(void) { return 0; }
 inline su2double CSolver::GetTotal_Sens_E(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetTotal_Sens_Nu(unsigned short iVal) { return 0.0; }
+
+inline su2double CSolver::GetTotal_Sens_EField(unsigned short iEField) { return 0.0; }
+
+inline su2double CSolver::GetTotal_Sens_DVFEA(unsigned short iDVFEA) { return 0.0; }
 
 inline su2double CSolver::GetGlobal_Sens_E(unsigned short iVal) { return 0.0; }
 
@@ -2018,6 +2024,10 @@ inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsi
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(unsigned short iVal) { return Total_Sens_E[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_Nu(unsigned short iVal) { return Total_Sens_Nu[iVal]; }
+
+inline su2double CDiscAdjFEASolver::GetTotal_Sens_EField(unsigned short iEField) { return Total_Sens_EField[iEField]; }
+
+inline su2double CDiscAdjFEASolver::GetTotal_Sens_DVFEA(unsigned short iDVFEA) { return Total_Sens_DV[iDVFEA]; }
 
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_E(unsigned short iVal) { return Global_Sens_E[iVal]; }
 

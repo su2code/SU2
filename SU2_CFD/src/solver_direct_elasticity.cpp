@@ -720,21 +720,16 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
      myfile_res << "Sensitivity Local" << "\t";
 
-     myfile_res << "Sensitivity Global" << "\t";
+     myfile_res << "Sensitivity Averaged" << "\t";
 
      myfile_res << endl;
 
      myfile_res.close();
 
    }
-//   if (rank == 3){
-//   cout << "OUTPUT GLOBAL ELEMENT ID" << endl;
-//
-//   /*--- If there are no multiple regions, the ID is 0 for all the cases ---*/
-//   for (unsigned short iElem = 0; iElem < nElement; iElem++){
-//     cout << geometry->elem[iElem]->GetGlobalIndex() << " " << geometry->node[geometry->elem[iElem]->GetNode(0)]->GetGlobalIndex() << endl;
-//   }
-//   }
+
+   /*--- Penalty value - to maintain constant the stiffness in optimization problems - TODO: this has to be improved ---*/
+   PenaltyValue = 0.0;
 
   /*--- Perform the MPI communication of the solution ---*/
 
@@ -5351,7 +5346,7 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
     objective_function_reduce        = objective_function;
 #endif
 
-  Total_OFRefGeom = objective_function_reduce;
+  Total_OFRefGeom = objective_function_reduce + PenaltyValue;
 
   bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
                       (config->GetDirectDiff() == D_POISSON) ||
@@ -5382,20 +5377,25 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
     myfile_res << scientific << Total_OFRefGeom << "\t";
 
+    unsigned long ExtIter = config->GetExtIter();
+
     su2double local_forward_gradient = 0.0;
+    su2double averaged_gradient = 0.0;
     unsigned long current_iter = 1;
     local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefGeom);
 
     if (fsi) {
       Total_ForwardGradient = local_forward_gradient;
+      averaged_gradient     = Total_ForwardGradient / (ExtIter + 1.0);
     }
     else {
       Total_ForwardGradient += local_forward_gradient;
+      averaged_gradient      = Total_ForwardGradient / (ExtIter + 1.0);
     }
 
     myfile_res << scientific << local_forward_gradient << "\t";
 
-    myfile_res << scientific << Total_ForwardGradient << "\t";
+    myfile_res << scientific << averaged_gradient << "\t";
 
     myfile_res << endl;
 
@@ -5507,26 +5507,28 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 
     myfile_res.precision(15);
 
-//    if (n_DV > 1){
-//      myfile_res << config->GetnID_DE() << "\t";
-//    }
-
     myfile_res << scientific << Total_OFRefNode << "\t";
 
+    unsigned long ExtIter = config->GetExtIter();
+
     su2double local_forward_gradient = 0.0;
+    su2double averaged_gradient = 0.0;
+
     unsigned long current_iter = 1;
     local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefNode);
 
     if (fsi) {
       Total_ForwardGradient = local_forward_gradient;
+      averaged_gradient     = Total_ForwardGradient / (ExtIter + 1.0);
     }
     else {
       Total_ForwardGradient += local_forward_gradient;
+      averaged_gradient      = Total_ForwardGradient / (ExtIter + 1.0);
     }
 
     myfile_res << scientific << local_forward_gradient << "\t";
 
-    myfile_res << scientific << Total_ForwardGradient << "\t";
+    myfile_res << scientific << averaged_gradient << "\t";
 
     myfile_res << endl;
 
@@ -5554,6 +5556,94 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
     }
 
   }
+
+
+}
+
+su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumerics **numerics, CConfig *config){
+
+  unsigned long iElem, iVar, iPoint;
+  unsigned short iNode, iDim, nNodes;
+  unsigned short i_DV;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord, val_Sol;
+  int EL_KIND, DV_TERM;
+
+  su2double elementVolume, dvValue, ratio;
+  su2double weightedValue = 0.0;
+  su2double weightedValue_reduce = 0.0;
+  su2double totalVolume = 0.0;
+  su2double totalVolume_reduce = 0.0;
+
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  unsigned short NelNodes;
+
+  /*--- Loops over the elements in the domain ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+    for (iNode = 0; iNode < nNodes; iNode++) {
+        indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+        for (iDim = 0; iDim < nDim; iDim++) {
+            val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+            val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+            element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+            element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        }
+    }
+
+    // Avoid double-counting elements:
+    // Only add the value if the first node is in the domain
+    if (geometry->node[indexNode[0]]->GetDomain()){
+
+        // Compute the area/volume of the element
+        if (nDim == 2)
+        	elementVolume = element_container[FEA_TERM][EL_KIND]->ComputeArea();
+        else
+        	elementVolume = element_container[FEA_TERM][EL_KIND]->ComputeVolume();
+
+        // Compute the total volume
+        totalVolume += elementVolume;
+
+        // Retrieve the value of the design variable
+        dvValue = numerics[FEA_TERM]->Get_DV_Val(element_properties[iElem]->GetDV());
+
+        // Add the weighted sum of the value of the design variable
+        weightedValue += dvValue * elementVolume;
+
+    }
+
+  }
+
+// Reduce value across processors for parallelization
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&weightedValue,  &weightedValue_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&totalVolume,  &totalVolume_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    weightedValue_reduce        = weightedValue;
+    totalVolume_reduce          = totalVolume;
+#endif
+
+    ratio = 1.0 - weightedValue_reduce/totalVolume_reduce;
+
+    PenaltyValue = config->GetTotalDV_Penalty() * ratio * ratio;
+
+    cout << "THE VALUE OF THE PENALTY IS... " << PenaltyValue << endl;
 
 
 }

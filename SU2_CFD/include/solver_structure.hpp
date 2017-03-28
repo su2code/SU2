@@ -3184,6 +3184,18 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
+   */
+  virtual su2double GetTotal_Sens_EField(unsigned short iEField);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
+   */
+  virtual su2double GetTotal_Sens_DVFEA(unsigned short iDVFEA);
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
    */
   virtual su2double GetGlobal_Sens_E(unsigned short iVal);
@@ -3508,6 +3520,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual su2double Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -11011,6 +11032,8 @@ private:
   su2double WAitken_Dyn;        /*!< \brief Aitken's dynamic coefficient */
   su2double WAitken_Dyn_tn1;      /*!< \brief Aitken's dynamic coefficient in the previous iteration */
   
+  su2double PenaltyValue;      /*!< \brief Penalty value to maintain total stiffness constant */
+
   CSysMatrix MassMatrix;       /*!< \brief Sparse structure for storing the mass matrix. */
   CSysVector TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
   CSysVector TimeRes;        /*!< \brief Vector for adding mass and damping contributions to the residual */
@@ -11486,6 +11509,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief Compute the penalty due to the stiffness increase
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  su2double Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
 
   /*!
    * \brief Get the value of the FSI convergence.
@@ -12359,7 +12391,7 @@ private:
 //  su2double Total_Sens_Nu;      /*!< \brief Total Poisson's ratio sensitivity coefficient for all the boundaries. */
 //  su2double Total_Sens_Rho;     /*!< \brief Total density sensitivity coefficient for all the boundaries. */
 //  su2double Total_Sens_Rho_DL;  /*!< \brief Total density sensitivity coefficient for all the boundaries. */
-  su2double Total_Sens_nL;      /*!< \brief Total normal pressure sensitivity coefficient for all the boundaries. */
+//  su2double Total_Sens_nL;      /*!< \brief Total normal pressure sensitivity coefficient for all the boundaries. */
 
   /*!< \brief Global sensitivities. */
 //  su2double Global_Sens_E,
@@ -12553,6 +12585,18 @@ public:
    */
   su2double GetTotal_Sens_Nu(unsigned short iVal);
   
+  /*!
+   * \brief A virtual member.
+   * \return Value of the sensitivity coefficient for the Electric Field in the region iEField (time averaged)
+   */
+  su2double GetTotal_Sens_EField(unsigned short iEField);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the total sensitivity coefficient for the FEA DV in the region iDVFEA (time averaged)
+   */
+  su2double GetTotal_Sens_DVFEA(unsigned short iDVFEA);
+
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
