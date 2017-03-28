@@ -129,7 +129,8 @@ class COutput {
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
   bool turbo;
   unsigned short   nSpanWiseSections,
-									nMarkerTurboPerf;
+  nMarkerTurboPerf,
+  nTimeInstances;
 
   su2double **TotalStaticEfficiency,
         **TotalTotalEfficiency,

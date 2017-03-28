@@ -35,7 +35,7 @@
 
 COutput::COutput(CConfig *config) {
 
-	unsigned short iDim, iSpan, iMarker;
+  unsigned short iDim, iSpan, iMarker;
   
   /*--- Initialize point and connectivity counters to zero. ---*/
   
@@ -122,160 +122,160 @@ COutput::COutput(CConfig *config) {
   turbo = config->GetBoolTurbomachinery();
 
   if(turbo){
-  	/*--- Initializate quantities for turboperformace ---*/
-  	nSpanWiseSections = config->GetnSpanMaxAllZones();
-  	nMarkerTurboPerf  = config->GetnMarker_TurboPerformance();
+    /*--- Initializate quantities for turboperformace ---*/
+    nSpanWiseSections = config->GetnSpanMaxAllZones();
+    nMarkerTurboPerf  = config->GetnMarker_TurboPerformance();
+    nTimeInstances =  config->GetnTimeInstances();
+
+    TotalStaticEfficiency         = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalTotalEfficiency          = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    KineticEnergyLoss             = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TRadius                       = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalPressureLoss             = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    MassFlowIn                    = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    MassFlowOut                   = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    FlowAngleIn                   = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    FlowAngleIn_BC                = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    FlowAngleOut                  = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    EulerianWork                  = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalEnthalpyIn               = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalEnthalpyIn_BC            = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    EntropyIn                     = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    EntropyOut                    = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    EntropyIn_BC                  = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    PressureRatio                 = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalTemperatureIn            = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    EnthalpyOut                   = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    MachIn                        = new su2double**[nMarkerTurboPerf*nTimeInstances];
+    MachOut                       = new su2double**[nMarkerTurboPerf*nTimeInstances];
+    VelocityOutIs                 = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    DensityIn                     = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    PressureIn                    = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TurboVelocityIn               = new su2double**[nMarkerTurboPerf*nTimeInstances];
+    DensityOut                    = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    PressureOut                   = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TurboVelocityOut              = new su2double**[nMarkerTurboPerf*nTimeInstances];
+    EnthalpyOutIs                 = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    EntropyGen                    = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    AbsFlowAngleIn                = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalEnthalpyOut              = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalEnthalpyOutIs            = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    RothalpyIn                    = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    RothalpyOut    		  = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    AbsFlowAngleOut               = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    PressureOut_BC                = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TemperatureIn                 = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TemperatureOut                = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalPressureIn               = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalPressureOut              = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalTemperatureOut           = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    EnthalpyIn                    = new su2double*[nMarkerTurboPerf*nTimeInstances];
+
+    for (iMarker = 0; iMarker < nMarkerTurboPerf*nTimeInstances; iMarker++){
+      TotalStaticEfficiency   [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalTotalEfficiency    [iMarker] = new su2double [nSpanWiseSections + 1];
+      KineticEnergyLoss       [iMarker] = new su2double [nSpanWiseSections + 1];
+      TRadius                 [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalPressureLoss       [iMarker] = new su2double [nSpanWiseSections + 1];
+      MassFlowIn              [iMarker] = new su2double [nSpanWiseSections + 1];
+      MassFlowOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+      FlowAngleIn             [iMarker] = new su2double [nSpanWiseSections + 1];
+      FlowAngleIn_BC          [iMarker] = new su2double [nSpanWiseSections + 1];
+      FlowAngleOut            [iMarker] = new su2double [nSpanWiseSections + 1];
+      EulerianWork            [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalEnthalpyIn         [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalEnthalpyIn_BC      [iMarker] = new su2double [nSpanWiseSections + 1];
+      EntropyIn               [iMarker] = new su2double [nSpanWiseSections + 1];
+      EntropyOut              [iMarker] = new su2double [nSpanWiseSections + 1];
+      EntropyIn_BC            [iMarker] = new su2double [nSpanWiseSections + 1];
+      PressureRatio           [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalTemperatureIn      [iMarker] = new su2double [nSpanWiseSections + 1];
+      EnthalpyOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+      MachIn                  [iMarker] = new su2double*[nSpanWiseSections + 1];
+      MachOut                 [iMarker] = new su2double*[nSpanWiseSections + 1];
+      VelocityOutIs           [iMarker] = new su2double [nSpanWiseSections + 1];
+      DensityIn               [iMarker] = new su2double [nSpanWiseSections + 1];
+      PressureIn              [iMarker] = new su2double [nSpanWiseSections + 1];
+      TurboVelocityIn         [iMarker] = new su2double*[nSpanWiseSections + 1];
+      DensityOut              [iMarker] = new su2double [nSpanWiseSections + 1];
+      PressureOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+      TurboVelocityOut        [iMarker] = new su2double*[nSpanWiseSections + 1];
+      EnthalpyOutIs           [iMarker] = new su2double [nSpanWiseSections + 1];
+      EntropyGen              [iMarker] = new su2double [nSpanWiseSections + 1];
+      AbsFlowAngleIn          [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalEnthalpyOut        [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalEnthalpyOutIs      [iMarker] = new su2double [nSpanWiseSections + 1];
+      RothalpyIn              [iMarker] = new su2double [nSpanWiseSections + 1];
+      RothalpyOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+      AbsFlowAngleOut         [iMarker] = new su2double [nSpanWiseSections + 1];
+      PressureOut_BC          [iMarker] = new su2double [nSpanWiseSections + 1];
+      TemperatureIn           [iMarker] = new su2double [nSpanWiseSections + 1];
+      TemperatureOut          [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalPressureIn         [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalPressureOut        [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalTemperatureOut     [iMarker] = new su2double [nSpanWiseSections + 1];
+      EnthalpyIn              [iMarker] = new su2double [nSpanWiseSections + 1];
 
 
-  	TotalStaticEfficiency         = new su2double*[nMarkerTurboPerf];
-  	TotalTotalEfficiency          = new su2double*[nMarkerTurboPerf];
-  	KineticEnergyLoss             = new su2double*[nMarkerTurboPerf];
-  	TRadius                       = new su2double*[nMarkerTurboPerf];
-  	TotalPressureLoss             = new su2double*[nMarkerTurboPerf];
-  	MassFlowIn                    = new su2double*[nMarkerTurboPerf];
-  	MassFlowOut                   = new su2double*[nMarkerTurboPerf];
-  	FlowAngleIn                   = new su2double*[nMarkerTurboPerf];
-  	FlowAngleIn_BC                = new su2double*[nMarkerTurboPerf];
-  	FlowAngleOut                  = new su2double*[nMarkerTurboPerf];
-  	EulerianWork                  = new su2double*[nMarkerTurboPerf];
-  	TotalEnthalpyIn               = new su2double*[nMarkerTurboPerf];
-  	TotalEnthalpyIn_BC            = new su2double*[nMarkerTurboPerf];
-  	EntropyIn                     = new su2double*[nMarkerTurboPerf];
-  	EntropyOut                    = new su2double*[nMarkerTurboPerf];
-  	EntropyIn_BC                  = new su2double*[nMarkerTurboPerf];
-  	PressureRatio                 = new su2double*[nMarkerTurboPerf];
-  	TotalTemperatureIn            = new su2double*[nMarkerTurboPerf];
-  	EnthalpyOut                   = new su2double*[nMarkerTurboPerf];
-  	MachIn                        = new su2double**[nMarkerTurboPerf];
-  	MachOut                       = new su2double**[nMarkerTurboPerf];
-  	VelocityOutIs                 = new su2double*[nMarkerTurboPerf];
-  	DensityIn                     = new su2double*[nMarkerTurboPerf];
-  	PressureIn                    = new su2double*[nMarkerTurboPerf];
-  	TurboVelocityIn               = new su2double**[nMarkerTurboPerf];
-  	DensityOut                    = new su2double*[nMarkerTurboPerf];
-  	PressureOut                   = new su2double*[nMarkerTurboPerf];
-  	TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
-  	EnthalpyOutIs                 = new su2double*[nMarkerTurboPerf];
-  	EntropyGen                    = new su2double*[nMarkerTurboPerf];
-  	AbsFlowAngleIn                = new su2double*[nMarkerTurboPerf];
-  	TotalEnthalpyOut              = new su2double*[nMarkerTurboPerf];
-  	TotalEnthalpyOutIs            = new su2double*[nMarkerTurboPerf];
-  	RothalpyIn               			= new su2double*[nMarkerTurboPerf];
-  	RothalpyOut             		 	= new su2double*[nMarkerTurboPerf];
-  	AbsFlowAngleOut               = new su2double*[nMarkerTurboPerf];
-  	PressureOut_BC                = new su2double*[nMarkerTurboPerf];
-  	TemperatureIn                 = new su2double*[nMarkerTurboPerf];
-  	TemperatureOut                = new su2double*[nMarkerTurboPerf];
-  	TotalPressureIn               = new su2double*[nMarkerTurboPerf];
-  	TotalPressureOut              = new su2double*[nMarkerTurboPerf];
-  	TotalTemperatureOut           = new su2double*[nMarkerTurboPerf];
-  	EnthalpyIn                    = new su2double*[nMarkerTurboPerf];
 
-  	for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-  		TotalStaticEfficiency   [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalTotalEfficiency    [iMarker] = new su2double [nSpanWiseSections + 1];
-  		KineticEnergyLoss       [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TRadius                 [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalPressureLoss       [iMarker] = new su2double [nSpanWiseSections + 1];
-  		MassFlowIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-  		MassFlowOut             [iMarker] = new su2double [nSpanWiseSections + 1];
-  		FlowAngleIn             [iMarker] = new su2double [nSpanWiseSections + 1];
-  		FlowAngleIn_BC          [iMarker] = new su2double [nSpanWiseSections + 1];
-  		FlowAngleOut            [iMarker] = new su2double [nSpanWiseSections + 1];
-  		EulerianWork            [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalEnthalpyIn         [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalEnthalpyIn_BC      [iMarker] = new su2double [nSpanWiseSections + 1];
-  		EntropyIn               [iMarker] = new su2double [nSpanWiseSections + 1];
-  		EntropyOut              [iMarker] = new su2double [nSpanWiseSections + 1];
-  		EntropyIn_BC            [iMarker] = new su2double [nSpanWiseSections + 1];
-  		PressureRatio           [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalTemperatureIn      [iMarker] = new su2double [nSpanWiseSections + 1];
-  		EnthalpyOut             [iMarker] = new su2double [nSpanWiseSections + 1];
-  		MachIn                  [iMarker] = new su2double*[nSpanWiseSections + 1];
-  		MachOut                 [iMarker] = new su2double*[nSpanWiseSections + 1];
-  		VelocityOutIs           [iMarker] = new su2double [nSpanWiseSections + 1];
-  		DensityIn               [iMarker] = new su2double [nSpanWiseSections + 1];
-  		PressureIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TurboVelocityIn         [iMarker] = new su2double*[nSpanWiseSections + 1];
-  		DensityOut              [iMarker] = new su2double [nSpanWiseSections + 1];
-  		PressureOut             [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TurboVelocityOut        [iMarker] = new su2double*[nSpanWiseSections + 1];
-  		EnthalpyOutIs           [iMarker] = new su2double [nSpanWiseSections + 1];
-  		EntropyGen              [iMarker] = new su2double [nSpanWiseSections + 1];
-  		AbsFlowAngleIn          [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalEnthalpyOut        [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalEnthalpyOutIs      [iMarker] = new su2double [nSpanWiseSections + 1];
-  		RothalpyIn         			[iMarker] = new su2double [nSpanWiseSections + 1];
-  		RothalpyOut        			[iMarker] = new su2double [nSpanWiseSections + 1];
-  		AbsFlowAngleOut         [iMarker] = new su2double [nSpanWiseSections + 1];
-  		PressureOut_BC          [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TemperatureIn           [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TemperatureOut          [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalPressureIn         [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalPressureOut        [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalTemperatureOut     [iMarker] = new su2double [nSpanWiseSections + 1];
-  		EnthalpyIn              [iMarker] = new su2double [nSpanWiseSections + 1];
+      for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+        TotalStaticEfficiency   [iMarker][iSpan] = 0.0;
+        TotalTotalEfficiency    [iMarker][iSpan] = 0.0;
+        KineticEnergyLoss       [iMarker][iSpan] = 0.0;
+        TRadius                 [iMarker][iSpan] = 0.0;
+        TotalPressureLoss       [iMarker][iSpan] = 0.0;
+        MassFlowIn              [iMarker][iSpan] = 0.0;
+        MassFlowOut             [iMarker][iSpan] = 0.0;
+        FlowAngleIn             [iMarker][iSpan] = 0.0;
+        FlowAngleIn_BC          [iMarker][iSpan] = config->GetFlowAngleIn_BC();
+        FlowAngleOut            [iMarker][iSpan] = 0.0;
+        EulerianWork            [iMarker][iSpan] = 0.0;
+        TotalEnthalpyIn         [iMarker][iSpan] = 0.0;
+        TotalEnthalpyIn_BC      [iMarker][iSpan] = 0.0;
+        EntropyIn               [iMarker][iSpan] = 0.0;
+        EntropyOut              [iMarker][iSpan] = 0.0;
+        EntropyIn_BC            [iMarker][iSpan] = 0.0;
+        PressureRatio           [iMarker][iSpan] = 0.0;
+        TotalTemperatureIn      [iMarker][iSpan] = 0.0;
+        EnthalpyOut             [iMarker][iSpan] = 0.0;
 
 
+        VelocityOutIs           [iMarker][iSpan] = 0.0;
+        DensityIn               [iMarker][iSpan] = 0.0;
+        PressureIn              [iMarker][iSpan] = 0.0;
 
-  		for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
-  			TotalStaticEfficiency   [iMarker][iSpan] = 0.0;
-  			TotalTotalEfficiency    [iMarker][iSpan] = 0.0;
-  			KineticEnergyLoss       [iMarker][iSpan] = 0.0;
-  			TRadius                 [iMarker][iSpan] = 0.0;
-  			TotalPressureLoss       [iMarker][iSpan] = 0.0;
-  			MassFlowIn              [iMarker][iSpan] = 0.0;
-  			MassFlowOut             [iMarker][iSpan] = 0.0;
-  			FlowAngleIn             [iMarker][iSpan] = 0.0;
-  			FlowAngleIn_BC          [iMarker][iSpan] = config->GetFlowAngleIn_BC();
-  			FlowAngleOut            [iMarker][iSpan] = 0.0;
-  			EulerianWork            [iMarker][iSpan] = 0.0;
-  			TotalEnthalpyIn         [iMarker][iSpan] = 0.0;
-  			TotalEnthalpyIn_BC      [iMarker][iSpan] = 0.0;
-  			EntropyIn               [iMarker][iSpan] = 0.0;
-  			EntropyOut              [iMarker][iSpan] = 0.0;
-  			EntropyIn_BC            [iMarker][iSpan] = 0.0;
-  			PressureRatio           [iMarker][iSpan] = 0.0;
-  			TotalTemperatureIn      [iMarker][iSpan] = 0.0;
-  			EnthalpyOut             [iMarker][iSpan] = 0.0;
+        DensityOut              [iMarker][iSpan] = 0.0;
+        PressureOut             [iMarker][iSpan] = 0.0;
 
+        EnthalpyOutIs           [iMarker][iSpan] = 0.0;
+        EntropyGen              [iMarker][iSpan] = 0.0;
+        AbsFlowAngleIn          [iMarker][iSpan] = 0.0;
+        TotalEnthalpyOut        [iMarker][iSpan] = 0.0;
+        TotalEnthalpyOutIs      [iMarker][iSpan] = 0.0;
+        RothalpyIn         			[iMarker][iSpan] = 0.0;
+        RothalpyOut        			[iMarker][iSpan] = 0.0;
+        AbsFlowAngleOut         [iMarker][iSpan] = 0.0;
+        PressureOut_BC          [iMarker][iSpan] = config->GetPressureOut_BC();
 
-  			VelocityOutIs           [iMarker][iSpan] = 0.0;
-  			DensityIn               [iMarker][iSpan] = 0.0;
-  			PressureIn              [iMarker][iSpan] = 0.0;
+        TemperatureIn           [iMarker][iSpan] = 0.0;
+        TemperatureOut          [iMarker][iSpan] = 0.0;
+        TotalPressureIn         [iMarker][iSpan] = 0.0;
+        TotalPressureOut        [iMarker][iSpan] = 0.0;
+        TotalTemperatureOut     [iMarker][iSpan] = 0.0;
+        EnthalpyIn              [iMarker][iSpan] = 0.0;
+        MachIn           [iMarker][iSpan]           = new su2double[4];
+        MachOut          [iMarker][iSpan]           = new su2double[4];
+        TurboVelocityIn  [iMarker][iSpan]           = new su2double[4];
+        TurboVelocityOut [iMarker][iSpan]           = new su2double[4];
 
-  			DensityOut              [iMarker][iSpan] = 0.0;
-  			PressureOut             [iMarker][iSpan] = 0.0;
-
-  			EnthalpyOutIs           [iMarker][iSpan] = 0.0;
-  			EntropyGen              [iMarker][iSpan] = 0.0;
-  			AbsFlowAngleIn          [iMarker][iSpan] = 0.0;
-  			TotalEnthalpyOut        [iMarker][iSpan] = 0.0;
-  			TotalEnthalpyOutIs      [iMarker][iSpan] = 0.0;
-  			RothalpyIn         			[iMarker][iSpan] = 0.0;
-  			RothalpyOut        			[iMarker][iSpan] = 0.0;
-  			AbsFlowAngleOut         [iMarker][iSpan] = 0.0;
-  			PressureOut_BC          [iMarker][iSpan] = config->GetPressureOut_BC();
-
-  			TemperatureIn           [iMarker][iSpan] = 0.0;
-  			TemperatureOut          [iMarker][iSpan] = 0.0;
-  			TotalPressureIn         [iMarker][iSpan] = 0.0;
-  			TotalPressureOut        [iMarker][iSpan] = 0.0;
-  			TotalTemperatureOut     [iMarker][iSpan] = 0.0;
-  			EnthalpyIn              [iMarker][iSpan] = 0.0;
-  			MachIn           [iMarker][iSpan]           = new su2double[4];
-  			MachOut          [iMarker][iSpan]           = new su2double[4];
-  			TurboVelocityIn  [iMarker][iSpan]           = new su2double[4];
-  			TurboVelocityOut [iMarker][iSpan]           = new su2double[4];
-
-  			for (iDim = 0; iDim < 4; iDim++){
-  				MachIn           [iMarker][iSpan][iDim]   = 0.0;
-  				MachOut          [iMarker][iSpan][iDim]   = 0.0;
-  				TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
-  				TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
-  			}
-  		}
-  	}
+        for (iDim = 0; iDim < 4; iDim++){
+          MachIn           [iMarker][iSpan][iDim]   = 0.0;
+          MachOut          [iMarker][iSpan][iDim]   = 0.0;
+          TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
+          TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
+        }
+      }
+    }
   }
 }
 
@@ -285,103 +285,103 @@ COutput::~COutput(void) {
   /* Data is taken care of in DeallocateSolution function */
 
 
-	/*--- Delete turboperformance pointers initiliazed at constrction  ---*/
-	unsigned short iMarker, iSpan;
-	if(turbo){
-		for(iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++){
-			for(iSpan=0; iSpan<nSpanWiseSections+1; iSpan++){
-				delete [] MachIn          [iMarker][iSpan];
-				delete [] MachOut         [iMarker][iSpan];
-				delete [] TurboVelocityIn [iMarker][iSpan];
-				delete [] TurboVelocityOut[iMarker][iSpan];
-			}
-		}
-		for(iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++){
-			delete [] TotalStaticEfficiency[iMarker];
-			delete [] TotalTotalEfficiency [iMarker];
-			delete [] KineticEnergyLoss    [iMarker];
-			delete [] TotalPressureLoss    [iMarker];
-			delete [] MassFlowIn           [iMarker];
-			delete [] MassFlowOut          [iMarker];
-			delete [] FlowAngleIn          [iMarker];
-			delete [] FlowAngleOut         [iMarker];
-			delete [] EulerianWork         [iMarker];
-			delete [] TotalEnthalpyIn      [iMarker];
-			delete [] TotalEnthalpyOut     [iMarker];
-			delete [] TotalEnthalpyOutIs   [iMarker];
-			delete [] PressureRatio        [iMarker];
-			delete [] EnthalpyOut          [iMarker];
-			delete [] VelocityOutIs        [iMarker];
-			delete [] TotalTemperatureIn   [iMarker];
-			delete [] FlowAngleIn_BC       [iMarker];
-			delete [] EntropyIn            [iMarker];
-			delete [] EntropyIn_BC         [iMarker];
-			delete [] TotalEnthalpyIn_BC   [iMarker];
-			delete [] DensityIn            [iMarker];
-			delete [] PressureIn           [iMarker];
-			delete [] DensityOut           [iMarker];
-			delete [] PressureOut          [iMarker];
-			delete [] EnthalpyOutIs        [iMarker];
-			delete [] EntropyGen           [iMarker];
-			delete [] AbsFlowAngleIn       [iMarker];
-			delete [] RothalpyIn      		 [iMarker];
-			delete [] RothalpyOut     		 [iMarker];
-			delete [] AbsFlowAngleOut      [iMarker];
-			delete [] PressureOut_BC       [iMarker];
-			delete [] MachIn               [iMarker];
-			delete [] MachOut              [iMarker];
-			delete [] TurboVelocityIn      [iMarker];
-			delete [] TurboVelocityOut     [iMarker];
-			delete [] TemperatureIn        [iMarker];
-			delete [] TemperatureOut       [iMarker];
-			delete [] TotalPressureIn      [iMarker];
-			delete [] TotalPressureOut     [iMarker];
-			delete [] TotalTemperatureOut  [iMarker];
-			delete [] EnthalpyIn           [iMarker];
+  /*--- Delete turboperformance pointers initiliazed at constrction  ---*/
+  unsigned short iMarker, iSpan;
+  if(turbo){
+    for(iMarker = 0; iMarker< nMarkerTurboPerf*nTimeInstances; iMarker++){
+      for(iSpan=0; iSpan<nSpanWiseSections+1; iSpan++){
+        delete [] MachIn          [iMarker][iSpan];
+        delete [] MachOut         [iMarker][iSpan];
+        delete [] TurboVelocityIn [iMarker][iSpan];
+        delete [] TurboVelocityOut[iMarker][iSpan];
+      }
+    }
+    for(iMarker = 0; iMarker< nMarkerTurboPerf*nTimeInstances; iMarker++){
+      delete [] TotalStaticEfficiency[iMarker];
+      delete [] TotalTotalEfficiency [iMarker];
+      delete [] KineticEnergyLoss    [iMarker];
+      delete [] TotalPressureLoss    [iMarker];
+      delete [] MassFlowIn           [iMarker];
+      delete [] MassFlowOut          [iMarker];
+      delete [] FlowAngleIn          [iMarker];
+      delete [] FlowAngleOut         [iMarker];
+      delete [] EulerianWork         [iMarker];
+      delete [] TotalEnthalpyIn      [iMarker];
+      delete [] TotalEnthalpyOut     [iMarker];
+      delete [] TotalEnthalpyOutIs   [iMarker];
+      delete [] PressureRatio        [iMarker];
+      delete [] EnthalpyOut          [iMarker];
+      delete [] VelocityOutIs        [iMarker];
+      delete [] TotalTemperatureIn   [iMarker];
+      delete [] FlowAngleIn_BC       [iMarker];
+      delete [] EntropyIn            [iMarker];
+      delete [] EntropyIn_BC         [iMarker];
+      delete [] TotalEnthalpyIn_BC   [iMarker];
+      delete [] DensityIn            [iMarker];
+      delete [] PressureIn           [iMarker];
+      delete [] DensityOut           [iMarker];
+      delete [] PressureOut          [iMarker];
+      delete [] EnthalpyOutIs        [iMarker];
+      delete [] EntropyGen           [iMarker];
+      delete [] AbsFlowAngleIn       [iMarker];
+      delete [] RothalpyIn           [iMarker];
+      delete [] RothalpyOut          [iMarker];
+      delete [] AbsFlowAngleOut      [iMarker];
+      delete [] PressureOut_BC       [iMarker];
+      delete [] MachIn               [iMarker];
+      delete [] MachOut              [iMarker];
+      delete [] TurboVelocityIn      [iMarker];
+      delete [] TurboVelocityOut     [iMarker];
+      delete [] TemperatureIn        [iMarker];
+      delete [] TemperatureOut       [iMarker];
+      delete [] TotalPressureIn      [iMarker];
+      delete [] TotalPressureOut     [iMarker];
+      delete [] TotalTemperatureOut  [iMarker];
+      delete [] EnthalpyIn           [iMarker];
 
 
-		}
-		delete [] TotalStaticEfficiency;
-		delete [] TotalTotalEfficiency;
-		delete [] KineticEnergyLoss;
-		delete [] TotalPressureLoss;
-		delete [] MassFlowIn;
-		delete [] MassFlowOut;
-		delete [] FlowAngleIn;
-		delete [] FlowAngleOut;
-		delete [] EulerianWork;
-		delete [] TotalEnthalpyIn;
-		delete [] TotalEnthalpyOut;
-		delete [] TotalEnthalpyOutIs;
-		delete [] PressureRatio;
-		delete [] EnthalpyOut;
-		delete [] VelocityOutIs;
-		delete [] TotalTemperatureIn;
-		delete [] FlowAngleIn_BC;
-		delete [] EntropyIn;
-		delete [] EntropyIn_BC;
-		delete [] TotalEnthalpyIn_BC;
-		delete [] DensityIn;
-		delete [] PressureIn;
-		delete [] DensityOut;
-		delete [] PressureOut;
-		delete [] EnthalpyOutIs;
-		delete [] EntropyGen;
-		delete [] AbsFlowAngleIn;
-		delete [] RothalpyIn;
-		delete [] RothalpyOut;
-		delete [] AbsFlowAngleOut;
-		delete [] PressureOut_BC;
-		delete [] MachIn;
-		delete [] MachOut;
-		delete [] TurboVelocityIn;
-		delete [] TurboVelocityOut;
-		delete [] TemperatureOut;
-		delete [] TotalPressureIn;
-		delete [] TotalPressureOut;
-		delete [] TotalTemperatureOut;
-		delete [] EnthalpyIn;
-	}
+    }
+    delete [] TotalStaticEfficiency;
+    delete [] TotalTotalEfficiency;
+    delete [] KineticEnergyLoss;
+    delete [] TotalPressureLoss;
+    delete [] MassFlowIn;
+    delete [] MassFlowOut;
+    delete [] FlowAngleIn;
+    delete [] FlowAngleOut;
+    delete [] EulerianWork;
+    delete [] TotalEnthalpyIn;
+    delete [] TotalEnthalpyOut;
+    delete [] TotalEnthalpyOutIs;
+    delete [] PressureRatio;
+    delete [] EnthalpyOut;
+    delete [] VelocityOutIs;
+    delete [] TotalTemperatureIn;
+    delete [] FlowAngleIn_BC;
+    delete [] EntropyIn;
+    delete [] EntropyIn_BC;
+    delete [] TotalEnthalpyIn_BC;
+    delete [] DensityIn;
+    delete [] PressureIn;
+    delete [] DensityOut;
+    delete [] PressureOut;
+    delete [] EnthalpyOutIs;
+    delete [] EntropyGen;
+    delete [] AbsFlowAngleIn;
+    delete [] RothalpyIn;
+    delete [] RothalpyOut;
+    delete [] AbsFlowAngleOut;
+    delete [] PressureOut_BC;
+    delete [] MachIn;
+    delete [] MachOut;
+    delete [] TurboVelocityIn;
+    delete [] TurboVelocityOut;
+    delete [] TemperatureOut;
+    delete [] TotalPressureIn;
+    delete [] TotalPressureOut;
+    delete [] TotalTemperatureOut;
+    delete [] EnthalpyIn;
+  }
 }
 
 void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
