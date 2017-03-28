@@ -577,6 +577,12 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     }
   }
 
+  /* Set up the list of tasks to be carried out in the computational expensive
+     part of the code. For the Runge-Kutta schemes this is typically the
+     computation of the spatial residual, while for ADER this list contains
+     the tasks to be done for one space time step. */
+  SetUpTaskList(config);
+
   /*--- Set up the persistent communication for the conservative variables and
    the reverse communication for the residuals of the halo elements. ---*/
   Prepare_MPI_Communication(DGGeometry, config);
@@ -586,8 +592,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Perform the MPI communication of the solution. ---*/
   Initiate_MPI_Communication();
-  Complete_MPI_Communication();
-
+  Complete_MPI_Communication(true);
 }
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
@@ -1227,6 +1232,36 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   }
 }
 
+void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
+
+  /* Check whether an ADER space-time step must be carried out. */
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
+
+    /*--- ADER time integration with local time stepping. There are 2^(M-1)
+          subtime steps, where M is the number of time levels. For each of
+          the subtime steps a number of tasks must be carried out, hence the
+          total list can become rather lengthy. ---*/
+    cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER not implemented yet";
+    exit(1);
+  }
+  else {
+
+    /*--- Standard time integration scheme for which the spatial residual must
+          be computed for the DOFS of the owned elements. ---*/
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION,         0, -1));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY,          0, -1));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::VOLUME_RESIDUAL,                    0, -1));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION,         0,  0));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS,     0,  3));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION, 0,  4));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS,    0, -1));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS,                0, -1));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION, 0,  5));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS,      0,  8));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX,       0,  9));
+  }
+}
+
 void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
                                                     CConfig        *config) {
 
@@ -1479,7 +1514,29 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(void) {
 #endif
 }
 
-void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
+bool CFEM_DG_EulerSolver::Complete_MPI_Communication(const bool commMustBeCompleted) {
+
+  /*-----------------------------------------------------------------------*/
+  /*--- Complete the MPI communication, if needed and if possible.      ---*/
+  /*-----------------------------------------------------------------------*/
+
+#ifdef HAVE_MPI
+  if( nCommRequests ) {
+
+    /*--- There are communication requests to be completed. Check if these
+          requests must be completed. In that case MPI_Waitall is used.
+          Otherwise, MPI_Testall is used to check if all the requests have
+          been completed. If not, false is returned. ---*/
+    if( commMustBeCompleted ) {
+      SU2_MPI::Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
+    }
+    else {
+      int flag;
+      MPI_Testall(nCommRequests, commRequests.data(), &flag, MPI_STATUSES_IGNORE);
+      if( !flag ) return false;
+    }
+  }
+#endif
 
   /*-----------------------------------------------------------------------*/
   /*---               Carry out the self communication.                 ---*/
@@ -1497,15 +1554,6 @@ void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
 
     memcpy(VecSolDOFs.data()+indR, VecSolDOFs.data()+indS, nBytes);
   }
-
-  /*-----------------------------------------------------------------------*/
-  /*---         Complete the MPI communication, if needed.              ---*/
-  /*-----------------------------------------------------------------------*/
-
-#ifdef HAVE_MPI
-  if( nCommRequests )
-    SU2_MPI::Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
-#endif
 
   /*------------------------------------------------------------------------*/
   /*--- Correct the vector quantities in the rotational periodic halo's. ---*/
@@ -1555,6 +1603,9 @@ void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
       }
     }
   }
+
+  /* Return true to indicate that the communication has been completed. */
+  return true;
 }
 
 void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
@@ -1655,16 +1706,29 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
   }
 }
 
-void CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(void) {
+bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(const bool commMustBeCompleted) {
 
 #ifdef HAVE_MPI
 
   /*-----------------------------------------------------------------------*/
-  /*---         Complete the MPI communication, if needed.              ---*/
+  /*---   Complete the MPI communication, if needed and if possible.    ---*/
   /*-----------------------------------------------------------------------*/
 
-  if( nCommRequests )
-    SU2_MPI::Waitall(nCommRequests, reverseCommRequests.data(), MPI_STATUSES_IGNORE);
+  if( nCommRequests ) {
+
+    /*--- There are communication requests to be completed. Check if these
+          requests must be completed. In that case MPI_Waitall is used.
+          Otherwise, MPI_Testall is used to check if all the requests have
+          been completed. If not, false is returned. ---*/
+    if( commMustBeCompleted ) {
+      SU2_MPI::Waitall(nCommRequests, reverseCommRequests.data(), MPI_STATUSES_IGNORE);
+    }
+    else {
+      int flag;
+      MPI_Testall(nCommRequests, reverseCommRequests.data(), &flag, MPI_STATUSES_IGNORE);
+      if( !flag ) return false;
+    }
+  }
 
   /*---------------------------------------------------------------------------*/
   /*--- Update the residuals of the owned DOFs with the data just received. ---*/
@@ -1690,6 +1754,9 @@ void CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(void) {
   }
 
 #endif
+
+  /* Return true to indicate that the communication has been completed. */
+  return true;
 }
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
@@ -1894,7 +1961,7 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
         communication of the solution. ---*/
   if( solutionSet ) {
     Initiate_MPI_Communication();
-    Complete_MPI_Communication();
+    Complete_MPI_Communication(true);
   }
 }
 
@@ -2141,88 +2208,175 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
 void CFEM_DG_EulerSolver::Spatial_Residual_DG(CGeometry *geometry,  CSolver **solver_container,
                                               CNumerics **numerics, CConfig *config,
                                               unsigned short iMesh) {
+  /* Variable for the internal timing. */
   su2double tick = 0.0;
 
-  /*--- Compute the artificial viscosity for shock capturing in DG. ---*/
-  config->Tick(&tick);
-  Shock_Capturing_DG(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
-  config->Tock(tick,"Shock_Capturing",3);
+  /* Define and initialize the bool vector, that indicates whether or
+     not the tasks from the list have been completed. */
+  vector<bool> taskCompleted(tasksList.size(), false);
 
-  /*--- Compute the volume portion of the residual. ---*/
-  config->Tick(&tick);
-  Volume_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
-  config->Tock(tick,"Volume_Residual",3);
+  /* While loop to carry out all the tasks in tasksList. */
+  unsigned long lowestIndexInList = 0;
+  while(lowestIndexInList < tasksList.size()) {
 
-  /*--- Compute source term residuals ---*/
-  config->Tick(&tick);
-  Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
-  config->Tock(tick,"Source_Residual",3);
+    /* Find the next task that can be carried out. The outer loop is there
+       to make sure that a communication is completed in case there are no
+       other tasks */
+    for(unsigned short j=0; j<2; ++j) {
+      bool taskCarriedOut = false;
+      for(unsigned long i=lowestIndexInList; i<tasksList.size(); ++i) {
 
-  /*--- Boundary conditions ---*/
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    switch (config->GetMarker_All_KindBC(iMarker)) {
-      case EULER_WALL:
-        config->Tick(&tick);
-        BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        config->Tock(tick,"BC_Euler_Wall",3);
-        break;
-      case FAR_FIELD:
-        config->Tick(&tick);
-        BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        config->Tock(tick,"BC_Far_Field",3);
-        break;
-      case SYMMETRY_PLANE:
-        config->Tick(&tick);
-        BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        config->Tock(tick,"BC_Sym_Plane",3);
-        break;
-      case INLET_FLOW:
-        config->Tick(&tick);
-        BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        config->Tock(tick,"BC_Inlet",3);
-        break;
-      case OUTLET_FLOW:
-        config->Tick(&tick);
-        BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        config->Tock(tick,"BC_Outlet",3);
-        break;
-      case ISOTHERMAL:
-        config->Tick(&tick);
-        BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        config->Tock(tick,"BC_Isothermal_Wall",3);
-        break;
-      case HEAT_FLUX:
-        config->Tick(&tick);
-        BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        config->Tock(tick,"BC_HeatFlux_Wall",3);
-        break;
-      case CUSTOM_BOUNDARY:
-        config->Tick(&tick);
-        BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        config->Tock(tick,"BC_Custom",3);
-        break;
-      case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
-        break;
-      default:
-        cout << "BC not implemented." << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
+        /* Determine whether or not it can be attempted to carry out
+           this task. */
+        const int ii = tasksList[i].indMustBeCompleted;
+        const bool earlierTaskDone = ii == -1 ? true : taskCompleted[ii];
+        if(!taskCompleted[i] && earlierTaskDone) {
+
+          /*--- Determine the actual task to be carried out and do so. The
+                only tasks that may fail are the completion of the non-blocking
+                communication. If that is the case the next task needs to be
+                found. ---*/
+          switch( tasksList[i].task ) {
+            case CTaskDefinition::INITIATE_MPI_COMMUNICATION: {
+
+              /* Start the MPI communication of the solution in the halo elements. */
+              Initiate_MPI_Communication();
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::COMPLETE_MPI_COMMUNICATION: {
+
+              /* Attempt to complete the MPI communication of the solution data.
+                 For j==0, MPI_Testall will be used, which returns false if not
+                 all requests can be completed. In that case the next task on
+                 the list is carried out. If j==1, this means that the next
+                 tasks are waiting for this communication to be completed and
+                 hence MPI_Waitall is used. */
+              if( Complete_MPI_Communication(j==1) )
+                taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION: {
+
+              /* Start the communication of the residuals, for which the
+                 reverse communication must be used. */
+              Initiate_MPI_ReverseCommunication();
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION: {
+
+              /* Attempt to complete the MPI communication of the residual data.
+                 For j==0, MPI_Testall will be used, which returns false if not
+                 all requests can be completed. In that case the next task on
+                 the list is carried out. If j==1, this means that the next
+                 tasks are waiting for this communication to be completed and
+                 hence MPI_Waitall is used. */
+              if( Complete_MPI_ReverseCommunication(j==1) )
+                taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SHOCK_CAPTURING_VISCOSITY: {
+
+              /*--- Compute the artificial viscosity for shock capturing in DG. ---*/
+              config->Tick(&tick);
+              Shock_Capturing_DG(geometry, solver_container, numerics[CONV_TERM], config, iMesh);
+              config->Tock(tick,"Shock_Capturing",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::VOLUME_RESIDUAL: {
+
+              /*--- Compute the volume portion of the residual. ---*/
+              config->Tick(&tick);
+              Volume_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh);
+              Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
+              config->Tock(tick,"Volume_Residual",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS: {
+
+              /* Compute the residual of the faces that only involve owned elements. */
+              config->Tick(&tick);
+              unsigned long indResFaces = startLocResInternalFacesLocalElem[0];
+              ResidualFaces(geometry, solver_container, numerics[CONV_TERM], config,
+                            iMesh, nMatchingInternalFacesLocalElem[0],
+                            nMatchingInternalFacesLocalElem[1], indResFaces);
+              config->Tock(tick,"ResidualFaces",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS: {
+
+              /* Compute the residual of the faces that involve a halo element. */
+              config->Tick(&tick);
+              unsigned long indResFaces = startLocResInternalFacesWithHaloElem[0];
+              ResidualFaces(geometry, solver_container, numerics[CONV_TERM], config,
+                            iMesh, nMatchingInternalFacesWithHaloElem[0],
+                            nMatchingInternalFacesWithHaloElem[1], indResFaces);
+              config->Tock(tick,"ResidualFaces",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::BOUNDARY_CONDITIONS: {
+
+              /*--- Apply the boundary conditions ---*/
+              config->Tick(&tick);
+              Boundary_Conditions(geometry, solver_container, numerics, config);
+              config->Tock(tick,"Boundary_Conditions",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS: {
+
+              /* Create the final residual by summing up all contributions. */
+              config->Tick(&tick);
+              CreateFinalResidual(0, nVolElemOwned);
+              config->Tock(tick,"CreateFinalResidual",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX: {
+
+              /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
+              config->Tick(&tick);
+              MultiplyResidualByInverseMassMatrix(config, false);
+              config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            default: {
+
+              cout << "Task not defined. This should not happen." << endl;
+              exit(1);
+            }
+          }
+        }
+
+        /* Break the inner loop if a task has been carried out. */
+        if( taskCarriedOut ) break;
+      }
+
+      /* Break the outer loop if a task has been carried out. */
+      if( taskCarriedOut ) break;
     }
+
+    /* Update the value of lowestIndexInList. */
+    for(; lowestIndexInList < tasksList.size(); ++lowestIndexInList)
+      if( !taskCompleted[lowestIndexInList] ) break;
   }
-
-  /*--- Compute surface portion of the residual. ---*/
-  config->Tick(&tick);
-  Surface_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
-  config->Tock(tick,"Surface_Residual",3);
-
-  /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
-  config->Tick(&tick);
-  MultiplyResidualByInverseMassMatrix(config, false);
-  config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
 }
 
 void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
@@ -2240,7 +2394,7 @@ void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolve
   Set_OldSolution(geometry);
 
   config->Tick(&tick);
-  ADER_DG_PredictorStep(config, 0);
+  ADER_DG_PredictorStep(config);
   config->Tock(tick,"ADER_DG_PredictorStep",2);
 
   const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
@@ -2255,14 +2409,17 @@ void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolve
     ADER_DG_TimeInterpolatePredictorSol(config, iTime);
     config->Tock(tick,"ADER_DG_TimeInterpolatePredictorSol",3);
 
+    /* Start the MPI communication of the solution in the halo elements. */
+    Initiate_MPI_Communication();
+
     /* Compute the artificial viscosity for shock capturing in DG. */
     config->Tick(&tick);
-    Shock_Capturing_DG(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+    Shock_Capturing_DG(geometry, solver_container, numerics[CONV_TERM], config, iMesh);
     config->Tock(tick,"Shock_Capturing",3);
 
     /*--- Compute the volume portion of the residual. ---*/
     config->Tick(&tick);
-    Volume_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+    Volume_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh);
     config->Tock(tick,"Volume_Residual",3);
 
     /*--- Compute source term residuals ---*/
@@ -2270,66 +2427,43 @@ void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolve
     Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
     config->Tock(tick,"Source_Residual",3);
 
-    /*--- Boundary conditions ---*/
-    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      switch (config->GetMarker_All_KindBC(iMarker)) {
-        case EULER_WALL:
-          config->Tick(&tick);
-          BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Euler_Wall",3);
-          break;
-        case FAR_FIELD:
-          config->Tick(&tick);
-          BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Far_Field",3);
-          break;
-        case SYMMETRY_PLANE:
-          config->Tick(&tick);
-          BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Sym_Plane",3);
-          break;
-        case INLET_FLOW:
-          config->Tick(&tick);
-          BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Inlet",3);
-          break;
-        case OUTLET_FLOW:
-          config->Tick(&tick);
-          BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Outlet",3);
-          break;
-        case ISOTHERMAL:
-          config->Tick(&tick);
-          BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Isothermal_Wall",3);
-          break;
-        case HEAT_FLUX:
-          config->Tick(&tick);
-          BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_HeatFlux_Wall",3);
-          break;
-        case CUSTOM_BOUNDARY:
-          config->Tick(&tick);
-          BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Custom",3);
-          break;
-        case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
-          break;
-        default:
-          cout << "BC not implemented." << endl;
-#ifndef HAVE_MPI
-          exit(EXIT_FAILURE);
-#else
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#endif
+    /*--- Apply the boundary conditions ---*/
+    config->Tick(&tick);
+    Boundary_Conditions(geometry, solver_container, numerics, config);
+    config->Tock(tick,"Boundary_Conditions",3);
+
+    /* Complete the MPI communication of the solution data. */
+    Complete_MPI_Communication(true);
+
+    /* Compute the residual of the faces that involve a halo element. */
+    unsigned long indResFaces = startLocResInternalFacesWithHaloElem[0];
+    ResidualFaces(geometry, solver_container, numerics[CONV_TERM], config,
+                  iMesh, nMatchingInternalFacesWithHaloElem[0],
+                  nMatchingInternalFacesWithHaloElem[1], indResFaces);
+
+    /* Start the communication of the residuals, for which the
+       reverse communication must be used. */
+    Initiate_MPI_ReverseCommunication();
+
+    /* Compute the residual of the faces that only involve owned elements. */
+    indResFaces = startLocResInternalFacesLocalElem[0];
+    ResidualFaces(geometry, solver_container, numerics[CONV_TERM], config,
+                  iMesh, nMatchingInternalFacesLocalElem[0],
+                  nMatchingInternalFacesLocalElem[1], indResFaces);
+
+    /* Complete the communication of the residuals. */
+    Complete_MPI_ReverseCommunication(true);
+
+    /* Create the final residual by summing up all contributions. */
+    for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+
+      su2double *resDOF = VecResDOFs.data() + nVar*i;
+      for(unsigned long j=nEntriesResFaces[i]; j<nEntriesResFaces[i+1]; ++j) {
+        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
+        for(unsigned short k=0; k<nVar; ++k)
+          resDOF[k] += resFace[k];
       }
     }
-
-    /*--- Compute surface portion of the residual. ---*/
-    config->Tick(&tick);
-    Surface_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
-    config->Tock(tick,"Surface_Residual",3);
 
     /*--- Accumulate the space time residual. ---*/
     AccumulateSpaceTimeResidualADER(iTime, timeIntegrationWeights[iTime]);
@@ -2342,7 +2476,7 @@ void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolve
 
   /*--- Perform the time integration ---*/
   config->Tick(&tick);
-  ADER_DG_Iteration(geometry, solver_container, config, 0);
+  ADER_DG_Iteration(geometry, solver_container, config);
   config->Tock(tick,"ADER_DG_Iteration",3);
 
   /*--- Postprocessing ---*/
@@ -2351,7 +2485,7 @@ void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolve
   config->Tock(tick,"Postprocessing",2);
 }
 
-void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) {
+void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config) {
 
   /*----------------------------------------------------------------------*/
   /*---        Get the data of the ADER time integration scheme.       ---*/
@@ -2826,7 +2960,7 @@ void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *con
 }
 
 void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+                                          CConfig *config, unsigned short iMesh) {
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
@@ -2836,10 +2970,7 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
 }
 
 void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
-
-  /* Start the MPI communication of the solution in the halo elements. */
-  Initiate_MPI_Communication();
+                                          CConfig *config, unsigned short iMesh) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solInt = VecTmpMemory.data();
@@ -2939,7 +3070,6 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
-
   }
 }
 
@@ -2968,50 +3098,55 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
     cout << ")." << endl;
 
   }
-
 }
 
-void CFEM_DG_EulerSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                           CConfig *config, unsigned short iMesh, unsigned short iStep) {
+void CFEM_DG_EulerSolver::Boundary_Conditions(CGeometry *geometry,  CSolver **solver_container,
+                                              CNumerics **numerics, CConfig *config){
 
-  /* Complete the MPI communication of the solution data. */
-  Complete_MPI_Communication();
-
-  /* Compute the residual of the faces that involve a halo element. */
-  unsigned long indResFaces = startLocResInternalFacesWithHaloElem[0];
-  ResidualFaces(geometry, solver_container, numerics, config, iMesh, iStep,
-                nMatchingInternalFacesWithHaloElem[0],
-                nMatchingInternalFacesWithHaloElem[1], indResFaces);
-
-  /* Start the communication of the residuals, for which the
-     reverse communication must be used. */
-  Initiate_MPI_ReverseCommunication();
-
-  /* Compute the residual of the faces that only involve owned elements. */
-  indResFaces = startLocResInternalFacesLocalElem[0];
-  ResidualFaces(geometry, solver_container, numerics, config, iMesh, iStep,
-                nMatchingInternalFacesLocalElem[0],
-                nMatchingInternalFacesLocalElem[1], indResFaces);
-
-  /* Complete the communication of the residuals. */
-  Complete_MPI_ReverseCommunication();
-
-  /* Create the final residual by summing up all contributions. */
-  for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
-
-    su2double *resDOF = VecResDOFs.data() + nVar*i;
-    for(unsigned long j=nEntriesResFaces[i]; j<nEntriesResFaces[i+1]; ++j) {
-      const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
-      for(unsigned short k=0; k<nVar; ++k)
-        resDOF[k] += resFace[k];
+  /* Loop over all boundaries and apply the appropriate boundary condition. */
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case EULER_WALL:
+        BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
+      case FAR_FIELD:
+        BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case SYMMETRY_PLANE:
+        BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case INLET_FLOW:
+        BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case OUTLET_FLOW:
+        BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case ISOTHERMAL:
+        BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case HEAT_FLUX:
+        BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case CUSTOM_BOUNDARY:
+        BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
+      case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
+        break;
+      default:
+        cout << "BC not implemented." << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
     }
   }
 }
 
 void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                        CConfig *config, unsigned short iMesh, unsigned short iStep,
-                                        const unsigned long indFaceBeg, const unsigned long indFaceEnd,
-                                        unsigned long &indResFaces) {
+                                        CConfig *config, unsigned short iMesh, const unsigned long indFaceBeg,
+                                        const unsigned long indFaceEnd, unsigned long &indResFaces) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solIntL = VecTmpMemory.data();
@@ -3196,6 +3331,27 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADER(unsigned short iTime, 
           halfWeight must be added to the total ADER residual. ---*/
     for(unsigned long i=0; i<VecTotResDOFsADER.size(); ++i)
       VecTotResDOFsADER[i] += halfWeight*VecResDOFs[i];
+  }
+}
+
+void CFEM_DG_EulerSolver::CreateFinalResidual(const unsigned long elemStart,
+                                              const unsigned long elemEnd) {
+
+  /* Loop over the required element range. */
+  for(unsigned long l=elemStart; l<elemEnd; ++l) {
+
+    /* Loop over the DOFs of this element. */
+    for(unsigned long i=volElem[l].offsetDOFsSolLocal;
+                      i<(volElem[l].offsetDOFsSolLocal+volElem[l].nDOFsSol); ++i) {
+
+      /* Create the final residual by summing up all contributions. */
+      su2double *resDOF = VecResDOFs.data() + nVar*i;
+      for(unsigned long j=nEntriesResFaces[i]; j<nEntriesResFaces[i+1]; ++j) {
+        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
+        for(unsigned short k=0; k<nVar; ++k)
+          resDOF[k] += resFace[k];
+      }
+    }
   }
 }
 
@@ -3717,8 +3873,8 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
 #endif
 }
 
-void CFEM_DG_EulerSolver::ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                            unsigned short iStep) {
+void CFEM_DG_EulerSolver::ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                            CConfig *config) {
 
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -4641,10 +4797,10 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   /*--- Perform the MPI communication of the solution. ---*/
   Initiate_MPI_Communication();
-  Complete_MPI_Communication();
+  Complete_MPI_Communication(true);
 
   /*--- Delete the class memory that is used to load the restart. ---*/
-  
+
   if (Restart_Vars != NULL) delete [] Restart_Vars;
   if (Restart_Data != NULL) delete [] Restart_Data;
   Restart_Vars = NULL; Restart_Data = NULL;
@@ -5980,20 +6136,20 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
 }
 
 void CFEM_DG_NSSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+                                          CConfig *config, unsigned short iMesh) {
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
     case NONE:
       break;
     case PERSSON:
-      Shock_Capturing_DG_Persson(geometry, solver_container, numerics, config, iMesh, iStep);
+      Shock_Capturing_DG_Persson(geometry, solver_container, numerics, config, iMesh);
       break;
   }
 
 }
 void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+                                          CConfig *config, unsigned short iMesh) {
 
   /*--- Dummy variable for storing shock sensor value temporarily ---*/
   su2double sensorVal, sensorLowerBound, machNorm, machMax;
@@ -6152,10 +6308,7 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
 }
 
 void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                       CConfig *config, unsigned short iMesh, unsigned short iStep) {
-
-  /* Start the MPI communication of the solution in the halo elements. */
-  Initiate_MPI_Communication();
+                                       CConfig *config, unsigned short iMesh) {
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
@@ -6368,14 +6521,12 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
-
   }
 }
 
 void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iStep,
-                                     const unsigned long indFaceBeg, const unsigned long indFaceEnd,
-                                     unsigned long &indResFaces) {
+                                     CConfig *config, unsigned short iMesh, const unsigned long indFaceBeg,
+                                     const unsigned long indFaceEnd, unsigned long &indResFaces) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double tick = 0.0;
