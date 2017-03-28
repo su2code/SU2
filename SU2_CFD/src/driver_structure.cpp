@@ -557,6 +557,7 @@ void CDriver::Geometrical_Preprocessing() {
   unsigned long iPoint;
   int rank = MASTER_NODE;
   unsigned short nSpanMax = 0;
+  unsigned short nTimeZones = config_container[ZONE_0]->GetnTimeInstances();
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -631,17 +632,22 @@ void CDriver::Geometrical_Preprocessing() {
 
     /*--- Create turbovertex structure ---*/
     if (config_container[iZone]->GetBoolTurbomachinery()){
-    	geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
-    	geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
-    if (rank == MASTER_NODE) cout << "Zone " << iZone << " number of span-wise sections " << config_container[iZone]->GetnSpanWiseSections() << endl;
-    	if (config_container[iZone]->GetnSpanWiseSections() > nSpanMax){
-    		nSpanMax = config_container[iZone]->GetnSpanWiseSections();
-    	}
-    	config_container[iZone%3]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(), (int)(iZone/3));
+      geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
+      geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
+      if (rank == MASTER_NODE) cout << "Zone " << iZone << " number of span-wise sections " << config_container[iZone]->GetnSpanWiseSections() << endl;
+      if (config_container[iZone]->GetnSpanWiseSections() > nSpanMax){
+        nSpanMax = config_container[iZone]->GetnSpanWiseSections();
+      }
+      if ( config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
-    if (rank == MASTER_NODE) cout << "Create TurboVertex structure." << endl;
-    	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
-    	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
+      config_container[iZone%nTimeZones]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(), (int)(iZone/nTimeZones));
+      }
+      else {
+      config_container[ZONE_0]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(),iZone);
+      }
+      if (rank == MASTER_NODE) cout << "Create TurboVertex structure." << endl;
+      geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
+      geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
     }
 
     /*--- Check for periodicity and disable MG if necessary. ---*/
