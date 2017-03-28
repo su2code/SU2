@@ -637,8 +637,7 @@ void CDriver::Geometrical_Preprocessing() {
     	if (config_container[iZone]->GetnSpanWiseSections() > nSpanMax){
     		nSpanMax = config_container[iZone]->GetnSpanWiseSections();
     	}
-
-    	config_container[ZONE_0]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(), iZone);
+    	config_container[iZone%3]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(), (int)(iZone/3));
 
     if (rank == MASTER_NODE) cout << "Create TurboVertex structure." << endl;
     	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
@@ -4993,11 +4992,6 @@ void CHBMultiZoneDriver::Run() {
 //    if(mixingplane)SetMixingPlane(iZone);
 //  }
 
-  if (rank == MASTER_NODE){
-    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
-      SetTurboPerformance(iTimeInstance);
-  }
-
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
     iteration_container[iTimeInstance]->Iterate(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
@@ -5010,6 +5004,7 @@ void CHBMultiZoneDriver::Run() {
   if (rank == MASTER_NODE){
     for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
       SetTurboPerformance(iTimeInstance);
+
   }
 
 }
@@ -5158,8 +5153,7 @@ void CHBMultiZoneDriver::SetTurboPerformance(unsigned short iTimeInstance){
 
   /* --- compute turboperformance for each stage and the global machine ---*/
 
-  output->ComputeTurboPerformance(solver_container[0][MESH_0][FLOW_SOL], geometry_container[0][MESH_0], config_container[0]);
-//  output->ComputeTurboPerformance(solver_container[iTimeInstance][MESH_0][FLOW_SOL], geometry_container[iTimeInstance][MESH_0], config_container[iTimeInstance]);
+  output->ComputeTurboPerformance(solver_container[iTimeInstance][MESH_0][FLOW_SOL], geometry_container[iTimeInstance][MESH_0], config_container[iTimeInstance]);
 
 }
 
