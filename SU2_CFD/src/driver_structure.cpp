@@ -3749,10 +3749,11 @@ void CTurbomachineryDriver::Run() {
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iZone);
+  }
 
+  for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->Postprocess(config_container, geometry_container,
                                             solver_container, iZone);
-
   }
 
   if (rank == MASTER_NODE){
