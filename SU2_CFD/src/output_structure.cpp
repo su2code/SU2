@@ -10297,13 +10297,13 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
         cout << "     Outlet Density " << "          Inlet Density" << "               err(%)" <<  endl;
         cout.width(25); cout << DensityOut[iMarkerPlot][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetDensity_Ref();
         cout.width(25); cout << DensityIn[iMarkerPlot + 1][config->GetnSpan_iZones(iMarker_Monitoring + 1)]*config->GetDensity_Ref();
-        cout.width(25); cout << abs((DensityIn[iMarkerPlot + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)] - DensityOut[iMarkerPlot][config->GetnSpan_iZones(iMarkerPlot)])/DensityIn[iMarkerPlot + 1][config->GetnSpan_iZones(iMarkerPlot +1)])*100.0;
+        cout.width(25); cout << abs((DensityIn[iMarkerPlot + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)] - DensityOut[iMarkerPlot][config->GetnSpan_iZones(iMarkerPlot)])/DensityIn[iMarkerPlot + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)])*100.0;
         cout << endl;
         cout << endl;
         cout << "     Outlet Pressure " << "         Inlet Pressure" << "              err(%)" <<  endl;
         cout.width(25); cout << PressureOut[iMarkerPlot][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetPressure_Ref();
         cout.width(25); cout << PressureIn[iMarkerPlot + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)]*config->GetPressure_Ref();
-        cout.width(25); cout << abs((PressureIn[iMarkerPlot + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)] - PressureOut[iMarkerPlot][config->GetnSpan_iZones(iMarkerPlot)])/PressureIn[iMarkerPlot + 1][config->GetnSpan_iZones(iMarkerPlot +1)])*100.0;
+        cout.width(25); cout << abs((PressureIn[iMarkerPlot + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)] - PressureOut[iMarkerPlot][config->GetnSpan_iZones(iMarkerPlot)])/PressureIn[iMarkerPlot + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)])*100.0;
         cout << endl;
         cout << endl;
         cout << "     Outlet Normal Velocity " << "  Inlet Normal Velocity" << "       err(%)" <<  endl;
