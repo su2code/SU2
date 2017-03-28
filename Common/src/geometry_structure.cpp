@@ -4372,6 +4372,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   Local_Points = NULL;
   Local_Colors = NULL;
 
+  Local_Elems = NULL;
+
   Conn_Line = NULL;
   Conn_BoundTria = NULL;
   Conn_BoundQuad = NULL;
@@ -4404,7 +4406,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   /*--- Distribute the element information to all ranks based on coloring. ---*/
 
   if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Distributing volumetric grid connectivity." << endl;
+    cout <<"Distributing volume element connectivity." << endl;
 
   DistributeVolumetricConnectivity(config, geometry, TRIANGLE     );
   DistributeVolumetricConnectivity(config, geometry, QUADRILATERAL);
@@ -4413,29 +4415,19 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   DistributeVolumetricConnectivity(config, geometry, PRISM        );
   DistributeVolumetricConnectivity(config, geometry, PYRAMID      );
 
+  /*--- Distribute the marker information to all ranks based on coloring. ---*/
+
+  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+    cout <<"Distributing surface element connectivity." << endl;
+
+  //DistributeSurfaceConnectivity(config, geometry, TRIANGLE     );
+
   /*--- Distribute the point information to all ranks based on the coloring. ---*/
 
   if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
     cout <<"Distributing grid points." << endl;
 
   DistributePoints(config, geometry);
-
-  /*--- Reduce information about the total number of cells, points, etc. ---*/
-
-  unsigned long global_elems = 0;
-
-  unsigned long nTotal_Elem = nLocal_Tria + nLocal_Quad + nLocal_Tetr + nLocal_Hexa + nLocal_Pris + nLocal_Pyra;
-
-  //cout << " rank: " << rank << "  Elems: " << nTotal_Elem << endl;
-  //unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_BoundTria + nParallel_BoundQuad;
-#ifndef HAVE_MPI
-  global_elems = nTotal_Elem;
-  //nSurf_Elem_Par   = nTotal_Surf_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Elem, &global_elems, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  //SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
 
   /*--- Now load all of the geomtric information into place for the class. ---*/
 
@@ -4447,6 +4439,24 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
 
   // Load boundaries
 
+  /*--- Reduce information about the total number of cells, points, etc. ---*/
+
+  unsigned long Local_nPoint       = nLocal_Point;
+  unsigned long Local_nPointDomain = nLocal_PointDomain;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&Local_nPoint, &Global_nPoint, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  Global_nPoint = Local_nPoint;
+  Global_nPointDomain = Local_nPointDomain;
+#endif
+
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << Global_nPoint << " vertices including ghost points. " << endl;
+
   /*--- Free memory associated with the redistribution of points and elems. ---*/
 
   LocalPoints.clear();
@@ -4457,6 +4467,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   if (Local_Colors != NULL) delete [] Local_Colors;
   if (Local_Coords != NULL) delete [] Local_Coords;
 
+  if (Local_Elems != NULL) delete [] Local_Elems;
+
   if (nLocal_Line > 0      && Conn_Line      != NULL) delete [] Conn_Line;
   if (nLocal_BoundTria > 0 && Conn_BoundTria != NULL) delete [] Conn_BoundTria;
   if (nLocal_BoundQuad > 0 && Conn_BoundQuad != NULL) delete [] Conn_BoundQuad;
@@ -4466,7 +4478,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   if (Conn_Hexa != NULL) delete [] Conn_Hexa;
   if (Conn_Pris != NULL) delete [] Conn_Pris;
   if (Conn_Pyra != NULL) delete [] Conn_Pyra;
-
+  
 }
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
@@ -4522,14 +4534,14 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
   }
   jPoint = geometry->GetnPoint();
   for (iPoint = 0; iPoint < LocalPoints.size(); iPoint++) {
-    if ((LocalPoints[iPoint] <  geometry->starting_node[rank]) &&
+    if ((LocalPoints[iPoint] <  geometry->starting_node[rank]) ||
         (LocalPoints[iPoint] >= geometry->ending_node[rank])){
       Global2Local[LocalPoints[iPoint]] = jPoint;
       jPoint++;
     }
   }
 
-  /*--- Now create the neighbor lists for each owned node. ---*/
+  /*--- Now create the neighbor list for each owned node (self-inclusive). ---*/
 
   Neighbors.clear();
   Neighbors.resize(LocalPoints.size());
@@ -4537,10 +4549,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
       iPoint = Global2Local[geometry->elem[iElem]->GetNode(iNode)];
       for (jNode = 0; jNode < geometry->elem[iElem]->GetnNodes(); jNode++) {
-        if (jNode != iNode) {
-          jPoint = geometry->elem[iElem]->GetNode(jNode);
-          Neighbors[iPoint].push_back(jPoint);
-        }
+        jPoint = geometry->elem[iElem]->GetNode(jNode);
+        Neighbors[iPoint].push_back(jPoint);
       }
     }
   }
@@ -4588,7 +4598,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
       else
         while(jPoint <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
 
-      /*--- If we have not visted this node yet, increment our
+      /*--- If we have not visited this node yet, increment our
        number of points that must be sent to a particular proc. ---*/
 
       if (nPoint_Flag[iProcessor] != (int)iPoint) {
@@ -4661,7 +4671,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
       else
         while(jPoint <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
 
-      /*--- If we have not visted this node yet, increment our
+      /*--- If we have not visited this node yet, increment our
        counters and load up the global ID and color. ---*/
 
       if (nPoint_Flag[iProcessor] != (int)iPoint) {
@@ -4699,7 +4709,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
     idRecv[ii] = 0;
 
 #ifdef HAVE_MPI
-  /*--- We need double the number of messages to send both the conn.
+  /*--- We need double the number of messages to send both the colors
    and the global IDs. ---*/
 
   send_req = new MPI_Request[2*nSends];
@@ -4719,16 +4729,16 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
     }
   }
 
-  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  /*--- Launch the non-blocking sends of the colors. ---*/
 
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll = nPoint_Send[ii];
-      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count  = kk;
-      int dest = ii;
-      int tag    = rank + 1;
+      int ll    = nPoint_Send[ii];
+      int kk    = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count = kk;
+      int dest  = ii;
+      int tag   = rank + 1;
       SU2_MPI::Isend(&(colorSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
                      MPI_COMM_WORLD, &(send_req[iMessage]));
       iMessage++;
@@ -4756,11 +4766,11 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll = nPoint_Send[ii];
-      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count  = kk;
-      int dest   = ii;
-      int tag    = rank + 1;
+      int ll    = nPoint_Send[ii];
+      int kk    = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count = kk;
+      int dest  = ii;
+      int tag   = rank + 1;
       SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
                      MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
       iMessage++;
@@ -4905,7 +4915,7 @@ void CPhysicalGeometry::DistributeVolumetricConnectivity(CConfig *config, CGeome
 
         iProcessor = Color_List[Global_Index];
 
-        /*--- If we have not visted this element yet, increment our
+        /*--- If we have not visited this element yet, increment our
          number of elements that must be sent to a particular proc. ---*/
 
         if ((nElem_Flag[iProcessor] != ii)) {
@@ -5133,9 +5143,7 @@ void CPhysicalGeometry::DistributeVolumetricConnectivity(CConfig *config, CGeome
 #endif
 
   /*--- Store the connectivity for this rank in the proper data
-   structure before post-processing below. Note that we add 1 here
-   to the connectivity for vizualization packages. First, allocate
-   appropriate amount of memory for this section. ---*/
+   structure. It will be loaded into the geometry objects in a later step. ---*/
 
   if (nElem_Recv[size] > 0)
     Conn_Elem = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
@@ -5148,7 +5156,13 @@ void CPhysicalGeometry::DistributeVolumetricConnectivity(CConfig *config, CGeome
     }
   }
 
-  /*--- Store the global element IDs here too. ---*/
+  /*--- Store the global element IDs too. ---*/
+
+  if (nElem_Recv[size] > 0)
+    Local_Elems = new unsigned long[nElem_Recv[size]];
+  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+      Local_Elems[ii] = idRecv[ii];
+  }
 
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
@@ -5245,7 +5259,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
 
       iProcessor = Color_List[jPoint];
 
-      /*--- If we have not visted this node yet, increment our
+      /*--- If we have not visited this node yet, increment our
        number of points that must be sent to a particular proc. ---*/
 
       if (nPoint_Flag[iProcessor] != (int)iPoint) {
@@ -5321,7 +5335,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
 
       iProcessor = Color_List[jPoint];
 
-      /*--- If we have not visted this node yet, increment our
+      /*--- If we have not visited this node yet, increment our
        counters and load up the global ID and color. ---*/
 
       if (nPoint_Flag[iProcessor] != (int)iPoint) {
@@ -5371,8 +5385,8 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
     coordRecv[ii] = 0;
 
 #ifdef HAVE_MPI
-  /*--- We need to triple the messages for IDs, colors, and coordinates. ---*/
 
+  /*--- We need to triple the messages for IDs, colors, and coordinates. ---*/
   send_req = new MPI_Request[3*nSends];
   recv_req = new MPI_Request[3*nRecvs];
 
@@ -5395,11 +5409,11 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll = nPoint_Send[ii];
-      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count  = kk;
-      int dest = ii;
-      int tag    = rank + 1;
+      int ll    = nPoint_Send[ii];
+      int kk    = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count = kk;
+      int dest  = ii;
+      int tag   = rank + 1;
       SU2_MPI::Isend(&(colorSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
                      MPI_COMM_WORLD, &(send_req[iMessage]));
       iMessage++;
@@ -5427,11 +5441,11 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   iMessage = nSends;
   for (int ii=0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll = nPoint_Send[ii];
-      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count  = kk;
-      int dest   = ii;
-      int tag    = rank + 1;
+      int ll    = nPoint_Send[ii];
+      int kk    = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count = kk;
+      int dest  = ii;
+      int tag   = rank + 1;
       SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
                      MPI_COMM_WORLD, &(send_req[iMessage]));
       iMessage++;
@@ -5459,11 +5473,11 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   iMessage = 2*nSends;
   for (int ii=0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll = nDim*nPoint_Send[ii];
-      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count  = nDim*kk;
-      int dest = ii;
-      int tag    = rank + 1;
+      int ll    = nDim*nPoint_Send[ii];
+      int kk    = nPoint_Send[ii+1] - nPoint_Send[ii];
+      int count = nDim*kk;
+      int dest  = ii;
+      int tag   = rank + 1;
       SU2_MPI::Isend(&(coordSend[ll]), count, MPI_DOUBLE, dest, tag,
                      MPI_COMM_WORLD, &(send_req[iMessage]));
       iMessage++;
@@ -5517,14 +5531,17 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   Local_Points = new unsigned long[nPoint_Recv[size]];
   Local_Colors = new unsigned long[nPoint_Recv[size]];
   Local_Coords = new su2double[nDim*nPoint_Recv[size]];
-
+  
+  nLocal_PointDomain = 0; nLocal_PointGhost = 0;
   for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
     Local_Points[ii] = idRecv[ii];
     Local_Colors[ii] = colorRecv[ii];
     for (int kk = 0; kk < nDim; kk++)
       Local_Coords[ii*nDim+kk] = coordRecv[ii*nDim+kk];
+    if (Local_Colors[ii] == (unsigned long)rank) nLocal_PointDomain++;
+    else nLocal_PointGhost++;
   }
-
+  
   /*--- Free temporary memory from communications ---*/
   
   delete [] colorSend;
@@ -5536,7 +5553,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   delete [] nPoint_Recv;
   delete [] nPoint_Send;
   delete [] nPoint_Flag;
-
+  
 }
 
 void CPhysicalGeometry::SetSendReceive(CConfig *config) {
@@ -8932,7 +8949,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               else
                 while(iPoint <  nPoint_Linear[iProcessor])   iProcessor--;
               
-              /*--- If we have not visted this element yet, increment our
+              /*--- If we have not visited this element yet, increment our
                number of elements that must be sent to a particular proc. ---*/
               
               if (nElem_Flag[iProcessor] != ii) {
