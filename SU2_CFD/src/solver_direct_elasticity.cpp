@@ -728,6 +728,9 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
    }
 
+   /*--- Penalty value - to maintain constant the stiffness in optimization problems - TODO: this has to be improved ---*/
+   PenaltyValue = 0.0;
+
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
@@ -5343,7 +5346,7 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
     objective_function_reduce        = objective_function;
 #endif
 
-  Total_OFRefGeom = objective_function_reduce;
+  Total_OFRefGeom = objective_function_reduce + PenaltyValue;
 
   bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
                       (config->GetDirectDiff() == D_POISSON) ||
@@ -5566,9 +5569,12 @@ su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver 
   su2double val_Coord, val_Sol;
   int EL_KIND, DV_TERM;
 
-  su2double elementVolume, dvValue;
-  su2double penaltyValue = 0.0;
-  su2double penaltyValue_reduce = 0.0;
+  su2double elementVolume, dvValue, ratio;
+  su2double weightedValue = 0.0;
+  su2double weightedValue_reduce = 0.0;
+  su2double totalVolume = 0.0;
+  su2double totalVolume_reduce = 0.0;
+
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -5576,8 +5582,6 @@ su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver 
 #endif
 
   unsigned short NelNodes;
-
-  cout << "Number of elements in rank " << rank << " " << geometry->GetGlobal_nElemDomain() << endl;
 
   /*--- Loops over the elements in the domain ---*/
 
@@ -5612,11 +5616,14 @@ su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver 
         else
         	elementVolume = element_container[FEA_TERM][EL_KIND]->ComputeVolume();
 
+        // Compute the total volume
+        totalVolume += elementVolume;
+
         // Retrieve the value of the design variable
         dvValue = numerics[FEA_TERM]->Get_DV_Val(element_properties[iElem]->GetDV());
 
         // Add the weighted sum of the value of the design variable
-        penaltyValue += dvValue * elementVolume;
+        weightedValue += dvValue * elementVolume;
 
     }
 
@@ -5625,12 +5632,18 @@ su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver 
 // Reduce value across processors for parallelization
 
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&penaltyValue,  &penaltyValue_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&weightedValue,  &weightedValue_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&totalVolume,  &totalVolume_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-    penaltyValue_reduce        = penaltyValue;
+    weightedValue_reduce        = weightedValue;
+    totalVolume_reduce          = totalVolume;
 #endif
 
-    cout << "THE VALUE OF THE PENALTY IS... " << penaltyValue_reduce << endl;
+    ratio = 1.0 - weightedValue_reduce/totalVolume_reduce;
+
+    PenaltyValue = config->GetTotalDV_Penalty() * ratio * ratio;
+
+    cout << "THE VALUE OF THE PENALTY IS... " << PenaltyValue << endl;
 
 
 }

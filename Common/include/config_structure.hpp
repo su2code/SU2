@@ -864,7 +864,8 @@ private:
   string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
   string FEA_FileName;         /*!< \brief File name for element-based properties. */
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
-  RefNode_Penalty;            /*!< \brief Penalty weight value for the reference node objective function. */
+  RefNode_Penalty,            /*!< \brief Penalty weight value for the reference node objective function. */
+  DV_Penalty;                 /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;           /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
@@ -7130,6 +7131,12 @@ public:
 	  * \return  Penalty weight value for the reference geometry objective function.
 	  */
 	 su2double GetRefGeom_Penalty(void);
+
+   /*!
+    * \brief Get the penalty weight value for the objective function.
+    * \return  Penalty weight value for the reference geometry objective function.
+    */
+   su2double GetTotalDV_Penalty(void);
 
 	/*!
 	 * \brief Get the maximum time of the ramp.

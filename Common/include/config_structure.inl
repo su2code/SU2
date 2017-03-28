@@ -1534,6 +1534,8 @@ inline su2double CConfig::GetSigmoid_K(void) { return Sigmoid_K; }
 
 inline su2double CConfig::GetRefGeom_Penalty(void) { return RefGeom_Penalty; }
 
+inline su2double CConfig::GetTotalDV_Penalty(void) { return DV_Penalty; }
+
 inline su2double CConfig::GetStatic_Time(void) { return Static_Time; }
 
 inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }

@@ -11032,6 +11032,8 @@ private:
   su2double WAitken_Dyn;        /*!< \brief Aitken's dynamic coefficient */
   su2double WAitken_Dyn_tn1;      /*!< \brief Aitken's dynamic coefficient in the previous iteration */
   
+  su2double PenaltyValue;      /*!< \brief Penalty value to maintain total stiffness constant */
+
   CSysMatrix MassMatrix;       /*!< \brief Sparse structure for storing the mass matrix. */
   CSysVector TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
   CSysVector TimeRes;        /*!< \brief Vector for adding mass and damping contributions to the residual */
