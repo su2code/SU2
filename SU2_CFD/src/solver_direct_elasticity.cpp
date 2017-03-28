@@ -720,21 +720,13 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
      myfile_res << "Sensitivity Local" << "\t";
 
-     myfile_res << "Sensitivity Global" << "\t";
+     myfile_res << "Sensitivity Averaged" << "\t";
 
      myfile_res << endl;
 
      myfile_res.close();
 
    }
-//   if (rank == 3){
-//   cout << "OUTPUT GLOBAL ELEMENT ID" << endl;
-//
-//   /*--- If there are no multiple regions, the ID is 0 for all the cases ---*/
-//   for (unsigned short iElem = 0; iElem < nElement; iElem++){
-//     cout << geometry->elem[iElem]->GetGlobalIndex() << " " << geometry->node[geometry->elem[iElem]->GetNode(0)]->GetGlobalIndex() << endl;
-//   }
-//   }
 
   /*--- Perform the MPI communication of the solution ---*/
 
@@ -5382,20 +5374,25 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
     myfile_res << scientific << Total_OFRefGeom << "\t";
 
+    unsigned long ExtIter = config->GetExtIter();
+
     su2double local_forward_gradient = 0.0;
+    su2double averaged_gradient = 0.0;
     unsigned long current_iter = 1;
     local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefGeom);
 
     if (fsi) {
       Total_ForwardGradient = local_forward_gradient;
+      averaged_gradient     = Total_ForwardGradient / (ExtIter + 1.0);
     }
     else {
       Total_ForwardGradient += local_forward_gradient;
+      averaged_gradient      = Total_ForwardGradient / (ExtIter + 1.0);
     }
 
     myfile_res << scientific << local_forward_gradient << "\t";
 
-    myfile_res << scientific << Total_ForwardGradient << "\t";
+    myfile_res << scientific << averaged_gradient << "\t";
 
     myfile_res << endl;
 
@@ -5507,26 +5504,28 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 
     myfile_res.precision(15);
 
-//    if (n_DV > 1){
-//      myfile_res << config->GetnID_DE() << "\t";
-//    }
-
     myfile_res << scientific << Total_OFRefNode << "\t";
 
+    unsigned long ExtIter = config->GetExtIter();
+
     su2double local_forward_gradient = 0.0;
+    su2double averaged_gradient = 0.0;
+
     unsigned long current_iter = 1;
     local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefNode);
 
     if (fsi) {
       Total_ForwardGradient = local_forward_gradient;
+      averaged_gradient     = Total_ForwardGradient / (ExtIter + 1.0);
     }
     else {
       Total_ForwardGradient += local_forward_gradient;
+      averaged_gradient      = Total_ForwardGradient / (ExtIter + 1.0);
     }
 
     myfile_res << scientific << local_forward_gradient << "\t";
 
-    myfile_res << scientific << Total_ForwardGradient << "\t";
+    myfile_res << scientific << averaged_gradient << "\t";
 
     myfile_res << endl;
 
