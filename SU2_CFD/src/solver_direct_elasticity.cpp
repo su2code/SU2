@@ -5558,7 +5558,7 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 
 }
 
-su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config){
+su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumerics **numerics, CConfig *config){
 
   unsigned long iElem, iVar, iPoint;
   unsigned short iNode, iDim, nNodes;
@@ -5567,22 +5567,20 @@ su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver 
   su2double val_Coord, val_Sol;
   int EL_KIND, DV_TERM;
 
-  su2double *Ta = NULL;
+  su2double elementVolume, dvValue;
+  su2double penaltyValue = 0.0;
+  su2double penaltyValue_reduce = 0.0;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   unsigned short NelNodes;
 
-  bool de_effects = config->GetDE_Effects();
+  cout << "Number of elements in rank " << rank << " " << geometry->GetGlobal_nElemDomain() << endl;
 
-  switch (config->GetDV_FEA()) {
-  case YOUNG_MODULUS:
-    DV_TERM = FEA_ADJ;
-    break;
-  case ELECTRIC_FIELD:
-    DV_TERM = DE_ADJ;
-    break;
-  }
-
-
-  /*--- Loops over all the elements ---*/
+  /*--- Loops over the elements in the domain ---*/
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
@@ -5595,35 +5593,45 @@ su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver 
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
 
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
-    /*--- The solution comes from the direct solver ---*/
     for (iNode = 0; iNode < nNodes; iNode++) {
         indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
         for (iDim = 0; iDim < nDim; iDim++) {
             val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
             val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-            element_container[DV_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-            element_container[DV_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+            element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+            element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
         }
     }
 
-    element_container[DV_TERM][EL_KIND]->Set_iDe(i_DV);
+    // Avoid double-counting elements:
+    // Only add the value if the first node is in the domain
+    if (geometry->node[indexNode[0]]->GetDomain()){
 
-    numerics_container[DV_TERM]->Compute_NodalStress_Term(element_container[DV_TERM][EL_KIND], config);
+        // Compute the area/volume of the element
+        if (nDim == 2)
+        	elementVolume = element_container[FEA_TERM][EL_KIND]->ComputeArea();
+        else
+        	elementVolume = element_container[FEA_TERM][EL_KIND]->ComputeVolume();
 
-    NelNodes = element_container[DV_TERM][EL_KIND]->GetnNodes();
+        // Retrieve the value of the design variable
+        dvValue = numerics[FEA_TERM]->Get_DV_Val(element_properties[iElem]->GetDV());
 
-    for (iNode = 0; iNode < NelNodes; iNode++){
-
-        Ta = element_container[DV_TERM][EL_KIND]->Get_Kt_a(iNode);
-        for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = Ta[iVar];
-
-//        LinSysRes_dSdv.SubtractBlock(indexNode[iNode], Residual);
+        // Add the weighted sum of the value of the design variable
+        penaltyValue += dvValue * elementVolume;
 
     }
 
-
   }
 
+// Reduce value across processors for parallelization
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&penaltyValue,  &penaltyValue_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    penaltyValue_reduce        = penaltyValue;
+#endif
+
+    cout << "THE VALUE OF THE PENALTY IS... " << penaltyValue_reduce << endl;
 
 
 }
