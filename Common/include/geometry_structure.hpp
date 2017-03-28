@@ -945,7 +945,7 @@ public:
  * \class CPhysicalGeometry
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  */
 class CPhysicalGeometry : public CGeometry {
@@ -977,6 +977,7 @@ class CPhysicalGeometry : public CGeometry {
   su2double *Local_Coords;
   unsigned long *Local_Points;
   unsigned long *Local_Colors;
+  unsigned long *Local_Elems;
   unsigned long *Conn_Line;
   unsigned long *Conn_BoundTria;
   unsigned long *Conn_BoundQuad;
