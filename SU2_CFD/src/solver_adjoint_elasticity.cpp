@@ -2006,8 +2006,9 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   de_effects = config->GetDE_Effects();
 
   EField = NULL;
-  Local_Sens_EField = NULL;
+  Local_Sens_EField  = NULL;
   Global_Sens_EField = NULL;
+  Total_Sens_EField  = NULL;
   if(de_effects){
 
     nEField = config->GetnElectric_Field();
@@ -2095,14 +2096,14 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
   if (EField        != NULL) delete [] EField;
   if (Local_Sens_EField        != NULL) delete [] Local_Sens_EField;
   if (Global_Sens_EField       != NULL) delete [] Global_Sens_EField;
+  if (Total_Sens_EField        != NULL) delete [] Total_Sens_EField;
 
   if (DV_Val               != NULL) delete [] DV_Val;
   if (Local_Sens_DV        != NULL) delete [] Local_Sens_DV;
   if (Global_Sens_DV       != NULL) delete [] Global_Sens_DV;
-
+  if (Total_Sens_DV        != NULL) delete [] Total_Sens_DV;
   if (Solution_Vel   != NULL) delete [] Solution_Vel;
   if (Solution_Accel != NULL) delete [] Solution_Accel;
-
   if (SolRest        != NULL) delete [] SolRest;
 
 }
@@ -3006,6 +3007,18 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config){
     Total_Sens_Rho[iVar]      += Global_Sens_Rho[iVar];
     Total_Sens_Rho_DL[iVar]   += Global_Sens_Rho_DL[iVar];
   }
+
+  if (de_effects){
+      for (iVar = 0; iVar < nEField; iVar++)
+        Total_Sens_EField[iVar]+= Global_Sens_EField[iVar];
+  }
+
+  if (fea_dv){
+      for (iVar = 0; iVar < nDV; iVar++){
+          Total_Sens_DV[iVar] += Global_Sens_DV[iVar];
+      }
+  }
+
 
 }
 
