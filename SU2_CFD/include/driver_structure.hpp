@@ -793,7 +793,7 @@ public:
 
   /*!
    * \brief Computation and storage of the Harmonic Balance method source terms.
-   * \author T. Economon, K. Naik
+   * \author T. Economon, K. Naik, A. Rubino
    * \param[in] iZone - Current zone number.
    */
   void SetHarmonicBalance(unsigned short iTimeInstance);

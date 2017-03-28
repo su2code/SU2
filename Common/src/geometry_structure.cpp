@@ -4307,15 +4307,15 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- initialize pointers for turbomachinery performance computation  ---*/
+  unsigned short nTest = config->GetnMarker_TurboPerformance();
+  TangGridVelIn   = new su2double*[nTest];
+  SpanAreaIn      = new su2double*[nTest];
+  TurboRadiusIn   = new su2double*[nTest];
+  TangGridVelOut  = new su2double*[nTest];
+  SpanAreaOut     = new su2double*[nTest];
+  TurboRadiusOut  = new su2double*[nTest];
 
-  TangGridVelIn  		= new su2double*[config->GetnMarker_TurboPerformance()];
-  SpanAreaIn 								= new su2double*[config->GetnMarker_TurboPerformance()];
-  TurboRadiusIn 					  = new su2double*[config->GetnMarker_TurboPerformance()];
-  TangGridVelOut  		= new su2double*[config->GetnMarker_TurboPerformance()];
-  SpanAreaOut 							= new su2double*[config->GetnMarker_TurboPerformance()];
-  TurboRadiusOut 					  = new su2double*[config->GetnMarker_TurboPerformance()];
-
-  for (iMarker = 0; iMarker < config->GetnMarker_TurboPerformance(); iMarker++){
+  for (iMarker = 0; iMarker < nTest; iMarker++){
     TangGridVelIn[iMarker]								= NULL;
     SpanAreaIn[iMarker]										= NULL;
     TurboRadiusIn[iMarker]								= NULL;
@@ -10962,13 +10962,13 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
                 }
                 break;
               case AXIAL:
-                if ( nDim == 3){
+//                if ( nDim == 3){
                   AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
-                }
-                else{
-                  cout << "Tang grid velocity AXIAL 2D NOT IMPLEMENTED YET"<<endl;
-                  exit(EXIT_FAILURE);
-                }
+//                }
+//                else{
+//                  cout << "Tang grid velocity AXIAL 2D NOT IMPLEMENTED YET"<<endl;
+//                  exit(EXIT_FAILURE);
+//                }
                 break;
               case CENTRIPETAL_AXIAL:
                 if (marker_flag == OUTFLOW){

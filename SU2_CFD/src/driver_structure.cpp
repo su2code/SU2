@@ -32,6 +32,9 @@
  */
 
 #include "../include/driver_structure.hpp"
+
+#include <ostream>
+
 #include "../include/definition_structure.hpp"
 
 CDriver::CDriver(char* confFile,
@@ -2373,6 +2376,7 @@ void CDriver::Interface_Preprocessing() {
 
       /*--- Coupling between zones for HB. Just interfaces corresponding to the same
        * time instances and at different geometrical zones are considered ---*/
+      //TODO Extend this to multistage!
       if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
         unsigned short nTimeInstances  = config_container[ZONE_0]->GetnTimeInstances();
         unsigned short nGeomZones      = nZone/nTimeInstances;
@@ -4938,6 +4942,13 @@ CHBMultiZoneDriver::~CHBMultiZoneDriver(void) {}
 
 void CHBMultiZoneDriver::Run() {
 
+  mixingplane = true;
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
@@ -4947,8 +4958,8 @@ void CHBMultiZoneDriver::Run() {
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
 
-  for (iTimeInstance = 0; iTimeInstance < nZone; iTimeInstance++) {
-    for (jTimeInstance = 0; jTimeInstance < nZone; jTimeInstance++)
+  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
+    for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
       if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
         interpolator_container[iTimeInstance][jTimeInstance]->Set_TransferCoeff(config_container);
   }
@@ -4962,18 +4973,52 @@ void CHBMultiZoneDriver::Run() {
     }
   }
 
+  if(ExtIter == 0){
+    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++) {
+      jTimeInstance = iTimeInstance;
+      for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
+        jTimeInstance += nTimeInstances;
+                  transfer_performance_container[jTimeInstance][iTimeInstance]->GatherAverageTurboGeoValues(geometry_container[jTimeInstance][MESH_0],
+                      geometry_container[iTimeInstance][MESH_0], iGeomZone);
+      }
+    }
+
+//    for (iZone = 0; iZone < nZone; iZone++) {
+//      if(mixingplane)PreprocessingMixingPlane(iZone);
+//    }
+  }
+
+//  /* --- Set the mixing-plane interface ---*/
+//  for (iZone = 0; iZone < nZone; iZone++) {
+//    if(mixingplane)SetMixingPlane(iZone);
+//  }
+
+  if (rank == MASTER_NODE){
+    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
+      SetTurboPerformance(iTimeInstance);
+  }
+
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
     iteration_container[iTimeInstance]->Iterate(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
   }
+
+  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
+    iteration_container[iTimeInstance]->Postprocess(config_container, geometry_container,
+        solver_container, iTimeInstance);
+  if (rank == MASTER_NODE){
+    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
+      SetTurboPerformance(iTimeInstance);
+  }
+
 }
 
 void CHBMultiZoneDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone){
 
 #ifdef HAVE_MPI
-int rank;
-MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
@@ -5099,18 +5144,22 @@ void CHBMultiZoneDriver::PreprocessingMixingPlane(unsigned short donorZone){
 }
 
 
-void CHBMultiZoneDriver::SetTurboPerformance(unsigned short targetZone){
+void CHBMultiZoneDriver::SetTurboPerformance(unsigned short iTimeInstance){
 
   unsigned short donorZone;
   //IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
   /* --- transfer the local turboperfomance quantities (for each blade)  from all the donorZones to the targetZone (ZONE_0) ---*/
-  for (donorZone = 1; donorZone < nZone; donorZone++) {
-    transfer_performance_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL], donorZone);
-  }
+  jTimeInstance = iTimeInstance;
+  for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
+    jTimeInstance += nTimeInstances;
+      transfer_performance_container[jTimeInstance][iTimeInstance]->GatherAverageValues(solver_container[jTimeInstance][MESH_0][FLOW_SOL],
+          solver_container[iTimeInstance][MESH_0][FLOW_SOL], iGeomZone);
+    }
 
   /* --- compute turboperformance for each stage and the global machine ---*/
 
-  output->ComputeTurboPerformance(solver_container[targetZone][MESH_0][FLOW_SOL], geometry_container[targetZone][MESH_0], config_container[targetZone]);
+  output->ComputeTurboPerformance(solver_container[0][MESH_0][FLOW_SOL], geometry_container[0][MESH_0], config_container[0]);
+//  output->ComputeTurboPerformance(solver_container[iTimeInstance][MESH_0][FLOW_SOL], geometry_container[iTimeInstance][MESH_0], config_container[iTimeInstance]);
 
 }
 

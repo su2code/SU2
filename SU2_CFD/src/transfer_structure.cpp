@@ -1881,17 +1881,15 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
 void CTransfer::GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
 
-
-	/*--- here we made the strong assumption that the mesh zone order follow the same order of the turbomachinery markers ---*/
-		SetAverageValues(donor_solution, target_solution, donorZone);
+  /*--- here we made the strong assumption that the mesh zone order follow the same order of the turbomachinery markers ---*/
+  SetAverageValues(donor_solution, target_solution, donorZone);
 
 }
 
 void CTransfer::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone){
 
-
-	/*--- here we made the strong assumption that the mesh zone order follow the same order of the turbomachinery markers ---*/
-		SetAverageTurboGeoValues(donor_geometry, target_geometry, donorZone);
+  /*--- here we made the strong assumption that the mesh zone order follow the same order of the turbomachinery markers ---*/
+  SetAverageTurboGeoValues(donor_geometry, target_geometry, donorZone);
 
 }
 
