@@ -958,6 +958,8 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
 
+  vector<unsigned long> LocalPoints;
+  vector<vector<unsigned long> > Neighbors;
   map<unsigned long, unsigned long> Color_List;
   unsigned long nLocal_Point,
   nLocal_PointDomain,
@@ -972,16 +974,18 @@ class CPhysicalGeometry : public CGeometry {
   nLocal_Hexa,
   nLocal_Pris,
   nLocal_Pyra;
-  su2double *Coords;
-  int *Conn_Line;
-  int *Conn_BoundTria;
-  int *Conn_BoundQuad;
-  int *Conn_Tria;
-  int *Conn_Quad;
-  int *Conn_Tetr;
-  int *Conn_Hexa;
-  int *Conn_Pris;
-  int *Conn_Pyra;
+  su2double *Local_Coords;
+  unsigned long *Local_Points;
+  unsigned long *Local_Colors;
+  unsigned long *Conn_Line;
+  unsigned long *Conn_BoundTria;
+  unsigned long *Conn_BoundQuad;
+  unsigned long *Conn_Tria;
+  unsigned long *Conn_Quad;
+  unsigned long *Conn_Tetr;
+  unsigned long *Conn_Hexa;
+  unsigned long *Conn_Pris;
+  unsigned long *Conn_Pyra;
 
 public:
   
@@ -1032,7 +1036,22 @@ public:
    * \param[in] geometry - Definition of the geometry container holding the initial linear partitions of the grid + coloring.
    * \param[in] config - Definition of the particular problem.
    */
-  void DistributeColoring(CGeometry *geometry, CConfig *config);
+  void DistributeColoring(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Distribute the connectivity for a single volume element type across all ranks based on a ParMETIS coloring.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being distributed.
+   */
+  void DistributeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+
+  /*!
+   * \brief Distribute the grid points, including ghost points, across all ranks based on a ParMETIS coloring.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DistributePoints(CConfig *config, CGeometry *geometry);
 
   /*!
 	 * \brief Set the send receive boundaries of the grid.
