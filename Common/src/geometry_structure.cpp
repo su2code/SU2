@@ -9936,24 +9936,24 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   minAngPitch        = new su2double[nSpanWiseSections[marker_flag-1]];
   maxAngPitch        = new su2double[nSpanWiseSections[marker_flag-1]];
 
-  nTotVertex_gb = new int[nSpanWiseSections[marker_flag-1]];
-  nVertexSpanHalo = new int[nSpanWiseSections[marker_flag-1]];
+  nTotVertex_gb      = new int[nSpanWiseSections[marker_flag-1]];
+  nVertexSpanHalo    = new int[nSpanWiseSections[marker_flag-1]];
   for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-    nTotVertex_gb[iSpan] = -1;
+    nTotVertex_gb[iSpan]   = -1;
     nVertexSpanHalo[iSpan] = 0;
-    minAngPitch[iSpan]= 10.0E+06;
-    maxAngPitch[iSpan]= -10.0E+06;
+    minAngPitch[iSpan]     = 10.0E+06;
+    maxAngPitch[iSpan]     = -10.0E+06;
   }
 
   /*--- Initialize auxiliary pointers ---*/
   TurboNormal      	= new su2double[3];
-  NormalArea				= new su2double[3];
-  ordered     			= new unsigned long* [nSpanWiseSections[marker_flag-1]];
-  disordered     		= new unsigned long* [nSpanWiseSections[marker_flag-1]];
-  oldVertex3D       = new unsigned long* [nSpanWiseSections[marker_flag-1]];
-  area 							= new su2double* [nSpanWiseSections[marker_flag-1]];
-  unitnormal 				= new su2double** [nSpanWiseSections[marker_flag-1]];
-  checkAssign       = new bool* [nSpanWiseSections[marker_flag-1]];
+  NormalArea       				= new su2double[3];
+  ordered     			     = new unsigned long* [nSpanWiseSections[marker_flag-1]];
+  disordered     		  = new unsigned long* [nSpanWiseSections[marker_flag-1]];
+  oldVertex3D      = new unsigned long* [nSpanWiseSections[marker_flag-1]];
+  area 							            = new su2double* [nSpanWiseSections[marker_flag-1]];
+  unitnormal 				      = new su2double** [nSpanWiseSections[marker_flag-1]];
+  checkAssign      = new bool* [nSpanWiseSections[marker_flag-1]];
 
   /*--- Initialize the new Vertex structure.
    * 		The if statement ensures that these vectors are initialized only once	 ---*/
@@ -10084,8 +10084,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               for (iVertex = 0; iVertex < nVertexSpanHalo[iSpan]; iVertex++){
                 unitnormal[iSpan][iVertex] = new su2double [nDim];
               }
-              angPitch[iSpan] = new su2double [nVertexSpanHalo[iSpan]];
-              deltaAngPitch[iSpan] = new su2double [nVertexSpanHalo[iSpan]];
+              angPitch[iSpan]             = new su2double [nVertexSpanHalo[iSpan]];
+              deltaAngPitch[iSpan]        = new su2double [nVertexSpanHalo[iSpan]];
               nVertexSpanHalo[iSpan]      = 0;
             }
 
@@ -10093,7 +10093,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
             for (iVertex = 0; (unsigned long)iVertex < nVertex[iMarker]; iVertex++) {
               iPoint = vertex[iMarker][iVertex]->GetNode();
               if(nDim == 3){
-                dist = 10E+06;
+                dist  = 10E+06;
                 jSpan = -1;
 
                 coord = node[iPoint]->GetCoord();
@@ -10435,7 +10435,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       angCoord_loc[iSpan][iSpanVertex] 	= -1.0;
       deltaAngCoord_loc[iSpan][iSpanVertex] = -1.0;
       rank_loc[iSpan][iSpanVertex] = -1;
-
     }
   }
 
@@ -10589,34 +10588,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       myfile << endl;
     }
   }
-  //TODO (turbo) implement check to be sure that pitch-wise ordering works correctly.
 
-
-  //			FINAL TEST
-  ////
-  //  for (iMarker = 0; iMarker < nMarker; iMarker++){
-  //  	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-  //			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-  //				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-  //					for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-  //						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
-  //							iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
-  //							coord = node[iPoint]->GetCoord();
-  //							if(iSpan == 1 && marker_flag == INFLOW){
-  //								cout <<"span " <<iSpan << " pitch wise " << coord[1]<< " local index " << iSpanVertex << " global index " << turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex() <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
-  //								//check if the old vertex work ass well
-  //								iVertex = turbovertex[iMarker][iSpan][iSpanVertex]->GetOldVertex();
-  //								iPoint = vertex[iMarker][iVertex]->GetNode();
-  //								coord = node[iPoint]->GetCoord();
-  //								cout <<"old vertex check in Span  " <<iSpan << " pitch wise " << coord[1]<< " in vertex " << iVertex <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
-  //
-  //							}
-  //						}
-  //					}
-  //				}
-  //  		}
-  //  	}
-  // }
 
   for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
     delete [] x_loc[iSpan];
