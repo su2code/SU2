@@ -4401,7 +4401,9 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
     direct_iteration[iZone]->Iterate(output, integration_container, geometry_container,
                                      solver_container, numerics_container, config_container,
                                      surface_movement, grid_movement, FFDBox, iZone);
+  }
 
+  for (iZone = 0; iZone < nZone; iZone++) {
     direct_iteration[iZone]->Postprocess(config_container, geometry_container, solver_container, iZone);
   }
 
