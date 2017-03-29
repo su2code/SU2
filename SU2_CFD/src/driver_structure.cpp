@@ -41,6 +41,10 @@ CDriver::CDriver(char* confFile,
 
 
   unsigned short jZone, iSol;
+  unsigned short Kind_Grid_Movement;
+  bool initStaticMovement;
+
+
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -342,6 +346,19 @@ CDriver::CDriver(char* confFile,
     }
   }
 
+  /*---If the Grid Movement is static initialize the static mesh movment ---*/
+  Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(ZONE_0);
+  initStaticMovement = (Kind_Grid_Movement == MOVING_WALL || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION);
+
+
+  if(initStaticMovement){
+    if (rank == MASTER_NODE)
+      cout << endl <<"---------------------- Initialize Static Mesh Movement ---------------------" << endl;
+
+    InitStaticMeshMovement(true, 0);
+  }
+
+
   /*--- Definition of the output class (one for all zones). The output class
    manages the writing of all restart, volume solution, surface solution,
    surface comma-separated value, and convergence history files (both in serial
@@ -627,18 +644,18 @@ void CDriver::Geometrical_Preprocessing() {
 
     /*--- Create turbovertex structure ---*/
     if (config_container[iZone]->GetBoolTurbomachinery()){
-    	geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
-    	geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
-    if (rank == MASTER_NODE) cout << "Zone " << iZone << " number of span-wise sections " << config_container[iZone]->GetnSpanWiseSections() << endl;
-    	if (config_container[iZone]->GetnSpanWiseSections() > nSpanMax){
-    		nSpanMax = config_container[iZone]->GetnSpanWiseSections();
-    	}
+      geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
+      geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
+      if (rank == MASTER_NODE) cout << "Zone " << iZone << " number of span-wise sections " << config_container[iZone]->GetnSpanWiseSections() << endl;
+      if (config_container[iZone]->GetnSpanWiseSections() > nSpanMax){
+        nSpanMax = config_container[iZone]->GetnSpanWiseSections();
+      }
 
-    	config_container[ZONE_0]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(), iZone);
+      config_container[ZONE_0]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(), iZone);
 
-    if (rank == MASTER_NODE) cout << "Create TurboVertex structure." << endl;
-    	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
-    	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
+      if (rank == MASTER_NODE) cout << "Create TurboVertex structure." << endl;
+      geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
+      geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
     }
 
     /*--- Check for periodicity and disable MG if necessary. ---*/
@@ -2590,6 +2607,84 @@ void CDriver::Interface_Preprocessing() {
 
 }
 
+
+void CDriver::InitStaticMeshMovement(bool print, unsigned long ExtIter){
+
+  unsigned short iMGlevel;
+  unsigned short Kind_Grid_Movement;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
+
+    switch (Kind_Grid_Movement) {
+
+    case MOVING_WALL:
+
+      /*--- Fixed wall velocities: set the grid velocities only one time
+         before the first iteration flow solver. ---*/
+      if (rank == MASTER_NODE)
+        cout << endl << " Setting the moving wall velocities." << endl;
+
+      surface_movement[iZone]->Moving_Walls(geometry_container[iZone][MESH_0],
+          config_container[iZone], iZone, 0);
+
+      /*--- Update the grid velocities on the coarser multigrid levels after
+           setting the moving wall velocities for the finest mesh. ---*/
+
+      grid_movement[iZone]->UpdateMultiGrid(geometry_container[iZone], config_container[iZone]);
+      break;
+
+
+    case ROTATING_FRAME:
+
+      /*--- Steadily rotating frame: set the grid velocities just once
+         before the first iteration flow solver. ---*/
+
+      if (rank == MASTER_NODE && print && ExtIter == 0) {
+        cout << endl << " Setting rotating frame grid velocities";
+        cout << " for zone " << iZone << "." << endl;
+      }
+
+      if(rank == MASTER_NODE && print && ExtIter > 0) {
+        cout << endl << " Updated rotating frame grid velocities";
+        cout << " for zone " << iZone << "." << endl;
+      }
+
+      /*--- Set the grid velocities on all multigrid levels for a steadily
+           rotating reference frame. ---*/
+
+      for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
+        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, print);
+
+
+      break;
+
+    case STEADY_TRANSLATION:
+
+      /*--- Set the translational velocity and hold the grid fixed during
+         the calculation (similar to rotating frame, but there is no extra
+         source term for translation). ---*/
+
+      if (rank == MASTER_NODE)
+        cout << endl << " Setting translational grid velocities." << endl;
+
+      /*--- Set the translational velocity on all grid levels. ---*/
+
+      for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
+        geometry_container[iZone][iMGlevel]->SetTranslationalVelocity(config_container[iZone]);
+
+
+
+      break;
+    }
+  }
+}
+
 void CDriver::StartSolver() {
 
   int rank = MASTER_NODE;
@@ -3824,7 +3919,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   string Marker_Tag;
 
   int rank = MASTER_NODE;
-
+  bool print;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -3893,11 +3988,16 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
         if(abs(rot_z_final) > 0.0){
           rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
           config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
-
-          geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
-          geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);
-          geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
         }
+      }
+      print = ((ExtIter + 1)%40 == 0 && ExtIter > 0);
+      InitStaticMeshMovement(print, ExtIter);
+
+      for (iZone = 0; iZone < nZone; iZone++) {
+        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
+        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);
+        geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
+
       }
 
       for (iZone = 1; iZone < nZone; iZone++) {

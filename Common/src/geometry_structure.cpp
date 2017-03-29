@@ -10660,7 +10660,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag) {
   unsigned short iMarker, iMarkerTP, iSpan, iDim;
-  unsigned long iSpanVertex, iPoint;
+  long iSpanVertex, iPoint;
   su2double *coord, *TurboNormal, Normal2;
 
   /*--- Initialize auxiliary pointers ---*/
@@ -13298,11 +13298,11 @@ void CPhysicalGeometry::GetQualityStatistics(su2double *statistics) {
   
 }
 
-void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) {
+void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {
   
   unsigned long iPoint;
   su2double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
-  
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -13320,7 +13320,7 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   
   /*--- Print some information to the console ---*/
   
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && print) {
     cout << " Rotational origin (x, y, z): ( " << Center[0] << ", " << Center[1];
     cout << ", " << Center[2] << " )" << endl;
     cout << " Angular velocity about x, y, z axes: ( " << Omega[0] << ", ";
@@ -16873,7 +16873,7 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
   delete[] Coordinates;
 }
 
-void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) {
+void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {
   
   unsigned long iPoint_Coarse;
   su2double *RotVel, Distance[3] = {0.0,0.0,0.0}, *Coord;
