@@ -554,10 +554,19 @@ public:
   
     /*!
 	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
 	virtual void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename);
+
+	/*!
+   * \brief A virtual member
+   * For periodic mesh reordering
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ReorderPeriodic(CGeometry *geometry, CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -846,7 +855,7 @@ public:
 	 * \returns The interpolated value of for x.
 	 */
 	su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
-	  
+
   /*!
 	 * \brief Compute the intersection between a segment and a plane.
    * \param[in] Segment_P0 - Definition of the particular problem.
@@ -916,7 +925,7 @@ public:
    * \param config - Config
    */
   virtual void Check_Periodicity(CConfig *config);
-  
+
 };
 
 /*!
@@ -1239,6 +1248,14 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */	
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
+
+	/*!
+   * \brief Reorder mesh s.t. periodic nodes are at the end
+   * (similar to what is done in SetMeshFile)
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ReorderPeriodic(CGeometry *geometry, CConfig *config);
 
 	/*! 
 	 * \brief Compute some parameters about the grid quality.
@@ -1686,10 +1703,20 @@ public:
 
 	/*! 
 	 * \brief Write the .su2 file.
+	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.		 
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
 	void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename);
+
+	/*!
+	 * \brief Reorder mesh s.t. periodic nodes are at the end
+	 * (similar to what is done in SetMeshFile)
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ReorderPeriodic(CGeometry *geometry, CConfig *config);
+
 };
 
 /*! 

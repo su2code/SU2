@@ -109,10 +109,13 @@ CGeometry::~CGeometry(void) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
+        bound[iMarker][iElem_Bound] = NULL;
       }
       if (bound[iMarker] != NULL) delete [] bound[iMarker];
+      bound[iMarker] = NULL;
     }
     delete [] bound;
+    bound = NULL;
   }
   
   if (face != NULL) {
@@ -149,7 +152,7 @@ CGeometry::~CGeometry(void) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (newBound[iMarker][iElem_Bound] != NULL) delete [] newBound[iMarker][iElem_Bound];
       }
-      delete[] newBound[iMarker];
+      if (newBound[iMarker]!=NULL) delete[] newBound[iMarker];
     }
     delete[] newBound;
   }
@@ -1444,7 +1447,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   }
 }
 
-CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
+CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) : CGeometry() {
   
   /*--- Initialize several class data members for later. ---*/
   
@@ -1530,7 +1533,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Define buffer vectors for the interior points / elements ---*/
   
   su2double *Buffer_Send_Coord = NULL;
-  
+
   unsigned long *Buffer_Send_Color            = NULL;
   unsigned long *Buffer_Send_GlobalPointIndex = NULL;
   unsigned long *Buffer_Send_Triangle         = NULL;
@@ -1694,7 +1697,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Basic dimensionalization ---*/
   
   nDomain = size;
-  
+
   Marker_All_SendRecv      = new short[nMarker_Max];
   nSendDomain_Periodic     = new unsigned long [nDomain];
   nReceivedDomain_Periodic = new unsigned long [nDomain];
@@ -1711,7 +1714,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   Buffer_Send_nZone = geometry->GetnZone();
   
   /*--- Divide the elements in color list to speed up the grid partitioning ---*/
-  
+
   map<unsigned long,unsigned long> Local_to_global_elem;
   for (unsigned long i=0; i<geometry->GetGlobal_nElem(); i++) {
     map<unsigned long, unsigned long>::const_iterator MI = geometry->Global_to_Local_Elem.find(i);
@@ -1719,17 +1722,28 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Local_to_global_elem[geometry->Global_to_Local_Elem[i]] = i;
     }
   }
-  
+
+  /*--- Copy information from parent geometry -- */
+  /*
+  if (starting_node == NULL){
+    starting_node = geometry->starting_node;
+    ending_node   = geometry->ending_node;
+    npoint_procs  = geometry->npoint_procs;
+    starting_node[rank] = geometry->starting_node[rank];
+    ending_node[rank] = geometry->ending_node[rank];
+  }
+  */
+
   /*--- MEMORY WARNING: Bad usage of memory here for local_colour_values. Not scalable. 
         In the future, we should avoid sharing a single array of all colors in all nodes. ---*/
   unsigned long *local_colour_values = new unsigned long[geometry->GetGlobal_nPoint()];
   unsigned long *local_colour_temp   = new unsigned long[geometry->ending_node[rank]-geometry->starting_node[rank]];
-  
+
   for (unsigned long i=0; i<geometry->ending_node[rank]-geometry->starting_node[rank]; i++) {
     local_colour_temp[i]=geometry->node[i]->GetColor();
     local_colour_values[geometry->starting_node[rank]+i]=local_colour_temp[i];
   }
-  
+
   /*--- Communicate the grid coloring to all partitions. This information
    will be repeatedly used throughout the organization of the partitions
    and sorting out their ghost points/elements. ---*/
@@ -4300,7 +4314,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
-  
+
   if (Local_to_Global_Point  != NULL) delete [] Local_to_Global_Point;
   if (Global_to_Local_Marker != NULL) delete [] Global_to_Local_Marker;
   if (Local_to_Global_Marker != NULL) delete [] Local_to_Global_Marker;
@@ -4774,6 +4788,419 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
   delete [] Marker_All_SendRecv_Copy;
   delete [] nElem_Bound_Copy;
+}
+
+void CPhysicalGeometry::ReorderPeriodic(CGeometry *geometry, CConfig *config){
+  unsigned long nElem_new, nPoint_new, jPoint, iPoint, iElem, jElem, iVertex, nMarkerUpdate,
+  nelem_triangle = 0, nelem_quad = 0, nelem_tetra = 0, nelem_hexa = 0, nelem_prism = 0,
+  nelem_pyramid = 0, iIndex, newElementsBound = 0, iElem_Bound;
+  unsigned short  iMarker, nPeriodic = 0, iPeriodic;
+  su2double *center, *angles, rotMatrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}},
+  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
+  dx, dy, dz, rotCoord[3], *Coord_i;
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+  /*--- Pointers --*/
+  unsigned long **Index = NULL;
+  bool *CreateMirror = NULL;
+  /*--- Temporary pointers; their content will replace [*]Update ---*/
+  /*--- NOTE: this requires caution due to the use/overwriting of pointers ---*/
+  unsigned long* nElem_BoundUpdate  = NULL;
+  CPrimalGrid** elemUpdate          = NULL;
+  CPoint** nodeUpdate               = NULL;
+  CPrimalGrid*** boundUpdate        = NULL;
+  /*--- Starting from instantiated geometry, make periodic mods ---*/
+
+  /*--- We only create the mirror structure for the second boundary ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      /*--- Evaluate the number of periodic boundary conditions ---*/
+      nPeriodic++;
+    }
+  }
+  CreateMirror = new bool[nPeriodic+1];
+  CreateMirror[0] = false;
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (iPeriodic <= nPeriodic/2) CreateMirror[iPeriodic] = false;
+    else CreateMirror[iPeriodic] = true;
+  }
+  /*--- Copy the new boundary element information from the geometry class.
+     Be careful, as these are pointers to vectors/objects. ---*/
+  //nNewElem_BoundPer = nNewElem_Bound;
+
+  /*--- Count the number of new boundary elements. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    newElementsBound += nNewElem_Bound[iMarker];
+
+  /*--- Loop over the original grid to perform the dimensionalizaton of the new vectors ---*/
+  nElem_new = 0; nPoint_new = 0;
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (CreateMirror[iPeriodic]) {
+      nElem_new += PeriodicElem[iPeriodic].size();
+      nPoint_new += PeriodicPoint[iPeriodic][0].size();
+    }
+  }
+  cout << "Number of new points: " << nPoint_new << "." << endl;
+  cout << "Number of new interior elements: " << nElem_new << "." << endl;
+  cout << "Number of new boundary elements added to preexisting markers: " << newElementsBound << "." << endl;
+
+  /*--- Create a copy of the original grid ---*/
+  elemUpdate = new CPrimalGrid*[nElem+ nElem_new];
+  for (iElem = 0; iElem < nElem; iElem ++) {
+    elemUpdate[iElem] = elem[iElem];
+    /*
+    switch(elem[iElem]->GetVTK_Type()) {
+    case TRIANGLE:
+      elemUpdate[iElem] = new CTriangle(elem[iElem]->GetNode(0),
+          elem[iElem]->GetNode(1),
+          elem[iElem]->GetNode(2), 2);
+      nelem_triangle++;
+      break;
+
+    case QUADRILATERAL:
+      elemUpdate[iElem] = new CQuadrilateral(elem[iElem]->GetNode(0),
+          elem[iElem]->GetNode(1),
+          elem[iElem]->GetNode(2),
+          elem[iElem]->GetNode(3), 2);
+      nelem_quad++;
+      break;
+
+    case TETRAHEDRON:
+      elemUpdate[iElem] = new CTetrahedron(elem[iElem]->GetNode(0),
+          elem[iElem]->GetNode(1),
+          elem[iElem]->GetNode(2),
+          elem[iElem]->GetNode(3));
+      nelem_tetra++;
+      break;
+
+    case HEXAHEDRON:
+      elemUpdate[iElem] = new CHexahedron(elem[iElem]->GetNode(0),
+          elem[iElem]->GetNode(1),
+          elem[iElem]->GetNode(2),
+          elem[iElem]->GetNode(3),
+          elem[iElem]->GetNode(4),
+          elem[iElem]->GetNode(5),
+          elem[iElem]->GetNode(6),
+          elem[iElem]->GetNode(7));
+      nelem_hexa++;
+      break;
+
+    case PRISM:
+      elemUpdate[iElem] = new CPrism(elem[iElem]->GetNode(0),
+          elem[iElem]->GetNode(1),
+          elem[iElem]->GetNode(2),
+          elem[iElem]->GetNode(3),
+          elem[iElem]->GetNode(4),
+          elem[iElem]->GetNode(5));
+      nelem_prism++;
+      break;
+
+    case PYRAMID:
+      elemUpdate[iElem] = new CPyramid(elem[iElem]->GetNode(0),
+          elem[iElem]->GetNode(1),
+          elem[iElem]->GetNode(2),
+          elem[iElem]->GetNode(3),
+          elem[iElem]->GetNode(4));
+      nelem_pyramid++;
+      break;
+    }
+    */
+  }
+
+  /*--- Create a list with all the points and the new index for each marker ---*/
+  Index = new unsigned long *[nPeriodic+1];
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++)
+    Index[iPeriodic] = new unsigned long [nPoint];
+
+  for(iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++){
+    for (iPoint = 0; iPoint < nPoint; iPoint ++){
+      Index[iPeriodic][iPoint] = 0;
+    }
+  }
+
+  /*--- Puts the new points into the Index vector using the old point number as a key ---*/
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (CreateMirror[iPeriodic]) {
+      for (iIndex = 0; iIndex < PeriodicPoint[iPeriodic][0].size(); iIndex++) {
+        iPoint =  PeriodicPoint[iPeriodic][0][iIndex];
+        Index[iPeriodic][iPoint] = PeriodicPoint[iPeriodic][1][iIndex];
+      }
+    }
+  }
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPeriodic = config->GetMarker_All_PerBound(iMarker);
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+        jPoint = vertex[iMarker][iVertex]->GetDonorPoint();
+        Index[iPeriodic][jPoint] = iPoint;
+      }
+
+  /*--- Add the new elements due to the periodic boundary condtion ---*/
+  iElem = nElem;
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (CreateMirror[iPeriodic]) {
+      for (iIndex = 0; iIndex < PeriodicElem[iPeriodic].size(); iIndex++) {
+        jElem = PeriodicElem[iPeriodic][iIndex];
+        //elemUpdate[iElem] = elem[ Index[iPeriodic] ] // this is a pointer
+        switch(geometry->elem[jElem]->GetVTK_Type()) {
+        case TRIANGLE:
+          elemUpdate[iElem] = new CTriangle(Index[iPeriodic][elem[jElem]->GetNode(0)],
+              Index[iPeriodic][elem[jElem]->GetNode(1)],
+              Index[iPeriodic][elem[jElem]->GetNode(2)], 2);
+          iElem++; nelem_triangle++;
+          break;
+
+        case QUADRILATERAL:
+          elemUpdate[iElem] = new CQuadrilateral(Index[iPeriodic][elem[jElem]->GetNode(0)],
+              Index[iPeriodic][elem[jElem]->GetNode(1)],
+              Index[iPeriodic][elem[jElem]->GetNode(2)],
+              Index[iPeriodic][elem[jElem]->GetNode(3)], 2);
+
+          iElem++; nelem_quad++;
+          break;
+
+        case TETRAHEDRON:
+          elemUpdate[iElem] = new CTetrahedron(Index[iPeriodic][elem[jElem]->GetNode(0)],
+              Index[iPeriodic][elem[jElem]->GetNode(1)],
+              Index[iPeriodic][elem[jElem]->GetNode(2)],
+              Index[iPeriodic][elem[jElem]->GetNode(3)]);
+          iElem++; nelem_tetra++;
+          break;
+
+        case HEXAHEDRON:
+          elemUpdate[iElem] = new CHexahedron(Index[iPeriodic][elem[jElem]->GetNode(0)],
+              Index[iPeriodic][elem[jElem]->GetNode(1)],
+              Index[iPeriodic][elem[jElem]->GetNode(2)],
+              Index[iPeriodic][elem[jElem]->GetNode(3)],
+              Index[iPeriodic][elem[jElem]->GetNode(4)],
+              Index[iPeriodic][elem[jElem]->GetNode(5)],
+              Index[iPeriodic][elem[jElem]->GetNode(6)],
+              Index[iPeriodic][elem[jElem]->GetNode(7)]);
+          iElem++; nelem_hexa++;
+          break;
+
+        case PRISM:
+          elemUpdate[iElem] = new CPrism(Index[iPeriodic][elem[jElem]->GetNode(0)],
+              Index[iPeriodic][elem[jElem]->GetNode(1)],
+              Index[iPeriodic][elem[jElem]->GetNode(2)],
+              Index[iPeriodic][elem[jElem]->GetNode(3)],
+              Index[iPeriodic][elem[jElem]->GetNode(4)],
+              Index[iPeriodic][elem[jElem]->GetNode(5)]);
+          iElem++; nelem_prism++;
+          break;
+
+        case PYRAMID:
+          elemUpdate[iElem] = new CPyramid(Index[iPeriodic][elem[jElem]->GetNode(0)],
+              Index[iPeriodic][elem[jElem]->GetNode(1)],
+              Index[iPeriodic][elem[jElem]->GetNode(2)],
+              Index[iPeriodic][elem[jElem]->GetNode(3)],
+              Index[iPeriodic][elem[jElem]->GetNode(4)]);
+          iElem++; nelem_pyramid++;
+          break;
+
+        }
+      }
+    }
+  }
+
+  /*--- Add the old points ---*/
+
+  nPointNode = nPoint + nPoint_new;
+  nodeUpdate = new CPoint*[nPoint + nPoint_new];
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+    nodeUpdate[iPoint] = node[iPoint];
+    /*
+    if (geometry->GetnDim() == 2)
+      node[iPoint] = new CPoint(geometry->node[iPoint]->GetCoord(0),
+                                geometry->node[iPoint]->GetCoord(1), iPoint, config);
+    if (geometry->GetnDim() == 3)
+      node[iPoint] = new CPoint(geometry->node[iPoint]->GetCoord(0),
+                                geometry->node[iPoint]->GetCoord(1),
+                                geometry->node[iPoint]->GetCoord(2), iPoint, config);
+     */
+  }
+
+  /*--- Add the new points due to the periodic boundary condtion (only in the mirror part) ---*/
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (CreateMirror[iPeriodic]) {
+      for (iIndex = 0; iIndex < PeriodicPoint[iPeriodic][0].size(); iIndex++) {
+
+        /*--- From iPeriodic obtain the iMarker ---*/
+        for (iMarker = 0; iMarker < nMarker; iMarker++)
+          if (iPeriodic == config->GetMarker_All_PerBound(iMarker)) break;
+
+        /*--- Retrieve the supplied periodic information. ---*/
+        center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
+        angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
+        trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
+
+        /*--- Store center - trans as it is constant and will be added on.
+         Note the subtraction, as this is the inverse translation. ---*/
+        translation[0] = center[0] - trans[0];
+        translation[1] = center[1] - trans[1];
+        translation[2] = center[2] - trans[2];
+
+        /*--- Store angles separately for clarity. Compute sines/cosines.
+         Note the negative sign, as this is the inverse rotation. ---*/
+        theta = -angles[0];
+        phi   = -angles[1];
+        psi   = -angles[2];
+
+        cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+        sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+
+        /*--- Compute the rotation matrix. Note that the implicit
+         ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+        rotMatrix[0][0] = cosPhi*cosPsi;
+        rotMatrix[1][0] = cosPhi*sinPsi;
+        rotMatrix[2][0] = -sinPhi;
+
+        rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+        rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+        rotMatrix[2][1] = sinTheta*cosPhi;
+
+        rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        rotMatrix[2][2] = cosTheta*cosPhi;
+
+        /*--- Retrieve node information for this boundary point. ---*/
+        iPoint = PeriodicPoint[iPeriodic][0][iIndex];
+        jPoint = PeriodicPoint[iPeriodic][1][iIndex];
+        Coord_i = node[iPoint]->GetCoord();
+
+        /*--- Get the position vector from rot center to point. ---*/
+        dx = Coord_i[0] - center[0];
+        dy = Coord_i[1] - center[1];
+        if (nDim == 3) {
+          dz = Coord_i[2] - center[2];
+        } else {
+          dz = 0.0;
+        }
+
+        /*--- Compute transformed point coordinates. ---*/
+        rotCoord[0] = rotMatrix[0][0]*dx + rotMatrix[0][1]*dy + rotMatrix[0][2]*dz + translation[0];
+        rotCoord[1] = rotMatrix[1][0]*dx + rotMatrix[1][1]*dy + rotMatrix[1][2]*dz + translation[1];
+        rotCoord[2] = rotMatrix[2][0]*dx + rotMatrix[2][1]*dy + rotMatrix[2][2]*dz + translation[2];
+
+        /*--- Save the new points with the new coordinates. ---*/
+        if (nDim== 2)
+          nodeUpdate[jPoint] = new CPoint(rotCoord[0], rotCoord[1], jPoint, config);
+        if (nDim == 3)
+          nodeUpdate[jPoint] = new CPoint(rotCoord[0], rotCoord[1], rotCoord[2], jPoint, config);
+
+      }
+    }
+  }
+
+  /*--- Add the old boundary, reserving space for two new bc (send/recive periodic bc) ---*/
+  nMarkerUpdate =nMarker + 2;
+  //nElem_Bound = new unsigned long [nMarkerUpdate];
+  nElem_BoundUpdate = new unsigned long[nMarkerUpdate];
+  Tag_to_Marker = new string [nMarker_Max];
+  config->SetnMarker_All(nMarkerUpdate);
+
+  /*--- Copy the old boundary ---*/
+  boundUpdate = new CPrimalGrid**[nMarkerUpdate];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    nElem_BoundUpdate[iMarker] = nElem_Bound[iMarker]+nNewElem_Bound[iMarker];
+
+    boundUpdate[iMarker] = new CPrimalGrid* [nNewElem_Bound[iMarker]+nElem_Bound[iMarker]];
+
+    for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+      /*--- Now instantiate the new element. ---*/
+      boundUpdate[iMarker][iElem_Bound] = bound[iMarker][iElem_Bound];
+    }
+    if (nNewElem_Bound[iMarker] > 0) {
+      for (iVertex = 0; iVertex < nNewElem_Bound[iMarker]; iVertex++) {
+        boundUpdate[iMarker][iVertex+nElem_Bound[iMarker]] = newBound[iMarker][iVertex];
+        /*
+          if (bound[iMarker][iVertex]->GetVTK_Type() == LINE)
+            boundUpdate[iMarker][iVertex+nElem_Bound[iMarker]] =
+                new CLine(bound[iMarker][iVertex]->GetNode(0),
+                    bound[iMarker][iVertex]->GetNode(1), 2);
+          if (bound[iMarker][iVertex]->GetVTK_Type() == TRIANGLE)
+            boundUpdate[iMarker][iVertex+nElem_Bound[iMarker]] =
+                new CTriangle(bound[iMarker][iVertex]->GetNode(0),
+                    bound[iMarker][iVertex]->GetNode(1),
+                    bound[iMarker][iVertex]->GetNode(2), 3);
+          if (bound[iMarker][iVertex]->GetVTK_Type() == QUADRILATERAL)
+            boundUpdate[iMarker][iVertex+nElem_Bound[iMarker]] =
+                new CQuadrilateral(bound[iMarker][iVertex]->GetNode(0),
+                    bound[iMarker][iVertex]->GetNode(1),
+                    bound[iMarker][iVertex]->GetNode(2),
+                    bound[iMarker][iVertex]->GetNode(3), 3);
+         */
+      }
+    }
+  }
+  /*-- Block future axess, so that only one variable points to a single set of data --*/
+  delete [] newBound;
+  newBound = NULL;
+  /*-- Fill in the new send/receive periodic bc --*/
+  //for (iMarker = nMarker; iMarker < nMarkerUpdate; iMarker++) {
+  //  nElem_BoundUpdate[iMarker] = nNewElem_Bound[iMarker];
+  //  if (nNewElem_Bound[iMarker] > 0) {
+  //    for (iVertex=0; iVertex < nNewElem_Bound[iMarker]; iVertex++) {
+  //      boundUpdate[iMarker][iVertex] = newBound[iMarker][iVertex];
+  //      /*
+  //          boundUpdate[iMarker][iElem_Bound]->SetVTK_Type(newBoundPer[iMarker][iElem_Bound]->GetVTK_Type());
+   //         for (iNodes = 0; iNodes < newBoundPer[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
+    //          boundUpdate[iMarker][iElem_Bound]->SetNode(iNodes, NewSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)]);
+     //    */
+  //    }
+  //  }
+ // }
+
+
+  /*--- Delete top-level list of pointers, which does not delete the pointers themselves
+   *  The variable is then re-assigned to the updated list, which points to the same pointers + new
+   ---*/
+  delete[] node; // Delete top-level list of pointers (does not delete pointers)
+  node = nodeUpdate; // new list points to the same pointers
+  //delete nodeUpdate;
+
+  delete[] elem;
+  elem = elemUpdate;
+  //delete elemUpdate;
+
+  //delete nElem_Bound;
+  //nElem_Bound = nElem_BoundUpdate;
+  //delete nElem_BoundUpdate;
+
+  for (iMarker=0; iMarker < nMarker; iMarker++){
+    //if (iMarker < nMarker){
+      /*--- Delete old boundary --- */
+      //for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++){
+      //  delete bound[iMarker][iElem_Bound];
+      //}
+    delete [] bound[iMarker];
+    //}
+    /*--- Update boundary ----*/
+    bound[iMarker] = boundUpdate[iMarker];
+    /*--- Update number of elements --- */
+    nElem_Bound[iMarker] += nNewElem_Bound[iMarker];
+
+  }
+
+  /*--- Other info to update ---*/
+  //nMarker   = nMarkerUpdate;
+  nElem     = nElem + nElem_new;
+  nPoint    = nPointNode;
+
+  /*--- Initialize counters for local/global points & elements ---*/
+  int rank = MASTER_NODE, size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  ending_node[size-1] = nPoint; // Initial: just add points to the last processor
+
+  delete [] Index;
+  delete [] CreateMirror;
+
 }
 
 void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
@@ -11290,8 +11717,8 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 							//if (iPoint == 15)
 							//cout << "KPoint = " <<kPoint << endl;
 							bool isPoint_marker = true;
-							for (long jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
-								long iPoint_mark = vertex[jMarker][jVertex]->GetNode();
+							for (unsigned long jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
+								unsigned long iPoint_mark = vertex[jMarker][jVertex]->GetNode();
 								if(iPoint_mark == kPoint) isPoint_marker = false;
 							}
 							if(isPoint_marker) {
@@ -13886,7 +14313,7 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   delete[] FaceArea;
 }
 
-CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
+CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGeometry(){
   unsigned long nElem_new, nPoint_new, jPoint, iPoint, iElem, jElem, iVertex,
   nelem_triangle = 0, nelem_quad = 0, nelem_tetra = 0, nelem_hexa = 0, nelem_prism = 0,
   nelem_pyramid = 0, iIndex, newElementsBound = 0;
@@ -13917,6 +14344,7 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
    Be careful, as these are pointers to vectors/objects. ---*/
   nNewElem_BoundPer = geometry->nNewElem_Bound;
   newBoundPer       = geometry->newBound;
+  newBound          = geometry->newBound;
   
   /*--- Count the number of new boundary elements. ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -13996,6 +14424,13 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
     }
   }
   
+  starting_node = geometry->starting_node;
+  ending_node   = geometry->ending_node;
+  npoint_procs  = geometry->npoint_procs;
+  starting_node[0] = geometry->starting_node[0];
+  ending_node[0] = geometry->ending_node[0];
+
+
   /*--- Create a list with all the points and the new index for each marker ---*/
   unsigned long **Index = new unsigned long *[nPeriodic+1];
 	for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++)
@@ -14429,6 +14864,126 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   delete [] NewSort;
   
 }
+
+void CPeriodicGeometry::ReorderPeriodic(CGeometry *geometry, CConfig *config){
+  unsigned long iPoint, iElem_Bound, GhostPoints;
+  unsigned short iMarker, iNodes, iDim;
+  unsigned short iMarkerReceive, iPeriodic, nPeriodic = 0;
+  string Grid_Marker;
+
+  /*--- Ghost points, look at the nodes in the send receive ---*/
+  iMarkerReceive = nMarker - 1;
+  GhostPoints = nElem_Bound[iMarkerReceive];
+
+  /*--- Change the numbering to guarantee that the all the receive
+     points are at the end of the file ---*/
+  unsigned long OldnPoint = geometry->GetnPoint();
+  unsigned long *NewSort = new unsigned long[nPoint];
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    NewSort[iPoint] = iPoint;
+  }
+
+  unsigned long Index = OldnPoint-1;
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+      if (config->GetMarker_All_SendRecv(iMarker) < 0) {
+        for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+          if (bound[iMarker][iElem_Bound]->GetNode(0) < geometry->GetnPoint()) {
+            NewSort[bound[iMarker][iElem_Bound]->GetNode(0)] = Index;
+            NewSort[Index] = bound[iMarker][iElem_Bound]->GetNode(0);
+            Index--;
+          }
+        }
+      }
+    }
+  }
+  /*--- Re-order points and coordinates ---*/
+  su2double *NewCoord = new su2double[nPoint*nDim];
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      NewCoord[iPoint*nDim+iDim] = node[NewSort[iPoint]]->GetCoord(iDim);
+    }
+  }
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      node[iPoint]->SetCoord(iDim, NewCoord[iPoint*nDim+iDim]);
+    }
+  }
+  /*--- copy boundary information ---*/
+  CPrimalGrid*** boundUpdate =  new CPrimalGrid**[nMarker];
+
+  /*--- Update indices in boundary elements and update number of elements ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    cout << nNewElem_BoundPer[iMarker] << endl;
+    cout << nElem_Bound[iMarker] << endl;
+    boundUpdate[iMarker] = new CPrimalGrid*[nNewElem_BoundPer[iMarker]+nElem_Bound[iMarker]];
+    for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+      /*--- Now instantiate the new element. ---*/
+      boundUpdate[iMarker][iElem_Bound] = bound[iMarker][iElem_Bound];
+      /*
+      VTK_Type = bound[iMarker][iElem_Bound]->GetVTK_Type();
+      switch(VTK_Type) {
+        case LINE:
+          boundUpdate[iMarker][iElem] = new CLine(
+              bound[iMarker][iElem_Bound]->GetNode(0), bound[iMarker][iElem_Bound]->GetNode(1),nDim);
+          break;
+        case TRIANGLE:
+          boundUpdate[iMarker][iElem] = new CTriangle(bound[iMarker][iElem_Bound]->GetNode(0),
+              bound[iMarker][iElem_Bound]->GetNode(1), bound[iMarker][iElem_Bound]->GetNode(2),nDim);
+          break;
+        case QUADRILATERAL:
+          boundUpdate[iMarker][iElem] = new CQuadrilateral(
+              bound[iMarker][iElem_Bound]->GetNode(0), bound[iMarker][iElem_Bound]->GetNode(1),
+              bound[iMarker][iElem_Bound]->GetNode(2), bound[iMarker][iElem_Bound]->GetNode(3),nDim);
+          break;
+        case TETRAHEDRON:
+          boundUpdate[iMarker][iElem] = new CTetrahedron(
+              );
+          break;
+        case HEXAHEDRON:
+          boundUpdate[iMarker][iElem] = new CHexahedron();
+          break;
+        case PRISM:
+          boundUpdate[iMarker][iElem] = new CPrism();
+          break;
+        case PYRAMID:
+          boundUpdate[iMarker][iElem] = new CPyramid();
+          break;
+      }
+      */
+    }
+    if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
+      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+        for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
+          boundUpdate[iMarker][iElem_Bound]->SetNode(iNodes, NewSort[bound[iMarker][iElem_Bound]->GetNode(iNodes)]);
+      }
+      /*--- Write any new elements at the end of the list. ---*/
+      if (nNewElem_BoundPer[iMarker] > 0) {
+        for (iElem_Bound = nElem_Bound[iMarker]-1; iElem_Bound < nElem_Bound[iMarker]+nNewElem_BoundPer[iMarker]; iElem_Bound++) {
+          boundUpdate[iMarker][iElem_Bound] = newBoundPer[iMarker][iElem_Bound];
+          /*
+          boundUpdate[iMarker][iElem_Bound]->SetVTK_Type(newBoundPer[iMarker][iElem_Bound]->GetVTK_Type());
+          for (iNodes = 0; iNodes < newBoundPer[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
+            boundUpdate[iMarker][iElem_Bound]->SetNode(iNodes, NewSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)]);
+            */
+        }
+      }
+    }
+    /*--- Delete old boundary --- */
+    for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++){
+      delete bound[iMarker][iElem_Bound];
+    }
+    delete [] bound[iMarker];
+    /*--- Update number of elements --- */
+    nElem_Bound[iMarker] += nNewElem_BoundPer[iMarker];
+    /*--- Update boundary ----*/
+    bound[iMarker] = boundUpdate[iMarker];
+
+  }
+
+
+}
+
 
 void CPeriodicGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file) {
   
