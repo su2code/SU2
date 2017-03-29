@@ -510,7 +510,7 @@ inline su2double *CVariable::GetLimiter_Secondary(void) { return NULL; }
 inline void CVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density) { }
 
 //inline void CVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag) { }
-inline void CVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double StrainMag) { }
+inline void CVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double StrainMag, su2double VelMag, su2double L_Inf) { }
 
 inline su2double CVariable::GetF1blending(void) { return 0; }
 

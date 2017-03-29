@@ -240,12 +240,12 @@ CTurbKEVariable::~CTurbKEVariable(void) {
 }
 
 //void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double val_f, su2double StrainMag) {
-void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double StrainMag) {
+void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double StrainMag, su2double VelInf, su2double L_Inf) {
 
 	unsigned short iDim;
 	su2double C_mu, C_T, C_L, C_eta;
 	//        su2double Tm, Lm, nu, temp;
-        su2double nu, temp;
+        su2double nu, temp, scalar_min;
   
         /*--- Molecular kinematic viscosity ---*/
         nu = val_viscosity/val_density;
@@ -273,13 +273,22 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2
         C_L = 0.23;
         C_eta = 70.0;
 
+        scalar_min = 1.0E-12;
+        su2double tke = max(val_kine, scalar_min*VelInf*VelInf);
+        su2double tdr = max(val_epsi, scalar_min*VelInf*VelInf*VelInf/L_Inf);
+        su2double v2 = max(val_zeta, 2.0/3.0*scalar_min*VelInf*VelInf);
+	//        su2double S = max(StrainMag,scalar_min*VelInf/L_Inf);
+        su2double S = max(StrainMag,scalar_min);
+
         //--- Model time scale ---//
-        temp = min(val_kine/val_epsi,0.6*val_kine/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
-        Tm = max(temp,C_T*sqrt(nu/val_epsi));
+	//        temp = min(val_kine/val_epsi,0.6*val_kine/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
+	//        Tm = max(temp,C_T*sqrt(nu/val_epsi));
+        temp = max(tke/tdr,C_T*sqrt(nu/tdr));
+        Tm = min(temp,0.6*tke/(sqrt(6.0)*C_mu*S*v2));
 
         //--- Model length scale ---//
-	temp = min(pow(val_kine,1.5)/val_epsi, pow(val_kine,1.5)/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
-        Lm = C_L * max(temp,C_eta*pow(pow(nu,3.0)/val_epsi,0.25));
+	temp = min(pow(tke,1.5)/tdr, pow(tke,1.5)/(sqrt(6.0)*C_mu*S*v2));
+        Lm = C_L * max(temp,C_eta*pow(pow(nu,3.0)/tdr,0.25));
 
 
 	// good here... cout<<" Lm in variable_direct: "<<Lm<<"\n";
