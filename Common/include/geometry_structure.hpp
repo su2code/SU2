@@ -676,7 +676,7 @@ virtual void UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsign
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
 	 */
-	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
+	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
     /*!
      * \brief A virtual member.
@@ -1500,7 +1500,7 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
 	 */
-	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
+	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
     
     /*!
      * \brief Set the translational velocity at each node.
@@ -2082,7 +2082,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
 	 */
-	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
+	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
     
     /*!
      * \brief Set the translational velocity at each grid point on a coarse mesh.
