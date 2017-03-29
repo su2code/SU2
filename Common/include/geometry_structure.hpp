@@ -450,6 +450,12 @@ su2double **TurboRadius; /*! <\brief Radius at each span wise section for each m
 	 */
 	virtual void SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
 
+/*!
+ * \brief A virtual member.
+ * \param[in] config - Definition of the particular problem.
+ */
+virtual void UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -1367,6 +1373,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate);
+
+/*!
+ * \brief update turbo boundary vertex.
+ * \param[in] config - Definition of the particular problem.
+ */
+void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag);
 
 	/*!
 	 * \brief Set turbo boundary vertex.

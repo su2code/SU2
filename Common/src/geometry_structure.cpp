@@ -10657,6 +10657,119 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 }
 
+
+void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag) {
+  unsigned short iMarker, iMarkerTP, iSpan, iDim;
+  unsigned long iSpanVertex, iPoint;
+  su2double *coord, *TurboNormal, Normal2;
+
+  /*--- Initialize auxiliary pointers ---*/
+  TurboNormal      = new su2double[3];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+          for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+            for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+              iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
+              coord  = node[iPoint]->GetCoord();
+              /*--- compute appropriate turbo normal ---*/
+              switch (config->GetKind_TurboMachinery(val_iZone)){
+              case CENTRIFUGAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW){
+                  TurboNormal[0] = -coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = -coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
+              case CENTRIPETAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == OUTFLOW){
+                  TurboNormal[0] = -coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = -coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
+              case AXIAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if(nDim == 3){
+                  if (marker_flag == INFLOW){
+                    TurboNormal[0] = coord[0]/sqrt(Normal2);
+                    TurboNormal[1] = coord[1]/sqrt(Normal2);
+                    TurboNormal[2] = 0.0;
+                  }else{
+                    TurboNormal[0] = coord[0]/sqrt(Normal2);
+                    TurboNormal[1] = coord[1]/sqrt(Normal2);
+                    TurboNormal[2] = 0.0;
+                  }
+                }
+                else{
+                  if (marker_flag == INFLOW){
+                    TurboNormal[0] = -1.0;
+                    TurboNormal[1] = 0.0;
+                    TurboNormal[2] = 0.0;
+                  }else{
+                    TurboNormal[0] = 1.0;
+                    TurboNormal[1] = 0.0;
+                    TurboNormal[2] = 0.0;
+                  }
+                }
+
+                break;
+              case CENTRIPETAL_AXIAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW){
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
+
+              case AXIAL_CENTRIFUGAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW){
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
+              }
+
+              /*--- store the new turbo normal ---*/
+              turbovertex[iMarker][iSpan][iSpanVertex]->SetTurboNormal(TurboNormal);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  delete [] TurboNormal;
+}
+
 void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
 
   unsigned short iMarker, iMarkerTP, iSpan, iDim;
