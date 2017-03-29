@@ -308,7 +308,7 @@ def main():
     fem_euler_naca0012.cfg_dir   = "hom_euler/NACA0012_5thOrder"
     fem_euler_naca0012.cfg_file  = "fem_NACA0012_reg.cfg"
     fem_euler_naca0012.test_iter = 10
-    fem_euler_naca0012.test_vals = [-6.519727,-5.976647,0.255551,0.000028] #last 4 columns
+    fem_euler_naca0012.test_vals = [-6.519946,-5.976944,0.255551,0.000028] #last 4 columns
     fem_euler_naca0012.su2_exec  = "SU2_CFD"
     fem_euler_naca0012.timeout   = 1600
     fem_euler_naca0012.tol       = 0.00001
@@ -323,7 +323,7 @@ def main():
     fem_ns_flatplate.cfg_dir   = "hom_navierstokes/FlatPlate/nPoly4"
     fem_ns_flatplate.cfg_file  = "lam_flatplate_reg.cfg"
     fem_ns_flatplate.test_iter = 25
-    fem_ns_flatplate.test_vals = [1.657622,3.744159,-0.058836,0.073999] #last 4 columns
+    fem_ns_flatplate.test_vals = [1.325847,3.141486,0.037730,0.223626] #last 4 columns
     fem_ns_flatplate.su2_exec  = "SU2_CFD"
     fem_ns_flatplate.timeout   = 1600
     fem_ns_flatplate.tol       = 0.00001
@@ -334,7 +334,7 @@ def main():
     fem_ns_cylinder.cfg_dir   = "hom_navierstokes/CylinderViscous/nPoly3"
     fem_ns_cylinder.cfg_file  = "fem_Cylinder_reg.cfg"
     fem_ns_cylinder.test_iter = 10
-    fem_ns_cylinder.test_vals = [0.447673,0.975592,-0.000020,61.594120] #last 4 columns
+    fem_ns_cylinder.test_vals = [0.441637,0.963217,-0.000022,67.293720] #last 4 columns
     fem_ns_cylinder.su2_exec  = "SU2_CFD"
     fem_ns_cylinder.timeout   = 1600
     fem_ns_cylinder.tol       = 0.00001
@@ -715,6 +715,17 @@ def main():
 #    pipe.tol       = 0.00001
 #    pipe.unsteady  = True
 #    test_list.append(pipe)
+
+    # Bars_SST_2D
+    bars_SST_2D           = TestCase('bars_SST_2D')
+    bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
+    bars_SST_2D.cfg_file  = "bars.cfg"
+    bars_SST_2D.test_iter = 13
+    bars_SST_2D.test_vals = [-2.324765, 0.916963, 0.001254, 0.093163] #last 4 columns
+    bars_SST_2D.su2_exec  = "SU2_CFD"
+    bars_SST_2D.timeout   = 1600
+    bars_SST_2D.tol       = 0.00001
+    test_list.append(bars_SST_2D)
 
     ##########################
     ### FEA - FSI          ###

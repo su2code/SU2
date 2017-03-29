@@ -126,7 +126,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     Tecplot_File << "VARIABLES = ";
     nVar_Total = config->fields.size() - 1;
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
-      Tecplot_File << config->fields[iField];
+      Tecplot_File << config->fields[iField] << " ";
     }
     Tecplot_File << endl;
     
