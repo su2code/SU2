@@ -227,6 +227,12 @@ inline void CGeometry::SetTurboRadiusOut(su2double value, unsigned short val_mar
 
 inline unsigned long CGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return 0;}
 
+inline su2double CGeometry::GetMinAngularPitch(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetMaxAngularPitch(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
 inline void CGeometry::SetCoord_CG(void) { }
@@ -426,5 +432,11 @@ inline void CPhysicalGeometry::SetTurboRadiusIn(su2double value, unsigned short 
 inline void CPhysicalGeometry::SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span){TurboRadiusOut[val_marker][val_span] = value;}
 
 inline unsigned long CPhysicalGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return nTotVertexSpan[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetMinAngularPitch(unsigned short val_marker, unsigned short val_span){return MinAngularPitch[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetMaxAngularPitch(unsigned short val_marker, unsigned short val_span){return MaxAngularPitch[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span){return MinRelAngularCoord[val_marker][val_span];}
 
 inline void CGeometry::Check_Periodicity(CConfig* config) {}

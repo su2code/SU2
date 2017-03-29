@@ -4292,9 +4292,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   AverageGridVel 					= new su2double**[nMarker];
   AverageTangGridVel  		= new su2double*[nMarker];
   SpanArea 								= new su2double*[nMarker];
+  TurboRadius 					  = new su2double*[nMarker];
   MaxAngularPitch = new su2double*[nMarker];
   MinAngularPitch = new su2double*[nMarker];
-  TurboRadius 					  = new su2double*[nMarker];
+  MinRelAngularCoord = new su2double*[nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
     nVertexSpan[iMarker] 								= NULL;
@@ -4306,6 +4307,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     AverageTangGridVel[iMarker]					= NULL;
     SpanArea[iMarker]										= NULL;
     TurboRadius[iMarker]								= NULL;
+    MaxAngularPitch[iMarker]= NULL;
+    MinAngularPitch[iMarker]= NULL;
+    MinRelAngularCoord[iMarker]= NULL;
   }
 
   /*--- initialize pointers for turbomachinery performance computation  ---*/
@@ -9903,21 +9907,24 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   unsigned long  iPoint, **ordered, **disordered, **oldVertex3D, iInternalVertex;
   unsigned long nVert, nVertMax;
   unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, iSize, kSize, jSize;
-  su2double min, max, *coord, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
+  su2double min, minInt, max, *coord, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   bool **checkAssign;
-  min = 10.0E+06;
+  min    =  10.0E+06;
+  minInt =  10.0E+06;
+  max    = -10.0E+06;
 
   su2double radius;
   long iVertex, iSpanVertex, jSpanVertex, kSpanVertex;
   int *nTotVertex_gb, *nVertexSpanHalo;
-  su2double **x_loc, **y_loc, **z_loc, **angCoord_loc, **deltaAngCoord_loc, **angPitch, **deltaAngPitch, *minAngPitch, *maxAngPitch;
+  su2double **x_loc, **y_loc, **z_loc, **angCoord_loc, **deltaAngCoord_loc, **angPitch, **deltaAngPitch, *minIntAngPitch,
+  *minAngPitch, *maxAngPitch;
   int       **rank_loc;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  su2double MyMin, MyMax;
+  su2double MyMin,MyIntMin, MyMax;
   su2double *x_gb = NULL, *y_gb = NULL, *z_gb = NULL, *angCoord_gb = NULL, *deltaAngCoord_gb = NULL;
   bool *checkAssign_gb =NULL;
   unsigned long My_nVert;
@@ -9934,6 +9941,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   deltaAngPitch      = new su2double*[nSpanWiseSections[marker_flag-1]];
   rank_loc           = new int*[nSpanWiseSections[marker_flag-1]];
   minAngPitch        = new su2double[nSpanWiseSections[marker_flag-1]];
+  minIntAngPitch     = new su2double[nSpanWiseSections[marker_flag-1]];
   maxAngPitch        = new su2double[nSpanWiseSections[marker_flag-1]];
 
   nTotVertex_gb      = new int[nSpanWiseSections[marker_flag-1]];
@@ -9942,6 +9950,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
     nTotVertex_gb[iSpan]   = -1;
     nVertexSpanHalo[iSpan] = 0;
     minAngPitch[iSpan]     = 10.0E+06;
+    minIntAngPitch[iSpan]  = 10.0E+06;
     maxAngPitch[iSpan]     = -10.0E+06;
   }
 
@@ -9969,11 +9978,13 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
             nTotVertexSpan[iMarker]						= new unsigned long [nSpanWiseSections[marker_flag-1] +1];
             MaxAngularPitch[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
             MinAngularPitch[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
+            MinRelAngularCoord[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
             for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
               nVertexSpan[iMarker][iSpan] 								= 0;
               turbovertex[iMarker][iSpan] 								= NULL;
               MinAngularPitch[iMarker][iSpan] = 10.0E+06;
               MaxAngularPitch[iMarker][iSpan] = -10.0E+06;
+              MinRelAngularCoord[iMarker][iSpan] = 10.0E+06;
             }
             for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1] +1; iSpan++){
               nTotVertexSpan[iMarker][iSpan]							= 0;
@@ -10182,13 +10193,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
             for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
 
               /*--- find the local minimum and maximum pitch-wise for each processor---*/
-              min = 10E+06;
-              max = -10E+06;
+              min    = 10E+06;
+              minInt = 10E+06;
+              max    = -10E+06;
               for(iSpanVertex = 0; iSpanVertex < nVertexSpanHalo[iSpan]; iSpanVertex++){
                 iPoint = disordered[iSpan][iSpanVertex];
                 coord = node[iPoint]->GetCoord();
+                /*--- find nodes at minimum pitch among all nodes---*/
                 if (coord[1]<min){
-                  min      = coord[1];
+                  min = coord[1];
                   if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
                     MinAngularPitch[iMarker][iSpan] = coord[1];
                   }
@@ -10198,9 +10211,24 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   minAngPitch[iSpan]= MinAngularPitch[iMarker][iSpan];
                   kSpanVertex =iSpanVertex;
                 }
-                if (coord[1]>max){
-                  /*--- find the maximum of the internal nodes---*/
+
+                /*--- find nodes at minimum pitch among the internal nodes---*/
+                if (coord[1]<minInt){
                   if(node[iPoint]->GetDomain()){
+                    minInt = coord[1];
+                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                      minIntAngPitch[iSpan] = coord[1];
+                    }
+                    else{
+                      minIntAngPitch[iSpan] = atan(coord[1]/coord[0]);
+                    }
+                  }
+                }
+
+                /*--- find nodes at maximum pitch among the internal nodes---*/
+                if (coord[1]>max){
+                  if(node[iPoint]->GetDomain()){
+                    max =coord[1];
                     if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
                       MaxAngularPitch[iMarker][iSpan] = coord[1];
                     }
@@ -10369,11 +10397,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
     nVert    = 0;
 
 #ifdef HAVE_MPI
-    MyMin= minAngPitch[iSpan]; minAngPitch[iSpan] = 10.0E+6;
-    MyMax= maxAngPitch[iSpan]; maxAngPitch[iSpan] = -10.0E+6;
+    MyMin     = minAngPitch[iSpan];      minAngPitch[iSpan]    = 10.0E+6;
+    MyIntMin  = minIntAngPitch[iSpan];   minIntAngPitch[iSpan] = 10.0E+6;
+    MyMax     = maxAngPitch[iSpan];      maxAngPitch[iSpan]    = -10.0E+6;
+
     SU2_MPI::Allreduce(&MyMin, &minAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyIntMin, &minIntAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyMax, &maxAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
+
 
     /*--- compute the relative angular pitch with respect to the minimum value ---*/
 
@@ -10384,6 +10416,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
             nVert = nVertexSpan[iMarker][iSpan];
             MinAngularPitch[iMarker][iSpan] = minAngPitch[iSpan];
             MaxAngularPitch[iMarker][iSpan] = maxAngPitch[iSpan];
+            MinRelAngularCoord[iMarker][iSpan] = minIntAngPitch[iSpan] - minAngPitch[iSpan];
             for(iSpanVertex = 0; iSpanVertex< nVertexSpan[iMarker][iSpan]; iSpanVertex++){
              turbovertex[iMarker][iSpan][iSpanVertex]->SetRelAngularCoord(MinAngularPitch[iMarker][iSpan]);
             }
