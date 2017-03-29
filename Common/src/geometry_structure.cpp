@@ -10846,7 +10846,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
             for(iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++){
               iPoint = turbovertex[iMarker][iSpan][iVertex]->GetNode();
               turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
-              turbovertex[iMarker][iSpan][iVertex]->GetNormal(Normal);;
+              turbovertex[iMarker][iSpan][iVertex]->GetNormal(Normal);
               coord  = node[iPoint]->GetCoord();
               //    					cout<< "Normal "<< Normal[0]<<endl;
               //    					cout<< "TurboNormal "<< TurboNormal[0]<<endl;
