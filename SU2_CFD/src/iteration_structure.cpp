@@ -813,9 +813,6 @@ void CTurboIteration::Preprocess(COutput *output,
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
 
   if(ExtIter == 0){
-      geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone], val_iZone, INFLOW, true);
-      geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],val_iZone, OUTFLOW, true);
-      geometry_container[val_iZone][MESH_0]->GatherInOutAverageValues(config_container[val_iZone], true);
       solver_container[val_iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],INFLOW);
       solver_container[val_iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],OUTFLOW);
   }
