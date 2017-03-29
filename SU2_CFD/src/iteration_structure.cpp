@@ -535,13 +535,33 @@ void CFluidIteration::Iterate(COutput *output,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
   
   
-  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
-	  (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-      (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS)) {
+  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER)) {
 
     /*--- Solve the 2phase model ---*/
 
-    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_2PHASE_SYS, ExtIter);
+    config_container[val_iZone]->SetGlobalParam(TWO_PHASE_EULER, RUNTIME_2PHASE_SYS, ExtIter);
+    integration_container[val_iZone][TWO_PHASE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                     config_container, RUNTIME_2PHASE_SYS, IntIter, val_iZone);
+
+
+  }
+
+  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES)) {
+
+    /*--- Solve the 2phase model ---*/
+
+    config_container[val_iZone]->SetGlobalParam(TWO_PHASE_NAVIER_STOKES, RUNTIME_2PHASE_SYS, ExtIter);
+    integration_container[val_iZone][TWO_PHASE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                     config_container, RUNTIME_2PHASE_SYS, IntIter, val_iZone);
+
+
+  }
+
+  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS)) {
+
+    /*--- Solve the 2phase model ---*/
+
+    config_container[val_iZone]->SetGlobalParam(TWO_PHASE_RANS, RUNTIME_2PHASE_SYS, ExtIter);
     integration_container[val_iZone][TWO_PHASE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                      config_container, RUNTIME_2PHASE_SYS, IntIter, val_iZone);
 

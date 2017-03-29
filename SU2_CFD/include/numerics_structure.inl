@@ -272,6 +272,10 @@ inline void CNumerics::Set2phaseVar(su2double *val_2phasevar_i, su2double *val_2
   Two_phaseVar_j = val_2phasevar_j;
 }
 
+inline void CNumerics::SetPrimitive_Liquid(su2double *val_Prim_Liq) {
+  Primitive_Liquid = val_Prim_Liq;
+}
+
 inline void CNumerics::SetTransVar(su2double *val_transvar_i, su2double *val_transvar_j) {
   TransVar_i = val_transvar_i;
   TransVar_j = val_transvar_j;

@@ -111,50 +111,26 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
     val_Jacobian_i[3][3] = a0;   val_Jacobian_j[3][3] = a1;
   }
 
+
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
   
 }
 
-void  CUpw_2phaseHill_Rus::ComputeResidual_HeatMassTransfer(su2double S, su2double h, su2double Y, su2double *Residual, su2double **Jacobian_i) {
 
-	unsigned short iVar;
+CSourcePieceWise_Hill::CSourcePieceWise_Hill(unsigned short val_nDim, unsigned short val_nVar,
+                                                 CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
-	// compute the source terms for the governing equations of the continuum phase
+	implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+	incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
-	q_ij = 0;
-
-	if (grid_movement) {
-	    for (iDim = 0; iDim < nDim; iDim++) {
-	      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
-	      q_ij += Velocity_i[iDim]*Velocity_i[iDim];
-	    }
-	  }
-	  else {
-	    for (iDim = 0; iDim < nDim; iDim++) {
-	      Velocity_i[iDim] = V_i[iDim+1];
-	      q_ij += Velocity_i[iDim]*Velocity_i[iDim];
-	    }
-	  }
-
-
-	Residual[0] = S * Volume;
-
-	for (iDim=0; iDim< nDim; iDim++) {
-		Residual  [iDim+1] = S * V_i[iDim + 1] * Volume;
-	}
-
-	Residual[nDim] = S * (h + 0.5*q_ij) * Volume;
-
-	for (iVar=0; iVar< nVar; iVar++) {
-		for (iVar=0; iVar< nVar; iVar++) {
-			Jacobian_i[iVar][iVar] = 0;
-		}
-	}
 
 }
 
-void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_Residual, su2double **val_Jacobian_i, su2double *val_liquid_i, su2double *V, CConfig *config) {
+CSourcePieceWise_Hill::~CSourcePieceWise_Hill(void) { }
+
+
+void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double **val_Jacobian_i, su2double *val_liquid_i, su2double *V, CConfig *config) {
 
 	unsigned short iVar, jVar;
 
@@ -162,9 +138,8 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_Residual, su2double **v
 	su2double P, T, rho, h, k, mu;
 
 	// compute the source terms for the moments equations
-
-	Density_mixture_i = val_liquid_i[8];
 	Critical_radius = val_liquid_i[6];
+	Density_mixture_i = val_liquid_i[8];
 
 	// retrieve the thermodynamic properties of the continuum phase primitive
 
@@ -190,6 +165,9 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_Residual, su2double **v
 	val_Residual[3] = Density_mixture_i*Nucleation_rate*pow(Critical_radius,3) + 3.0*Density_mixture_i*Growth_rate*Two_phaseVar_i[2];
 
 
+    for (iVar=0; iVar<nVar; iVar++) {
+    	val_Residual[iVar] = val_Residual[iVar] * Volume;
+    }
 	// compute the Jacobians of the source terms
 
 	if (implicit) {
@@ -200,9 +178,9 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_Residual, su2double **v
 			}
 		}
 
-		val_Jacobian_i[1][0] = Density_mixture_i*Growth_rate;
-		val_Jacobian_i[2][1] = 2.0*Density_mixture_i*Growth_rate;
-		val_Jacobian_i[3][2] = 3.0*Density_mixture_i*Growth_rate;
+		val_Jacobian_i[1][0] = Density_mixture_i*Growth_rate* Volume;
+		val_Jacobian_i[2][1] = 2.0*Density_mixture_i*Growth_rate* Volume;
+		val_Jacobian_i[3][2] = 3.0*Density_mixture_i*Growth_rate* Volume;
 
 	}
 

@@ -1551,6 +1551,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       else
         numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
       
+      if (two_phase)
+    	  numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource2phase(nDim, nVar_Flow, config);
+
       numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
     }
     
@@ -1628,6 +1631,13 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       default :
         cout << "Convective scheme not implemented (2phase)." << endl; exit(EXIT_FAILURE);
         break;
+    }
+
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      if (hill_rus || hill_ausm) numerics_container[iMGlevel][TWO_PHASE_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Hill(nDim, nVar_2phase, config);
+      numerics_container[iMGlevel][TWO_PHASE_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
     }
 
     /*--- Definition of the boundary condition method ---*/
@@ -2181,6 +2191,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     if (hill_rus || hill_ausm) {
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
         /*--- Definition of the boundary condition method ---*/
+
+        delete numerics_container[iMGlevel][TWO_PHASE_SOL][SOURCE_FIRST_TERM];
+        delete numerics_container[iMGlevel][TWO_PHASE_SOL][SOURCE_SECOND_TERM];
         delete numerics_container[iMGlevel][TWO_PHASE_SOL][CONV_BOUND_TERM];
 
       }

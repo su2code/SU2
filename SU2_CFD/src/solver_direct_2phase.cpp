@@ -39,7 +39,7 @@ C2phaseSolver::C2phaseSolver(void) : CSolver() {
   FlowPrimVar_j = NULL;
   lowerlimit    = NULL;
   upperlimit    = NULL;
-  
+
 }
 
 C2phaseSolver::C2phaseSolver(CConfig *config) : CSolver() {
@@ -63,7 +63,7 @@ C2phaseSolver::~C2phaseSolver(void) {
   if (lowerlimit != NULL) delete [] lowerlimit;
   if (upperlimit != NULL) delete [] upperlimit;
   
-  if (Primitive_Liquid != NULL) delete [] Primitive_Liquid;
+//  if (Primitive_Liquid != NULL) delete [] Primitive_Liquid;
 
 }
 
@@ -1138,8 +1138,9 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
     for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]  = 0.0;
 
     /*--- Define some auxiliary vectors related to the liquid phase ---*/
-    Primitive_Liquid = new su2double[10];
-    for (iVar = 0; iVar < 10; iVar++) Primitive_Liquid[iVar]  = 0.0;
+    /*Primitive_Liquid = new su2double[9];
+    for (iVar = 0; iVar < 9; iVar++) Primitive_Liquid[iVar]  = 0.0;
+    */
 
     /*--- Define some auxiliary vector related with the geometry ---*/
     Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
@@ -1349,7 +1350,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
       /* liquid properties stored in Primitive_Liquid*/
 
-      node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config);
+      numerics->SetPrimitive_Liquid(node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config));
 
 
     }
@@ -1393,11 +1394,11 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
+	Primitive_Liquid = node[iPoint]->GetLiquidPrim();
+
     if (Solution[0] != 0) {
 
-    	node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config);
-
-		R = Solution[1]/Solution[0];
+    	R = Solution[1]/Solution[0];
 
 		y = Solution[3]*(Primitive_Liquid[1] - FlowPrimVar_i[nDim + 2]);
 		y = y + 0.75 * FlowPrimVar_i[nDim + 2] / 3.14;
@@ -1438,14 +1439,11 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 
 	numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
 
-    numerics->ComputeResidual(Residual, Jacobian_i,
-    		solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(), NULL, config);
+	numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-    for (iVar=0; iVar<nVar; iVar++) {
-    	Residual[iVar] = Residual[iVar] * (geometry->node[iPoint]->GetVolume());
-    	for (jVar=0; jVar<nVar; jVar++)
-    	Jacobian_i[iVar][jVar] = Jacobian_i[iVar][jVar] * (geometry->node[iPoint]->GetVolume());
-    }
+	numerics->SetPrimitive_Liquid(solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim());
+
+    numerics->ComputeResidual(Residual, Jacobian_i, node[iPoint]->GetLiquidPrim(), NULL, config);
 
     /*--- Subtract residual and the Jacobian ---*/
     

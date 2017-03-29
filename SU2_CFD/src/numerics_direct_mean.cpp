@@ -4248,3 +4248,55 @@ void CSourceWindGust::ComputeResidual(su2double *val_residual, su2double **val_J
   }
   
 }
+
+
+CSource2phase::CSource2phase(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+	  grid_movement   = config->GetGrid_Movement();
+	  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	  Velocity_i = new su2double [nDim];
+}
+
+CSource2phase::~CSource2phase(void) {
+
+	  if (Velocity_i != NULL) delete [] Velocity_i;
+}
+
+void  CSource2phase::ComputeResidual_HeatMassTransfer(su2double S, su2double h, su2double Y, su2double *val_Residual, su2double **val_Jacobian_i) {
+
+	// compute the source terms for the governing equations of the continuum phase
+
+	q_ij = 0;
+
+	if (grid_movement) {
+	    for (iDim = 0; iDim < nDim; iDim++) {
+	      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
+	      q_ij += Velocity_i[iDim]*Velocity_i[iDim];
+	    }
+	  }
+	  else {
+	    for (iDim = 0; iDim < nDim; iDim++) {
+	      Velocity_i[iDim] = V_i[iDim+1];
+	      q_ij += Velocity_i[iDim]*Velocity_i[iDim];
+	    }
+	  }
+
+
+	val_Residual[0] = S * Volume;
+
+	for (iDim=0; iDim< nDim; iDim++) {
+		val_Residual  [iDim+1] = S * V_i[iDim + 1] * Volume;
+	}
+
+	val_Residual[nDim] = S * (h + 0.5*q_ij) * Volume;
+
+	if (implicit) {
+
+		for (iVar=0; iVar< nVar; iVar++) {
+			for (jVar=0; jVar< nVar; jVar++) {
+				val_Jacobian_i[iVar][jVar] = 0;
+			}
+		}
+	}
+
+}

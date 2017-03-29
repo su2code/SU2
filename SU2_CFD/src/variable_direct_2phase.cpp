@@ -60,6 +60,10 @@ C2phaseVariable::C2phaseVariable(unsigned short val_nDim, unsigned short val_nva
     Solution_Min[iVar] = 0.0;
   }
   
+  Primitive_Liquid = new su2double [9];
+  for (iVar = 0; iVar < 9; iVar++)
+	  Primitive_Liquid[iVar] = 0.0;
+
 }
 /*
 C2phaseVariable::SetSource(su2double S) {Source = S; };
@@ -73,6 +77,8 @@ C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction = Y; };
 
 
 C2phaseVariable::~C2phaseVariable(void) {
+
+	if (Primitive_Liquid != NULL) delete [] Primitive_Liquid;
 
 }
 
@@ -130,7 +136,7 @@ void C2phase_HillVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2d
 
 }
 
-void C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Phase_Var,CConfig *config) {
+su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Phase_Var,CConfig *config) {
 
 	su2double rho_l, rho_m, T_l, h_l, Psat, Tsat, sigma, Rc, R;
 
@@ -170,6 +176,7 @@ void C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Ph
 	Primitive_Liquid[7] = R;
 	Primitive_Liquid[8] = rho_m;
 
+	return Primitive_Liquid;
 
 }
 

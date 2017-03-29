@@ -6542,7 +6542,7 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
         for (jDim = 0; jDim < nDim; jDim++) {
           product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
         }
-        
+
         node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
       }
     }
@@ -14509,7 +14509,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool two_phase = ((config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES )|| (config->GetKind_Solver() == TWO_PHASE_RANS));
+  bool two_phase = ((config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES )|| (config->GetKind_Solver() == TWO_PHASE_RANS)
+		  || (config->GetKind_Solver() == TWO_PHASE_EULER));
 
 
   int rank = MASTER_NODE;
@@ -15457,8 +15458,6 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
   unsigned short turb_model = config->GetKind_Turb_Model();
   unsigned short two_phase = config->GetKind_2phase_Model();
   bool RightSol  = true;
-  
-  su2double  S, R, Y, h;
 
   bool tkeNeeded            = (turb_model == SST);
 

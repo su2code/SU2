@@ -677,7 +677,8 @@ inline su2double CEulerVariable::GetGradient_Primitive(unsigned short val_var, u
 
 inline su2double CEulerVariable::GetLimiter_Primitive(unsigned short val_var) { return Limiter_Primitive[val_var]; }
 
-inline void CEulerVariable::SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) { Gradient_Primitive[val_var][val_dim] = val_value; }
+inline void CEulerVariable::SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) {
+ Gradient_Primitive[val_var][val_dim] = val_value; }
 
 inline void CEulerVariable::SetLimiter_Primitive(unsigned short val_var, su2double val_value) { Limiter_Primitive[val_var] = val_value; }
 
@@ -1107,7 +1108,7 @@ inline void       C2phaseVariable::SetDropletProp(su2double rho_l, su2double rho
 
 inline su2double  C2phaseVariable::GetRadius() { return Radius; } 
 
-inline void       C2phaseVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config) {}
+inline su2double* C2phaseVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config) {}
 
 inline  su2double C2phaseVariable::GetMassSource()   {return Source;} 
 
@@ -1151,7 +1152,7 @@ inline su2double  CVariable::GetLiquidFraction() { return 0;}
 inline su2double  CVariable::GetLiquidEnthalpy() { return 0;}   
 
 
-inline void       CVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config) {}
+inline su2double* CVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config) {}
 
 inline  void      CVariable::SetSource(su2double S)  {}   
 

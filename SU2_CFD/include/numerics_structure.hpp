@@ -158,6 +158,8 @@ public:
     *Two_phaseVar_j,      /*!< \brief Vector of 2phase variables at point j. */
     *Two_phaseVar_jd;  /*!< \brief Vector of derivative of 2phase variables at point j. */
 
+  su2double *Primitive_Liquid;
+
   su2double *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;      /*!< \brief Vector of turbulent variables at point j. */
   su2double *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
@@ -423,6 +425,9 @@ public:
      * \param[in] val_turbvar_j - Value of the 2phase variable at point j.
      */
    void Set2phaseVar(su2double *val_2phasevar_i, su2double *val_2phasevar_j);
+
+
+   void SetPrimitive_Liquid(su2double *val_Prim_liquid);
 
   /*!
    * \brief Set the value of the turbulent variable.
@@ -2322,9 +2327,9 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 
-  void ComputeResidual_HeatMassTransfer(su2double S, su2double h, su2double Y, su2double *Residual, su2double **Jacobian_i);
+//  void ComputeResidual_HeatMassTransfer(su2double S, su2double h, su2double Y, su2double *Residual, su2double **Jacobian_i);
 
-  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, su2double *val_liquid_j, CConfig *config);
+//  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, su2double *val_liquid_j, CConfig *config);
 
 };
 
@@ -2368,7 +2373,7 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 
-  void ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
+//  void ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
 
 };
 
@@ -4467,6 +4472,40 @@ public:
   
 };
 
+
+class CSourcePieceWise_Hill : public CNumerics {
+private:
+
+  unsigned short iDim;
+
+  bool incompressible, implicit;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_Hill(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourcePieceWise_Hill(void);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_Residual, su2double **val_Jacobian_i, su2double *val_liquid_i, su2double *V, CConfig *config);
+
+};
+
 /*!
  * \class CSourceGravity
  * \brief Class for the source term integration of the gravity force.
@@ -4825,6 +4864,43 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
 };
+
+
+class CSource2phase : public CNumerics {
+
+private: su2double q_ij;
+         su2double *Velocity_i;
+         unsigned short iDim, iVar, jVar;
+         bool grid_movement, implicit;
+
+
+
+public:
+
+
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSource2phase(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSource2phase(void);
+
+  /*!
+   * \brief Residual of the wind gust source term.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual_HeatMassTransfer(su2double S, su2double h, su2double Y, su2double *Residual, su2double **Jacobian_i);
+};
+
 
 /*!
  * \class CSource_Template

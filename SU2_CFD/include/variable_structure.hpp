@@ -2039,7 +2039,7 @@ public:
 
   virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
-  virtual void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
+  virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
 
   virtual su2double GetRadius() ;
 
@@ -3711,7 +3711,7 @@ public:
 
   virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
-  virtual void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
+  virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
 
   su2double  GetRadius() ;
 
@@ -4000,7 +4000,7 @@ public:
 
   su2double GetLiquidPrim() ;
 */
-  void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
+  su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
 
 };
 
