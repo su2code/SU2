@@ -1218,6 +1218,19 @@ static const map<string, ENUM_FFD_BLENDING> Blending_Map = CCreateMap<string, EN
 ("BEZIER", BEZIER);
 
 /*!
+ * \brief Energy definition for constrained based shape parameterization
+ */
+enum ENUM_CSP_ENERGY{
+  LEAST_SQUARES = 0,
+  LAPLACIAN_ENERGY = 1,
+  ELASTIC_ENERGY = 2
+};
+static const map<string, ENUM_CSP_ENERGY> CSP_Energy_Map = CCreateMap<string, ENUM_CSP_ENERGY>
+("LEAST_SQUARES", LEAST_SQUARES)
+("LAPLACIAN_ENERGY", LAPLACIAN_ENERGY)
+("ELASTIC_ENERGY", ELASTIC_ENERGY);
+
+/*!
  * \brief types of solvers for solving linear systems
  */
 enum ENUM_LINEAR_SOLVER {

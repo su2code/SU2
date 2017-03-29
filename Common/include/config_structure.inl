@@ -1486,8 +1486,10 @@ inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 
 inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
 
-inline string CConfig::GetPilotPointFile(){return PilotPointFile;}
+inline string CConfig::GetCSP_PilotPointFile(){return CSP_PilotPointFile;}
 
-inline string CConfig::GetFFD_ConstraintGroup(unsigned short val_group){return FFD_ConstraintGroups[val_group];}
+inline unsigned short CConfig::GetCSP_EnergyDefinition(){return CSP_EnergyDefinition;}
 
-inline unsigned short CConfig::GetnFFD_ConstraintGroups(){return nFFD_ConstraintGroups;}
+inline string CConfig::GetCSP_ConstraintGroup(unsigned short val_group){return CSP_ConstraintGroups[val_group];}
+
+inline unsigned short CConfig::GetnCSP_ConstraintGroups(){return nCSP_ConstraintGroups;}

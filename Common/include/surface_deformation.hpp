@@ -292,11 +292,11 @@ public:
   vector<unsigned short> Fix_JPlane;  /*!< \brief Fix FFD J plane. */
   vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
 
-  vector<string> PilotGroupNames;
-  vector<vector<su2double> > PilotPointsX;
-  vector<vector<su2double> > PilotPointsY;
-  vector<vector<su2double> > PilotPointsZ;
-  vector<unsigned short> PilotGroupType;
+  vector<string> CSPPilotGroupNames;
+  vector<vector<su2double> > CSPPilotPointsX;
+  vector<vector<su2double> > CSPPilotPointsY;
+  vector<vector<su2double> > CSPPilotPointsZ;
+  vector<unsigned short> CSPPilotGroupType;
   vector<bool> isPilotDV;
   CFreeFormBlending** BlendingFunction;
 
@@ -953,7 +953,7 @@ public:
 
   void GetLocalStiffnessMatrix(EigenMatrix &StiffMatrix, su2double *uvw);
 
-  void SetStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, CGeometry *geometry);
+  void GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, CGeometry *geometry);
 };
 
 
@@ -1390,7 +1390,7 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  void SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, bool ResetDef);
+  void SetConstrainedShapeParam(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, bool ResetDef);
 
   /*!
    * \brief Read the free form information from the grid input file.
