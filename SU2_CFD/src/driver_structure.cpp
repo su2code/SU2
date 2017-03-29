@@ -352,22 +352,21 @@ CDriver::CDriver(char* confFile,
 
 
   if(initStaticMovement){
-    if (rank == MASTER_NODE)
-      cout << endl <<"---------------------- Initialize Static Mesh Movement ---------------------" << endl;
+    if (rank == MASTER_NODE)cout << endl <<"--------------------- Initialize Static Mesh Movement --------------------" << endl;
 
-    InitStaticMeshMovement(true, 0);
+      InitStaticMeshMovement(true, 0);
   }
 
-//TODO(turbo) make it general for HB
+//TODO(turbo) make it general for turbo HB
   if (config_container[ZONE_0]->GetBoolTurbomachinery()){
-    if (rank == MASTER_NODE) cout << "Compute average geometrical quantities for turbomachinery simulations." << endl;
+    if (rank == MASTER_NODE) cout <<endl<<"Compute average geometrical quantities for turbomachinery simulations." << endl;
     for (iZone = 0; iZone < nZone; iZone++) {
       geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
       geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
       geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
 
     }
-    if (rank == MASTER_NODE) cout << "Transfer average geometrical quantities to zone 0." << endl;
+    if (rank == MASTER_NODE) cout << "Transfer turbo average geometrical quantities to zone 0." << endl;
     for (iZone = 1; iZone < nZone; iZone++) {
       transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
     }
@@ -2798,6 +2797,14 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
        (config_container[ZONE_0]->GetKind_Solver() ==  RANS) ) ) {
         for(iZone = 0; iZone < nZone; iZone++) {
           solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+    }
+  }
+
+  /*--- Set the initial solution for average quantities for EULER/N-S/RANS in turbomachinery simulations ---*/
+  if(ExtIter == 0 && config_container[ZONE_0]->GetBoolTurbomachinery()){
+    for(iZone = 0; iZone < nZone; iZone++) {
+      solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
     }
   }
 
