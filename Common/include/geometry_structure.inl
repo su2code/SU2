@@ -185,6 +185,8 @@ inline void CGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, u
 
 inline void CGeometry::SetTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
 
+inline void CGeometry::UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag) { }
+
 inline void CGeometry::SetAvgTurboValue(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
 
 inline void CGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){ }
