@@ -1465,6 +1465,9 @@ public:
   void SetSurface_Derivative(CGeometry *geometry, CConfig *config);
 
   void ReadPilotPoints(CGeometry *geometry, CConfig *config, CFreeFormDefBox* FFDBox);
+
+  void SetBoundingFFDBox(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox);
+
 };
 
 #include "surface_deformation.inl"

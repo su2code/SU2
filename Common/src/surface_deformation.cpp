@@ -67,7 +67,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
     /*--- Read the FFD information from the config file ---*/
 
-    ReadFFDInfo(geometry, config, FFDBox);
+//    ReadFFDInfo(geometry, config, FFDBox);
+    SetBoundingFFDBox(geometry, config, FFDBox);
 
     /*--- If there is a FFDBox in the input file ---*/
 
@@ -5557,6 +5558,157 @@ void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config, CFr
       }
     }
   } 
+}
+
+void CSurfaceMovement::SetBoundingFFDBox(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox) {
+
+  unsigned short iMarker, iDim;
+  unsigned long iVertex, iPoint;
+
+  unsigned short nDim = geometry->GetnDim(), iFFDBox, degree[3];
+
+  su2double CartCoord[3], MyCartCoordMin[3], MyCartCoordMax[3], CoordCP[3];
+  su2double CartCoordMin[3], CartCoordMax[3];
+  string TagFFDBox;
+  unsigned short SplineOrder[3]={2,2,2};
+
+  for (iDim = 0; iDim < 3; iDim++){
+    SplineOrder[iDim] = SU2_TYPE::Short(config->GetFFD_BSplineOrder()[iDim]);
+  }
+
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  for (iDim = 0; iDim < nDim; iDim++){
+    MyCartCoordMin[iDim] =  1E30;
+    MyCartCoordMax[iDim] = -1E30;
+  }
+
+
+  if (rank == MASTER_NODE){
+    cout << "Automatic generation of bounding FFD boxes." << endl;
+  }
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+
+      /*--- Read the degree of the FFD box ---*/
+      TagFFDBox = config->GetMarker_All_TagBound(iMarker) + string("_BOX");
+
+      if (rank == MASTER_NODE) cout << "FFD box tag: " << TagFFDBox <<". ";
+
+      degree[0] = config->GetDegreeFFDBox(iFFDBox, 0);
+      degree[1] = config->GetDegreeFFDBox(iFFDBox, 1);
+      if (nDim == 2) { degree[2] = 1; }
+      else { degree[2] = config->GetDegreeFFDBox(iFFDBox, 2); }
+
+      if (rank == MASTER_NODE) {
+        cout << "Degrees: " << degree[0] << ", " << degree[1];
+        if (nDim == 3) cout << ", " << degree[2];
+        cout << ". " << endl;
+      }
+
+      if (rank == MASTER_NODE){
+        if (config->GetFFD_Blending() == BSPLINE_UNIFORM){
+          cout << "FFD Blending using B-Splines. ";
+          cout << "Order: " << SplineOrder[0] << ", " << SplineOrder[1];
+          if (nDim == 3) cout << ", " << SplineOrder[2];
+          cout << ". " << endl;
+        }
+        if (config->GetFFD_Blending() == BEZIER){
+          cout << "FFD Blending using Bezier Curves." << endl;
+        }
+      }
+      FFDBox[iFFDBox] = new CFreeFormDefBox(degree, SplineOrder, config->GetFFD_Blending());
+      FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(0);
+
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Get the cartesian coordinates ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          CartCoord[iDim] = geometry->vertex[iMarker][iVertex]->GetCoord(iDim);
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        for (iDim = 0; iDim < nDim; iDim++){
+          if (MyCartCoordMax[iDim] < CartCoord[iDim]){
+            MyCartCoordMax[iDim] = CartCoord[iDim];
+          }
+          if (MyCartCoordMin[iDim] > CartCoord[iDim]){
+            MyCartCoordMin[iDim] = CartCoord[iDim];
+          }
+        }
+      }
+
+
+#ifdef HAVE_MPI
+      SU2_MPI::Allreduce(MyCartCoordMax, CartCoordMax, 3, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(MyCartCoordMin, CartCoordMin, 3, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#else
+      for (iDim = 0; iDim < nDim; iDim++){
+        CartCoordMax[iDim] = MyCartCoordMax[iDim];
+        CartCoordMin[iDim] = MyCartCoordMin[iDim];
+      }
+#endif
+
+      /*--- Increase the size of the box by 10% --- */
+
+      for (iDim = 0; iDim < nDim; iDim++){
+        CartCoordMax[iDim] = CartCoordMax[iDim]+0.05*(CartCoordMax[iDim] - CartCoordMin[iDim]);
+        CartCoordMin[iDim] = CartCoordMin[iDim]-0.05*(CartCoordMax[iDim] - CartCoordMin[iDim]);
+      }
+
+      if (nDim == 2){
+        CartCoordMin[2] = -0.5;
+        CartCoordMax[2] =  0.5;
+      }
+
+      /*--- Set the corner points --- */
+      CoordCP[0] = CartCoordMin[0];
+      CoordCP[1] = CartCoordMin[1];
+      CoordCP[2] = CartCoordMin[2];
+      FFDBox[iFFDBox]->SetCoordCornerPoints(CoordCP, 0);
+      CoordCP[0] = CartCoordMin[0];
+      CoordCP[1] = CartCoordMax[1];
+      CoordCP[2] = CartCoordMin[2];
+      FFDBox[iFFDBox]->SetCoordCornerPoints(CoordCP, 1);
+      CoordCP[0] = CartCoordMax[0];
+      CoordCP[1] = CartCoordMax[1];
+      CoordCP[2] = CartCoordMin[2];
+      FFDBox[iFFDBox]->SetCoordCornerPoints(CoordCP, 2);
+      CoordCP[0] = CartCoordMax[0];
+      CoordCP[1] = CartCoordMin[1];
+      CoordCP[2] = CartCoordMin[2];
+      FFDBox[iFFDBox]->SetCoordCornerPoints(CoordCP, 3);
+      CoordCP[0] = CartCoordMin[0];
+      CoordCP[1] = CartCoordMin[1];
+      CoordCP[2] = CartCoordMax[2];
+      FFDBox[iFFDBox]->SetCoordCornerPoints(CoordCP, 4);
+      CoordCP[0] = CartCoordMin[0];
+      CoordCP[1] = CartCoordMax[1];
+      CoordCP[2] = CartCoordMax[2];
+      FFDBox[iFFDBox]->SetCoordCornerPoints(CoordCP, 5);
+      CoordCP[0] = CartCoordMax[0];
+      CoordCP[1] = CartCoordMax[1];
+      CoordCP[2] = CartCoordMax[2];
+      FFDBox[iFFDBox]->SetCoordCornerPoints(CoordCP, 6);
+      CoordCP[0] = CartCoordMax[0];
+      CoordCP[1] = CartCoordMin[1];
+      CoordCP[2] = CartCoordMax[2];
+      FFDBox[iFFDBox]->SetCoordCornerPoints(CoordCP, 7);
+
+      iFFDBox++;
+    }
+  }
+
+  nFFDBox = iFFDBox;
+  nLevel  = 1;
 }
 
 CFreeFormDefBox::CFreeFormDefBox(void) { }
