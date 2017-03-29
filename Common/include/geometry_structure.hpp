@@ -132,7 +132,8 @@ public:
 	su2double **SpanArea; /*! <\brief Area at each span wise section for each marker.*/
 su2double **MaxAngularPitch; /*! <\brief Max angular pitch at each span wise section for each marker.*/
 su2double **MinAngularPitch; /*! <\brief Max angular pitch at each span wise section for each marker.*/
-  su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
+su2double **MinRelAngularCoord; /*! <\brief Min relative angular coord at each span wise section for each marker.*/
+su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
 	su2double **TangGridVelIn, **TangGridVelOut; /*! <\brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
 	su2double **SpanAreaIn, **SpanAreaOut; /*! <\brief Area at each span wise section for each turbomachinery marker.*/
 	su2double **TurboRadiusIn, **TurboRadiusOut; /*! <\brief Radius at each span wise section for each turbomachinery marker*/
@@ -1155,11 +1156,31 @@ su2double **MinAngularPitch; /*! <\brief Max angular pitch at each span wise sec
 	 */
 	virtual unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span);
 
+/*!
+ * \brief A virtual member.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  virtual su2double GetMinAngularPitch(unsigned short val_marker, unsigned short val_span);
+
   /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - marker value.
-	 * \param[in] val_span - span value.
-	 */
+   * \brief A virtual member.
+   * \param[in] val_marker - marker value.
+   * \param[in] val_span - span value.
+   */
+  virtual su2double GetMaxAngularPitch(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - marker value.
+   * \param[in] val_span - span value.
+   */
+  virtual su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span);
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - marker value.
+   * \param[in] val_span - span value.
+   */
   virtual su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span);
 
   /*!
@@ -1902,6 +1923,27 @@ public:
 	 * \param[in] val_span - span value.
 	 */
 	unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span);
+
+/*!
+ * \brief min angular pitch independently from the MPI partions.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  su2double GetMinAngularPitch(unsigned short val_marker, unsigned short val_span);
+
+/*!
+ * \brief max angular pitch independently from the MPI partions.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  su2double GetMaxAngularPitch(unsigned short val_marker, unsigned short val_span);
+
+/*!
+ * \brief min Relatice angular coord independently from the MPI partions.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span);
 
   /*!
 	 * \brief Get the average grid velocity at a specific span for a given marker.
