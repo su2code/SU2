@@ -450,14 +450,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
     numerics->SetPrimitive(V_i, V_j);
     
-    /*--- Turbulent variables w/o reconstruction ---*/
-    
+    /*--- Turbulent variables w/o reconstruction ---*/    
     Turb_i = node[iPoint]->GetSolution();
     Turb_j = node[jPoint]->GetSolution();
     numerics->SetTurbVar(Turb_i, Turb_j);
     
-    /*--- Grid Movement ---*/
-    
+    /*--- Grid Movement ---*/    
     if (grid_movement)
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
     
@@ -468,8 +466,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
       }
       
-      /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
-      
+      /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/      
       Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
       Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive();
       if (limiter) {
@@ -495,8 +492,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
       numerics->SetPrimitive(FlowPrimVar_i, FlowPrimVar_j);
       
-      /*--- Turbulent variables using gradient reconstruction and limiters ---*/
-      
+      /*--- Turbulent variables using gradient reconstruction and limiters ---*/      
       Gradient_i = node[iPoint]->GetGradient();
       Gradient_j = node[jPoint]->GetGradient();
       if (limiter) {
@@ -524,15 +520,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
     }
     
-    /*--- Add and subtract residual ---*/
-    
-    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-    
+    /*--- Add and subtract residual ---*/    
+    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);    
     LinSysRes.AddBlock(iPoint, Residual);
     LinSysRes.SubtractBlock(jPoint, Residual);
     
-    /*--- Implicit part ---*/
-    
+    /*--- Implicit part ---*/    
     Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
     Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
@@ -574,10 +567,10 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetF1blending(node[iPoint]->GetF1blending(), node[jPoint]->GetF1blending());
 
     /*--- (swh) Get Tm and Lm here? (only KE)---*/
-    if (config->GetKind_Turb_Model() == KE) {
-      numerics->SetTm(node[iPoint]->GetTm(), node[jPoint]->GetTm());
-      numerics->SetLm(node[iPoint]->GetLm(), node[jPoint]->GetLm());
-    }
+    //    if (config->GetKind_Turb_Model() == KE) {
+    //      numerics->SetTm(node[iPoint]->GetTm(), node[jPoint]->GetTm());
+    //      numerics->SetLm(node[iPoint]->GetLm(), node[jPoint]->GetLm());
+    //    }
     
     /*--- Compute residual, and Jacobians ---*/
     
@@ -3563,8 +3556,8 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   constants[6]  = 1.4;    //C_1
   constants[7]  = 0.3;   //C_2p
   constants[8]  = 6.0;    //C_T
-  constants[9]  = 0.23;   //C_L
-  constants[10] = 70.0;   //C_eta
+  constants[9]  = 0.115; //0.23;   //C_L
+  constants[10] = 140.0; //70.0;   //C_eta
 
   /*--- Initialize lower and upper limits---*/
   lowerlimit = new su2double[nVar];
@@ -3580,7 +3573,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   // epsi  
   //  lowerlimit[1] = 1.0e-14;
   lowerlimit[1] = -1.0e10; //-1.0e2;
-  lowerlimit[1] = -1.0e2;
+  //  lowerlimit[1] = -1.0e2;
   upperlimit[1] = 1.0e10;
 
   // zeta
@@ -3597,8 +3590,8 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   upperlimit[2] = 1.0e10; 
   
   // f
-  lowerlimit[3] = 1.0e-14;
-  //  lowerlimit[3] = 0.0;
+  //  lowerlimit[3] = 1.0e-14;
+  lowerlimit[3] = 0.0;
   //  lowerlimit[3] = -1.0e10; //-1.0e2;
   upperlimit[3] = 1.0e10;
 
@@ -3612,6 +3605,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   viscRatio = config->GetTurb2LamViscRatio_FreeStream();
 
   // jump  
+  //unsigned short iDim;
   su2double VelMag = 0;
   for (iDim = 0; iDim < nDim; iDim++)
   VelMag += VelInf[iDim]*VelInf[iDim];
@@ -3619,12 +3613,13 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   //  cout<<"Intensity: "<<Intensity<<"\n";
   kine_Inf = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
   epsi_Inf = 2.0/3.0*constants[0]*rhoInf*(kine_Inf*kine_Inf)/(muLamInf*viscRatio); // not sure here... rhoInf*kine_Inf/(muLamInf*viscRatio);
-  epsi_Inf = min( epsi_Inf, pow(2.0/3.0*constants[0]/constants[8]*kine_Inf/viscRatio,2.0)*rhoInf/muLamInf);
+  epsi_Inf = min( epsi_Inf, pow(2.0/3.0*constants[0]*constants[8]*kine_Inf/viscRatio,2.0)*rhoInf/muLamInf);
   //  zeta_Inf = 2.0/3.0;
   zeta_Inf = 2.0/3.0*kine_Inf; // v2 here
-  Tm_Inf = max( kine_Inf/max(epsi_Inf,1.0E-14), constants[8]*sqrt(muLamInf/(rhoInf*max(epsi_Inf,1.0E-14))) );
-  Lm_Inf = constants[9] * max( pow(kine_Inf,1.5)/max(epsi_Inf,1.0E-14), constants[10]*pow(muLamInf/rhoInf,0.75)/pow(max(epsi_Inf,1.0E-14),0.25) ); 
-  f_Inf = (10.0/3.0+0.3)*epsi_Inf/max(kine_Inf,1.0E-14);
+  Tm_Inf = kine_Inf/max(epsi_Inf,1.0E-14);
+  Tm_Inf = max( Tm_Inf, constants[8]*sqrt(muLamInf/(rhoInf*max(epsi_Inf,1.0E-8))) );
+  Lm_Inf = constants[9] * max( pow(kine_Inf,1.5)/max(epsi_Inf,1.0E-14), constants[10]*pow(muLamInf/rhoInf,0.75)/pow(max(epsi_Inf,1.0E-8),0.25) ); 
+  f_Inf = (10.0/3.0+0.3)*epsi_Inf/max(kine_Inf,1.0E-8);
  
   //  cout<<"Intensity: "<<Intensity<<"\n";
   //  cout<<"Cmu: "<<constants[0]<<"\n";
@@ -3635,8 +3630,8 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   //  muT_Inf = constants[0] * rhoInf*zeta_Inf*(kine_Inf*kine_Inf)/epsi_Inf;
-  muT_Inf = constants[0] * rhoInf*zeta_Inf*Tm_Inf; //v2
-  //  muT_Inf = muLamInf*viscRatio;
+  //  muT_Inf = constants[0] * rhoInf*zeta_Inf*Tm_Inf; //v2
+  muT_Inf = muLamInf*viscRatio;
 
   
   /*--- Restart the solution from file information ---*/
@@ -3795,7 +3790,7 @@ void CTurbKESolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  su2double rho = 0.0, mu = 0.0, dist, epsi, kine, strMag, Lm, Tm, zeta, f, muT;
+  su2double rho = 0.0, mu = 0.0, dist, epsi, kine, strMag, Lm, Tm, zeta, f, muT, *VelInf, VelMag;
   su2double Re_t;
   unsigned long iPoint;
   //su2double C_mu, C_T, C_L, C_eta, nu, temp;
@@ -3836,26 +3831,33 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     //cout<<"kine: "<<kine<<"\n";
     //cout<<"f: "<<f<<"\n";
 
-    kine = max(kine,1.0E-8);
-    epsi = max(epsi,1.0E-8);
-    zeta = max(zeta,1.0E-8);
+    //    kine = max(kine,1.0E-8);
+    //    epsi = max(epsi,1.0E-8);
+    //    zeta = max(zeta,1.0E-8);
     //    zeta = 2.0/3.0*kine;
-    zeta = min(zeta,2.0/3.0*kine);
+    //    zeta = min(zeta,2.0/3.0*kine);
 
     /*--- T & L ---*/
     dist = geometry->node[iPoint]->GetWall_Distance();
     strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
-    //    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, zeta, f, strMag);
-    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, zeta, strMag);
+    su2double L_Inf = config->GetLength_Reynolds();
+    VelInf = config->GetVelocity_FreeStreamND();
+    unsigned short iDim;
+    for (iDim = 0; iDim < nDim; iDim++)
+    VelMag += VelInf[iDim]*VelInf[iDim];
+    VelMag = sqrt(VelMag);
+
+    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, zeta, strMag, VelMag, L_Inf);
     Tm = node[iPoint]->GetTm();
     //    Lm = node[iPoint]->GetLm();
 
     /*--- Compute the eddy viscosity ---*/
-    Re_t = rho*(kine*kine)/(mu*epsi);
+    Re_t = rho*(kine*kine)/max(mu*epsi,1.0E-12);
     //    muT = constants[0]*max(rho*zeta*kine*Tm,0.0);
     //    muT = max(muT,mu);
     //    muT = constants[0]*max(rho*max(zeta*kine,0.0)/max(epsi,1.0E-9),0.0); //v2
     //muT = 0.0;
+    Tm = max(Tm,1.0E-14);
     muT = constants[0]*rho*zeta*Tm; //v2
 
     //muT = constants[0]*rho*2.0/3.0*kine*Tm; //testing...
@@ -4255,9 +4257,32 @@ void CTurbKESolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
        Solution_i --> TurbVar_internal,
        Solution_j --> TurbVar_outlet ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
+      //      for (iVar = 0; iVar < nVar-1; iVar++) {
         Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
         Solution_j[iVar] = node[iPoint]->GetSolution(iVar);
       }
+
+      // for f
+      /*
+      iVar = nVar-1;
+      su2double **Gradient_i = node[iPoint]->GetGradient();
+      su2double *pos_i = geometry->node[iPoint]->GetCoord();
+      su2double *pos_j = geometry->node[Point_Normal]->GetCoord();
+      su2double *Vector_i;
+      for (iDim = 0; iDim < nDim; iDim++)
+      Vector_i[iDim] = pos_j[iDim]-pos_i[iDim];
+      su2double dist = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+      dist += Vector_i[iDim]*Vector_i[iDim];
+      dist = sqrt(dist);
+      su2double Project_Grad_i = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+      }
+      Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+      Solution_j[iVar] = Solution_i[iVar] + Project_Grad_i;
+      */
+
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
       /*--- Set Normal (negate for outward convention) ---*/
@@ -4290,8 +4315,8 @@ void CTurbKESolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       
       /*--- Model length and time scales ---*/
       //visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending()); // here
-      visc_numerics->SetTm(node[iPoint]->GetTm(), node[iPoint]->GetTm());
-      visc_numerics->SetLm(node[iPoint]->GetLm(), node[iPoint]->GetLm());
+      //      visc_numerics->SetTm(node[iPoint]->GetTm(), node[iPoint]->GetTm());
+      //      visc_numerics->SetLm(node[iPoint]->GetLm(), node[iPoint]->GetLm());
       
       /*--- Compute residual, and Jacobians ---*/
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
