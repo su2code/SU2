@@ -15686,6 +15686,9 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               }
             }
 
+            /*--- compute cartesian average Velocity ---*/
+            ComputeBackVelocity(AverageTurboVelocity[iMarker][iSpan], AverageTurboNormal , AverageVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+
 
             /*--- Store averaged performance value for the selected average method ---*/
             switch(performance_average_process){
