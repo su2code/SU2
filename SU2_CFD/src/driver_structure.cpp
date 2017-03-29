@@ -827,6 +827,10 @@ void CDriver::Geometrical_Preprocessing_DGFEM() {
     /*--- Compute the coordinates of the integration points. ---*/
     if (rank == MASTER_NODE) cout << "Computing coordinates of the integration points." << endl;
     DGMesh->CoordinatesIntegrationPoints();
+
+    /*--- Store the global to local mapping. ---*/
+    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local DOF index." << endl;
+    geometry_container[iZone][MESH_0]->SetGlobal_to_Local_Point();
   }
   
   /*--- Loop to create the coarser grid levels. ---*/
@@ -1088,6 +1092,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (fem) {
       if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
       solver_container[MESH_0][FEA_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+    }
+    if (fem_euler || fem_ns) {
+      if (fem_dg_flow)
+        solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
   }
 
@@ -3055,7 +3063,6 @@ bool CDriver::Monitor(unsigned long ExtIter) {
 
 void CDriver::Output(unsigned long ExtIter) {
 
-  unsigned short KindSolver = config_container[ZONE_0]->GetKind_Solver();
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -3129,17 +3136,6 @@ void CDriver::Output(unsigned long ExtIter) {
                                 geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
 
-    /*--- Make a distinction between the FEM and the FVM solvers. ---*/
-    if ((KindSolver == FEM_EULER) ||
-        (KindSolver == FEM_NAVIER_STOKES) ||
-        (KindSolver == FEM_RANS) ||
-        (KindSolver == FEM_LES)) {
-
-      /*--- Temporary output for the FEM solver. ---*/
-      output->SetResult_Files_FEM(solver_container, geometry_container, config_container, ExtIter, nZone);
-
-    } else {
-
       /*--- Execute the routine for writing restart, volume solution,
        surface solution, and surface comma-separated value files. ---*/
 
@@ -3149,7 +3145,6 @@ void CDriver::Output(unsigned long ExtIter) {
     
       output->SetForces_Breakdown(geometry_container, solver_container,
                                   config_container, integration_container, ZONE_0);
-    }
     
     /*--- Compute the forces at different sections. ---*/
 
@@ -3844,27 +3839,33 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
   case BROADCAST_DATA:
       if (MatchingMesh) {
         transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-        config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+            geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+            config_container[donorZone], config_container[targetZone]);
+        if (config_container[targetZone]->GetKind_Solver() == RANS)
+          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][TURB_SOL],solver_container[targetZone][MESH_0][TURB_SOL],
+              geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+              config_container[donorZone], config_container[targetZone]);
       }
       else {
         transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-        config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+            geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+            config_container[donorZone], config_container[targetZone]);
+        if (config_container[targetZone]->GetKind_Solver() == RANS)
+          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][TURB_SOL],solver_container[targetZone][MESH_0][TURB_SOL],
+              geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+              config_container[donorZone], config_container[targetZone]);
     }
     break;
 
   case SCATTER_DATA:
     if (MatchingMesh) {
       transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-      geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-      config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+          geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+          config_container[donorZone], config_container[targetZone]);
+      if (config_container[targetZone]->GetKind_Solver() == RANS)
+        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][TURB_SOL],solver_container[targetZone][MESH_0][TURB_SOL],
+            geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+            config_container[donorZone], config_container[targetZone]);
     }
     else {
       cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
@@ -3879,10 +3880,12 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
     }
     else {
       transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-      geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-      config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+          geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+          config_container[donorZone], config_container[targetZone]);
+      if (config_container[targetZone]->GetKind_Solver() == RANS)
+        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][TURB_SOL],solver_container[targetZone][MESH_0][TURB_SOL],
+            geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+            config_container[donorZone], config_container[targetZone]);
     }
     break;
   }

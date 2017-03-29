@@ -32,24 +32,24 @@
 #include "../include/solver_structure.hpp"
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
-  
+
   /*--- Basic array initialization ---*/
-  
+
   FluidModel = NULL;
- 
+
   CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
   CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
   CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
-  
+
   /*--- Surface-based array initialization ---*/
   Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
   Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
   Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
-  
+
   Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
-  
+
   Cauchy_Serie = NULL;
 
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
@@ -57,7 +57,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
 
   /*--- Initialize boolean for deallocating MPI comm. structure. ---*/
   mpiCommsPresent = false;
-  
+
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh) : CSolver() {
@@ -68,12 +68,14 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
    time stepping that depends on the flow state. ---*/
 
   nDim = val_nDim;
-  SetNondimensionalization(config, iMesh);
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
+  SetNondimensionalization(config, iMesh, false);
 
   /*--- Basic array initialization ---*/
-  
+
   FluidModel = NULL;
-  
+
   CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
   CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
   CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
@@ -88,7 +90,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
 
   Cauchy_Serie = NULL;
-  
+
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
 
@@ -98,37 +100,33 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-  
-  /*--- Determine the restart information. ---*/
-  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  string filename = config->GetSolution_FlowFileName();
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Array initialization ---*/
   FluidModel = NULL;
-  
+
   CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL; CEff_Inv = NULL;
   CMx_Inv = NULL;   CMy_Inv = NULL;   CMz_Inv = NULL;
   CFx_Inv = NULL;   CFy_Inv = NULL;   CFz_Inv = NULL;
-  
+
   Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
   Surface_CFx_Inv = NULL;   Surface_CFy_Inv = NULL;   Surface_CFz_Inv = NULL;
   Surface_CMx_Inv = NULL;   Surface_CMy_Inv = NULL;   Surface_CMz_Inv = NULL;
-  
+
   Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
   Surface_CFx = NULL;   Surface_CFy = NULL;   Surface_CFz = NULL;
   Surface_CMx = NULL;   Surface_CMy = NULL;   Surface_CMz = NULL;
-  
+
   Cauchy_Serie = NULL;
-  
+
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  
+
   /*--- Define geometry constants in the solver structure. ---*/
   nDim    = geometry->GetnDim();
   nMarker = config->GetnMarker_All();
@@ -139,21 +137,21 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   else               nVar = nDim + 1;
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-        geometrical information for the FEM DG solver. If necessary, it is
-        possible to increase nMatchingFacesWithHaloElem a bit, such that
-        the computation of the external faces may be more efficient when
-        using multiple threads. ---*/
+        geometrical information for the FEM DG solver. ---*/
   CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
 
   nVolElemTot   = DGGeometry->GetNVolElemTot();
   nVolElemOwned = DGGeometry->GetNVolElemOwned();
   volElem       = DGGeometry->GetVolElem();
 
+  nVolElemOwnedPerTimeLevel    = DGGeometry->GetNVolElemOwnedPerTimeLevel();
+  nVolElemInternalPerTimeLevel = DGGeometry->GetNVolElemInternalPerTimeLevel();
+
   nMeshPoints = DGGeometry->GetNMeshPoints();
   meshPoints  = DGGeometry->GetMeshPoints();
 
   nMatchingInternalFacesWithHaloElem = DGGeometry->GetNMatchingFacesWithHaloElem();
-  nMatchingInternalFaces             = DGGeometry->GetNMatchingFaces();
+  nMatchingInternalFacesLocalElem    = DGGeometry->GetNMatchingFacesInternal();
   matchingInternalFaces              = DGGeometry->GetMatchingFaces();
 
   boundaries = DGGeometry->GetBoundaries();
@@ -240,7 +238,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     unsigned int sizePredictorADER = 4*nVar*nDOFsMax*nTimeDOFs
                                    +   nVar*nDOFsMax;
 
-    if(config->GetKind_ADER_Predictor() == ADER_ALIASED_PREDICTOR) 
+    if(config->GetKind_ADER_Predictor() == ADER_ALIASED_PREDICTOR)
       sizePredictorADER += nDim*nVar*nDOFsMax + nDim*nDim*nVar*nIntegrationMax;
     else
       sizePredictorADER += (nDim+1)*nVar*max(nIntegrationMax, nDOFsMax)
@@ -253,7 +251,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
-  SetNondimensionalization(config, iMesh);
+  SetNondimensionalization(config, iMesh, true);
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
@@ -266,7 +264,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     Point_Max_Coord[iVar] = new su2double[nDim];
     for(unsigned short iDim=0; iDim<nDim; ++iDim) Point_Max_Coord[iVar][iDim] = 0.0;
   }
-  
+
   /*--- Non-dimensional coefficients ---*/
   CD_Inv   = new su2double[nMarker];
   CL_Inv   = new su2double[nMarker];
@@ -278,7 +276,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   CFx_Inv  = new su2double[nMarker];
   CFy_Inv  = new su2double[nMarker];
   CFz_Inv  = new su2double[nMarker];
-  
+
   Surface_CL_Inv   = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD_Inv   = new su2double[config->GetnMarker_Monitoring()];
   Surface_CSF_Inv  = new su2double[config->GetnMarker_Monitoring()];
@@ -299,13 +297,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   Surface_CMx      = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMy      = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMz      = new su2double[config->GetnMarker_Monitoring()];
-  
+
   /*--- Init total coefficients ---*/
   Total_CD   = 0.0; Total_CL  = 0.0; Total_CSF = 0.0;
   Total_CMx  = 0.0; Total_CMy = 0.0; Total_CMz = 0.0;
   Total_CFx  = 0.0; Total_CFy = 0.0; Total_CFz = 0.0;
   Total_CEff = 0.0;
-  
+
   /*--- Read farfield conditions ---*/
   Density_Inf     = config->GetDensity_FreeStreamND();
   Pressure_Inf    = config->GetPressure_FreeStreamND();
@@ -355,7 +353,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     if(config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT)
       VecSolDOFsNew.resize(nVar*nDOFsLocOwned);
   }
-  
+
   /*--- Determine the global number of DOFs. ---*/
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -363,11 +361,20 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   nDOFsGlobal = nDOFsLocOwned;
 #endif
 
+  /*--- Store the number of DOFs in the geometry class in case of restart. ---*/
+  geometry->SetnPointDomain(nDOFsLocOwned);
+  geometry->SetGlobal_nPointDomain(nDOFsGlobal);
+
   /*--- Allocate the memory to store the time steps, residuals, etc. ---*/
   VecDeltaTime.resize(nVolElemOwned);
   VecResDOFs.resize(nVar*nDOFsLocTot);
   nEntriesResFaces.assign(nDOFsLocTot+1, 0);
   startLocResFacesMarkers.resize(nMarker);
+
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+
+  startLocResInternalFacesLocalElem.assign(nTimeLevels+1, 0);
+  startLocResInternalFacesWithHaloElem.assign(nTimeLevels+1, 0);
 
   /*--- Determine the size of the vector to store residuals that come from the
         integral over the faces and determine the number of entries in this
@@ -378,7 +385,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- First the internal matching faces. ---*/
   unsigned long sizeVecResFaces = 0;
-  for(unsigned long i=0; i<nMatchingInternalFaces; ++i) {
+  for(unsigned long i=0; i<nMatchingInternalFacesWithHaloElem[nTimeLevels]; ++i) {
 
     /* The terms that only contribute to the DOFs located on the face. */
     const unsigned short ind = matchingInternalFaces[i].indStandardElement;
@@ -407,12 +414,39 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       for(unsigned short j=0; j<nDOFsElem1; ++j)
         ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide1[j]+1];
     }
+
+    /* Determine the time level of this face and store the position of the
+       residual in the appropriate entry. */
+    const unsigned long  elem0     = matchingInternalFaces[i].elemID0;
+    const unsigned long  elem1     = matchingInternalFaces[i].elemID1;
+    const unsigned short timeLevel = min(volElem[elem0].timeLevel,
+                                         volElem[elem1].timeLevel);
+
+    if(i < nMatchingInternalFacesWithHaloElem[0] )
+      startLocResInternalFacesLocalElem[timeLevel+1] = sizeVecResFaces;
+    else
+      startLocResInternalFacesWithHaloElem[timeLevel+1] = sizeVecResFaces;
   }
 
-  /* And the physical boundary faces. Exclude the periodic boundaries,
+  /* Set the uninitialized values of startLocResInternalFacesLocalElem. */
+  for(unsigned short i=1; i<=nTimeLevels; ++i) {
+    if(startLocResInternalFacesLocalElem[i] == 0)
+      startLocResInternalFacesLocalElem[i] = startLocResInternalFacesLocalElem[i-1];
+  }
+
+  /* Set the uninitialized values of startLocResInternalFacesWithHaloElem. */
+  startLocResInternalFacesWithHaloElem[0] = startLocResInternalFacesLocalElem[nTimeLevels];
+
+  for(unsigned short i=1; i<=nTimeLevels; ++i) {
+    if(startLocResInternalFacesWithHaloElem[i] == 0)
+      startLocResInternalFacesWithHaloElem[i] = startLocResInternalFacesWithHaloElem[i-1];
+  }
+
+  /* The physical boundary faces. Exclude the periodic boundaries,
      because these are not physical boundaries. */
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-    startLocResFacesMarkers[iMarker] = sizeVecResFaces;
+    startLocResFacesMarkers[iMarker].assign(nTimeLevels+1, 0);
+    startLocResFacesMarkers[iMarker][0] = sizeVecResFaces;
 
     if( !(boundaries[iMarker].periodicBoundary) ) {
 
@@ -439,7 +473,18 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
           for(unsigned short j=0; j<nDOFsElem; ++j)
             ++nEntriesResFaces[surfElem[i].DOFsSolElement[j]+1];
         }
+
+        /* Determine the time level of the adjacent element and store the position of the
+           residual in the appropriate entry. */
+        const unsigned short timeLevel = volElem[surfElem[i].volElemID].timeLevel;
+        startLocResFacesMarkers[iMarker][timeLevel+1] = sizeVecResFaces;
       }
+    }
+
+    /* Set the unitialized values of startLocResFacesMarkers[iMarker]. */
+    for(unsigned short i=1; i<=nTimeLevels; ++i) {
+      if(startLocResFacesMarkers[iMarker][i] == 0)
+        startLocResFacesMarkers[iMarker][i] = startLocResFacesMarkers[iMarker][i-1];
     }
   }
 
@@ -458,7 +503,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /* First the loop over the internal matching faces. */
   sizeVecResFaces = 0;
-  for(unsigned long i=0; i<nMatchingInternalFaces; ++i) {
+  for(unsigned long i=0; i<nMatchingInternalFacesWithHaloElem[nTimeLevels]; ++i) {
 
     /* The terms that only contribute to the DOFs located on the face. */
     const unsigned short ind = matchingInternalFaces[i].indStandardElement;
@@ -528,159 +573,26 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     }
   }
 
-  /*--- Check for a restart and set up the variables at each node
-        appropriately. Coarse multigrid levels will be intitially set to
-        the farfield values bc the solver will immediately interpolate
-        the solution from the finest mesh to the coarser levels. ---*/
-  if (!restart || (iMesh != MESH_0)) {
-    
-    /*--- Start the solution from the free-stream state ---*/
+  /*--- Start the solution from the free-stream state ---*/
 
-    unsigned long ii = 0;
-    for(unsigned long i=0; i<nDOFsLocTot; ++i) {
-      for(unsigned short j=0; j<nVar; ++j, ++ii) {
-        VecSolDOFs[ii] = ConsVarFreeStream[j];
-      }
+  unsigned long ii = 0;
+  for(unsigned long i=0; i<nDOFsLocTot; ++i) {
+    for(unsigned short j=0; j<nVar; ++j, ++ii) {
+      VecSolDOFs[ii] = ConsVarFreeStream[j];
     }
-    
-  } else {
-    
-    /*--- Open the restart file, throw an error if this fails. ---*/
-    ifstream restart_file;
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file " << filename.data() << "!!!"<< endl;
-      exit(EXIT_FAILURE);
-    }
-
-    /*--- Create the map from the global DOF ID to the local index. ---*/
-    map<unsigned long, unsigned long> mapGlobal2Local;
-
-    unsigned long ii = 0;
-    for(unsigned long i=0; i<nVolElemOwned; ++i) {
-      for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j, ++ii) {
-        mapGlobal2Local[volElem[i].offsetDOFsSolGlobal+j] = ii;
-      }
-    }
-    
-    /*--- The first line is the header ---*/
-    string text_line;
-    getline (restart_file, text_line);
-    
-    /*--- Read all lines in the restart file ---*/
-    unsigned long iDOF_Global = 0, nDOF_Read = 0;
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-
-      /*--- Check if this DOF must be stored on this rank. ---*/
-      map<unsigned long, unsigned long>::const_iterator MI;
-      MI = mapGlobal2Local.find(iDOF_Global);
-      if(MI != mapGlobal2Local.end()) {
-
-        /*--- This DOF must be stored on this rank. Retrieve the local index
-              and read the data from file. ---*/
-        const unsigned long iDOF_Local = nVar*MI->second;
-
-        unsigned long index;
-        point_line >> index;
-        for(unsigned short i=0; i<nDim; ++i) {
-          su2double dull_val;
-          point_line >> dull_val;
-        }
-
-        for(unsigned short i=0; i<nVar; ++i) {
-          point_line >> VecSolDOFs[iDOF_Local+i];
-        }
-
-        /*--- Update the local counter nDOF_Read. ---*/
-        ++nDOF_Read;
-      }
-
-      /*--- Update the counter iDOF_Global. ---*/
-      ++iDOF_Global;
-    }
-    
-    /*--- Detect a wrong solution file ---*/
-    unsigned short rbuf_NotMatching = 0;
-    if(nDOF_Read < nDOFsLocOwned) rbuf_NotMatching = 1;
-    
-#ifdef HAVE_MPI
-    unsigned short sbuf_NotMatching = rbuf_NotMatching;
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
-#endif
-    
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-    
-    /*--- Close the restart file ---*/
-    restart_file.close();
-  }
-  
-  /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
-  unsigned long nBadDOFs = 0;
-
-  if( compressible ) {
-
-    for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
-      const unsigned long ii = nVar*i;
-      su2double DensityInv = 1.0/VecSolDOFs[ii];
-
-      su2double Velocity2 = 0.0;
-      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-        const su2double vel = VecSolDOFs[ii+iDim]*DensityInv;
-        Velocity2 += vel*vel;
-      }
-
-      su2double StaticEnergy = VecSolDOFs[ii+nDim+1]*DensityInv - 0.5*Velocity2;
-  
-      FluidModel->SetTDState_rhoe(VecSolDOFs[ii], StaticEnergy);
-      su2double Pressure = FluidModel->GetPressure();
-      su2double Temperature = FluidModel->GetTemperature();
-    
-      /*--- Use the values at the infinity if the state is not physical. ---*/
-      if((Pressure < 0.0) || (VecSolDOFs[ii] < 0.0) || (Temperature < 0.0)) {
-        for(unsigned short j=0; j<nVar; ++j) {
-          VecSolDOFs[ii+j] = ConsVarFreeStream[j];
-        }
-
-        ++nBadDOFs;
-      }
-    }
-  }
-    
-  /*--- Warning message about non-physical points ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
-#ifdef HAVE_MPI
-    unsigned long nBadDOFsLoc = nBadDOFs;
-    SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-#endif
-
-    if((rank == MASTER_NODE) && (nBadDOFs != 0))
-      cout << "Warning. The initial solution contains "<< nBadDOFs << " DOFs that are not physical." << endl;
   }
 
   /*--- Set up the persistent communication for the conservative variables and
-        the reverse communication for the residuals of the halo elements. ---*/
+   the reverse communication for the residuals of the halo elements. ---*/
   Prepare_MPI_Communication(DGGeometry, config);
 
   /*--- Initialize boolean for deallocating MPI comm. structure. ---*/
   mpiCommsPresent = true;
-  
+
   /*--- Perform the MPI communication of the solution. ---*/
   Initiate_MPI_Communication();
   Complete_MPI_Communication();
+
 }
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
@@ -718,13 +630,13 @@ CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
   if (Surface_CMy != NULL)      delete [] Surface_CMy;
   if (Surface_CMz != NULL)      delete [] Surface_CMz;
   if (CEff_Inv != NULL)         delete [] CEff_Inv;
-  
+
   if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
 
 #ifdef HAVE_MPI
 
   if (mpiCommsPresent) {
-    
+
     /*--- Release the memory of the persistent communication and the derived
           data types. ---*/
     for(int i=0; i<nCommRequests; ++i) MPI_Request_free(&commRequests[i]);
@@ -738,8 +650,10 @@ CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
 #endif
 }
 
-void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
-  
+void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
+                                                   unsigned short iMesh,
+                                                   const bool     writeOutput) {
+
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
   Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
@@ -752,16 +666,16 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
-  
+
   unsigned short iDim;
-  
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Local variables ---*/
-  
+
   su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta             = config->GetAoS()*PI_NUMBER/180.0;
   su2double Mach             = config->GetMach();
@@ -774,20 +688,20 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
-  
+
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
-  
+
   Pressure_FreeStream = config->GetPressure_FreeStream();
   Density_FreeStream  = config->GetDensity_FreeStream();
   Temperature_FreeStream  = config->GetTemperature_FreeStream();
-  
+
   switch (config->GetKind_FluidModel()) {
-      
+
     case STANDARD_AIR:
-      
+
       if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
       else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.49);
-      
+
       FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
@@ -800,9 +714,9 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
         config->SetTemperature_FreeStream(Temperature_FreeStream);
       }
       break;
-      
+
     case IDEAL_GAS:
-      
+
       FluidModel = new CIdealGas(Gamma, config->GetGas_Constant());
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
@@ -815,9 +729,9 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
         config->SetTemperature_FreeStream(Temperature_FreeStream);
       }
       break;
-      
+
     case VW_GAS:
-      
+
       FluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(),
                                        config->GetPressure_Critical(), config->GetTemperature_Critical());
       if (free_stream_temp) {
@@ -831,9 +745,9 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
         config->SetTemperature_FreeStream(Temperature_FreeStream);
       }
       break;
-      
+
     case PR_GAS:
-      
+
       FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                      config->GetTemperature_Critical(), config->GetAcentric_Factor());
       if (free_stream_temp) {
@@ -847,13 +761,13 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
         config->SetTemperature_FreeStream(Temperature_FreeStream);
       }
       break;
-      
+
   }
-  
+
   Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
-  
+
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
-  
+
   if (nDim == 2) {
     config->GetVelocity_FreeStream()[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
     config->GetVelocity_FreeStream()[1] = sin(Alpha)*Mach*Mach2Vel_FreeStream;
@@ -863,30 +777,30 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
     config->GetVelocity_FreeStream()[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
     config->GetVelocity_FreeStream()[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
   }
-  
+
   /*--- Compute the modulus of the free stream velocity ---*/
-  
+
   ModVel_FreeStream = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
-  
+
   /*--- Viscous initialization ---*/
-  
+
   if (viscous) {
-    
+
     /*--- Reynolds based initialization ---*/
-    
+
     if (reynolds_init) {
-      
+
       /*--- First, check if there is mesh motion. If yes, use the Mach
        number relative to the body to initialize the flow. ---*/
-      
+
       if (grid_movement) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
       else Velocity_Reynolds = ModVel_FreeStream;
-      
+
       /*--- Change of measurement system, hard coded value working only with STANDAR AIR model ---*/
-      
+
       if (standard_air) {
         if (config->GetSystemMeasurements() == SI) {
           config->SetMu_RefND(1.716E-5);
@@ -899,57 +813,57 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
           config->SetMu_Temperature_RefND(518.7);
         }
       }
-      
+
       /*--- For viscous flows, pressure will be computed from a density
        that is found from the Reynolds number. The viscosity is computed
        from the dimensional version of Sutherland's law ---*/
-      
+
       FluidModel->SetLaminarViscosityModel(config);
-      
+
       Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
-      
+
       Density_FreeStream = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds());
       config->SetDensity_FreeStream(Density_FreeStream);
       FluidModel->SetTDState_rhoT(Density_FreeStream, Temperature_FreeStream);
       Pressure_FreeStream = FluidModel->GetPressure();
       config->SetPressure_FreeStream(Pressure_FreeStream);
       Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
-      
+
     }
-    
+
     /*--- Thermodynamics quantities based initialization ---*/
-    
+
     else {
-      
+
       FluidModel->SetLaminarViscosityModel(config);
       Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
       Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
-      
+
     }
-    
+
     /*--- Turbulence kinetic energy ---*/
-    
+
     Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-    
+
   }
   else {
-    
+
     /*--- For inviscid flow, energy is calculated from the specified
      FreeStream quantities using the proper gas law. ---*/
-    
+
     Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
-    
+
   }
-  
+
   /*-- Compute the freestream energy. ---*/
-  
+
   if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
-  
+
   /*--- Compute non dimensional quantities. By definition,
    Lref is one because we have converted the grid to meters. ---*/
-  
+
   if (config->GetRef_NonDim() == DIMENSIONAL) {
     Pressure_Ref      = 1.0;
     Density_Ref       = 1.0;
@@ -973,7 +887,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
   config->SetPressure_Ref(Pressure_Ref);
   config->SetDensity_Ref(Density_Ref);
   config->SetTemperature_Ref(Temperature_Ref);
-  
+
   Length_Ref        = 1.0;                                                         config->SetLength_Ref(Length_Ref);
   Velocity_Ref      = sqrt(config->GetPressure_Ref()/config->GetDensity_Ref());    config->SetVelocity_Ref(Velocity_Ref);
   Time_Ref          = Length_Ref/Velocity_Ref;                                     config->SetTime_Ref(Time_Ref);
@@ -983,105 +897,105 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
   Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
   Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
   Froude            = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);         config->SetFroude(Froude);
-  
+
   /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
-  
+
   Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref();  config->SetPressure_FreeStreamND(Pressure_FreeStreamND);
   Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();    config->SetDensity_FreeStreamND(Density_FreeStreamND);
-  
+
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_FreeStreamND[iDim] = config->GetVelocity_FreeStream()[iDim]/Velocity_Ref; config->SetVelocity_FreeStreamND(Velocity_FreeStreamND[iDim], iDim);
   }
-  
+
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
-  
+
   Gas_ConstantND = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
-  
-  
+
+
   ModVel_FreeStreamND = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
   ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
-  
+
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
-  
+
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStream(Tke_FreeStream);
-  
+
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
-  
+
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStream(Omega_FreeStream);
-  
+
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
-  
+
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
   /*--- Delete the original (dimensional) FluidModel object before replacing. ---*/
 
   delete FluidModel;
-  
+
   switch (config->GetKind_FluidModel()) {
-      
+
     case STANDARD_AIR:
       FluidModel = new CIdealGas(1.4, Gas_ConstantND);
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
-      
+
     case IDEAL_GAS:
       FluidModel = new CIdealGas(Gamma, Gas_ConstantND);
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
-      
+
     case VW_GAS:
       FluidModel = new CVanDerWaalsGas(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                                        config->GetTemperature_Critical()/config->GetTemperature_Ref());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
-      
+
     case PR_GAS:
       FluidModel = new CPengRobinson(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                                      config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
-      
+
   }
-  
+
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-  
+
   if (viscous) {
-    
+
     /*--- Constant viscosity model ---*/
     config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
-    
+
     /*--- Sutherland's model ---*/
-    
+
     config->SetMu_RefND(config->GetMu_RefND()/Viscosity_Ref);
     config->SetMu_SND(config->GetMu_SND()/config->GetTemperature_Ref());
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_RefND()/config->GetTemperature_Ref());
-    
+
     /* constant thermal conductivity model */
     config->SetKt_ConstantND(config->GetKt_ConstantND()/Conductivity_Ref);
-    
+
     FluidModel->SetLaminarViscosityModel(config);
     FluidModel->SetThermalConductivityModel(config);
-    
+
   }
-  
+
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
-  
+
   Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
-  
+
   Total_UnstTimeND = config->GetTotal_UnstTime() / Time_Ref;    config->SetTotal_UnstTimeND(Total_UnstTimeND);
   Delta_UnstTimeND = config->GetDelta_UnstTime() / Time_Ref;    config->SetDelta_UnstTimeND(Delta_UnstTimeND);
-  
-  /*--- Write output to the console if this is the master node and first domain ---*/
-  
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
-    
+
+  /*--- Write output to the console if this is required and if this is the master node and first domain ---*/
+
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && writeOutput) {
+
     cout.precision(6);
-    
+
     if (viscous) {
       cout << "Viscous flow: Computing pressure using the ideal gas law" << endl;
       cout << "based on the free-stream temperature and a density computed" << endl;
@@ -1090,14 +1004,14 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
       cout << "Inviscid flow: Computing density based on free-stream" << endl;
       cout << "temperature and pressure using the ideal gas law." << endl;
     }
-    
+
     if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
     else cout << "Force coefficients computed using free-stream values." << endl;
-    
+
     cout <<"-- Input conditions:"<< endl;
-    
+
     switch (config->GetKind_FluidModel()) {
-        
+
       case STANDARD_AIR:
         cout << "Fluid Model: STANDARD_AIR "<< endl;
         cout << "Specific gas constant: " << config->GetGas_Constant();
@@ -1106,14 +1020,14 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
         cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
         cout << "Specific Heat Ratio: "<< Gamma << endl;
         break;
-        
+
       case IDEAL_GAS:
         cout << "Fluid Model: IDEAL_GAS "<< endl;
         cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
         cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
         cout << "Specific Heat Ratio: "<< Gamma << endl;
         break;
-        
+
       case VW_GAS:
         cout << "Fluid Model: Van der Waals "<< endl;
         cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
@@ -1124,7 +1038,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
         cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
         cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
         break;
-        
+
       case PR_GAS:
         cout << "Fluid Model: Peng-Robinson "<< endl;
         cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
@@ -1135,11 +1049,11 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
         cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
         cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
         break;
-        
+
     }
     if (viscous) {
       switch (config->GetKind_ViscosityModel()) {
-          
+
         case CONSTANT_VISCOSITY:
           cout << "Viscosity Model: CONSTANT_VISCOSITY  "<< endl;
           cout << "Laminar Viscosity: " << config->GetMu_ConstantND()*Viscosity_Ref;
@@ -1147,7 +1061,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
           else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
           cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
           break;
-          
+
         case SUTHERLAND:
           cout << "Viscosity Model: SUTHERLAND "<< endl;
           cout << "Ref. Laminar Viscosity: " << config->GetMu_RefND()*Viscosity_Ref;
@@ -1163,40 +1077,40 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
           cout << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< endl;
           cout << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< endl;
           break;
-          
+
       }
       switch (config->GetKind_ConductivityModel()) {
-          
+
         case CONSTANT_PRANDTL:
           cout << "Conductivity Model: CONSTANT_PRANDTL  "<< endl;
           cout << "Prandtl: " << config->GetPrandtl_Lam()<< endl;
           break;
-          
+
         case CONSTANT_CONDUCTIVITY:
           cout << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
           cout << "Molecular Conductivity: " << config->GetKt_ConstantND()*Conductivity_Ref<< " W/m^2.K." << endl;
           cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< endl;
           break;
-          
+
       }
     }
-    
+
     cout << "Free-stream static pressure: " << config->GetPressure_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-    
+
     cout << "Free-stream total pressure: " << config->GetPressure_FreeStream() * pow( 1.0+Mach*Mach*0.5*(Gamma-1.0), Gamma/(Gamma-1.0) );
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-    
+
     cout << "Free-stream temperature: " << config->GetTemperature_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-    
+
     cout << "Free-stream density: " << config->GetDensity_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
-    
+
     if (nDim == 2) {
       cout << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
       cout << config->GetVelocity_FreeStream()[1] << ")";
@@ -1207,15 +1121,15 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
     }
     if (config->GetSystemMeasurements() == SI) cout << " m/s. ";
     else if (config->GetSystemMeasurements() == US) cout << " ft/s. ";
-    
+
     cout << "Magnitude: "	<< config->GetModVel_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
-    
+
     cout << "Free-stream total energy per unit mass: " << config->GetEnergy_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
-    
+
     if (viscous) {
       cout << "Free-stream viscosity: " << config->GetViscosity_FreeStream();
       if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
@@ -1229,37 +1143,37 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
         else if (config->GetSystemMeasurements() == US) cout << " 1/s." << endl;
       }
     }
-    
+
     if (unsteady) { cout << "Total time: " << config->GetTotal_UnstTime() << " s. Time step: " << config->GetDelta_UnstTime() << " s." << endl; }
-    
+
     /*--- Print out reference values. ---*/
-    
+
     cout <<"-- Reference values:"<< endl;
-    
+
     cout << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-    
+
     cout << "Reference pressure: " << config->GetPressure_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-    
+
     cout << "Reference temperature: " << config->GetTemperature_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-    
+
     cout << "Reference density: " << config->GetDensity_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
-    
+
     cout << "Reference velocity: " << config->GetVelocity_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
-    
+
     cout << "Reference energy per unit mass: " << config->GetEnergy_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
-    
+
     if (viscous) {
       cout << "Reference viscosity: " << config->GetViscosity_Ref();
       if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
@@ -1268,12 +1182,12 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
       if (config->GetSystemMeasurements() == SI) cout << " W/m^2.K." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " lbf/ft.s.R." << endl;
     }
-    
-    
+
+
     if (unsteady) cout << "Reference time: " << config->GetTime_Ref() <<" s." << endl;
-    
+
     /*--- Print out resulting non-dim values here. ---*/
-    
+
     cout << "-- Resulting non-dimensional state:" << endl;
     cout << "Mach number (non-dim): " << config->GetMach() << endl;
     if (viscous) {
@@ -1281,14 +1195,14 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
       if (config->GetSystemMeasurements() == SI) cout << " m." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " ft." << endl;
     }
-    
+
     cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
     cout << "Free-stream temperature (non-dim): " << config->GetTemperature_FreeStreamND() << endl;
-    
+
     cout << "Free-stream pressure (non-dim): " << config->GetPressure_FreeStreamND() << endl;
-    
+
     cout << "Free-stream density (non-dim): " << config->GetDensity_FreeStreamND() << endl;
-    
+
     if (nDim == 2) {
       cout << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
       cout << config->GetVelocity_FreeStreamND()[1] << "). ";
@@ -1297,9 +1211,9 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
       cout << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
     }
     cout << "Magnitude: "	 << config->GetModVel_FreeStreamND() << endl;
-    
+
     cout << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << endl;
-    
+
     if (viscous) {
       cout << "Free-stream viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << endl;
       if (turbulent) {
@@ -1307,14 +1221,14 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned sho
         cout << "Free-stream specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << endl;
       }
     }
-    
+
     if (unsteady) {
       cout << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << endl;
       cout << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << endl;
     }
-    
+
     cout << endl;
-    
+
   }
 }
 
@@ -1351,7 +1265,7 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   /* Store the receive information of the self communication in
      elementsRecvSelfComm, if present. */
   for(unsigned long i=0; i<ranksRecv.size(); ++i) {
-    if(ranksRecv[i] == rank) 
+    if(ranksRecv[i] == rank)
       elementsRecvSelfComm = elementsRecv[i];
   }
 
@@ -1737,7 +1651,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
 
     su2double *resOwned = VecResDOFs.data()
                         + nVar*volElem[elementsSendSelfComm[i]].offsetDOFsSolLocal;
-    su2double *resHalo  = VecResDOFs.data() 
+    su2double *resHalo  = VecResDOFs.data()
                         + nVar*volElem[elementsRecvSelfComm[i]].offsetDOFsSolLocal;
 
     const unsigned short nRes = nVar*volElem[elementsSendSelfComm[i]].nDOFsSol;
@@ -1912,13 +1826,13 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
   }
 
 #elif TAYLOR_GREEN
-  
+
   solutionSet = true;
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /* Write a message that the solution is initialized for the Taylor-Green vortex
      test case. */
   if(rank == MASTER_NODE) {
@@ -1926,37 +1840,37 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
     cout << "Warning: Solution is initialized for the Taylor-Green vortex test case!!!" << endl;
     cout << endl << flush;
   }
-  
-  /* The initial conditions are set for the Taylor-Green vortex case, which 
+
+  /* The initial conditions are set for the Taylor-Green vortex case, which
    is a DNS case that features vortex breakdown into turbulence. These
    particular settings are for the typical Re = 1600 case (M = 0.08) with
    an initial temperature of 300 K. Note that this condition works in both
    2D and 3D. */
-  
+
   const su2double tgvLength   = 1.0;     // Taylor-Green length scale.
   const su2double tgvVelocity = 1.0;     // Taylor-Green velocity.
   const su2double tgvDensity  = 1.0;     // Taylor-Green density.
   const su2double tgvPressure = 100.0;   // Taylor-Green pressure.
-  
+
   /* Useful coefficient in which Gamma is present. */
   const su2double ovGm1    = 1.0/Gamma_Minus_One;
-  
+
   /* Loop over the owned elements. */
   for(unsigned long i=0; i<nVolElemOwned; ++i) {
-    
+
     /* Loop over the DOFs of this element. */
     for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-      
+
       // Set the pointer to the solution of this DOF and to the
       // coordinates of its corresponding node ID of the grid.
       su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-      
+
       const unsigned long ind = volElem[i].nodeIDsGrid[j];
       const su2double *coor   = meshPoints[ind].coor;
 
       su2double coorZ = 0.0;
       if (nDim == 3) coorZ = coor[2];
-      
+
       /* Compute the primitive variables. */
       su2double rho = tgvDensity;
       su2double u   =  tgvVelocity * (sin(coor[0]/tgvLength)*
@@ -1978,9 +1892,9 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
       solDOF[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
     }
   }
-  
+
 #endif
-  
+
   /*--- If the solution was set in this function, perform the MPI
         communication of the solution. ---*/
   if( solutionSet ) {
@@ -1992,7 +1906,7 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long ErrorCounter = 0;
-  
+
   /*-----------------------------------------------------------------------------*/
   /*--- Check for non-physical points. Only needed for a compressible solver. ---*/
   /*-----------------------------------------------------------------------------*/
@@ -2047,51 +1961,52 @@ void CFEM_DG_EulerSolver::Set_OldSolution(CGeometry *geometry) {
 }
 
 void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
-  
+
   memcpy(VecSolDOFsNew.data(), VecSolDOFs.data(), VecSolDOFsNew.size()*sizeof(su2double));
 }
 
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  
+  /* Check whether or not a time stepping scheme is used. */
+  const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
 
   /* Easier storage of the CFL number. Note that if we are using explicit
    time stepping, the regular CFL condition has been overwritten with the
    unsteady CFL condition in the config post-processing (if non-zero). */
-  
+
   const su2double CFL = config->GetCFL(iMesh);
 
   /*--- Explicit time stepping with imposed time step (eventually will
    allow for local time stepping with this value imposed as the time
-   for syncing the cells). If the unsteady CFL is set to zero (default), 
+   for syncing the cells). If the unsteady CFL is set to zero (default),
    it uses the defined unsteady time step, otherwise it computes the time
    step based on the provided unsteady CFL. Note that the regular CFL
    option in the config is always ignored with time stepping. ---*/
-  
+
   if (time_stepping && (config->GetUnst_CFL() == 0.0)) {
-    
+
     /*--- Loop over the owned volume elements and set the fixed dt. ---*/
     for(unsigned long i=0; i<nVolElemOwned; ++i)
       VecDeltaTime[i] = config->GetDelta_UnstTimeND();
-    
+
   } else {
-    
+
     /*--- Check for a compressible solver. ---*/
     if(config->GetKind_Regime() == COMPRESSIBLE) {
-      
+
       /*--- Loop over the owned volume elements. ---*/
       for(unsigned long i=0; i<nVolElemOwned; ++i) {
-        
+
         /*--- Loop over the DOFs of this element and determine
               the maximum wave speed. ---*/
         su2double charVel2Max = 0.0;
         for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
           const su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-          
+
           /* Compute the velocities. */
           su2double velAbs[3];
           const su2double DensityInv = 1.0/solDOF[0];
@@ -2101,54 +2016,56 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
             velAbs[iDim-1] = fabs(vel);
             Velocity2 += vel*vel;
           }
-          
+
           /*--- Compute the maximum value of the wave speed. This is a rather
            conservative estimate. ---*/
           const su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
           FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
           const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
           const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
-          
+
           su2double charVel2 = 0.0;
           for(unsigned short iDim=0; iDim<nDim; ++iDim) {
             const su2double rad = velAbs[iDim] + SoundSpeed;
             charVel2 += rad*rad;
           }
-          
+
           charVel2Max = max(charVel2Max, charVel2);
         }
-        
+
         /*--- Compute the time step for the element and update the minimum and
-         maximum value. Note that in the length scale the polynomial degree
-         must be taken into account for the high order element. ---*/
+              maximum value. Take the factor for time accurate local time
+              stepping into account for the minimum and maximum. Note that in
+              the length scale the polynomial degree must be taken into account
+              for the high order element. ---*/
         const unsigned short ind = volElem[i].indStandardElement;
         unsigned short nPoly = standardElementsSol[ind].GetNPoly();
         if(nPoly == 0) nPoly = 1;
-        
+
         const su2double lenScaleInv = nPoly/volElem[i].lenScale;
-        const su2double dtInv       = lenScaleInv*charVel2Max;
-        
+        const su2double dtInv       = lenScaleInv*sqrt(charVel2Max);
+
         VecDeltaTime[i] = CFL/dtInv;
-        
-        Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
-        Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
+
+        Min_Delta_Time = min(Min_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
+        Max_Delta_Time = max(Max_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
       }
     }
     else {
-      
+
       /*--- Incompressible solver. ---*/
-      
+
       int rank = MASTER_NODE;
 #ifdef HAVE_MPI
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
       MPI_Barrier(MPI_COMM_WORLD);
 #endif
-      
+
       if(rank == MASTER_NODE) {
         cout << "In function CFEM_DG_EulerSolver::SetTime_Step" << endl;
         cout << "Incompressible solver not implemented yet" << endl;
       }
-      
+
 #ifdef HAVE_MPI
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
@@ -2156,35 +2073,207 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
 #else
       exit(EXIT_FAILURE);
 #endif
-      
+
     }
-    
+
     /*--- Compute the max and the min dt (in parallel). Note that we only
-     so this for steady calculations if the high verbosity is set, but we
+     do this for steady calculations if the high verbosity is set, but we
      always perform the reduction for unsteady calculations where the CFL
      limit is used to set the global time step. ---*/
     if ((config->GetConsole_Output_Verb() == VERB_HIGH) || time_stepping) {
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
       SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-      
+
       rbuf_time = Max_Delta_Time;
       SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
     }
-    /*--- For explicit time stepping with an unsteady CFL imposed, 
-     use the minimum delta time of the entire mesh. ---*/
+
+    /*--- For explicit time stepping with an unsteady CFL imposed, use the
+          minimum delta time of the entire mesh. As Min_Delta_Time is scaled to
+          the time step of the largest time level, a correction must be used
+          for the time level when time accurate local time stepping is used. ---*/
     if (time_stepping) {
       for(unsigned long i=0; i<nVolElemOwned; ++i)
-        VecDeltaTime[i] = Min_Delta_Time;
+        VecDeltaTime[i] = Min_Delta_Time/volElem[i].factTimeLevel;
     }
   }
+}
+
+void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
+                                                   const su2double TimeSync,
+                                                   su2double       &timeEvolved,
+                                                   bool            &syncTimeReached) {
+
+  /* Check if this is the first time this check is carried out
+     and determine the new time evolved. */
+  const bool firstTime = timeEvolved == 0.0;
+  timeEvolved         += Min_Delta_Time;
+
+  /*--- Check for a (too) small a value for the synchronization time and
+        print a warning if this happens. ---*/
+  if(firstTime && timeEvolved >= 1.5*TimeSync) {
+
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+    if(rank == MASTER_NODE) {
+      cout << endl << "              WARNING" << endl;
+      cout << "The specified synchronization time is " << timeEvolved/TimeSync
+           << " times smaller than the time step for stability" << endl;
+      cout << "This is inefficient!!!!!" << endl << endl;
+    }
+  }
+
+  /*--- If the current value of timeEvolved is larger or equal than the
+        synchronization time, syncTimeReached is set to true and a correction
+        to the time step is carried out. The factor for the time accurate local
+        time stepping must be taken into account. If the synchronization time
+        has not been reached yet, syncTimeReached is set to false. ---*/
+  if(timeEvolved >= TimeSync) {
+    syncTimeReached = true;
+    const su2double newDeltaTime = Min_Delta_Time + (TimeSync - timeEvolved);
+
+    for(unsigned long i=0; i<nVolElemOwned; ++i)
+      VecDeltaTime[i] = newDeltaTime/volElem[i].factTimeLevel;
+  }
+  else syncTimeReached = false;
+}
+
+void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
+                                                    CNumerics **numerics, CConfig *config,
+                                                    unsigned short iMesh, unsigned short RunTime_EqSystem) {
+
+  su2double tick = 0.0;
+
+  /*--- Preprocessing ---*/
+  config->Tick(&tick);
+  Preprocessing(geometry, solver_container, config, iMesh, 0, RunTime_EqSystem, false);
+  config->Tock(tick,"Preprocessing",2);
+
+  /*--- Set the old solution, carry out the predictor step and set the number
+        of time integration points and the corresponding weights. ---*/
+  Set_OldSolution(geometry);
+
+  config->Tick(&tick);
+  ADER_DG_PredictorStep(config, 0);
+  config->Tock(tick,"ADER_DG_PredictorStep",2);
+
+  const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
+  const su2double     *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
+
+  /* Loop over the number of integration points in time. */
+  for(unsigned short iTime=0; iTime<nTimeIntegrationPoints; iTime++) {
+
+    /* The predictor solution must be interpolated in time to the correct
+       time location of the current integration point. */
+    config->Tick(&tick);
+    ADER_DG_TimeInterpolatePredictorSol(config, iTime);
+    config->Tock(tick,"ADER_DG_TimeInterpolatePredictorSol",3);
+
+    /* Compute the artificial viscosity for shock capturing in DG. */
+    config->Tick(&tick);
+    Shock_Capturing_DG(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+    config->Tock(tick,"Shock_Capturing",3);
+
+    /*--- Compute the volume portion of the residual. ---*/
+    config->Tick(&tick);
+    Volume_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+    config->Tock(tick,"Volume_Residual",3);
+
+    /*--- Compute source term residuals ---*/
+    config->Tick(&tick);
+    Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
+    config->Tock(tick,"Source_Residual",3);
+
+    /*--- Boundary conditions ---*/
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case EULER_WALL:
+          config->Tick(&tick);
+          BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Euler_Wall",3);
+          break;
+        case FAR_FIELD:
+          config->Tick(&tick);
+          BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Far_Field",3);
+          break;
+        case SYMMETRY_PLANE:
+          config->Tick(&tick);
+          BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Sym_Plane",3);
+          break;
+        case INLET_FLOW:
+          config->Tick(&tick);
+          BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Inlet",3);
+          break;
+        case OUTLET_FLOW:
+          config->Tick(&tick);
+          BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Outlet",3);
+          break;
+        case ISOTHERMAL:
+          config->Tick(&tick);
+          BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Isothermal_Wall",3);
+          break;
+        case HEAT_FLUX:
+          config->Tick(&tick);
+          BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_HeatFlux_Wall",3);
+          break;
+        case CUSTOM_BOUNDARY:
+          config->Tick(&tick);
+          BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Custom",3);
+          break;
+        case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
+          break;
+        default:
+          cout << "BC not implemented." << endl;
+#ifndef HAVE_MPI
+          exit(EXIT_FAILURE);
+#else
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
+#endif
+      }
+    }
+
+    /*--- Compute surface portion of the residual. ---*/
+    config->Tick(&tick);
+    Surface_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+    config->Tock(tick,"Surface_Residual",3);
+
+    /*--- Accumulate the space time residual. ---*/
+    AccumulateSpaceTimeResidualADER(iTime, timeIntegrationWeights[iTime]);
+  }
+
+  /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
+  config->Tick(&tick);
+  MultiplyResidualByInverseMassMatrix(config, true);
+  config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
+
+  /*--- Perform the time integration ---*/
+  config->Tick(&tick);
+  ADER_DG_Iteration(geometry, solver_container, config, 0);
+  config->Tock(tick,"ADER_DG_Iteration",3);
+
+  /*--- Postprocessing ---*/
+  config->Tick(&tick);
+  Postprocessing(geometry, solver_container, config, iMesh);
+  config->Tock(tick,"Postprocessing",2);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) {
 
   /*----------------------------------------------------------------------*/
-  /*---        Get the data of the ADER time integration scheme.       ---*/ 
+  /*---        Get the data of the ADER time integration scheme.       ---*/
   /*----------------------------------------------------------------------*/
 
   const unsigned short nTimeDOFs              = config->GetnTimeDOFsADER_DG();
@@ -2720,7 +2809,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt, nVar, nDOFs, matBasisInt, solDOFs, solInt);
     config->GEMM_Tock(tick, "Volume_Residual1", nInt, nVar, nDOFs);
-    
+
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
     /*---         integration weight, in the integration points.           ---*/
@@ -2823,17 +2912,6 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
 
-//    cout << "residuals:" << endl;
-//    for(unsigned short int k=0; k<nDOFs; k++)
-//      {
-//	for(unsigned short int p=0; p<nVar; p++)
-//	  {
-//	    cout << res[p*nDOFs+k] << ", ";
-//	  }
-//	cout << endl;
-//      }
-
-
   }
 }
 
@@ -2864,7 +2942,7 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_
       const unsigned short ind = volElem[l].indStandardElement;
       const unsigned short nInt = standardElementsSol[ind].GetNIntegration();
       const unsigned short nDOFs = volElem[l].nDOFsSol;
-      const su2double *matBasisInt = standardElementsSol[ind].GetBasisFunctionsIntegration();
+      const su2double *matBasisInt = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
       const su2double *lagBasisIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
       const su2double *weights = standardElementsSol[ind].GetWeightsIntegration();
 
@@ -2968,18 +3046,20 @@ void CFEM_DG_EulerSolver::Surface_Residual(CGeometry *geometry, CSolver **solver
   Complete_MPI_Communication();
 
   /* Compute the residual of the faces that involve a halo element. */
-  unsigned long indResFaces = 0;
+  unsigned long indResFaces = startLocResInternalFacesWithHaloElem[0];
   ResidualFaces(geometry, solver_container, numerics, config, iMesh, iStep,
-                0, nMatchingInternalFacesWithHaloElem, indResFaces);
+                nMatchingInternalFacesWithHaloElem[0],
+                nMatchingInternalFacesWithHaloElem[1], indResFaces);
 
   /* Start the communication of the residuals, for which the
      reverse communication must be used. */
   Initiate_MPI_ReverseCommunication();
 
   /* Compute the residual of the faces that only involve owned elements. */
+  indResFaces = startLocResInternalFacesLocalElem[0];
   ResidualFaces(geometry, solver_container, numerics, config, iMesh, iStep,
-                nMatchingInternalFacesWithHaloElem, nMatchingInternalFaces,
-                indResFaces);
+                nMatchingInternalFacesLocalElem[0],
+                nMatchingInternalFacesLocalElem[1], indResFaces);
 
   /* Complete the communication of the residuals. */
   Complete_MPI_ReverseCommunication();
@@ -3006,7 +3086,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
   su2double *solIntR = solIntL + nIntegrationMax*nVar;
   su2double *fluxes  = solIntR + nIntegrationMax*nVar;
   su2double tick = 0.0;
-  
+
   /*--- Loop over the requested range of matching faces. ---*/
   for(unsigned long l=indFaceBeg; l<indFaceEnd; ++l) {
 
@@ -3014,11 +3094,11 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
     /*--- Step 1: Compute the inviscid fluxes in the integration points of ---*/
     /*---         this matching face multiplied by the integration weight. ---*/
     /*------------------------------------------------------------------------*/
-    
+
     /* Compute the inviscid fluxes in the integration points. */
     InviscidFluxesInternalMatchingFace(config, &matchingInternalFaces[l],
                                        solIntL, solIntR, fluxes, numerics);
-  
+
     /* Get the number of integration points and integration weights
        from the standard element. */
     const unsigned short ind  = matchingInternalFaces[l].indStandardElement;
@@ -3053,7 +3133,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
     config->GEMM_Tock(tick,"ResidualFaces1",nDOFsFace0, nVar, nInt);
-    
+
     /* Easier storage of the position in the residual array for side 1 of
        this face and update the corresponding counter. */
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
@@ -3074,11 +3154,11 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
             the residual. Afterwards the residual is negated, because the
             normal is pointing into the adjacent element. ---*/
       basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
-      
+
       config->GEMM_Tick(&tick);
       DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
       config->GEMM_Tock(tick,"ResidualFaces2",nDOFsFace1, nVar, nInt);
-      
+
       for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
         resFace1[i] = -resFace1[i];
     }
@@ -3476,12 +3556,12 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
     SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
                        MPI_SUM, MPI_COMM_WORLD);
   }
-  
+
   /*--- Copy the data back from globBuf into the required variables. ---*/
   ii = 0;
   AllBound_CD_Inv  = globBuf[ii++]; AllBound_CL_Inv  = globBuf[ii++];
   AllBound_CSF_Inv = globBuf[ii++]; AllBound_CMx_Inv = globBuf[ii++];
-  AllBound_CMy_Inv = globBuf[ii++]; AllBound_CMz_Inv = globBuf[ii++]; 
+  AllBound_CMy_Inv = globBuf[ii++]; AllBound_CMz_Inv = globBuf[ii++];
   AllBound_CFx_Inv = globBuf[ii++]; AllBound_CFy_Inv = globBuf[ii++];
   AllBound_CFz_Inv = globBuf[ii++];
 
@@ -3517,7 +3597,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
     Surface_CL[iMarker_Monitoring]      = Surface_CL_Inv[iMarker_Monitoring];
     Surface_CD[iMarker_Monitoring]      = Surface_CD_Inv[iMarker_Monitoring];
     Surface_CSF[iMarker_Monitoring] = Surface_CSF_Inv[iMarker_Monitoring];
-    Surface_CEff[iMarker_Monitoring]       = Surface_CL_Inv[iMarker_Monitoring] 
+    Surface_CEff[iMarker_Monitoring]       = Surface_CL_Inv[iMarker_Monitoring]
                                            / (Surface_CD_Inv[iMarker_Monitoring] + EPS);
     Surface_CFx[iMarker_Monitoring]        = Surface_CFx_Inv[iMarker_Monitoring];
     Surface_CFy[iMarker_Monitoring]        = Surface_CFy_Inv[iMarker_Monitoring];
@@ -3530,14 +3610,14 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config, unsigned short iRKStep) {
-  
+
   su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-  
+
   for(unsigned short iVar=0; iVar<nVar; ++iVar) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
-  
+
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
@@ -3562,7 +3642,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
         solDOFs[i] = solDOFsOld[i] - tmp*res[i];
 
         AddRes_RMS(iVar, res[i]*res[i]);
-        AddRes_Max(iVar, fabs(res[i]), globalIndex, coor); 
+        AddRes_Max(iVar, fabs(res[i]), globalIndex, coor);
       }
     }
   }
@@ -3578,19 +3658,19 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   vector<su2double> rbuf(nVar);
-  
+
   /*--- Disable the reduce for the residual to avoid overhead if requested. ---*/
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
     SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    
+
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-      
+
       if (rbuf[iVar] != rbuf[iVar]) {
         if (rank == MASTER_NODE)
           cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
         MPI_Abort(MPI_COMM_WORLD,1);
       }
-      
+
       SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
     }
   }
@@ -3613,95 +3693,95 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
 
 void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config, unsigned short iRKStep) {
-  
+
   /*--- Hard-coded classical RK4 coefficients. Will be added to config. ---*/
   su2double RK_FuncCoeff[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
   su2double RK_TimeCoeff[4] = {0.5, 0.5, 1.0, 1.0};
-  
+
   for(unsigned short iVar=0; iVar<nVar; ++iVar) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
-  
+
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
-    
+
     /* Store the coordinate of the first vertex of this element to give an
      indication for the location of the maximum residual. */
     const unsigned long ind = volElem[l].nodeIDsGrid[0];
     const su2double *coor   = meshPoints[ind].coor;
-    
+
     /* Set the pointers for the residual and solution for this element. */
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
     const su2double *res        = VecResDOFs.data()    + offset;
     const su2double *solDOFsOld = VecSolDOFsOld.data() + offset;
     su2double *solDOFsNew       = VecSolDOFsNew.data() + offset;
     su2double *solDOFs          = VecSolDOFs.data()    + offset;
-    
+
     /* Loop over the DOFs for this element and update the solution and the L2 norm. */
     const su2double tmp_time = -1.0*RK_TimeCoeff[iRKStep]*VecDeltaTime[l];
     const su2double tmp_func = -1.0*RK_FuncCoeff[iRKStep]*VecDeltaTime[l];
-    
+
     unsigned int i = 0;
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
-        
+
         if (iRKStep < 3) {
           solDOFsNew[i] += tmp_func*res[i];
           solDOFs[i]     = solDOFsOld[i] + tmp_time*res[i];
         } else {
           solDOFs[i]     = solDOFsNew[i] + tmp_func*res[i];
         }
-        
+
         AddRes_RMS(iVar, res[i]*res[i]);
         AddRes_Max(iVar, fabs(res[i]), globalIndex, coor);
       }
     }
-    
+
   }
-  
+
   /*--- Compute the root mean square residual. Note that the SetResidual_RMS
    function cannot be used, because that is for the FV solver.    ---*/
-  
+
 #ifdef HAVE_MPI
   /*--- Parallel mode. The local L2 norms must be added to obtain the
    global value. Also check for divergence. ---*/
   int nProc, rank;
   MPI_Comm_size(MPI_COMM_WORLD, &nProc);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
+
   vector<su2double> rbuf(nVar);
-  
+
   /*--- Disable the reduce for the residual to avoid overhead if requested. ---*/
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
     SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    
+
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-      
+
       if (rbuf[iVar] != rbuf[iVar]) {
         if (rank == MASTER_NODE)
           cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
         MPI_Abort(MPI_COMM_WORLD,1);
       }
-      
+
       SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
     }
   }
-  
+
 #else
   /*--- Sequential mode. Check for a divergence of the solver and compute
    the L2-norm of the residuals. ---*/
   for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-    
+
     if(GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
       cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
       exit(EXIT_FAILURE);
     }
-    
+
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal)));
   }
-  
+
 #endif
 }
 
@@ -3733,7 +3813,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_co
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -3813,7 +3893,7 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_con
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -3856,7 +3936,7 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -3908,7 +3988,7 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
   }
 }
 
-void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, 
+void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Retrieve the specified total conditions for this inlet. ---*/
@@ -3932,7 +4012,7 @@ void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -4040,7 +4120,7 @@ void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
   }
 }
 
-void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, 
+void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Retrieve the specified back pressure for this outlet.
@@ -4057,7 +4137,7 @@ void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -4144,7 +4224,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_contai
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -4225,7 +4305,7 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
   const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const su2double *weights   = standardBoundaryFacesSol[ind].GetWeightsIntegration();
   su2double tick = 0.0;
-  
+
   /*------------------------------------------------------------------------*/
   /*--- Step 1: Compute the fluxes in the integration points using the   ---*/
   /*---         approximate Riemann solver.                              ---*/
@@ -4275,7 +4355,7 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(CConfig *confi
   const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const su2double *basisFace = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
   su2double tick = 0.0;
-  
+
   /* Easier storage of the DOFs of the face. */
   const unsigned long *DOFs = surfElem->DOFsSolFace.data();
 
@@ -4292,7 +4372,7 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(CConfig *confi
   config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt, nVar, nDOFs, basisFace, solFace, solIntL);
   config->GEMM_Tock(tick, "LeftStatesIntegrationPointsBoundaryFace", nInt, nVar, nDOFs);
-  
+
 }
 
 void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
@@ -4305,7 +4385,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
 
   /* Easier storage of the specific heat ratio. */
   const su2double gm1   = Gamma - 1.0;
-  
+
   /*--- Data for loading into the CNumerics Riemann solvers.
    This is temporary and not efficient.. just replicating exactly
    the arrays we typically have in order to avoid bugs. We can
@@ -4313,35 +4393,35 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
   su2double Normal[3];
   su2double Prim_L[8];
   su2double Prim_R[8];
-  
+
   Jacobian_i = new su2double*[nVar];
   Jacobian_j = new su2double*[nVar];
   for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
     Jacobian_i[iVar] = new su2double[nVar];
     Jacobian_j[iVar] = new su2double[nVar];
   }
-  
+
   /*--- Loop over the number of points. ---*/
-  
+
   for(unsigned long i=0; i<nPoints; ++i) {
-    
+
     /* Easier storage of the left and right solution, the face normals and
      the flux vector for this point. */
     const su2double *UL   = solL + i*nVar;
     const su2double *UR   = solR + i*nVar;
     const su2double *norm = normalsFace + i*(nDim+1);
     su2double       *flux = fluxes + i*nVar;
-    
+
     /*--- Store and load the normal into numerics. ---*/
     for (unsigned short iDim = 0; iDim < nDim; ++iDim)
       Normal[iDim] = norm[iDim]*norm[nDim];
     numerics->SetNormal(Normal);
-    
-    /*--- Prepare the primitive states for the numerics class. Note 
+
+    /*--- Prepare the primitive states for the numerics class. Note
      that for the FV solver, we have the following primitive
      variable ordering: Compressible flow, primitive variables nDim+5,
      (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
-    
+
     /*--- Left primitive state ---*/
     Prim_L[0] = 0.0;                                        // Temperature (unused)
     Prim_L[nDim+1] = gm1*UL[nVar-1];
@@ -4351,7 +4431,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
     }
     Prim_L[nDim+2] = UL[0];                                 // Density
     Prim_L[nDim+3] = (UL[nVar-1] + Prim_L[nDim+1]) / UL[0]; // Enthalpy
-    
+
     /*--- Right primitive state ---*/
     Prim_R[0] = 0.0;                                        // Temperature (unused)
     Prim_R[nDim+1] = gm1*UR[nVar-1];
@@ -4361,16 +4441,16 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
     }
     Prim_R[nDim+2] = UR[0];                                 // Density
     Prim_R[nDim+3] = (UR[nVar-1] + Prim_R[nDim+1]) / UR[0]; // Enthalpy
-    
+
     /*--- Load the primitive states into the numerics class. ---*/
     numerics->SetPrimitive(Prim_L, Prim_R);
-    
+
     /*--- Now simply call the ComputeResidual() function to calculate
      the flux using the chosen approximate Riemann solver. Note that
      the Jacobian arrays here are just dummies for now (no implicit). ---*/
     numerics->ComputeResidual(flux, Jacobian_i, Jacobian_j, config);
   }
-  
+
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     delete [] Jacobian_i[iVar];
     delete [] Jacobian_j[iVar];
@@ -4499,15 +4579,155 @@ void CFEM_DG_EulerSolver::RinglebSolution(const su2double *coor,
 
 #endif
 
-CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
+void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  /*--- Restart the solution from file information ---*/
+  unsigned short iVar;
+  unsigned long index;
+
+  string UnstExt, text_line;
+  ifstream restart_file;
+
+  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+
+  string restart_filename = config->GetSolution_FlowFileName();
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  int counter = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned short rbuf_NotMatching = 0;
+  unsigned long nDOF_Read = 0;
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[0] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        VecSolDOFs[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
+      }
+      /*--- Update the local counter nDOF_Read. ---*/
+      ++nDOF_Read;
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+    }
+
+  }
+
+  /*--- Detect a wrong solution file ---*/
+  if(nDOF_Read < nDOFsLocOwned) rbuf_NotMatching = 1;
+
+#ifdef HAVE_MPI
+  unsigned short sbuf_NotMatching = rbuf_NotMatching;
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
+  unsigned long nBadDOFs = 0;
+
+  if( compressible ) {
+
+    for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+      const unsigned long ii = nVar*i;
+      su2double DensityInv = 1.0/VecSolDOFs[ii];
+
+      su2double Velocity2 = 0.0;
+      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+        const su2double vel = VecSolDOFs[ii+iDim]*DensityInv;
+        Velocity2 += vel*vel;
+      }
+
+      su2double StaticEnergy = VecSolDOFs[ii+nDim+1]*DensityInv - 0.5*Velocity2;
+
+      FluidModel->SetTDState_rhoe(VecSolDOFs[ii], StaticEnergy);
+      su2double Pressure = FluidModel->GetPressure();
+      su2double Temperature = FluidModel->GetTemperature();
+
+      /*--- Use the values at the infinity if the state is not physical. ---*/
+      if((Pressure < 0.0) || (VecSolDOFs[ii] < 0.0) || (Temperature < 0.0)) {
+        for(unsigned short j=0; j<nVar; ++j) {
+          VecSolDOFs[ii+j] = ConsVarFreeStream[j];
+        }
+
+        ++nBadDOFs;
+      }
+    }
+  }
+
+  /*--- Warning message about non-physical points ---*/
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+#ifdef HAVE_MPI
+    unsigned long nBadDOFsLoc = nBadDOFs;
+    SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+    if((rank == MASTER_NODE) && (nBadDOFs != 0))
+      cout << "Warning. The initial solution contains "<< nBadDOFs << " DOFs that are not physical." << endl;
+  }
+
+  /*--- Perform the MPI communication of the solution. ---*/
+  Initiate_MPI_Communication();
+  Complete_MPI_Communication();
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
   
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+
+}
+
+CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
+
   /*--- Basic array initialization ---*/
   CD_Visc  = NULL; CL_Visc  = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
   CMx_Visc = NULL; CMy_Visc = NULL; CMz_Visc = NULL;
   CFx_Visc = NULL; CFy_Visc = NULL; CFz_Visc = NULL;
-  
+
   ForceViscous = NULL; MomentViscous = NULL; CSkinFriction = NULL;
-  
+
   /*--- Surface-based array initialization ---*/
   Surface_CL_Visc  = NULL; Surface_CD_Visc  = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
   Surface_CFx_Visc = NULL; Surface_CFy_Visc = NULL; Surface_CFz_Visc = NULL;
@@ -4521,27 +4741,27 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
  : CFEM_DG_EulerSolver(geometry, config, iMesh) {
-  
+
   /*--- Array initialization ---*/
   CD_Visc = NULL;  CL_Visc = NULL;  CSF_Visc = NULL; CEff_Visc = NULL;
   CMx_Visc = NULL; CMy_Visc = NULL; CMz_Visc = NULL;
   CFx_Visc = NULL; CFy_Visc = NULL; CFz_Visc = NULL;
-  
+
   Surface_CL_Visc  = NULL; Surface_CD_Visc = NULL;  Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
   Surface_CFx_Visc = NULL; Surface_CFy_Visc = NULL; Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL; Surface_CMy_Visc = NULL; Surface_CMz_Visc = NULL;
   MaxHeatFlux_Visc = NULL; Heat_Visc = NULL;
-  
+
   ForceViscous = NULL;  MomentViscous = NULL;
   CSkinFriction = NULL; Cauchy_Serie = NULL;
 
   /*--- Initialize the solution and right hand side vectors for storing
    the residuals and updating the solution (always needed even for
    explicit schemes). ---*/
-  
+
   //LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   //LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  
+
   /*--- Non dimensional coefficients ---*/
   ForceViscous  = new su2double[3];
   MomentViscous = new su2double[3];
@@ -4555,7 +4775,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   CFx_Visc      = new su2double[nMarker];
   CFy_Visc      = new su2double[nMarker];
   CFz_Visc      = new su2double[nMarker];
-  
+
   Surface_CL_Visc   = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD_Visc   = new su2double[config->GetnMarker_Monitoring()];
   Surface_CSF_Visc  = new su2double[config->GetnMarker_Monitoring()];
@@ -4569,16 +4789,16 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
 
   Heat_Visc        = new su2double[nMarker];
   MaxHeatFlux_Visc = new su2double[nMarker];
-  
+
   /*--- Init total coefficients ---*/
-  
+
   Total_CD   = 0.0; Total_CL  = 0.0; Total_CSF = 0.0;
   Total_CMx  = 0.0; Total_CMy = 0.0; Total_CMz = 0.0;
   Total_CEff = 0.0;
   Total_CFx  = 0.0; Total_CFy = 0.0; Total_CFz = 0.0;
-  
+
   /*--- Read farfield conditions from config ---*/
-  
+
   Viscosity_Inf = config->GetViscosity_FreeStreamND();
   Prandtl_Lam   = config->GetPrandtl_Lam();
   Prandtl_Turb  = config->GetPrandtl_Turb();
@@ -4630,7 +4850,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
 
 CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
   unsigned short iMarker;
-  
+
   if (CD_Visc != NULL)       delete [] CD_Visc;
   if (CL_Visc != NULL)       delete [] CL_Visc;
   if (CSF_Visc != NULL)      delete [] CSF_Visc;
@@ -4643,8 +4863,8 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
   if (CEff_Visc != NULL)     delete [] CEff_Visc;
   if (ForceViscous != NULL)  delete [] ForceViscous;
   if (MomentViscous != NULL) delete [] MomentViscous;
-  
-  
+
+
   if (Surface_CL_Visc != NULL)   delete [] Surface_CL_Visc;
   if (Surface_CD_Visc != NULL)   delete [] Surface_CD_Visc;
   if (Surface_CSF_Visc != NULL)  delete [] Surface_CSF_Visc;
@@ -4658,9 +4878,9 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
 
   if (Heat_Visc        != NULL)  delete [] Heat_Visc;
   if (MaxHeatFlux_Visc != NULL)  delete [] MaxHeatFlux_Visc;
-  
+
   if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
-  
+
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete CSkinFriction[iMarker];
@@ -4682,12 +4902,12 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam = Gamma/Prandtl_Lam;
   su2double tick = 0.0;
-  
+
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solInt     = VecTmpMemory.data();
   su2double *gradSolInt = solInt     + nIntegrationMax*nVar;
   su2double *solDOFs    = gradSolInt + nIntegrationMax*nVar*nDim;
- 
+
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
   const su2double Beta            = config->GetAoS()*PI_NUMBER/180.0;
@@ -4797,7 +5017,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           config->GEMM_Tick(&tick);
           DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solDOFs, gradSolInt);
           config->GEMM_Tock(tick, "Friction_Forces", nInt*nDim, nVar, nDOFsElem);
-          
+
           /* Determine the offset between r- and -s-derivatives, which is also the
              offset between s- and t-derivatives. */
           const unsigned short offDeriv = nVar*nInt;
@@ -4882,7 +5102,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
             for(unsigned short iDim=0; iDim<nDim; ++iDim) {
               Force[iDim] = 0.0;
-              for(unsigned short jDim=0; jDim<nDim; ++jDim) 
+              for(unsigned short jDim=0; jDim<nDim; ++jDim)
                 Force[iDim] -= tauVis[iDim][jDim]*normals[jDim];
 
               MomentDist[iDim]    = Coord[iDim] - Origin[iDim];
@@ -4995,12 +5215,12 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
     SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
                        MPI_SUM, MPI_COMM_WORLD);
   }
-  
+
   /*--- Copy the data back from globBuf into the required variables. ---*/
   ii = 0;
   AllBound_CD_Visc  = globBuf[ii++]; AllBound_CL_Visc       = globBuf[ii++];
   AllBound_CSF_Visc = globBuf[ii++]; AllBound_CMx_Visc      = globBuf[ii++];
-  AllBound_CMy_Visc = globBuf[ii++]; AllBound_CMz_Visc      = globBuf[ii++]; 
+  AllBound_CMy_Visc = globBuf[ii++]; AllBound_CMz_Visc      = globBuf[ii++];
   AllBound_CFx_Visc = globBuf[ii++]; AllBound_CFy_Visc      = globBuf[ii++];
   AllBound_CFz_Visc = globBuf[ii++]; AllBound_HeatFlux_Visc = globBuf[ii++];
 
@@ -5055,7 +5275,8 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  /* Check whether or not a time stepping scheme is used. */
+  const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
@@ -5074,34 +5295,33 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   /* Store the number of metric points per DOF, which depends
      on the number of dimensions. */
   const unsigned short nMetricPerPoint = nDim*nDim + 1;
-  
+
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
 
   /* Easier storage of the CFL number. Note that if we are using explicit
    time stepping, the regular CFL condition has been overwritten with the
    unsteady CFL condition in the config post-processing (if non-zero). */
-  
+
   const su2double CFL = config->GetCFL(iMesh);
 
   /*--- Explicit time stepping with imposed time step (eventually will
    allow for local time stepping with this value imposed as the time
-   for syncing the cells). If the unsteady CFL is set to zero (default), 
+   for syncing the cells). If the unsteady CFL is set to zero (default),
    it uses the defined unsteady time step, otherwise it computes the time
    step based on the provided unsteady CFL. Note that the regular CFL
    option in the config is always ignored with time stepping. ---*/
-  
   if (time_stepping && (config->GetUnst_CFL() == 0.0)) {
-    
+
     /*--- Loop over the owned volume elements and set the fixed dt. ---*/
     for(unsigned long i=0; i<nVolElemOwned; ++i)
       VecDeltaTime[i] = config->GetDelta_UnstTimeND();
-    
+
   } else {
-    
+
     /*--- Check for a compressible solver. ---*/
     if(config->GetKind_Regime() == COMPRESSIBLE) {
-      
+
       /*--- Loop over the owned volume elements. ---*/
       for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
@@ -5129,7 +5349,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
           DenseMatrixProduct(nDOFs*nDim, nVar, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
         }
-        
+
         /*--- Loop over the DOFs of this element and determine the maximum wave speed
               and the maximum value of the viscous spectral radius. ---*/
         su2double charVel2Max = 0.0, radViscMax = 0.0;
@@ -5145,22 +5365,22 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
             velAbs[iDim] = fabs(vel[iDim]);
             Velocity2 += vel[iDim]*vel[iDim];
           }
-          
+
           /*--- Compute the maximum value of the wave speed. This is a rather
                 conservative estimate. ---*/
           const su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
           FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
           const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
           const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
-          
+
           su2double charVel2 = 0.0;
           for(unsigned short iDim=0; iDim<nDim; ++iDim) {
             const su2double rad = velAbs[iDim] + SoundSpeed;
             charVel2 += rad*rad;
           }
-          
+
           charVel2Max = max(charVel2Max, charVel2);
-          
+
           /* Compute the laminar kinematic viscosity and check if an eddy
              viscosity must be determined. */
           const su2double muLam = FluidModel->GetLaminarViscosity();
@@ -5221,32 +5441,33 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
           /* Update the maximum value of the viscous spectral radius. */
           radViscMax = max(radViscMax, radVisc);
         }
-        
+
         /*--- Compute the time step for the element and update the minimum and
-              maximum value. ---*/
-        const su2double dtInv = lenScaleInv*(charVel2Max + radViscMax*lenScaleInv);
-        
+              maximum value. Take the factor for time accurate local time
+              stepping into account for the minimum and maximum. ---*/
+        const su2double dtInv = lenScaleInv*(sqrt(charVel2Max) + radViscMax*lenScaleInv);
+
         VecDeltaTime[i] = CFL/dtInv;
-        
-        Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
-        Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
+
+        Min_Delta_Time = min(Min_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
+        Max_Delta_Time = max(Max_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
       }
     }
     else {
-      
+
       /*--- Incompressible solver. ---*/
-      
+
       int rank = MASTER_NODE;
 #ifdef HAVE_MPI
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
       MPI_Barrier(MPI_COMM_WORLD);
 #endif
-      
+
       if(rank == MASTER_NODE) {
         cout << "In function CFEM_DG_EulerSolver::SetTime_Step" << endl;
         cout << "Incompressible solver not implemented yet" << endl;
       }
-      
+
 #ifdef HAVE_MPI
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
@@ -5254,9 +5475,9 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 #else
       exit(EXIT_FAILURE);
 #endif
-      
+
     }
-    
+
     /*--- Compute the max and the min dt (in parallel). Note that we only
      so this for steady calculations if the high verbosity is set, but we
      always perform the reduction for unsteady calculations where the CFL
@@ -5265,16 +5486,19 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
       SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-      
+
       rbuf_time = Max_Delta_Time;
       SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
     }
-    /*--- For explicit time stepping with an unsteady CFL imposed, 
-     use the minimum delta time of the entire mesh. ---*/
+
+    /*--- For explicit time stepping with an unsteady CFL imposed, use the
+          minimum delta time of the entire mesh. As Min_Delta_Time is scaled to
+          the time step of the largest time level, a correction must be used
+          for the time level when time accurate local time stepping is used. ---*/
     if (time_stepping) {
       for(unsigned long i=0; i<nVolElemOwned; ++i)
-        VecDeltaTime[i] = Min_Delta_Time;
+        VecDeltaTime[i] = Min_Delta_Time/volElem[i].factTimeLevel;
     }
   }
 }
@@ -5315,7 +5539,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
   su2double *divFlux       = work;
 
   /* Determine the offset between the r-derivatives and s-derivatives, which is
-     also the offset between s- and t-derivatives, of the fluxes in the 
+     also the offset between s- and t-derivatives, of the fluxes in the
      integration points and the solution in the DOFs. */
   const unsigned short offDerivSol    = nVar*nDOFs;
   const unsigned short offDerivFluxes = nVar*nInt*nDim;
@@ -5327,7 +5551,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Determine the Cartesian fluxes of the Navier-Stokes        ---*/
   /*---         equations in the DOFs.                                     ---*/
-  /*--------------------------------------------------------------------------*/ 
+  /*--------------------------------------------------------------------------*/
 
   /* Compute the derivatives of the solution variables w.r.t. the parametric
      coordinates in the DOFs. */
@@ -5357,7 +5581,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
           terms in this DOF. Note that at the end a multiplication with JacInv
           takes places, because the metric terms are scaled by the Jacobian. ---*/
     su2double solGradCart[5][3];
-    for(unsigned short k=0; k<nDim; ++k) { 
+    for(unsigned short k=0; k<nDim; ++k) {
       for(unsigned short j=0; j<nVar; ++j) {
         solGradCart[j][k] = 0.0;
         for(unsigned short l=0; l<nDim; ++l)
@@ -5565,7 +5789,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
   /*---         integration points and also determine the first and second ---*/
   /*---         derivatives of these variables in the integration points.  ---*/
   /*---         All derivatives are w.r.t. the parametric coordinates.     ---*/
-  /*--------------------------------------------------------------------------*/ 
+  /*--------------------------------------------------------------------------*/
 
   /*--- The computation of the second derivatives happens in two stages. First
         the first derivatives in the DOFs are determined and these are then
@@ -5744,7 +5968,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
           derivatives must be computed. ---*/
     su2double ViscosityTurb = 0.0;
     su2double ViscosityTurbGrad[] = {0.0, 0.0, 0.0};
-    
+
     if( SGSModelUsed ) {
       const su2double dist = elem->wallDistance[i];
       ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
@@ -5807,7 +6031,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
                             * (velGrad[k][l] + velGrad[l][k])
                             + vel[k]*Viscosity*(vel2ndDer[k][l][l] + vel2ndDer[l][k][l]
                             +                   lambdaOverMu*vel2ndDer[l][k][l]);
-      } 
+      }
 
       divFluxInt[k+1] *= weightJac;
     }
@@ -5925,7 +6149,7 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
       for (unsigned short j=0; j<nDOFs; ++j)
         vecTemp[i] += matVanderInv[i+j*nDOFs]*machSolDOFs[j];
     }
-    
+
     /* Get the L2 norm of solution coefficients for the highest polynomial order. */
     for(unsigned short i=nDOFsPm1; i<nDOFs; ++i) {
         sensorVal += vecTemp[i]*vecTemp[i];
@@ -6217,9 +6441,13 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
+<<<<<<< HEAD
 //    if(rank == MASTER_NODE) {
 //	 cout << "Cell " << l << " vol residuals = " << res[0] << ", " << res[1] << ", " << res[2] << ", " << res[3] << endl;
 //    }
+=======
+
+>>>>>>> feature_hom
   }
 }
 
@@ -6231,7 +6459,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
   /*--- Set the pointers for the local arrays. ---*/
   su2double tick = 0.0;
   su2double tick2 = 0.0;
-  
+
   unsigned int sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
@@ -6323,7 +6551,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. ---*/
     for(unsigned short j=0; j<(nVar*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
-    
+
     config->Tock(tick, "ER_1_2", 4);
 
     /*------------------------------------------------------------------------*/
@@ -6376,7 +6604,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
     config->GEMM_Tock(tick, "ResidualFaces1", nDOFsFace0, nVar, nInt);
-    
+
     /* Easier storage of the position in the residual array for side 1 of
        this face and update the corresponding counter. */
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
@@ -6547,7 +6775,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
                                                    su2double      *kOverCvInt) {
 
   su2double tick = 0.0;
-  
+
   /* Constant factor present in the heat flux vector. Set it to zero if the heat
      flux is prescribed, such that no if statements are needed in the loop. */
   const su2double factHeatFlux_Lam  = HeatFlux_Prescribed ? 0.0: Gamma/Prandtl_Lam;
@@ -6576,7 +6804,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
   config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solElem, gradSolInt);
   config->GEMM_Tock(tick, "ViscousNormalFluxFace", nInt*nDim, nVar, nDOFsElem);
-  
+
   /* Determine the offset between r- and -s-derivatives, which is also the
      offset between s- and t-derivatives. */
   const unsigned short offDeriv = nVar*nInt;
@@ -6605,7 +6833,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
     /*--- Call the function ViscousNormalFluxIntegrationPoint to compute the
           actual normal viscous flux. The viscosity and thermal conductivity
           are stored for later use. ---*/
-    const su2double *normal  = metricNormalsFace + i*(nDim+1); 
+    const su2double *normal  = metricNormalsFace + i*(nDim+1);
     su2double *normalFlux    = viscNormFluxes + i*nVar;
     const su2double wallDist = wallDistanceInt ? wallDistanceInt[i] : 0.0;
 
@@ -6709,7 +6937,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint(const su2double *sol,
   /* Set the energy flux to the prescribed heat flux. If the heat flux is
      not prescribed HeatFlux is equal to zero. */
   normalFlux[nVar-1] = normal[nDim]*HeatFlux;
-      
+
   /*--- Loop over the number of dimensions to compute the fluxes in the
         direction of the parametric coordinates. ---*/
   for(unsigned short k=0; k<nDim; ++k) {
@@ -6718,7 +6946,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint(const su2double *sol,
     /*--- Loop over the variables to update the normal flux. Note
           that the loop starts at 1, because the mass conservation
           does not have a viscous contribution. ---*/
-    for(unsigned short j=1; j<nVar; ++j) 
+    for(unsigned short j=1; j<nVar; ++j)
       normalFlux[j] += fluxCart[j][k]*unscaledNorm;
   }
 }
@@ -6923,7 +7151,7 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -6986,7 +7214,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
                                     CConfig *config,
                                     unsigned short val_marker) {
   su2double tick = 0.0;
-  
+
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
@@ -7013,7 +7241,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -7064,7 +7292,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solElem, gradSolInt);
     config->GEMM_Tock(tick, "BC_Sym_Plane", nInt*nDim, nVar, nDOFsElem);
-    
+
     /*--- Loop over the integration points to apply the symmetry condition
           and to compute the viscous normal fluxes. This is done in the same
           loop, because the gradients in the right integration points are
@@ -7196,7 +7424,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -7289,7 +7517,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   }
 }
 
-void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, 
+void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Retrieve the specified total conditions for this inlet. ---*/
@@ -7322,7 +7550,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -7452,7 +7680,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   }
 }
 
-void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, 
+void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Retrieve the specified back pressure for this outlet.
@@ -7478,7 +7706,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -7606,7 +7834,7 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -7716,10 +7944,10 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
   su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
-  
+
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -7822,7 +8050,7 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
 
   /* Easier storage of the boundary faces for this boundary marker. */
   const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
@@ -7931,7 +8159,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       unsigned long            &indResFaces) {
 
   su2double tick = 0.0;
-  
+
   /*--- Get the required information from the standard element. ---*/
   const unsigned short ind          = surfElem->indStandardElement;
   const unsigned short nInt         = standardBoundaryFacesSol[ind].GetNIntegration();
@@ -7988,7 +8216,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
   config->GEMM_Tock(tick, "ResidualViscousBoundaryFace1", nDOFs, nVar, nInt);
-  
+
   /*------------------------------------------------------------------------*/
   /*--- Step 3: Compute the symmetrizing terms, if present, in the       ---*/
   /*---         integration points of this boundary face.                ---*/
