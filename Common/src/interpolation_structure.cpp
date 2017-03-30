@@ -401,54 +401,6 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     /*-- Collect coordinates, global points, and normal vectors ---*/
     Collect_VertexInfo( false, markDonor, markTarget, nVertexDonor, nDim );
 
-//  TEMPORARY FOR TEST ONLY! TRANSLATION
-    su2double CoordLocal_i_min, CoordLocal_i_max, CoordLocal_j_min, CoordLocal_j_max, *CoordLocal_j;
-    unsigned long Point_Donor;
-    unsigned short pDir = 1;
-    CoordLocal_i_min = HUGE;  CoordLocal_i_max = -HUGE;
-    CoordLocal_j_min = HUGE;  CoordLocal_j_max = -HUGE;
-
-    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
-    Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
-    Coord_i = target_geometry->node[Point_Target]->GetCoord();
-
-    if (target_geometry->node[Point_Target]->GetDomain()) {
-    if (Coord_i[pDir] < CoordLocal_i_min)
-    CoordLocal_i_min = Coord_i[pDir];
-    }
-    if (Coord_i[pDir] > CoordLocal_i_max)
-    CoordLocal_i_max = Coord_i[pDir];
-
-    }
-
-    for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
-    Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
-    CoordLocal_j = donor_geometry->node[Point_Donor]->GetCoord();
-
-    if (donor_geometry->node[Point_Donor]->GetDomain()) {
-    if (CoordLocal_j[pDir] < CoordLocal_j_min)
-    CoordLocal_j_min = CoordLocal_j[pDir];
-    }
-    if (CoordLocal_j[pDir] > CoordLocal_j_max)
-    CoordLocal_j_max = CoordLocal_j[pDir];
-    }
-
-    su2double CoordGlobal_i_min, CoordGlobal_i_max, CoordGlobal_j_min, CoordGlobal_j_max;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&CoordLocal_i_min, &CoordGlobal_i_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&CoordLocal_i_max, &CoordGlobal_i_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&CoordLocal_j_min, &CoordGlobal_j_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&CoordLocal_j_max, &CoordGlobal_j_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-  CoordGlobal_i_min = CoordLocal_i_min;  CoordGlobal_i_max = CoordLocal_i_max;
-  CoordGlobal_j_min = CoordLocal_j_min;  CoordGlobal_j_max = CoordLocal_j_max;
-#endif
-//cout << CoordLocal_i_max - CoordLocal_i_min   << " --> I LOCAL  "  << endl;
-//cout << CoordGlobal_i_max - CoordGlobal_i_min << " --> I GLOBAL "  << endl;
-//cout << CoordLocal_j_max - CoordLocal_j_min   << " --> J LOCAL  "  << endl;
-//cout << CoordGlobal_j_max - CoordGlobal_j_min << " --> J GLOBAL "  << endl;
-
     /*--- Compute the closest point to a Near-Field boundary point ---*/
     maxdist = 0.0;
 
@@ -464,141 +416,28 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
         /*--- Coordinates of the boundary point ---*/
         Coord_i = target_geometry->node[Point_Target]->GetCoord();
 
-
-        mindist    = HUGE;
+        mindist    = 1E6; 
         pProcessor = 0;
 
         /*--- Loop over all the boundaries to find the pair ---*/
 
-        su2double dist_t;
-
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
           for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
             Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
 
             /*--- Compute the dist ---*/
-            dist  = 0.0;
-            dist_t = 0.0;
+            dist = 0.0; 
             for (iDim = 0; iDim < nDim; iDim++) {
               Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-              if ( iDim == pDir && Coord_i[iDim] > CoordGlobal_j_max   ){
-                dist += pow(Coord_j[iDim] - (Coord_i[iDim] - 0.04463756775),2.0);
-              }
-              else if ( iDim == pDir && Coord_i[iDim] <=  CoordGlobal_j_min  ){
-                dist += pow(Coord_j[iDim] - (Coord_i[iDim] + 0.04463756775),2.0);
-              }
-              else
-                dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
+              dist += pow(Coord_j[iDim] - Coord_i[iDim], 2.0);
             }
 
-//--------END SECTION FOR TRANSLATION
+            if (dist < mindist) {
+              mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
+            }
 
-
-//----------ROTATION SECTION---------------------------------
-//
-//    //TEMPORARY FOR TEST ONLY! ROTATION
-//    su2double Theta_i_min, Theta_i_max, Theta_j_min, Theta_j_max, *Coord_j_global;
-//    unsigned long Point_Donor;
-//    Theta_i_min = HUGE;  Theta_i_max = -HUGE;
-//    Theta_j_min = HUGE;  Theta_j_max = -HUGE;
-//
-//    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
-//    /*--- Compute the min ---*/
-//    Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
-//    Coord_i = target_geometry->node[Point_Target]->GetCoord();
-//
-//    if (target_geometry->node[Point_Target]->GetDomain()) {
-//    if (atan(Coord_i[1]/Coord_i[0]) < Theta_i_min)
-//    Theta_i_min = atan2(Coord_i[1], Coord_i[0]);
-//    }
-//    if (atan(Coord_i[1]/Coord_i[0]) > Theta_i_max)
-//    Theta_i_max = atan2(Coord_i[1], Coord_i[0]);
-//
-//    }
-//
-//
-//    for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
-//    Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
-//    Coord_j_global = donor_geometry->node[Point_Donor]->GetCoord();
-//
-//    if (donor_geometry->node[Point_Donor]->GetDomain()) {
-//    if (atan(Coord_j_global[1]/Coord_j_global[0]) < Theta_j_min)
-//    Theta_j_min = atan2(Coord_j_global[1], Coord_j_global[0]);
-//    }
-//    if (atan(Coord_j_global[1]/ Coord_j_global[0]) > Theta_j_max)
-//    Theta_j_max = atan2(Coord_j_global[1], Coord_j_global[0]);
-//    }
-//
-//    /*--- Compute the closest point to a Near-Field boundary point ---*/
-//    maxdist = 0.0;
-//
-//    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
-//
-//      Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
-//
-//      if ( target_geometry->node[Point_Target]->GetDomain() ) {
-//
-//        target_geometry->vertex[markTarget][iVertexTarget]->SetnDonorPoints(1);
-//        target_geometry->vertex[markTarget][iVertexTarget]->Allocate_DonorInfo(); // Possible meme leak?
-//
-//        /*--- Coordinates of the boundary point ---*/
-//        Coord_i = target_geometry->node[Point_Target]->GetCoord();
-//
-//        su2double Theta_i, R_i;
-//        Theta_i = atan2(Coord_i[1],Coord_i[0]);
-//        R_i = sqrt(pow(Coord_i[1],2)+pow(Coord_i[0],2));
-//
-//        mindist    = HUGE;
-//        pProcessor = 0;
-//
-//        /*--- Loop over all the boundaries to find the pair ---*/
-//
-//        su2double dist_t;
-//
-//        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-//        for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
-//        Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
-//
-//        /*--- Compute the dist ---*/
-//        dist  = 0.0;
-//        dist_t = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//        Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-//        if ( iDim == 0 && Theta_i > Theta_j_max   ){
-//        dist += pow(Coord_j[iDim] - (R_i * cos(Theta_i - 12.41/180*PI_NUMBER)),2.0);
-//        }
-//        else if ( iDim == 0 && Theta_i <=  Theta_j_min  ){
-//        dist += pow(Coord_j[iDim] - (R_i * cos(Theta_i + 12.41/180*PI_NUMBER)),2.0);
-//        }
-//        else if ( iDim == 1 && Theta_i > Theta_j_max   ){
-//        dist += pow(Coord_j[iDim] - (R_i * sin(Theta_i - 12.41/180*PI_NUMBER)),2.0);
-//        }
-//        else if ( iDim == 1 && Theta_i <=  Theta_j_min  ){
-//        dist += pow(Coord_j[iDim] - (R_i * sin(Theta_i + 12.41/180*PI_NUMBER)),2.0);
-//        }
-//        else
-//        dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
-//        }
-
-//-------------------------------END OF ROTATION
-
-//        cout.precision(17);
-//        cout << "+++++++++++++" << endl;
-//        cout << "Theta_iM-> " << Theta_i_max*180/PI_NUMBER << "  jM: " << Theta_j_max*180/PI_NUMBER << endl;
-//        cout << "Theta_im-> " << Theta_i_min*180/PI_NUMBER << "  jm: " << Theta_j_min*180/PI_NUMBER << endl;
-//        cout << "Pitch_i -> " << (Theta_i_max-Theta_i_min)*180/PI_NUMBER << "  pj: " << (Theta_j_max-Theta_j_min)*180/PI_NUMBER << endl;
-//        cout << "Coord_i -> " << Coord_i[0]  << "      " << Coord_i[1] << endl;
-//        cout << "Coord_j -> " << Coord_j[0]  << "      " << Coord_j[1] << endl;
-//        cout << "dist    -> " << dist        << endl;
-//        cout << "dist_t  -> " << dist_t      << endl;
-//        cout << "mindist -> " << dist        << endl;
-
-        if (dist < mindist) {
-        mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
-        }
-
-        if (dist == 0.0) break;
-        }
+            if (dist == 0.0) break;
+          }
 
         } 
 
