@@ -4377,6 +4377,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   Conn_Line = NULL;
   Conn_BoundTria = NULL;
   Conn_BoundQuad = NULL;
+
+  Conn_Line_Linear = NULL;
+  Conn_BoundTria_Linear = NULL;
+  Conn_BoundQuad_Linear = NULL;
+
   Conn_Tria = NULL;
   Conn_Quad = NULL;
   Conn_Tetr = NULL;
@@ -4403,6 +4408,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
 
   DistributeColoring(config, geometry);
 
+  /*--- Distribute the points to all ranks based on the coloring. ---*/
+
+  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+    cout <<"Distributing grid points." << endl;
+
+  DistributePoints(config, geometry);
+
   /*--- Distribute the element information to all ranks based on coloring. ---*/
 
   if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
@@ -4418,16 +4430,30 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   /*--- Distribute the marker information to all ranks based on coloring. ---*/
 
   if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Distributing surface element connectivity." << endl;
+    cout <<"Distributing markers and surface elements." << endl;
 
-  //DistributeSurfaceConnectivity(config, geometry, TRIANGLE     );
+  /*--- First, perform a linear partitioning of the marker information, as
+   the grid readers currently store all boundary information on the master
+   rank. In the future, this process can be moved directly into the grid
+   reader to avoid reading the markers to the master rank alone at first. ---*/
 
-  /*--- Distribute the point information to all ranks based on the coloring. ---*/
+  //PartitionSurfacePoints(config, geometry);
+  PartitionSurfaceConnectivity(config, geometry, LINE          );
+  PartitionSurfaceConnectivity(config, geometry, TRIANGLE      );
+  PartitionSurfaceConnectivity(config, geometry, QUADRILATERAL );
 
-  if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Distributing grid points." << endl;
+  cout << " Surface elems for rank " << rank << ": " << nLinear_Line << ", " << nLinear_BoundTria << ", " << nLinear_BoundQuad << endl;
+  //PartitionPeriodicPoints(config, geometry);
 
-  DistributePoints(config, geometry);
+  /*--- Once the markers are distributed according to the linear partitioning
+   of the grid points, we can use similar techniques as above for distributing
+   the surface element connectivity. ---*/
+
+  //DistributeSurfacePoints(config, geometry);
+  //DistributeSurfaceConnectivity(config, geometry, LINE          );
+  //DistributeSurfaceConnectivity(config, geometry, TRIANGLE      );
+  //DistributeSurfaceConnectivity(config, geometry, QUADRILATERAL );
+  //DistributePeriodicPoints(config, geometry);
 
   /*--- Now load all of the geomtric information into place for the class. ---*/
 
@@ -4469,6 +4495,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
 
   if (Local_Elems != NULL) delete [] Local_Elems;
 
+  if (nLinear_Line > 0      && Conn_Line_Linear      != NULL) delete [] Conn_Line_Linear;
+  if (nLinear_BoundTria > 0 && Conn_BoundTria_Linear != NULL) delete [] Conn_BoundTria_Linear;
+  if (nLinear_BoundQuad > 0 && Conn_BoundQuad_Linear != NULL) delete [] Conn_BoundQuad_Linear;
   if (nLocal_Line > 0      && Conn_Line      != NULL) delete [] Conn_Line;
   if (nLocal_BoundTria > 0 && Conn_BoundTria != NULL) delete [] Conn_BoundTria;
   if (nLocal_BoundQuad > 0 && Conn_BoundQuad != NULL) delete [] Conn_BoundQuad;
@@ -5553,6 +5582,411 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   delete [] nPoint_Recv;
   delete [] nPoint_Send;
   delete [] nPoint_Flag;
+  
+}
+
+void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+
+  /*--- We begin with all marker information residing on the master rank,
+   as the master currently stores all marker info when reading the grid.
+   We first check and communicate basic information that each rank will
+   need to hold its portion of the linearly partitioned markers. In a
+   later step, we will distribute the markers according to the ParMETIS
+   coloring. This intermediate step is necessary since we already have the
+   correct coloring distributed by the linear partitions, which we would
+   like to reuse when partitioning the markers. Plus, the markers should
+   truly be linearly partitioned upon reading the mesh, which we will
+   change soon. ---*/
+
+  unsigned long iProcessor;
+  unsigned short NODES_PER_ELEMENT;
+  unsigned long nElem_Total = 0, Global_Index;
+
+  unsigned long iMarker;
+
+  unsigned long *Conn_Elem  = NULL;
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Request *send_req, *recv_req;
+  MPI_Status status;
+  int ind;
+#endif
+
+  /*--- Store the local number of this element type and the number of nodes
+   per this element type. In serial, this will be the total number of this
+   element type in the entire mesh. In parallel, it is the number on only
+   the current partition. ---*/
+
+  switch (Elem_Type) {
+    case LINE:
+      NODES_PER_ELEMENT = N_POINTS_LINE;
+      break;
+    case TRIANGLE:
+      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+      break;
+    case QUADRILATERAL:
+      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+      break;
+    default:
+      cout << "Error: Unrecognized element type \n";
+      exit(EXIT_FAILURE); break;
+  }
+
+  int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
+  int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
+  int *nElem_Flag = new int[size];
+
+  for (int ii=0; ii < size; ii++) {
+    nElem_Send[ii] = 0;
+    nElem_Recv[ii] = 0;
+    nElem_Flag[ii]= -1;
+  }
+  nElem_Send[size] = 0; nElem_Recv[size] = 0;
+
+  /*--- We know that the master owns all of the info and will be the only
+   rank sending anything, although all ranks might receive something. ---*/
+
+  if (rank == MASTER_NODE) {
+    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+
+      /*--- Reset the flag in between markers, just to ensure that we
+       don't miss some elements on different markers with the same local
+       index. ---*/
+
+      for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
+
+      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+
+        for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
+
+          if (geometry->bound[iMarker][ii]->GetVTK_Type() == Elem_Type) {
+
+            for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+
+              /*--- Get the index of the current point (stored as global). ---*/
+
+              Global_Index = geometry->bound[iMarker][ii]->GetNode(jj);
+
+              /*--- Search for the processor that owns this point ---*/
+
+              iProcessor = Global_Index/geometry->npoint_procs[0];
+              if (iProcessor >= (unsigned long)size)
+                iProcessor = (unsigned long)size-1;
+              if (Global_Index >= geometry->nPoint_Linear[iProcessor])
+                while(Global_Index >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
+              else
+                while(Global_Index <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
+
+              /*--- If we have not visited this element yet, increment our
+               number of elements that must be sent to a particular proc. ---*/
+
+              if ((nElem_Flag[iProcessor] != ii)) {
+                nElem_Flag[iProcessor] = ii;
+                nElem_Send[iProcessor+1]++;
+              }
+
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Communicate the number of cells to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many cells it will receive from each other processor. ---*/
+
+#ifdef HAVE_MPI
+  SU2_MPI::Scatter(&(nElem_Send[1]), 1, MPI_INT,
+                   &(nElem_Recv[1]), 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  nElem_Recv[1] = nElem_Send[1];
+#endif
+
+  /*--- Prepare to send connectivities. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+
+  int nSends = 0, nRecvs = 0;
+  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+
+  for (int ii = 0; ii < size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
+    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
+
+    nElem_Send[ii+1] += nElem_Send[ii];
+    nElem_Recv[ii+1] += nElem_Recv[ii];
+  }
+
+  /*--- Allocate memory to hold the connectivity that we are
+   sending. ---*/
+
+  unsigned long *connSend = NULL;
+  unsigned long *markerSend = NULL;
+
+  if (rank == MASTER_NODE) {
+
+    connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
+    for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
+      connSend[ii] = 0;
+
+    markerSend = new unsigned long[nElem_Send[size]];
+    for (int ii = 0; ii < nElem_Send[size]; ii++)
+      markerSend[ii] = 0;
+
+    /*--- Create an index variable to keep track of our index
+     position as we load up the send buffer. ---*/
+
+    unsigned long *index = new unsigned long[size];
+    for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+
+    unsigned long *markerIndex = new unsigned long[size];
+    for (int ii=0; ii < size; ii++) markerIndex[ii] = nElem_Send[ii];
+
+    /*--- Loop through our elements and load the elems and their
+     additional data that we will send to the other procs. ---*/
+
+    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+
+      /*--- Reset the flag in between markers, just to ensure that we
+       don't miss some elements on different markers with the same local
+       index. ---*/
+
+      for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
+
+      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+
+        for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
+
+          if (geometry->bound[iMarker][ii]->GetVTK_Type() == Elem_Type) {
+            for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+
+              /*--- Get the index of the current point. ---*/
+
+              Global_Index = geometry->bound[iMarker][ii]->GetNode(jj);
+
+              /*--- Search for the processor that owns this point ---*/
+
+              iProcessor = Global_Index/geometry->npoint_procs[0];
+              if (iProcessor >= (unsigned long)size)
+                iProcessor = (unsigned long)size-1;
+              if (Global_Index >= geometry->nPoint_Linear[iProcessor])
+                while(Global_Index >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
+              else
+                while(Global_Index <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
+
+              /*--- Load connectivity into the buffer for sending ---*/
+
+              if ((nElem_Flag[iProcessor] != ii)) {
+
+                nElem_Flag[iProcessor] = ii;
+                unsigned long nn = index[iProcessor];
+                unsigned long mm = markerIndex[iProcessor];
+
+                /*--- Load the connectivity values. ---*/
+
+                for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
+                  connSend[nn] = geometry->bound[iMarker][ii]->GetNode(kk); nn++;
+                }
+
+                /*--- Store the marker index ---*/
+
+                markerSend[mm] = iMarker;
+
+                /*--- Increment the index by the message length ---*/
+
+                index[iProcessor] += NODES_PER_ELEMENT;
+                markerIndex[iProcessor]++;
+              }
+
+            }
+          }
+        }
+      }
+    }
+
+    /*--- Free memory after loading up the send buffer. ---*/
+
+    delete [] index;
+    delete [] markerIndex;
+
+  }
+
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+
+  unsigned long *connRecv = NULL;
+  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
+  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
+    connRecv[ii] = 0;
+
+  unsigned long *markerRecv = new unsigned long[nElem_Recv[size]];
+  for (int ii = 0; ii < nElem_Recv[size]; ii++)
+    markerRecv[ii] = 0;
+
+#ifdef HAVE_MPI
+  /*--- We need double the number of messages to send both the conn.
+   and the flags for the halo cells. ---*/
+
+  send_req = new MPI_Request[2*nSends];
+  recv_req = new MPI_Request[2*nRecvs];
+
+  /*--- Launch the non-blocking recv's for the connectivity. ---*/
+
+  unsigned long iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = NODES_PER_ELEMENT*kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+      iMessage++;
+    }
+  }
+
+  /*--- Launch the non-blocking sends of the connectivity. ---*/
+
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll = NODES_PER_ELEMENT*nElem_Send[ii];
+      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+      int count  = NODES_PER_ELEMENT*kk;
+      int dest = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage]));
+      iMessage++;
+    }
+  }
+
+  /*--- Repeat the process to communicate the halo flags. ---*/
+
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(markerRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+      iMessage++;
+    }
+  }
+
+  /*--- Launch the non-blocking sends of the halo flags. ---*/
+
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll = nElem_Send[ii];
+      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+      int count  = kk;
+      int dest   = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(markerSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+      iMessage++;
+    }
+  }
+#endif
+
+  /*--- Copy my own rank's data into the recv buffer directly. ---*/
+
+  if (rank == MASTER_NODE) {
+
+    int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
+    int ll = NODES_PER_ELEMENT*nElem_Send[rank];
+    int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
+
+    for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+
+    mm = nElem_Recv[rank];
+    ll = nElem_Send[rank];
+    kk = nElem_Send[rank+1];
+
+    for (int nn=ll; nn<kk; nn++, mm++) markerRecv[mm] = markerSend[nn];
+
+  }
+
+  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
+
+#ifdef HAVE_MPI
+  int number = 2*nSends;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, send_req, &ind, &status);
+
+  number = 2*nRecvs;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, recv_req, &ind, &status);
+
+  delete [] send_req;
+  delete [] recv_req;
+#endif
+
+
+  /*--- Store the connectivity for this rank in the proper data
+   structure before post-processing below. Note that we add 1 here
+   to the connectivity for vizualization packages. First, allocate
+   appropriate amount of memory for this section. ---*/
+
+  if (nElem_Recv[size] > 0)
+    Conn_Elem = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
+  int count = 0; nElem_Total = 0;
+  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+    nElem_Total++;
+    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
+      Conn_Elem[count] = (int)connRecv[ii*NODES_PER_ELEMENT+jj] + 1;
+      count++;
+    }
+  }
+
+  /*--- Do something here with marker index values. ---*/
+
+
+  /*--- Store the particular global element count in the class data,
+   and set the class data pointer to the connectivity array. ---*/
+
+  switch (Elem_Type) {
+    case LINE:
+      nLinear_Line = nElem_Total;
+      if (nLinear_Line > 0) Conn_Line_Linear = Conn_Elem;
+      break;
+    case TRIANGLE:
+      nLinear_BoundTria = nElem_Total;
+      if (nLinear_BoundTria > 0) Conn_BoundTria_Linear = Conn_Elem;
+      break;
+    case QUADRILATERAL:
+      nLinear_BoundQuad = nElem_Total;
+      if (nLinear_BoundQuad > 0) Conn_BoundQuad_Linear = Conn_Elem;
+      break;
+    default:
+      cout << "Error: Unrecognized element type \n";
+      exit(EXIT_FAILURE); break;
+  }
+  
+  /*--- Free temporary memory from communications ---*/
+  
+  if (connSend   != NULL) delete [] connSend;
+  if (markerSend != NULL) delete [] markerSend;
+  
+  delete [] connRecv;
+  delete [] markerRecv;
+  delete [] nElem_Recv;
+  delete [] nElem_Send;
+  delete [] nElem_Flag;
   
 }
 
