@@ -357,19 +357,8 @@ CDriver::CDriver(char* confFile,
       InitStaticMeshMovement(true, 0);
   }
 
-//TODO(turbo) make it general for turbo HB
-  if (config_container[ZONE_0]->GetBoolTurbomachinery()){
-    if (rank == MASTER_NODE) cout <<endl<<"Compute average geometrical quantities for turbomachinery simulations." << endl;
-    for (iZone = 0; iZone < nZone; iZone++) {
-      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
-      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
-      geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
-
-    }
-    if (rank == MASTER_NODE) cout << "Transfer turbo average geometrical quantities to zone 0." << endl;
-    for (iZone = 1; iZone < nZone; iZone++) {
-      transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
-    }
+ if (config_container[ZONE_0]->GetBoolTurbomachinery()){
+      TurbomachineryPreprocessing();
   }
 
 
@@ -2697,6 +2686,29 @@ void CDriver::InitStaticMeshMovement(bool print, unsigned long ExtIter){
       break;
     }
   }
+}
+
+void CDriver::TurbomachineryPreprocessing(){
+
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+//TODO(turbo) make it general for turbo HB
+  if (rank == MASTER_NODE) cout <<endl<<"Compute average geometrical quantities for turbomachinery simulations." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
+    geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
+    geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
+
+  }
+  if (rank == MASTER_NODE) cout << "Transfer turbo average geometrical quantities to zone 0." << endl;
+  for (iZone = 1; iZone < nZone; iZone++) {
+    transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
+  }
+
 }
 
 void CDriver::StartSolver() {
