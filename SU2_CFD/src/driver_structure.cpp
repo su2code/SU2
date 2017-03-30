@@ -358,6 +358,7 @@ CDriver::CDriver(char* confFile,
   }
 
  if (config_container[ZONE_0]->GetBoolTurbomachinery()){
+   if (rank == MASTER_NODE)cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
       TurbomachineryPreprocessing();
   }
 
@@ -2696,19 +2697,20 @@ void CDriver::TurbomachineryPreprocessing(){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+  if (rank == MASTER_NODE) cout<<endl<<"Initialize solver containers for average and performance quantities." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     solver_container[iZone][MESH_0][FLOW_SOL]->InitTurboContainers(geometry_container[iZone][MESH_0],config_container[iZone]);
   }
 
 //TODO(turbo) make it general for turbo HB
-  if (rank == MASTER_NODE) cout <<endl<<"Compute average geometrical quantities for turbomachinery simulations." << endl;
+  if (rank == MASTER_NODE) cout<<"Compute inflow and outflow average geometric quantities." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
     geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
 
   }
-  if (rank == MASTER_NODE) cout << "Transfer turbo average geometrical quantities to zone 0." << endl;
+  if (rank == MASTER_NODE) cout << "Transfer average geometric quantities to zone 0." << endl;
   for (iZone = 1; iZone < nZone; iZone++) {
     transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
   }
