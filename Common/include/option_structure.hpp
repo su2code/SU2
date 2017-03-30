@@ -664,6 +664,19 @@ static const map<string, ENUM_2PHASE_MODEL> Two_phase_Model_Map = CCreateMap<str
 ("QMOM_RUS", QMOM_RUS);
 
 
+enum ENUM_NUCLEATION_MODEL {
+  CLASSICAL_THEORY = 0, /*!< \brief No 2phase model. */
+};
+static const map<string, ENUM_NUCLEATION_MODEL> Nucleation_Model_Map = CCreateMap<string, ENUM_NUCLEATION_MODEL>
+("CLASSICAL_THEORY", CLASSICAL_THEORY);
+
+
+enum ENUM_LIQUID_MODEL {
+  WATER = 0, /*!< \brief No 2phase model. */
+};
+static const map<string, ENUM_LIQUID_MODEL> Liquid_Model_Map = CCreateMap<string, ENUM_LIQUID_MODEL>
+("WATER", WATER);
+
 /*!
  * \brief types of transition models
  */

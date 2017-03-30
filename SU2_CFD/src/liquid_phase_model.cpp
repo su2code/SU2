@@ -80,12 +80,16 @@ void CLiquidModel::SetRCritical(su2double P, su2double T) {
 
 void CLiquidModel::SetDensity_Mixture(su2double rho, su2double *Two_Phase_Var) {
 
-	    y = Two_Phase_Var[3]*(rho_l - rho);
-	    y = y + 0.75 * rho / 3.14;
-	    y = y*rho_l / y;
+	    if (Two_Phase_Var[3] == 0) {
+	    	rho_m = rho;
+	    } else {
+			y = Two_Phase_Var[3]*(rho_l - rho);
+			y = y + 0.75 * rho / 3.14;
+			y = Two_Phase_Var[3]*rho_l / y;
 
-	    rho_m = y/ rho_l + (1.0 - y)/ rho;
-	    rho_m = 1.0/ rho_m;
+			rho_m = y/ rho_l + (1.0 - y)/ rho;
+			rho_m = 1.0/ rho_m;
+	    }
 }
 
 

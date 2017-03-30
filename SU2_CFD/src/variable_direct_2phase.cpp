@@ -35,10 +35,14 @@
 
 C2phaseVariable::C2phaseVariable(void) : CVariable() {
 
+	unsigned short iVar;
+
 	Source = 0; Enthalpy_Liquid = 0;
 	Radius = 0; Liquid_Fraction = 0;
 
 	Primitive_Liquid = new su2double [9];
+	for (iVar = 0; iVar < 9; iVar++)
+		  Primitive_Liquid[iVar] = 0.0;
 
 }
 
@@ -136,14 +140,14 @@ void C2phase_HillVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2d
 
 }
 
-su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Phase_Var,CConfig *config) {
+su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Phase_Var,CFluidModel *FluidModel, CConfig *config) {
 
 	su2double rho_l, rho_m, T_l, h_l, Psat, Tsat, sigma, Rc, R;
 
-	P   = Primitive[nDim+1] / config->GetPressure_Ref();
-	T   = Primitive[0]      / config->GetTemperature_Ref();
-	rho = Primitive[nDim+2] / config->GetDensity_Ref();
-	h   = Primitive[nDim+3] / config->GetEnergy_Ref();
+	P   = Primitive[nDim+1] * config->GetPressure_Ref();
+	T   = Primitive[0]      * config->GetTemperature_Ref();
+	rho = Primitive[nDim+2] * config->GetDensity_Ref();
+	h   = Primitive[nDim+3] * config->GetEnergy_Ref();
 
 	FluidModel->SetLiquidProp(P, T, rho, h, Two_Phase_Var);
 

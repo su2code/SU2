@@ -462,6 +462,7 @@ void C2phaseSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 void C2phaseSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
   
 	  su2double *Two_phase_i, *Two_phase_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
+	  su2double *Liquid_vec;
 	  unsigned long iEdge, iPoint, jPoint;
 	  unsigned short iDim, iVar;
 
@@ -488,6 +489,9 @@ void C2phaseSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
 	    Two_phase_i = node[iPoint]->GetSolution();
 	    Two_phase_j = node[jPoint]->GetSolution();
 	    numerics->Set2phaseVar(Two_phase_i, Two_phase_j);
+
+	    Liquid_vec = node[iPoint]->SetLiquidPrim(V_i, Two_phase_i, FluidModel, config);
+	    numerics->SetPrimitive_Liquid(Liquid_vec);
 
 	    /*--- Grid Movement ---*/
 
@@ -555,13 +559,14 @@ void C2phaseSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
 
 	      numerics->Set2phaseVar(Solution_i, Solution_j);
 
-	      /* liquid properties stored in Primitive_Liquid*/
-
-	      node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config);
+	//      numerics->SetPrimitive_Liquid(node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config));
 
 	    }
 
 	    /*--- Add and subtract residual ---*/
+
+	    cout << "Solution before upwind " << Two_phase_i[0] << endl;
+	    getchar();
 
 	    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
@@ -576,8 +581,9 @@ void C2phaseSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
 	    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
 
 	  }
-  
-}
+
+	}
+
 
 
 
@@ -1081,13 +1087,11 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 }
 
 
-
 C2phase_HillSolver::C2phase_HillSolver(void) : C2phaseSolver() {
-
   
 }
 
-C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : C2phaseSolver() {
+C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel) : C2phaseSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint;
   ifstream restart_file;
@@ -1098,6 +1102,8 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+
+
   /*--- Dimension of the problem --> dependent on the 2phase model. ---*/
   nVar = 4;
   nPoint = geometry->GetnPoint();
@@ -1194,13 +1200,14 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
   
   lowerlimit[1] = 1.0e-4;
   upperlimit[1] = 1.0e15;
+
   
   /*--- Far-field flow state quantities and initialization. ---*/
   su2double RInf, NInf, DInf;
 
   DInf    = 1.0;
-  RInf    = 0.0;
-  NInf    = 0.0;
+  RInf    = 0;
+  NInf    = 0;
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
@@ -1220,6 +1227,8 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
 C2phase_HillSolver::~C2phase_HillSolver(void) {
   
 }
+
+
 
 void C2phase_HillSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
@@ -1249,11 +1258,14 @@ void C2phase_HillSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   
   if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
 
+
+
 }
 
 void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
   su2double *Two_phase_i, *Two_phase_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
+  su2double *Liquid_vec;
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
 
@@ -1280,6 +1292,9 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
     Two_phase_i = node[iPoint]->GetSolution();
     Two_phase_j = node[jPoint]->GetSolution();
     numerics->Set2phaseVar(Two_phase_i, Two_phase_j);
+
+    Liquid_vec = node[iPoint]->SetLiquidPrim(V_i, Two_phase_i, solver_container[FLOW_SOL]->GetFluidModel(), config);
+    numerics->SetPrimitive_Liquid(Liquid_vec);
 
     /*--- Grid Movement ---*/
 
@@ -1347,17 +1362,18 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
       numerics->Set2phaseVar(Solution_i, Solution_j);
 
-
-      /* liquid properties stored in Primitive_Liquid*/
-
-      numerics->SetPrimitive_Liquid(node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config));
-
+//      numerics->SetPrimitive_Liquid(node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config));
 
     }
 
     /*--- Add and subtract residual ---*/
-
     numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+    Residual[0] = 1e3;
+    Residual[1] = 1e3;
+    Residual[2] = 1e3;
+    Residual[3] = 1e3;
+
 
     LinSysRes.AddBlock(iPoint, Residual);
     LinSysRes.SubtractBlock(jPoint, Residual);
@@ -1441,7 +1457,7 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 
 	numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-	numerics->SetPrimitive_Liquid(solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim());
+//	numerics->SetPrimitive_Liquid(solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim());
 
     numerics->ComputeResidual(Residual, Jacobian_i, node[iPoint]->GetLiquidPrim(), NULL, config);
 
@@ -1934,124 +1950,129 @@ void C2phase_QMOMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
 
 void C2phase_QMOMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
-  su2double *Two_phase_i, *Two_phase_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
-  unsigned long iEdge, iPoint, jPoint;
-  unsigned short iDim, iVar;
+	  su2double *Two_phase_i, *Two_phase_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
+	  su2double *Liquid_vec;
+	  unsigned long iEdge, iPoint, jPoint;
+	  unsigned short iDim, iVar;
 
-  bool second_order  = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
-  bool limiter       = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
-  bool grid_movement = config->GetGrid_Movement();
+	  bool second_order  = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
+	  bool limiter       = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
+	  bool grid_movement = config->GetGrid_Movement();
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+	  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    /*--- Points in edge and normal vectors ---*/
+	    /*--- Points in edge and normal vectors ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+	    iPoint = geometry->edge[iEdge]->GetNode(0);
+	    jPoint = geometry->edge[iEdge]->GetNode(1);
+	    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-    /*--- Primitive variables w/o reconstruction ---*/
+	    /*--- Primitive variables w/o reconstruction ---*/
 
-    V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-    V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
-    numerics->SetPrimitive(V_i, V_j);
+	    V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+	    V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+	    numerics->SetPrimitive(V_i, V_j);
 
-    /*--- 2phase variables w/o reconstruction ---*/
+	    /*--- 2phase variables w/o reconstruction ---*/
 
-    Two_phase_i = node[iPoint]->GetSolution();
-    Two_phase_j = node[jPoint]->GetSolution();
-    numerics->Set2phaseVar(Two_phase_i, Two_phase_j);
+	    Two_phase_i = node[iPoint]->GetSolution();
+	    Two_phase_j = node[jPoint]->GetSolution();
+	    numerics->Set2phaseVar(Two_phase_i, Two_phase_j);
 
-    /*--- Grid Movement ---*/
+	    Liquid_vec = node[iPoint]->SetLiquidPrim(V_i, Two_phase_i, FluidModel, config);
+	    numerics->SetPrimitive_Liquid(Liquid_vec);
 
-    if (grid_movement)
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+	    /*--- Grid Movement ---*/
 
-    if (second_order) {
+	    if (grid_movement)
+	      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
 
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-      }
+	    if (second_order) {
 
-      /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
+	      for (iDim = 0; iDim < nDim; iDim++) {
+	        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+	        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+	      }
 
-      Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-      Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive();
-      if (limiter) {
-        Limiter_i = solver_container[FLOW_SOL]->node[iPoint]->GetLimiter_Primitive();
-        Limiter_j = solver_container[FLOW_SOL]->node[jPoint]->GetLimiter_Primitive();
-      }
+	      /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
 
-      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-        }
-        if (limiter) {
-          FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-        }
-        else {
-          FlowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-          FlowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
-        }
-      }
+	      Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+	      Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive();
+	      if (limiter) {
+	        Limiter_i = solver_container[FLOW_SOL]->node[iPoint]->GetLimiter_Primitive();
+	        Limiter_j = solver_container[FLOW_SOL]->node[jPoint]->GetLimiter_Primitive();
+	      }
 
-      numerics->SetPrimitive(FlowPrimVar_i, FlowPrimVar_j);
+	      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+	        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+	        for (iDim = 0; iDim < nDim; iDim++) {
+	          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+	          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+	        }
+	        if (limiter) {
+	          FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+	          FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+	        }
+	        else {
+	          FlowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
+	          FlowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
+	        }
+	      }
 
-      /*--- Turbulent variables using gradient reconstruction and limiters ---*/
+	      numerics->SetPrimitive(FlowPrimVar_i, FlowPrimVar_j);
 
-      Gradient_i = node[iPoint]->GetGradient();
-      Gradient_j = node[jPoint]->GetGradient();
-      if (limiter) {
-        Limiter_i = node[iPoint]->GetLimiter();
-        Limiter_j = node[jPoint]->GetLimiter();
-      }
+	      /*--- Turbulent variables using gradient reconstruction and limiters ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-        }
-        if (limiter) {
-          Solution_i[iVar] = Two_phase_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          Solution_j[iVar] = Two_phase_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-        }
-        else {
-          Solution_i[iVar] = Two_phase_i[iVar] + Project_Grad_i;
-          Solution_j[iVar] = Two_phase_j[iVar] + Project_Grad_j;
-        }
-      }
+	      Gradient_i = node[iPoint]->GetGradient();
+	      Gradient_j = node[jPoint]->GetGradient();
+	      if (limiter) {
+	        Limiter_i = node[iPoint]->GetLimiter();
+	        Limiter_j = node[jPoint]->GetLimiter();
+	      }
 
-      numerics->Set2phaseVar(Solution_i, Solution_j);
+	      for (iVar = 0; iVar < nVar; iVar++) {
+	        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+	        for (iDim = 0; iDim < nDim; iDim++) {
+	          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+	          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+	        }
+	        if (limiter) {
+	          Solution_i[iVar] = Two_phase_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+	          Solution_j[iVar] = Two_phase_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+	        }
+	        else {
+	          Solution_i[iVar] = Two_phase_i[iVar] + Project_Grad_i;
+	          Solution_j[iVar] = Two_phase_j[iVar] + Project_Grad_j;
+	        }
+	      }
 
+	      numerics->Set2phaseVar(Solution_i, Solution_j);
 
-      /* liquid properties stored in Primitive_Liquid*/
+	//      numerics->SetPrimitive_Liquid(node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config));
 
-      node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config);
+	    }
 
-    }
+	    /*--- Add and subtract residual ---*/
 
-    /*--- Add and subtract residual ---*/
+	    cout << "Solution before upwind " << Two_phase_i[0] << endl;
+	    getchar();
 
-    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+	    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
-    LinSysRes.AddBlock(iPoint, Residual);
-    LinSysRes.SubtractBlock(jPoint, Residual);
+	    LinSysRes.AddBlock(iPoint, Residual);
+	    LinSysRes.SubtractBlock(jPoint, Residual);
 
-    /*--- Implicit part ---*/
+	    /*--- Implicit part ---*/
 
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+	    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+	    Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+	    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+	    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
 
-  }
+	  }
 
-}
+	}
+
 
 void C2phase_QMOMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
@@ -2119,6 +2140,7 @@ void C2phase_QMOMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     /*--- Compute the source term ---*/
 
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
+
 
     /*--- Subtract residual and the Jacobian ---*/
 

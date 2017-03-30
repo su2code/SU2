@@ -1108,7 +1108,7 @@ inline void       C2phaseVariable::SetDropletProp(su2double rho_l, su2double rho
 
 inline su2double  C2phaseVariable::GetRadius() { return Radius; } 
 
-inline su2double* C2phaseVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config) {}
+inline su2double* C2phaseVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config) {}
 
 inline  su2double C2phaseVariable::GetMassSource()   {return Source;} 
 
@@ -1152,7 +1152,7 @@ inline su2double  CVariable::GetLiquidFraction() { return 0;}
 inline su2double  CVariable::GetLiquidEnthalpy() { return 0;}   
 
 
-inline su2double* CVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config) {}
+inline su2double* CVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config) {}
 
 inline  void      CVariable::SetSource(su2double S)  {}   
 

@@ -3433,6 +3433,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Density_FreeStream  = config->GetDensity_FreeStream();
   Temperature_FreeStream  = config->GetTemperature_FreeStream();
 
+
   switch (config->GetKind_FluidModel()) {
 
     case STANDARD_AIR:
@@ -3681,7 +3682,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
  
   /*--- Delete the original (dimensional) FluidModel object before replacing. ---*/
-  
+
+
   delete FluidModel;
  
   switch (config->GetKind_FluidModel()) {

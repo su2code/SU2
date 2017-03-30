@@ -1912,3 +1912,4 @@ inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
   }
 }
 
+inline CFluidModel* C2phaseSolver::GetFluidModel(void) { return FluidModel;}

@@ -38,6 +38,14 @@ CNucleationModel::CNucleationModel() {
 
 CNucleationModel::CNucleationModel(CConfig *config) {
 
+}
+
+CNucleationModel::~CNucleationModel(void) { }
+
+
+
+CClassicalTheory::CClassicalTheory(CConfig *config) : CNucleationModel() {
+
 	Gamma = config->GetGamma();
 	Gas_Constant = config -> GetGas_ConstantND();
 
@@ -45,13 +53,6 @@ CNucleationModel::CNucleationModel(CConfig *config) {
 	MolMass   = 18.0 * 1.66054e-27 / config ->GetMass_Ref();
 
 
-}
-
-CNucleationModel::~CNucleationModel(void) { }
-
-
-
-CClassicalTheory::CClassicalTheory() : CNucleationModel() {
 
 }
 
@@ -61,13 +62,14 @@ CClassicalTheory::~CClassicalTheory(void) {
 }
 
 
-void CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2double rho,
+su2double CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2double rho,
 		                      su2double h, su2double k, su2double mu, su2double *V_l) {
 
 	// V_l = T, rho, h, Psat, Tsat, sigma, Rc
 
 	if ((V_l[4]-T) < 0) {
 		J = 0;
+
 	} else {
 
 		Theta = (h - V_l[2])/Gas_Constant/T;
@@ -82,9 +84,11 @@ void CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2double rh
 
 	}
 
+	return J;
+
 }
 
-void CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double rho,
+su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double rho,
 		                      su2double h, su2double k, su2double mu, su2double *V_l) {
 
 	// V_l = T, rho, h, Psat, Tsat, sigma, Rc
@@ -95,8 +99,7 @@ void CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double rho,
 
 		G = k * (V_l[4] - T);
 
-		if (V_l[7] == 0) G = G * (1-V_l[6]/1e-15);
-		else G = G * (1-V_l[6]/V_l[7]);
+		if (V_l[7] != 0) G = G * (1-V_l[6]/V_l[7]);
 
 		G = G / V_l[1] / (h - V_l[2]);
 
@@ -106,13 +109,16 @@ void CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double rho,
 		Ni = Ni * Gas_Constant * V_l[4] / (h - V_l[2]);
 
 		Lambda = 1.5* mu * sqrt(Gas_Constant * T / P);
+
 		Pr = Gas_Constant * Gamma / (Gamma - 1) * mu / k;
 
 		Lambda = V_l[7] + 1.89 * (1-Ni) * Lambda / Pr;
+
 		G   = G / Lambda;
 
 	}
 
+	return G;
 }
 
 

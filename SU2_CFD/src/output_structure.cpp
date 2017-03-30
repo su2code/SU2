@@ -5172,8 +5172,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
         
         switch (config[val_iZone]->GetKind_Solver()) {
-          case EULER :                  case NAVIER_STOKES:
-          case TWO_PHASE_EULER :        case TWO_PHASE_NAVIER_STOKES:
+        case TWO_PHASE_EULER :        case TWO_PHASE_NAVIER_STOKES:
             
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
@@ -5203,32 +5202,69 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             cout << "-------------------------------------------------------------------------" << endl;
             
-            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
-            else cout << endl << " IntIter" << " ExtIter";
-            
-            //            if (!fluid_structure) {
-            if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
-            else if (rotating_frame && nDim == 3) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
-            else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
-            else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
-            else if (turbo)
-              switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
-                case BLADE:
-                  cout << "     Res[Rho]" << "     Res[RhoE]"  << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
-                  break;
-                case STAGE: case TURBINE:
-                  cout << "     Res[Rho]" << "     Res[RhoE]"  << " TSEfficiency(%)" << " Outlet Pressure" << endl;
-                  break;
-                default:
-                  break;
-              }
-            else cout << "     Res[Rho]" << "     Res[RhoE]" << "      CL(Total)" << "      CD(Total)" << endl;
+            cout << endl << " IntIter" << " ExtIter";
+            cout <<  "     Res[Rho]" << "     Res[RhoE]" << "      Res[N]" << "      Res[y]" << endl;
             //            }
             //            else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
             
             break;
             
-          case RANS :
+			  case EULER :        case NAVIER_STOKES:
+
+				/*--- Visualize the maximum residual ---*/
+				iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
+				Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
+
+				cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
+
+				cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+
+				if (config[val_iZone]->GetSystemMeasurements() == SI) {
+				  cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
+				  if (nDim == 3) cout << ", " << Coord[2];
+				  cout <<   ")." << endl;
+				}
+				else {
+				  cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
+				  if (nDim == 3) cout << ", " << Coord[2]*12.0;
+				  cout <<   ")." << endl;
+				}
+
+				/*--- Print out the number of non-physical points and reconstructions ---*/
+
+				if (config[val_iZone]->GetNonphysical_Points() > 0)
+				  cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+				if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
+				  cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
+
+				cout << "-------------------------------------------------------------------------" << endl;
+
+				if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+				else cout << endl << " IntIter" << " ExtIter";
+
+				//            if (!fluid_structure) {
+				if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
+				else if (rotating_frame && nDim == 3) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
+				else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
+				else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
+				else if (turbo)
+				  switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
+					case BLADE:
+					  cout << "     Res[Rho]" << "     Res[RhoE]"  << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
+					  break;
+					case STAGE: case TURBINE:
+					  cout << "     Res[Rho]" << "     Res[RhoE]"  << " TSEfficiency(%)" << " Outlet Pressure" << endl;
+					  break;
+					default:
+					  break;
+				  }
+				else cout << "     Res[Rho]" << "     Res[RhoE]" << "      CL(Total)" << "      CD(Total)" << endl;
+				//            }
+				//            else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
+
+				break;
+
+			  case RANS :
             
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
@@ -5582,6 +5618,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if (incompressible) cout.width(13);
           else  cout.width(14);
           cout << log10(residual_flow[0]);
+          if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
+          else { cout.width(14); cout << log10(residual_flow[4]); }
           //          else  cout.width(14),
           //                 cout << log10(residual_flow[0]),
           //                 cout.width(14);
@@ -5589,8 +5627,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           //          if ( nDim==3 ) cout << log10(residual_flow[4]);
 
           cout.width(14); cout << log10(max(residual_2phase[0], 1e-30));
-          cout.width(15); cout << log10(max(residual_2phase[1], 1e-30));
-          cout.width(15); cout << log10(max(residual_2phase[2], 1e-30));
           cout.width(15); cout << log10(max(residual_2phase[3], 1e-30));
 
           cout << endl;

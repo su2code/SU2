@@ -2039,7 +2039,7 @@ public:
 
   virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
-  virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
+  virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config);
 
   virtual su2double GetRadius() ;
 
@@ -3687,7 +3687,6 @@ protected:
 	su2double Source, Enthalpy_Liquid, Radius, Liquid_Fraction;
 	su2double *Primitive_Liquid;
 
-	CFluidModel *FluidModel;
 
 public:
   /*!
@@ -3711,7 +3710,7 @@ public:
 
   virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
-  virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
+  virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config);
 
   su2double  GetRadius() ;
 
@@ -4000,7 +3999,7 @@ public:
 
   su2double GetLiquidPrim() ;
 */
-  su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
+  su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config);
 
 };
 

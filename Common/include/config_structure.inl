@@ -1513,3 +1513,8 @@ inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
 inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 
 inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
+
+
+inline unsigned short CConfig::GetKind_Nucleation_Model(void) { return Kind_Nucleation_Model; }
+
+inline unsigned short CConfig::GetKind_Liquid_Model(void) { return Kind_Liquid_Model; }

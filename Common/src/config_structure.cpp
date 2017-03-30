@@ -543,8 +543,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
-  /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify 2phase model \n Options: DEFAULT: NO_2PHASE_MODEL \ingroup Config*/
+  /*!\brief KIND_2PHASE_MODEL \n DESCRIPTION: Specify 2phase model \n Options: DEFAULT: NO_2PHASE_MODEL \ingroup Config*/
   addEnumOption("KIND_2PHASE_MODEL", Kind_2phase_Model, Two_phase_Model_Map, NO_2PHASE_MODEL);
+
+  /*!\brief KIND_NUCLEATION_MODEL \n DESCRIPTION: Specify nucleation model \n Options: DEFAULT: classical theory \ingroup Config*/
+  addEnumOption("KIND_NUCLEATION_MODEL", Kind_Nucleation_Model, Nucleation_Model_Map, CLASSICAL_THEORY);
+
+  /*!\brief KIND_LIQUID_MODEL \n DESCRIPTION: Specify liquid model \n Options: DEFAULT: WATER \ingroup Config*/
+  addEnumOption("KIND_LIQUID_MODEL", Kind_Liquid_Model, Liquid_Model_Map, WATER);
+
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
