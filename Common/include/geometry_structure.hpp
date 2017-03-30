@@ -961,6 +961,7 @@ class CPhysicalGeometry : public CGeometry {
   vector<unsigned long> LocalPoints;
   vector<vector<unsigned long> > Neighbors;
   map<unsigned long, unsigned long> Color_List;
+  vector<string> Marker_Tags;
   unsigned long nLocal_Point,
   nLocal_PointDomain,
   nLocal_PointGhost,
@@ -977,10 +978,13 @@ class CPhysicalGeometry : public CGeometry {
   nLocal_Hexa,
   nLocal_Pris,
   nLocal_Pyra;
+  unsigned long nMarker_Global;
   su2double *Local_Coords;
   unsigned long *Local_Points;
   unsigned long *Local_Colors;
   unsigned long *Local_Elems;
+  unsigned long *Linear_Markers;
+  unsigned long *Local_Markers;
   unsigned long *Conn_Line;
   unsigned long *Conn_BoundTria;
   unsigned long *Conn_BoundQuad;
@@ -1046,19 +1050,34 @@ public:
   void DistributeColoring(CConfig *config, CGeometry *geometry);
 
   /*!
-   * \brief Distribute the connectivity for a single volume element type across all ranks based on a ParMETIS coloring.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being distributed.
-   */
-  void DistributeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-
-  /*!
    * \brief Distribute the grid points, including ghost points, across all ranks based on a ParMETIS coloring.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void DistributePoints(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Distribute the connectivity for a single volume element type across all ranks based on a ParMETIS coloring.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being distributed.
+   */
+  void DistributeVolumeConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+
+  /*!
+   * \brief Distribute the connectivity for a single surface element type in all markers across all ranks based on a ParMETIS coloring.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being distributed.
+   */
+  void DistributeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+
+  /*!
+   * \brief Broadcast the marker tags for all boundaries from the master rank to all other ranks.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DistributeMarkerTags(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Partition the marker information according to a linear partitioning of the grid nodes.
@@ -1074,6 +1093,27 @@ public:
    * \param[in] Elem_Type - VTK index of the element type being distributed.
    */
   void PartitionSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+
+  /*!
+   * \brief Load the local grid points after partitioning (owned and ghost) into the geometry class objects.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void LoadPoints(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Load the local volume elements after partitioning (owned and ghost) into the geometry class objects.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void LoadVolumeElements(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Load the local surface elements after partitioning (owned and ghost) into the geometry class objects.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void LoadSurfaceElements(CConfig *config, CGeometry *geometry);
 
   /*!
 	 * \brief Set the send receive boundaries of the grid.
