@@ -94,6 +94,7 @@ CDriver::CDriver(char* confFile,
     numerics_container[iZone]             = NULL;
     config_container[iZone]               = NULL;
     geometry_container[iZone]             = NULL;
+
     surface_movement[iZone]               = NULL;
     grid_movement[iZone]                  = NULL;
     FFDBox[iZone]                         = NULL;
@@ -2713,12 +2714,15 @@ void CDriver::InitStaticMeshMovement(bool print, unsigned long ExtIter){
 void CDriver::TurbomachineryPreprocessing(){
 
   int rank = MASTER_NODE;
+  unsigned short iTimeInstance = 0, jTimeInstance = 0, iGeomZone = 0, jGeomZone = 0;
+  unsigned short nTimeInstances = config_container[ZONE_0]->GetnTimeInstances();
+  unsigned short nGeomZones     = nZone/nTimeInstances;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-//TODO(turbo) make it general for turbo HB
+  //TODO(turbo) make it general for turbo HB
   if (rank == MASTER_NODE) cout <<endl<<"Compute average geometrical quantities for turbomachinery simulations." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
@@ -2727,8 +2731,20 @@ void CDriver::TurbomachineryPreprocessing(){
 
   }
   if (rank == MASTER_NODE) cout << "Transfer turbo average geometrical quantities to zone 0." << endl;
-  for (iZone = 1; iZone < nZone; iZone++) {
-    transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
+
+  if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
+    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++) {
+      jTimeInstance = iTimeInstance;
+      for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
+        jTimeInstance += nTimeInstances;
+        transfer_performance_container[jTimeInstance][iTimeInstance]->GatherAverageTurboGeoValues(geometry_container[jTimeInstance][MESH_0],
+            geometry_container[iTimeInstance][MESH_0], iGeomZone);
+      }
+    }
+  }
+  else {
+    for (iZone = 1; iZone < nZone; iZone++)
+      transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
   }
 
 }
@@ -5112,20 +5128,20 @@ void CHBMultiZoneDriver::Run() {
     }
   }
 
-  if(ExtIter == 0){
-    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++) {
-      jTimeInstance = iTimeInstance;
-      for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
-        jTimeInstance += nTimeInstances;
-                  transfer_performance_container[jTimeInstance][iTimeInstance]->GatherAverageTurboGeoValues(geometry_container[jTimeInstance][MESH_0],
-                      geometry_container[iTimeInstance][MESH_0], iGeomZone);
-      }
-    }
+//  if(ExtIter == 0){
+//    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++) {
+//      jTimeInstance = iTimeInstance;
+//      for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
+//        jTimeInstance += nTimeInstances;
+//                  transfer_performance_container[jTimeInstance][iTimeInstance]->GatherAverageTurboGeoValues(geometry_container[jTimeInstance][MESH_0],
+//                      geometry_container[iTimeInstance][MESH_0], iGeomZone);
+//      }
+//    }
 
 //    for (iZone = 0; iZone < nZone; iZone++) {
 //      if(mixingplane)PreprocessingMixingPlane(iZone);
 //    }
-  }
+//  }
 
 //  /* --- Set the mixing-plane interface ---*/
 //  for (iZone = 0; iZone < nZone; iZone++) {
