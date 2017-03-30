@@ -458,16 +458,6 @@ void CPoint::AddResolutionTensor(unsigned short iDim, unsigned short jDim,
   if (iDim < nDim && jDim < nDim) ResolutionTensor[iDim][jDim] += tensor_value;
 };
 
-vector<vector<su2double> > CPoint::GetResolutionTensor(void) {
-  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
-  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
-    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
-      output[iDim][jDim] = ResolutionTensor[iDim][jDim];
-    }
-  }
-  return output;
-}
-
 void CPoint::SetResolutionGradient(unsigned short iDim, unsigned short jDim,
                                    unsigned short kDim, su2double grad_value) {
   if (iDim < nDim && jDim < nDim && kDim < nDim)

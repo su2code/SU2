@@ -3,7 +3,7 @@
  * \brief This test checks whether the correct viscous residual is calculated
  *        for anisotropic viscosities on incompressible flows.
  * \author C. Pederson
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

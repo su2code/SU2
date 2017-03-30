@@ -293,7 +293,7 @@ public:
   /*!
    * \brief Gets the resolution tensor for the given grid object.
    */
-  virtual vector<vector<su2double> > GetResolutionTensor(void);
+  su2double** GetResolutionTensor(void);
 };
 
 /*!
@@ -800,13 +800,6 @@ public:
    * \param[in] val_coord - Coordinates of the element.
    */
   void SetResolutionTensor(su2double **val_coord);
-
-  /*!
-   * \brief Gets the resolution tensor for a quadrilateral element.
-   * \return A 2x2 resolution tensor representing the separation distances
-   *         across the cell in the global coordinates.
-   */
-  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -1050,14 +1043,6 @@ public:
    * \param[in] val_coord - Coordinates of the element.
    */
   void SetResolutionTensor(su2double **val_coord);
-
-  /*!
-   * \brief Gets the resolution tensor for the given hexahedral cell.
-   *
-   * \return A 3x3 resolution tensor representing the separation distances
-   *         across the cell in the global coordinates.
-   */
-  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!

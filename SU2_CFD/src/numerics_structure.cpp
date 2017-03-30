@@ -133,7 +133,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   l = new su2double [nDim];
   m = new su2double [nDim];
-  
 }
 
 CNumerics::~CNumerics(void) {

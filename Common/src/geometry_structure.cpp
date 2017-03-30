@@ -9600,7 +9600,7 @@ void CGeometry::SetResolutionTensor(void) {
   unsigned short nNode, iNode;
   unsigned long elem_poin;
   su2double temp_value;
-  vector<vector<su2double> > temp_tensor;
+  su2double** temp_tensor;
   su2double **Coord;
 
   /*--- Compute the resolution tensor for primal mesh elements ---*/
@@ -9649,7 +9649,7 @@ void CGeometry::SetResolutionGradient(void) {
   unsigned short iDim, jDim, kDim, lDim;
   unsigned short iVar, iNeigh;
   unsigned long iPoint, jPoint;
-  vector<vector<su2double> > M_temp;
+  su2double** M_temp;
   vector<vector<su2double> > M_i(nDim, vector<su2double>(nDim));
   vector<vector<su2double> > M_j(nDim, vector<su2double>(nDim));
   su2double** Smatrix;

@@ -3373,6 +3373,65 @@ CAvgGrad_Flow::~CAvgGrad_Flow(void) {
   
 }
 
+void CAvgGrad_Flow::ComputeAnisoEddyViscosity(su2double** primvar_grad,
+                                              su2double** resolution,
+                                              su2double scalar_eddy_viscosity,
+                                              su2double** eddy_viscosity) {
+  unsigned short iDim, jDim, pDim, qDim;
+  su2double** delta_u;  // Tensor analog of velocity difference
+  su2double** Qt;       // Tensor analog of 2-point, 2nd order struct. func.
+  su2double** MQM;
+  su2double** sqrtMQM;
+
+//    /*--- Allocate temporary arrays ---*/
+//    delta_u = new su2double*[nDim];
+//    Qt = new su2double*[nDim];
+//    MQM = new su2double*[nDim];
+//    sqrtMQM = new su2double*[nDim];
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      delta_u[iDim] = new su2double[nDim];
+//      Qt[iDim] = new su2double[nDim];
+//      MQM[iDim] = new su2double[nDim];
+//      sqrtMQM[iDim] = new su2double[nDim];
+//    }
+//
+//    /*-- Force arrays to be zero --*/
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      for (jDim = 0; jDim < nDim; jDim++) {
+//        delta_u[iDim][jDim] = 0.0;
+//        Qt[iDim][jDim] = 0.0;
+//        MQM[iDim][jDim] = 0.0;
+//        sqrtMQM[iDim][jDim] = 0.0;
+//        eddy_viscosity[iDim][jDim] = 0.0;
+//      }
+//    }
+//
+//    /*--- Gradient of U * Resolution Tensor ---*/
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      for (jDim = 0; jDim < nDim; jDim++)
+//        for (pDim = 0; pDim < nDim; pDim++)
+//          delta_u[iDim][jDim] += primvar_grad[iDim+1][pDim]*resolution[pDim][jDim];
+//
+//    /*--- Q_{ij} = \pderiv{U_k}{x_m} M_{mi} \pderiv{U_k}{x_n} M_{nj} ---*/
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      for (jDim = 0; jDim < nDim; jDim++)
+//        for (pDim = 0; pDim < nDim; pDim++)
+//          Qt[iDim][jDim] += delta_u[pDim][iDim]*delta_u[pDim][jDim];
+//
+//    /*--- Resolution Tensor * Q * Resolution Tensor ---*/
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      for (jDim = 0; jDim < nDim; jDim++)
+//        for (pDim = 0; pDim < nDim; pDim++)
+//          for (qDim = 0; qDim < nDim; qDim++)
+//            MQM += resolution[iDim][pDim]*Qt[pDim][qDim]*resolution[qDim][jDim];
+//
+//    sqrtMQM = f(MQM) // ?????
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    for (jDim = 0; jDim < nDim; jDim++)
+      eddy_viscosity[iDim][jDim] = scalar_eddy_viscosity*delta[iDim][jDim];
+}
+
 void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
   /*--- Normalized normal vector ---*/

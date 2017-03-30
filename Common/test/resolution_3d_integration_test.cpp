@@ -79,7 +79,7 @@ void WriteQuadMeshFile () {
     Mesh_File << "%" << std::endl;
     Mesh_File << "% Problem dimension" << std::endl;
     Mesh_File << "%" << std::endl;
-    Mesh_File << "NDIME= 3" << std::endl; // TODO: Include nDim
+    Mesh_File << "NDIME= 3" << std::endl;
     Mesh_File << "%" << std::endl;
     Mesh_File << "% Inner element connectivity" << std::endl;
     Mesh_File << "%" << std::endl;
@@ -275,7 +275,7 @@ int main() {
 
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
-    vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
+    su2double** Mij = geometry->node[iPoint]->GetResolutionTensor();
 
     // ---------------------------------------------------------------------------
     // Check that the values of Mij are correct

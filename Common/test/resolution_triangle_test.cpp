@@ -199,7 +199,7 @@ int main() {
 
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
-    vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
+    su2double** Mij = geometry->node[iPoint]->GetResolutionTensor();
 
     // ---------------------------------------------------------------------------
     // Check that the values of Mij are correct

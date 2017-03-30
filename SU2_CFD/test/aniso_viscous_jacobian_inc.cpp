@@ -1,7 +1,7 @@
 /*!
  * \file aniso_viscous_flux.cpp
  * \brief checks whether the viscous projected flux is computed correctly for
- *        anisotropic eddy viscosities in compressible flow.
+ *        anisotropic eddy viscosities in incompressible flow.
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  *
@@ -45,11 +45,11 @@
 #include "../include/numerics_structure.hpp"
 
 const unsigned short nDim = 3;
-const unsigned short nVar = 5;
+const unsigned short nVar = 4;
 
 class TestNumerics : public CNumerics {
  public:
-  TestNumerics(CConfig* config) : CNumerics(3, 5, config) {
+  TestNumerics(CConfig* config) : CNumerics(3, 4, config) {
   };
 };
 
@@ -75,12 +75,12 @@ int main() {
       gradprimvar[iVar][jDim] = 0.0;
   }
 
+
   gradprimvar[1][1] =  1; // dU/dy
   gradprimvar[2][0] = -1; // dV/dx
   su2double normal[nDim] = {1.0, 0.0, 0.0};
-  su2double prim_var[6] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-  su2double turb_ke = 3.0;
   su2double laminar_viscosity = 0.000;
+  su2double eddy_viscosity = 0.015;
   su2double** Aniso_Eddy_Viscosity = new su2double*[nDim];
   int counter = 1;
   for (int iDim = 0; iDim < nDim; iDim++) {
@@ -90,31 +90,30 @@ int main() {
       counter++;
     }
   }
-
-  /**---------------------------------------------------------------------------
-   * Test
-   * 
-   * We set up \nu_{ij} = [[1.0, 2.0, 3.0],[4.0, 5.0, 6.0],[7.0, 8.0, 9.0]]
-   * k = 3.0
-   * \rho = 1.0
-   * \pderiv{u_i}{x_j} = [[0,1,0],[-1,0,0],[0,0,0]]
-   * 
-   * Which gives us:
-   * G_{ij} = \pderiv{u_i}{x_j} = [[0,1,0],[-1,0,0],[0,0,0]]
-   * 
-   * \tau_{ij} = [[6,4,8],[4,-6,-7],[8,-7,2]]
-   *
-   * So the correct projected flux on a normal of [1,0,0] is:
-   * output = [6,4,8]
-   *---------------------------------------------------------------------------
-   */
-  su2double eps = std::numeric_limits<su2double>::epsilon();
-  numerics.GetViscousProjFlux(prim_var, gradprimvar, turb_ke, normal,
-                        laminar_viscosity, Aniso_Eddy_Viscosity);
+  //---------------------------------------------------------------------------
+  // Test
+  // We set up \mu_{ij} = [[1.0, 2.0, 3.0],[4.0, 5.0, 6.0],[7.0, 8.0, 9.0]]
+  //                  A = 1.0
+  //                  n = [1,0,0]
+  //                  d = 1.0
+  // So that \pderiv{\Gamma_i}{u_j} = -A/d (\mu_{kl}n_ln_k\delta_{ij}
+  //                                        + \mu_{il}n_in_j)
+  // J[1][1] = -2\mu_{11} = -2
+  // J[1][2] =  0
+  // J[1][3] =  0
+  // J[2][1] =  -\mu_21
+  // J[2][2] =  -\mu_{11}
+  // J[2][3] =  0
+  // J[3][1] =
+  // J[3][2] =  0
+  // J[3][3] =  -\mu_{11}
+  //---------------------------------------------------------------------------
+  numerics.GetViscousArtCompProjFlux(gradprimvar, normal, laminar_viscosity,
+                                     Aniso_Eddy_Viscosity);
   su2double* output = numerics.Proj_Flux_Tensor;
-  su2double correct_output[nVar] = {0.0, 6.0, 4.0, 8.0};
-  for (int iVar = 0; iVar < nVar-1; iVar++) {
-    if (std::abs(output[iVar] - correct_output[iVar]) > eps) {
+  su2double correct_output[nVar] = {0.0, 4.0, 4.0, 8.0};
+  for (int iVar = 0; iVar < nVar; iVar++) {
+    if (output[iVar] != correct_output[iVar]) {
       std::cout << "The projected flux tensor for an anisotropic eddy";
       std::cout << " viscosity was incorrect" << std::endl;
       std::cout << "    The test case was: incompressible flow." << std::endl;

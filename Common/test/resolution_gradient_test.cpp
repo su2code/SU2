@@ -78,7 +78,7 @@ void WriteQuadMeshFile () {
     Mesh_File << "%" << std::endl;
     Mesh_File << "% Problem dimension" << std::endl;
     Mesh_File << "%" << std::endl;
-    Mesh_File << "NDIME= 3" << std::endl; // TODO: Include nDim
+    Mesh_File << "NDIME= 3" << std::endl;
     Mesh_File << "%" << std::endl;
     Mesh_File << "% Inner element connectivity" << std::endl;
     Mesh_File << "%" << std::endl;
@@ -282,8 +282,8 @@ int main() {
   // These are hand-calculated numerical derivatives.
   su2double correct_grads[5] = {0, 1.5, 7.0/3, 5.0/6, 0};
 
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-     vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
+/*  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+     su2double** Mij = geometry->node[iPoint]->GetResolutionTensor();
      su2double* coord;
      coord = geometry->node[iPoint]->GetCoord();
 
@@ -304,10 +304,9 @@ int main() {
      std::cout << "     [";
      std::cout << Mij[2][0] << "," << Mij[2][1] << "," << Mij[2][2];
      std::cout << "]]" << std::endl;
-  }
+  }*/
 
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    entries_correct = true; // XXX: Take this out when done testing.
     for (iDim = 0; iDim < nDim; iDim++) {
       vector<vector<su2double> > dMsqdx = geometry->node[iPoint]->GetResolutionGradient(iDim);
       su2double* coord;
@@ -369,10 +368,10 @@ int main() {
         std::cout << "]]" << std::endl;
 
         return_flag = 1;
-//       break;
+        break;
       }
     }
-//    if (not(entries_correct)) break;
+    if (not(entries_correct)) break;
   }
 
   //---------------------------------------------------------------------------

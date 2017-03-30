@@ -765,7 +765,7 @@ public:
    * \return A tensor representing the separation distances
    *         across the cell in the global coordinates.
    */
-  vector<vector<su2double> > GetResolutionTensor(void);
+  su2double** GetResolutionTensor(void) const;
 
   /*!
    * \brief Sets the gradient of the resolution tensor for the control volume.

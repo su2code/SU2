@@ -10437,6 +10437,13 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                   geometry->node[iPoint]->GetGridVel());
       }
       
+      /*--- Resolution anisotropy tensor ---*/
+      //TODO: Make config settings for anisotropic eddy viscosity
+      //TODO: Modify geometry to make it pass out pointers, rather than vectors
+      if (true)
+        visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                           geometry->node[iPoint]->GetResolutionTensor());
+
       /*--- Compute the convective residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -10482,6 +10489,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
+
+
+
+
         /*--- Compute and update viscous residual ---*/
         
         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);

@@ -136,16 +136,6 @@ void CPrimalGrid::SetResolutionTensor(su2double** val_coord) {
   delete[] coord_min;
 };
 
-vector<vector<su2double> > CPrimalGrid::GetResolutionTensor(void) {
-  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
-  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
-    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
-      output[iDim][jDim] = ResolutionTensor[iDim][jDim];
-    }
-  }
-  return output;
-}
-
 void CPrimalGrid::GramSchmidt(std::vector<std::vector<su2double> > &w,
                               std::vector<std::vector<su2double> > &v) {
   unsigned short iDim, jDim;
@@ -510,16 +500,6 @@ void CQuadrilateral::SetResolutionTensor(su2double **val_coord) {
 
 };
 
-vector<vector<su2double> > CQuadrilateral::GetResolutionTensor(void) {
-  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
-  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
-    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
-      output[iDim][jDim] = ResolutionTensor[iDim][jDim];
-    }
-  }
-  return output;
-}
-
 void CQuadrilateral::Change_Orientation(void) {
 	unsigned long jPoint, Point_3;
 	jPoint = Nodes[1];
@@ -800,16 +780,6 @@ void CHexahedron::SetResolutionTensor(su2double** val_coord) {
 
 
 };
-
-vector<vector<su2double> > CHexahedron::GetResolutionTensor(void) {
-  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
-  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
-    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
-      output[iDim][jDim] = ResolutionTensor[iDim][jDim];
-    }
-  }
-  return output;
-}
 
 unsigned short CPrism::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
 
