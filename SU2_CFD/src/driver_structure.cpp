@@ -2696,6 +2696,10 @@ void CDriver::TurbomachineryPreprocessing(){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+  for (iZone = 0; iZone < nZone; iZone++) {
+    solver_container[iZone][MESH_0][FLOW_SOL]->InitTurboContainers(geometry_container[iZone][MESH_0],config_container[iZone]);
+  }
+
 //TODO(turbo) make it general for turbo HB
   if (rank == MASTER_NODE) cout <<endl<<"Compute average geometrical quantities for turbomachinery simulations." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {

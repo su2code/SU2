@@ -911,6 +911,8 @@ inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
     node[iPoint]->SetSolution_New();
 }
 
+inline void CSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){}
+
 inline void CSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
 
 inline void CSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
