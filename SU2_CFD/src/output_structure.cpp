@@ -4495,7 +4495,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
 
     su2double dummy = 0.0, *Coord;
-    unsigned short iVar, iMarker, iMarker_Monitoring, iDim;
+    unsigned short iVar, iMarker_Monitoring;
     
     unsigned long LinSolvIter = 0, iPointMaxResid;
     su2double timeiter = timeused/su2double(iExtIter+1);
@@ -4920,7 +4920,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
     bool In_DualTime_2 = (Unsteady && DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
     bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
-    bool inlet, outlet, mixing;
 
     /*--- Header frequency: analogy for dynamic structural analysis ---*/
     /*--- DualTime_Iteration is a bool we receive, which is true if it comes from FEM_StructuralIteration and false from SU2_CFD ---*/
@@ -10385,14 +10384,10 @@ void COutput::SpanwiseFile(CGeometry ***geometry,
                            CConfig **config,
                            unsigned short val_iZone) {
 
-  bool turbo = config[val_iZone]->GetBoolTurbomachinery();
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
-  unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
-  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nZone       = config[val_iZone]->GetnZone();
 
-  unsigned short iVar, iMarker, iMarker_Monitoring, iDim, iSpan;
-  unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
+  unsigned short iMarker_Monitoring, iDim, iSpan;
 
   unsigned long iExtIter = config[val_iZone]->GetExtIter();
 

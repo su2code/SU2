@@ -130,7 +130,10 @@ public:
 	su2double ***AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
 	su2double **AverageTangGridVel; /*! <\brief Average tangential rotational speed at each span wise section for each marker.*/
 	su2double **SpanArea; /*! <\brief Area at each span wise section for each marker.*/
-  su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
+su2double **MaxAngularPitch; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+su2double **MinAngularPitch; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+su2double **MinRelAngularCoord; /*! <\brief Min relative angular coord at each span wise section for each marker.*/
+su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
 	su2double **TangGridVelIn, **TangGridVelOut; /*! <\brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
 	su2double **SpanAreaIn, **SpanAreaOut; /*! <\brief Area at each span wise section for each turbomachinery marker.*/
 	su2double **TurboRadiusIn, **TurboRadiusOut; /*! <\brief Radius at each span wise section for each turbomachinery marker*/
@@ -447,6 +450,12 @@ public:
 	 */
 	virtual void SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
 
+/*!
+ * \brief A virtual member.
+ * \param[in] config - Definition of the particular problem.
+ */
+virtual void UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -667,7 +676,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
 	 */
-	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
+	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
     /*!
      * \brief A virtual member.
@@ -1153,11 +1162,31 @@ public:
 	 */
 	virtual unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span);
 
+/*!
+ * \brief A virtual member.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  virtual su2double GetMinAngularPitch(unsigned short val_marker, unsigned short val_span);
+
   /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - marker value.
-	 * \param[in] val_span - span value.
-	 */
+   * \brief A virtual member.
+   * \param[in] val_marker - marker value.
+   * \param[in] val_span - span value.
+   */
+  virtual su2double GetMaxAngularPitch(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - marker value.
+   * \param[in] val_span - span value.
+   */
+  virtual su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span);
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - marker value.
+   * \param[in] val_span - span value.
+   */
   virtual su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span);
 
   /*!
@@ -1345,6 +1374,12 @@ public:
 	 */
 	void SetTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate);
 
+/*!
+ * \brief update turbo boundary vertex.
+ * \param[in] config - Definition of the particular problem.
+ */
+void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag);
+
 	/*!
 	 * \brief Set turbo boundary vertex.
 	 * \param[in] config - Definition of the particular problem.
@@ -1465,7 +1500,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
 	 */
-	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
+	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
     
     /*!
      * \brief Set the translational velocity at each node.
@@ -1901,6 +1936,27 @@ public:
 	 */
 	unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span);
 
+/*!
+ * \brief min angular pitch independently from the MPI partions.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  su2double GetMinAngularPitch(unsigned short val_marker, unsigned short val_span);
+
+/*!
+ * \brief max angular pitch independently from the MPI partions.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  su2double GetMaxAngularPitch(unsigned short val_marker, unsigned short val_span);
+
+/*!
+ * \brief min Relatice angular coord independently from the MPI partions.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span);
+
   /*!
 	 * \brief Get the average grid velocity at a specific span for a given marker.
 	 * \param[in] val_marker - marker value.
@@ -2026,7 +2082,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
 	 */
-	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
+	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
     
     /*!
      * \brief Set the translational velocity at each grid point on a coarse mesh.

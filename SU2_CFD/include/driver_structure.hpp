@@ -185,6 +185,16 @@ public:
   void Postprocessing();
 
   /*!
+   * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
+   */
+  void InitStaticMeshMovement(bool print, unsigned long ExtIter);
+
+  /*!
+   * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
+   */
+  void TurbomachineryPreprocessing(void);
+
+  /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.

@@ -2212,7 +2212,8 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
 void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iSpan;
-  unsigned long iVertex, oldVertex, iPoint, Point_Normal;
+  unsigned long  oldVertex, iPoint, Point_Normal;
+  long iVertex;
   su2double *V_inlet, *V_domain, *Normal;
   su2double extAverageNu;
   Normal = new su2double[nDim];
@@ -3453,7 +3454,8 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
                               unsigned short val_marker) {
 
   unsigned short iVar, iSpan, iDim;
-  unsigned long iVertex, oldVertex, iPoint, Point_Normal;
+  unsigned long  oldVertex, iPoint, Point_Normal;
+  long iVertex;
   su2double *V_inlet, *V_domain, *Normal;
   su2double extAverageKei, extAverageOmega;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();

@@ -46,7 +46,7 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
           unsigned long IntIter,
           unsigned long ExtIter)   {
 
-  unsigned short iDim, iMGlevel, nMGlevels = config_container[val_iZone]->GetnMGLevels();
+  unsigned short iDim;
   unsigned short Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(val_iZone);
   unsigned long nIterMesh;
   unsigned long iPoint;
@@ -74,72 +74,7 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
   /*--- Perform mesh movement depending on specified type ---*/
   switch (Kind_Grid_Movement) {
 
-    case MOVING_WALL:
-
-      /*--- Fixed wall velocities: set the grid velocities only one time
-       before the first iteration flow solver. ---*/
-
-      if (ExtIter == 0) {
-
-        if (rank == MASTER_NODE)
-          cout << endl << " Setting the moving wall velocities." << endl;
-
-        surface_movement[val_iZone]->Moving_Walls(geometry_container[val_iZone][MESH_0],
-                                       config_container[val_iZone], val_iZone, ExtIter);
-
-        /*--- Update the grid velocities on the coarser multigrid levels after
-         setting the moving wall velocities for the finest mesh. ---*/
-
-        grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
-
-      }
-
-      break;
-
-
-    case ROTATING_FRAME:
-
-      /*--- Steadily rotating frame: set the grid velocities just once
-       before the first iteration flow solver. ---*/
-
-      if (ExtIter == 0 || (ExtIter%40 == 0 && config_container[val_iZone]->GetRampRotatingFrame())) {
-
-        if (rank == MASTER_NODE) {
-          cout << endl << " Setting rotating frame grid velocities";
-          cout << " for zone " << val_iZone << "." << endl;
-        }
-
-        /*--- Set the grid velocities on all multigrid levels for a steadily
-         rotating reference frame. ---*/
-
-        for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
-          geometry_container[val_iZone][iMGlevel]->SetRotationalVelocity(config_container[val_iZone], val_iZone);
-
-      }
-
-      break;
-
-    case STEADY_TRANSLATION:
-
-      /*--- Set the translational velocity and hold the grid fixed during
-       the calculation (similar to rotating frame, but there is no extra
-       source term for translation). ---*/
-
-      if (ExtIter == 0) {
-
-        if (rank == MASTER_NODE)
-          cout << endl << " Setting translational grid velocities." << endl;
-
-        /*--- Set the translational velocity on all grid levels. ---*/
-
-        for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
-          geometry_container[val_iZone][iMGlevel]->SetTranslationalVelocity(config_container[val_iZone]);
-
-      }
-
-      break;
-
-    case RIGID_MOTION:
+  case RIGID_MOTION:
 
       if (rank == MASTER_NODE) {
         cout << endl << " Performing rigid mesh transformation." << endl;
@@ -396,6 +331,9 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
 
       break;
 
+    case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
+      break;
+
     case NO_MOVEMENT: case GUST: default:
 
       /*--- There is no mesh motion specified for this zone. ---*/
@@ -464,7 +402,6 @@ void CFluidIteration::Preprocess(COutput *output,
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   
   bool fsi = config_container[val_iZone]->GetFSI_Simulation();
-  bool turbomachinery = config_container[val_iZone]->GetBoolTurbomachinery();
   unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
 
   
@@ -878,20 +815,6 @@ void CTurboIteration::Preprocess(COutput *output,
                                     CFreeFormDefBox*** FFDBox,
                                     unsigned short val_iZone) {
 
-  unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
-  bool restart   = (config_container[val_iZone]->GetRestart() || config_container[val_iZone]->GetRestart_Flow());
-
-  if(ExtIter == 0){
-      geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone], val_iZone, INFLOW, true);
-      geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],val_iZone, OUTFLOW, true);
-      geometry_container[val_iZone][MESH_0]->GatherInOutAverageValues(config_container[val_iZone], true);
-      if(!restart){
-        solver_container[val_iZone][MESH_0][FLOW_SOL]->SetFreeStream_TurboSolution(config_container[val_iZone]);
-      }
-      solver_container[val_iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],INFLOW);
-      solver_container[val_iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],OUTFLOW);
-  }
 
   solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],INFLOW);
   solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],OUTFLOW);

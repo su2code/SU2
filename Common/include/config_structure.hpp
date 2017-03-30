@@ -4781,7 +4781,7 @@ public:
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] newRotation_Rate_Z - new rotation rate after computing the ramp value.
    */
-  su2double SetRotation_Rate_Z(su2double newRotation_Rate_Z, unsigned short val_iZone);
+  void SetRotation_Rate_Z(su2double newRotation_Rate_Z, unsigned short val_iZone);
 
   /*!
    * \brief Get the angular frequency of a mesh pitching about the x-axis.
