@@ -255,3 +255,39 @@ public:
   void Set_TransferCoeff(CConfig **config);
 
 };
+
+/*!
+ * \class CTurboInterpolation
+ * \brief Main class for turbomachinery interface interpolation
+ * \author A. Rubino
+ * \version 5.0.0 "Raven"
+ */
+class CTurboInterpolation : public CInterpolator {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTurboInterpolation(void);
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - index of the donor zone
+   * \param[in] jZone - index of the target zone
+   */
+  CTurboInterpolation(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurboInterpolation(void);
+
+  /*!
+   * \brief Set up transfer matrix defining relation between two meshes
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_TransferCoeff(CConfig **config);
+
+};

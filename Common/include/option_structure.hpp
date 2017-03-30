@@ -286,12 +286,14 @@ enum ENUM_INTERPOLATOR {
   NEAREST_NEIGHBOR = 0,   /*!< \brief Nearest Neigbhor interpolation */
   ISOPARAMETRIC = 1, /*!< \brief Isoparametric interpolation */
   CONSISTCONSERVE = 2,/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+  TURBO_INTERPOLATION = 3,/*!< \brief Turbomachinery Interface Interpolation */
 };
 
 static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
 ("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
 ("ISOPARAMETRIC", ISOPARAMETRIC)
-("CONSISTCONSERVE", CONSISTCONSERVE);
+("CONSISTCONSERVE", CONSISTCONSERVE)
+("TURBO_INTERPOLATION", TURBO_INTERPOLATION);
 
 
 /*!

@@ -2578,6 +2578,12 @@ void CDriver::Interface_Preprocessing() {
 
             break;
 
+          case TURBO_INTERPOLATION:
+            interpolator_container[donorZone][targetZone] = new CTurboInterpolation(geometry_container, config_container, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "Turbomachinery interface interpolation." << endl;
+
+            break;
+
           }
         }
 
