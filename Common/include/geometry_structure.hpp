@@ -944,7 +944,7 @@ public:
 /*!
  * \class CPhysicalGeometry
  * \brief Class for reading a defining the primal grid which is read from the 
- *        grid file in .su2 format.
+ *        grid file in .su2 or .cgns format.
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  */
@@ -968,6 +968,9 @@ class CPhysicalGeometry : public CGeometry {
   nLocal_Line,
   nLocal_BoundTria,
   nLocal_BoundQuad,
+  nLinear_Line,
+  nLinear_BoundTria,
+  nLinear_BoundQuad,
   nLocal_Tria,
   nLocal_Quad,
   nLocal_Tetr,
@@ -981,6 +984,9 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long *Conn_Line;
   unsigned long *Conn_BoundTria;
   unsigned long *Conn_BoundQuad;
+  unsigned long *Conn_Line_Linear;
+  unsigned long *Conn_BoundTria_Linear;
+  unsigned long *Conn_BoundQuad_Linear;
   unsigned long *Conn_Tria;
   unsigned long *Conn_Quad;
   unsigned long *Conn_Tetr;
@@ -1053,6 +1059,21 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void DistributePoints(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Partition the marker information according to a linear partitioning of the grid nodes.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  //void PartitionSurfacePoints(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Partition the marker connectivity held on the master rank according to a linear partitioning.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being distributed.
+   */
+  void PartitionSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
 
   /*!
 	 * \brief Set the send receive boundaries of the grid.

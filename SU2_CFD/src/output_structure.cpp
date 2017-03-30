@@ -13317,7 +13317,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*---         We need to identify which nodes in the volume data are     ---*/
   /*---         also surface points. Our first step is to loop over all    ---*/
   /*---         of the sorted surface connectivity and create a data       ---*/
-  /*---         structure on each proc that can idenify the local surf     ---*/
+  /*---         structure on each proc that can identify the local surf    ---*/
   /*---         points. Note that the linear partitioning is slightly      ---*/
   /*---         different between the nodes and elements, so we will       ---*/
   /*---         have to move between the two systems in this routine.      ---*/
