@@ -7319,7 +7319,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     
     /*--- Flags identifying the types of files to be written. ---*/
     
-    bool Low_MemoryOutput = config[iZone]->GetLow_MemoryOutput();
     bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
     bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     
@@ -7331,14 +7330,14 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
      is only performed if a volume solution file is requested, and it
      is active by default. ---*/
     
-    if ((Wrt_Vol || Wrt_Srf) && (!Low_MemoryOutput)) {
+    if ((Wrt_Vol || Wrt_Srf)) {
       if (rank == MASTER_NODE) cout << "Merging connectivities in the Master node." << endl;
       MergeConnectivity(config[iZone], geometry[iZone], iZone);
     }
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
-    if ((Wrt_Vol || Wrt_Srf) && (!Low_MemoryOutput)) {
+    if ((Wrt_Vol || Wrt_Srf)) {
       if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
       MergeBaselineSolution(config[iZone], geometry[iZone], solver[iZone], iZone);
     }
@@ -7347,155 +7346,112 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
      This data lives only on the master, and these routines are currently
      executed by the master proc alone (as if in serial). ---*/
     
-    if (!Low_MemoryOutput) {
-      
-      if (rank == MASTER_NODE) {
-        
-        if (Wrt_Vol) {
-          
-          switch (FileFormat) {
-              
-            case TECPLOT:
-              
-              /*--- Write a Tecplot ASCII file ---*/
-              
-              if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (volume grid)." << endl;
-              SetTecplotASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, false);
-              DeallocateConnectivity(config[iZone], geometry[iZone], false);
-              break;
-              
-            case FIELDVIEW:
-              
-              /*--- Write a FieldView ASCII file ---*/
-              
-              if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
-              SetFieldViewASCII(config[iZone], geometry[iZone], iZone, val_nZone);
-              DeallocateConnectivity(config[iZone], geometry[iZone], false);
-              break;
-              
-            case TECPLOT_BINARY:
-              
-              /*--- Write a Tecplot binary solution file ---*/
-              
-              if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (volume grid)." << endl;
-              SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone], iZone);
-              SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone], iZone);
-              break;
-              
-            case FIELDVIEW_BINARY:
-              
-              /*--- Write a binary binary file ---*/
-              
-              if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
-              SetFieldViewBinary(config[iZone], geometry[iZone], iZone, val_nZone);
-              DeallocateConnectivity(config[iZone], geometry[iZone], false);
-              break;
-              
-            case PARAVIEW:
-              
-              /*--- Write a Paraview ASCII file ---*/
-              
-              if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (volume grid)." << endl;
-              SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, false);
-              DeallocateConnectivity(config[iZone], geometry[iZone], false);
-              break;
-              
-            default:
-              break;
-          }
-          
-        }
-        
-        if (Wrt_Srf) {
-          
-          switch (FileFormat) {
-              
-            case TECPLOT:
-              
-              /*--- Write a Tecplot ASCII file ---*/
-              
-              if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (surface grid)." << endl;
-              SetTecplotASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, true);
-              DeallocateConnectivity(config[iZone], geometry[iZone], true);
-              break;
-              
-            case TECPLOT_BINARY:
-              
-              /*--- Write a Tecplot binary solution file ---*/
-              
-              if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (surface grid)." << endl;
-              SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone], iZone);
-              SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone], iZone);
-              break;
-              
-            case PARAVIEW:
-              
-              /*--- Write a Paraview ASCII file ---*/
-              
-              if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (surface grid)." << endl;
-              SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
-              DeallocateConnectivity(config[iZone], geometry[iZone], true);
-              break;
-              
-            default:
-              break;
-          }
-        }
-        
-        if (FileFormat == TECPLOT_BINARY) {
-          if (!wrote_base_file)
-            DeallocateConnectivity(config[iZone], geometry[iZone], false);
-          if (!wrote_surf_file)
-            DeallocateConnectivity(config[iZone], geometry[iZone], wrote_surf_file);
-        }
-        
-        if (Wrt_Vol || Wrt_Srf)
-          DeallocateSolution(config[iZone], geometry[iZone]);
-      }
-      
-    }
-    
-    else {
-      
+
+    if (rank == MASTER_NODE) {
+
       if (Wrt_Vol) {
-        
-        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (volume grid)." << endl;
-        char buffer_char[50], out_file[MAX_STRING_SIZE];
-        
-        string filename;
-        if (!config[iZone]->GetContinuous_Adjoint()) filename = config[iZone]->GetFlow_FileName();
-        else filename = config[iZone]->GetAdj_FileName();
-        
-        if (size > 1) {
-          SPRINTF (buffer_char, "_%d", SU2_TYPE::Int(rank+1));
-          filename = filename + buffer_char;
+
+        switch (FileFormat) {
+
+          case TECPLOT:
+
+            /*--- Write a Tecplot ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (volume grid)." << endl;
+            SetTecplotASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone], false);
+            break;
+
+          case FIELDVIEW:
+
+            /*--- Write a FieldView ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
+            SetFieldViewASCII(config[iZone], geometry[iZone], iZone, val_nZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone], false);
+            break;
+
+          case TECPLOT_BINARY:
+
+            /*--- Write a Tecplot binary solution file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (volume grid)." << endl;
+            SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone], iZone);
+            SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone], iZone);
+            break;
+
+          case FIELDVIEW_BINARY:
+
+            /*--- Write a binary binary file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
+            SetFieldViewBinary(config[iZone], geometry[iZone], iZone, val_nZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone], false);
+            break;
+
+          case PARAVIEW:
+
+            /*--- Write a Paraview ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (volume grid)." << endl;
+            SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone], false);
+            break;
+
+          default:
+            break;
         }
-        
-        SPRINTF (buffer_char, ".dat");
-        strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
-        SetTecplotASCII_LowMemory(config[iZone], geometry[iZone], solver, out_file, false);
+
       }
-      
+
       if (Wrt_Srf) {
-        
-        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (surface grid)." << endl;
-        char buffer_char[50], out_file[MAX_STRING_SIZE];
-        
-        string filename;
-        if (!config[iZone]->GetContinuous_Adjoint()) filename = config[iZone]->GetSurfFlowCoeff_FileName();
-        else filename = config[iZone]->GetSurfAdjCoeff_FileName();
-        
-        if (size > 1) {
-          SPRINTF (buffer_char, "_%d", SU2_TYPE::Int(rank+1));
-          filename = filename + buffer_char;
+
+        switch (FileFormat) {
+
+          case TECPLOT:
+
+            /*--- Write a Tecplot ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (surface grid)." << endl;
+            SetTecplotASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone], true);
+            break;
+
+          case TECPLOT_BINARY:
+
+            /*--- Write a Tecplot binary solution file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (surface grid)." << endl;
+            SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone], iZone);
+            SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone], iZone);
+            break;
+
+          case PARAVIEW:
+
+            /*--- Write a Paraview ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (surface grid)." << endl;
+            SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone], true);
+            break;
+
+          default:
+            break;
         }
-        
-        SPRINTF (buffer_char, ".dat");
-        strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
-        SetTecplotASCII_LowMemory(config[iZone], geometry[iZone], solver, out_file, true);
       }
-      
+
+      if (FileFormat == TECPLOT_BINARY) {
+        if (!wrote_base_file)
+          DeallocateConnectivity(config[iZone], geometry[iZone], false);
+        if (!wrote_surf_file)
+          DeallocateConnectivity(config[iZone], geometry[iZone], wrote_surf_file);
+      }
+
+      if (Wrt_Vol || Wrt_Srf)
+        DeallocateSolution(config[iZone], geometry[iZone]);
     }
+
+
     
     /*--- Final broadcast (informing other procs that the base output
      file was written). ---*/
