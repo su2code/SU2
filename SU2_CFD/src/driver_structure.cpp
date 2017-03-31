@@ -2692,6 +2692,7 @@ void CDriver::InitStaticMeshMovement(bool print, unsigned long ExtIter){
 void CDriver::TurbomachineryPreprocessing(){
 
   int rank = MASTER_NODE;
+  unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -2715,6 +2716,22 @@ void CDriver::TurbomachineryPreprocessing(){
     transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
   }
 
+
+  if(config_container[ZONE_0]->GetBoolMixingPlaneInterface()){
+    if (rank == MASTER_NODE) cout<<"Preprocessing of the Mixing-Plane Interface." << endl;
+    for (donorZone = 0; donorZone < nZone; donorZone++) {
+      nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
+      for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+        for (targetZone = 0; targetZone < nZone; targetZone++) {
+          if (targetZone != donorZone){
+            transfer_performance_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
+                config_container[donorZone], config_container[targetZone],
+                iMarkerInt);
+          }
+        }
+      }
+    }
+  }
 }
 
 void CDriver::StartSolver() {
@@ -3846,7 +3863,7 @@ CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 void CTurbomachineryDriver::Run() {
 
 
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+//  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
   int rank = MASTER_NODE;
 
@@ -3865,11 +3882,11 @@ void CTurbomachineryDriver::Run() {
                                            surface_movement, grid_movement, FFDBox, iZone);
   }
 
-  if(ExtIter == 0){
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if(mixingplane)PreprocessingMixingPlane(iZone);
-    }
-  }
+//  if(ExtIter == 0){
+//    for (iZone = 0; iZone < nZone; iZone++) {
+//      if(mixingplane)PreprocessingMixingPlane(iZone);
+//    }
+//  }
 
   /* --- Set the mixing-plane interface ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
