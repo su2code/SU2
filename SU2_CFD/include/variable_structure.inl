@@ -1104,8 +1104,6 @@ inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 
 
 
-inline void       C2phaseVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2double G) { }
-
 inline su2double  C2phaseVariable::GetRadius() { return Radius; } 
 
 inline su2double* C2phaseVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config) {}
@@ -1139,17 +1137,15 @@ inline void CEulerVariable::SetThermalConductivity(su2double thermalConductivity
 
 
 
-inline void       CVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2double G) { }
-
 inline su2double  CVariable::GetRadius() { } 
 
 inline su2double  CVariable::GetAverageRadius() { return 0;}
 
-inline su2double  CVariable::GetMassSource() { return 0;}
+inline su2double  CVariable::GetMassSource() { }
 
-inline su2double  CVariable::GetLiquidFraction() { return 0;} 
+inline su2double  CVariable::GetLiquidFraction() { } 
 
-inline su2double  CVariable::GetLiquidEnthalpy() { return 0;}   
+inline su2double  CVariable::GetLiquidEnthalpy() { }   
 
 
 inline su2double* CVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config) {}

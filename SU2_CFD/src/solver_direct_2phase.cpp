@@ -429,6 +429,7 @@ void C2phaseSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *confi
   
 }
 
+/*
 void C2phaseSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
 
   unsigned long iPoint;
@@ -451,13 +452,14 @@ void C2phaseSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     	Jacobian_i[iVar][jVar] = Jacobian_i[iVar][jVar] * (geometry->node[iPoint]->GetVolume());
     }
 
-    /*--- Subtract residual and the Jacobian ---*/
+    //--- Subtract residual and the Jacobian --//
 
     LinSysRes.SubtractBlock(iPoint, Residual);
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
   }
 }
+*/
 
 void C2phaseSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
   
@@ -600,6 +602,44 @@ void C2phaseSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_containe
 
 }
 
+void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+
+  /*--- Update the solution ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    Vol = geometry->node[iPoint]->GetVolume();
+    Delta = node[iPoint]->GetDelta_Time() / Vol;
+
+    local_Res_TruncError = node[iPoint]->GetResTruncError();
+    local_Residual = LinSysRes.GetBlock(iPoint);
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res = local_Residual[iVar] + local_Res_TruncError[iVar];
+        node[iPoint]->AddSolution(iVar, -Res*Delta);
+        AddRes_RMS(iVar, Res*Res);
+        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      }
+    }
+
+
+  /*--- MPI solution ---*/
+
+  Set_MPI_Solution(geometry, config);
+
+  /*--- Compute the root mean square residual ---*/
+
+  SetResidual_RMS(geometry, config);
+
+}
+
 void C2phaseSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned short iVar;
@@ -664,39 +704,11 @@ void C2phaseSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
     
     switch (config->GetKind_2phase_Model()) {
         
-      case SA:
-        
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_2phase()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
-        }
-        
-        break;
-        
-      case SA_NEG:
-        
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddSolution(0, config->GetRelaxation_Factor_2phase()*LinSysSol[iPoint]);
-        }
-        
-        break;
+      case HILL_RUS:
 
-      case SST:
-        
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          
-          if (compressible) {
-            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
-            density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-          }
-          if (incompressible) {
-            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-            density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-          }
-          
-          for (iVar = 0; iVar < nVar; iVar++) {
-            node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_2phase()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
-          }
-          
+        	for (iVar = 0; iVar < nVar; iVar++)
+        		node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_2phase()*LinSysSol[iPoint*nVar+iVar]);
         }
         
         break;
@@ -759,16 +771,12 @@ void C2phaseSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
       
-        Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
-        Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
-        Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
-        
         for (iVar = 0; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Residual[iVar] = ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
+            Residual[iVar] = ( U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Residual[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
-                              +1.0*Density_nM1*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
+            Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
+                              +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
         }
 
       
@@ -825,9 +833,8 @@ void C2phaseSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
       /*--- Multiply by density at node i for the SST model ---*/
       
 
-        Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
         for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
+          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
 
       LinSysRes.AddBlock(iPoint, Residual);
       
@@ -836,10 +843,9 @@ void C2phaseSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
       U_time_n = node[jPoint]->GetSolution_time_n();
       
       /*--- Multiply by density at node j for the SST model ---*/
-      
-        Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetSolution_time_n()[0];
+
         for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
+          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
 
       LinSysRes.SubtractBlock(jPoint, Residual);
       
@@ -873,10 +879,8 @@ void C2phaseSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
         
         /*--- Multiply by density at node i for the SST model ---*/
         
-
-          Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
           for (iVar = 0; iVar < nVar; iVar++)
-            Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
+            Residual[iVar] = U_time_n[iVar]*Residual_GCL;
 
         LinSysRes.AddBlock(iPoint, Residual);
       }
@@ -907,18 +911,12 @@ void C2phaseSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
        due to the time discretization has a new form.---*/
       
 
-        /*--- If this is the SST model, we need to multiply by the density
-         in order to get the conservative variables ---*/
-        Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
-        Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
-        Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
-        
         for (iVar = 0; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
+            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-            + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+            + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
         }
 
       
@@ -1369,12 +1367,6 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
     /*--- Add and subtract residual ---*/
     numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
-    Residual[0] = 1e3;
-    Residual[1] = 1e3;
-    Residual[2] = 1e3;
-    Residual[3] = 1e3;
-
-
     LinSysRes.AddBlock(iPoint, Residual);
     LinSysRes.SubtractBlock(jPoint, Residual);
 
@@ -1392,7 +1384,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
   unsigned long iPoint, iNode, rho_m;
-  su2double R, S, y;
+  su2double R, S, y, *Liquid_vec, rho_v, *mom;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1410,32 +1402,36 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
-	Primitive_Liquid = node[iPoint]->GetLiquidPrim();
+     rho_v   = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+     mom     = node[iPoint]->GetSolution();
 
-    if (Solution[0] != 0) {
+     Liquid_vec = node[iPoint]->GetLiquidPrim();
 
-    	R = Solution[1]/Solution[0];
+     if (mom[0] > 0.0 && mom[1] > 0.0) {
 
-		y = Solution[3]*(Primitive_Liquid[1] - FlowPrimVar_i[nDim + 2]);
-		y = y + 0.75 * FlowPrimVar_i[nDim + 2] / 3.14;
-		y = y*Primitive_Liquid[1] / y;
+    	 R = mom[1] / mom[0];
+     	 y = mom[3]*(Liquid_vec[1] - rho_v);
+     	 y = y + 0.75 * rho_v / 3.14;
+     	 y = mom[3]*Liquid_vec[1] / y;
+     	 rho_m = y/ Liquid_vec[1] + (1.0 - y)/ rho_v;
+     	 rho_m = 1.0/ rho_m;
 
-		rho_m = y/ Primitive_Liquid[1] + (1.0 - y)/ FlowPrimVar_i[nDim + 2];
-		rho_m = 1.0/ rho_m;
+     	 S = - rho_m * 3.0 * y / R * Liquid_vec[9];
 
-		S = rho_m * 3 * y / R * Primitive_Liquid[9];
-    } else {
-    	R = 0; y = 0; rho_m = FlowPrimVar_i[nDim + 2]; S = 0;
-    }
 
-	node[iPoint]->SetSource(S);
-	node[iPoint]->SetLiqEnthalpy(Primitive_Liquid[2]);
-	node[iPoint]->SetRadius(R);
-    node[iPoint]->SetLiquidFrac(y);
+     } else {
+    	 R = 0; y = 0; rho_m = rho_v; S = 0;
+     }
+
+	 node[iPoint]->SetSource(S);
+	 node[iPoint]->SetLiqEnthalpy(Liquid_vec[2]);
+	 node[iPoint]->SetRadius(R);
+     node[iPoint]->SetLiquidFrac(y);
     
   }
   
 }
+
 
 void C2phase_HillSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh) {
@@ -1620,24 +1616,10 @@ void C2phase_HillSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       
-      /*--- Allocate the value at the inlet ---*/
-      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-      
-      /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
-      
-      /*--- Set the turbulent variable states. Use free-stream SST
-       values for the turbulent state at the inflow. ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-      Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
-      
-      Solution_j[0]= 0;
-      Solution_j[1]= 0;
-      Solution_j[2]= 0;
-      Solution_j[3]= 0;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+        Solution_j[iVar] = 0.0;
+      }
       
       conv_numerics->Set2phaseVar(Solution_i, Solution_j);
       
@@ -1654,28 +1636,6 @@ void C2phase_HillSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Jacobian contribution for implicit integration ---*/
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
-      /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      visc_numerics->SetPrimitive(V_domain, V_inlet);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->Set2phaseVar(Solution_i, Solution_j);
-      visc_numerics->Set2phaseVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      
     }
   }
   
@@ -1703,12 +1663,7 @@ void C2phase_HillSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Index of the closest interior node ---*/
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      
-      /*--- Allocate the value at the outlet ---*/
-      V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-      
-      /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+
       
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_outlet);
@@ -1740,28 +1695,8 @@ void C2phase_HillSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Jacobian contribution for implicit integration ---*/
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
-      /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      visc_numerics->SetPrimitive(V_domain, V_outlet);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->Set2phaseVar(Solution_i, Solution_j);
-      visc_numerics->Set2phaseVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      
+
+
     }
   }
   
@@ -2076,48 +2011,53 @@ void C2phase_QMOMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
 void C2phase_QMOMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-  unsigned long iPoint, iNode, rho_m;
-  su2double R, S, y;
+	 unsigned long iPoint, iNode, rho_m;
+	  su2double R, S, y, *Liquid_vec, rho_v, rhoN, rhoNR, rhoNR3;
 
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+	  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+	  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
-  /*--- Compute mean flow and turbulence gradients ---*/
+	  /*--- Compute mean flow and turbulence gradients ---*/
 
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
-    SetSolution_Gradient_GG(geometry, config);
-  }
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
-    SetSolution_Gradient_LS(geometry, config);
-  }
+	  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+	//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
+	    SetSolution_Gradient_GG(geometry, config);
+	  }
+	  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+	//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
+	    SetSolution_Gradient_LS(geometry, config);
+	  }
 
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+	  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-    // evaluate the source term, use the growth rate stored in Primitive liquid, position 9
-	// then set it in the node primitive
+	     rho_v  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+	     rhoN      = node[iPoint]->GetSolution(0);
+	     rhoNR     = node[iPoint]->GetSolution(1);
+	     rhoNR3    = node[iPoint]->GetSolution(3);
 
+	     Liquid_vec= node[iPoint]->GetLiquidPrim();
 
-	node[iNode]->SetDropletProp (Primitive_Liquid[1], FlowPrimVar_i[nDim + 2], Primitive_Liquid[9]);
+	     if (rhoN != 0) {
 
-	R = Solution[1]/Solution[0];
+	    	 R = rhoNR / rhoN;
+	     	 y = rhoNR3*(Liquid_vec[1] - rho_v);
+	     	 y = y + 0.75 * rho_v / 3.14;
+	     	 y = y*Liquid_vec[1] / y;
 
-    y = Solution[3]*(Primitive_Liquid[1] - FlowPrimVar_i[nDim + 2]);
-    y = y + 0.75 * FlowPrimVar_i[nDim + 2] / 3.14;
-    y = y*Primitive_Liquid[1] / y;
+	     	 rho_m = y/ Liquid_vec[1] + (1.0 - y)/ rho_v;
+	     	 rho_m = 1.0/ rho_m;
 
-    rho_m = y/ Primitive_Liquid[1] + (1.0 - y)/ FlowPrimVar_i[nDim + 2];
-    rho_m = 1.0/ rho_m;
+	     	 S = rho_m * 3 * y / R * Liquid_vec[9];
+	     } else {
+	    	 R = 0; y = 0; rho_m = rho_v; S = 0;
+	     }
 
-    S = rho_m * 3 * y / R * Primitive_Liquid[9];
+		 node[iPoint]->SetSource(S);
+		 node[iPoint]->SetLiqEnthalpy(Liquid_vec[2]);
+		 node[iPoint]->SetRadius(R);
+	     node[iPoint]->SetLiquidFrac(y);
 
-	node[iPoint]->SetSource(S);
-	node[iPoint]->SetLiqEnthalpy(Primitive_Liquid[2]);
-	node[iPoint]->SetRadius(R);
-	node[iPoint]->SetLiquidFrac(y);
-
-  }
+	  }
 
 }
 
@@ -2226,14 +2166,6 @@ void C2phase_QMOMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_cont
 
     if (geometry->node[iPoint]->GetDomain()) {
 
-      /*--- Allocate the value at the infinity ---*/
-
-      V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
@@ -2301,17 +2233,6 @@ void C2phase_QMOMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-      /*--- Allocate the value at the inlet ---*/
-      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-
-      /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
-
-      /*--- Set the turbulent variable states. Use free-stream SST
-       values for the turbulent state at the inflow. ---*/
       for (iVar = 0; iVar < nVar; iVar++)
       Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
 
@@ -2335,27 +2256,6 @@ void C2phase_QMOMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Jacobian contribution for implicit integration ---*/
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-      /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-
-      /*--- Conservative variables w/o reconstruction ---*/
-      visc_numerics->SetPrimitive(V_domain, V_inlet);
-
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->Set2phaseVar(Solution_i, Solution_j);
-      visc_numerics->Set2phaseVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-
-      /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-
-      /*--- Compute residual, and Jacobians ---*/
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
-      /*--- Subtract residual, and update Jacobians ---*/
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
     }
   }

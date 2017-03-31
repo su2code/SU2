@@ -155,6 +155,9 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 	Nucleation_rate = GetNucleation_Rate(P, T, rho, h, k, mu, val_liquid_i);
 	Growth_rate = GetGrowth_Rate(P, T, rho, h, k, mu, val_liquid_i);
 
+	// store G for source term euler
+	val_liquid_i[9] = Growth_rate;
+
 	// compute the source terms
 
 	val_Residual[0] = Density_mixture_i*Nucleation_rate;
@@ -178,9 +181,9 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 			}
 		}
 
-		val_Jacobian_i[1][0] = Density_mixture_i*Growth_rate* Volume;
-		val_Jacobian_i[2][1] = 2.0*Density_mixture_i*Growth_rate* Volume;
-		val_Jacobian_i[3][2] = 3.0*Density_mixture_i*Growth_rate* Volume;
+//		val_Jacobian_i[1][0] = Density_mixture_i*Growth_rate* Volume;
+//		val_Jacobian_i[2][1] = 2.0*Density_mixture_i*Growth_rate* Volume;
+//		val_Jacobian_i[3][2] = 3.0*Density_mixture_i*Growth_rate* Volume;
 
 	}
 

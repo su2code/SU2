@@ -2037,8 +2037,6 @@ public:
 
   // classes for 2phase solver
 
-  virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
-
   virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config);
 
   virtual su2double GetRadius() ;
@@ -3708,8 +3706,6 @@ public:
   virtual ~C2phaseVariable(void);
 
 
-  virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
-
   virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config);
 
   su2double  GetRadius() ;
@@ -3990,8 +3986,6 @@ public:
   void SetLiquidEnthalpy(su2double h) ;
 */
 
-
-  void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 /*
   su2double GetRadius() ;
 

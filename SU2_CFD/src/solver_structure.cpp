@@ -2603,7 +2603,6 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   if (config->GetKind_Regime() != INCOMPRESSIBLE) { GridVel_Index += 1; }
   
   if (config->GetKind_2phase_Model() == HILL_RUS) { GridVel_Index += 4; }
-  if (config->GetKind_2phase_Model() == HILL_AUSM) { GridVel_Index += 4; }
 
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -2885,10 +2884,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         /*--- First, remove any variables for the 2phase model that
                  appear in the restart file before the grid velocities. ---*/
         if (two_phase_model == HILL_RUS) {
-          index+=4;
-        }
-
-        if (two_phase_model == HILL_AUSM) {
           index+=4;
         }
 

@@ -5034,8 +5034,9 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
       
       S = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetMassSource();
+
       h = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidEnthalpy();
-//      R = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetAverageRadius();
+
       Y = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction();
 
       /*--- Compute the 2-phase source residual ---*/
