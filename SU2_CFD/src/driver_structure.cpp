@@ -354,7 +354,7 @@ CDriver::CDriver(char* confFile,
   if(initStaticMovement){
     if (rank == MASTER_NODE)cout << endl <<"--------------------- Initialize Static Mesh Movement --------------------" << endl;
 
-      InitStaticMeshMovement(true, 0);
+      InitStaticMeshMovement();
   }
 
  if (config_container[ZONE_0]->GetBoolTurbomachinery()){
@@ -2612,7 +2612,7 @@ void CDriver::Interface_Preprocessing() {
 }
 
 
-void CDriver::InitStaticMeshMovement(bool print, unsigned long ExtIter){
+void CDriver::InitStaticMeshMovement(){
 
   unsigned short iMGlevel;
   unsigned short Kind_Grid_Movement;
@@ -2649,13 +2649,8 @@ void CDriver::InitStaticMeshMovement(bool print, unsigned long ExtIter){
       /*--- Steadily rotating frame: set the grid velocities just once
          before the first iteration flow solver. ---*/
 
-      if (rank == MASTER_NODE && print && ExtIter == 0) {
+      if (rank == MASTER_NODE) {
         cout << endl << " Setting rotating frame grid velocities";
-        cout << " for zone " << iZone << "." << endl;
-      }
-
-      if(rank == MASTER_NODE && print && ExtIter > 0) {
-        cout << endl << " Updated rotating frame grid velocities";
         cout << " for zone " << iZone << "." << endl;
       }
 
@@ -2663,7 +2658,7 @@ void CDriver::InitStaticMeshMovement(bool print, unsigned long ExtIter){
            rotating reference frame. ---*/
 
       for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, print);
+        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, true);
 
 
       break;
@@ -4033,7 +4028,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
     finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(2));
     rot_z_ini = config_container[ZONE_0]->GetRampRotatingFrame_Coeff(0);
-
+    print = ((ExtIter + 1)%40 == 0 && ExtIter > 0);
     if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
 
       for (iZone = 0; iZone < nZone; iZone++) {
@@ -4041,10 +4036,13 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
         if(abs(rot_z_final) > 0.0){
           rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
           config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
+          if(rank == MASTER_NODE && print && ExtIter > 0) {
+            cout << endl << " Updated rotating frame grid velocities";
+            cout << " for zone " << iZone << "." << endl;
+          }
+          geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, print);
         }
       }
-      print = ((ExtIter + 1)%40 == 0 && ExtIter > 0);
-      InitStaticMeshMovement(print, ExtIter);
 
       for (iZone = 0; iZone < nZone; iZone++) {
         geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
