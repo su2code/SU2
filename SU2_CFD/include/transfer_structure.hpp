@@ -182,24 +182,26 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] target_solution - Solution from the target mesh.
-	 * \param[in] target_geometry - Geometry of the target mesh.
-	 * \param[in] target_config - Definition of the problem at the target mesh.
-	 * \param[in] Marker_Target - Index of the target marker.
-	 * \param[in] Vertex_Target - Index of the target vertex.
-	 * \param[in] Point_Target - Index of the target point.
-	 */
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] donor_zone      - Index of the donorZone.
+ */
+
 	virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,  unsigned short donorZone);
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] donor_geometry - Geometry of the target mesh.
 	 * \param[in] target_geometry - Geometry of the target mesh.
-	 * \param[in] target_config - Definition of the problem at the target mesh.
-	 * \param[in] Marker_Target - Index of the target marker.
-	 * \param[in] Vertex_Target - Index of the target vertex.
-	 * \param[in] Point_Target - Index of the target point.
+	 * \param[in] donor_zone      - Index of the donorZone.
 	 */
 	virtual void SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
+
+/*!
+ * \brief A virtual member.
+ * \param[in] donor_config - Definition of the problem at the donor mesh.
+ * \param[in] target_config - Definition of the problem at the target mesh.
+ */
+virtual void SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config);
 
 
 	/*!
@@ -554,6 +556,14 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	virtual ~CTransfer_MixingPlaneInterface(void);
+
+
+/*!
+ * \brief Initialize quantities for spanwise sections for interpolation.
+ * \param[in] donor_config - Definition of the problem at the donor mesh.
+ * \param[in] target_config - Definition of the problem at the target mesh.
+ */
+void SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config);
 
 	/*!
 	 * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
