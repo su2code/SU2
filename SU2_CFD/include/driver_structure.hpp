@@ -640,11 +640,6 @@ public:
   void SetMixingPlane(unsigned short iZone);
 
   /*!
-   * \brief Preprocessing Mixing Plane interface.
-   */
-  void PreprocessingMixingPlane(unsigned short donorZone);
-
-  /*!
    * \brief Set Mixing Plane interface within multiple zones.
    */
   void SetTurboPerformance(unsigned short targetZone);
@@ -749,11 +744,6 @@ public:
    * \brief Set Mixing Plane interface within multiple zones.
    */
   void SetMixingPlane(unsigned short iZone);
-
-  /*!
-   * \brief Preprocessing Mixing Plane interface.
-   */
-  void PreprocessingMixingPlane(unsigned short donorZone);
 
   /*!
    * \brief Set Mixing Plane interface within multiple zones.

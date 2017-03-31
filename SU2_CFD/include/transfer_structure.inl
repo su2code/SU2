@@ -48,3 +48,5 @@ inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *t
 inline void CTransfer::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone) { }
 
 inline void CTransfer::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone) { }
+
+inline void CTransfer::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config) { }
