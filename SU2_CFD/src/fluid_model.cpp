@@ -90,7 +90,10 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
 
 void CFluidModel::SetLiquidPhaseModel (CConfig *config) {
 
-    Liquid_Prop = new CWater(config);
+	switch (config->GetKind_Liquid_Model() ) {
+	case WATER:    Liquid_Prop = new CWater(config); break;
+	default: cout << "No liquid model selected, stop" << endl; exit(EXIT_FAILURE); break;
+	}
 
 }
 

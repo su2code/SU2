@@ -96,8 +96,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
 
-  nucleation_model = new CNucleationModel();
-
   UnitNormal = new su2double [nDim];
   UnitNormald = new su2double [nDim];
 
@@ -2523,6 +2521,18 @@ void CNumerics::CreateBasis(su2double *val_Normal) {
   }
 }
 
+void CNumerics::SetNucleationModel(CConfig *config) {
+
+	switch (config->GetKind_Nucleation_Model()) {
+	case CLASSICAL_THEORY:
+		nucleation_model = new CClassicalTheory(config); break;
+	default:
+	    cout << "No nucleation model specified, stop" << endl; exit(EXIT_FAILURE); break;
+	}
+}
+
 CSourceNothing::CSourceNothing(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
 CSourceNothing::~CSourceNothing(void) { }
+
+

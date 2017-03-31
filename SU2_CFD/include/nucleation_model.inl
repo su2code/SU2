@@ -33,12 +33,9 @@
 
 #pragma once
 
-inline su2double CNucleationModel::GetNucleationRate() { return J; }
-inline su2double CNucleationModel::GetGrowthRate() { return G; }
+inline su2double CNucleationModel::SetNucleationRate(su2double P, su2double T, su2double rho,
+		                      su2double h, su2double k, su2double mu, su2double *V_l) { return 0;}
 
-inline void      CNucleationModel::SetNucleationRate(su2double P, su2double T, su2double rho,
-		                      su2double h, su2double k, su2double mu, su2double *V_l) { }
-
-inline void      CNucleationModel::SetGrowthRate(su2double P, su2double T, su2double rho,
-		                      su2double h, su2double k, su2double mu, su2double *V_l) {  }
+inline su2double CNucleationModel::SetGrowthRate(su2double P, su2double T, su2double rho,
+		                      su2double h, su2double k, su2double mu, su2double *V_l) { return 0; }
 		                      

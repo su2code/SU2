@@ -8306,7 +8306,7 @@ protected:
   
   su2double *Primitive_Liquid;  /*!< \brief prim vector for the model. */
 
-  CLiquidModel  *liquid;
+  CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
 
 public:
 
@@ -8365,7 +8365,7 @@ public:
   void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                        unsigned short iMesh);
 
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh);
+  //void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh);
 
   
   /*!
@@ -8391,10 +8391,19 @@ public:
                      unsigned short val_marker);
   
   /*!
+   * \brief Update the solution using an explicit solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   *
+   */
+  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
+   *
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
@@ -8419,6 +8428,8 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
+  CFluidModel* GetFluidModel(void);
 
 };
 
@@ -8984,8 +8995,7 @@ public:
 
 class C2phase_HillSolver: public C2phaseSolver {
 private:
-  su2double *Primitive_Liquid;  /*!< \brief prim vector for the model. */
-  CLiquidModel  *liquid;
+ // su2double *Primitive_Liquid;  /*!< \brief prim vector for the model. */
 
 public:
   /*!
@@ -8999,7 +9009,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  C2phase_HillSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  C2phase_HillSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel);
   
   /*!
    * \brief Destructor of the class.

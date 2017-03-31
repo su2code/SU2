@@ -446,6 +446,8 @@ private:
   Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
   Kind_Upwind_2phase,			/*!< \brief Upwind scheme for the 2phase model. */
+  Kind_Nucleation_Model,       /* brief nucleation model in use*/
+  Kind_Liquid_Model,          /* brief liquid model in use*/
   Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
@@ -3313,6 +3315,18 @@ public:
    * \return Kind of the 2phase model.
    */
   unsigned short GetKind_2phase_Model(void);
+
+  /*!
+     * \brief Get the kind of the nucleation model.
+     * \return Kind of the nucleation model.
+     */
+    unsigned short GetKind_Nucleation_Model(void);
+
+    /*!
+       * \brief Get the kind of the liquid model.
+       * \return Kind of the liquid model.
+       */
+      unsigned short GetKind_Liquid_Model(void);
 
   /*!
    * \brief Get the kind of the transition model.

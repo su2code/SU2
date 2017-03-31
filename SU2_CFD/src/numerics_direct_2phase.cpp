@@ -45,7 +45,7 @@ CUpw_2phaseHill_Rus::CUpw_2phaseHill_Rus(unsigned short val_nDim, unsigned short
   
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
-  
+
 }
 
 CUpw_2phaseHill_Rus::~CUpw_2phaseHill_Rus(void) {
@@ -119,7 +119,7 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
 
 
 CSourcePieceWise_Hill::CSourcePieceWise_Hill(unsigned short val_nDim, unsigned short val_nVar,
-                                                 CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+                                              CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
 	implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
 	incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -150,12 +150,13 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 	mu  = V_i[nDim+5];
 	k   = V_i[nDim+7];
 
-	// compute the nucleation rate the growth rate
+	// compute the nucleation rate and the growth rate
 
-	SetNucleation_GrowthRate(P, T, rho, h, k, mu, val_liquid_i);
+	Nucleation_rate = GetNucleation_Rate(P, T, rho, h, k, mu, val_liquid_i);
+	Growth_rate = GetGrowth_Rate(P, T, rho, h, k, mu, val_liquid_i);
 
-	Nucleation_rate = GetNucleation_Rate();
-	Growth_rate = GetGrowth_Rate();
+	// store G for source term euler
+	val_liquid_i[9] = Growth_rate;
 
 	// compute the source terms
 
@@ -168,6 +169,8 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
     for (iVar=0; iVar<nVar; iVar++) {
     	val_Residual[iVar] = val_Residual[iVar] * Volume;
     }
+
+
 	// compute the Jacobians of the source terms
 
 	if (implicit) {
@@ -178,9 +181,9 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 			}
 		}
 
-		val_Jacobian_i[1][0] = Density_mixture_i*Growth_rate* Volume;
-		val_Jacobian_i[2][1] = 2.0*Density_mixture_i*Growth_rate* Volume;
-		val_Jacobian_i[3][2] = 3.0*Density_mixture_i*Growth_rate* Volume;
+//		val_Jacobian_i[1][0] = Density_mixture_i*Growth_rate* Volume;
+//		val_Jacobian_i[2][1] = 2.0*Density_mixture_i*Growth_rate* Volume;
+//		val_Jacobian_i[3][2] = 3.0*Density_mixture_i*Growth_rate* Volume;
 
 	}
 
