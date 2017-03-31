@@ -6951,16 +6951,21 @@ void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGrou
   }
 }
 
-void CFreeFormDefBox::GetLocalStiffnessMatrix(EigenMatrix &StiffMatrix, su2double *uvw){
+void CFreeFormDefBox::AddLocalStiffnessContribution(EigenMatrix &StiffMatrix, su2double *uvw, su2double factor){
 
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
   const unsigned short nControl = BlendingFunction[2]->GetnControl();
-  unsigned short iDegree, jDegree, kDegree;
+  unsigned short iDegree, jDegree, kDegree,iDegree2, jDegree2, kDegree2;
   unsigned short iDim, lmn[3], jDim;
+  su2double  DerivativeBasis[3],ValBasis[3];
 
   lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
 
+  const su2double E = 1E06, nu = 0.25;
+
+  const su2double Lambda = (nu*E)/((1+nu)*(1-2*nu));
+  const su2double mu     = E/(2*(1+nu));
 
   unsigned short ijk[3];
   for (iDim = 0; iDim < nDim; iDim++) ijk[iDim] = 0;
@@ -6969,12 +6974,23 @@ void CFreeFormDefBox::GetLocalStiffnessMatrix(EigenMatrix &StiffMatrix, su2doubl
     for (jDegree = 0; jDegree <= lmn[1]; jDegree++){
       for (kDegree = 0; kDegree <= lmn[2]; kDegree++) {
         ijk[0] = iDegree; ijk[1] = jDegree; ijk[2] = kDegree;
+
+        /*--- For BSplines the GetDerivative() already evaluates the basis functions.
+         *    Calling  GetBasis() with false as the last argument simply returns the stored values. ---*/
+
         for (iDim = 0; iDim < nDim; iDim++){
-          Derivative(iDegree*mControl*nControl + jDegree*nControl + kDegree, iDim) = GetDerivative1(uvw, iDim, ijk, lmn);
+          DerivativeBasis[iDim] = BlendingFunction[iDim]->GetDerivative(ijk[iDim], uvw[iDim], 1);
+          ValBasis[iDim]        = BlendingFunction[iDim]->GetBasis(ijk[iDim],uvw[iDim], false);
         }
+
+        Derivative(iDegree*mControl*nControl + jDegree*nControl + kDegree, 0) = DerivativeBasis[0]*ValBasis[1]*ValBasis[2];
+        Derivative(iDegree*mControl*nControl + jDegree*nControl + kDegree, 1) = ValBasis[0]*DerivativeBasis[1]*ValBasis[2];
+        Derivative(iDegree*mControl*nControl + jDegree*nControl + kDegree, 2) = ValBasis[0]*ValBasis[1]*DerivativeBasis[2];
+
       }
     }
   }
+
 
   LocalMatrix = EigenMatrix::Zero(3, 3);
 
@@ -6992,22 +7008,42 @@ void CFreeFormDefBox::GetLocalStiffnessMatrix(EigenMatrix &StiffMatrix, su2doubl
 
   R = Derivative*LocalMatrix.inverse();
 
-  unsigned short Offset1 = 0, Offset2;
+  /*--- Compute S^T D S and add it to the global integral ---*/
+
+  unsigned short Index1 = 0, Index2, MatrixIndex1, MatrixIndex2;
 
   for (iDegree = 0; iDegree <= lmn[0]; iDegree++){
     for (jDegree = 0; jDegree <= lmn[1]; jDegree++){
       for (kDegree = 0; kDegree <= lmn[2]; kDegree++) {
-        Offset2 = iDegree*mControl*nControl + jDegree*nControl + kDegree;
-        for (iDim = 0; iDim < nDim; iDim++){
-          StiffMatrix(iDim, Offset1 + iDim) = R(Offset2, iDim);
+
+        Index1       = iDegree*mControl*nControl + jDegree*nControl + kDegree;
+        MatrixIndex1 = iDegree*mControl*nControl*nDim+ jDegree*nControl*nDim+ kDegree*nDim;
+
+        if ((fabs(R(Index1, 0)) > EPS) || (fabs(R(Index1, 1)) > EPS) || (fabs(R(Index1, 2)) > EPS)){
+
+          for (iDegree2 = 0; iDegree2 <= lmn[0]; iDegree2++){
+            for (jDegree2 = 0; jDegree2 <= lmn[1]; jDegree2++){
+              for (kDegree2 = 0; kDegree2 <= lmn[2]; kDegree2++) {
+
+                Index2       = iDegree2*mControl*nControl + jDegree2*nControl + kDegree2;
+                MatrixIndex2 = iDegree2*mControl*nControl*nDim+ jDegree2*nControl*nDim+ kDegree2*nDim;
+
+                StiffMatrix(MatrixIndex1 + 0, MatrixIndex2 + 0) += factor*((Lambda + 2*mu)*R(Index1, 0)*R(Index2, 0) + mu*R(Index1, 1)*R(Index2, 1) + mu*R(Index1, 2)*R(Index2, 2));
+                StiffMatrix(MatrixIndex1 + 0, MatrixIndex2 + 1) += factor*(Lambda*R(Index1, 0)*R(Index2, 1) + mu*R(Index2, 0)*R(Index1, 1));
+                StiffMatrix(MatrixIndex1 + 0, MatrixIndex2 + 2) += factor*(Lambda*R(Index1, 0)*R(Index2, 2) + mu*R(Index2, 0)*R(Index1, 2));
+
+                StiffMatrix(MatrixIndex1 + 1, MatrixIndex2 + 0) += factor*(Lambda*R(Index2, 0)*R(Index1, 1) + mu*R(Index1, 0)*R(Index2, 1));
+                StiffMatrix(MatrixIndex1 + 1, MatrixIndex2 + 1) += factor*((Lambda + 2*mu)*R(Index1, 1)*R(Index2, 1) + mu*R(Index1, 0)*R(Index2, 0) + mu*R(Index1, 2)*R(Index2, 2));
+                StiffMatrix(MatrixIndex1 + 1, MatrixIndex2 + 2) += factor*(Lambda*R(Index1, 1)*R(Index2, 2) + mu*R(Index2, 1)*R(Index1, 2));
+
+                StiffMatrix(MatrixIndex1 + 2, MatrixIndex2 + 0) += factor*(Lambda*R(Index2, 0)*R(Index1, 2) + mu*R(Index1, 0)*R(Index2, 2));
+                StiffMatrix(MatrixIndex1 + 2, MatrixIndex2 + 1) += factor*(Lambda*R(Index2, 1)*R(Index1, 2) + mu*R(Index1, 1)*R(Index2, 2));
+                StiffMatrix(MatrixIndex1 + 2, MatrixIndex2 + 2) += factor*((Lambda + 2*mu)*R(Index1, 2)*R(Index2, 2) + mu*R(Index1, 0)*R(Index2, 0) + mu*R(Index1, 1)*R(Index2, 1));
+
+              }
+            }
+          }
         }
-        StiffMatrix(3, Offset1 + 0) = 0.5*R(Offset2, 1);
-        StiffMatrix(3, Offset1 + 1) = 0.5*R(Offset2, 0);
-        StiffMatrix(4, Offset1 + 0) = 0.5*R(Offset2, 2);
-        StiffMatrix(4, Offset1 + 2) = 0.5*R(Offset2, 0);
-        StiffMatrix(5, Offset1 + 1) = 0.5*R(Offset2, 2);
-        StiffMatrix(5, Offset1 + 2) = 0.5*R(Offset2, 1);
-        Offset1 += nDim;
       }
     }
   }
@@ -7020,13 +7056,15 @@ void CFreeFormDefBox::GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *con
   const unsigned short nControl = BlendingFunction[2]->GetnControl();
   const unsigned long TotalControl = lControl*mControl*nControl;
 
+  unsigned short iControl, jControl, kControl;
+
   unsigned long iVertex, iPoint, iSurfacePoints;
   unsigned short iMarker, iDim;
+  unsigned short lmn_min[3], lmn_max[3];
 
-  su2double *ParamCoord, Area = 0, *Normal;
+  su2double *ParamCoord, Area = 0, *Normal, *Coord, ParamCoord_Guess[] = {0.5, 0.5, 0.5}, factor;
 
   EigenMatrix LocalStiffness(6, TotalControl*nDim);
-  EigenMatrix ConstitutiveMatrix(6,6);
   EigenMatrix MyEnergy(TotalControl*nDim, TotalControl*nDim);
   Matrix.resize(TotalControl*nDim, TotalControl*nDim);
   Derivative.resize(TotalControl, nDim);
@@ -7034,22 +7072,12 @@ void CFreeFormDefBox::GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *con
   LocalMatrix.resize(nDim, nDim);
   R.resize(TotalControl, nDim);
 
+  R = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
   MyEnergy = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
   Matrix = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
   LocalStiffness = EigenMatrix::Zero(6, TotalControl*nDim);
 
-  /* TODO: Eventually add a config option for the E modulus */
-  su2double E = 1E06, nu = 0.25;
-
-  su2double Lambda = (nu*E)/((1+nu)*(1-2*nu));
-  su2double mu     = E/(2*(1+nu));
-
-  ConstitutiveMatrix = EigenMatrix::Zero(6,6);
-  ConstitutiveMatrix(0,0) = Lambda+2*mu; ConstitutiveMatrix(0, 1) = Lambda; ConstitutiveMatrix(0, 2) = Lambda;
-  ConstitutiveMatrix(1,0) = Lambda; ConstitutiveMatrix(1, 1) = Lambda+2*mu; ConstitutiveMatrix(1, 2) = Lambda;
-  ConstitutiveMatrix(2,0) = Lambda; ConstitutiveMatrix(2, 1) = Lambda; ConstitutiveMatrix(2, 2) = Lambda+2*mu;
-  ConstitutiveMatrix(3,3) = 4*mu;   ConstitutiveMatrix(4,4) = 4*mu;    ConstitutiveMatrix(5,5) = 4*mu;
-
+  cout << "Computing CSP stiffness matrix." << endl;
 
   /*--- Compute the elastic energy as an integral over the surface points ---*/
 
@@ -7074,11 +7102,12 @@ void CFreeFormDefBox::GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *con
         }
         Area = sqrt(Area);
 
+        factor = 0.5*Area;
+
         /*--- Get the local stiffness matrix at the parametric coordinates of the surface point  ---*/
 
-        GetLocalStiffnessMatrix(LocalStiffness, ParamCoord);
+        AddLocalStiffnessContribution(MyEnergy, ParamCoord, factor);
 
-        MyEnergy += 0.5*(LocalStiffness.transpose()*ConstitutiveMatrix*LocalStiffness)*Area;
       }
     }
   }
@@ -7090,6 +7119,49 @@ void CFreeFormDefBox::GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *con
 
 AD_BEGIN_PASSIVE
   SU2_MPI::Allreduce(MyEnergy.data(), Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+AD_END_PASSIVE
+
+
+//  for (iControl = 0; iControl < lControl; iControl++){
+//    for (jControl = 0; jControl < mControl; jControl++){
+//      for (kControl = 0; kControl < nControl; kControl++){
+
+////        if (iControl + 1 - BlendingFunction[0]->GetDegree() >= 0){
+////          lmn_min[0] = iControl + 1 - BlendingFunction[0]->GetDegree();
+////        } else {
+////          lmn_min[0] = 0;
+////        }
+////        if (jControl + 1 - BlendingFunction[1]->GetDegree() >= 0){
+////          lmn_min[1] = jControl + 1 - BlendingFunction[1]->GetDegree();
+////        } else {
+////          lmn_min[1] = 0;
+////        }
+////        if (kControl + 1 - BlendingFunction[2]->GetDegree() >= 0){
+////          lmn_min[2] = kControl + 1 - BlendingFunction[2]->GetDegree();
+////        } else {
+////          lmn_min[2] = 0;
+////        }
+//        lmn_min[0] = 0;
+//        lmn_min[1] = 0;
+//        lmn_min[2] = 0;
+
+//        lmn_max[0] =  lControl - 1;
+//        lmn_max[1] =  mControl - 1;
+//        lmn_max[2] =  nControl - 1;
+
+//        cout << iControl << " " << jControl << " " << kControl << endl;
+
+//        Coord =GetCoordControlPoints(iControl, jControl, kControl);
+
+//        ParamCoord = GetParametricCoord_Iterative(0, Coord, ParamCoord_Guess, config);
+
+//        GetLocalStiffnessMatrix(Matrix, ParamCoord, lmn_min, lmn_max);
+
+////        Matrix.noalias() += 0.5*(LocalStiffness.transpose()*ConstitutiveMatrix*LocalStiffness);
+
+//      }
+//    }
+//  }
 AD_END_PASSIVE
 }
 
@@ -7390,11 +7462,12 @@ void CBSplineBlending::SetOrder(short val_order, short n_controlpoints){
   N.resize(Order, vector<su2double>(Order, 0.0));
 }
 
-su2double CBSplineBlending::GetBasis(short val_i, su2double val_t){
+su2double CBSplineBlending::GetBasis(short val_i, su2double val_t, bool compute){
 
-  /*--- Evaluation is based on the algorithm from "The NURBS Book (Les Piegl and Wayne Tiller)" ---*/
 
-  /*--- Special cases ---*/
+    /*--- Evaluation is based on the algorithm from "The NURBS Book (Les Piegl and Wayne Tiller)" ---*/
+
+    /*--- Special cases ---*/
 
   if ((val_i == 0 && val_t == U[0]) || (val_i == (short)U.size()-1 && val_t == U.back())) {return 1.0;}
 
@@ -7402,27 +7475,31 @@ su2double CBSplineBlending::GetBasis(short val_i, su2double val_t){
 
   if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])){ return 0.0;}
 
-  unsigned short j,k;
-  su2double saved, temp;
+  if (compute){
 
-  for (j = 0; j < Order; j++){
-    if ((val_t >= U[val_i+j]) && (val_t < U[val_i+j+1])) N[j][0] = 1.0;
-    else N[j][0] = 0;
-  }
+    unsigned short j,k;
+    su2double saved, temp;
 
-  for (k = 1; k < Order; k++){
-    if (N[0][k-1] == 0.0) saved = 0.0;
-    else saved = ((val_t - U[val_i])*N[0][k-1])/(U[val_i+k] - U[val_i]);
-    for (j = 0; j < Order-k; j++){
-      if (N[j+1][k-1] == 0.0){
-        N[j][k] = saved; saved = 0.0;
-      } else {
-        temp     = N[j+1][k-1]/(U[val_i+j+k+1] - U[val_i+j+1]);
-        N[j][k]  = saved+(U[val_i+j+k+1] - val_t)*temp;
-        saved    = (val_t - U[val_i+j+1])*temp;
+    for (j = 0; j < Order; j++){
+      if ((val_t >= U[val_i+j]) && (val_t < U[val_i+j+1])) N[j][0] = 1.0;
+      else N[j][0] = 0;
+    }
+
+    for (k = 1; k < Order; k++){
+      if (N[0][k-1] == 0.0) saved = 0.0;
+      else saved = ((val_t - U[val_i])*N[0][k-1])/(U[val_i+k] - U[val_i]);
+      for (j = 0; j < Order-k; j++){
+        if (N[j+1][k-1] == 0.0){
+          N[j][k] = saved; saved = 0.0;
+        } else {
+          temp     = N[j+1][k-1]/(U[val_i+j+k+1] - U[val_i+j+1]);
+          N[j][k]  = saved+(U[val_i+j+k+1] - val_t)*temp;
+          saved    = (val_t - U[val_i+j+1])*temp;
+        }
       }
     }
   }
+
   return N[0][Order-1];
 }
 
@@ -7482,7 +7559,7 @@ void CBezierBlending::SetOrder(short val_order, short n_controlpoints){
   nControl = Order;
 }
 
-su2double CBezierBlending::GetBasis(short val_i, su2double val_t){
+su2double CBezierBlending::GetBasis(short val_i, su2double val_t, bool compute){
   return GetBernstein(Degree, val_i, val_t);
 }
 

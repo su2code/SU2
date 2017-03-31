@@ -91,7 +91,7 @@ public:
    * \param[in] val_i - index of the basis function.
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    */
-  virtual su2double GetBasis(short val_i, su2double val_t);
+  virtual su2double GetBasis(short val_i, su2double val_t, bool compute = true);
 
   /*!
    * \brief A pure virtual member.
@@ -154,8 +154,7 @@ public:
    * \param[in] val_i - index of the basis function.
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    */
-  su2double GetBasis(short val_i, su2double val_t);
-
+  su2double GetBasis(short val_i, su2double val_t, bool compute = true);
   /*!
    * \brief Returns the value of the derivative of the i-th basis function.
    * \param[in] val_i - index of the basis function.
@@ -230,7 +229,7 @@ public:
    * \param[in] val_i - index of the basis function.
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    */
-  su2double GetBasis(short val_i, su2double val_t);
+  su2double GetBasis(short val_i, su2double val_t, bool compute = true);
 
   /*!
    * \brief Returns the value of the derivative of the i-th basis function.
@@ -951,7 +950,7 @@ public:
 
   void GetLaplacianEnergyMatrix3D(EigenMatrix &Matrix);
 
-  void GetLocalStiffnessMatrix(EigenMatrix &StiffMatrix, su2double *uvw);
+  void AddLocalStiffnessContribution(EigenMatrix &StiffMatrix, su2double *uvw, su2double factor);
 
   void GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, CGeometry *geometry);
 };
