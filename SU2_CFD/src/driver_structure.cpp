@@ -3970,36 +3970,6 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
     }
   }
 
-  /*--- Source term for a 2phase model ---*/
-  if (config_container[ZONE_0]->GetKind_2phase_Model() != 0) {
-
-    /*--- Extra variables needed if we have a 2phase model. ---*/
-    unsigned short nVar_2phase = solver_container[ZONE_0][MESH_0][TWO_PHASE_SOL]->GetnVar();
-    su2double *U_2phase = new su2double[nVar_2phase];
-    su2double *Source_2phase = new su2double[nVar_2phase];
-
-    /*--- Loop over only the finest mesh level (turbulence is always solved
-     on the original grid only). ---*/
-    for (iPoint = 0; iPoint < geometry_container[ZONE_0][MESH_0]->GetnPoint(); iPoint++) {
-      for (iVar = 0; iVar < nVar_2phase; iVar++) Source_2phase[iVar] = 0.0;
-      for (jZone = 0; jZone < nZone; jZone++) {
-
-        /*--- Retrieve solution at this node in current zone ---*/
-        for (iVar = 0; iVar < nVar_2phase; iVar++) {
-          U_2phase[iVar] = solver_container[jZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetSolution(iVar);
-          Source_2phase[iVar] += U_2phase[iVar]*D[iZone][jZone];
-        }
-      }
-
-      /*--- Store sources for current iZone ---*/
-      for (iVar = 0; iVar < nVar_2phase; iVar++)
-        solver_container[iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source_2phase[iVar]);
-    }
-
-    delete [] U_2phase;
-    delete [] Source_2phase;
-  }
-
   /*--- Source term for a turbulence model ---*/
   if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
 
