@@ -49,7 +49,7 @@ CClassicalTheory::CClassicalTheory(CConfig *config) : CNucleationModel() {
 	Gamma = config->GetGamma();
 	Gas_Constant = config -> GetGas_ConstantND();
 
-	Boltzmann = 1.38064852/config->GetBoltzmann_Ref();
+	Boltzmann = 1.38064852 * 1.0e-23 /config->GetBoltzmann_Ref();
 	MolMass   = 18.0 * 1.66054e-27 / config ->GetMass_Ref();
 
 

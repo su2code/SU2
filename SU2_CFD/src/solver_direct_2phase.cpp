@@ -603,7 +603,7 @@ void C2phaseSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_containe
 }
 
 void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
+  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res, *Sol, *Sol_Old, *Sol_New;
   unsigned short iVar;
   unsigned long iPoint;
 
@@ -618,17 +618,27 @@ void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
     Vol = geometry->node[iPoint]->GetVolume();
     Delta = node[iPoint]->GetDelta_Time() / Vol;
 
+    Sol_Old = node[iPoint]->GetSolution_Old();
+    Sol = node[iPoint]->GetSolution();
+
     local_Res_TruncError = node[iPoint]->GetResTruncError();
     local_Residual = LinSysRes.GetBlock(iPoint);
 
       for (iVar = 0; iVar < nVar; iVar++) {
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
-        node[iPoint]->AddSolution(iVar, -Res*Delta);
+ //       node[iPoint]->AddSolution(iVar, -Res*Delta);
+        Sol[iVar] = Sol[iVar] - Res*Delta;
+        node[iPoint]->SetSolution(Sol);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
-    }
 
+      Sol_New = node[iPoint]->GetSolution();
+
+cout << " Res0 " << local_Residual[0] + local_Res_TruncError[0] << " Sol0 " << Sol[0] << " Sol_Old0 " << Sol_Old[0] << endl;
+cout << " Sol_New0 " << Sol_New[0] << endl;
+
+    }
 
   /*--- MPI solution ---*/
 
@@ -1409,15 +1419,16 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
 
      if (mom[0] > 0.0 && mom[1] > 0.0) {
 
+//cout << "mom3 " << mom[3] << endl;
     	 R = mom[1] / mom[0];
+    	 mom[3] = mom[0] *R*R*R;
      	 y = mom[3]*(Liquid_vec[1] - rho_v);
      	 y = y + 0.75 * rho_v / 3.14;
      	 y = mom[3]*Liquid_vec[1] / y;
      	 rho_m = y/ Liquid_vec[1] + (1.0 - y)/ rho_v;
      	 rho_m = 1.0/ rho_m;
-
+//cout << "mom0 " << mom[0] << "mom1 " << mom[1] << "mom2 " << mom[2] << "mom3 " << mom[3] << "y " << y << endl;
      	 S = - rho_m * 3.0 * y / R * Liquid_vec[9];
-
 
      } else {
     	 R = 0; y = 0; rho_m = rho_v; S = 0;
