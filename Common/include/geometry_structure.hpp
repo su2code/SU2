@@ -966,6 +966,10 @@ class CPhysicalGeometry : public CGeometry {
   nLocal_PointDomain,
   nLocal_PointGhost,
   nLocal_PointPeriodic,
+  nLocal_Elem,
+  nLocal_Bound_Elem,
+  nGlobal_Elem,
+  nGlobal_Bound_Elem,
   nLocal_Line,
   nLocal_BoundTria,
   nLocal_BoundQuad,
@@ -982,9 +986,6 @@ class CPhysicalGeometry : public CGeometry {
   su2double *Local_Coords;
   unsigned long *Local_Points;
   unsigned long *Local_Colors;
-  unsigned long *Local_Elems;
-  unsigned long *Linear_Markers;
-  unsigned long *Local_Markers;
   unsigned long *Conn_Line;
   unsigned long *Conn_BoundTria;
   unsigned long *Conn_BoundQuad;
@@ -997,6 +998,18 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long *Conn_Hexa;
   unsigned long *Conn_Pris;
   unsigned long *Conn_Pyra;
+  unsigned long *ID_Line;
+  unsigned long *ID_BoundTria;
+  unsigned long *ID_BoundQuad;
+  unsigned long *ID_Line_Linear;
+  unsigned long *ID_BoundTria_Linear;
+  unsigned long *ID_BoundQuad_Linear;
+  unsigned long *ID_Tria;
+  unsigned long *ID_Quad;
+  unsigned long *ID_Tetr;
+  unsigned long *ID_Hexa;
+  unsigned long *ID_Pris;
+  unsigned long *ID_Pyra;
 
 public:
   

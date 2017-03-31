@@ -4372,11 +4372,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   Local_Points = NULL;
   Local_Colors = NULL;
 
-  Linear_Markers = NULL;
-  Local_Markers  = NULL;
-
-  Local_Elems = NULL;
-
   Conn_Line = NULL;
   Conn_BoundTria = NULL;
   Conn_BoundQuad = NULL;
@@ -4391,6 +4386,20 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   Conn_Hexa = NULL;
   Conn_Pris = NULL;
   Conn_Pyra = NULL;
+
+  ID_Line = NULL;
+  ID_BoundTria = NULL;
+  ID_BoundQuad = NULL;
+  ID_Line_Linear = NULL;
+  ID_BoundTria_Linear = NULL;
+  ID_BoundQuad_Linear = NULL;
+
+  ID_Tria = NULL;
+  ID_Quad = NULL;
+  ID_Tetr = NULL;
+  ID_Hexa = NULL;
+  ID_Pris = NULL;
+  ID_Pyra = NULL;
 
   nDim = geometry->GetnDim();
 
@@ -4460,6 +4469,25 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   DistributeSurfaceConnectivity(config, geometry, QUADRILATERAL );
   //DistributePeriodicPoints(config, geometry);
 
+  /*--- Reduce the total number of elements that we have on each rank. ---*/
+
+  nLocal_Elem = (nLocal_Tria +
+                 nLocal_Quad +
+                 nLocal_Tetr +
+                 nLocal_Hexa +
+                 nLocal_Pris +
+                 nLocal_Pyra);
+  nLocal_Bound_Elem = nLocal_Line + nLocal_BoundTria + nLocal_BoundQuad;
+#ifndef HAVE_MPI
+  nGlobal_Elem       = nLocal_Elem;
+  nGlobal_Bound_Elem = nLocal_Bound_Elem;
+#else
+  SU2_MPI::Allreduce(&nLocal_Elem, &nGlobal_Elem, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocal_Bound_Elem, &nGlobal_Bound_Elem, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
   cout << " Dist. surface elems for rank " << rank << ": " << nLocal_Line << ", " << nLocal_BoundTria << ", " << nLocal_BoundQuad << endl;
 
   /*--- With the distribution of all points, elements, and markers based
@@ -4468,28 +4496,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
 
   LoadPoints(config, geometry);
 
-  // LoadVolumeElements(config, geometry);
+  LoadVolumeElements(config, geometry);
 
   // LoadSurfaceElements(config, geometry);
-
-
-  /*--- Reduce information about the total number of cells, points, etc. ---*/
-
-  unsigned long Local_nPoint       = nLocal_Point;
-  unsigned long Local_nPointDomain = nLocal_PointDomain;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&Local_nPoint, &Global_nPoint, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Global_nPoint = Local_nPoint;
-  Global_nPointDomain = Local_nPointDomain;
-#endif
-
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << Global_nPoint << " vertices including ghost points. " << endl;
 
   /*--- Free memory associated with the redistribution of points and elems. ---*/
 
@@ -4500,10 +4509,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   if (Local_Points != NULL) delete [] Local_Points;
   if (Local_Colors != NULL) delete [] Local_Colors;
   if (Local_Coords != NULL) delete [] Local_Coords;
-  if (Local_Elems  != NULL) delete [] Local_Elems;
 
-  if (Linear_Markers != NULL) delete [] Linear_Markers;
-  if (Local_Markers  != NULL) delete [] Local_Markers;
 
   if (nLinear_Line > 0      && Conn_Line_Linear      != NULL) delete [] Conn_Line_Linear;
   if (nLinear_BoundTria > 0 && Conn_BoundTria_Linear != NULL) delete [] Conn_BoundTria_Linear;
@@ -4518,7 +4524,21 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   if (Conn_Hexa != NULL) delete [] Conn_Hexa;
   if (Conn_Pris != NULL) delete [] Conn_Pris;
   if (Conn_Pyra != NULL) delete [] Conn_Pyra;
-  
+
+  if (ID_Line != NULL) delete [] ID_Line;
+  if (ID_BoundTria != NULL) delete [] ID_BoundTria;
+  if (ID_BoundQuad != NULL) delete [] ID_BoundQuad;
+  if (ID_Line_Linear != NULL) delete [] ID_Line_Linear;
+  if (ID_BoundTria_Linear != NULL) delete [] ID_BoundTria_Linear;
+  if (ID_BoundQuad_Linear != NULL) delete [] ID_BoundQuad_Linear;
+
+  if (ID_Tria != NULL) delete [] ID_Tria;
+  if (ID_Quad != NULL) delete [] ID_Quad;
+  if (ID_Tetr != NULL) delete [] ID_Tetr;
+  if (ID_Hexa != NULL) delete [] ID_Hexa;
+  if (ID_Pris != NULL) delete [] ID_Pris;
+  if (ID_Pyra != NULL) delete [] ID_Pyra;
+
 }
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
@@ -4876,6 +4896,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
   unsigned long nElem_Total = 0, Global_Index;
 
   unsigned long *Conn_Elem  = NULL;
+  unsigned long *ID_Elems   = NULL;
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -5199,9 +5220,9 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
   /*--- Store the global element IDs too. ---*/
 
   if (nElem_Recv[size] > 0)
-    Local_Elems = new unsigned long[nElem_Recv[size]];
+    ID_Elems = new unsigned long[nElem_Recv[size]];
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-      Local_Elems[ii] = idRecv[ii];
+      ID_Elems[ii] = idRecv[ii];
   }
 
   /*--- Store the particular global element count in the class data,
@@ -5210,27 +5231,45 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
   switch (Elem_Type) {
     case TRIANGLE:
       nLocal_Tria = nElem_Total;
-      if (nLocal_Tria > 0) Conn_Tria = Conn_Elem;
+      if (nLocal_Tria > 0) {
+        Conn_Tria = Conn_Elem;
+        ID_Tria   = ID_Elems;
+      }
       break;
     case QUADRILATERAL:
       nLocal_Quad = nElem_Total;
-      if (nLocal_Quad > 0) Conn_Quad = Conn_Elem;
+      if (nLocal_Quad > 0) {
+        Conn_Quad = Conn_Elem;
+        ID_Quad   = ID_Elems;
+      }
       break;
     case TETRAHEDRON:
       nLocal_Tetr = nElem_Total;
-      if (nLocal_Tetr > 0) Conn_Tetr = Conn_Elem;
+      if (nLocal_Tetr > 0) {
+        Conn_Tetr = Conn_Elem;
+        ID_Tetr   = ID_Elems;
+      }
       break;
     case HEXAHEDRON:
       nLocal_Hexa = nElem_Total;
-      if (nLocal_Hexa > 0) Conn_Hexa = Conn_Elem;
+      if (nLocal_Hexa > 0) {
+        Conn_Hexa = Conn_Elem;
+        ID_Hexa   = ID_Elems;
+      }
       break;
     case PRISM:
       nLocal_Pris = nElem_Total;
-      if (nLocal_Pris > 0) Conn_Pris = Conn_Elem;
+      if (nLocal_Pris > 0) {
+        Conn_Pris = Conn_Elem;
+        ID_Pris   = ID_Elems;
+      }
       break;
     case PYRAMID:
       nLocal_Pyra = nElem_Total;
-      if (nLocal_Pyra > 0) Conn_Pyra = Conn_Elem;
+      if (nLocal_Pyra > 0) {
+        Conn_Pyra = Conn_Elem;
+        ID_Pyra   = ID_Elems;
+      }
       break;
     default:
       cout << "Error: Unrecognized element type \n";
@@ -5615,7 +5654,8 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
 
   unsigned long iMarker;
 
-  unsigned long *Conn_Elem  = NULL;
+  unsigned long *Conn_Elem      = NULL;
+  unsigned long *Linear_Markers = NULL;
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -5979,15 +6019,24 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
   switch (Elem_Type) {
     case LINE:
       nLinear_Line = nElem_Total;
-      if (nLinear_Line > 0) Conn_Line_Linear = Conn_Elem;
+      if (nLinear_Line > 0) {
+        Conn_Line_Linear = Conn_Elem;
+        ID_Line_Linear = Linear_Markers;
+      }
       break;
     case TRIANGLE:
       nLinear_BoundTria = nElem_Total;
-      if (nLinear_BoundTria > 0) Conn_BoundTria_Linear = Conn_Elem;
+      if (nLinear_BoundTria > 0) {
+        Conn_BoundTria_Linear = Conn_Elem;
+        ID_BoundTria_Linear = Linear_Markers;
+      }
       break;
     case QUADRILATERAL:
       nLinear_BoundQuad = nElem_Total;
-      if (nLinear_BoundQuad > 0) Conn_BoundQuad_Linear = Conn_Elem;
+      if (nLinear_BoundQuad > 0) {
+        Conn_BoundQuad_Linear = Conn_Elem;
+        ID_BoundQuad_Linear = Linear_Markers;
+      }
       break;
     default:
       cout << "Error: Unrecognized element type \n";
@@ -6013,8 +6062,10 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
   unsigned short NODES_PER_ELEMENT;
   unsigned long nElem_Total = 0, Global_Index;
 
-  unsigned long *Conn_Linear  = NULL;
-  unsigned long *Conn_Elem    = NULL;
+  unsigned long *Conn_Linear    = NULL;
+  unsigned long *Conn_Elem      = NULL;
+  unsigned long *Linear_Markers = NULL;
+  unsigned long *Local_Markers  = NULL;
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -6036,17 +6087,19 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
       NELEM             = nLinear_Line;
       NODES_PER_ELEMENT = N_POINTS_LINE;
       Conn_Linear       = Conn_Line_Linear;
+      Linear_Markers    = ID_Line_Linear;
       break;
     case TRIANGLE:
       NELEM             = nLinear_BoundTria;
       NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
       Conn_Linear       = Conn_BoundTria_Linear;
-
+      Linear_Markers    = ID_BoundTria_Linear;
       break;
     case QUADRILATERAL:
       NELEM             = nLinear_BoundQuad;
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       Conn_Linear       = Conn_BoundQuad_Linear;
+      Linear_Markers    = ID_BoundQuad_Linear;
       break;
     default:
       cout << "Error: Unrecognized element type \n";
@@ -6333,15 +6386,24 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
   switch (Elem_Type) {
     case LINE:
       nLocal_Line = nElem_Total;
-      if (nLocal_Line > 0) Conn_Line = Conn_Elem;
+      if (nLocal_Line > 0) {
+        Conn_Line = Conn_Elem;
+        ID_Line   = Local_Markers;
+      }
       break;
     case TRIANGLE:
       nLocal_BoundTria = nElem_Total;
-      if (nLocal_BoundTria > 0) Conn_BoundTria = Conn_Elem;
+      if (nLocal_BoundTria > 0) {
+        Conn_BoundTria = Conn_Elem;
+        ID_BoundTria   = Local_Markers;
+      }
       break;
     case QUADRILATERAL:
       nLocal_BoundQuad = nElem_Total;
-      if (nLocal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
+      if (nLocal_BoundQuad > 0) {
+        Conn_BoundQuad = Conn_Elem;
+        ID_BoundQuad   = Local_Markers;
+      }
       break;
     default:
       cout << "Error: Unrecognized element type \n";
@@ -6419,9 +6481,455 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
 
 void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
+  unsigned long iPoint, jPoint, iOwned, iPeriodic, iGhost;
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  /*--- Create the basic point structures before storing the points. ---*/
+
+  nPoint       = nLocal_Point;
+  nPointDomain = nLocal_PointDomain;
+  nPointNode   = nPoint;
+
+  node = new CPoint*[nPoint];
+
+  Local_to_Global_Point = new long[nPoint];
+
+  /*--- Array initialization ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    Local_to_Global_Point[iPoint] = -1;
+  }
+
+  /*--- Set our counters correctly based on the number of owned and ghost
+   nodes that we counted during the partitioning. ---*/
+
+  jPoint    = 0;
+  iOwned    = 0;
+  iPeriodic = nLocal_PointDomain;
+  iGhost    = nLocal_PointDomain + nLocal_PointPeriodic;
+
+  /*--- Loop over all of the points that we have recv'd and store the
+   coordinates, global index, and colors ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    /*--- Set the starting point to the correct counter for this point. ---*/
+
+    if (Local_Colors[iPoint] == (unsigned long)rank) {
+      if (Local_Points[iPoint] < geometry->GetGlobal_nPointDomain())
+        jPoint = iOwned;
+      else jPoint = iPeriodic;
+    } else {
+      jPoint = iGhost;
+    }
+
+    /*--- Get the global index ---*/
+
+    Local_to_Global_Point[jPoint] = Local_Points[iPoint];
+
+    /*--- Allocating the Point object ---*/
+
+    if ( nDim == 2 )
+      node[jPoint] = new CPoint(Local_Coords[iPoint*nDim+0],
+                                Local_Coords[iPoint*nDim+1],
+                                Local_to_Global_Point[jPoint], config);
+    if ( nDim == 3 )
+      node[jPoint] = new CPoint(Local_Coords[iPoint*nDim+0],
+                                Local_Coords[iPoint*nDim+1],
+                                Local_Coords[iPoint*nDim+2],
+                                Local_to_Global_Point[jPoint], config);
+
+    /*--- Set the color ---*/
+
+    node[jPoint]->SetColor(Local_Colors[iPoint]);
+
+    /*--- Increment the correct counter before moving to the next point. ---*/
+
+    if (Local_Colors[iPoint] == (unsigned long)rank) {
+      if (Local_Points[iPoint] < geometry->GetGlobal_nPointDomain())
+        iOwned++;
+      else iPeriodic++;
+    } else {
+      iGhost++;
+    }
+  }
+
+  /*--- Create the global to local mapping, which will be useful for loading
+   the elements and boundaries in subsequent steps. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
+
+  /*--- Set the value of Global_nPoint and Global_nPointDomain ---*/
+
+  unsigned long Local_nPoint = nPoint;
+  unsigned long Local_nPointDomain = nPointDomain;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&Local_nPoint, &Global_nPoint, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  Global_nPoint = Local_nPoint;
+  Global_nPointDomain = Local_nPointDomain;
+#endif
+
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << Global_nPoint << " vertices including ghost points. " << endl;
+
 }
 
 void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry) {
+
+  unsigned long iElem, jElem, iNode, Local_Elem;
+  unsigned long Local_Nodes[N_POINTS_HEXAHEDRON];
+  
+  unsigned long iElemTria = 0;
+  unsigned long iElemQuad = 0;
+  unsigned long iElemTetr = 0;
+  unsigned long iElemHexa = 0;
+  unsigned long iElemPris = 0;
+  unsigned long iElemPyra = 0;
+
+  unsigned long nTria, nQuad, nTetr, nHexa, nPris, nPyra;
+
+  vector<unsigned long> Tria_List;
+  vector<unsigned long> Quad_List;
+  vector<unsigned long> Tetr_List;
+  vector<unsigned long> Hexa_List;
+  vector<unsigned long> Pris_List;
+  vector<unsigned long> Pyra_List;
+  vector<unsigned long>::iterator it;
+
+  unsigned short NODES_PER_ELEMENT;
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- It is possible that we have repeated elements during the previous
+   communications, as we mostly focus on the grid points and their colors.
+   First, loop through our local elements, count the local total for each
+   type, and build a vector so we can avoid duplicates. ---*/
+
+  for (iElem = 0; iElem < nLocal_Tria; iElem++)
+    Tria_List.push_back(ID_Tria[iElem]);
+  sort(Tria_List.begin(), Tria_List.end());
+  it = unique(Tria_List.begin(), Tria_List.end());
+  Tria_List.resize(it - Tria_List.begin());
+  nTria = Tria_List.size();
+
+  for (iElem = 0; iElem < nLocal_Quad; iElem++)
+    Quad_List.push_back(ID_Quad[iElem]);
+  sort(Quad_List.begin(), Quad_List.end());
+  it = unique(Quad_List.begin(), Quad_List.end());
+  Quad_List.resize(it - Quad_List.begin());
+  nQuad = Quad_List.size();
+
+  for (iElem = 0; iElem < nLocal_Tetr; iElem++)
+    Tetr_List.push_back(ID_Tetr[iElem]);
+  sort(Tetr_List.begin(), Tetr_List.end());
+  it = unique(Tetr_List.begin(), Tetr_List.end());
+  Tetr_List.resize(it - Tetr_List.begin());
+  nTetr = Tetr_List.size();
+
+  for (iElem = 0; iElem < nLocal_Hexa; iElem++)
+    Hexa_List.push_back(ID_Hexa[iElem]);
+  sort(Hexa_List.begin(), Hexa_List.end());
+  it = unique(Hexa_List.begin(), Hexa_List.end());
+  Hexa_List.resize(it - Hexa_List.begin());
+  nHexa = Hexa_List.size();
+
+  for (iElem = 0; iElem < nLocal_Pris; iElem++)
+    Pris_List.push_back(ID_Pris[iElem]);
+  sort(Pris_List.begin(), Pris_List.end());
+  it = unique(Pris_List.begin(), Pris_List.end());
+  Pris_List.resize(it - Pris_List.begin());
+  nPris = Pris_List.size();
+
+  for (iElem = 0; iElem < nLocal_Pyra; iElem++)
+    Pyra_List.push_back(ID_Pyra[iElem]);
+  sort(Pyra_List.begin(), Pyra_List.end());
+  it = unique(Pyra_List.begin(), Pyra_List.end());
+  Pyra_List.resize(it - Pyra_List.begin());
+  nPyra = Pyra_List.size();
+
+  /*--- Reduce the final count of non-repeated elements on this rank. ---*/
+
+  Local_Elem = nTria + nQuad + nTetr + nHexa + nPris + nPyra;
+
+  /*--- Clear vectors so that we can build again when creating objects. ---*/
+
+  Tria_List.clear();
+  Quad_List.clear();
+  Tetr_List.clear();
+  Hexa_List.clear();
+  Pris_List.clear();
+  Pyra_List.clear();
+
+  /*--- Create the basic structures for holding the grid elements. ---*/
+
+  jElem = 0;
+  nElem = Local_Elem;
+  elem  = new CPrimalGrid*[nElem];
+
+  /*--- Store the elements of each type in the proper containers. ---*/
+
+  for (iElem = 0; iElem < nLocal_Tria; iElem++) {
+
+    if (find(Tria_List.begin(), Tria_List.end(), ID_Tria[iElem]) == Tria_List.end()) {
+
+      /*--- Transform the stored connectivity for this element from global
+       to local values on this rank. ---*/
+
+      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
+        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Tria[iElem*NODES_PER_ELEMENT+iNode]];
+
+      /*--- Create the element object. ---*/
+
+      elem[jElem] = new CTriangle(Local_Nodes[0],
+                                  Local_Nodes[1],
+                                  Local_Nodes[2], 2);
+
+      elem[jElem]->SetGlobalIndex(ID_Tria[iElem]);
+
+      Tria_List.push_back(ID_Tria[iElem]);
+
+      /*--- Increment our local counters. ---*/
+
+      jElem++; iElemTria++;
+
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_Quad; iElem++) {
+
+    if (find(Quad_List.begin(), Quad_List.end(), ID_Quad[iElem]) == Quad_List.end()) {
+
+      /*--- Transform the stored connectivity for this element from global
+       to local values on this rank. ---*/
+
+      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
+        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Quad[iElem*NODES_PER_ELEMENT+iNode]];
+
+      /*--- Create the element object. ---*/
+
+      elem[jElem] = new CQuadrilateral(Local_Nodes[0],
+                                       Local_Nodes[1],
+                                       Local_Nodes[2],
+                                       Local_Nodes[3], 2);
+
+      elem[jElem]->SetGlobalIndex(ID_Quad[iElem]);
+
+      Quad_List.push_back(ID_Quad[iElem]);
+
+      /*--- Increment our local counters. ---*/
+
+      jElem++; iElemQuad++;
+
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_Tetr; iElem++) {
+
+    if (find(Tetr_List.begin(), Tetr_List.end(), ID_Tetr[iElem]) == Tetr_List.end()) {
+
+      /*--- Transform the stored connectivity for this element from global
+       to local values on this rank. ---*/
+
+      NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
+        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Tetr[iElem*NODES_PER_ELEMENT+iNode]];
+
+      /*--- Create the element object. ---*/
+
+      elem[jElem] = new CTetrahedron(Local_Nodes[0],
+                                     Local_Nodes[1],
+                                     Local_Nodes[2],
+                                     Local_Nodes[3]);
+
+      elem[jElem]->SetGlobalIndex(ID_Tetr[iElem]);
+
+      Tetr_List.push_back(ID_Tetr[iElem]);
+
+      /*--- Increment our local counters. ---*/
+
+      jElem++; iElemTetr++;
+
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_Hexa; iElem++) {
+
+    if (find(Hexa_List.begin(), Hexa_List.end(), ID_Hexa[iElem]) == Hexa_List.end()) {
+
+      /*--- Transform the stored connectivity for this element from global
+       to local values on this rank. ---*/
+
+      NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
+        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Hexa[iElem*NODES_PER_ELEMENT+iNode]];
+
+      /*--- Create the element object. ---*/
+
+      elem[jElem] = new CHexahedron(Local_Nodes[0],
+                                    Local_Nodes[1],
+                                    Local_Nodes[2],
+                                    Local_Nodes[3],
+                                    Local_Nodes[4],
+                                    Local_Nodes[5],
+                                    Local_Nodes[6],
+                                    Local_Nodes[7]);
+
+      elem[jElem]->SetGlobalIndex(ID_Hexa[iElem]);
+
+      Hexa_List.push_back(ID_Hexa[iElem]);
+
+      /*--- Increment our local counters. ---*/
+
+      jElem++; iElemHexa++;
+
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_Pris; iElem++) {
+
+    if (find(Pris_List.begin(), Pris_List.end(), ID_Pris[iElem]) == Pris_List.end()) {
+
+      /*--- Transform the stored connectivity for this element from global
+       to local values on this rank. ---*/
+
+      NODES_PER_ELEMENT = N_POINTS_PRISM;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
+        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Pris[iElem*NODES_PER_ELEMENT+iNode]];
+
+      /*--- Create the element object. ---*/
+
+      elem[jElem] = new CPrism(Local_Nodes[0],
+                               Local_Nodes[1],
+                               Local_Nodes[2],
+                               Local_Nodes[3],
+                               Local_Nodes[4],
+                               Local_Nodes[5]);
+
+      elem[jElem]->SetGlobalIndex(ID_Pris[iElem]);
+
+      Pris_List.push_back(ID_Pris[iElem]);
+
+      /*--- Increment our local counters. ---*/
+
+      jElem++; iElemPris++;
+
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_Pyra; iElem++) {
+
+    if (find(Pyra_List.begin(), Pyra_List.end(), ID_Pyra[iElem]) == Pyra_List.end()) {
+
+      /*--- Transform the stored connectivity for this element from global
+       to local values on this rank. ---*/
+
+      NODES_PER_ELEMENT = N_POINTS_PYRAMID;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
+        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Pyra[iElem*NODES_PER_ELEMENT+iNode]];
+
+      /*--- Create the element object. ---*/
+      
+      elem[jElem] = new CPyramid(Local_Nodes[0],
+                                 Local_Nodes[1],
+                                 Local_Nodes[2],
+                                 Local_Nodes[3],
+                                 Local_Nodes[4]);
+      
+      elem[jElem]->SetGlobalIndex(ID_Pyra[iElem]);
+
+      Pyra_List.push_back(ID_Pyra[iElem]);
+
+      /*--- Increment our local counters. ---*/
+      
+      jElem++; iElemPyra++;
+      
+    }
+  }
+
+  /*--- Communicate the number of each element type to all processors. These
+   values are important for merging and writing output later. ---*/
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&Local_Elem, &Global_nElem, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  Global_nElem = nElem;
+#endif
+
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << Global_nElem << " interior elements including halo cells. " << endl;
+
+  /*--- Set the value of Global_nElemDomain (stored in the geometry container that is passed in) ---*/
+
+  Global_nElemDomain = geometry->GetGlobal_nElemDomain();
+
+  /*--- Store total number of each element type after incrementing the
+   counters in the recv loop above (to make sure there aren't repeats). ---*/
+
+  nelem_triangle = iElemTria;
+  nelem_quad     = iElemQuad;
+  nelem_tetra    = iElemTetr;
+  nelem_hexa     = iElemHexa;
+  nelem_prism    = iElemPris;
+  nelem_pyramid  = iElemPyra;
+
+#ifdef HAVE_MPI
+  unsigned long Local_nElemTri     = nelem_triangle;
+  unsigned long Local_nElemQuad    = nelem_quad;
+  unsigned long Local_nElemTet     = nelem_tetra;
+  unsigned long Local_nElemHex     = nelem_hexa;
+  unsigned long Local_nElemPrism   = nelem_prism;
+  unsigned long Local_nElemPyramid = nelem_pyramid;
+  SU2_MPI::Allreduce(&Local_nElemTri, &Global_nelem_triangle, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemQuad, &Global_nelem_quad, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemTet, &Global_nelem_tetra, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemHex, &Global_nelem_hexa, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemPrism, &Global_nelem_prism, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  Global_nelem_triangle = nelem_triangle;
+  Global_nelem_quad     = nelem_quad;
+  Global_nelem_tetra    = nelem_tetra;
+  Global_nelem_hexa     = nelem_hexa;
+  Global_nelem_prism    = nelem_prism;
+  Global_nelem_pyramid  = nelem_pyramid;
+#endif
+
+  /*--- Print information about the elements to the console ---*/
+
+  if (rank == MASTER_NODE) {
+    if (Global_nelem_triangle > 0)  cout << Global_nelem_triangle << " triangles."      << endl;
+    if (Global_nelem_quad > 0)      cout << Global_nelem_quad     << " quadrilaterals." << endl;
+    if (Global_nelem_tetra > 0)     cout << Global_nelem_tetra    << " tetrahedra."     << endl;
+    if (Global_nelem_hexa > 0)      cout << Global_nelem_hexa     << " hexahedra."      << endl;
+    if (Global_nelem_prism > 0)     cout << Global_nelem_prism    << " prisms."         << endl;
+    if (Global_nelem_pyramid > 0)   cout << Global_nelem_pyramid  << " pyramids."       << endl;
+  }
 
 }
 
