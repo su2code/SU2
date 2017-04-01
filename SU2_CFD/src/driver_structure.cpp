@@ -1548,13 +1548,12 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceGravity(nDim, nVar_Flow, config);
       else if (config->GetWind_Gust() == YES)
         numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceWindGust(nDim, nVar_Flow, config);
+      else if (two_phase)
+    	  numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource2phase(nDim, nVar_Flow, config);
       else
         numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
       
-      if (two_phase)
-    	  numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource2phase(nDim, nVar_Flow, config);
-
-      numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
+        numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
     }
     
   }
@@ -1637,7 +1636,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (hill_rus || hill_ausm) numerics_container[iMGlevel][TWO_PHASE_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Hill(nDim, nVar_2phase, config);
       numerics_container[iMGlevel][TWO_PHASE_SOL][SOURCE_FIRST_TERM]->SetNucleationModel(config);
-      numerics_container[iMGlevel][TWO_PHASE_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
+      numerics_container[iMGlevel][TWO_PHASE_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_2phase, config);
       numerics_container[iMGlevel][TWO_PHASE_SOL][SOURCE_SECOND_TERM]->SetNucleationModel(config);
     }
 

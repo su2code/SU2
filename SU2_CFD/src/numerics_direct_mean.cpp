@@ -4288,7 +4288,7 @@ void  CSource2phase::ComputeResidual_HeatMassTransfer(su2double S, su2double h, 
 		val_Residual  [iDim+1] = S * V_i[iDim + 1] * Volume;
 	}
 
-	val_Residual[nDim] = S * (h + 0.5*q_ij) * Volume;
+	val_Residual[nDim+1] = S * (h + 0.5*q_ij) * Volume;
 
 	if (implicit) {
 

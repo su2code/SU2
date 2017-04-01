@@ -4323,7 +4323,14 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 }
 
 void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                  unsigned short iMesh) { }
+                                  unsigned short iMesh) {
+/*	unsigned long ErrorCounter = 0;
+
+	if (config->GetKind_2phase_Model() != NONE) {
+		ErrorCounter = SetPrimitive_Variables(solver_container, config, false);
+	}
+*/
+}
 
 unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
@@ -5028,7 +5035,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
       /*--- Load the primitive variables ---*/
-      numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[iPoint]->GetPrimitive());
+      numerics->SetPrimitive(node[iPoint]->GetPrimitive(), NULL);
       
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -5049,10 +5056,9 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
-}
+
+  }
   
-
-
 }
 
 void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
