@@ -229,9 +229,9 @@ inline void CGeometry::SetTurboRadiusOut(su2double value, unsigned short val_mar
 
 inline unsigned long CGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return 0;}
 
-inline su2double CGeometry::GetMinAngularPitch(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetMinAngularCoord(unsigned short val_marker, unsigned short val_span){return 0.0;}
 
-inline su2double CGeometry::GetMaxAngularPitch(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span){return 0.0;}
 
 inline su2double CGeometry::GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span){return 0.0;}
 
@@ -435,9 +435,9 @@ inline void CPhysicalGeometry::SetTurboRadiusOut(su2double value, unsigned short
 
 inline unsigned long CPhysicalGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return nTotVertexSpan[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetMinAngularPitch(unsigned short val_marker, unsigned short val_span){return MinAngularPitch[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetMinAngularCoord(unsigned short val_marker, unsigned short val_span){return MinAngularCoord[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetMaxAngularPitch(unsigned short val_marker, unsigned short val_span){return MaxAngularPitch[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span){return MaxAngularCoord[val_marker][val_span];}
 
 inline su2double CPhysicalGeometry::GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span){return MinRelAngularCoord[val_marker][val_span];}
 

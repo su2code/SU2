@@ -4293,8 +4293,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   AverageTangGridVel  		= new su2double*[nMarker];
   SpanArea 								= new su2double*[nMarker];
   TurboRadius 					  = new su2double*[nMarker];
-  MaxAngularPitch = new su2double*[nMarker];
-  MinAngularPitch = new su2double*[nMarker];
+  MaxAngularCoord = new su2double*[nMarker];
+  MinAngularCoord = new su2double*[nMarker];
   MinRelAngularCoord = new su2double*[nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
@@ -4307,8 +4307,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     AverageTangGridVel[iMarker]					= NULL;
     SpanArea[iMarker]										= NULL;
     TurboRadius[iMarker]								= NULL;
-    MaxAngularPitch[iMarker]= NULL;
-    MinAngularPitch[iMarker]= NULL;
+    MaxAngularCoord[iMarker]= NULL;
+    MinAngularCoord[iMarker]= NULL;
     MinRelAngularCoord[iMarker]= NULL;
   }
 
@@ -9976,14 +9976,14 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
             nVertexSpan[iMarker] 							= new long[nSpanWiseSections[marker_flag-1]];
             turbovertex[iMarker] 							= new CTurboVertex** [nSpanWiseSections[marker_flag-1]];
             nTotVertexSpan[iMarker]						= new unsigned long [nSpanWiseSections[marker_flag-1] +1];
-            MaxAngularPitch[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
-            MinAngularPitch[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
+            MaxAngularCoord[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
+            MinAngularCoord[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
             MinRelAngularCoord[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
             for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
               nVertexSpan[iMarker][iSpan] 								= 0;
               turbovertex[iMarker][iSpan] 								= NULL;
-              MinAngularPitch[iMarker][iSpan] = 10.0E+06;
-              MaxAngularPitch[iMarker][iSpan] = -10.0E+06;
+              MinAngularCoord[iMarker][iSpan] = 10.0E+06;
+              MaxAngularCoord[iMarker][iSpan] = -10.0E+06;
               MinRelAngularCoord[iMarker][iSpan] = 10.0E+06;
             }
             for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1] +1; iSpan++){
@@ -10203,12 +10203,12 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 if (coord[1]<min){
                   min = coord[1];
                   if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
-                    MinAngularPitch[iMarker][iSpan] = coord[1];
+                    MinAngularCoord[iMarker][iSpan] = coord[1];
                   }
                   else{
-                  MinAngularPitch[iMarker][iSpan] = atan(coord[1]/coord[0]);
+                  MinAngularCoord[iMarker][iSpan] = atan(coord[1]/coord[0]);
                   }
-                  minAngPitch[iSpan]= MinAngularPitch[iMarker][iSpan];
+                  minAngPitch[iSpan]= MinAngularCoord[iMarker][iSpan];
                   kSpanVertex =iSpanVertex;
                 }
 
@@ -10230,12 +10230,12 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   if(node[iPoint]->GetDomain()){
                     max =coord[1];
                     if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
-                      MaxAngularPitch[iMarker][iSpan] = coord[1];
+                      MaxAngularCoord[iMarker][iSpan] = coord[1];
                     }
                     else{
-                      MaxAngularPitch[iMarker][iSpan] = atan(coord[1]/coord[0]);
+                      MaxAngularCoord[iMarker][iSpan] = atan(coord[1]/coord[0]);
                     }
-                    maxAngPitch[iSpan]= MaxAngularPitch[iMarker][iSpan];
+                    maxAngPitch[iSpan]= MaxAngularCoord[iMarker][iSpan];
                   }
                 }
               }
@@ -10414,11 +10414,11 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
             nVert = nVertexSpan[iMarker][iSpan];
-            MinAngularPitch[iMarker][iSpan] = minAngPitch[iSpan];
-            MaxAngularPitch[iMarker][iSpan] = maxAngPitch[iSpan];
+            MinAngularCoord[iMarker][iSpan] = minAngPitch[iSpan];
+            MaxAngularCoord[iMarker][iSpan] = maxAngPitch[iSpan];
             MinRelAngularCoord[iMarker][iSpan] = minIntAngPitch[iSpan] - minAngPitch[iSpan];
             for(iSpanVertex = 0; iSpanVertex< nVertexSpan[iMarker][iSpan]; iSpanVertex++){
-             turbovertex[iMarker][iSpan][iSpanVertex]->SetRelAngularCoord(MinAngularPitch[iMarker][iSpan]);
+             turbovertex[iMarker][iSpan][iSpanVertex]->SetRelAngularCoord(MinAngularCoord[iMarker][iSpan]);
             }
           }
         }

@@ -130,8 +130,8 @@ public:
 	su2double ***AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
 	su2double **AverageTangGridVel; /*! <\brief Average tangential rotational speed at each span wise section for each marker.*/
 	su2double **SpanArea; /*! <\brief Area at each span wise section for each marker.*/
-su2double **MaxAngularPitch; /*! <\brief Max angular pitch at each span wise section for each marker.*/
-su2double **MinAngularPitch; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+su2double **MaxAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+su2double **MinAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
 su2double **MinRelAngularCoord; /*! <\brief Min relative angular coord at each span wise section for each marker.*/
 su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
 	su2double **TangGridVelIn, **TangGridVelOut; /*! <\brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
@@ -1167,14 +1167,14 @@ virtual void UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsign
  * \param[in] val_marker - marker value.
  * \param[in] val_span - span value.
  */
-  virtual su2double GetMinAngularPitch(unsigned short val_marker, unsigned short val_span);
+  virtual su2double GetMinAngularCoord(unsigned short val_marker, unsigned short val_span);
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.
    */
-  virtual su2double GetMaxAngularPitch(unsigned short val_marker, unsigned short val_span);
+  virtual su2double GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span);
 
   /*!
    * \brief A virtual member.
@@ -1941,14 +1941,14 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
  * \param[in] val_marker - marker value.
  * \param[in] val_span - span value.
  */
-  su2double GetMinAngularPitch(unsigned short val_marker, unsigned short val_span);
+  su2double GetMinAngularCoord(unsigned short val_marker, unsigned short val_span);
 
 /*!
  * \brief max angular pitch independently from the MPI partions.
  * \param[in] val_marker - marker value.
  * \param[in] val_span - span value.
  */
-  su2double GetMaxAngularPitch(unsigned short val_marker, unsigned short val_span);
+  su2double GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span);
 
 /*!
  * \brief min Relatice angular coord independently from the MPI partions.
