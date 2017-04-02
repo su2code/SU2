@@ -9,7 +9,7 @@
 typedef std::complex<su2double> Complex;
 typedef std::valarray<Complex> CArray;
 
-#define N_PROF 200001
+#define N_PROF 80001
 
 SUBoom::SUBoom(){
 
@@ -95,7 +95,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
             x = SU2_TYPE::GetValue(Coord[0]);
             p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
             //if(x >= (ray_r0/tan(asin(1/flt_M)))) panelCount++;
-            //if(p >= 1. || p <= -1.){
+            //if(p >= 0.1 || p <= -0.1){
                 panelCount++;
                 if(x < xmin) xmin = x;
             //}
@@ -130,7 +130,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           x = SU2_TYPE::GetValue(Coord[0]);
           //if(x >= ray_r0/tan(asin(1/flt_M))){
           p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
-          //if(p >= 1. || p <= -1.){
+          //if(p >= 0.1 || p <= -0.1){
             //cout << "p = " << p << endl;
             panelCount++;
             y = SU2_TYPE::GetValue(Coord[1]);
@@ -156,8 +156,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
             //if(panelCount==1) p = 0.;
             signal.original_p[panelCount-1] = p;
-            signal.x[panelCount-1] = x;
-            sigFile << x << " " << p << endl;
+            signal.x[panelCount-1] = x - xmin;
+            sigFile << x-xmin << " " << p << endl;
           //}
         }
 
@@ -732,8 +732,8 @@ void SUBoom::RayTubeArea(){
   for(int i = 0; i < ray_N_phi; i++){
     M = N_PROF;
     Ah = 0;
-    ray_A[i][M-1] = 0.0;
-    for(int j = 0; j < M-1; j++){
+    //ray_A[i][M-1] = 0.0;
+    for(int j = 0; j < M; j++){
       for(int k = 0; k < 4; k++){
 	    for(int kk = 0; kk < 3; kk++){
 	    corners[k][kk] = 0.0;
@@ -860,12 +860,12 @@ void SUBoom::ODETerms(){
     ray_C2[i] = new double[N_PROF];
     for(int j = 0; j < N_PROF; j++){
       ray_C1[i][j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];
-      if(A[j] > 1E-16){
+      //if(A[j] > 1E-16){
           ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./A[j])*dAdt[j]);
-      }
-      else{
-        ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j]);
-      }
+      //}
+      //else{
+        //ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j]);
+      //}
       //cout << "A = " << A[j] << ", dAdt = " << dAdt[j] << ", C2 = " << ray_C2[i][j] << endl;
     }
     ray_dC1[i] = SplineGetDerivs(t, ray_C1[i], N_PROF);
@@ -911,23 +911,24 @@ void SUBoom::CreateSignature(){
   int M = len-1;
   int i = 0;
   while(i <= M-1){
-    if(mm[i] > tol_m){  // shock present
+    if(mm[i] > tol_m/scale_m || mm[i] < -tol_m/scale_m){  // shock present
       /*---Remove segment i---*/
       for(int j = i; j < M; j++){
         pp[0][j] = pp[0][j+1];
         pp[1][j] = pp[1][j+1];
 	    ll[j] = ll[j+1];
 	    mm[j] = mm[j+1];
+        //ll[i] = tol_l;
+        //mm[i] = (pp[1][i] - pp[0][i])/ll[i];
       }
-      //i -= 1;
+      i -= 1;
       M -= 1;
     }
-    else if(mm[i] < -tol_m){  // "expansion shock" present
-      /*---Remove segment i---*/
-      ll[i] = tol_l;
-      mm[i] = (pp[1][i] - pp[0][i])/ll[i];
-      //i -= 1;
-    }
+    //else if(mm[i] < -tol_m){  // "expansion shock" present
+    //  /*---Remove segment i---*/
+    //  ll[i] = tol_l;
+    //  mm[i] = (pp[1][i] - pp[0][i])/ll[i];
+    //}
     i += 1;
   }
 
@@ -1026,13 +1027,13 @@ double *derivsProp(double t, int m, double y[], SUBoom::RayData data){
   double diff_m[M], diff_dp[M];
   double **current_signal;
   double C1, C2;
-  int Msig = M;
+  int Msig = -1;
 
   dydt = new double[3*M];
 
   /*---Get final pressure value for diff_dp[end]---*/
   current_signal = new double*[2];
-  for(int i = 0; i < 2; i++){current_signal[i] = new double[2*M];}
+  for(int i = 0; i < 2; i++){current_signal[i] = new double[M];}
   current_signal = WaveformToPressureSignal(y, M, Msig);
 
   for(int i = 0; i < M; i++){
@@ -1042,7 +1043,7 @@ double *derivsProp(double t, int m, double y[], SUBoom::RayData data){
     }
     else if(i == M-1){
       diff_m[i] = y[i] + y[i-1];
-      diff_dp[i] =  y[i+M] - current_signal[1][Msig-1];
+      diff_dp[i] =  y[i+M] - current_signal[1][M-1];
     }
     else{
       diff_m[i] = y[i] + y[i-1];
@@ -1102,12 +1103,12 @@ double *SUBoom::ClipLambdaZeroSegment(double fvec[], int &M){
   int i = 0;
   fvec_new = fvec;
   while(i <= N-1){
-    if(l[i] <= tol_l || m[i] >= tol_m){
+    if(l[i] <= tol_l/scale_T || m[i] >= tol_m/scale_m || m[i] <= -tol_m/scale_m){
       /*---Record pressure gap---*/
       current_signal = WaveformToPressureSignal(fvec_new, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
       /*---Add to next segment if needed---*/
-      if(dp_seg > tol_dp){
+      if(dp_seg > tol_dp || dp_seg < -tol_dp){
           if(i < N-1){
               dp[i+1] = dp[i+1] + dp_seg;
           }
