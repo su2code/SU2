@@ -2668,7 +2668,7 @@ void CDriver::TurbomachineryPreprocessing(){
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
   bool mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
-
+  su2double areaIn, areaOut;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -2736,6 +2736,16 @@ void CDriver::TurbomachineryPreprocessing(){
   for (iZone = 1; iZone < nZone; iZone++) {
     transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
   }
+
+  if (rank == MASTER_NODE){
+    for (iZone = 0; iZone < nZone; iZone++) {
+    areaIn  = geometry_container[iZone][MESH_0]->GetSpanAreaIn(iZone, config_container[iZone]->GetnSpanWiseSections());
+    areaOut = geometry_container[iZone][MESH_0]->GetSpanAreaOut(iZone, config_container[iZone]->GetnSpanWiseSections());
+    cout << "Inlet area for blade "<< iZone << ": " << areaIn*10000.0 <<" cm^2."  <<endl;
+    cout << "Oulet area for blade "<< iZone << ": " << areaOut*10000.0 <<" cm^2."  <<endl;
+    }
+  }
+
 
   if(mixingplane){
     if (rank == MASTER_NODE) cout<<"Preprocessing of the Mixing-Plane Interface." << endl;
