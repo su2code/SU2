@@ -2635,9 +2635,10 @@ void CDriver::InitStaticMeshMovement(){
       /*--- Set the grid velocities on all multigrid levels for a steadily
            rotating reference frame. ---*/
 
-      for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
+      for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
         geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, true);
-
+        geometry_container[iZone][iMGlevel]->SetShroudVelocity(config_container[iZone]);
+      }
 
       break;
 
@@ -4045,6 +4046,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
             cout << " for zone " << iZone << "." << endl;
           }
           geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, print);
+          geometry_container[iZone][MESH_0]->SetShroudVelocity(config_container[iZone]);
         }
       }
 

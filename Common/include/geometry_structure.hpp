@@ -678,11 +678,17 @@ virtual void UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsign
 	 */
 	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
-    /*!
-     * \brief A virtual member.
-     * \param[in] config - Definition of the particular problem.
-     */
-    virtual void SetTranslationalVelocity(CConfig *config);
+/*!
+ * \brief A virtual member.
+ * \param[in] config - Definition of the particular problem.
+ */
+virtual void SetShroudVelocity(CConfig *config);
+
+/*!
+ * \brief A virtual member.
+ * \param[in] config - Definition of the particular problem.
+ */
+virtual void SetTranslationalVelocity(CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -1501,12 +1507,18 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] val_iZone - Index of the current zone.
 	 */
 	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
-    
-    /*!
-     * \brief Set the translational velocity at each node.
-     * \param[in] config - Definition of the particular problem.
-     */
-    void SetTranslationalVelocity(CConfig *config);
+
+/*!
+ * \brief Set the rotational velocity of the points on the shroud markers to 0.
+ * \param[in] config - Definition of the particular problem.
+ */
+void SetShroudVelocity(CConfig *config);
+
+/*!
+ * \brief Set the translational velocity at each node.
+ * \param[in] config - Definition of the particular problem.
+ */
+void SetTranslationalVelocity(CConfig *config);
 
 	/*! 
 	 * \brief Set the grid velocity via finite differencing at each node.
@@ -2083,12 +2095,18 @@ public:
    * \param[in] val_iZone - Index of the current zone.
 	 */
 	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
-    
-    /*!
-     * \brief Set the translational velocity at each grid point on a coarse mesh.
-     * \param[in] config - Definition of the particular problem.
-     */
-    void SetTranslationalVelocity(CConfig *config);
+
+/*!
+ * \brief Set the rotational velocity of the points on the shroud markers to 0.
+ * \param[in] config - Definition of the particular problem.
+ */
+void SetShroudVelocity(CConfig *config);
+
+/*!
+ * \brief Set the translational velocity at each grid point on a coarse mesh.
+ * \param[in] config - Definition of the particular problem.
+ */
+void SetTranslationalVelocity(CConfig *config);
 
 	/*!
 	 * \brief Set the grid velocity at each node in the coarse mesh level.

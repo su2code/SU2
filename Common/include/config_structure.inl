@@ -981,6 +981,10 @@ inline unsigned short CConfig::GetnMarker_MixingPlaneInterface(void) { return nM
 
 inline unsigned short CConfig::GetnMarker_Turbomachinery(void) { return nMarker_Turbomachinery;}
 
+inline unsigned short CConfig::GetnMarker_Shroud(void) { return nMarker_Shroud;}
+
+inline string CConfig::GetMarker_Shroud(unsigned short val_marker){return Marker_Shroud[val_marker];}
+
 inline unsigned short CConfig::GetnMarker_TurboPerformance(void) { return nMarker_TurboPerformance;}
 
 inline unsigned short CConfig::Get_nSpanWiseSections_User(void) { return nSpanWiseSections_User;}
