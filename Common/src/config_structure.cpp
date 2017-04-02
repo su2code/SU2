@@ -854,8 +854,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief TURBOMACHINERY_TYPE \n DESCRIPTION: types of turbomachynery architecture.
       \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
   addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
-  /*!\brief TURBOMACHINERY_TYPE \n DESCRIPTION: types of turbomachynery architecture.
-        \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
+  /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0 .
+   * \n Format: (shroud1, shroud2, ...)
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s)
    * \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/

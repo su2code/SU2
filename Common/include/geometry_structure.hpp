@@ -2097,7 +2097,7 @@ public:
 	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
 /*!
- * \brief Set the rotational velocity of the points on the shroud markers to 0.
+ * \brief Set the rotational velocity of the points on the shroud markers to 0.0.
  * \param[in] config - Definition of the particular problem.
  */
 void SetShroudVelocity(CConfig *config);
