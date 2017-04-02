@@ -27,7 +27,7 @@ public:
   unsigned int atm_noise_flag;
 
   double T_inf, a_inf, p_inf, rho_inf;
-  double z[45001], T_of_z[45001], a_of_z[45001], p_of_z[45001], rho_of_z[45001];
+  double *z, *a_of_z, *rho_of_z;//, T_of_z[65001], rho_of_z[65001];
 
   /*---Scale factors---*/
   double scale_L, scale_T, scale_p, scale_m, scale_z;
@@ -43,8 +43,7 @@ public:
   double **ray_c0;
   double ***theta;
   double ***x_of_z, ***y_of_z, ***t_of_z;
-  //double ***a_of_z, ***rho_of_z, ***p_of_z;
-  double ***dxdt, ***dydt, ***dzdt, ***tangent;
+  double ***dxdt, ***dydt, ***dzdt;
   double **ray_A;
   double **ray_C1, **ray_C2, **ray_dC1, **ray_dC2;
 

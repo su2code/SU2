@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 	CGeometry **geometry_container = NULL;
 	CSolver **solver_container     = NULL;
 	CConfig **config_container     = NULL;
-	FWHSolver **FWH_container      = NULL;
+////////	FWHSolver **FWH_container      = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
@@ -161,49 +161,49 @@ int main(int argc, char *argv[]) {
 
 
 
-  if (rank == MASTER_NODE)
-          cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
+////////  if (rank == MASTER_NODE)
+////////          cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 
 /*--- Compute elements surrounding points, points surrounding points ---*/
 
-if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-geometry_container[ZONE_0]->SetPoint_Connectivity();
+////////if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
+////////geometry_container[ZONE_0]->SetPoint_Connectivity();
 
-if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
+////////if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+////////geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
 
 /*--- recompute elements surrounding points, points surrounding points ---*/
 
-if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-geometry_container[ZONE_0]->SetPoint_Connectivity();
+////////if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+////////geometry_container[ZONE_0]->SetPoint_Connectivity();
 
 /*--- Compute elements surrounding elements ---*/
 
-if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
-geometry_container[ZONE_0]->SetElement_Connectivity();
+////////if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
+////////geometry_container[ZONE_0]->SetElement_Connectivity();
 
 /*--- Check the orientation before computing geometrical quantities ---*/
 
-if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
-geometry_container[ZONE_0]->SetBoundVolume();
-geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
-geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
+////////if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+////////geometry_container[ZONE_0]->SetBoundVolume();
+////////geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
+////////geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
 /*--- Create the edge structure ---*/
 
-if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
+////////if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
+////////geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
 
 /*--- Compute center of gravity ---*/
 
-if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-geometry_container[ZONE_0]->SetCoord_CG();
+////////if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+////////geometry_container[ZONE_0]->SetCoord_CG();
 
 /*--- Create the dual control volume structures ---*/
 
-if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
+////////if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+////////geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
-  geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
+////////  geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
 ////////      FWH_container = new FWHSolver* [nZone];
 ////////for (iZone = 0; iZone < nZone; iZone++) {
@@ -495,7 +495,7 @@ geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLO
         cout<<"Type= "<<   config_container[ZONE_0]->GetDiscrete_Adjoint() <<endl;  //  <--- returns 1! (cont adj)
 
          if (config_container[ZONE_0]->GetAD_Mode()){
-             if (rank == MASTER_NODE)
+/*             if (rank == MASTER_NODE)
                cout << endl <<"------------------------- Computing Far Field Noise (Primal+Adjoint) -----------------------" << endl;
 
              AD::StartRecording();
@@ -529,7 +529,7 @@ geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLO
 
             FWH_container[ZONE_0]->Write_Sensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
-
+*/
 
 
 

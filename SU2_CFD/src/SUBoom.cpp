@@ -9,6 +9,8 @@
 typedef std::complex<su2double> Complex;
 typedef std::valarray<Complex> CArray;
 
+#define N_PROF 200001
+
 SUBoom::SUBoom(){
 
 }
@@ -22,7 +24,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   /*---Make sure to read in hard-coded values in the future!---*/
 
   /*---Flight variables---*/
-  flt_h = 15000; // altitude [m]
+  flt_h = 15240; // altitude [m]
   flt_M = config->GetMach();
   flt_psi = 0.;  // heading angle [deg]
   flt_gamma = 0.; // flight path angle [deg]
@@ -42,42 +44,14 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   ray_r0 = 2.0;
 
   /*---Tolerance variables---*/
-  tol_dphi = 1.0E-3;
-  tol_dr = 1.0E-3;
-  tol_m = 1.0E6;
-  tol_dp = 1.0E-5;
-  tol_l = 1.0E-5;
-
-  /*---Loop over boundary markers to select those to extract pressure signature---*/
-  unsigned long nDim = geometry->GetnDim();
-  unsigned long nMarker = config->GetnMarker_All();
-  unsigned long nSig=0, SigCount=0, panelCount=0, nPanel=0;
-  unsigned long iMarker, iVertex, iPoint;
-  double x, y, z;
-  double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
-  double ux, uy, uz, StaticEnergy, p;
-  double *Coord;
-  for(iMarker = 0; iMarker < nMarker; iMarker++){
-    if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
-      size_t last_index = config->GetMarker_All_TagBound(iMarker).find_last_not_of("0123456789");
-      string result = config->GetMarker_All_TagBound(iMarker).substr(last_index + 1);
-      int f = std::strtol(result.c_str(),NULL,10);
-      SigCount++;
-
-      for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if(geometry->node[iPoint]->GetDomain()){
-            x = SU2_TYPE::GetValue(Coord[0]);
-            //if(x >= ray_r0/tan(asin(1/flt_M))) panelCount++;
-            panelCount++;
-        }
-      }
-      nPanel = panelCount;
-    }
-    nSig = SigCount;
-  }
-
-  signal.original_len = nPanel;
+  string str;
+  ifstream tolfile;
+  tolfile.open("tols.in");
+  tolfile >> str >> tol_dphi;
+  tolfile >> str >> tol_dr;
+  tolfile >> str >> tol_m;
+  tolfile >> str >> tol_dp;
+  tolfile >> str >> tol_l;
 
   /*---Set reference pressure, make sure signal is dimensional---*/
   double Pressure_FreeStream=config->GetPressure_FreeStream();
@@ -94,12 +68,52 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
     Pressure_Ref      = flt_M*flt_M*atm_g*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
   }
+  //p_inf = Pressure_FreeStream;
   cout << "Pressure_Ref = " << Pressure_Ref << ", Pressure_FreeStream = " << Pressure_FreeStream << endl;
+
+  /*---Loop over boundary markers to select those to extract pressure signature---*/
+  unsigned long nDim = geometry->GetnDim();
+  unsigned long nMarker = config->GetnMarker_All();
+  unsigned long nSig=0, SigCount=0, panelCount=0, nPanel=0;
+  unsigned long iMarker, iVertex, iPoint;
+  double x, y, z;
+  double xmin = 1000.;
+  double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
+  double ux, uy, uz, StaticEnergy, p;
+  double *Coord;
+  for(iMarker = 0; iMarker < nMarker; iMarker++){
+    if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
+      size_t last_index = config->GetMarker_All_TagBound(iMarker).find_last_not_of("0123456789");
+      string result = config->GetMarker_All_TagBound(iMarker).substr(last_index + 1);
+      int f = std::strtol(result.c_str(),NULL,10);
+      SigCount++;
+
+      for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if(geometry->node[iPoint]->GetDomain()){
+            Coord = geometry->node[iPoint]->GetCoord();
+            x = SU2_TYPE::GetValue(Coord[0]);
+            p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
+            //if(x >= (ray_r0/tan(asin(1/flt_M)))) panelCount++;
+            //if(p >= 1. || p <= -1.){
+                panelCount++;
+                if(x < xmin) xmin = x;
+            //}
+            //panelCount++;
+        }
+      }
+      nPanel = panelCount;
+    }
+    nSig = SigCount;
+  }
+
+  signal.original_len = nPanel;
+  cout << "nPanel = " << nPanel << endl;
 
   /*---Extract signature---*/
   ofstream sigFile;
   sigFile.open("signal_original.txt");
-  sigFile << "# x, y, p" << endl;
+  sigFile << "# x, p" << endl;
   panelCount = 0;
   signal.x = new double[nPanel];
   signal.original_p = new double[nPanel];
@@ -115,6 +129,9 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           Coord = geometry->node[iPoint]->GetCoord();
           x = SU2_TYPE::GetValue(Coord[0]);
           //if(x >= ray_r0/tan(asin(1/flt_M))){
+          p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
+          //if(p >= 1. || p <= -1.){
+            //cout << "p = " << p << endl;
             panelCount++;
             y = SU2_TYPE::GetValue(Coord[1]);
             z = 0.0;
@@ -135,11 +152,12 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
             if(nDim == 3) uz= rho_uz/rho;
             StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
             p = (config->GetGamma()-1)*rho*StaticEnergy - Pressure_FreeStream/Pressure_Ref;*/
-            p = solver->node[iPoint]->GetSolution(2*nDim+2);//*Pressure_Ref - Pressure_FreeStream;
+            //p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
 
+            //if(panelCount==1) p = 0.;
             signal.original_p[panelCount-1] = p;
             signal.x[panelCount-1] = x;
-            sigFile << x << " " << y << " " << p << endl;
+            sigFile << x << " " << p << endl;
           //}
         }
 
@@ -147,6 +165,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     }
   }
   sigFile.close();
+  //signal.original_p[0] = 0.;
+  //signal.original_p[panelCount-1] = 0.;
 
 }
 
@@ -205,14 +225,18 @@ void SUBoom::AtmosISA(double& h0, double& T, double& a, double& p,
 void SUBoom::ConditionAtmosphericData(){
   double g = atm_g;    // specific heat ratio
   double h0 = flt_h;    // flight altitude [m]
+  double T, p;
 
   /*---Conditions at flight altitude---*/
   AtmosISA(h0, T_inf, a_inf, p_inf, rho_inf, g);
 
   /*---Atmospheric conditions profile---*/
-  for(int i = 0; i < 45001; i++){
-    z[i] = h0*double(i)/(45001.-1.);
-    AtmosISA(z[i], T_of_z[i], a_of_z[i], p_of_z[i], rho_of_z[i], g);
+  z = new double[N_PROF];
+  a_of_z = new double[N_PROF];
+  rho_of_z = new double[N_PROF];
+  for(int i = 0; i < N_PROF; i++){
+    z[i] = h0*double(i)/(double(N_PROF)-1.);
+    AtmosISA(z[i], T, a_of_z[i], p, rho_of_z[i], g);
   }
 }
 
@@ -233,7 +257,9 @@ void SUBoom::ScaleFactors(){
     if(x[i] < min_x)
       min_x = x[i];
   }
+  // TODO: get a/c length
   L = max_x - min_x;
+  //L = 1.0;
 
   scale_L = L;    // [m]
   scale_T = L/(M_inf*a_inf);    // flow over aircraft [s]
@@ -248,15 +274,16 @@ void SUBoom::ScaleFactors(){
 void SUBoom::GetAtmosphericData(double& a, double& rho, double& p, double h){
   /*---Get speed of sound, density, and pressure at an altitude---*/
   int i_h = -1;
-  for(int i = 0; i < 45001; i++){
+  for(int i = 0; i < N_PROF; i++){
     if(h == z[i]){
       i_h = i;
       break;
     }
   }
   a = a_of_z[i_h];
+  p = p_inf;
   rho = rho_of_z[i_h];
-  p = p_of_z[i_h];
+  //p = p_of_z[i_h];
 }
 
 void SUBoom:: Sph2Cart(double& nx, double& ny, double& nz, double az, double elev,
@@ -302,7 +329,7 @@ void SUBoom::InitialWaveNormals(){
 
   /*---Compute initial ray parameters---*/
   //GetAtmosphericData(a0, rho0, p0, h);
-  a0 = a_of_z[45001-1];
+  a0 = a_of_z[N_PROF-1];
 
   for(int i = 0; i < ray_N_phi; i++){
     /*---Primary rays---*/
@@ -455,12 +482,15 @@ void SUBoom::RayTracer(){
   double L = flt_h;
   double T = scale_T;
   double a0, rho0, p0;
-  double a[45001], rho[45001], p[45001];
-  //  double theta[45001];
+  double a, rho, p;
+  //  double theta[N_PROF];
   double r0[3];
-  double *f, x[45001], y[45001], t[45001];
+  double *f, x[N_PROF], y[N_PROF], t[N_PROF];
+  double xtmp[1001], ytmp[1001], ztmp[1001], ttmp[1001];
   double *kx, *ky, *kz;
   double dz = (z[0] - z[1]);
+
+  int jj;
 
   //GetAtmosphericData(a0, rho0, p0, L);
   a0 = a_inf;
@@ -491,13 +521,13 @@ void SUBoom::RayTracer(){
     dzdt[i] = new double*[4];
     theta[i] = new double*[4];
     for(int j = 0; j < 4; j++){
-      x_of_z[i][j] = new double[45001];
-      y_of_z[i][j] = new double[45001];
-      t_of_z[i][j] = new double[45001];
-      dxdt[i][j] = new double[45001];
-      dydt[i][j] = new double[45001];
-      dzdt[i][j] = new double[45001];
-      theta[i][j] = new double[45001];
+      x_of_z[i][j] = new double[N_PROF];
+      y_of_z[i][j] = new double[N_PROF];
+      t_of_z[i][j] = new double[N_PROF];
+      dxdt[i][j] = new double[N_PROF];
+      dydt[i][j] = new double[N_PROF];
+      dzdt[i][j] = new double[N_PROF];
+      theta[i][j] = new double[N_PROF];
     }
   }
 
@@ -508,7 +538,7 @@ void SUBoom::RayTracer(){
     data.nu = ray_nu[i][0];
     r0[0] = r0[1] = r0[2] = 0.;
 
-    for(int j = 45001-1; j > -1; j--){
+    for(int j = N_PROF-1; j > -1; j--){
       f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
       x[j] = x_of_z[i][0][j] = -f[0];
       y[j] = y_of_z[i][0][j] = -f[1];
@@ -519,25 +549,42 @@ void SUBoom::RayTracer(){
       r0[2] = -t[j];
 
       /*---Derived data---*/
-      GetAtmosphericData(a[j], rho[j], p[j], z[j]);
-      theta[i][0][j] = acos(a[j]/data.c0);
+      GetAtmosphericData(a, rho, p, z[j]);
+      theta[i][0][j] = acos(a/data.c0);
     }
 
-    kx = SplineGetDerivs(t, x, 45001);
-    ky = SplineGetDerivs(t, y, 45001);
-    kz = SplineGetDerivs(t, z, 45001);
-    for(int ik = 0; ik < 45001; ik++){
+    kx = SplineGetDerivs(t, x, N_PROF);
+    ky = SplineGetDerivs(t, y, N_PROF);
+    kz = SplineGetDerivs(t, z, N_PROF);
+    for(int ik = 0; ik < N_PROF; ik++){
       dxdt[i][0][ik] = kx[ik];
       dydt[i][0][ik] = ky[ik];
       dzdt[i][0][ik] = kz[ik];
     }
-    /*---Tangent vector---*/
+    /*jj = 0;
+    while(jj < N_PROF-1){
+    for(int ik = 0; ik < 1001; ik++){
+        xtmp[ik] = x[ik+jj];
+        ytmp[ik] = y[ik+jj];
+        ztmp[ik] = z[ik+jj];
+        ttmp[ik] = t[ik+jj];
+    }
+    kx = SplineGetDerivs(ttmp, xtmp, 1001);
+    ky = SplineGetDerivs(ttmp, ytmp, 1001);
+    kz = SplineGetDerivs(ttmp, ztmp, 1001);
+    for(int ik = 0; ik < 1001; ik++){
+      dxdt[i][0][ik+jj] = kx[ik];
+      dydt[i][0][ik+jj] = ky[ik];
+      dzdt[i][0][ik+jj] = kz[ik];
+    }
+    jj = jj + 1001-1;
+}*/
 
     /*---Ray tube corners: {0, +dheading}---*/
     r0[0] = flt_heading[0]*tol_dr;
     r0[1] = flt_heading[1]*tol_dr;
     r0[2] = flt_heading[2]*tol_dr;
-    for(int j = 45001-1; j > -1; j--){
+    for(int j = N_PROF-1; j > -1; j--){
       f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
       x[j] = x_of_z[i][1][j] = -f[0];
       y[j] = y_of_z[i][1][j] = -f[1];
@@ -548,23 +595,38 @@ void SUBoom::RayTracer(){
       r0[2] = -t[j];
 
       /*---Derived data---*/
-      GetAtmosphericData(a[j], rho[j], p[j], z[j]);
-      theta[i][1][j] = acos(a[j]/data.c0);
+      GetAtmosphericData(a, rho, p, z[j]);
+      theta[i][1][j] = acos(a/data.c0);
     }
 
-    kx = SplineGetDerivs(t, x, 45001);
-    ky = SplineGetDerivs(t, y, 45001);
-    for(int ik = 0; ik < 45001; ik++){
+    kx = SplineGetDerivs(t, x, N_PROF);
+    ky = SplineGetDerivs(t, y, N_PROF);
+    for(int ik = 0; ik < N_PROF; ik++){
       dxdt[i][1][ik] = kx[ik];
       dydt[i][1][ik] = ky[ik];
     }
+    /*jj = 0;
+    while(jj < N_PROF-1){
+    for(int ik = 0; ik < 1001; ik++){
+        xtmp[ik] = x[ik+jj];
+        ytmp[ik] = y[ik+jj];
+        ttmp[ik] = t[ik+jj];
+    }
+    kx = SplineGetDerivs(ttmp, xtmp, 1001);
+    ky = SplineGetDerivs(ttmp, ytmp, 1001);
+    for(int ik = 0; ik < 1001; ik++){
+      dxdt[i][1][ik+jj] = kx[ik];
+      dydt[i][1][ik+jj] = ky[ik];
+    }
+    jj = jj + 1001-1;
+}*/
 
     /*---Ray tube corners: {+dphi, 0}---*/
     data.c0 = ray_c0[i][1];
     data.nu = ray_nu[i][1];
     r0[0] = r0[1] = r0[2] = 0.;
 
-    for(int j = 45001-1; j > -1; j--){
+    for(int j = N_PROF-1; j > -1; j--){
       f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
       x[j] = x_of_z[i][2][j] = -f[0];
       y[j] = y_of_z[i][2][j] = -f[1];
@@ -575,24 +637,42 @@ void SUBoom::RayTracer(){
       r0[2] = -t[j];
 
       /*---Derived data---*/
-      GetAtmosphericData(a[j], rho[j], p[j], z[j]);
-      theta[i][2][j] = acos(a[j]/data.c0);
+      GetAtmosphericData(a, rho, p, z[j]);
+      theta[i][2][j] = acos(a/data.c0);
     }
 
-    kx = SplineGetDerivs(t, x, 45001);
-    ky = SplineGetDerivs(t, y, 45001);
-    kz = SplineGetDerivs(t, z, 45001);
-    for(int ik = 0; ik < 45001; ik++){
+    kx = SplineGetDerivs(t, x, N_PROF);
+    ky = SplineGetDerivs(t, y, N_PROF);
+    kz = SplineGetDerivs(t, z, N_PROF);
+    for(int ik = 0; ik < N_PROF; ik++){
       dxdt[i][2][ik] = kx[ik];
       dydt[i][2][ik] = ky[ik];
       dzdt[i][2][ik] = kz[ik];
     }
+    /*jj = 0;
+    while(jj < N_PROF-1){
+    for(int ik = 0; ik < 1001; ik++){
+      xtmp[ik] = x[ik+jj];
+      ytmp[ik] = y[ik+jj];
+      ztmp[ik] = z[ik+jj];
+      ttmp[ik] = t[ik+jj];
+    }
+    kx = SplineGetDerivs(ttmp, xtmp, 1001);
+    ky = SplineGetDerivs(ttmp, ytmp, 1001);
+    kz = SplineGetDerivs(ttmp, ztmp, 1001);
+    for(int ik = 0; ik < 1001; ik++){
+      dxdt[i][2][ik+jj] = kx[ik];
+      dydt[i][2][ik+jj] = ky[ik];
+      dzdt[i][2][ik+jj] = kz[ik];
+    }
+    jj = jj + 1001-1;
+}*/
 
     /*---Ray tube corners: {+dphi, +dheading}---*/
     r0[0] = flt_heading[0]*tol_dr;
     r0[1] = flt_heading[1]*tol_dr;
     r0[2] = flt_heading[2]*tol_dr;
-    for(int j = 45001-1; j > -1; j--){
+    for(int j = N_PROF-1; j > -1; j--){
       f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
       x[j] = x_of_z[i][3][j] = -f[0];
       y[j] = y_of_z[i][3][j] = -f[1];
@@ -603,16 +683,31 @@ void SUBoom::RayTracer(){
       r0[2] = -t[j];
 
       /*---Derived data---*/
-      GetAtmosphericData(a[j], rho[j], p[j], z[j]);
-      theta[i][3][j] = acos(a[j]/data.c0);
+      GetAtmosphericData(a, rho, p, z[j]);
+      theta[i][3][j] = acos(a/data.c0);
     }
 
-    kx = SplineGetDerivs(t, x, 45001);
-    ky = SplineGetDerivs(t, y, 45001);
-    for(int ik = 0; ik < 45001; ik++){
+    kx = SplineGetDerivs(t, x, N_PROF);
+    ky = SplineGetDerivs(t, y, N_PROF);
+    for(int ik = 0; ik < N_PROF; ik++){
       dxdt[i][3][ik] = kx[ik];
       dydt[i][3][ik] = ky[ik];
     }
+    /*jj = 0;
+    while(jj < N_PROF-1){
+    for(int ik = 0; ik < 1001; ik++){
+      xtmp[ik] = x[ik+jj];
+      ytmp[ik] = y[ik+jj];
+      ttmp[ik] = t[ik+jj];
+    }
+    kx = SplineGetDerivs(ttmp, xtmp, 1001);
+    ky = SplineGetDerivs(ttmp, ytmp, 1001);
+    for(int ik = 0; ik < 1001; ik++){
+      dxdt[i][3][ik+jj] = kx[ik];
+      dydt[i][3][ik+jj] = ky[ik];
+    }
+    jj = jj + 1001-1;
+}*/
 
   }
 
@@ -630,12 +725,12 @@ void SUBoom::RayTubeArea(){
 
   ray_A = new double*[ray_N_phi];
   for(int i = 0; i < ray_N_phi; i++){
-    ray_A[i] = new double[45001];
+    ray_A[i] = new double[N_PROF];
   }
 
   /*---Loop over rays---*/
   for(int i = 0; i < ray_N_phi; i++){
-    M = 45001;
+    M = N_PROF;
     Ah = 0;
     ray_A[i][M-1] = 0.0;
     for(int j = 0; j < M-1; j++){
@@ -673,7 +768,7 @@ void SUBoom::FindInitialRayTime(){
   double eps;
 
   int ii, jj, kk, j_sp;
-  double f[45001], t[45001];
+  double f[N_PROF], t[N_PROF];
   double f0, f1, f2, t0, t1, t2, tmp, trat;
   int flag;
 
@@ -682,31 +777,31 @@ void SUBoom::FindInitialRayTime(){
 
   ray_t0 = new double[ray_N_phi];
 
-  ks = new double[45001];
+  ks = new double[N_PROF];
 
   for(int i = 0; i < ray_N_phi; i++){
-    for(int j = 0; j < 45001; j++){
+    for(int j = 0; j < N_PROF; j++){
       t[j] = t_of_z[i][0][j];
       f[j] = matchr(i, j, h_L, ray_r0);
     }
 
     /*---Get spline---*/
-    ks = SplineGetDerivs(t, f, 45001);
+    ks = SplineGetDerivs(t, f, N_PROF);
 
     /*---Secant method---*/
-    f0 = f[(45001-1)/3];
-    f1 = f[2*(45001-1)/3];
-    t0 = t[(45001-1)/3];
-    t1 = t[2*(45001-1)/3];
+    f0 = f[(N_PROF-1)/3];
+    f1 = f[2*(N_PROF-1)/3];
+    t0 = t[(N_PROF-1)/3];
+    t1 = t[2*(N_PROF-1)/3];
     eps = 1.E6;
-    while(eps > 1.E-5){
+    while(eps > 1.E-8){
       tmp = t1 - f1*(t1-t0)/(f1-f0);
       t0 = t1;
       t1 = tmp;
       f0 = f1;
       // Find interval which contains t1
-      j_sp = 45001-1;
-      for(int j = 45001-1; j > -1; j--){
+      j_sp = N_PROF-1;
+      for(int j = N_PROF-1; j > -1; j--){
 	    if(t1 < t[j]){
 	      j_sp = j+1;
 	      break;
@@ -731,39 +826,39 @@ void SUBoom::FindInitialRayTime(){
 }
 
 void SUBoom::ODETerms(){
-  double t[45001], A[45001];
+  double t[N_PROF], A[N_PROF];
   double *cn;
   double *dadt, *drhodt, *dAdt;
   double *dcndt;
   double g = atm_g;
 
-  cn = new double[45001];
+  cn = new double[N_PROF];
 
-  dadt = new double[45001];
-  drhodt = new double[45001];
-  dAdt = new double[45001];
-  dcndt = new double[45001];
+  dadt = new double[N_PROF];
+  drhodt = new double[N_PROF];
+  dAdt = new double[N_PROF];
+  dcndt = new double[N_PROF];
 
   ray_C1 = new double*[ray_N_phi];
   ray_C2 = new double*[ray_N_phi];
   ray_dC1 = new double*[ray_N_phi];
   ray_dC2 = new double*[ray_N_phi];
   for(int i = 0; i < ray_N_phi; i++){
-    for (int j = 0; j < 45001; j++){
+    for (int j = 0; j < N_PROF; j++){
       t[j] = t_of_z[i][0][j];
       A[j] = ray_A[i][j];
       cn[j] = ray_c0[i][0]*cos(theta[i][0][j]);
     }
 
     /*--- Spline interpolation of a, rho, A---*/
-    dadt = SplineGetDerivs(t, a_of_z, 45001);
-    drhodt = SplineGetDerivs(t, rho_of_z, 45001);
-    dAdt = SplineGetDerivs(t, A, 45001);
-    dcndt = SplineGetDerivs(t, cn, 45001);
+    dadt = SplineGetDerivs(t, a_of_z, N_PROF);
+    drhodt = SplineGetDerivs(t, rho_of_z, N_PROF);
+    dAdt = SplineGetDerivs(t, A, N_PROF);
+    dcndt = SplineGetDerivs(t, cn, N_PROF);
 
-    ray_C1[i] = new double[45001];
-    ray_C2[i] = new double[45001];
-    for(int j = 0; j < 45001; j++){
+    ray_C1[i] = new double[N_PROF];
+    ray_C2[i] = new double[N_PROF];
+    for(int j = 0; j < N_PROF; j++){
       ray_C1[i][j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];
       if(A[j] > 1E-16){
           ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./A[j])*dAdt[j]);
@@ -773,8 +868,12 @@ void SUBoom::ODETerms(){
       }
       //cout << "A = " << A[j] << ", dAdt = " << dAdt[j] << ", C2 = " << ray_C2[i][j] << endl;
     }
-    ray_dC1[i] = SplineGetDerivs(t, ray_C1[i], 45001);
-    ray_dC2[i] = SplineGetDerivs(t, ray_C2[i], 45001);
+    ray_dC1[i] = SplineGetDerivs(t, ray_C1[i], N_PROF);
+    ray_dC2[i] = SplineGetDerivs(t, ray_C2[i], N_PROF);
+
+    delete [] ray_c0[i];
+    delete [] ray_nu[i];
+    delete [] ray_theta0[i];
   }
 
   delete [] cn;
@@ -782,6 +881,8 @@ void SUBoom::ODETerms(){
   delete [] drhodt;
   delete [] dAdt;
   delete [] dcndt;
+  delete [] a_of_z;
+  delete [] rho_of_z;
 }
 
 void SUBoom::DistanceToTime(){
@@ -810,20 +911,22 @@ void SUBoom::CreateSignature(){
   int M = len-1;
   int i = 0;
   while(i <= M-1){
-    if(mm[i] > tol_m/scale_m){  // shock present
+    if(mm[i] > tol_m){  // shock present
       /*---Remove segment i---*/
       for(int j = i; j < M; j++){
-	pp[0][j] = pp[0][j+1];
-	pp[1][j] = pp[1][j+1];
-	ll[j] = ll[j+1];
-	mm[j] = mm[j+1];
+        pp[0][j] = pp[0][j+1];
+        pp[1][j] = pp[1][j+1];
+	    ll[j] = ll[j+1];
+	    mm[j] = mm[j+1];
       }
-      M = M-1;
+      //i -= 1;
+      M -= 1;
     }
-    else if(mm[i] < -tol_m/scale_m){  // "expansion shock" present
+    else if(mm[i] < -tol_m){  // "expansion shock" present
       /*---Remove segment i---*/
       ll[i] = tol_l;
       mm[i] = (pp[1][i] - pp[0][i])/ll[i];
+      //i -= 1;
     }
     i += 1;
   }
@@ -948,8 +1051,8 @@ double *derivsProp(double t, int m, double y[], SUBoom::RayData data){
   }
 
   /*---Get coefficients for derivatives---*/
-  C1 = EvaluateSpline(t,45001,data.t,data.C1,data.dC1);
-  C2 = EvaluateSpline(t,45001,data.t,data.C2,data.dC2);
+  C1 = EvaluateSpline(t,9,data.t,data.C1,data.dC1);
+  C2 = EvaluateSpline(t,9,data.t,data.C2,data.dC2);
 
   for(int i = 0; i < 3*M; i++){
     if(i < M){
@@ -999,7 +1102,7 @@ double *SUBoom::ClipLambdaZeroSegment(double fvec[], int &M){
   int i = 0;
   fvec_new = fvec;
   while(i <= N-1){
-    if(l[i] <= tol_l/scale_T || m[i] >= tol_m/scale_m){
+    if(l[i] <= tol_l || m[i] >= tol_m){
       /*---Record pressure gap---*/
       current_signal = WaveformToPressureSignal(fvec_new, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
@@ -1010,13 +1113,14 @@ double *SUBoom::ClipLambdaZeroSegment(double fvec[], int &M){
           }
       }
 
-      N = N-1;
+      N -= 1;
       /*---Remove segment---*/
       for(int j = i; j < N; j++){
           m[j] = m[j+1];
           dp[j] = dp[j+1];
           l[j] = l[j+1];
       }
+      //i -= 1;
       delete [] fvec_new;
       fvec_new = new double[3*N];
       for(int j = 0; j < N; j++){
@@ -1026,7 +1130,7 @@ double *SUBoom::ClipLambdaZeroSegment(double fvec[], int &M){
       }
 
     }
-    i = i+1;
+    i += 1;
 
   }
 
@@ -1086,7 +1190,7 @@ double EvaluateSpline(double x, int N, double t[], double fit[], double coeffs[]
 }
 
 void SUBoom::PropagateSignal(){
-  int len = signal.original_len;
+//  int len = signal.original_len;
   double t0, tf, dt;
   int j0;
   RayData data;
@@ -1111,31 +1215,36 @@ void SUBoom::PropagateSignal(){
 	signal.fvec[j] = signal.l[j-2*signal.M];
       }
     }
-    data.t = new double[45001];
-    data.C1 = new double[45001];
-    data.C2 = new double[45001];
-    data.dC1 = new double[45001];
-    data.dC2 = new double[45001];
-
-    data.t = t_of_z[i][0];
-    data.C1 = ray_C1[i];
-    data.C2 = ray_C2[i];
-    data.dC1 = ray_dC1[i];
-    data.dC2 = ray_dC2[i];
+    data.t = new double[9];
+    data.C1 = new double[9];
+    data.C2 = new double[9];
+    data.dC1 = new double[9];
+    data.dC2 = new double[9];
 
     data.M = signal.M;
     data.scale_C1 = scale_C1;
     data.scale_C2 = scale_C2;
 
     fvec = signal.fvec;
-    for(int j = 45001-1; j > 0; j--){
+    for(int j = N_PROF-1; j > 0; j--){
         if(t_of_z[i][0][j] >= ray_t0[i]){
             j0 = j+1;
             break;
         }
     }
-    for(int j = j0; j > 1; j--){
+    for(int j = j0; j > 0; j--){
       /*---Integrate---*/
+      int j0_dat;
+      if(j >= N_PROF-4) j0_dat = N_PROF-4;
+      else if(j < 4) j0_dat = 4;
+      else j0_dat = j;
+      for(int jj = 0; jj < 9; jj++){
+          data.t[jj] = t_of_z[i][0][j0_dat-4+jj];
+          data.C1[jj] = ray_C1[i][j0_dat-4+jj];
+          data.C2[jj] = ray_C2[i][j0_dat-4+jj];
+          data.dC1[jj] = ray_dC1[i][j0_dat-4+jj];
+          data.dC2[jj] = ray_dC2[i][j0_dat-4+jj];
+      }
       tf = t_of_z[i][0][j-1];
       dt = (tf - t0);
       f = rk4(t0, 3*M, fvec, dt, data, derivsProp);
@@ -1171,6 +1280,45 @@ void SUBoom::PropagateSignal(){
     p_rise = signal.final_p[0];
     if(signal.final_p[0] > -signal.final_p[Msig-1]) p_rise2 = signal.final_p[0];
     else p_rise2 = signal.final_p[Msig-1];
+    cout << "Scale_T = " << scale_T << ", Scale_p = " << scale_p << endl;
     cout << "p_rise = " << p_rise << ", p_max = " << p_max << endl;
+
+    /*---Clean up---*/
+    for(int j = 0; j < 4; j++){
+        delete [] x_of_z[i][j];
+        delete [] y_of_z[i][j];
+        delete [] t_of_z[i][j];
+        delete [] dxdt[i][j];
+        delete [] dydt[i][j];
+        delete [] dzdt[i][j];
+        delete [] theta[i][j];
+    }
+    delete [] x_of_z[i];
+    delete [] y_of_z[i];
+    delete [] t_of_z[i];
+    delete [] dxdt[i];
+    delete [] dydt[i];
+    delete [] dzdt[i];
+    delete [] theta[i];
+    delete [] ray_A[i];
+    delete [] ray_C1[i];
+    delete [] ray_C2[i];
+    delete [] ray_dC1[i];
+    delete [] ray_dC2[i];
   }
+
+  delete [] ray_t0;
+  delete [] ray_phi;
+  delete [] x_of_z;
+  delete [] y_of_z;
+  delete [] t_of_z;
+  delete [] dxdt;
+  delete [] dydt;
+  delete [] dzdt;
+  delete [] theta;
+  delete [] ray_A;
+  delete [] ray_C1;
+  delete [] ray_C2;
+  delete [] ray_dC1;
+  delete [] ray_dC2;
 }
