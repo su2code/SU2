@@ -182,6 +182,7 @@ private:
   nMarker_Turbomachinery,				/*!< \brief Number turbomachinery markers. */
   nMarker_TurboPerformance,				/*!< \brief Number of turboperformance markers. */
   nSpanWiseSections_User,			/*!< \brief Number of spanwise sections to compute 3D BC and Performance for turbomachinery   */
+  nMarker_Shroud,/*!< \brief Number of shroud markers to set grid velocity to 0.*/
   nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
   nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
@@ -231,6 +232,7 @@ private:
   *Marker_Inlet,					/*!< \brief Inlet flow markers. */
   *Marker_Riemann,					/*!< \brief Riemann markers. */
   *Marker_NRBC,					/*!< \brief NRBC markers. */
+  *Marker_Shroud,/*!< \brief Shroud markers. */
   *Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
   *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
   *Marker_Outlet,					/*!< \brief Outlet flow markers. */
@@ -3889,6 +3891,18 @@ public:
    * \return number of bound.
    */
 	unsigned short GetnMarker_Turbomachinery(void);
+
+/*!
+ * \brief Get number of shroud markers.
+ * \return number of marker shroud.
+ */
+unsigned short GetnMarker_Shroud(void);
+
+/*!
+ * \brief Get the marker shroud.
+ * \return marker shroud.
+ */
+string GetMarker_Shroud(unsigned short val_marker);
 
 	/*!
 	 * \brief number Turbomachinery performance option specified from config file.

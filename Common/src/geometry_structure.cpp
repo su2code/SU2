@@ -13359,6 +13359,29 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   
 }
 
+void CPhysicalGeometry::SetShroudVelocity(CConfig *config) {
+
+  unsigned long iPoint, iVertex;
+  unsigned short iMarker, iMarkerShroud;
+  su2double RotVel[3];
+
+  RotVel[0] = 0.0;
+  RotVel[1] = 0.0;
+  RotVel[2] = 0.0;
+
+  /*--- Loop over all vertex in the shroud marker and set the rotational velocity to 0.0 ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    for(iMarkerShroud=0; iMarkerShroud < config->GetnMarker_Shroud(); iMarkerShroud++){
+      if(config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)){
+        for (iVertex = 0; iVertex  < nVertex[iMarker]; iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          node[iPoint]->SetGridVel(RotVel);
+        }
+      }
+    }
+  }
+}
+
 void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
   
   unsigned short iDim;
@@ -16918,6 +16941,29 @@ void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short v
   
   delete [] RotVel;
   
+}
+
+void CMultiGridGeometry::SetShroudVelocity(CConfig *config) {
+
+  unsigned long iPoint, iVertex;
+  unsigned short iMarker, iMarkerShroud;
+  su2double RotVel[3];
+
+  RotVel[0] = 0.0;
+  RotVel[1] = 0.0;
+  RotVel[2] = 0.0;
+
+  /*--- Loop over all vertex in the shroud marker and set the rotational velocity to 0.0 ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    for(iMarkerShroud=0; iMarkerShroud < config->GetnMarker_Shroud(); iMarkerShroud++){
+      if(config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)){
+        for (iVertex = 0; iVertex  < nVertex[iMarker]; iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          node[iPoint]->SetGridVel(RotVel);
+        }
+      }
+    }
+  }
 }
 
 void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config) {
