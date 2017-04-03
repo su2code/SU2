@@ -77,6 +77,7 @@ su2_sol_ldadd += \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-postprocessing_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-SUBoom.$(OBJEXT) \
    ../../Common/lib/libSU2_AD.a
 endif
 

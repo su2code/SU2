@@ -128,8 +128,7 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../include/postprocessing_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/SU2_CFD.hpp \
-	../include/SUBoom.hpp \
-        ../include/transport_model.hpp \
+	../include/SUBoom.hpp ../include/transport_model.hpp \
 	../include/transport_model.inl \
 	../include/variable_structure.hpp \
 	../include/variable_structure.inl \

@@ -77,6 +77,7 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
 @BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
 @BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-postprocessing_structure.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-SUBoom.$(OBJEXT) \
 @BUILD_REVERSE_TRUE@   ../../Common/lib/libSU2_AD.a
 
 subdir = SU2_SOL/obj
