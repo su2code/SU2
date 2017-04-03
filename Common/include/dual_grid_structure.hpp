@@ -1259,73 +1259,75 @@ private:
 	su2double AngularCoord;     /*!< \brief Value of the angular coordinate  */
 	su2double DeltaAngularCoord;     /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
 su2double RelAngularCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
+su2double RadiusCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
+su2double SpanCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
 
 unsigned long OldVertex;    /*!< \brief Value of the vertex numeration before the ordering */
 	int GlobalIndex;						/*!< \brief Value of the vertex numeration after the ordering and global with respect to MPI partinioning */
 
 public:
 
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_point - Node of the vertex.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 */
-	CTurboVertex(unsigned long val_point, unsigned short val_nDim);
+/*!
+ * \brief Constructor of the class.
+ * \param[in] val_point - Node of the vertex.
+ * \param[in] val_nDim - Number of dimensions of the problem.
+ */
+CTurboVertex(unsigned long val_point, unsigned short val_nDim);
 
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CTurboVertex(void);
+/*!
+ * \brief Destructor of the class.
+ */
+~CTurboVertex(void);
 
-	/*!
-	 * \brief set Normal in the turbomachinery frame of reference.
-	 * \param[in] val_normal - normal vector.
-	 */
-	void SetTurboNormal(su2double *val_normal);
+/*!
+ * \brief set Normal in the turbomachinery frame of reference.
+ * \param[in] val_normal - normal vector.
+ */
+void SetTurboNormal(su2double *val_normal);
 
-	/*!
-	 * \brief set face Area.
-	 * \param[in] val_area - value of the face area.
-	 */
-	void SetArea(su2double val_area);
+/*!
+ * \brief set face Area.
+ * \param[in] val_area - value of the face area.
+ */
+void SetArea(su2double val_area);
 
-	/*!
-	 * \brief get face Area associate to the vertex.
-	 */
-	su2double GetArea(void);
+/*!
+ * \brief get face Area associate to the vertex.
+ */
+su2double GetArea(void);
 
-	/*!
-	 * \brief Copy the the turbo normal vector of a face.
-	 * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensionaless).
-	 */
-	void GetTurboNormal(su2double *val_normal);
+/*!
+ * \brief Copy the the turbo normal vector of a face.
+ * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensionaless).
+ */
+void GetTurboNormal(su2double *val_normal);
 
-	/*!
-	 * \brief Get the turbo normal to a face where turboperformance are computed .
-	 * \return Dimensionaless normal vector, the modulus is the area of the face.
-	 */
-	su2double *GetTurboNormal(void);
+/*!
+ * \brief Get the turbo normal to a face where turboperformance are computed .
+ * \return Dimensionaless normal vector, the modulus is the area of the face.
+ */
+su2double *GetTurboNormal(void);
 
-	/*!
-	 * \brief set vertex value not ordered.
-	 * \param[in] val_vertex - value of the vertex before ordering.
-	 */
-	void SetOldVertex(unsigned long val_vertex);
+/*!
+ * \brief set vertex value not ordered.
+ * \param[in] val_vertex - value of the vertex before ordering.
+ */
+void SetOldVertex(unsigned long val_vertex);
 
-	/*!
-	 * \brief retrieve vertex value not ordered.
-	 */
-	unsigned long GetOldVertex(void);
+/*!
+ * \brief retrieve vertex value not ordered.
+ */
+unsigned long GetOldVertex(void);
 
-	/*!
-	 * \brief set global index for ordered span-wise turbovertex.
-	 */
-	void SetGlobalVertexIndex(int globalindex);
+/*!
+ * \brief set global index for ordered span-wise turbovertex.
+ */
+void SetGlobalVertexIndex(int globalindex);
 
-	/*!
-	 * \brief get global index for ordered span-wise turbovertex.
-	 */
-	int GetGlobalVertexIndex(void);
+/*!
+ * \brief get global index for ordered span-wise turbovertex.
+ */
+int GetGlobalVertexIndex(void);
 
 //	/*!
 //	 * \brief set global pitch coord.
@@ -1337,25 +1339,25 @@ public:
 //	 */
 //	su2double GetPitchCoord(void);
 
-	/*!
-	 * \brief set angular coord.
-	 */
-	void SetAngularCoord(su2double angCoord);
+/*!
+ * \brief set angular coord.
+ */
+void SetAngularCoord(su2double angCoord);
 
-	/*!
-	 * \brief get angular coord.
-	 */
-	su2double GetAngularCoord(void);
+/*!
+ * \brief get angular coord.
+ */
+su2double GetAngularCoord(void);
 
-	/*!
-	 * \brief set angular coord.
-	 */
-	void SetDeltaAngularCoord(su2double deltaAngCoord);
+/*!
+ * \brief set angular coord.
+ */
+void SetDeltaAngularCoord(su2double deltaAngCoord);
 
-	/*!
-	 * \brief get angular coord.
-	 */
-	su2double GetDeltaAngularCoord(void);
+/*!
+ * \brief get angular coord.
+ */
+su2double GetDeltaAngularCoord(void);
 
 /*!
  * \brief set angular coord.
@@ -1366,6 +1368,24 @@ void SetRelAngularCoord(su2double minAngCoord);
  * \brief get angular coord.
  */
 su2double GetRelAngularCoord(void);
+/*!
+ * \brief set span coord.
+ */
+void SetSpanCoord(su2double spanCoord);
+
+/*!
+ * \brief get span coord.
+ */
+su2double GetSpanCoord(void);
+/*!
+ * \brief set radius coord.
+ */
+void SetRadiusCoord(su2double radiusCoord);
+
+/*!
+ * \brief get radius coord.
+ */
+su2double GetRadiusCoord(void);
 
 };
 

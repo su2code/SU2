@@ -445,3 +445,10 @@ inline void CTurboVertex::SetRelAngularCoord(su2double minAngCoord) {RelAngularC
 
 inline su2double CTurboVertex::GetRelAngularCoord(void){return RelAngularCoord;}
 
+inline void CTurboVertex::SetSpanCoord(su2double spanCoord) {SpanCoord = spanCoord;}
+
+inline su2double CTurboVertex::GetRadiusCoord(void){return RadiusCoord;}
+
+inline void CTurboVertex::SetRadiusCoord(su2double radiusCoord) {RadiusCoord = radiusCoord;}
+
+inline su2double CTurboVertex::GetSpanCoord(void){return SpanCoord;}

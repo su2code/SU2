@@ -9990,7 +9990,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   minInt =  10.0E+06;
   max    = -10.0E+06;
 
-  su2double radius;
+  su2double radius, spanCoord;
   long iVertex, iSpanVertex, jSpanVertex, kSpanVertex;
   int *nTotVertex_gb, *nVertexSpanHalo;
   su2double **x_loc, **y_loc, **z_loc, **angCoord_loc, **deltaAngCoord_loc, **angPitch, **deltaAngPitch, *minIntAngPitch,
@@ -10348,6 +10348,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   turbovertex[iMarker][iSpan][iInternalVertex]->SetDeltaAngularCoord(deltaAngPitch[iSpan][iSpanVertex]);
                   switch (config->GetKind_TurboMachinery(val_iZone)){
                   case CENTRIFUGAL:
+                    spanCoord = coord[2];
+                    radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                     Normal2 = 0.0;
                     for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
                     if (marker_flag == INFLOW){
@@ -10361,6 +10363,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                     }
                     break;
                   case CENTRIPETAL:
+                    spanCoord = coord[2];
+                    radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                     Normal2 = 0.0;
                     for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
                     if (marker_flag == OUTFLOW){
@@ -10377,6 +10381,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                     Normal2 = 0.0;
                     for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
                     if(nDim == 3){
+                      spanCoord = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                      radius = spanCoord;
                       if (marker_flag == INFLOW){
                         TurboNormal[0] = coord[0]/sqrt(Normal2);
                         TurboNormal[1] = coord[1]/sqrt(Normal2);
@@ -10388,6 +10394,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                       }
                     }
                     else{
+                      spanCoord = 0.0;
+                      radius = 0.0;
                       if (marker_flag == INFLOW){
                         TurboNormal[0] = -1.0;
                         TurboNormal[1] = 0.0;
@@ -10404,10 +10412,14 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                     Normal2 = 0.0;
                     for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
                     if (marker_flag == INFLOW){
+                      spanCoord = coord[2];
+                      radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                       TurboNormal[0] = coord[0]/sqrt(Normal2);
                       TurboNormal[1] = coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
                     }else{
+                      spanCoord = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                      radius    = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                       TurboNormal[0] = coord[0]/sqrt(Normal2);
                       TurboNormal[1] = coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
@@ -10418,10 +10430,14 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                     Normal2 = 0.0;
                     for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
                     if (marker_flag == INFLOW){
+                      spanCoord = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                      radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                       TurboNormal[0] = coord[0]/sqrt(Normal2);
                       TurboNormal[1] = coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
                     }else{
+                      spanCoord = coord[2];
+                      radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                       TurboNormal[0] = coord[0]/sqrt(Normal2);
                       TurboNormal[1] = coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
@@ -10430,6 +10446,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
                   }
                   turbovertex[iMarker][iSpan][iInternalVertex]->SetTurboNormal(TurboNormal);
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetSpanCoord(spanCoord);
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetRadiusCoord(radius);
                   iInternalVertex++;
                 }
 
