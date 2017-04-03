@@ -1688,7 +1688,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   su2double dTdk, dTde, dTdz, dLdk, dLde, dLdz, dCe1dz, dPedT, dPedC, dDzdz, dDzdT,
     dDede, dDedT, dPzdf, dDzdk, dPfdT, dPfdL, dPfdz, dPfde, dDfdL, dDfdf, dDkde;
   su2double dTdrv2, dLdrv2, dTdv2, dLdv2, dCe1dv2, dDv2dv2, dDv2dT, dPv2df, dDv2dk, 
-    dPfdv2, dCe1dk, dPv2dk, dPfdk, dDv2de;
+    dPfdv2, dCe1dk, dPv2dk, dPfdk, dDv2de, dPede, dPkde;
 
 
   //yplus = CNSSolver.YPlus;
@@ -1732,27 +1732,32 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   //  f  = max(f,0.0);
 
   // from previous timestep
-  //  tke0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(5);
-  //  tdr0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(6);
-  //  zeta0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(7);
-  //  f0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(8);
+  //  tke0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(6);
+  //  tdr0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(7);
+  //  zeta0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(8);
+  //  f0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(9);
 
   // denominator floors <jump>
-  su2double scalar_min = 1.0E-14;
-  su2double VelMag, *VelInf, L_Inf;
+  //  su2double scalar_min = 1.0E-14;
+  su2double VelMag, *VelInf, L_Inf, scalar_min;
+  su2double tke_raw, tdr_raw;
+  tke_raw = tke;
+  tdr_raw = tdr;
   VelInf = config->GetVelocity_FreeStreamND();
   L_Inf = config->GetLength_Reynolds();
   for (iDim = 0; iDim < nDim; iDim++)
   VelMag += VelInf[iDim]*VelInf[iDim];
   VelMag = sqrt(VelMag);
+  //  su2double solve_tol = config->GetLinear_Solver_Error()
+  scalar_min = 1.0E-8/(VelMag*VelMag); // setting based on tke min being 1e-8
+  //  scalar_min = 1.0E-12;
   tke = max(tke, scalar_min*VelMag*VelMag);
-  su2double tdr_raw = tdr;
   tdr = max(tdr, scalar_min*VelMag*VelMag*VelMag/L_Inf);
   v2 = max(v2, 2.0/3.0*scalar_min*VelMag*VelMag);
   f = max(f, scalar_min*VelMag/L_Inf);
   zeta = v2/tke;
   //  S = max(S,scalar_min*VelMag/L_Inf); // no checked...
-  S = max(S,scalar_min);
+  S = max(S,1.0E-14);
   /*
   tke_d = max(tke,1.0E-8);
   tdr_d = max(tdr,1.0E-8);
@@ -1985,7 +1990,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     //    su2double kf = (C_2f*pk - ((C_1-6.0)*v2 - 2.0/3.0*(C_1-1.0)*tke)*rho/T);
     //    kf = max(kf,0.0);
 
-    C_e1 = C_e1o*(1.0+0.045*sqrt(max(tke/v2,0.0)));
+    C_e1 = C_e1o*(1.0+0.045*sqrt(tke/v2));
 
     //--- divergence of velocity ---//
     diverg = 0.0;
@@ -1994,13 +1999,13 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
  
     //--- Production ---// //<warp>//
     //pk = muT*(S*S - 2.0/3.0*diverg*diverg) - 2.0/3.0*rho*tke*diverg;
-    pk = muT*S*S - 2.0/3.0*rho*tke*diverg;
+    pk = muT*S*S - 2.0/3.0*rho*max(tke_raw,0.0)*diverg;
     //    pk = 0.0;
     pk = max(pk,0.0);
     pe = C_e1*pk/T;
     pv2 = rho*tke*f;
     pv2 = max(pv2,0.0);
-    pv2 = min(pv2,2.0/3.0*pk+5.0*max(rho*v2*tdr,0.0)/tke);
+    pv2 = min(pv2,2.0/3.0*pk+5.0*rho*v2/tke*tdr);
     //    pv2 = min(pv2,2.0/3.0*(pk+5.0*rho*tdr));
     //    pv2 = rho*f; //f=kf
     C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(v2/tke-0.55)));
@@ -2013,9 +2018,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     //    pf = max(pf,0.0);
 
     //--- Dissipation ---//
-    dk = rho*tdr;
+    dk = rho*max(tdr_raw,0.0);
     de = C_e2*rho*tdr_raw/T;
-    dv2 = 6.0*(v2/tke)*rho*tdr;
+    dv2 = 6.0*(v2/tke)*rho*max(tdr_raw,0.0);
     df = rho*max(f,0.0)/(L*L);
 
     //-- Store in residual --//
@@ -2031,63 +2036,73 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     if (T==T3) {
 
       dTdk = 0.0;
-      dTde = -0.5*C_T*sqrt(nu)*pow(tdr_d,-1.5);
+      dTde = -0.5*C_T*sqrt(nu)*pow(tdr,-1.5);
       dTdv2 = 0.0;
       dLdk = 0.0;
-      dLde = -C_L*0.25*C_eta*pow(nu,0.75)*pow(tdr_d,-5.0/4.0);
+      dLde = -C_L*0.25*C_eta*pow(nu,0.75)*pow(tdr,-5.0/4.0);
       dLdv2 = 0.0;
 
       dTdrk = 0.0;
-      dTdre = -0.5*C_T*sqrt(nu)*pow(rho*tdr_d,-1.5) * sqrt(rho) ;
+      dTdre = -0.5*C_T*sqrt(nu)*pow(rho*tdr,-1.5) * sqrt(rho) ;
       dTdrv2 = 0.0;
       dLdrk = 0.0;
-      dLdre = -C_L*0.25*C_eta*pow(nu,0.75)*pow(rho*tdr_d,-5.0/4.0) * pow(rho,0.25);
+      dLdre = -C_L*0.25*C_eta*pow(nu,0.75)*pow(rho*tdr,-5.0/4.0) * pow(rho,0.25);
       dLdrv2 = 0.0;
 
     }
     else if (T==T2) {
 
-      dTdk = 0.6/(sqrt(6.0)*C_mu*S*v2_d);
+      dTdk = 0.6/(sqrt(6.0)*C_mu*S*v2);
       dTde = 0.0;
-      dTdv2 = -0.6*tke/(sqrt(6.0)*C_mu*S*v2_d*v2_d);
-      dLdk = C_L*1.5*sqrt(tke_d)/(sqrt(6.0)*C_mu*S*v2_d);
-      dLde = -C_L*pow(tke_d,1.5)/(sqrt(6.0)*C_mu*S*v2_d*v2_d);
+      dTdv2 = -0.6*tke/(sqrt(6.0)*C_mu*S*v2*v2);
+      dLdk = C_L*1.5*sqrt(tke)/(sqrt(6.0)*C_mu*S*v2);
+      dLde = -C_L*pow(tke,1.5)/(sqrt(6.0)*C_mu*S*v2*v2);
       dLdv2 = 0.0;
 
-      dTdrk = 0.6/(sqrt(6.0)*C_mu*S*v2_d*rho);
+      dTdrk = 0.6/(sqrt(6.0)*C_mu*S*v2*rho);
       dTdre = 0.0;
-      dTdrv2 = -0.6/(sqrt(6.0)*C_mu*S*v2_d*v2_d*rho);
-      dLdrk = C_L*1.5*sqrt(rho*tke_d)/(sqrt(6.0)*C_mu*S*v2_d)*1.0/pow(rho,1.5) ;
-      dLdre = -C_L*pow(tke_d,1.5)/(sqrt(6.0)*C_mu*S*v2_d*v2_d*rho);
+      dTdrv2 = -0.6/(sqrt(6.0)*C_mu*S*v2*v2*rho);
+      dLdrk = C_L*1.5*sqrt(rho*tke)/(sqrt(6.0)*C_mu*S*v2)*1.0/pow(rho,1.5) ;
+      dLdre = -C_L*pow(tke,1.5)/(sqrt(6.0)*C_mu*S*v2*v2*rho);
       dLdrv2 = 0.0;
 
     }
     else {
 
-      dTdk = 1.0/tdr_d;
-      dTde = -tke/(tdr_d*tdr_d);
+      dTdk = 1.0/tdr;
+      dTde = -tke/(tdr*tdr);
       dTdv2 = 0.0;
-      dLdk = C_L*1.5*sqrt(tke_d)/tdr_d;
-      dLde = -C_L*pow(tke_d,1.5)/(tdr_d*tdr_d);
+      dLdk = C_L*1.5*sqrt(tke)/tdr;
+      dLde = -C_L*pow(tke,1.5)/(tdr*tdr);
       dLdv2 = 0.0;
 
-      dTdrk = 1.0/(rho*tdr_d);
-      dTdre = -tke/(tdr_d*tdr_d*rho);
+      dTdrk = 1.0/(rho*tdr);
+      dTdre = -tke/(tdr*tdr*rho);
       dTdrv2 = 0.0;
-      dLdrk = C_L*1.5*sqrt(rho*tke_d)/tdr_d*1.0/pow(rho,1.3);
-      dLdre = -C_L*pow(tke_d,1.5)/(tdr_d*tdr_d*rho);
+      dLdrk = C_L*1.5*sqrt(rho*tke)/tdr*1.0/pow(rho,1.3);
+      dLdre = -C_L*pow(tke,1.5)/(tdr*tdr*rho);
       dLdrv2 = 0.0;
 
     }
 
     // other jacobian portions
+    dPkde = 0.0;
     dDkde = 1.0;
+    if(tdr_raw<0.0) {
+    //       dPkde = -1.0;
+       dDkde = 0.0;
+    }
 
-    dCe1dk = C_e1o*0.045*0.5/sqrt(rho*tke_d*rho*v2_d);
-    dCe1dv2 = -C_e1o*0.045*0.5*sqrt(tke/(v2_d*v2_d*rho));
+    dCe1dk = C_e1o*0.045*0.5/sqrt(rho*tke*rho*v2);
+    dCe1dv2 = -C_e1o*0.045*0.5*sqrt(tke/(v2*v2*rho));
     dPedT = -C_e1*pk/(T*T);
     dPedC = pk/T;
+    dPede = 0.0;
     dDede = C_e2/T;
+    if(tdr_raw<0.0) {
+       dPede = -C_e2/T;
+       dDede = 0.0;
+    }
     dDedT = -C_e2*rho*tdr/(T*T);
 
     dPv2dk = f;//    dPv2dk = 0.0;
@@ -2096,11 +2111,11 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     dDv2de = 6.0*v2/tke;
     dDv2dv2 = 6.0/(tke*rho)*rho*tdr;
 
-    dPfdT = ((C_1-6.0)*v2/tke_d - 2.0/3.0*(C_1-1.0))*rho/(T*T) * 1.0/(L*L);
-    dPfdL = -(C_2f*pk/tke_d - ((C_1-6.0)*v2/tke_d - 2.0/3.0*(C_1-1.0))*rho/T) * 2.0/(L*L*L);
-    dPfdk = (-C_2f*pk/(tke_d*tke_d*rho) - (-(C_1-6.0)*v2/(tke_d*tke_d*rho))*rho/T) * 1.0/(L*L);
+    dPfdT = ((C_1-6.0)*v2/tke - 2.0/3.0*(C_1-1.0))*rho/(T*T) * 1.0/(L*L);
+    dPfdL = -(C_2f*pk/tke - ((C_1-6.0)*v2/tke - 2.0/3.0*(C_1-1.0))*rho/T) * 2.0/(L*L*L);
+    dPfdk = (-C_2f*pk/(tke*tke*rho) - (-(C_1-6.0)*v2/(tke*tke*rho))*rho/T) * 1.0/(L*L);
     dPfde = 0.0;
-    dPfdv2 = -(C_1-6.0)*1.0/(rho*tke_d) * rho/T * 1.0/(L*L);
+    dPfdv2 = -(C_1-6.0)*1.0/(rho*tke) * rho/T * 1.0/(L*L);
     dDfdL = -2.0*rho*f/(L*L*L);
     dDfdf = 1.0/(L*L);
 
@@ -2136,11 +2151,13 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_Jacobian_i[3][2] += dPfdv2 * Vol + (dPfdT*dTdrv2 + dPfdL*dLdrv2 + dPfdv2) * Vol;
     val_Jacobian_i[3][3] += 0.0;
     */
+    //    val_Jacobian_i[0][1] += dPkde * Vol;
+    val_Jacobian_i[1][1] += dPede * Vol;
 
 
     // destruction...
     val_Jacobian_i[0][0] -= 0.0;
-    val_Jacobian_i[0][1] -= dDkde * Vol;
+    val_Jacobian_i[0][1] -= 0.0;// dDkde * Vol;
     val_Jacobian_i[0][2] -= 0.0;
     val_Jacobian_i[0][3] -= 0.0;
 
