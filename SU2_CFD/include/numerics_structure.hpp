@@ -92,8 +92,8 @@ public:
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
   su2double Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
   Eddy_Viscosity_j;      /*!< \brief Eddy viscosity at point j. */
-  su2double** Aniso_Eddy_Viscosity_i,  /*!< \brief Anisotropic eddy viscosity at point i. */
-  **Aniso_Eddy_Viscosity_j;      /*!< \brief Anisotropic eddy viscosity at point j. */
+  su2double** Aniso_Eddy_Viscosity_i;  /*!< \brief Anisotropic eddy viscosity at point i. */
+  su2double** Aniso_Eddy_Viscosity_j;  /*!< \brief Anisotropic eddy viscosity at point j. */
   su2double** Resolution_Tensor_i;  /*!< \brief Resolution tensor at point i. */
   su2double** Resolution_Tensor_j;  /*!< \brief Resolution tensor at point j. */
   su2double turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
@@ -2786,6 +2786,7 @@ protected:
   Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
   dist_ij;            /*!< \brief Length of the edge and face. */
   bool implicit; /*!< \brief Implicit calculus. */
+  bool hasAnisoEddyViscosity;
   
 public:
   
@@ -2795,7 +2796,8 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar,
+                CConfig *config, bool aniso_viscosity = false);
   
   /*!
    * \brief Destructor of the class.
