@@ -849,6 +849,7 @@ private:
   unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
   bool turbMixingPlane;   /*!< \brief option for turbulent mixingplane */
+  bool SpatialFourier; /*!< \brief option for computing the fourier transforms for subsonic non-reflecting BC. */
   bool RampRotatingFrame;   /*!< \brief option for ramping up or down the Rotating Frame values */
   bool RampOutletPressure;  /*!< \brief option for ramping up or down the outlet pressure */
   su2double *Mixedout_Coeff; /*!< \brief coefficient for the  */
@@ -3850,12 +3851,18 @@ public:
    * \return boolean.
    */
 	bool GetBoolMixingPlaneInterface(void);
-  
+
 	/*!
 	 * \brief Verify if there is mixing plane interface specified from config file.
 	 * \return boolean.
 	 */
 	bool GetBoolTurbMixingPlane(void);
+
+/*!
+ * \brief Verify if there is mixing plane interface specified from config file.
+ * \return boolean.
+ */
+bool GetSpatialFourier(void);
 
   /*!
    * \brief number mixing plane interface specified from config file.

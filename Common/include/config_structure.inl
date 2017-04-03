@@ -971,6 +971,8 @@ inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachiner
 
 inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane;}
 
+inline bool CConfig::GetSpatialFourier(void){return SpatialFourier;}
+
 inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[val_iZone];}
 
 inline bool CConfig::GetBoolNRBC(void) { return (nMarker_NRBC!=0);}

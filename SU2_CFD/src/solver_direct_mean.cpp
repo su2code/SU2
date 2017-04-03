@@ -11921,27 +11921,52 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       case TOTAL_CONDITIONS_PT: case MIXING_IN:case TOTAL_CONDITIONS_PT_1D: case MIXING_IN_1D:
 
         if (AvgMach < 0.999){
-          Beta_inf= I*complex<su2double>(sqrt(1.0 - AvgMach));
-          c2js = complex<su2double>(0.0,0.0);
-          c3js = complex<su2double>(0.0,0.0);
-          for(k=0; k < 2*kend_max+1; k++){
-            freq = k - kend_max;
-            if(freq >= (long)(-kend) && freq <= (long)(kend) && AvgMach > 0.15){
-              TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
+          if(config->GetSpatialFourier()){
+            Beta_inf= I*complex<su2double>(sqrt(1.0 - AvgMach));
+            c2js = complex<su2double>(0.0,0.0);
+            c3js = complex<su2double>(0.0,0.0);
+            for(k=0; k < 2*kend_max+1; k++){
+              freq = k - kend_max;
+              if(freq >= (long)(-kend) && freq <= (long)(kend) && AvgMach > 0.15){
+                TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
 
-              c2ks = -CkInflow[val_marker][iSpan][k]*complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
-              c3ks =  CkInflow[val_marker][iSpan][k]*complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
-              c3ks *= complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
-              c2js += c2ks*(complex<su2double>(cos(TwoPiThetaFreq_Pitch))+I*complex<su2double>(sin(TwoPiThetaFreq_Pitch)));
-              c3js += c3ks*(complex<su2double>(cos(TwoPiThetaFreq_Pitch))+I*complex<su2double>(sin(TwoPiThetaFreq_Pitch)));
+                c2ks = -CkInflow[val_marker][iSpan][k]*complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
+                c3ks =  CkInflow[val_marker][iSpan][k]*complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
+                c3ks *= complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
+                c2js += c2ks*(complex<su2double>(cos(TwoPiThetaFreq_Pitch))+I*complex<su2double>(sin(TwoPiThetaFreq_Pitch)));
+                c3js += c3ks*(complex<su2double>(cos(TwoPiThetaFreq_Pitch))+I*complex<su2double>(sin(TwoPiThetaFreq_Pitch)));
+              }
+              else{
+                c2js += complex<su2double>(0.0,0.0);
+                c3js += complex<su2double>(0.0,0.0);
+              }
             }
-            else{
-              c2js += complex<su2double>(0.0,0.0);
-              c3js += complex<su2double>(0.0,0.0);
+            c2js_Re = c2js.real();
+            c3js_Re = c3js.real();
+
+            if (nDim == 2){
+              dcjs[0] = 0.0     - cj[0];
+              dcjs[1] = c2js_Re - cj[1];
+              dcjs[2] = c3js_Re - cj[2];
+            }else{
+              dcjs[0] = 0.0     - cj[0];
+              dcjs[1] = c2js_Re - cj[1];
+              dcjs[2] = 0.0     - cj[2];
+              dcjs[3] = c3js_Re - cj[3];
             }
           }
-          c2js_Re = c2js.real();
-          c3js_Re = c3js.real();
+          else{
+            if (nDim == 2){
+              dcjs[0] = 0.0;
+              dcjs[1] = 0.0;
+              dcjs[2] = 0.0;
+            }else{
+              dcjs[0] = 0.0;
+              dcjs[1] = 0.0;
+              dcjs[2] = 0.0;
+              dcjs[3] = 0.0;
+            }
+          }
 
         }else{
           if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
@@ -11958,17 +11983,18 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
             c3js_Re = cj[4]*(Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
             c3js_Re *= (Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
           }
-        }
 
-        if (nDim == 2){
-          dcjs[0] = 0.0     - cj[0];
-          dcjs[1] = c2js_Re - cj[1];
-          dcjs[2] = c3js_Re - cj[2];
-        }else{
-          dcjs[0] = 0.0     - cj[0];
-          dcjs[1] = c2js_Re - cj[1];
-          dcjs[2] = 0.0     - cj[2];
-          dcjs[3] = c3js_Re - cj[3];
+
+          if (nDim == 2){
+            dcjs[0] = 0.0     - cj[0];
+            dcjs[1] = c2js_Re - cj[1];
+            dcjs[2] = c3js_Re - cj[2];
+          }else{
+            dcjs[0] = 0.0     - cj[0];
+            dcjs[1] = c2js_Re - cj[1];
+            dcjs[2] = 0.0     - cj[2];
+            dcjs[3] = c3js_Re - cj[3];
+          }
         }
 
         /* --- Impose Inlet BC Reflecting--- */
@@ -12001,33 +12027,49 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
           else{
             cOutjs_Re= (2.0 * AverageTurboMach[0])/(GilesBeta - AverageTurboMach[1])*cj[1] - (GilesBeta + AverageTurboMach[1])/(GilesBeta - AverageTurboMach[1])*cj[3];
           }
-
+          if (nDim == 2){
+            dcjs[3] = cOutjs_Re - cj[3];
+          }
+          else{
+            dcjs[4] = cOutjs_Re - cj[4];
+          }
         }else{
-          /* --- subsonic NRBC implementation ---*/
-          Beta_inf= I*complex<su2double>(sqrt(1.0  - AvgMach));
-          cOutjs 	= complex<su2double>(0.0,0.0);
-          for(k=0; k < 2*kend_max+1; k++){
-            freq = k - kend_max;
-            if(freq >= (long)(-kend) && freq <= (long)(kend) && AvgMach > 0.15){
-              TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
-              cOutks  = complex<su2double>(2.0 * AverageTurboMach[0])/complex<su2double>(Beta_inf - AverageTurboMach[1])*CkOutflow1[val_marker][iSpan][k];
-              cOutks -= complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>(Beta_inf - AverageTurboMach[1])*CkOutflow2[val_marker][iSpan][k];
+          if(config->GetSpatialFourier()){
+            /* --- subsonic NRBC implementation ---*/
+            Beta_inf= I*complex<su2double>(sqrt(1.0  - AvgMach));
+            cOutjs 	= complex<su2double>(0.0,0.0);
+            for(k=0; k < 2*kend_max+1; k++){
+              freq = k - kend_max;
+              if(freq >= (long)(-kend) && freq <= (long)(kend) && AvgMach > 0.15){
+                TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
+                cOutks  = complex<su2double>(2.0 * AverageTurboMach[0])/complex<su2double>(Beta_inf - AverageTurboMach[1])*CkOutflow1[val_marker][iSpan][k];
+                cOutks -= complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>(Beta_inf - AverageTurboMach[1])*CkOutflow2[val_marker][iSpan][k];
 
-              cOutjs += cOutks*(complex<su2double>(cos(TwoPiThetaFreq_Pitch)) + I*complex<su2double>(sin(TwoPiThetaFreq_Pitch)));
+                cOutjs += cOutks*(complex<su2double>(cos(TwoPiThetaFreq_Pitch)) + I*complex<su2double>(sin(TwoPiThetaFreq_Pitch)));
+              }
+              else{
+                cOutjs +=complex<su2double>(0.0,0.0);
+              }
+            }
+            cOutjs_Re = cOutjs.real();
+
+            if (nDim == 2){
+              dcjs[3] = cOutjs_Re - cj[3];
             }
             else{
-              cOutjs +=complex<su2double>(0.0,0.0);
+              dcjs[4] = cOutjs_Re - cj[4];
             }
           }
-          cOutjs_Re = cOutjs.real();
+          else{
+            if (nDim == 2){
+              dcjs[3] = 0.0;
+            }
+            else{
+              dcjs[4] = 0.0;
+            }
+          }
         }
-        if (nDim == 2){
-          dcjs[3] = cOutjs_Re - cj[3];
-        }
-        else{
-          dcjs[4] = cOutjs_Re - cj[4];
-        }
-        
+
         /* --- Impose Outlet BC Non-Reflecting  --- */
         delta_c[0] = cj[0];
         delta_c[1] = cj[1];

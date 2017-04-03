@@ -94,10 +94,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/
 
-  if (config->GetBoolNRBC()){
-		solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], INFLOW);
+  if (config->GetBoolNRBC() && config->GetSpatialFourier()){
+    solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], INFLOW);
 
-		solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
+    solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
   }
 
 
