@@ -348,7 +348,8 @@ CDriver::CDriver(char* confFile,
 
   /*---If the Grid Movement is static initialize the static mesh movment ---*/
   Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(ZONE_0);
-  initStaticMovement = (Kind_Grid_Movement == MOVING_WALL || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION);
+  initStaticMovement = (config_container[ZONE_0]->GetGrid_Movement() && (Kind_Grid_Movement == MOVING_WALL
+                        || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION));
 
 
   if(initStaticMovement){
