@@ -33,7 +33,6 @@
 
 #include "../include/SU2_SOL.hpp"
 #include "../../SU2_CFD/include/postprocessing_structure.hpp"
-#include "../../SU2_CFD/include/SUBoom.hpp"
 
 using namespace std;
 
@@ -531,10 +530,55 @@ int main(int argc, char *argv[]) {
 
 */
 
+             if (rank == MASTER_NODE)
+               cout << endl <<"------------------------- Computing Far Field Noise (Primal+Adjoint) -----------------------" << endl;
+
+             AD::StartRecording();
+			 SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
+             cout << "SUBoom initialized." << endl;
+             boom.ConditionAtmosphericData();
+             cout << "Condition atmospheric data complete." << endl;
+             boom.ScaleFactors();
+             cout << "Scale factors complete." << endl;
+             boom.InitialWaveNormals();
+             cout << "Initial wave normals complete." << endl;
+             boom.RayTracer();
+             cout << "Ray tracer complete." << endl;
+             boom.RayTubeArea();
+             cout << "Ray tube area complete." << endl;
+             boom.FindInitialRayTime();
+             cout << "Find initial ray time complete." << endl;
+             boom.ODETerms();
+             cout << "ODE terms complete." << endl;
+             boom.DistanceToTime();
+             cout << "Distance to time complete." << endl;
+             boom.CreateSignature();
+             cout << "Create signature complete." << endl;
+             boom.PropagateSignal();
+             Objective_Function = boom.p_max;
+
+             if (rank==MASTER_NODE){
+             SU2_TYPE::SetDerivative(Objective_Function,1.0);
+               }else{
+                 SU2_TYPE::SetDerivative(Objective_Function,0.0);
+               }
+             AD::StopRecording();
+             AD::ComputeAdjoint();
+
+             cout<<"Finished Computing Boom Adjoint"<<endl;
+
+             su2double extracted_derivative;
+
+             for (int iPanel=0; iPanel<boom.nPanel; iPanel++){
+                for (int i =0; i< boom.nDim+3; i++){
+                    boom.dJdU[i][iPanel]=SU2_TYPE::GetDerivative(extracted_derivative);
+                }
+             }
 
 
+             cout<<"Finished Extracting"<<endl;
 
-
+             boom.WriteSensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
            }else{
              if (rank == MASTER_NODE)
@@ -542,25 +586,25 @@ int main(int argc, char *argv[]) {
 ////////             FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
              SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
-             cout << "SUBoom Initialized" << endl;
+             cout << "SUBoom initialized." << endl;
              boom.ConditionAtmosphericData();
-             cout << "Condition Atmospheric Data Complete" << endl;
+             cout << "Condition atmospheric data complete." << endl;
              boom.ScaleFactors();
-             cout << "Scale Factors Complete" << endl;
+             cout << "Scale factors complete." << endl;
              boom.InitialWaveNormals();
-             cout << "Initial Wave Normals Complete" << endl;
+             cout << "Initial wave normals complete." << endl;
              boom.RayTracer();
-             cout << "Ray Tracer Complete" << endl;
+             cout << "Ray tracer complete." << endl;
              boom.RayTubeArea();
-             cout << "Ray Tube Area Complete" << endl;
+             cout << "Ray tube area complete." << endl;
              boom.FindInitialRayTime();
-             cout << "Find Initial Ray Time Complete" << endl;
+             cout << "Find initial ray time complete." << endl;
              boom.ODETerms();
-             cout << "ODE Terms Complete" << endl;
+             cout << "ODE terms complete." << endl;
              boom.DistanceToTime();
-             cout << "Distance To Time Complete" << endl;
+             cout << "Distance to time complete." << endl;
              boom.CreateSignature();
-             cout << "Create Signature Complete" << endl;
+             cout << "Create signature complete." << endl;
              boom.PropagateSignal();
            }
 

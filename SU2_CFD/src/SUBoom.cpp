@@ -16,10 +16,10 @@ SUBoom::SUBoom(){
 }
 
 SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
-/*double h0, double M, double psi, double gamma, double g,
+/*su2double h0, su2double M, su2double psi, su2double gamma, su2double g,
                unsigned int noise_flag, unsigned int N_phi,
-               double phi[], double dphi, double r0, double dr,
-	       double m, double dp, double l){*/
+               su2double phi[], su2double dphi, su2double r0, su2double dr,
+	       su2double m, su2double dp, su2double l){*/
 
   /*---Make sure to read in hard-coded values in the future!---*/
 
@@ -36,7 +36,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   /*---Ray variables---*/
   int N_phi = 1;
   ray_N_phi = N_phi;
-  ray_phi = new double[ray_N_phi];
+  ray_phi = new su2double[ray_N_phi];
   for(int i = 0; i < N_phi; i++){
     //ray_phi[i] = phi[i];
     ray_phi[i] = 0.0;
@@ -54,8 +54,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   tolfile >> str >> tol_l;
 
   /*---Set reference pressure, make sure signal is dimensional---*/
-  double Pressure_FreeStream=config->GetPressure_FreeStream();
-  double Pressure_Ref;
+  su2double Pressure_FreeStream=config->GetPressure_FreeStream();
+  su2double Pressure_Ref;
   if (config->GetRef_NonDim() == DIMENSIONAL) {
     Pressure_Ref      = 1.0;
   }
@@ -72,39 +72,31 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   cout << "Pressure_Ref = " << Pressure_Ref << ", Pressure_FreeStream = " << Pressure_FreeStream << endl;
 
   /*---Loop over boundary markers to select those to extract pressure signature---*/
-  unsigned long nDim = geometry->GetnDim();
   unsigned long nMarker = config->GetnMarker_All();
-  unsigned long nSig=0, SigCount=0, panelCount=0, nPanel=0;
+  unsigned long panelCount=0;
   unsigned long iMarker, iVertex, iPoint;
-  double x, y, z;
-  double xmin = 1000.;
-  double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
-  double ux, uy, uz, StaticEnergy, p;
-  double *Coord;
+  su2double x, y, z;
+  su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
+  su2double ux, uy, uz, StaticEnergy, p;
+  su2double *Coord;
+
+  nPanel = 0;
+  nDim = geometry->GetnDim();
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
-      size_t last_index = config->GetMarker_All_TagBound(iMarker).find_last_not_of("0123456789");
-      string result = config->GetMarker_All_TagBound(iMarker).substr(last_index + 1);
-      int f = std::strtol(result.c_str(),NULL,10);
-      SigCount++;
-
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if(geometry->node[iPoint]->GetDomain()){
             Coord = geometry->node[iPoint]->GetCoord();
             x = SU2_TYPE::GetValue(Coord[0]);
             p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
-            //if(x >= (ray_r0/tan(asin(1/flt_M)))) panelCount++;
             //if(p >= 0.1 || p <= -0.1){
                 panelCount++;
-                if(x < xmin) xmin = x;
             //}
-            //panelCount++;
         }
       }
       nPanel = panelCount;
     }
-    nSig = SigCount;
   }
 
   signal.original_len = nPanel;
@@ -115,49 +107,54 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   sigFile.open("signal_original.txt");
   sigFile << "# x, p" << endl;
   panelCount = 0;
-  signal.x = new double[nPanel];
-  signal.original_p = new double[nPanel];
+  signal.x = new su2double[nPanel];
+  signal.original_p = new su2double[nPanel];
+  PointID = new unsigned long[nPanel];
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
-      size_t last_index = config->GetMarker_All_TagBound(iMarker).find_last_not_of("0123456789");
-      string result = config->GetMarker_All_TagBound(iMarker).substr(last_index + 1);
-      int f = std::strtol(result.c_str(),NULL,10);
-
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if(geometry->node[iPoint]->GetDomain()){
           Coord = geometry->node[iPoint]->GetCoord();
           x = SU2_TYPE::GetValue(Coord[0]);
-          //if(x >= ray_r0/tan(asin(1/flt_M))){
-          p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
+          //p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
           //if(p >= 0.1 || p <= -0.1){
-            //cout << "p = " << p << endl;
             panelCount++;
             y = SU2_TYPE::GetValue(Coord[1]);
             z = 0.0;
             if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
 
             /*---Extract conservative flow data---*/
-            /*rho = solver->node[iPoint]->GetSolution(nDim);
+            rho = solver->node[iPoint]->GetSolution(nDim);
             rho_ux = solver->node[iPoint]->GetSolution(nDim+1);
             rho_uy = solver->node[iPoint]->GetSolution(nDim+2);
             if(nDim == 3) rho_uz = solver->node[iPoint]->GetSolution(nDim+3);
             rho_E = solver->node[iPoint]->GetSolution(2*nDim+1);
-            TKE = 0.0;*/
+            TKE = 0.0;
+
+            //Register conservative variables as input for adjoint computation
+            if (config->GetAD_Mode()){
+              AD::RegisterInput(rho);
+              AD::RegisterInput(rho_ux);
+              AD::RegisterInput(rho_uy);
+              if (nDim==3) AD::RegisterInput(rho_uz);
+              AD::RegisterInput(rho_E);
+              AD::RegisterInput(TKE);
+            }
 
             /*---Compute pressure---*/
-            /*ux = rho_ux/rho;
+            ux = rho_ux/rho;
             uy = rho_uy/rho;
             uz = 0.0;
             if(nDim == 3) uz= rho_uz/rho;
             StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
-            p = (config->GetGamma()-1)*rho*StaticEnergy - Pressure_FreeStream/Pressure_Ref;*/
-            //p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
+            p = (config->GetGamma()-1)*rho*StaticEnergy - Pressure_FreeStream/Pressure_Ref;
 
-            //if(panelCount==1) p = 0.;
             signal.original_p[panelCount-1] = p;
-            signal.x[panelCount-1] = x - xmin;
-            sigFile << x-xmin << " " << p << endl;
+            signal.x[panelCount-1] = x;
+            sigFile << x << " " << p << endl;
+
+            PointID[panelCount-1] = geometry->node[iPoint]->GetGlobalIndex();
           //}
         }
 
@@ -165,27 +162,34 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     }
   }
   sigFile.close();
-  //signal.original_p[0] = 0.;
-  //signal.original_p[panelCount-1] = 0.;
+
+  /*---Initialize sensitivities---*/
+  dJdU = new su2double* [nDim+3];
+  for(int iDim = 0; iDim < nDim+3 ; iDim++){
+      dJdU[iDim] = new su2double[nPanel];
+      for(int iPanel = 0;  iPanel< nPanel; iPanel++){
+          dJdU[iDim][iPanel] = 0.0;
+      }
+  }
 
 }
 
-void SUBoom::AtmosISA(double& h0, double& T, double& a, double& p,
-                      double& rho, double& g){
+void SUBoom::AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
+                      su2double& rho, su2double& g){
   /*---Calculate temperature, speed of sound, pressure, and density at a given
        altitude using standard atmosphere---*/
-  const double GMR = 34.163195;    // hydrostatic constant
-  const double R = 287.058;    // gas constant of air [m^2/s^2*K]
-  const double Re_earth = 6371.;    // equatorial radius [km]
+  const su2double GMR = 34.163195;    // hydrostatic constant
+  const su2double R = 287.058;    // gas constant of air [m^2/s^2*K]
+  const su2double Re_earth = 6371.;    // equatorial radius [km]
 
-  double h = (h0/1000.)*Re_earth/(h0/1000.+Re_earth);    // geometric to geopotential altitude
+  su2double h = (h0/1000.)*Re_earth/(h0/1000.+Re_earth);    // geometric to geopotential altitude
 
-  double htab[8] = {0.0, 11.0, 20.0, 32.0, 47.0, 51.0, 71.0, 84.852};
-  double ttab[8] = {288.15, 216.65, 216.65, 228.65, 270.65, 270.65, 214.65, 186.946};
-  double ptab[8] = {1.0, 2.233611E-1, 5.403295E-2, 8.5666784E-3, 1.0945601E-3,
+  su2double htab[8] = {0.0, 11.0, 20.0, 32.0, 47.0, 51.0, 71.0, 84.852};
+  su2double ttab[8] = {288.15, 216.65, 216.65, 228.65, 270.65, 270.65, 214.65, 186.946};
+  su2double ptab[8] = {1.0, 2.233611E-1, 5.403295E-2, 8.5666784E-3, 1.0945601E-3,
                     6.6063531E-4, 3.9046834E-5, 3.68501E-6};
-  double gtab[8] = {-6.5, 0.0, 1.0, 2.8, 0.0, -2.8, -2.0, 0.0};
-  double tgrad, tbase, tlocal, deltah, theta, delta, sigma;
+  su2double gtab[8] = {-6.5, 0.0, 1.0, 2.8, 0.0, -2.8, -2.0, 0.0};
+  su2double tgrad, tbase, tlocal, deltah, theta, delta, sigma;
 
   int i = 1, j=8, k;
 
@@ -223,34 +227,34 @@ void SUBoom::AtmosISA(double& h0, double& T, double& a, double& p,
 }
 
 void SUBoom::ConditionAtmosphericData(){
-  double g = atm_g;    // specific heat ratio
-  double h0 = flt_h;    // flight altitude [m]
-  double T, p;
+  su2double g = atm_g;    // specific heat ratio
+  su2double h0 = flt_h;    // flight altitude [m]
+  su2double T, p;
 
   /*---Conditions at flight altitude---*/
   AtmosISA(h0, T_inf, a_inf, p_inf, rho_inf, g);
 
   /*---Atmospheric conditions profile---*/
-  z = new double[N_PROF];
-  a_of_z = new double[N_PROF];
-  rho_of_z = new double[N_PROF];
+  z = new su2double[N_PROF];
+  a_of_z = new su2double[N_PROF];
+  rho_of_z = new su2double[N_PROF];
   for(int i = 0; i < N_PROF; i++){
-    z[i] = h0*double(i)/(double(N_PROF)-1.);
+    z[i] = h0*su2double(i)/(su2double(N_PROF)-1.);
     AtmosISA(z[i], T, a_of_z[i], p, rho_of_z[i], g);
   }
 }
 
 void SUBoom::ScaleFactors(){
   int len;
-  double *x;
-  double L;
-  double h0 = flt_h;
-  double M_inf = flt_M;
+  su2double *x;
+  su2double L;
+  su2double h0 = flt_h;
+  su2double M_inf = flt_M;
 
   len = signal.original_len;
   x = signal.x;
 
-  double min_x = x[0], max_x = x[len-1];
+  su2double min_x = x[0], max_x = x[len-1];
 
   for(int i = 0; i < len; i++){
       max_x = x[i];
@@ -271,7 +275,7 @@ void SUBoom::ScaleFactors(){
   scale_C2 = scale_T;    // [s]
 }
 
-void SUBoom::GetAtmosphericData(double& a, double& rho, double& p, double h){
+void SUBoom::GetAtmosphericData(su2double& a, su2double& rho, su2double& p, su2double h){
   /*---Get speed of sound, density, and pressure at an altitude---*/
   int i_h = -1;
   for(int i = 0; i < N_PROF; i++){
@@ -286,8 +290,8 @@ void SUBoom::GetAtmosphericData(double& a, double& rho, double& p, double h){
   //p = p_of_z[i_h];
 }
 
-void SUBoom:: Sph2Cart(double& nx, double& ny, double& nz, double az, double elev,
-              double r){
+void SUBoom:: Sph2Cart(su2double& nx, su2double& ny, su2double& nz, su2double az, su2double elev,
+              su2double r){
   /*---Compute spherical coordinates from elevation, azimuth, and radius---*/
   nx = r*cos(elev)*cos(az);
   ny = r*cos(elev)*sin(az);
@@ -295,26 +299,25 @@ void SUBoom:: Sph2Cart(double& nx, double& ny, double& nz, double az, double ele
 }
 
 void SUBoom::InitialWaveNormals(){
-  double a0, rho0, p0;
-  double nx, ny, nz;
-  const double deg2rad = M_PI/180.;
-  double M = flt_M;    // Mach
-  double h = flt_h;    // altitude [m]
-  double psi = flt_psi*deg2rad;    // heading angle [rad]
-  double g = flt_gamma*deg2rad;    // climb angle [rad]
-  double phi[ray_N_phi];    // azimuth angles of wave normal from vertical plane [rad]
-  double phi_tube[ray_N_phi];
-  double mu = asin(1./M);    // Mach angle [rad]
+  su2double a0;
+  su2double nx, ny, nz;
+  const su2double deg2rad = M_PI/180.;
+  su2double M = flt_M;    // Mach
+  su2double psi = flt_psi*deg2rad;    // heading angle [rad]
+  su2double g = flt_gamma*deg2rad;    // climb angle [rad]
+  su2double phi[ray_N_phi];    // azimuth angles of wave normal from vertical plane [rad]
+  su2double phi_tube[ray_N_phi];
+  su2double mu = asin(1./M);    // Mach angle [rad]
   flt_mu = mu;
 
   /*---Create arrays---*/
-  ray_nu = new double*[ray_N_phi];
-  ray_c0 = new double*[ray_N_phi];
-  ray_theta0 = new double*[ray_N_phi];
+  ray_nu = new su2double*[ray_N_phi];
+  ray_c0 = new su2double*[ray_N_phi];
+  ray_theta0 = new su2double*[ray_N_phi];
   for(int i = 0; i < ray_N_phi; i++){
-    ray_nu[i] = new double[2];
-    ray_c0[i] = new double[2];
-    ray_theta0[i] = new double[2];
+    ray_nu[i] = new su2double[2];
+    ray_c0[i] = new su2double[2];
+    ray_theta0[i] = new su2double[2];
   }
 
   /*---Initialize ray parameters---*/
@@ -352,20 +355,20 @@ void SUBoom::InitialWaveNormals(){
   flt_heading[2] = nz;
 }
 
-double *derivs(double x, int m, double y[], SUBoom::RayData data){
-  double *dydx;
-  double a, rho, p, T;
-  double g = 1.4;
-  double xdim = x*data.L;
+su2double *derivs(su2double x, int m, su2double y[], SUBoom::RayData data){
+  su2double *dydx;
+  su2double a, rho, p, T;
+  su2double g = 1.4;
+  su2double xdim = x*data.L;
 
   SUBoom boom;
   boom.AtmosISA(xdim, T, a, p, rho, g);
 
-  double theta = acos(a/data.c0);
-  double num = cos(theta);
-  double denom = sin(theta);
+  su2double theta = acos(a/data.c0);
+  su2double num = cos(theta);
+  su2double denom = sin(theta);
 
-  dydx = new double[3];
+  dydx = new su2double[3];
   dydx[0] = (num*sin(data.nu))/denom;
   dydx[1] = (num*cos(data.nu))/denom;
   dydx[2] = (data.L/(data.T*a))/denom;
@@ -373,32 +376,32 @@ double *derivs(double x, int m, double y[], SUBoom::RayData data){
   return dydx;
 }
 
-double *SUBoom::rk4(double x0, int m, double y0[], double dx, RayData data,
-                    double *f(double x, int m, double y[], RayData data)){
-  double *f0, *f1, *f2, *f3;
-  double x1, x2, x3;
-  double *y, *y1, *y2, *y3;
+su2double *SUBoom::rk4(su2double x0, int m, su2double y0[], su2double dx, RayData data,
+                    su2double *f(su2double x, int m, su2double y[], RayData data)){
+  su2double *f0, *f1, *f2, *f3;
+  su2double x1, x2, x3;
+  su2double *y, *y1, *y2, *y3;
 
   SUBoom boom;
 
   // Intermediate steps
   f0 = f(x0, m, y0, data);
   x1 = x0 + dx/2.0;
-  y1 = new double[m];
+  y1 = new su2double[m];
   for(int i = 0; i < m; i++){
     y1[i] = y0[i] + dx*f0[i]/2.0;
   }
 
   f1 = f(x1, m, y1, data);
   x2 = x0 + dx/2.0;
-  y2 = new double[m];
+  y2 = new su2double[m];
   for(int i = 0; i < m; i++){
     y2[i] = y0[i] + dx*f1[i]/2.0;
   }
 
   f2 = f(x2, m, y2, data);
   x3 = x0 + dx;
-  y3 = new double[m];
+  y3 = new su2double[m];
   for(int i = 0; i < m; i++){
     y3[i] = y0[i] + dx*f2[i];
   }
@@ -406,7 +409,7 @@ double *SUBoom::rk4(double x0, int m, double y0[], double dx, RayData data,
   f3 = f(x3, m, y3, data);
 
   // Now estimate solution
-  y = new double[m];
+  y = new su2double[m];
   for(int i = 0; i < m; i++){
     y[i] = y0[i] + dx*(f0[i] + 2.0*f1[i] + 2.0*f2[i] + f3[i])/6.0;
   }
@@ -422,18 +425,18 @@ double *SUBoom::rk4(double x0, int m, double y0[], double dx, RayData data,
   return y;
 }
 
-double *SUBoom::SplineGetDerivs(double x[], double y[], int N){
-  double *ks;    // Derivatives vector, using Wikipedia notation q'(x)=k
-  double *a, *b, *c, *d;
-  double *cp, *dp;
+su2double *SUBoom::SplineGetDerivs(su2double x[], su2double y[], int N){
+  su2double *ks;    // Derivatives vector, using Wikipedia notation q'(x)=k
+  su2double *a, *b, *c, *d;
+  su2double *cp, *dp;
 
   /*---Create a, b, c, d vectors---*/
-  a = new double[N];
-  b = new double[N];
-  c = new double[N];
-  d = new double[N];
-  cp = new double[N];
-  dp = new double[N];
+  a = new su2double[N];
+  b = new su2double[N];
+  c = new su2double[N];
+  d = new su2double[N];
+  cp = new su2double[N];
+  dp = new su2double[N];
 
   /*---Create tridiagonal system---*/
   for(int i = 1; i < N-1; i++){
@@ -460,7 +463,7 @@ double *SUBoom::SplineGetDerivs(double x[], double y[], int N){
   }
 
   /*---Back substitution---*/
-  ks = new double[N];
+  ks = new su2double[N];
   ks[N-1] =dp[N-1];
   for(int i = N-2; i > -1; i--){
     ks[i] = dp[i]-cp[i]*ks[i+1];
@@ -479,18 +482,15 @@ double *SUBoom::SplineGetDerivs(double x[], double y[], int N){
 
 void SUBoom::RayTracer(){
   /*---Scale factors---*/
-  double L = flt_h;
-  double T = scale_T;
-  double a0, rho0, p0;
-  double a, rho, p;
-  //  double theta[N_PROF];
-  double r0[3];
-  double *f, x[N_PROF], y[N_PROF], t[N_PROF];
-  double xtmp[1001], ytmp[1001], ztmp[1001], ttmp[1001];
-  double *kx, *ky, *kz;
-  double dz = (z[0] - z[1]);
-
-  int jj;
+  su2double L = flt_h;
+  su2double T = scale_T;
+  su2double a0, rho0, p0;
+  su2double a, rho, p;
+  //  su2double theta[N_PROF];
+  su2double r0[3];
+  su2double *f, x[N_PROF], y[N_PROF], t[N_PROF];
+  su2double *kx, *ky, *kz;
+  su2double dz = (z[0] - z[1]);
 
   //GetAtmosphericData(a0, rho0, p0, L);
   a0 = a_inf;
@@ -503,31 +503,31 @@ void SUBoom::RayTracer(){
   data.T = T;
 
   /*---Create arrays---*/
-  f = new double[3];
+  f = new su2double[3];
 
-  x_of_z = new double**[ray_N_phi];
-  y_of_z = new double**[ray_N_phi];
-  t_of_z = new double**[ray_N_phi];
-  dxdt = new double**[ray_N_phi];
-  dydt = new double**[ray_N_phi];
-  dzdt = new double**[ray_N_phi];
-  theta = new double**[ray_N_phi];
+  x_of_z = new su2double**[ray_N_phi];
+  y_of_z = new su2double**[ray_N_phi];
+  t_of_z = new su2double**[ray_N_phi];
+  dxdt = new su2double**[ray_N_phi];
+  dydt = new su2double**[ray_N_phi];
+  dzdt = new su2double**[ray_N_phi];
+  theta = new su2double**[ray_N_phi];
   for(int i = 0; i < ray_N_phi; i++){
-    x_of_z[i] = new double*[4];
-    y_of_z[i] = new double*[4];
-    t_of_z[i] = new double*[4];
-    dxdt[i] = new double*[4];
-    dydt[i] = new double*[4];
-    dzdt[i] = new double*[4];
-    theta[i] = new double*[4];
+    x_of_z[i] = new su2double*[4];
+    y_of_z[i] = new su2double*[4];
+    t_of_z[i] = new su2double*[4];
+    dxdt[i] = new su2double*[4];
+    dydt[i] = new su2double*[4];
+    dzdt[i] = new su2double*[4];
+    theta[i] = new su2double*[4];
     for(int j = 0; j < 4; j++){
-      x_of_z[i][j] = new double[N_PROF];
-      y_of_z[i][j] = new double[N_PROF];
-      t_of_z[i][j] = new double[N_PROF];
-      dxdt[i][j] = new double[N_PROF];
-      dydt[i][j] = new double[N_PROF];
-      dzdt[i][j] = new double[N_PROF];
-      theta[i][j] = new double[N_PROF];
+      x_of_z[i][j] = new su2double[N_PROF];
+      y_of_z[i][j] = new su2double[N_PROF];
+      t_of_z[i][j] = new su2double[N_PROF];
+      dxdt[i][j] = new su2double[N_PROF];
+      dydt[i][j] = new su2double[N_PROF];
+      dzdt[i][j] = new su2double[N_PROF];
+      theta[i][j] = new su2double[N_PROF];
     }
   }
 
@@ -719,13 +719,13 @@ void SUBoom::RayTracer(){
 }
 
 void SUBoom::RayTubeArea(){
-  double Ah, x_int, y_int, z_int;
-  double corners[4][3];
+  su2double Ah, x_int, y_int, z_int;
+  su2double corners[4][3];
   int M;
 
-  ray_A = new double*[ray_N_phi];
+  ray_A = new su2double*[ray_N_phi];
   for(int i = 0; i < ray_N_phi; i++){
-    ray_A[i] = new double[N_PROF];
+    ray_A[i] = new su2double[N_PROF];
   }
 
   /*---Loop over rays---*/
@@ -747,37 +747,36 @@ void SUBoom::RayTubeArea(){
 	  corners[k][1] = y_int;
 	  corners[k][2] = z_int;
       }
-      double u[3] = {corners[3][0]-corners[0][0], corners[3][1]-corners[0][1], corners[3][2]-corners[0][2]};
-      double v[3] = {corners[2][0]-corners[1][0], corners[2][1]-corners[1][1], corners[2][2]-corners[1][2]};
+      su2double u[3] = {corners[3][0]-corners[0][0], corners[3][1]-corners[0][1], corners[3][2]-corners[0][2]};
+      su2double v[3] = {corners[2][0]-corners[1][0], corners[2][1]-corners[1][1], corners[2][2]-corners[1][2]};
       /*---Cross product---*/
-      double c[3] = {u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]};
+      su2double c[3] = {u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]};
       Ah = 0.5*sqrt(pow(c[0],2)+pow(c[1],2)+pow(c[2],2));
       ray_A[i][j] = Ah*a_of_z[j]*tan(theta[i][0][j])/ray_c0[i][0];
     }
   }
 }
 
-double SUBoom::matchr(int i, int j, double h_L, double r0){
-  double f;
+su2double SUBoom::matchr(int i, int j, su2double h_L, su2double r0){
+  su2double f;
   f = sqrt(pow(x_of_z[i][0][j],2) + pow(y_of_z[i][0][j],2) + pow(z[j]/scale_z-1.0,2))*h_L - r0;
   return f;
 }
 
 void SUBoom::FindInitialRayTime(){
-  double h_L = scale_z/scale_L;
-  double eps;
+  su2double h_L = scale_z/scale_L;
+  su2double eps;
 
-  int ii, jj, kk, j_sp;
-  double f[N_PROF], t[N_PROF];
-  double f0, f1, f2, t0, t1, t2, tmp, trat;
-  int flag;
+  su2double f[N_PROF], t[N_PROF];
+  su2double f0, f1, t0, t1, tmp, trat;
+  //int flag;
 
-  double a, b;
-  double *ks;
+  su2double a, b;
+  su2double *ks;
 
-  ray_t0 = new double[ray_N_phi];
+  ray_t0 = new su2double[ray_N_phi];
 
-  ks = new double[N_PROF];
+  ks = new su2double[N_PROF];
 
   for(int i = 0; i < ray_N_phi; i++){
     for(int j = 0; j < N_PROF; j++){
@@ -800,7 +799,7 @@ void SUBoom::FindInitialRayTime(){
       t1 = tmp;
       f0 = f1;
       // Find interval which contains t1
-      j_sp = N_PROF-1;
+      int j_sp = N_PROF-1;
       for(int j = N_PROF-1; j > -1; j--){
 	    if(t1 < t[j]){
 	      j_sp = j+1;
@@ -826,23 +825,23 @@ void SUBoom::FindInitialRayTime(){
 }
 
 void SUBoom::ODETerms(){
-  double t[N_PROF], A[N_PROF];
-  double *cn;
-  double *dadt, *drhodt, *dAdt;
-  double *dcndt;
-  double g = atm_g;
+  su2double t[N_PROF], A[N_PROF];
+  su2double *cn;
+  su2double *dadt, *drhodt, *dAdt;
+  su2double *dcndt;
+  su2double g = atm_g;
 
-  cn = new double[N_PROF];
+  cn = new su2double[N_PROF];
 
-  dadt = new double[N_PROF];
-  drhodt = new double[N_PROF];
-  dAdt = new double[N_PROF];
-  dcndt = new double[N_PROF];
+  dadt = new su2double[N_PROF];
+  drhodt = new su2double[N_PROF];
+  dAdt = new su2double[N_PROF];
+  dcndt = new su2double[N_PROF];
 
-  ray_C1 = new double*[ray_N_phi];
-  ray_C2 = new double*[ray_N_phi];
-  ray_dC1 = new double*[ray_N_phi];
-  ray_dC2 = new double*[ray_N_phi];
+  ray_C1 = new su2double*[ray_N_phi];
+  ray_C2 = new su2double*[ray_N_phi];
+  ray_dC1 = new su2double*[ray_N_phi];
+  ray_dC2 = new su2double*[ray_N_phi];
   for(int i = 0; i < ray_N_phi; i++){
     for (int j = 0; j < N_PROF; j++){
       t[j] = t_of_z[i][0][j];
@@ -856,8 +855,8 @@ void SUBoom::ODETerms(){
     dAdt = SplineGetDerivs(t, A, N_PROF);
     dcndt = SplineGetDerivs(t, cn, N_PROF);
 
-    ray_C1[i] = new double[N_PROF];
-    ray_C2[i] = new double[N_PROF];
+    ray_C1[i] = new su2double[N_PROF];
+    ray_C2[i] = new su2double[N_PROF];
     for(int j = 0; j < N_PROF; j++){
       ray_C1[i][j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];
       //if(A[j] > 1E-16){
@@ -894,9 +893,9 @@ void SUBoom::DistanceToTime(){
 
 void SUBoom::CreateSignature(){
   int len = signal.original_len;
-  double pp[2][len-1];
-  double ll[len-1];
-  double mm[len-1];
+  su2double pp[2][len-1];
+  su2double ll[len-1];
+  su2double mm[len-1];
 
   /*---Pressure signal to waveform---*/
   /*---Collect data into segments---*/
@@ -933,9 +932,9 @@ void SUBoom::CreateSignature(){
   }
 
   /*---Record signal---*/
-  signal.dp = new double[M];
-  signal.m = new double[M];
-  signal.l = new double[M];
+  signal.dp = new su2double[M];
+  signal.m = new su2double[M];
+  signal.l = new su2double[M];
   signal.M = M;
 
   signal.dp[0] = pp[0][0];
@@ -949,10 +948,10 @@ void SUBoom::CreateSignature(){
 
 }
 
-double **WaveformToPressureSignal(double fvec[], int M, int &Msig){
-  double TT[2][M], pp[2][M];
-  double m[M], dp[M], l[M];
-  double **sig;
+su2double **WaveformToPressureSignal(su2double fvec[], int M, int &Msig){
+  su2double TT[2][M], pp[2][M];
+  su2double m[M], dp[M], l[M];
+  su2double **sig;
 
   /*---Get m, dp, l from fvec---*/
   for(int i = 0; i < M; i++){
@@ -980,8 +979,8 @@ double **WaveformToPressureSignal(double fvec[], int M, int &Msig){
 
   if(Msig < 0){
     /*---Just return pressure value at segments---*/
-    sig = new double*[2];
-    for(int j = 0; j < 2; j++){sig[j] = new double[M];}
+    sig = new su2double*[2];
+    for(int j = 0; j < 2; j++){sig[j] = new su2double[M];}
 
     for(int j = 0; j < M; j++){
         sig[0][j] = pp[0][j];
@@ -991,8 +990,8 @@ double **WaveformToPressureSignal(double fvec[], int M, int &Msig){
   }
   else{
     /*---Build 2-D vector---*/
-    sig = new double*[2];
-    for(int j = 0; j < 2; j++){sig[j] = new double[2*M];}
+    sig = new su2double*[2];
+    for(int j = 0; j < 2; j++){sig[j] = new su2double[2*M];}
 
     /*---First segment---*/
     sig[0][0] = TT[0][0];
@@ -1020,20 +1019,20 @@ double **WaveformToPressureSignal(double fvec[], int M, int &Msig){
 
 }
 
-double *derivsProp(double t, int m, double y[], SUBoom::RayData data){
-  double *dydt;
+su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data){
+  su2double *dydt;
 
   int M = data.M;
-  double diff_m[M], diff_dp[M];
-  double **current_signal;
-  double C1, C2;
+  su2double diff_m[M], diff_dp[M];
+  su2double **current_signal;
+  su2double C1, C2;
   int Msig = -1;
 
-  dydt = new double[3*M];
+  dydt = new su2double[3*M];
 
   /*---Get final pressure value for diff_dp[end]---*/
-  current_signal = new double*[2];
-  for(int i = 0; i < 2; i++){current_signal[i] = new double[M];}
+  current_signal = new su2double*[2];
+  for(int i = 0; i < 2; i++){current_signal[i] = new su2double[M];}
   current_signal = WaveformToPressureSignal(y, M, Msig);
 
   for(int i = 0; i < M; i++){
@@ -1076,16 +1075,16 @@ double *derivsProp(double t, int m, double y[], SUBoom::RayData data){
   return dydt;
 }
 
-double *SUBoom::ClipLambdaZeroSegment(double fvec[], int &M){
-  double m[M], dp[M], l[M];
-  double dp_seg;
-  double *fvec_new, **current_signal;
+su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
+  su2double m[M], dp[M], l[M];
+  su2double dp_seg;
+  su2double *fvec_new, **current_signal;
   int N = M;
   int Msig = -1;
 
   /*---Get pressure values to get pressure gap---*/
-  current_signal = new double*[2];
-  for(int i = 0; i < 2; i++){current_signal[i] = new double[M+1];}
+  current_signal = new su2double*[2];
+  for(int i = 0; i < 2; i++){current_signal[i] = new su2double[M+1];}
 
   /*---Decompose f vector---*/
   for(int j = 0; j < 3*M; j++){
@@ -1123,7 +1122,7 @@ double *SUBoom::ClipLambdaZeroSegment(double fvec[], int &M){
       }
       //i -= 1;
       delete [] fvec_new;
-      fvec_new = new double[3*N];
+      fvec_new = new su2double[3*N];
       for(int j = 0; j < N; j++){
           fvec_new[j] = m[j];
           fvec_new[j+N] = dp[j];
@@ -1136,7 +1135,7 @@ double *SUBoom::ClipLambdaZeroSegment(double fvec[], int &M){
   }
 
   delete [] fvec_new;
-  fvec_new = new double[3*N];
+  fvec_new = new su2double[3*N];
   for(int j = 0; j < N; j++){
     fvec_new[j] = m[j];
     fvec_new[j+N] = dp[j];
@@ -1155,15 +1154,14 @@ double *SUBoom::ClipLambdaZeroSegment(double fvec[], int &M){
 
 }
 
-double EvaluateSpline(double x, int N, double t[], double fit[], double coeffs[]){
-  double x_min, x_max;
-  double x1, x2, dx;
-  double g1, g2, y1, y2;
-  double x2_x, x_x1;
-  double a, b, rat;
+su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2double coeffs[]){
+  su2double x_min, x_max;
+  su2double x1, x2;
+  su2double g1, g2, y1, y2;
+  su2double a, b, rat;
   int j;
 
-  double C;
+  su2double C;
 
   x_min = t[N-1]; x_max = t[0];
 
@@ -1192,19 +1190,19 @@ double EvaluateSpline(double x, int N, double t[], double fit[], double coeffs[]
 
 void SUBoom::PropagateSignal(){
 //  int len = signal.original_len;
-  double t0, tf, dt;
+  su2double t0, tf, dt;
   int j0;
   RayData data;
-  double *fvec;
-  double *f;
-  double **ground_signal;
+  su2double *fvec;
+  su2double *f;
+  su2double **ground_signal;
   int M = signal.M;
 
   for(int i = 0; i < ray_N_phi; i++){
     t0 = ray_t0[i];
 
     /*---Assemble f vector and ray data for integration---*/
-    signal.fvec = new double[3*signal.M];
+    signal.fvec = new su2double[3*signal.M];
     for(int j = 0; j < 3*signal.M; j++){
       if(j < signal.M){
 	signal.fvec[j] = signal.m[j];
@@ -1216,11 +1214,11 @@ void SUBoom::PropagateSignal(){
 	signal.fvec[j] = signal.l[j-2*signal.M];
       }
     }
-    data.t = new double[9];
-    data.C1 = new double[9];
-    data.C2 = new double[9];
-    data.dC1 = new double[9];
-    data.dC2 = new double[9];
+    data.t = new su2double[9];
+    data.C1 = new su2double[9];
+    data.C2 = new su2double[9];
+    data.dC1 = new su2double[9];
+    data.dC2 = new su2double[9];
 
     data.M = signal.M;
     data.scale_C1 = scale_C1;
@@ -1255,15 +1253,15 @@ void SUBoom::PropagateSignal(){
     }
 
     /*---Waveform to pressure signal---*/
-    ground_signal = new double*[2];
+    ground_signal = new su2double*[2];
     for(int ii = 0; ii < 2; ii++){
-      ground_signal[ii] = new double[2*M];
+      ground_signal[ii] = new su2double[2*M];
     }
     int Msig = M;
     ground_signal = WaveformToPressureSignal(fvec, M, Msig);
 
-    signal.final_T = new double[Msig];
-    signal.final_p = new double[Msig];
+    signal.final_T = new su2double[Msig];
+    signal.final_p = new su2double[Msig];
     signal.final_M = Msig;
 
     /*---Final signal and boom strength---*/
@@ -1322,4 +1320,97 @@ void SUBoom::PropagateSignal(){
   delete [] ray_C2;
   delete [] ray_dC1;
   delete [] ray_dC2;
+}
+
+void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geometry){
+  unsigned long iVar, iPanel, Max_nPanel, Tot_nPanel, nVar, Global_Index ;
+  ofstream Boom_AdjointFile;
+
+  int rank, iProcessor, nProcessor;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  unsigned long Buffer_Send_nPanel[1], *Buffer_Recv_nPanel = NULL;
+
+  if (rank == MASTER_NODE) Buffer_Recv_nPanel= new unsigned long [nProcessor];
+
+  Buffer_Send_nPanel[0]=nPanel;
+  Max_nPanel = nPanel;
+#ifdef HAVE_MPI
+  SU2_MPI::Gather(&Buffer_Send_nPanel, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPanel, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+  SU2_MPI::Allreduce(&nPanel,&Max_nPanel,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+  SU2_MPI::Reduce(&nPanel,&Tot_nPanel,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+#endif
+
+  nVar = nDim+3;
+
+  /* pack sensitivity values in each processor and send to root */
+  su2double *Buffer_Send_dJdU = new su2double [Max_nPanel*nVar];
+  unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nPanel];
+  //zero send buffers
+  for (int i=0; i <Max_nPanel*nVar; i++){
+    Buffer_Send_dJdU[i]=0.0;
+  }
+  for (int i=0; i <Max_nPanel; i++){
+    Buffer_Send_GlobalIndex[i]=0;
+  }
+  su2double *Buffer_Recv_dJdU = NULL;
+  unsigned long *Buffer_Recv_GlobalIndex = NULL;
+
+  if (rank == MASTER_NODE) {
+    Buffer_Recv_dJdU = new su2double [nProcessor*Max_nPanel*nVar];
+    Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nPanel];
+  }
+
+  for (iVar=0; iVar<nVar; iVar++){
+      for(iPanel=0; iPanel<nPanel; iPanel++){
+          Buffer_Send_dJdU[iVar*nPanel+iPanel] = dJdU[iVar][iPanel];
+        }
+    }
+
+  for (iPanel=0; iPanel<nPanel; iPanel++){
+     Buffer_Send_GlobalIndex[iPanel] = PointID[iPanel];
+  }
+
+
+#ifdef HAVE_MPI
+  SU2_MPI::Gather(Buffer_Send_dJdU, Max_nPanel*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nPanel*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nPanel, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nPanel , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+  /* root opens a file at each time step and write out the merged dJdU values at that time step into the file */
+  if (rank == MASTER_NODE){
+  char cstr [200];
+
+  SPRINTF (cstr, "Adj_Boom.dat");
+  cout<<cstr<<endl;
+  Boom_AdjointFile.precision(15);
+  Boom_AdjointFile.open(cstr, ios::out);
+
+  /*--- Loop through all of the collected data and write each node's values ---*/
+  unsigned long Total_Index;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    for (iPanel = 0; iPanel < Buffer_Recv_nPanel[iProcessor]; iPanel++) {
+        Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPanel+iPanel ];
+        Boom_AdjointFile  << scientific << Global_Index << "\t";
+
+       for (iVar = 0; iVar < nVar; iVar++){
+         /*--- Current index position and global index ---*/
+         Total_Index  = iProcessor*Max_nPanel*nVar + iVar*Buffer_Recv_nPanel[iProcessor]  + iPanel;
+
+         /*--- Write to file---*/
+         Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Global_Index]   << "\t";
+       }
+       Boom_AdjointFile  << endl;
+
+    }
+  }
+
+  Boom_AdjointFile.close();
+  delete [] Buffer_Recv_dJdU;
+  delete [] Buffer_Recv_GlobalIndex;
+   }
+
+  delete [] Buffer_Send_dJdU;
+  delete [] Buffer_Send_GlobalIndex;
+
 }
