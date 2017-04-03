@@ -52,6 +52,7 @@ CInterpolator::CInterpolator(void) {
   Buffer_Send_nFaceNodes_Donor     = NULL;
   Buffer_Receive_GlobalPoint       = NULL;
   Buffer_Send_GlobalPoint          = NULL;
+
   Buffer_Send_FaceIndex            = NULL;
   Buffer_Receive_FaceIndex         = NULL;
   Buffer_Send_FaceNodes            = NULL;
@@ -1381,7 +1382,8 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   unsigned long nSpanSectionsDonor, nSpanSectionsTarget;
   unsigned long Global_Point_Donor, pGlobalPoint=0;
 
-  su2double MinPitchTarget;
+  su2double PitchTarget, MinPitchCoord_Target, MaxPitchCoord_Target;
+  su2double PitchDonor, MinPitchCoord_Donor, MaxPitchCoord_Donor;
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
 
 #ifdef HAVE_MPI
@@ -1486,8 +1488,17 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
     /*-- Collect coordinates, global points, and normal vectors ---*/
     Collect_TurboVertexInfo( false, markDonor, markTarget, nVertexSpanDonor, iSpan ,nDim );
 
+    if (nVertexSpanTarget != 0 ){
+      MinPitchCoord_Target = target_geometry->GetMinAngularPitch(markTarget, iSpan);
+      MaxPitchCoord_Target = target_geometry->GetMaxAngularPitch(markTarget, iSpan);
+      PitchTarget = abs(MaxPitchCoord_Target - MinPitchCoord_Target);
+    }
 
-
+    if (nVertexSpanDonor != 0 ){
+      MinPitchCoord_Donor = donor_geometry->GetMinAngularPitch(markDonor, iSpan);
+      MaxPitchCoord_Donor = donor_geometry->GetMaxAngularPitch(markDonor, iSpan);
+      PitchDonor = abs(MaxPitchCoord_Donor - MinPitchCoord_Donor);
+    }
 
     //  TEMPORARY FOR TEST ONLY! TRANSLATION
     su2double CoordLocal_i_min, CoordLocal_i_max, CoordLocal_j_min, CoordLocal_j_max, *CoordLocal_j;
@@ -1534,8 +1545,8 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 #endif
 //cout << CoordLocal_i_max - CoordLocal_i_min   << " --> I LOCAL  "  << endl;
 //cout << CoordGlobal_i_max - CoordGlobal_i_min << " --> I GLOBAL "  << endl;
-//cout << CoordLocal_j_max - CoordLocal_j_min   << " --> J LOCAL  "  << endl;
-//cout << CoordGlobal_j_max - CoordGlobal_j_min << " --> J GLOBAL "  << endl;
+//cout << CoordGlobal_j_max  << " --> J GLOBAL"  << endl;
+//cout << CoordGlobal_j_min << " --> J GLOBAL "  << endl;
 
     /*--- Compute the closest point to a Near-Field boundary point ---*/
     maxdist = 0.0;
@@ -1552,8 +1563,10 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
         /*--- Coordinates of the boundary point ---*/
         Coord_i = target_geometry->node[Point_Target]->GetCoord();
-        MinPitchTarget = target_geometry->GetMinAngularPitch(markTarget, iSpan);
-//        cout << "MinPitch:   " << MinPitchTarget << endl;
+
+//        cout << "MinPitch:   " << MinPitchCoord_Target << endl;
+//        cout << "MaxPitch:   " << MaxPitchCoord_Target << endl;
+//        cout << "PitchTarget:   " << PitchTarget << endl;
 
         mindist    = HUGE;
         pProcessor = 0;
@@ -1569,13 +1582,24 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
             /*--- Compute the dist ---*/
             dist  = 0.0;
             dist_t = 0.0;
+//            for (iDim = 0; iDim < nDim; iDim++) {
+//              Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
+//              if ( iDim == pDir && Coord_i[iDim] > CoordGlobal_j_max   ){
+//                dist += pow(Coord_j[iDim] - (Coord_i[iDim] - 0.04463756775),2.0);
+//              }
+//              else if ( iDim == pDir && Coord_i[iDim] <=  CoordGlobal_j_min  ){
+//                dist += pow(Coord_j[iDim] - (Coord_i[iDim] + 0.04463756775),2.0);
+//              }
+//              else
+//                dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
+//            }
             for (iDim = 0; iDim < nDim; iDim++) {
               Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-              if ( iDim == pDir && Coord_i[iDim] > CoordGlobal_j_max   ){
-                dist += pow(Coord_j[iDim] - (Coord_i[iDim] - 0.04463756775),2.0);
+              if ( iDim == pDir && Coord_i[iDim] > MaxPitchCoord_Target ){
+                dist += pow(Coord_j[iDim] - (Coord_i[iDim] - PitchDonor),2.0);
               }
-              else if ( iDim == pDir && Coord_i[iDim] <=  CoordGlobal_j_min  ){
-                dist += pow(Coord_j[iDim] - (Coord_i[iDim] + 0.04463756775),2.0);
+              else if ( iDim == pDir && Coord_i[iDim] <=  MinPitchCoord_Target  ){
+                dist += pow(Coord_j[iDim] - (Coord_i[iDim] + PitchDonor),2.0);
               }
               else
                 dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
