@@ -273,12 +273,13 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2
         C_L = 0.23;
         C_eta = 70.0;
 
-        scalar_min = 1.0E-12;
+	//        scalar_min = 1.0E-12;
+	scalar_min = 1.0E-8/(VelInf*VelInf); // setting based on tke min being 1e-
         su2double tke = max(val_kine, scalar_min*VelInf*VelInf);
         su2double tdr = max(val_epsi, scalar_min*VelInf*VelInf*VelInf/L_Inf);
         su2double v2 = max(val_zeta, 2.0/3.0*scalar_min*VelInf*VelInf);
 	//        su2double S = max(StrainMag,scalar_min*VelInf/L_Inf);
-        su2double S = max(StrainMag,scalar_min);
+        su2double S = max(StrainMag,1.0E-14);
 
         //--- Model time scale ---//
 	//        temp = min(val_kine/val_epsi,0.6*val_kine/(sqrt(6.0)*C_mu*StrainMag*val_zeta));

@@ -3565,9 +3565,9 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   
   // k
   //  lowerlimit[0] = 1.0e-14;
-  lowerlimit[0] = 0.0;
+  //  lowerlimit[0] = 0.0;
   //  lowerlimit[0] = -1.0e-1;
-  //  lowerlimit[0] = -1.0e-10;
+  lowerlimit[0] = -1.0e10;
   upperlimit[0] = 1.0e10;
 
   // epsi  
@@ -3584,15 +3584,15 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   // v2
   //  lowerlimit[2] = 1.0e-14;
-  lowerlimit[2] = 0.0;
+  //  lowerlimit[2] = 0.0;
   //  lowerlimit[2] = -1.0e-1;
-  //  lowerlimit[2] = -1.0e-10;
+  lowerlimit[2] = -1.0e10;
   upperlimit[2] = 1.0e10; 
   
   // f
   //  lowerlimit[3] = 1.0e-14;
-  lowerlimit[3] = 0.0;
-  //  lowerlimit[3] = -1.0e10; //-1.0e2;
+  //  lowerlimit[3] = 0.0;
+  lowerlimit[3] = -1.0e10; //-1.0e2;
   upperlimit[3] = 1.0e10;
 
 
@@ -3610,16 +3610,27 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   for (iDim = 0; iDim < nDim; iDim++)
   VelMag += VelInf[iDim]*VelInf[iDim];
   VelMag = sqrt(VelMag);
+
+  su2double L_Inf = config->GetLength_Reynolds();
+  su2double scalar_min;
+  //  scalar_min = 1.0E-12;
+  //  su2double solve_tol = config->GetLinear_Solver_Error()
+  scalar_min = 1.0E-8/(VelMag*VelMag);
+  su2double tke_min = scalar_min*VelMag*VelMag;
+  su2double tdr_min = scalar_min*pow(VelMag,3.0)/L_Inf;
+  su2double v2_min = 2.0/3.0*scalar_min*VelMag*VelMag;
+  su2double S_min = scalar_min;
+
   //  cout<<"Intensity: "<<Intensity<<"\n";
   kine_Inf = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
-  epsi_Inf = 2.0/3.0*constants[0]*rhoInf*(kine_Inf*kine_Inf)/(muLamInf*viscRatio); // not sure here... rhoInf*kine_Inf/(muLamInf*viscRatio);
+  epsi_Inf = 2.0/3.0*constants[0]*rhoInf*(kine_Inf*kine_Inf)/(muLamInf*viscRatio);
   epsi_Inf = min( epsi_Inf, pow(2.0/3.0*constants[0]*constants[8]*kine_Inf/viscRatio,2.0)*rhoInf/muLamInf);
   //  zeta_Inf = 2.0/3.0;
   zeta_Inf = 2.0/3.0*kine_Inf; // v2 here
-  Tm_Inf = kine_Inf/max(epsi_Inf,1.0E-14);
-  Tm_Inf = max( Tm_Inf, constants[8]*sqrt(muLamInf/(rhoInf*max(epsi_Inf,1.0E-8))) );
-  Lm_Inf = constants[9] * max( pow(kine_Inf,1.5)/max(epsi_Inf,1.0E-14), constants[10]*pow(muLamInf/rhoInf,0.75)/pow(max(epsi_Inf,1.0E-8),0.25) ); 
-  f_Inf = (10.0/3.0+0.3)*epsi_Inf/max(kine_Inf,1.0E-8);
+  Tm_Inf = kine_Inf/max(epsi_Inf,tdr_min);
+  Tm_Inf = max( Tm_Inf, constants[8]*sqrt(muLamInf/(rhoInf*max(epsi_Inf,tdr_min))) );
+  Lm_Inf = constants[9] * max( pow(kine_Inf,1.5)/max(epsi_Inf,tdr_min), constants[10]*pow(muLamInf/rhoInf,0.75)/pow(max(epsi_Inf,tdr_min),0.25) ); 
+  f_Inf = (10.0/3.0+0.3)*epsi_Inf/max(kine_Inf,tke_min);
  
   //  cout<<"Intensity: "<<Intensity<<"\n";
   //  cout<<"Cmu: "<<constants[0]<<"\n";
@@ -3857,8 +3868,7 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     //    muT = max(muT,mu);
     //    muT = constants[0]*max(rho*max(zeta*kine,0.0)/max(epsi,1.0E-9),0.0); //v2
     //muT = 0.0;
-    Tm = max(Tm,1.0E-14);
-    muT = constants[0]*rho*zeta*Tm; //v2
+    muT = constants[0]*rho*max(zeta*Tm,1.0E-14); //v2
 
     //muT = constants[0]*rho*2.0/3.0*kine*Tm; //testing...
     node[iPoint]->SetmuT(muT);
@@ -4166,8 +4176,8 @@ void CTurbKESolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       Solution_j[0] = kine_Inf;
       Solution_j[1] = epsi_Inf;
       Solution_j[2] = zeta_Inf;
-      Solution_j[3] = f_Inf;
-      //      Solution_j[3] = node[iPoint]->GetSolution(3);
+      //      Solution_j[3] = f_Inf;
+      Solution_j[3] = node[iPoint]->GetSolution(3);
       /*
       Solution_j[0] = node[iPoint]->GetSolution(0);
       Solution_j[1] = node[iPoint]->GetSolution(1);
