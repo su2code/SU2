@@ -290,4 +290,27 @@ public:
    */
   void Set_TransferCoeff(CConfig **config);
 
+  /*!
+   * \brief Determine array sizes used to collect and send coordinate and global point
+   * information.
+   * \param[in] faces - boolean that determines whether or not to set face information as well
+   * \param[in] markDonor - Index of the boundary on the donor domain.
+   * \param[in] markTarget - Index of the boundary on the target domain.
+   * \param[in] nVertexDonor - Number of vertices on the donor boundary.
+   * \param[in] iSpan - span index for turbo-vertex data structure.
+   * \param[in] nDim - number of physical dimensions.
+   */
+  void Determine_ArraySize(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short iSpan, unsigned short nDim);
+
+  /*!
+   * \brief Collect and communicate vertex info: coord, global point, and if faces=true the normal vector
+   * \param[in] faces - boolean that determines whether or not to set face information as well
+   * \param[in] markDonor - Index of the boundary on the donor domain.
+   * \param[in] markTarget - Index of the boundary on the target domain.
+   * \param[in] nVertexDonor - Number of vertices on the donor boundary.
+   * \param[in] iSpan - span index for turbo-vertex data structure.
+   * \param[in] nDim - number of physical dimensions.
+   */
+  void Collect_TurboVertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short iSpan, unsigned short nDim);
+
 };

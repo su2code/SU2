@@ -1376,8 +1376,12 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   unsigned short iDim, nDim, iMarkerInt, nMarkerInt, iDonor;
 
   unsigned long nVertexDonor, nVertexTarget, Point_Target, jVertex, iVertexTarget;
+  unsigned long iPrimalVertex_Target, PrimalPoint_Target;
+  unsigned long nVertexSpanTarget, nVertexSpanDonor;
+  unsigned long nSpanSectionsDonor, nSpanSectionsTarget;
   unsigned long Global_Point_Donor, pGlobalPoint=0;
 
+  su2double MinPitchTarget;
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
 
 #ifdef HAVE_MPI
@@ -1388,7 +1392,7 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 
-  if (rank == MASTER_NODE)
+//  if (rank == MASTER_NODE)
     Buffer_Recv_mark = new int[nProcessor];
 
 #else
@@ -1402,7 +1406,6 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   nMarkerInt = (int) ( config[donorZone]->GetMarker_n_FSIinterface() / 2 );
 
   nDim = donor_geometry->GetnDim();
-
   iDonor = 0;
 
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
@@ -1412,6 +1415,8 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
+//    for (unsigned short iSpan= 0; iSpan < nSpanSectionsTarget ; iSpan++){
+    unsigned short iSpan = 0;
     /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
     markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
 
@@ -1425,28 +1430,22 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
     /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
 
-    SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Donor_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    for (iRank = 0; iRank < nProcessor; iRank++)
+      if( Buffer_Recv_mark[iRank] != -1 ) {
+        Donor_check = Buffer_Recv_mark[iRank];
+        break;
+      }
 
 
-    SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Target_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    for (iRank = 0; iRank < nProcessor; iRank++)
+      if( Buffer_Recv_mark[iRank] != -1 ) {
+        Target_check = Buffer_Recv_mark[iRank];
+        break;
+      }
 
     #else
     Donor_check  = markDonor;
@@ -1457,20 +1456,27 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
     if(Target_check == -1 || Donor_check == -1)
       continue;
 
-    if(markDonor != -1)
-      nVertexDonor  = donor_geometry->GetnVertex( markDonor );
-    else
+    if(markDonor != -1){
+      nVertexDonor        = donor_geometry->GetnVertex( markDonor );
+      nVertexSpanDonor   =  donor_geometry->GetnVertexSpan( markDonor, iSpan );
+    }
+    else{
       nVertexDonor  = 0;
+      nVertexSpanDonor  = 0;
+    }
 
-    if(markTarget != -1)
-      nVertexTarget = target_geometry->GetnVertex( markTarget );
-    else
+    if(markTarget != -1){
+      nVertexTarget       = target_geometry->GetnVertex( markTarget );
+      nVertexSpanTarget   = target_geometry->GetnVertexSpan( markTarget, iSpan );
+    }
+    else{
       nVertexTarget  = 0;
-
+      nVertexSpanTarget  = 0;
+    }
     Buffer_Send_nVertex_Donor  = new unsigned long [ 1 ];
 
     /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
-    Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
+    Determine_ArraySize(false, markDonor, markTarget, nVertexSpanDonor, iSpan, nDim);
 
     Buffer_Send_Coord          = new su2double     [ MaxLocalVertex_Donor * nDim ];
     Buffer_Send_GlobalPoint    = new unsigned long [ MaxLocalVertex_Donor ];
@@ -1478,9 +1484,12 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
     Buffer_Receive_GlobalPoint = new unsigned long [ nProcessor * MaxLocalVertex_Donor ];
 
     /*-- Collect coordinates, global points, and normal vectors ---*/
-    Collect_VertexInfo( false, markDonor, markTarget, nVertexDonor, nDim );
+    Collect_TurboVertexInfo( false, markDonor, markTarget, nVertexSpanDonor, iSpan ,nDim );
 
-//  TEMPORARY FOR TEST ONLY! TRANSLATION
+
+
+
+    //  TEMPORARY FOR TEST ONLY! TRANSLATION
     su2double CoordLocal_i_min, CoordLocal_i_max, CoordLocal_j_min, CoordLocal_j_max, *CoordLocal_j;
     unsigned long Point_Donor;
     unsigned short pDir = 1;
@@ -1488,28 +1497,28 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
     CoordLocal_j_min = HUGE;  CoordLocal_j_max = -HUGE;
 
     for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
-    Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
-    Coord_i = target_geometry->node[Point_Target]->GetCoord();
+      Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+      Coord_i = target_geometry->node[Point_Target]->GetCoord();
 
-    if (target_geometry->node[Point_Target]->GetDomain()) {
-    if (Coord_i[pDir] < CoordLocal_i_min)
-    CoordLocal_i_min = Coord_i[pDir];
-    }
-    if (Coord_i[pDir] > CoordLocal_i_max)
-    CoordLocal_i_max = Coord_i[pDir];
+      if (target_geometry->node[Point_Target]->GetDomain()) {
+        if (Coord_i[pDir] < CoordLocal_i_min)
+          CoordLocal_i_min = Coord_i[pDir];
+      }
+      if (Coord_i[pDir] > CoordLocal_i_max)
+        CoordLocal_i_max = Coord_i[pDir];
 
     }
 
     for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
-    Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
-    CoordLocal_j = donor_geometry->node[Point_Donor]->GetCoord();
+      Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
+      CoordLocal_j = donor_geometry->node[Point_Donor]->GetCoord();
 
-    if (donor_geometry->node[Point_Donor]->GetDomain()) {
-    if (CoordLocal_j[pDir] < CoordLocal_j_min)
-    CoordLocal_j_min = CoordLocal_j[pDir];
-    }
-    if (CoordLocal_j[pDir] > CoordLocal_j_max)
-    CoordLocal_j_max = CoordLocal_j[pDir];
+      if (donor_geometry->node[Point_Donor]->GetDomain()) {
+        if (CoordLocal_j[pDir] < CoordLocal_j_min)
+          CoordLocal_j_min = CoordLocal_j[pDir];
+      }
+      if (CoordLocal_j[pDir] > CoordLocal_j_max)
+        CoordLocal_j_max = CoordLocal_j[pDir];
     }
 
     su2double CoordGlobal_i_min, CoordGlobal_i_max, CoordGlobal_j_min, CoordGlobal_j_max;
@@ -1531,18 +1540,20 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
     /*--- Compute the closest point to a Near-Field boundary point ---*/
     maxdist = 0.0;
 
-    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
+    for (iVertexTarget = 0; iVertexTarget < nVertexSpanTarget; iVertexTarget++) {
 
-      Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+      iPrimalVertex_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetOldVertex();
+      Point_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetNode();
 
       if ( target_geometry->node[Point_Target]->GetDomain() ) {
 
-        target_geometry->vertex[markTarget][iVertexTarget]->SetnDonorPoints(1);
-        target_geometry->vertex[markTarget][iVertexTarget]->Allocate_DonorInfo(); // Possible meme leak?
+        target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetnDonorPoints(1);
+        target_geometry->vertex[markTarget][iPrimalVertex_Target]->Allocate_DonorInfo(); // Possible meme leak?
 
         /*--- Coordinates of the boundary point ---*/
         Coord_i = target_geometry->node[Point_Target]->GetCoord();
-
+        MinPitchTarget = target_geometry->GetMinAngularPitch(markTarget, iSpan);
+//        cout << "MinPitch:   " << MinPitchTarget << endl;
 
         mindist    = HUGE;
         pProcessor = 0;
@@ -1570,122 +1581,122 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
                 dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
             }
 
-//--------END SECTION FOR TRANSLATION
+            //--------END SECTION FOR TRANSLATION
 
 
-//----------ROTATION SECTION---------------------------------
-//
-//    //TEMPORARY FOR TEST ONLY! ROTATION
-//    su2double Theta_i_min, Theta_i_max, Theta_j_min, Theta_j_max, *Coord_j_global;
-//    unsigned long Point_Donor;
-//    Theta_i_min = HUGE;  Theta_i_max = -HUGE;
-//    Theta_j_min = HUGE;  Theta_j_max = -HUGE;
-//
-//    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
-//    /*--- Compute the min ---*/
-//    Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
-//    Coord_i = target_geometry->node[Point_Target]->GetCoord();
-//
-//    if (target_geometry->node[Point_Target]->GetDomain()) {
-//    if (atan(Coord_i[1]/Coord_i[0]) < Theta_i_min)
-//    Theta_i_min = atan2(Coord_i[1], Coord_i[0]);
-//    }
-//    if (atan(Coord_i[1]/Coord_i[0]) > Theta_i_max)
-//    Theta_i_max = atan2(Coord_i[1], Coord_i[0]);
-//
-//    }
-//
-//
-//    for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
-//    Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
-//    Coord_j_global = donor_geometry->node[Point_Donor]->GetCoord();
-//
-//    if (donor_geometry->node[Point_Donor]->GetDomain()) {
-//    if (atan(Coord_j_global[1]/Coord_j_global[0]) < Theta_j_min)
-//    Theta_j_min = atan2(Coord_j_global[1], Coord_j_global[0]);
-//    }
-//    if (atan(Coord_j_global[1]/ Coord_j_global[0]) > Theta_j_max)
-//    Theta_j_max = atan2(Coord_j_global[1], Coord_j_global[0]);
-//    }
-//
-//    /*--- Compute the closest point to a Near-Field boundary point ---*/
-//    maxdist = 0.0;
-//
-//    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
-//
-//      Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
-//
-//      if ( target_geometry->node[Point_Target]->GetDomain() ) {
-//
-//        target_geometry->vertex[markTarget][iVertexTarget]->SetnDonorPoints(1);
-//        target_geometry->vertex[markTarget][iVertexTarget]->Allocate_DonorInfo(); // Possible meme leak?
-//
-//        /*--- Coordinates of the boundary point ---*/
-//        Coord_i = target_geometry->node[Point_Target]->GetCoord();
-//
-//        su2double Theta_i, R_i;
-//        Theta_i = atan2(Coord_i[1],Coord_i[0]);
-//        R_i = sqrt(pow(Coord_i[1],2)+pow(Coord_i[0],2));
-//
-//        mindist    = HUGE;
-//        pProcessor = 0;
-//
-//        /*--- Loop over all the boundaries to find the pair ---*/
-//
-//        su2double dist_t;
-//
-//        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-//        for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
-//        Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
-//
-//        /*--- Compute the dist ---*/
-//        dist  = 0.0;
-//        dist_t = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//        Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-//        if ( iDim == 0 && Theta_i > Theta_j_max   ){
-//        dist += pow(Coord_j[iDim] - (R_i * cos(Theta_i - 12.41/180*PI_NUMBER)),2.0);
-//        }
-//        else if ( iDim == 0 && Theta_i <=  Theta_j_min  ){
-//        dist += pow(Coord_j[iDim] - (R_i * cos(Theta_i + 12.41/180*PI_NUMBER)),2.0);
-//        }
-//        else if ( iDim == 1 && Theta_i > Theta_j_max   ){
-//        dist += pow(Coord_j[iDim] - (R_i * sin(Theta_i - 12.41/180*PI_NUMBER)),2.0);
-//        }
-//        else if ( iDim == 1 && Theta_i <=  Theta_j_min  ){
-//        dist += pow(Coord_j[iDim] - (R_i * sin(Theta_i + 12.41/180*PI_NUMBER)),2.0);
-//        }
-//        else
-//        dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
-//        }
+            //----------ROTATION SECTION---------------------------------
+            //
+            //    //TEMPORARY FOR TEST ONLY! ROTATION
+            //    su2double Theta_i_min, Theta_i_max, Theta_j_min, Theta_j_max, *Coord_j_global;
+            //    unsigned long Point_Donor;
+            //    Theta_i_min = HUGE;  Theta_i_max = -HUGE;
+            //    Theta_j_min = HUGE;  Theta_j_max = -HUGE;
+            //
+            //    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
+            //    /*--- Compute the min ---*/
+            //    Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+            //    Coord_i = target_geometry->node[Point_Target]->GetCoord();
+            //
+            //    if (target_geometry->node[Point_Target]->GetDomain()) {
+            //    if (atan(Coord_i[1]/Coord_i[0]) < Theta_i_min)
+            //    Theta_i_min = atan2(Coord_i[1], Coord_i[0]);
+            //    }
+            //    if (atan(Coord_i[1]/Coord_i[0]) > Theta_i_max)
+            //    Theta_i_max = atan2(Coord_i[1], Coord_i[0]);
+            //
+            //    }
+            //
+            //
+            //    for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+            //    Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
+            //    Coord_j_global = donor_geometry->node[Point_Donor]->GetCoord();
+            //
+            //    if (donor_geometry->node[Point_Donor]->GetDomain()) {
+            //    if (atan(Coord_j_global[1]/Coord_j_global[0]) < Theta_j_min)
+            //    Theta_j_min = atan2(Coord_j_global[1], Coord_j_global[0]);
+            //    }
+            //    if (atan(Coord_j_global[1]/ Coord_j_global[0]) > Theta_j_max)
+            //    Theta_j_max = atan2(Coord_j_global[1], Coord_j_global[0]);
+            //    }
+            //
+            //    /*--- Compute the closest point to a Near-Field boundary point ---*/
+            //    maxdist = 0.0;
+            //
+            //    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
+            //
+            //      Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+            //
+            //      if ( target_geometry->node[Point_Target]->GetDomain() ) {
+            //
+            //        target_geometry->vertex[markTarget][iVertexTarget]->SetnDonorPoints(1);
+            //        target_geometry->vertex[markTarget][iVertexTarget]->Allocate_DonorInfo(); // Possible meme leak?
+            //
+            //        /*--- Coordinates of the boundary point ---*/
+            //        Coord_i = target_geometry->node[Point_Target]->GetCoord();
+            //
+            //        su2double Theta_i, R_i;
+            //        Theta_i = atan2(Coord_i[1],Coord_i[0]);
+            //        R_i = sqrt(pow(Coord_i[1],2)+pow(Coord_i[0],2));
+            //
+            //        mindist    = HUGE;
+            //        pProcessor = 0;
+            //
+            //        /*--- Loop over all the boundaries to find the pair ---*/
+            //
+            //        su2double dist_t;
+            //
+            //        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+            //        for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
+            //        Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
+            //
+            //        /*--- Compute the dist ---*/
+            //        dist  = 0.0;
+            //        dist_t = 0.0;
+            //        for (iDim = 0; iDim < nDim; iDim++) {
+            //        Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
+            //        if ( iDim == 0 && Theta_i > Theta_j_max   ){
+            //        dist += pow(Coord_j[iDim] - (R_i * cos(Theta_i - 12.41/180*PI_NUMBER)),2.0);
+            //        }
+            //        else if ( iDim == 0 && Theta_i <=  Theta_j_min  ){
+            //        dist += pow(Coord_j[iDim] - (R_i * cos(Theta_i + 12.41/180*PI_NUMBER)),2.0);
+            //        }
+            //        else if ( iDim == 1 && Theta_i > Theta_j_max   ){
+            //        dist += pow(Coord_j[iDim] - (R_i * sin(Theta_i - 12.41/180*PI_NUMBER)),2.0);
+            //        }
+            //        else if ( iDim == 1 && Theta_i <=  Theta_j_min  ){
+            //        dist += pow(Coord_j[iDim] - (R_i * sin(Theta_i + 12.41/180*PI_NUMBER)),2.0);
+            //        }
+            //        else
+            //        dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
+            //        }
 
-//-------------------------------END OF ROTATION
+            //-------------------------------END OF ROTATION
 
-//        cout.precision(17);
-//        cout << "+++++++++++++" << endl;
-//        cout << "Theta_iM-> " << Theta_i_max*180/PI_NUMBER << "  jM: " << Theta_j_max*180/PI_NUMBER << endl;
-//        cout << "Theta_im-> " << Theta_i_min*180/PI_NUMBER << "  jm: " << Theta_j_min*180/PI_NUMBER << endl;
-//        cout << "Pitch_i -> " << (Theta_i_max-Theta_i_min)*180/PI_NUMBER << "  pj: " << (Theta_j_max-Theta_j_min)*180/PI_NUMBER << endl;
-//        cout << "Coord_i -> " << Coord_i[0]  << "      " << Coord_i[1] << endl;
-//        cout << "Coord_j -> " << Coord_j[0]  << "      " << Coord_j[1] << endl;
-//        cout << "dist    -> " << dist        << endl;
-//        cout << "dist_t  -> " << dist_t      << endl;
-//        cout << "mindist -> " << dist        << endl;
+            //        cout.precision(17);
+            //        cout << "+++++++++++++" << endl;
+            //        cout << "Theta_iM-> " << Theta_i_max*180/PI_NUMBER << "  jM: " << Theta_j_max*180/PI_NUMBER << endl;
+            //        cout << "Theta_im-> " << Theta_i_min*180/PI_NUMBER << "  jm: " << Theta_j_min*180/PI_NUMBER << endl;
+            //        cout << "Pitch_i -> " << (Theta_i_max-Theta_i_min)*180/PI_NUMBER << "  pj: " << (Theta_j_max-Theta_j_min)*180/PI_NUMBER << endl;
+            //        cout << "Coord_i -> " << Coord_i[0]  << "      " << Coord_i[1] << endl;
+            //        cout << "Coord_j -> " << Coord_j[0]  << "      " << Coord_j[1] << endl;
+            //        cout << "dist    -> " << dist        << endl;
+            //        cout << "dist_t  -> " << dist_t      << endl;
+            //        cout << "mindist -> " << dist        << endl;
 
-        if (dist < mindist) {
-        mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
-        }
+            if (dist < mindist) {
+              mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
+            }
 
-        if (dist == 0.0) break;
-        }
+            if (dist == 0.0) break;
+          }
 
         }
 
         /*--- Store the value of the pair ---*/
         maxdist = max(maxdist, mindist);
-        target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorPoint(iDonor, pGlobalPoint);
-        target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorProcessor(iDonor, pProcessor);
-        target_geometry->vertex[markTarget][iVertexTarget]->SetDonorCoeff(iDonor, 1.0);
+        target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorPoint(iDonor, pGlobalPoint);
+        target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorProcessor(iDonor, pProcessor);
+        target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetDonorCoeff(iDonor, 1.0);
       }
     }
 
@@ -1701,8 +1712,172 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
   delete[] Buffer_Receive_nVertex_Donor;
 
-  #ifdef HAVE_MPI
+#ifdef HAVE_MPI
   if (rank == MASTER_NODE)
     delete [] Buffer_Recv_mark;
-  #endif
+#endif
 }
+
+void CTurboInterpolation::Determine_ArraySize(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short iSpan , unsigned short nDim) {
+  unsigned long nLocalVertex_Donor = 0, nLocalFaceNodes_Donor=0, nLocalFace_Donor=0;
+  unsigned long iVertex, iPointDonor = 0;
+  /* Only needed if face data is also collected */
+  unsigned long inode;
+  unsigned long donor_elem, jElem, jPoint;
+  unsigned short iDonor;
+  unsigned int nFaces=0, iFace, nNodes=0;
+  bool face_on_marker = true;
+
+#ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int nProcessor = SINGLE_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+
+  for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
+    iPointDonor = donor_geometry->turbovertex[markDonor][iSpan][iVertex]->GetNode();
+    if (donor_geometry->node[iPointDonor]->GetDomain()) {
+      nLocalVertex_Donor++;
+      if (faces) {
+        /*--- On Donor geometry also communicate face info ---*/
+        if (nDim==3) {
+          for (jElem=0; jElem<donor_geometry->node[iPointDonor]->GetnElem(); jElem++) {
+            donor_elem = donor_geometry->node[iPointDonor]->GetElem(jElem);
+            nFaces = donor_geometry->elem[donor_elem]->GetnFaces();
+            for (iFace=0; iFace<nFaces; iFace++) {
+              face_on_marker=true;
+              nNodes = donor_geometry->elem[donor_elem]->GetnNodesFace(iFace);
+              for (iDonor=0; iDonor<nNodes; iDonor++) {
+                /*--- Local index of the node on face --*/
+                inode = donor_geometry->elem[donor_elem]->GetFaces(iFace, iDonor);
+                jPoint = donor_geometry->elem[donor_elem]->GetNode(inode);
+                face_on_marker = (face_on_marker && (donor_geometry->node[jPoint]->GetVertex(markDonor) !=-1));
+              }
+              if (face_on_marker ) {
+                nLocalFace_Donor++;
+                nLocalFaceNodes_Donor+=nNodes;
+              }
+            }
+          }
+        }
+        else {
+          /*--- in 2D we use the edges ---*/
+          nNodes=2;
+          nFaces = donor_geometry->node[iPointDonor]->GetnPoint();
+          for (iFace=0; iFace<nFaces; iFace++) {
+            face_on_marker=true;
+            for (iDonor=0; iDonor<nNodes; iDonor++) {
+              inode = donor_geometry->node[iPointDonor]->GetEdge(iFace);
+              jPoint = donor_geometry->edge[inode]->GetNode(iDonor);
+              face_on_marker = (face_on_marker && (donor_geometry->node[jPoint]->GetVertex(markDonor) !=-1));
+            }
+            if (face_on_marker ) {
+              nLocalFace_Donor++;
+              nLocalFaceNodes_Donor+=nNodes;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  Buffer_Send_nVertex_Donor[0] = nLocalVertex_Donor;
+  if (faces) {
+    Buffer_Send_nFace_Donor[0] = nLocalFace_Donor;
+    Buffer_Send_nFaceNodes_Donor[0] = nLocalFaceNodes_Donor;
+  }
+
+  /*--- Send Interface vertex information --*/
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nLocalVertex_Donor, &MaxLocalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_nVertex_Donor, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  if (faces) {
+    SU2_MPI::Allreduce(&nLocalFace_Donor, &nGlobalFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nLocalFace_Donor, &MaxFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nLocalFaceNodes_Donor, &nGlobalFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nLocalFaceNodes_Donor, &MaxFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(Buffer_Send_nFace_Donor, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(Buffer_Send_nFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    MaxFace_Donor++;
+  }
+#else
+  MaxLocalVertex_Donor    = nLocalVertex_Donor;
+  Buffer_Receive_nVertex_Donor[0] = Buffer_Send_nVertex_Donor[0];
+  if (faces) {
+    nGlobalFace_Donor       = nLocalFace_Donor;
+    nGlobalFaceNodes_Donor  = nLocalFaceNodes_Donor;
+    MaxFaceNodes_Donor      = nLocalFaceNodes_Donor;
+    MaxFace_Donor           = nLocalFace_Donor+1;
+    Buffer_Receive_nFace_Donor[0] = Buffer_Send_nFace_Donor[0];
+    Buffer_Receive_nFaceNodes_Donor[0] = Buffer_Send_nFaceNodes_Donor[0];
+  }
+#endif
+
+}
+
+void CTurboInterpolation::Collect_TurboVertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short iSpan ,unsigned short nDim) {
+  unsigned long nLocalVertex_Donor = 0;
+  unsigned long iVertex, iPointDonor = 0, iVertexDonor, nBuffer_Coord, nBuffer_Point;
+  unsigned short iDim;
+  /* Only needed if face data is also collected */
+  su2double  *Normal;
+
+#ifdef HAVE_MPI
+  int rank;
+  int nProcessor = SINGLE_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+
+
+  for (iVertex = 0; iVertex < MaxLocalVertex_Donor; iVertex++) {
+    Buffer_Send_GlobalPoint[iVertex] = 0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+      if (faces)
+        Buffer_Send_Normal[iVertex*nDim+iDim] = 0.0;
+    }
+  }
+
+  /*--- Copy coordinates and point to the auxiliar vector --*/
+  nLocalVertex_Donor = 0;
+
+  for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
+    iPointDonor = donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetNode();
+    if (donor_geometry->node[iPointDonor]->GetDomain()) {
+      Buffer_Send_GlobalPoint[nLocalVertex_Donor] = donor_geometry->node[iPointDonor]->GetGlobalIndex();
+      for (iDim = 0; iDim < nDim; iDim++)
+        Buffer_Send_Coord[nLocalVertex_Donor*nDim+iDim] = donor_geometry->node[iPointDonor]->GetCoord(iDim);
+
+      if (faces) {
+        Normal =  donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetNormal();
+        for (iDim = 0; iDim < nDim; iDim++)
+          Buffer_Send_Normal[nLocalVertex_Donor*nDim+iDim] = Normal[iDim];
+      }
+      nLocalVertex_Donor++;
+    }
+  }
+  nBuffer_Coord = MaxLocalVertex_Donor*nDim;
+  nBuffer_Point = MaxLocalVertex_Donor;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  if (faces) {
+    SU2_MPI::Allgather(Buffer_Send_Normal, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Normal, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+  }
+#else
+  for (iVertex = 0; iVertex < nBuffer_Coord; iVertex++)
+    Buffer_Receive_Coord[iVertex] = Buffer_Send_Coord[iVertex];
+
+  for (iVertex = 0; iVertex < nBuffer_Point; iVertex++)
+    Buffer_Receive_GlobalPoint[iVertex] = Buffer_Send_GlobalPoint[iVertex];
+
+  if (faces) {
+    for (iVertex = 0; iVertex < nBuffer_Coord; iVertex++)
+      Buffer_Receive_Normal[iVertex] = Buffer_Send_Normal[iVertex];
+  }
+#endif
+}
+
