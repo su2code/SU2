@@ -10758,15 +10758,31 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZ
 
   /*--- Initialize auxiliary pointers ---*/
   TurboNormal      = new su2double[3];
+  su2double ang_coord, delta_grid_movement;
+  su2double max = -HUGE;
+#ifdef HAVE_MPI
+//  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  su2double MyMax;
+#endif
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-          for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
             for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
               iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
               coord  = node[iPoint]->GetCoord();
+              if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                ang_coord=coord[1];
+              }
+              else{
+                ang_coord=atan(coord[1]/coord[0]);
+              }
+              turbovertex[iMarker][iSpan][iSpanVertex]->SetAngularCoord(ang_coord);
+              if (ang_coord > max)
+                max = ang_coord;
               /*--- compute appropriate turbo normal ---*/
               switch (config->GetKind_TurboMachinery(val_iZone)){
               case CENTRIFUGAL:
@@ -10858,7 +10874,23 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZ
         }
       }
     }
+#ifdef HAVE_MPI
+    MyMax     = max;      max    = -HUGE;
+    SU2_MPI::Allreduce(&MyMax, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+          delta_grid_movement = max - MaxAngularPitch[iMarker][iSpan];
+          MaxAngularPitch[iMarker][iSpan] += delta_grid_movement;
+          MinAngularPitch[iMarker][iSpan] += delta_grid_movement;
+          }
+        }
+      }
+    }
   }
+
 
   delete [] TurboNormal;
 }

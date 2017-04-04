@@ -1382,8 +1382,8 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   unsigned long nSpanSectionsDonor, nSpanSectionsTarget;
   unsigned long Global_Point_Donor, pGlobalPoint=0;
 
-  su2double PitchTarget, MinPitchCoord_Target, MaxPitchCoord_Target;
-  su2double PitchDonor, MinPitchCoord_Donor, MaxPitchCoord_Donor;
+  su2double PitchTarget, AngularCoord_Target,  MinAngularCoord_Target, MaxAngularCoord_Target;
+  su2double PitchDonor, AngularCoord_Donor, MinAngularCoord_Donor, MaxAngularCoord_Donor;
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
 
 #ifdef HAVE_MPI
@@ -1480,24 +1480,28 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
     /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
     Determine_ArraySize(false, markDonor, markTarget, nVertexSpanDonor, iSpan, nDim);
 
-    Buffer_Send_Coord          = new su2double     [ MaxLocalVertex_Donor * nDim ];
+//    Buffer_Send_Coord          = new su2double     [ MaxLocalVertex_Donor * nDim ];
+//    Buffer_Send_GlobalPoint    = new unsigned long [ MaxLocalVertex_Donor ];
+//    Buffer_Receive_Coord       = new su2double     [ nProcessor * MaxLocalVertex_Donor * nDim ];
+//    Buffer_Receive_GlobalPoint = new unsigned long [ nProcessor * MaxLocalVertex_Donor ];
+    Buffer_Send_Coord          = new su2double     [ MaxLocalVertex_Donor ];
     Buffer_Send_GlobalPoint    = new unsigned long [ MaxLocalVertex_Donor ];
-    Buffer_Receive_Coord       = new su2double     [ nProcessor * MaxLocalVertex_Donor * nDim ];
+    Buffer_Receive_Coord       = new su2double     [ nProcessor * MaxLocalVertex_Donor ];
     Buffer_Receive_GlobalPoint = new unsigned long [ nProcessor * MaxLocalVertex_Donor ];
 
     /*-- Collect coordinates, global points, and normal vectors ---*/
     Collect_TurboVertexInfo( false, markDonor, markTarget, nVertexSpanDonor, iSpan ,nDim );
 
     if (nVertexSpanTarget != 0 ){
-      MinPitchCoord_Target = target_geometry->GetMinAngularPitch(markTarget, iSpan);
-      MaxPitchCoord_Target = target_geometry->GetMaxAngularPitch(markTarget, iSpan);
-      PitchTarget = abs(MaxPitchCoord_Target - MinPitchCoord_Target);
+      MinAngularCoord_Target = target_geometry->GetMinAngularPitch(markTarget, iSpan);
+      MaxAngularCoord_Target = target_geometry->GetMaxAngularPitch(markTarget, iSpan);
+      PitchTarget = abs(MaxAngularCoord_Target - MinAngularCoord_Target);
     }
 
     if (nVertexSpanDonor != 0 ){
-      MinPitchCoord_Donor = donor_geometry->GetMinAngularPitch(markDonor, iSpan);
-      MaxPitchCoord_Donor = donor_geometry->GetMaxAngularPitch(markDonor, iSpan);
-      PitchDonor = abs(MaxPitchCoord_Donor - MinPitchCoord_Donor);
+      MinAngularCoord_Donor = donor_geometry->GetMinAngularPitch(markDonor, iSpan);
+      MaxAngularCoord_Donor = donor_geometry->GetMaxAngularPitch(markDonor, iSpan);
+      PitchDonor = abs(MaxAngularCoord_Donor - MinAngularCoord_Donor);
     }
 
     //  TEMPORARY FOR TEST ONLY! TRANSLATION
@@ -1563,7 +1567,7 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
         /*--- Coordinates of the boundary point ---*/
         Coord_i = target_geometry->node[Point_Target]->GetCoord();
-
+        AngularCoord_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetAngularCoord();
 //        cout << "MinPitch:   " << MinPitchCoord_Target << endl;
 //        cout << "MaxPitch:   " << MaxPitchCoord_Target << endl;
 //        cout << "PitchTarget:   " << PitchTarget << endl;
@@ -1573,15 +1577,14 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
         /*--- Loop over all the boundaries to find the pair ---*/
 
-        su2double dist_t;
-
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
           for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
             Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
 
             /*--- Compute the dist ---*/
             dist  = 0.0;
-            dist_t = 0.0;
+
+
 //            for (iDim = 0; iDim < nDim; iDim++) {
 //              Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
 //              if ( iDim == pDir && Coord_i[iDim] > CoordGlobal_j_max   ){
@@ -1593,17 +1596,23 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 //              else
 //                dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
 //            }
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-              if ( iDim == pDir && Coord_i[iDim] > MaxPitchCoord_Target ){
-                dist += pow(Coord_j[iDim] - (Coord_i[iDim] - PitchDonor),2.0);
-              }
-              else if ( iDim == pDir && Coord_i[iDim] <=  MinPitchCoord_Target  ){
-                dist += pow(Coord_j[iDim] - (Coord_i[iDim] + PitchDonor),2.0);
-              }
-              else
-                dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
+            AngularCoord_Donor = Buffer_Receive_Coord[ Global_Point_Donor];
+            if ( AngularCoord_Donor > MaxAngularCoord_Target ){
+              dist = abs(AngularCoord_Donor - (AngularCoord_Target + PitchDonor));
             }
+            else if ( AngularCoord_Donor <=  MinAngularCoord_Target  ){
+//              dist = abs( AngularCoord_Donor - (AngularCoord_Target - PitchDonor));
+              dist = abs(AngularCoord_Donor - (AngularCoord_Target - PitchDonor));
+            }
+            else
+              dist = abs(AngularCoord_Donor - AngularCoord_Target);
+//            cout << "Pitch Donor        : " << PitchDonor << endl;
+//            cout << "MaxAngular_Target  : " <<  MaxAngularCoord_Target << endl;
+//            cout << "MinAngular_Target  : " <<  MinAngularCoord_Target << endl;
+//            cout << "AngularCoord_Donor : " <<  AngularCoord_Donor << endl;
+//            cout << "AngularCoord_Target: " <<  AngularCoord_Target << endl;
+//            cout << "Distance           : " <<  dist                << endl;
+//            cout << endl;
 
             //--------END SECTION FOR TRANSLATION
 
@@ -1711,11 +1720,13 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
               mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
             }
 
+//            cout << "Min Distance       : " <<  mindist             << endl;
             if (dist == 0.0) break;
           }
 
         }
 
+//        cout << " ====================="             << endl;
         /*--- Store the value of the pair ---*/
         maxdist = max(maxdist, mindist);
         target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorPoint(iDonor, pGlobalPoint);
@@ -1857,12 +1868,13 @@ void CTurboInterpolation::Collect_TurboVertexInfo(bool faces, int markDonor, int
 
   for (iVertex = 0; iVertex < MaxLocalVertex_Donor; iVertex++) {
     Buffer_Send_GlobalPoint[iVertex] = 0;
+    Buffer_Send_Coord[iVertex] = HUGE;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
       if (faces)
         Buffer_Send_Normal[iVertex*nDim+iDim] = 0.0;
     }
   }
+
 
   /*--- Copy coordinates and point to the auxiliar vector --*/
   nLocalVertex_Donor = 0;
@@ -1871,8 +1883,7 @@ void CTurboInterpolation::Collect_TurboVertexInfo(bool faces, int markDonor, int
     iPointDonor = donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetNode();
     if (donor_geometry->node[iPointDonor]->GetDomain()) {
       Buffer_Send_GlobalPoint[nLocalVertex_Donor] = donor_geometry->node[iPointDonor]->GetGlobalIndex();
-      for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[nLocalVertex_Donor*nDim+iDim] = donor_geometry->node[iPointDonor]->GetCoord(iDim);
+        Buffer_Send_Coord[nLocalVertex_Donor] = donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetAngularCoord();
 
       if (faces) {
         Normal =  donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetNormal();
@@ -1882,7 +1893,7 @@ void CTurboInterpolation::Collect_TurboVertexInfo(bool faces, int markDonor, int
       nLocalVertex_Donor++;
     }
   }
-  nBuffer_Coord = MaxLocalVertex_Donor*nDim;
+  nBuffer_Coord = MaxLocalVertex_Donor;
   nBuffer_Point = MaxLocalVertex_Donor;
 
 #ifdef HAVE_MPI

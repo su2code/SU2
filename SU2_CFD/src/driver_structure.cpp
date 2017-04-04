@@ -323,6 +323,9 @@ CDriver::CDriver(char* confFile,
       if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE)
         unsigned short nTimeInstances = config_container[ZONE_0]->GetnTimeInstances();
         iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
+        geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, INFLOW);
+        geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, OUTFLOW);
+
     }
 
     if (config_container[iZone]->GetDirectDiff() == D_DESIGN) {
