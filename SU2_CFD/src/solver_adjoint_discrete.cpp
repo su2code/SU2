@@ -188,7 +188,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   }
 
-CDiscAdjSolver::~CDiscAdjSolver(void) { 
+CDiscAdjSolver::~CDiscAdjSolver(void) {
 
   unsigned short iMarker;
 
@@ -288,7 +288,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     Temperature            = config->GetTemperature_FreeStreamND();
 
     su2double SoundSpeed = 0.0;
-    
+
     if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
     if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
 
@@ -394,6 +394,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
       break;
     case NOISE:
+      ObjFunc_Value = 0.0;
+      break;
+    case BOOM:
       ObjFunc_Value = 0.0;
       break;
 
@@ -566,14 +569,21 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
     // FWH
     if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
-    if (config->GetExtIter()<config->GetIter_Avg_Objective()){
+    if (config->GetExtIter()<config->GetIter_Avg_Objective() && config->GetKind_ObjFunc()==NOISE){
     if (LocalPointIndex[iPoint] >= 0){
         for (iVar = 0; iVar < nVar; iVar++){
             Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
          }
     }
-      }
-      }
+    }
+    else if(config->GetKind_ObjFunc()==BOOM){
+    if (LocalPointIndex[iPoint] >= 0){
+        for (iVar = 0; iVar < nVar; iVar++){
+            Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
+         }
+    }
+    }
+    }
 
 
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
@@ -922,8 +932,90 @@ void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config
 
   delete [] Global2Local;
 
+}
+
+void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config){
+   unsigned long iPoint, iVar, iPanel;
+   string  text_line;
+   ifstream Boom_AdjointFile;
+
+   char filename [64];
+
+   SPRINTF (filename, "Adj_Boom.dat");
+   cout<<"Accessing Boom Adjoint file: "<< filename << endl;
+//   string filename = strcat (cstr);
+//   Boom_AdjointFile.open(filename.data() , ios::in);
+   Boom_AdjointFile.open(filename , ios::in);
+   if (Boom_AdjointFile.fail()) {
+//     if (rank == MASTER_NODE)
+//       cout << "There is no flow restart file!! " <<  filename.data()  << "."<< endl;
+       cout << "There is no flow restart file!! " <<  filename  << "."<< endl;
+     exit(EXIT_FAILURE);
+   }
 
 
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
 
+  long *Global2Local = NULL;
+  Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  /*--- First, set all indices to a negative value by default ---*/
+  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    Global2Local[iPoint] = -1;
+  }
+
+  /*--- Now fill array with the transform values only for local points ---*/
+
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+  /*--- Read all lines in the restart file ---*/
+
+  long iPoint_Local = 0;
+  unsigned long iPoint_Global = 0;
+  iPanel=0;
+
+
+  int rank ;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
+
+  /*--- The first line is the header ---*/
+
+  while (getline (Boom_AdjointFile, text_line)) {
+    istringstream point_line(text_line);
+     point_line >> iPoint_Global ;
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on a different processor, the value of iPoint_Local will be -1, as
+     initialized above. Otherwise, the local index for this node on the
+     current processor will be returned and used to instantiate the vars. ---*/
+
+    iPoint_Local = Global2Local[iPoint_Global];
+    if (iPoint_Local >= 0) {
+      LocalPointIndex[iPoint_Local] =  iPanel;
+      for (iVar=0; iVar<nDim+3; iVar++){
+          point_line >> dJdU_CAA[iPanel][iVar];
+        }
+     iPanel++;
+    }
+
+
+  }
+
+
+  cout<<"Finished reading."<<"iPanel= "<<iPanel<<",  Rank= "<<rank<<endl;
+
+  /*--- Close the restart file ---*/
+
+  Boom_AdjointFile.close();
+
+  /*--- Free memory needed for the transformation ---*/
+
+  delete [] Global2Local;
 
 }

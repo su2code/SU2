@@ -1,8 +1,12 @@
+#pragma once
+
 #include <iostream>
 #include <cmath>
 #include <algorithm>
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "../../Common/include/mpi_structure.hpp"
 
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"

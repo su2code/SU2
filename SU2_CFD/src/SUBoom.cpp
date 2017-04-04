@@ -136,12 +136,12 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
             //Register conservative variables as input for adjoint computation
             if (config->GetAD_Mode()){
-              AD::RegisterInput(rho);
-              AD::RegisterInput(rho_ux);
-              AD::RegisterInput(rho_uy);
-              if (nDim==3) AD::RegisterInput(rho_uz);
-              AD::RegisterInput(rho_E);
-              AD::RegisterInput(TKE);
+              AD::RegisterInput(rho );
+              AD::RegisterInput(rho_ux );
+              AD::RegisterInput(rho_uy );
+              if (nDim==3) AD::RegisterInput(rho_uz );
+              AD::RegisterInput(rho_E );
+              AD::RegisterInput(TKE );
             }
 
             /*---Compute pressure---*/
@@ -890,9 +890,9 @@ void SUBoom::ODETerms(){
     ray_dC1[i] = SplineGetDerivs(t, ray_C1[i], N_PROF);
     ray_dC2[i] = SplineGetDerivs(t, ray_C2[i], N_PROF);
 
-    //delete [] ray_c0[i];
-    //delete [] ray_nu[i];
-    //delete [] ray_theta0[i];
+    delete [] ray_c0[i];
+    delete [] ray_nu[i];
+    delete [] ray_theta0[i];
   }
 
   delete [] cn;
@@ -900,11 +900,11 @@ void SUBoom::ODETerms(){
   delete [] drhodt;
   delete [] dAdt;
   delete [] dcndt;
-  //delete [] a_of_z;
-  //delete [] rho_of_z;
-  //delete [] ray_c0;
-  //delete [] ray_nu;
-  //delete [] ray_theta0;
+  delete [] a_of_z;
+  delete [] rho_of_z;
+  delete [] ray_c0;
+  delete [] ray_nu;
+  delete [] ray_theta0;
 }
 
 void SUBoom::DistanceToTime(){
@@ -1312,48 +1312,59 @@ void SUBoom::PropagateSignal(){
   /*---Clean up---*/
   for(int i = 0; i < ray_N_phi; i++){
   for(int j = 0; j < 4; j++){
-      //delete [] x_of_z[i][j];
-      //delete [] y_of_z[i][j];
-      //delete [] t_of_z[i][j];
-      //delete [] dxdt[i][j];
-      //delete [] dydt[i][j];
-      //delete [] dzdt[i][j];
-      //delete [] theta[i][j];
+      delete [] x_of_z[i][j];
+      delete [] y_of_z[i][j];
+      delete [] t_of_z[i][j];
+      delete [] dxdt[i][j];
+      delete [] dydt[i][j];
+      delete [] dzdt[i][j];
+      delete [] theta[i][j];
   }
-  //delete [] x_of_z[i];
-  //delete [] y_of_z[i];
-  //delete [] t_of_z[i];
-  //delete [] dxdt[i];
-  //delete [] dydt[i];
-  //delete [] dzdt[i];
-  //delete [] theta[i];
-  //delete [] ray_A[i];
-  //delete [] ray_C1[i];
-  //delete [] ray_C2[i];
-  //delete [] ray_dC1[i];
-  //delete [] ray_dC2[i];
+  delete [] x_of_z[i];
+  delete [] y_of_z[i];
+  delete [] t_of_z[i];
+  delete [] dxdt[i];
+  delete [] dydt[i];
+  delete [] dzdt[i];
+  delete [] theta[i];
+  delete [] ray_A[i];
+  delete [] ray_C1[i];
+  delete [] ray_C2[i];
+  delete [] ray_dC1[i];
+  delete [] ray_dC2[i];
   }
 
-  //delete [] x_of_z;
-  //delete [] y_of_z;
-  //delete [] t_of_z;
-  //delete [] dxdt;
-  //delete [] dydt;
-  //delete [] dzdt;
-  //delete [] theta;
-  //delete [] ray_A;
-  //delete [] ray_C1;
-  //delete [] ray_C2;
-  //delete [] ray_dC1;
-  //delete [] ray_dC2;
-  //delete [] ray_t0;
+  delete [] x_of_z;
+  delete [] y_of_z;
+  delete [] t_of_z;
+  delete [] dxdt;
+  delete [] dydt;
+  delete [] dzdt;
+  delete [] theta;
+  delete [] ray_A;
+  delete [] ray_C1;
+  delete [] ray_C2;
+  delete [] ray_dC1;
+  delete [] ray_dC2;
+  delete [] ray_t0;
 
   /*---Clear up memory from RayData class---*/
-  //delete [] data.t;
-  //delete [] data.C1;
-  //delete [] data.C2;
-  //delete [] data.dC1;
-  //delete [] data.dC2;
+  delete [] data.t;
+  delete [] data.C1;
+  delete [] data.C2;
+  delete [] data.dC1;
+  delete [] data.dC2;
+
+  /*---Clear up memory from Signal class---*/
+  /*delete [] signal.m;
+  delete [] signal.dp;
+  delete [] signal.l;
+  delete [] signal.fvec;
+  delete [] signal.x;
+  delete [] signal.original_T;
+  delete [] signal.original_p;
+  delete [] signal.final_T;
+  delete [] signal.final_p;*/
 }
 
 void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geometry){
@@ -1368,7 +1379,6 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
   if (rank == MASTER_NODE) Buffer_Recv_nPanel= new unsigned long [nProcessor];
 
   Buffer_Send_nPanel[0]=nPanel;
-  //Max_nPanel = nPanel;
 #ifdef HAVE_MPI
   SU2_MPI::Gather(&Buffer_Send_nPanel, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPanel, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
   SU2_MPI::Allreduce(&nPanel,&Max_nPanel,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
@@ -1449,10 +1459,10 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
 
   /*---Clear up  memory from dJdU---*/
 /*  for (int i=0; i<nDim+3; i++){
-    //delete [] dJdU[i];
+    delete [] dJdU[i];
   }
-  //delete [] dJdU;
-  //delete [] PointID;*/
+  delete [] dJdU;
+  delete [] PointID;*/
 
-  cout << "\nFinished writing boom adjoint file" << endl;
+  cout << "\nFinished writing boom adjoint file." << endl;
 }
