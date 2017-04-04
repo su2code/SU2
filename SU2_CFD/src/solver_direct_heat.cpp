@@ -33,7 +33,10 @@
 
 #include "../include/solver_structure.hpp"
 
-CHeatSolver::CHeatSolver(void) : CSolver() { }
+CHeatSolver::CHeatSolver(void) : CSolver() {
+
+  ConjugateVar = NULL;
+}
 
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
@@ -148,8 +151,23 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
       Smatrix[iDim] = new su2double [nDim];
   }
 
-
   Heat_Flux = new su2double[nMarker];
+
+  /*--- Store the value of the temperature and the heat flux density at the boundaries,
+   used for IO with a donor cell ---*/
+  unsigned short nConjVariables = 2;
+
+  ConjugateVar = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    ConjugateVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+      ConjugateVar[iMarker][iVertex] = new su2double [nConjVariables];
+      for (iVar = 0; iVar < nConjVariables ; iVar++) {
+        ConjugateVar[iMarker][iVertex][iVar] = 0.0;
+      }
+    }
+  }
 
   /*--- Non-dimensionalization of heat equation */
   config->SetTemperature_Ref(config->GetTemperature_FreeStream());
@@ -790,6 +808,131 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 }
 
+void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+
+  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned short iDim, iVar, iMarker;
+
+  su2double *Coord_i, *Coord_j;
+  su2double Area, dist_ij, thermal_conductivity, Prandtl_Lam, laminar_viscosity, Twall, dTdn, HeatFluxDensity, HeatFluxValue;
+  su2double maxTemperature, maxHeatFluxDensity, avTemperature, avHeatFlux, HeatFluxIntegral;
+
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool flow          = (config->GetKind_Solver() != HEAT_EQUATION);
+
+  su2double *Normal = new su2double[nDim];
+
+  Prandtl_Lam = config->GetPrandtl_Lam();
+  laminar_viscosity = config->GetViscosity_FreeStreamND();  
+
+  if(flow) {
+
+    //cout << "                             TFFB Interface report for fluid zone - ";
+    /*--- We have to set temperature BC for the convective zone ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+
+        maxTemperature = 0.0;
+        maxHeatFluxDensity = 0.0;
+        avTemperature = 0.0;
+        avHeatFlux = 0.0;
+        HeatFluxIntegral = 0.0;
+
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (geometry->node[iPoint]->GetDomain()) {
+
+            /*--- Get the conjugate variable, 0 for temperature ---*/
+            Twall = GetConjugateVariable(iMarker, iVertex, 0);
+            //cout << "Read temperature (fluid): " << Twall << endl;
+            if (Twall > maxTemperature) maxTemperature = Twall;
+
+            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt (Area);
+
+            Coord_i = geometry->node[iPoint]->GetCoord();
+            Coord_j = geometry->node[Point_Normal]->GetCoord();
+            dist_ij = 0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+            dist_ij = sqrt(dist_ij);
+
+            dTdn = -(node[Point_Normal]->GetSolution(0) - Twall)/dist_ij;
+            thermal_conductivity = laminar_viscosity/Prandtl_Lam;
+
+            HeatFluxDensity = thermal_conductivity*dTdn;
+            HeatFluxValue = HeatFluxDensity * Area;
+            HeatFluxIntegral += HeatFluxDensity * Area;
+            if (HeatFluxDensity > maxHeatFluxDensity) maxHeatFluxDensity = HeatFluxDensity;
+
+            Res_Visc[0] = HeatFluxValue;
+
+            if(implicit) {
+
+              Jacobian_i[0][0] = -thermal_conductivity/dist_ij * Area;
+
+            }
+            /*--- Viscous contribution to the residual at the wall ---*/
+
+            LinSysRes.SubtractBlock(iPoint, Res_Visc);
+            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+          }
+        }
+        //cout << "max. Heat Flux Density: " << maxHeatFluxDensity << ", max. Temperature (used to compute heat fluxes): " << maxTemperature <<  endl;
+      }
+    }
+  }
+  else {
+
+    //cout << "                             TFFB Interface report for solid zone - ";
+    /*--- We have to set heat flux BC for the purely conductive zone ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+
+        maxTemperature = 0.0;
+        maxHeatFluxDensity = 0.0;
+        avTemperature = 0.0;
+        avHeatFlux = 0.0;
+        HeatFluxIntegral = 0.0;
+
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (geometry->node[iPoint]->GetDomain()) {
+
+            /*--- Get the conjugate variable, 1 for heat flux density ---*/
+            HeatFluxDensity = GetConjugateVariable(iMarker, iVertex, 1);
+            if (HeatFluxDensity > maxHeatFluxDensity) maxHeatFluxDensity = HeatFluxDensity;
+
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt (Area);
+
+            /*--- Just apply the weak boundary condition, note that there is no dependence on the current solution,
+             * i.e. there is no Jacobian contribution ---*/
+            HeatFluxValue = HeatFluxDensity * Area;
+            //cout << "Apply heat flux (solid): " << -HeatFluxValue << endl;
+            HeatFluxIntegral += HeatFluxDensity * Area;
+            Res_Visc[0] = -HeatFluxValue;
+            LinSysRes.SubtractBlock(iPoint, Res_Visc);
+          }
+        }
+      }
+    }
+    //cout << "Heat Flux (to check): " << HeatFluxIntegral << endl;
+  }
+}
+
 void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned long iVertex, iPoint, iPointNormal;
@@ -838,6 +981,35 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
       }
     }
+    else if ( Boundary == FLUID_INTERFACE && Monitoring == YES) {
+
+      for( iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+        Twall = node[iPoint]->GetSolution(0);
+
+        Coord = geometry->node[iPoint]->GetCoord();
+        Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+
+        dist = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
+        dist = sqrt(dist);
+
+        dTdn = (Twall - node[iPointNormal]->GetSolution(0))/dist;
+        eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+        thermal_conductivity = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() + eddy_viscosity/config->GetPrandtl_Turb();
+        Heat_Flux[iMarker] += thermal_conductivity*dTdn*Area;
+
+      }
+
+    }
+    else { }
 
     //cout << "Heat flux computation: " << Heat_Flux[iMarker] << endl;
     AllBound_HeatFlux += Heat_Flux[iMarker];

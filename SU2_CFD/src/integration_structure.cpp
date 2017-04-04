@@ -90,8 +90,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
-  solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+  //solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
 
+  solver_container[MainSolver]->BC_ConjugateTFFB_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
   /*--- Weak boundary conditions ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {

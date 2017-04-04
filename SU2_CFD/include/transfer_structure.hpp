@@ -523,8 +523,59 @@ public:
 };
 
 
+/*!
+ * \class CTransfer_ConjugateHeatVars
+ * \brief Transfer temperature and heatflux density for conjugate heat interfaces between structure and fluid zones.
+ * \author O. Burghardt
+ * \version 4.0.1 "Cardinal"
+ */
+class CTransfer_ConjugateHeatVars : public CTransfer {
 
+protected:
 
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTransfer_ConjugateHeatVars(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nVar - Number of variables that need to be transferred.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTransfer_ConjugateHeatVars(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CTransfer_ConjugateHeatVars(void);
+
+  /*!
+   * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
+   * \param[in] donor_solution - Solution from the donor mesh.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] Marker_Donor - Index of the donor marker.
+   * \param[in] Vertex_Donor - Index of the donor vertex.
+   * \param[in] Point_Donor - Index of the donor point.
+   */
+  void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
+               unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
+
+  /*!
+   * \brief Set the variable that has been received from the target mesh into the target mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   * \param[in] Marker_Target - Index of the target marker.
+   * \param[in] Vertex_Target - Index of the target vertex.
+   * \param[in] Point_Target - Index of the target point.
+   */
+  void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
+              unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
+};
 
 
 

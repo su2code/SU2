@@ -68,7 +68,8 @@ protected:
                 nZone,                          /*!< \brief Total number of zones in the problem. */
                 nDim;                           /*!< \brief Number of dimensions.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
-       fsi;                                     /*!< \brief FSI simulation flag.*/
+       fsi,                                     /*!< \brief FSI simulation flag.*/
+       cht;                                     /*!< \brief CHT simulation flag.*/
   CIteration **iteration_container;             /*!< \brief Container vector with all the iteration methods. */
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
   CIntegration ***integration_container;        /*!< \brief Container vector with all the integration methods. */
@@ -732,4 +733,41 @@ public:
    */
   void Update(unsigned short zoneFlow, unsigned short zoneStruct);
   using CDriver::Update;
+};
+
+/*!
+ * \class CCHTDriver
+ * \brief Class for driving a conjugate heat transfer iteration.
+ * \author O. Burghardt.
+ * \version 5.0.0 "Raven"
+ */
+class CCHTDriver : public CDriver {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CCHTDriver(char* confFile,
+             unsigned short val_nZone,
+             unsigned short val_nDim,
+             SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CCHTDriver(void);
+
+  /*!
+   * \brief Run a single iteration of a two-zone CHT problem.
+   */
+  void Run();
+
+  /*!
+   * \brief Transfer temperature and heat flux data.
+   */
+  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+
 };

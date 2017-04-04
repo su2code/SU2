@@ -187,6 +187,7 @@ enum ENUM_SOLVER {
   WAVE_EQUATION = 10,					/*!< \brief Definition of the wave solver. */
   HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
   FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
+  CONJUGATE_HEAT_TRANSFER = 28, /*!< \brief Definition of a CHT solver. */
   FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
   ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
@@ -213,6 +214,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
+("CONJUGATE_HEAT_TRANSFER", CONJUGATE_HEAT_TRANSFER)
 
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER);
 
@@ -242,6 +244,32 @@ enum ENUM_FSI_STRUC_PROBLEM {
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
 ("FEM_ELASTICITY", FEM_ELASTICITY_SFSI);
+
+/*!
+ * \brief types of CHT fluid solvers
+ */
+enum ENUM_CHT_FLUID_PROBLEM {
+    NO_SOLVER_FCHT = 0,			/*!< \brief Definition of no solver. */
+    EULER_FCHT = 1,				/*!< \brief Euler equations for the CHT problem */
+    NAVIER_STOKES_FCHT = 2,		/*!< \brief NS equations for the CHT problem */
+    RANS_FCHT = 3 				/*!< \brief RANS equations for the CHT problem */
+};
+static const map<string, ENUM_CHT_FLUID_PROBLEM> CHT_Fluid_Solver_Map = CCreateMap<string, ENUM_CHT_FLUID_PROBLEM>
+("NONE", NO_SOLVER_FCHT)
+("EULER", EULER_FCHT)
+("NAVIER_STOKES", NAVIER_STOKES_FCHT)
+("RANS", RANS_FCHT);
+
+/*!
+ * \brief types of CHT structural solvers
+ */
+enum ENUM_CHT_STRUC_PROBLEM {
+  NO_SOLVER_SCHT = 0,				/*!< \brief Definition of no solver. */
+  HEAT_EQUATION_SCHT = 29,		/*!< \brief Heat equation for the structural problem */
+};
+static const map<string, ENUM_CHT_STRUC_PROBLEM> CHT_Struc_Solver_Map = CCreateMap<string, ENUM_CHT_STRUC_PROBLEM>
+("NONE", NO_SOLVER_SCHT)
+("HEAT_EQUATION", HEAT_EQUATION_SCHT);
 
 /*!
  * \brief Material geometric conditions

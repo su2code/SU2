@@ -977,6 +977,17 @@ public:
    */
   virtual void BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                             CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+
   /*!
    * \brief It performs the average value along a boundary.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1278,6 +1289,9 @@ public:
   */
   virtual void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
 
+  virtual su2double GetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
+
+  virtual void SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double val_var);
   
   /*!
    * \brief A virtual member.
@@ -4495,7 +4509,7 @@ public:
    */
   void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                          CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief It avarage the fluxes value along a boundary.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -10527,6 +10541,7 @@ class CHeatSolver : public CSolver {
 protected:
   unsigned short nVarFlow, nMarker;
   su2double *Heat_Flux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux, *Primitive, *Primitive_Flow_i, *Primitive_Flow_j;
+  su2double ***ConjugateVar;
 public:
 
   /*!
@@ -10633,6 +10648,12 @@ public:
 
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  void BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+
+  su2double GetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
+
+  void SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double val_var);
 
   void Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 

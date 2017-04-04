@@ -1592,6 +1592,23 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("FSI_LINEAR_SOLVER_ERROR_STRUC", Linear_Solver_Error_FSI_Struc, 1E-6);
 
+
+  /* CONFIG_CATEGORY: CHT solver */
+  /*--- Options related to the CHT solver ---*/
+
+  /*!\brief PHYSICAL_PROBLEM_FLUID_CHT
+   *  DESCRIPTION: Physical governing equations \n
+   *  Options: NONE (default),EULER, NAVIER_STOKES, RANS,
+   *  \ingroup Config*/
+  addEnumOption("CHT_FLUID_PROBLEM", Kind_Solver_Fluid_CHT, CHT_Fluid_Solver_Map, NO_SOLVER_FCHT);
+
+  /*!\brief PHYSICAL_PROBLEM_STRUCTURAL_CHT
+   *  DESCRIPTION: Physical governing equations \n
+   *  Options: NONE (default), HEAT_EQUATION
+   *  \ingroup Config*/
+  addEnumOption("CHT_STRUCTURAL_PROBLEM", Kind_Solver_Struc_CHT, CHT_Struc_Solver_Map, NO_SOLVER_SCHT);
+
+
   /* DESCRIPTION: Restart from a steady state (sets grid velocities to 0 when loading the restart). */
   addBoolOption("RESTART_STEADY_STATE", SteadyRestart, false);
 
@@ -2059,6 +2076,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
   }
   else { FSI_Problem = false; }
+
+  /*--- If CHT, set the solver for each zone.
+   *--- ZONE_0 is the zone of the fluid.
+   *--- All the other zones are structure.
+   *--- This will allow us to define multiple physics structural problems */
+
+  if (Kind_Solver == CONJUGATE_HEAT_TRANSFER) {
+    if (val_izone == 0) {	Kind_Solver = Kind_Solver_Fluid_CHT; 		CHT_Problem = true;}
+
+    else {			 	Kind_Solver = Kind_Solver_Struc_CHT;	  	CHT_Problem = true;
+                  // here, overwrite other config options for heat solver if needed...
+    }
+  }
+  else { CHT_Problem = false; }
 
   if ((rank==MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;

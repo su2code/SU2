@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi;
+  bool fsi, cht;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi = config->GetFSI_Simulation();
+  cht = config->GetCHT_Simulation();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -103,6 +104,10 @@ int main(int argc, char *argv[]) {
     /*--- FSI problem: instantiate the FSI driver class. ---*/
 
     driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
+
+  } else if ((nZone == 2) && cht ) {
+
+    driver = new CCHTDriver(config_file_name, nZone, nDim, MPICommunicator);
 
   } else {
 

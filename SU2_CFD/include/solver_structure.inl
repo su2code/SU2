@@ -676,6 +676,10 @@ inline su2double CSolver::GetPressureOut(unsigned short inMarkerTP) { return 0;}
 
 inline su2double CSolver::GetPressureRatio(unsigned short inMarkerTP) { return 0;}
 
+inline su2double CSolver::GetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { }
+
+inline void CSolver::SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double val_var) { }
+
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
                    unsigned short val_marker) { }
 
@@ -766,6 +770,9 @@ inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, 
                                          
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
                   CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                      CConfig *config) { }
 
 inline void CSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker) {}
 
@@ -1835,6 +1842,10 @@ inline void CIncNSSolver::SetStrainMag_Max(su2double val_strainmag_max) { Strain
 inline void CIncNSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
 
 inline su2double CHeatSolver::GetTotal_HeatFlux() { return Total_HeatFlux; }
+
+inline su2double CHeatSolver::GetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return ConjugateVar[val_marker][val_vertex][pos_var]; }
+
+inline void CHeatSolver::SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double val_var) { ConjugateVar[val_marker][val_vertex][pos_var] = val_var; }
 
 inline su2double CAdjIncEulerSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 

@@ -447,6 +447,8 @@ private:
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
+  Kind_Solver_Fluid_CHT,    /*!< \brief Kind of solver for the fluid in CHT applications. */
+  Kind_Solver_Struc_CHT,     /*!< \brief Kind of solver for the structure in CHT applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   Kind_TransferMethod,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
   SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
@@ -456,6 +458,7 @@ private:
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  bool CHT_Problem;     /*!< \brief Boolean to determine whether the simulation is CHT or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
@@ -6756,6 +6759,12 @@ public:
    */
   bool GetFSI_Simulation(void);
   
+  /*!
+   * \brief Check if the simulation we are running is a CHT simulation
+   * \return Value of the physical time in an unsteady simulation.
+   */
+  bool GetCHT_Simulation(void);
+
   /*!
    * \brief Check if we want to apply an incremental load to the nonlinear structural simulation
    * \return <code>TRUE</code> means that the load is to be applied in increments.

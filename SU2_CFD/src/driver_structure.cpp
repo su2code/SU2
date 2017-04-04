@@ -189,6 +189,7 @@ CDriver::CDriver(char* confFile,
     cout << endl <<"------------------------- Driver information --------------------------" << endl;
 
   fsi = config_container[ZONE_0]->GetFSI_Simulation();
+  cht = config_container[ZONE_0]->GetCHT_Simulation();
 
   if ( (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY ||
         config_container[ZONE_0]->GetKind_Solver() == POISSON_EQUATION ||
@@ -201,6 +202,9 @@ CDriver::CDriver(char* confFile,
   }
   else if (nZone == 2 && fsi) {
     if (rank == MASTER_NODE) cout << "A Fluid-Structure Interaction driver has been instantiated." << endl;
+  }
+  else if (nZone == 2 && cht) {
+    if (rank == MASTER_NODE) cout << "A Conjugate Heat Transfer driver has been instantiated." << endl;
   }
   else {
     if (rank == MASTER_NODE) cout << "A Fluid driver has been instantiated." << endl;
@@ -2296,8 +2300,8 @@ void CDriver::Interface_Preprocessing() {
   unsigned short nMarkerTarget, iMarkerTarget, nMarkerDonor, iMarkerDonor;
 
   /*--- Initialize some useful booleans ---*/
-  bool fluid_donor, structural_donor;
-  bool fluid_target, structural_target;
+  bool fluid_donor, structural_donor, heat_donor;
+  bool fluid_target, structural_target, heat_target;
 
   int markDonor, markTarget, Donor_check, Target_check, iMarkerInt, nMarkerInt;
 
@@ -2408,10 +2412,12 @@ void CDriver::Interface_Preprocessing() {
 
         /*--- Set some boolean to properly allocate data structure later ---*/
       fluid_target      = false; 
-        structural_target = false;
+      structural_target = false;
+      heat_target       = false;
 
       fluid_donor       = false; 
       structural_donor  = false;
+      heat_donor        = false;
 
       switch ( config_container[targetZone]->GetKind_Solver() ) {
 
@@ -2422,6 +2428,11 @@ void CDriver::Interface_Preprocessing() {
 
         case FEM_ELASTICITY:            
           structural_target = true;   
+
+          break;
+
+        case HEAT_EQUATION:
+          heat_target = true;
 
           break;
         }
@@ -2438,16 +2449,21 @@ void CDriver::Interface_Preprocessing() {
         structural_donor = true;  
 
           break;
+
+      case HEAT_EQUATION:
+        heat_donor =true;
+
+        break;
         }
 
         /*--- Begin the creation of the communication pattern among zones ---*/
 
         /*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
-        if (!structural_donor && !structural_target)
-          nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
-        else
+        //if (!structural_donor && !structural_target)
+        //  nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
+        //else
           /*--- If at least one of the components is structural ---*/
-          nVar = nDim;
+        //  nVar = nDim;
 
       if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
 
@@ -2507,11 +2523,17 @@ void CDriver::Interface_Preprocessing() {
         transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
       }
-      else if (!structural_donor && !structural_target) {
+      else if (!structural_donor && !structural_target && false) {
           nVarTransfer = 0;
           nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnPrimVar();
         transfer_container[donorZone][targetZone] = new CTransfer_SlidingInterface(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "sliding interface. " << endl;
+      }
+      else if ((heat_target && fluid_donor) || (fluid_target && heat_donor)) {
+          nVarTransfer = 0;
+          nVar = 2;
+        transfer_container[donorZone][targetZone] = new CTransfer_ConjugateHeatVars(nVar, nVarTransfer, config_container[donorZone]);
+        if (rank == MASTER_NODE) cout << " temperature and heat flux data. " << endl;
       }
       else {
           nVarTransfer = 0;
@@ -2626,12 +2648,14 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
 
   /*--- Set the initial condition for EULER/N-S/RANS and for a non FSI simulation ---*/
 
-  if ( (!fsi) &&
-      ( (config_container[ZONE_0]->GetKind_Solver() ==  EULER) ||
-       (config_container[ZONE_0]->GetKind_Solver() ==  NAVIER_STOKES) ||
-       (config_container[ZONE_0]->GetKind_Solver() ==  RANS) ) ) {
-        for(iZone = 0; iZone < nZone; iZone++) {
-          solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+  if(!fsi) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
+          (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
+          (config_container[iZone]->GetKind_Solver() ==  RANS) ) {
+
+        solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+      }
     }
   }
 
@@ -4394,3 +4418,119 @@ void CFSIDriver::Update(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
 }
 
+CCHTDriver::CCHTDriver(char* confFile,
+                       unsigned short val_nZone,
+                       unsigned short val_nDim,
+                       SU2_Comm MPICommunicator) : CDriver(confFile,
+                                                          val_nZone,
+                                                          val_nDim,
+                                                          MPICommunicator) { }
+
+CCHTDriver::~CCHTDriver(void) { }
+
+void CCHTDriver::Run() {
+
+  unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
+  unsigned short iZone, jZone;
+  unsigned long CHTIter = 0;
+  //unsigned long nCHTIter = config_container[ZONE_FLOW]->GetnIterFSI();
+  unsigned long nCHTIter = 1;
+  unsigned long IntIter, nIntIter = 1;
+
+  while (CHTIter < nCHTIter) {
+
+    for (iZone = 0; iZone < nZone; iZone++)
+      iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+
+    for (IntIter = 0; IntIter < nIntIter; IntIter++){
+
+      iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
+                                              solver_container, numerics_container, config_container,
+                                              surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+
+      //if (integration_container[ZONE_FLOW][FLOW_SOL]->GetConvergence() == 1) break;
+
+      //output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container,
+      //                            integration_container, true, 0.0, ZONE_FLOW);
+
+      //integration_container[ZONE_FLOW][FLOW_SOL]->SetConvergence(false);
+
+      iteration_container[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
+                                      solver_container, numerics_container, config_container,
+                                      surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+
+    }
+
+    // Aus Solver müssen Heat Flux und Temperatur gelesen werden,
+    // danach Kommunikation mit Target Solver
+    /*--- At each pseudo time-step updates transfer data ---*/
+    //cout << "                         TRANSFERRING SOLVER DATA" << endl;
+    /*for (iZone = 0; iZone < nZone; iZone++)
+      for (jZone = 0; jZone < nZone; jZone++)
+        if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+          Transfer_Data(iZone, jZone);
+    */
+    Transfer_Data(0,1);
+  CHTIter++;
+  }  
+}
+void CCHTDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
+
+#ifdef HAVE_MPI
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
+
+  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
+
+  switch (config_container[targetZone]->GetKind_TransferMethod()) {
+
+  case BROADCAST_DATA:
+      if (MatchingMesh) {
+        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+        config_container[donorZone], config_container[targetZone]);
+      /*--- Set the volume deformation for the fluid zone ---*/
+      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+        config_container[donorZone], config_container[targetZone]);
+      /*--- Set the volume deformation for the fluid zone ---*/
+      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+    }
+    break;
+
+  case SCATTER_DATA:
+    if (MatchingMesh) {
+      transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+      geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+      config_container[donorZone], config_container[targetZone]);
+      /*--- Set the volume deformation for the fluid zone ---*/
+      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+    }
+    else {
+      cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
+      exit(EXIT_FAILURE);
+    }
+    break;
+
+  case ALLGATHER_DATA:
+    if (MatchingMesh) {
+      cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
+      exit(EXIT_FAILURE);
+    }
+    else {
+      transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+      geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+      config_container[donorZone], config_container[targetZone]);
+      /*--- Set the volume deformation for the fluid zone ---*/
+      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+    }
+    break;
+  }
+
+}

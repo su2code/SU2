@@ -379,3 +379,55 @@ void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CG
     target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, Target_Variable[iVar]);
 
 }
+
+CTransfer_ConjugateHeatVars::CTransfer_ConjugateHeatVars(void) : CTransfer() {
+
+}
+
+CTransfer_ConjugateHeatVars::CTransfer_ConjugateHeatVars(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+
+}
+
+CTransfer_ConjugateHeatVars::~CTransfer_ConjugateHeatVars(void) {
+
+}
+
+void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
+                                                unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
+
+  unsigned long PointNormal;
+  unsigned short nDim, iDim;
+  su2double *Coord, *Coord_Normal, *Normal, dist, Twall, dTdn, thermal_conductivity, heat_flux_density;
+
+  nDim = donor_geometry->GetnDim();
+
+  /*--- Retrieve temperature solution an set is as the first donor variable ---*/
+  Twall = donor_solution->node[Point_Donor]->GetSolution(0);
+  Donor_Variable[0] = Twall;
+
+  /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) and set it as second donor variable ---*/
+  PointNormal = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
+  Coord = donor_geometry->node[Point_Donor]->GetCoord();
+  Coord_Normal = donor_geometry->node[PointNormal]->GetCoord();
+  Normal = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal();
+
+  dist = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
+  dist = sqrt(dist);
+
+  dTdn = (Twall - donor_solution->node[PointNormal]->GetSolution(0))/dist;
+  thermal_conductivity = donor_config->GetViscosity_FreeStreamND()/donor_config->GetPrandtl_Lam();
+  heat_flux_density = thermal_conductivity * dTdn;
+
+  Donor_Variable[1] = heat_flux_density;
+}
+
+
+void CTransfer_ConjugateHeatVars::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+                          CConfig *target_config, unsigned long Marker_Target,
+                          unsigned long Vertex_Target, unsigned long Point_Target) {
+
+  target_solution->SetConjugateVariable(Marker_Target, Vertex_Target, 0, Target_Variable[0]);
+  //cout << "SetTarget_Variable called with temperature value " << Target_Variable[0] << endl;
+  target_solution->SetConjugateVariable(Marker_Target, Vertex_Target, 1, Target_Variable[1]);
+}

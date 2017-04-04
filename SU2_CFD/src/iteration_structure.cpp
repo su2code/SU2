@@ -461,9 +461,9 @@ void CFluidIteration::Preprocess(COutput *output,
   
   /*--- Set the initial condition for FSI problems with subiterations ---*/
   /*--- This must be done only in the first subiteration ---*/
-  if( fsi  && ( FSIIter == 0 ) ){
-    solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
-  }
+  //if( fsi  && ( FSIIter == 0 ) ){
+  //  solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
+  //}
   
   /*--- Apply a Wind Gust ---*/
   
