@@ -9,17 +9,13 @@
 typedef std::complex<su2double> Complex;
 typedef std::valarray<Complex> CArray;
 
-#define N_PROF 80001
+#define N_PROF 150001
 
 SUBoom::SUBoom(){
 
 }
 
 SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
-/*su2double h0, su2double M, su2double psi, su2double gamma, su2double g,
-               unsigned int noise_flag, unsigned int N_phi,
-               su2double phi[], su2double dphi, su2double r0, su2double dr,
-	       su2double m, su2double dp, su2double l){*/
 
   /*---Make sure to read in hard-coded values in the future!---*/
 
@@ -44,9 +40,12 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   ray_r0 = 2.0;
 
   /*---Tolerance variables---*/
+//  char cstr [200];
   string str;
   ifstream tolfile;
-  tolfile.open("tols.in");
+//  SPRINTF (cstr, "tols.in");
+//  tolfile.open(cstr, ios::in);
+  tolfile.open("tols.in", ios::in);
   tolfile >> str >> tol_dphi;
   tolfile >> str >> tol_dr;
   tolfile >> str >> tol_m;
@@ -104,7 +103,10 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   /*---Extract signature---*/
   ofstream sigFile;
-  sigFile.open("signal_original.txt");
+//  SPRINTF (cstr, "signal_original.dat");
+  sigFile.precision(15);
+//  sigFile.open(cstr, ios::out);
+  sigFile.open("signal_original.dat");
   sigFile << "# x, p" << endl;
   panelCount = 0;
   signal.x = new su2double[nPanel];
@@ -152,7 +154,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
             signal.original_p[panelCount-1] = p;
             signal.x[panelCount-1] = x;
-            sigFile << x << " " << p << endl;
+            sigFile << x << "\t" << p << endl;
 
             PointID[panelCount-1] = geometry->node[iPoint]->GetGlobalIndex();
           //}
@@ -164,6 +166,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   sigFile.close();
 
   /*---Initialize sensitivities---*/
+  if(config->GetAD_Mode()){
   dJdU = new su2double* [nDim+3];
   for(int iDim = 0; iDim < nDim+3 ; iDim++){
       dJdU[iDim] = new su2double[nPanel];
@@ -171,6 +174,11 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           dJdU[iDim][iPanel] = 0.0;
       }
   }
+  }
+
+}
+
+SUBoom::~SUBoom(void){
 
 }
 
@@ -488,7 +496,7 @@ void SUBoom::RayTracer(){
   su2double a, rho, p;
   //  su2double theta[N_PROF];
   su2double r0[3];
-  su2double *f, x[N_PROF], y[N_PROF], t[N_PROF];
+  su2double *f, *x, *y, *t;
   su2double *kx, *ky, *kz;
   su2double dz = (z[0] - z[1]);
 
@@ -504,6 +512,12 @@ void SUBoom::RayTracer(){
 
   /*---Create arrays---*/
   f = new su2double[3];
+  x = new su2double[N_PROF];
+  y = new su2double[N_PROF];
+  t = new su2double[N_PROF];
+  kx = new su2double[N_PROF];
+  ky = new su2double[N_PROF];
+  kz = new su2double[N_PROF];
 
   x_of_z = new su2double**[ray_N_phi];
   y_of_z = new su2double**[ray_N_phi];
@@ -711,7 +725,13 @@ void SUBoom::RayTracer(){
 
   }
 
+  cout << "Clearing up ray tracer memory" << endl;
+
   /*---Clear up memory---*/
+  delete [] f;
+  delete [] x;
+  delete [] y;
+  delete [] t;
   delete [] kx;
   delete [] ky;
   delete [] kz;
@@ -870,9 +890,9 @@ void SUBoom::ODETerms(){
     ray_dC1[i] = SplineGetDerivs(t, ray_C1[i], N_PROF);
     ray_dC2[i] = SplineGetDerivs(t, ray_C2[i], N_PROF);
 
-    delete [] ray_c0[i];
-    delete [] ray_nu[i];
-    delete [] ray_theta0[i];
+    //delete [] ray_c0[i];
+    //delete [] ray_nu[i];
+    //delete [] ray_theta0[i];
   }
 
   delete [] cn;
@@ -880,8 +900,11 @@ void SUBoom::ODETerms(){
   delete [] drhodt;
   delete [] dAdt;
   delete [] dcndt;
-  delete [] a_of_z;
-  delete [] rho_of_z;
+  //delete [] a_of_z;
+  //delete [] rho_of_z;
+  //delete [] ray_c0;
+  //delete [] ray_nu;
+  //delete [] ray_theta0;
 }
 
 void SUBoom::DistanceToTime(){
@@ -1100,11 +1123,10 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   }
   /*---Remove segments with l = 0---*/
   int i = 0;
-  fvec_new = fvec;
   while(i <= N-1){
     if(l[i] <= tol_l/scale_T || m[i] >= tol_m/scale_m || m[i] <= -tol_m/scale_m){
       /*---Record pressure gap---*/
-      current_signal = WaveformToPressureSignal(fvec_new, N, Msig);
+      current_signal = WaveformToPressureSignal(fvec, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
       /*---Add to next segment if needed---*/
       if(dp_seg > tol_dp || dp_seg < -tol_dp){
@@ -1121,12 +1143,11 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
           l[j] = l[j+1];
       }
       //i -= 1;
-      delete [] fvec_new;
       fvec_new = new su2double[3*N];
       for(int j = 0; j < N; j++){
-          fvec_new[j] = m[j];
-          fvec_new[j+N] = dp[j];
-          fvec_new[j+2*N] = l[j];
+          fvec[j] = m[j];
+          fvec[j+N] = dp[j];
+          fvec[j+2*N] = l[j];
       }
 
     }
@@ -1134,7 +1155,6 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
 
   }
 
-  delete [] fvec_new;
   fvec_new = new su2double[3*N];
   for(int j = 0; j < N; j++){
     fvec_new[j] = m[j];
@@ -1265,15 +1285,21 @@ void SUBoom::PropagateSignal(){
     signal.final_M = Msig;
 
     /*---Final signal and boom strength---*/
+//    char cstr [200];
     ofstream sigFile;
-    sigFile.open("signal_final.txt");
+//    SPRINTF (cstr, "signal_final.dat");
+    sigFile.precision(15);
+//    sigFile.open(cstr, ios::out);
+    sigFile.open("signal_final.dat", ios::out);
     sigFile << "# T, p" << endl;
     p_max = -1E10;
+    p_int2 = 0;
     for(int j = 0; j < Msig; j++){
       signal.final_T[j] = ground_signal[0][j]*scale_T;
       signal.final_p[j] = ground_signal[1][j]*scale_p;
-      sigFile << signal.final_T[j] << " " << signal.final_p[j] << endl;
+      sigFile << signal.final_T[j] << "\t" << signal.final_p[j] << endl;
       if(signal.final_p[j] > p_max) p_max = signal.final_p[j];
+      if(j > 0) p_int2 = p_int2 + 0.5*(signal.final_p[j]+signal.final_p[j-1])/(signal.final_T[j]-signal.final_T[j]);
     }
     sigFile.close();
     p_rise = signal.final_p[0];
@@ -1281,45 +1307,53 @@ void SUBoom::PropagateSignal(){
     else p_rise2 = signal.final_p[Msig-1];
     cout << "Scale_T = " << scale_T << ", Scale_p = " << scale_p << endl;
     cout << "p_rise = " << p_rise << ", p_max = " << p_max << endl;
-
-    /*---Clean up---*/
-    for(int j = 0; j < 4; j++){
-        delete [] x_of_z[i][j];
-        delete [] y_of_z[i][j];
-        delete [] t_of_z[i][j];
-        delete [] dxdt[i][j];
-        delete [] dydt[i][j];
-        delete [] dzdt[i][j];
-        delete [] theta[i][j];
-    }
-    delete [] x_of_z[i];
-    delete [] y_of_z[i];
-    delete [] t_of_z[i];
-    delete [] dxdt[i];
-    delete [] dydt[i];
-    delete [] dzdt[i];
-    delete [] theta[i];
-    delete [] ray_A[i];
-    delete [] ray_C1[i];
-    delete [] ray_C2[i];
-    delete [] ray_dC1[i];
-    delete [] ray_dC2[i];
   }
 
-  delete [] ray_t0;
-  delete [] ray_phi;
-  delete [] x_of_z;
-  delete [] y_of_z;
-  delete [] t_of_z;
-  delete [] dxdt;
-  delete [] dydt;
-  delete [] dzdt;
-  delete [] theta;
-  delete [] ray_A;
-  delete [] ray_C1;
-  delete [] ray_C2;
-  delete [] ray_dC1;
-  delete [] ray_dC2;
+  /*---Clean up---*/
+  for(int i = 0; i < ray_N_phi; i++){
+  for(int j = 0; j < 4; j++){
+      //delete [] x_of_z[i][j];
+      //delete [] y_of_z[i][j];
+      //delete [] t_of_z[i][j];
+      //delete [] dxdt[i][j];
+      //delete [] dydt[i][j];
+      //delete [] dzdt[i][j];
+      //delete [] theta[i][j];
+  }
+  //delete [] x_of_z[i];
+  //delete [] y_of_z[i];
+  //delete [] t_of_z[i];
+  //delete [] dxdt[i];
+  //delete [] dydt[i];
+  //delete [] dzdt[i];
+  //delete [] theta[i];
+  //delete [] ray_A[i];
+  //delete [] ray_C1[i];
+  //delete [] ray_C2[i];
+  //delete [] ray_dC1[i];
+  //delete [] ray_dC2[i];
+  }
+
+  //delete [] x_of_z;
+  //delete [] y_of_z;
+  //delete [] t_of_z;
+  //delete [] dxdt;
+  //delete [] dydt;
+  //delete [] dzdt;
+  //delete [] theta;
+  //delete [] ray_A;
+  //delete [] ray_C1;
+  //delete [] ray_C2;
+  //delete [] ray_dC1;
+  //delete [] ray_dC2;
+  //delete [] ray_t0;
+
+  /*---Clear up memory from RayData class---*/
+  //delete [] data.t;
+  //delete [] data.C1;
+  //delete [] data.C2;
+  //delete [] data.dC1;
+  //delete [] data.dC2;
 }
 
 void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geometry){
@@ -1334,7 +1368,7 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
   if (rank == MASTER_NODE) Buffer_Recv_nPanel= new unsigned long [nProcessor];
 
   Buffer_Send_nPanel[0]=nPanel;
-  Max_nPanel = nPanel;
+  //Max_nPanel = nPanel;
 #ifdef HAVE_MPI
   SU2_MPI::Gather(&Buffer_Send_nPanel, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPanel, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
   SU2_MPI::Allreduce(&nPanel,&Max_nPanel,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
@@ -1379,12 +1413,12 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
 
   /* root opens a file at each time step and write out the merged dJdU values at that time step into the file */
   if (rank == MASTER_NODE){
-  char cstr [200];
+//  char cstr [200];
 
-  SPRINTF (cstr, "Adj_Boom.dat");
-  cout<<cstr<<endl;
+//  SPRINTF (cstr, "Adj_Boom.dat");
   Boom_AdjointFile.precision(15);
-  Boom_AdjointFile.open(cstr, ios::out);
+//  Boom_AdjointFile.open(cstr, ios::out);
+  Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
 
   /*--- Loop through all of the collected data and write each node's values ---*/
   unsigned long Total_Index;
@@ -1398,7 +1432,7 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
          Total_Index  = iProcessor*Max_nPanel*nVar + iVar*Buffer_Recv_nPanel[iProcessor]  + iPanel;
 
          /*--- Write to file---*/
-         Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Global_Index]   << "\t";
+         Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
        }
        Boom_AdjointFile  << endl;
 
@@ -1413,4 +1447,12 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
   delete [] Buffer_Send_dJdU;
   delete [] Buffer_Send_GlobalIndex;
 
+  /*---Clear up  memory from dJdU---*/
+/*  for (int i=0; i<nDim+3; i++){
+    //delete [] dJdU[i];
+  }
+  //delete [] dJdU;
+  //delete [] PointID;*/
+
+  cout << "\nFinished writing boom adjoint file" << endl;
 }

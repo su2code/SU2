@@ -53,7 +53,7 @@ public:
   su2double tol_integrate;
 
   /*---Boom strength---*/
-  su2double p_rise, p_max, p_rise2;
+  su2double p_rise, p_max, p_rise2, p_int2;
 
   /*---Sensitivity---*/
   unsigned long nPanel, nDim;
@@ -94,6 +94,7 @@ public:
          unsigned long noise_flag, unsigned long N_phi,
          su2double phi[], su2double dphi, su2double r0, su2double dr,
 	     su2double m, su2double dp, su2double l);*/
+  ~SUBoom(void);
 
   void AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
                 su2double& rho, su2double& g);

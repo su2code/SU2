@@ -535,8 +535,8 @@ int main(int argc, char *argv[]) {
 
              AD::StartRecording();
 			 SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
-             cout << "SUBoom initialized." << endl;
-             boom.ConditionAtmosphericData();
+			 cout << "SUBoom initialized." << endl;
+			 boom.ConditionAtmosphericData();
              cout << "Condition atmospheric data complete." << endl;
              boom.ScaleFactors();
              cout << "Scale factors complete." << endl;
@@ -555,7 +555,7 @@ int main(int argc, char *argv[]) {
              boom.CreateSignature();
              cout << "Create signature complete." << endl;
              boom.PropagateSignal();
-             Objective_Function = boom.p_max;
+             Objective_Function = boom.p_int2;
 
              if (rank==MASTER_NODE){
              SU2_TYPE::SetDerivative(Objective_Function,1.0);
@@ -565,7 +565,7 @@ int main(int argc, char *argv[]) {
              AD::StopRecording();
              AD::ComputeAdjoint();
 
-             cout<<"Finished Computing Boom Adjoint"<<endl;
+             cout<<"Finished computing boom adjoint."<<endl;
 
              su2double extracted_derivative;
 
@@ -575,12 +575,12 @@ int main(int argc, char *argv[]) {
                 }
              }
 
-
-             cout<<"Finished Extracting"<<endl;
+             cout<<"Finished extracting."<<endl;
 
              boom.WriteSensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
-           }else{
+           }
+		   else{
              if (rank == MASTER_NODE)
                cout << endl <<"------------------------- Computing Far Field Noise (Primal Only) -----------------------" << endl;
 ////////             FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
