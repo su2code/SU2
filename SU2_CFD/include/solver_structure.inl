@@ -57,7 +57,7 @@ inline void CSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *con
 
 //inline void CSolver::Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) { }
+inline void CSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) { }
 
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
 
@@ -707,7 +707,7 @@ inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
                   unsigned short val_marker) { }
 
-inline void CSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+inline void CSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                          CConfig *config) { }
 
 inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -796,7 +796,14 @@ inline void CSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_c
 inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 							        unsigned short iMesh, unsigned long Iteration) { }	
 
-inline void CSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) { }
+inline void CSolver:: CheckTimeSynchronization(CConfig         *config,
+                                               const su2double TimeSync,
+                                               su2double       &timeEvolved,
+                                               bool            &syncTimeReached) {}
+
+inline void CSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
+                                               CNumerics **numerics, CConfig *config,
+                                               unsigned short iMesh, unsigned short RunTime_EqSystem) {}
 							        
 inline void CSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
                       unsigned short iMesh) { }  
@@ -856,9 +863,6 @@ inline void CSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_
 
 inline void CSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                             CConfig *config, unsigned short iRKStep) { }
-
-inline void CSolver::ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container,
-                                       CConfig *config, unsigned short iStep) { }
 
 inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
@@ -1004,6 +1008,8 @@ inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
+
+inline su2double* CBaselineSolver_FEM::GetVecSolDOFs(void) {return VecSolDOFs.data();}
 
 inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
@@ -2070,9 +2076,6 @@ inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long va
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
 
-inline void CSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *config,
-                                                         unsigned short iTime) {}
-
 inline void CSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
 
@@ -2082,10 +2085,11 @@ inline void CSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_conta
 inline void CSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
 
-inline void CSolver::AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight) {}
-
 inline void CSolver:: MultiplyResidualByInverseMassMatrix(CConfig    *config,
                                                           const bool useADER) {}
+inline void CTurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component){ SlidingState[val_marker][val_vertex][val_state] = component; }
+
+inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return SlidingState[val_marker][val_vertex][val_state]; }
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)

@@ -268,7 +268,7 @@ private:
  * \class su2_adtPointsOnlyClass
  * \brief  Class for storing an ADT of only points in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class su2_adtPointsOnlyClass : public su2_adtBaseClass {
 private:
@@ -281,15 +281,18 @@ private:
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] nDim    Number of spatial dimensions of the problem.
-   * \param[in] nPoints Number of local points to be stored in the ADT.
-   * \param[in] coor    Coordinates of the local points.
-   * \param[in] pointID Local point IDs of the local points. 
+   * \param[in] nDim       Number of spatial dimensions of the problem.
+   * \param[in] nPoints    Number of local points to be stored in the ADT.
+   * \param[in] coor       Coordinates of the local points.
+   * \param[in] pointID    Local point IDs of the local points. 
+   * \param[in] globalTree Whether or not a global tree must be built. If false
+                           a local ADT is built.
    */
   su2_adtPointsOnlyClass(unsigned short      nDim,
                          unsigned long       nPoints,
                          const su2double     *coor,
-                         const unsigned long *pointID);
+                         const unsigned long *pointID,
+                         const bool          globalTree);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.

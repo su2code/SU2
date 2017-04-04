@@ -2313,6 +2313,12 @@ public:
   unsigned short GetnLevels_TimeAccurateLTS(void);
 
   /*!
+   * \brief Set the number of time levels for time accurate local time stepping.
+   * \param[in] val_nLevels - The number of time levels to be set.
+   */
+  void SetnLevels_TimeAccurateLTS(unsigned short val_nLevels);
+
+  /*!
    * \brief Get the number time DOFs for ADER-DG.
    * \return Number of time DOFs used in ADER-DG.
    */

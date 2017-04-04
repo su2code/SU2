@@ -31,19 +31,39 @@
 
 #pragma once
 
-inline SortFacesClass::SortFacesClass(unsigned long val_nVolElemOwned,
-                                      unsigned long val_nVolElemTot)
- {nVolElemOwned = val_nVolElemOwned; nVolElemTot = val_nVolElemTot;}
+inline long3T::long3T(){long0 = long1 = long2 = 0;}
+
+inline long3T::long3T(const long a, const long b, const long c){long0 = a; long1 = b; long2 = c;}
+
+inline long3T::~long3T(){}
+
+inline long3T::long3T(const long3T &other){Copy(other);}
+
+inline long3T& long3T::operator=(const long3T &other){Copy(other); return (*this);}
+
+inline CReorderElementClass::CReorderElementClass(const unsigned long  val_GlobalElemID,
+                                                  const unsigned short val_TimeLevel,
+                                                  const bool           val_CommSolution)
+ {globalElemID = val_GlobalElemID; timeLevel = val_TimeLevel; commSolution = val_CommSolution;}
+
+inline CReorderElementClass::~CReorderElementClass(void) { }
+
+inline CReorderElementClass::CReorderElementClass(const CReorderElementClass &other) { Copy(other); }
+
+inline CReorderElementClass& CReorderElementClass::operator=(const CReorderElementClass &other) { Copy(other); return (*this); }
+
+inline bool CReorderElementClass::GetCommSolution(void) { return commSolution; }
+
+inline unsigned long CReorderElementClass::GetGlobalElemID(void) { return globalElemID; }
+
+inline unsigned short CReorderElementClass::GetTimeLevel(void) { return timeLevel; }
+
+inline SortFacesClass::SortFacesClass(unsigned long            val_nVolElemOwned,
+                                      unsigned long            val_nVolElemTot,
+                                      const CVolumeElementFEM *val_volElem)
+ {nVolElemOwned = val_nVolElemOwned; nVolElemTot = val_nVolElemTot; volElem = val_volElem;}
 
 inline SortFacesClass::~SortFacesClass(void) { }
-
-inline CPointCompare::CPointCompare(void) { }
-
-inline CPointCompare::~CPointCompare(void) { }
-
-inline CPointCompare::CPointCompare(const CPointCompare &other) { Copy(other); }
-
-inline CPointCompare& CPointCompare::operator=(const CPointCompare &other) { Copy(other); return (*this); }
 
 inline CVolumeElementFEM::CVolumeElementFEM(void) { }
 
@@ -91,6 +111,10 @@ inline unsigned long CMeshFEM::GetNVolElemTot(void) {return nVolElemTot;}
 
 inline CVolumeElementFEM* CMeshFEM::GetVolElem(void) {return volElem.data();}
 
+inline unsigned long* CMeshFEM::GetNVolElemOwnedPerTimeLevel(void) {return nVolElemOwnedPerTimeLevel.data();}
+
+inline unsigned long* CMeshFEM::GetNVolElemInternalPerTimeLevel(void) {return nVolElemInternalPerTimeLevel.data();}
+
 inline unsigned short CMeshFEM::GetNStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.size();}
 
 inline FEMStandardBoundaryFaceClass* CMeshFEM::GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
@@ -111,13 +135,36 @@ inline CMeshFEM_DG::CMeshFEM_DG(void) { }
 
 inline CMeshFEM_DG::~CMeshFEM_DG(void) { }
 
+inline void CMeshFEM_DG::SetGlobal_nPointDomain(unsigned long val_global_npoint) { Global_nPointDomain =  val_global_npoint; }
+
+inline unsigned long CMeshFEM_DG::GetGlobal_nPointDomain(void) { return Global_nPointDomain; }
+
+inline void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
+  Global_to_Local_Point.clear();
+  unsigned long ii = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j, ++ii) {
+      Global_to_Local_Point[volElem[i].offsetDOFsSolGlobal+j] = ii;
+    }
+  }
+}
+
+inline long CMeshFEM_DG::GetGlobal_to_Local_Point(unsigned long val_ipoint) {
+  map<unsigned long, unsigned long>::const_iterator MI = Global_to_Local_Point.find(val_ipoint);
+  if (MI != Global_to_Local_Point.end()) {
+    return Global_to_Local_Point[val_ipoint];
+  } else {
+    return -1;
+  }
+}
+
 inline su2double* CMeshFEM_DG::GetLagrangianBeginTimeIntervalADER_DG(void) {return LagrangianBeginTimeIntervalADER_DG.data();}
 
 inline su2double* CMeshFEM_DG::GetTimeInterpolDOFToIntegrationADER_DG(void) {return timeInterpolDOFToIntegrationADER_DG.data();}
 
-inline unsigned long CMeshFEM_DG::GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem;}
+inline unsigned long *CMeshFEM_DG::GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem.data();}
 
-inline unsigned long CMeshFEM_DG::GetNMatchingFaces(void) {return matchingFaces.size();}
+inline unsigned long *CMeshFEM_DG::GetNMatchingFacesInternal(void) {return nMatchingFacesInternal.data();}
 
 inline CInternalFaceElementFEM* CMeshFEM_DG::GetMatchingFaces(void) {return matchingFaces.data();}
 
