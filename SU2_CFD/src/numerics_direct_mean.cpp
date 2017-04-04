@@ -4266,29 +4266,36 @@ void  CSource2phase::ComputeResidual_HeatMassTransfer(su2double S, su2double h, 
 
 	// compute the source terms for the governing equations of the continuum phase
 
-	q_ij = 0;
+	if (h != V_i[nDim+3]) {
+		q_ij = 0;
 
-	if (grid_movement) {
-	    for (iDim = 0; iDim < nDim; iDim++) {
-	      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
-	      q_ij += Velocity_i[iDim]*Velocity_i[iDim];
-	    }
-	  }
-	  else {
-	    for (iDim = 0; iDim < nDim; iDim++) {
-	      Velocity_i[iDim] = V_i[iDim+1];
-	      q_ij += Velocity_i[iDim]*Velocity_i[iDim];
-	    }
-	  }
+		if (grid_movement) {
+			for (iDim = 0; iDim < nDim; iDim++) {
+			  Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
+			  q_ij += Velocity_i[iDim]*Velocity_i[iDim];
+			}
+		  }
+		  else {
+			for (iDim = 0; iDim < nDim; iDim++) {
+			  Velocity_i[iDim] = V_i[iDim+1];
+			  q_ij += Velocity_i[iDim]*Velocity_i[iDim];
+			}
+		  }
 
 
-	val_Residual[0] = S * Volume;
+		val_Residual[0] = S * Volume;
 
-	for (iDim=0; iDim< nDim; iDim++) {
-		val_Residual  [iDim+1] = S * V_i[iDim + 1] * Volume;
+		for (iDim=0; iDim< nDim; iDim++) {
+			val_Residual  [iDim+1] = S * V_i[iDim + 1] * Volume;
+		}
+
+		val_Residual[nDim+1] = S * (h + 0.5*q_ij) * Volume;
+	} else {
+		val_Residual[0] = 0;
+		val_Residual[1] = 0;
+		val_Residual[2] = 0;
+		val_Residual[3] = 0;
 	}
-
-	val_Residual[nDim+1] = S * (h + 0.5*q_ij) * Volume;
 
 	if (implicit) {
 
@@ -4297,6 +4304,15 @@ void  CSource2phase::ComputeResidual_HeatMassTransfer(su2double S, su2double h, 
 				val_Jacobian_i[iVar][jVar] = 0;
 			}
 		}
+
+		for (iDim=0; iDim< nDim; iDim++) {
+			val_Jacobian_i[iDim+1][0] = -S * V_i[iDim + 1] / V_i[1] * Volume;
+			val_Jacobian_i[iDim+1][iDim+1] = S / V_i[1] * Volume;
+		}
+
+		val_Jacobian_i[nDim+1][0] = -S * (h + 0.5*q_ij) / V_i[1] * Volume;
+		val_Jacobian_i[nDim+1][nDim+1] = S / V_i[1] * Volume;
+
 	}
 
 }

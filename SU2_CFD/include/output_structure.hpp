@@ -120,7 +120,7 @@ class COutput {
   su2double **Parallel_Surf_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   vector<string> Variable_Names;
 
-  su2double **Data;
+	su2double **Data;
   unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
   bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
   unsigned short wrote_base_file;

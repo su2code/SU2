@@ -3637,7 +3637,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   config->SetDensity_Ref(Density_Ref);
   config->SetTemperature_Ref(Temperature_Ref);
 
-  Length_Ref        = 1.0;                                                         config->SetLength_Ref(Length_Ref);
+  Length_Ref        = 1.0   ;                                                      config->SetLength_Ref(Length_Ref);
   Velocity_Ref      = sqrt(config->GetPressure_Ref()/config->GetDensity_Ref());    config->SetVelocity_Ref(Velocity_Ref);
   Time_Ref          = Length_Ref/Velocity_Ref;                                     config->SetTime_Ref(Time_Ref);
   Omega_Ref         = Velocity_Ref/Length_Ref;                                     config->SetOmega_Ref(Omega_Ref);

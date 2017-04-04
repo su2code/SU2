@@ -69,11 +69,11 @@ CConfig *config;
 
 public:
 
-
+    CLiquidModel();
     /*!
      * \brief Constructor of the class.
      */
-    CLiquidModel(void);
+    CLiquidModel(CConfig *config);
 
     /*!
      * \brief Destructor of the class.
@@ -129,7 +129,7 @@ public:
     /*!
      * \brief return liquid density value.
      */
-    void Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var);
+    void Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double *Two_Phase_Var);
 
     void SetRadius(su2double *Two_Phase_Var);
 
@@ -143,7 +143,7 @@ public:
 
     virtual void SetLiquidDensity();
 
-    virtual void SetTLiquid( su2double T);
+    virtual void SetTLiquid( su2double T, su2double Rcritical);
 
     virtual void SetLiquidEnthalpy(su2double h_v);
 
@@ -188,7 +188,7 @@ public:
 
   void SetLiquidDensity();
 
-  void SetTLiquid( su2double T);
+  void SetTLiquid( su2double T, su2double Rcritical);
 
   void SetLiquidEnthalpy(su2double h_v);
 

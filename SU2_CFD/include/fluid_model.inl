@@ -55,8 +55,8 @@ inline su2double CFluidModel::GetLaminarViscosity () {
         return Mu;
 }
 
-inline void CFluidModel::SetLiquidProp (su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var) {
-        Liquid_Prop->Set_LiquidProp(P, T, rho, h_v, Two_Phase_Var);
+inline void CFluidModel::SetLiquidProp (su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double *Two_Phase_Var) {
+        Liquid_Prop->Set_LiquidProp(P, T, rho, h_v, Rcritical, Two_Phase_Var);
 }
 
 inline su2double CFluidModel::GetLiquidDensity () { return Liquid_Prop->Get_LiquidDensity();}

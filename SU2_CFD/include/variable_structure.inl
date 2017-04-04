@@ -1106,7 +1106,7 @@ inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 
 inline su2double  C2phaseVariable::GetRadius() { return Radius; } 
 
-inline su2double* C2phaseVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config) {}
+inline su2double* C2phaseVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, su2double Rcritical, CFluidModel *FluidModel, CConfig *config) {}
 
 inline  su2double C2phaseVariable::GetMassSource()   {return Source;} 
 
@@ -1125,6 +1125,13 @@ inline  su2double C2phaseVariable::GetLiquidFraction()    {return Liquid_Fractio
 inline  void      C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction = Y; }
 
 inline su2double*  C2phaseVariable::GetLiquidPrim() {return Primitive_Liquid;}
+
+inline void  C2phaseVariable::SetLiquidPrim(su2double *Liquid_vec) {Primitive_Liquid = Liquid_vec;}
+
+inline void       C2phaseVariable::SetLiquidPrimZero() {
+     
+     unsigned short iVar;     
+     for (iVar=0;iVar<10; iVar++) Primitive_Liquid[iVar] = 0.0;  }
 
  
 inline void CEulerVariable::SetLaminarViscosity(su2double laminarViscosity) {
@@ -1148,7 +1155,7 @@ inline su2double  CVariable::GetLiquidFraction() { }
 inline su2double  CVariable::GetLiquidEnthalpy() { }   
 
 
-inline su2double* CVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config) {}
+inline su2double* CVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, su2double Rcritical, CFluidModel *FluidModel, CConfig *config) {}
 
 inline  void      CVariable::SetSource(su2double S)  {}   
 
@@ -1159,6 +1166,10 @@ inline  void      CVariable::SetRadius(su2double R)   {}
 inline  void      CVariable::SetLiquidFrac(su2double Y) {}
 
 inline su2double*  CVariable::GetLiquidPrim() { return 0;}
+
+inline void  CVariable::SetLiquidPrim(su2double *Liquid_vec) {}
+
+inline void       CVariable::SetLiquidPrimZero() {}
 
 
 

@@ -59,7 +59,7 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
   
 	// compute the advective fluxes for the moments equations
 
-  unsigned short iVar, jVar, *Liquid_vec;
+  unsigned short iVar, jVar;
   su2double qi, qj;
 
   AD::StartPreacc();
@@ -78,7 +78,9 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
   AD::SetPreaccIn(V_j, nDim+9);
 
 
-//  if (Primitive_Liquid[4] > V_i[0]) {
+	for (iVar = 0; iVar < nVar; iVar++) val_residual[iVar] = 0.0;
+
+
 	  qi = 0.0;
 	  qj = 0.0;
 	  if (grid_movement) {
@@ -98,20 +100,11 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
 		}
 	  }
 
-
 	  for (iVar=0; iVar<nVar; iVar++) {
 		  val_residual[iVar] = 0.5* qi * Two_phaseVar_i[iVar] + 0.5 * qj* Two_phaseVar_j[iVar];
 		  val_residual[iVar] = val_residual[iVar] - 0.5 * max(qi, qj) * (Two_phaseVar_j[iVar] - Two_phaseVar_i[iVar]);
 	  }
 
-//  } else {
-//
-//	  val_residual[0] = 0;
-//	  val_residual[1] = 0;
-//	  val_residual[2] = 0;
-//	  val_residual[3] = 0;
-//
-//  }
   
   if (implicit) {
 
@@ -122,18 +115,15 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
 		}
 	}
 
-//	if (Primitive_Liquid[4] > V_i[0]) {
-    val_Jacobian_i[0][0] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[0][0] = 0.5 * (qi - max(qi, qj));
-    val_Jacobian_i[1][1] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[1][1] = 0.5 * (qi - max(qi, qj));
-    val_Jacobian_i[2][2] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[2][2] = 0.5 * (qi - max(qi, qj));
-    val_Jacobian_i[3][3] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[3][3] = 0.5 * (qi - max(qi, qj));
-//	}
+		val_Jacobian_i[0][0] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[0][0] = 0.5 * (qi - max(qi, qj));
+		val_Jacobian_i[1][1] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[1][1] = 0.5 * (qi - max(qi, qj));
+		val_Jacobian_i[2][2] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[2][2] = 0.5 * (qi - max(qi, qj));
+		val_Jacobian_i[3][3] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[3][3] = 0.5 * (qi - max(qi, qj));
   }
 
 
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
-  
 }
 
 
@@ -155,6 +145,9 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 
 	su2double Density_mixture, Critical_radius, Nucleation_rate, Growth_rate;
 	su2double P, T, rho, h, k, mu;
+
+
+	for (iVar = 0; iVar < nVar; iVar++) val_Residual[iVar] = 0.0;
 
 	// compute the source terms for the moments equations
 	Critical_radius = val_liquid_i[6];
@@ -191,13 +184,15 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 		}
 
 	}	else 	{
-
 		for (iVar=0; iVar<nVar; iVar++) {
-			val_Residual[iVar] = 0;
+			val_Residual[iVar] = 0.0;
 		}
+		val_liquid_i[9] = 0.0;
 	}
 
 	// compute the Jacobians of the source terms
+
+	//cout << " Tsat " << val_liquid_i[4] << " T " << T << " Res0     " << val_Residual[0];
 
 	if (implicit) {
 
@@ -207,12 +202,12 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 			}
 		}
 
-/*		if (val_liquid_i[4] > T) {
-			val_Jacobian_i[1][0] =     Growth_rate* Volume;
-			val_Jacobian_i[2][1] = 2.0*Growth_rate* Volume;
-			val_Jacobian_i[3][2] = 3.0*Growth_rate* Volume;
+		if (val_liquid_i[4] > T) {
+			val_Jacobian_i[1][0] =      Growth_rate* Volume;
+			val_Jacobian_i[2][1] = 2.0* Growth_rate* Volume;
+			val_Jacobian_i[3][2] = 3.0* Growth_rate* Volume;
 		}
-*/
+
 	}
 }
 

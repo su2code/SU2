@@ -2037,7 +2037,7 @@ public:
 
   // classes for 2phase solver
 
-  virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config);
+  virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, su2double Rcritical, CFluidModel *FluidModel, CConfig *config);
 
   virtual su2double GetRadius() ;
 
@@ -2058,6 +2058,11 @@ public:
   virtual void      SetLiquidFrac(su2double Y);
 
   virtual su2double* GetLiquidPrim();
+
+  virtual void       SetLiquidPrim(su2double *Liquid_vec) ;
+
+  virtual void       SetLiquidPrimZero() ;
+
 
 
 
@@ -3706,7 +3711,7 @@ public:
   virtual ~C2phaseVariable(void);
 
 
-  virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config);
+  virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, su2double Rcritical, CFluidModel *FluidModel, CConfig *config);
 
   su2double  GetRadius() ;
 
@@ -3729,6 +3734,10 @@ public:
   void      SetLiquidFrac(su2double Y);
 
   su2double* GetLiquidPrim();
+
+  void      SetLiquidPrim(su2double *Liquid_vec) ;
+
+  void       SetLiquidPrimZero() ;
 
 };
 
@@ -3993,7 +4002,7 @@ public:
 
   su2double GetLiquidPrim() ;
 */
-  su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CFluidModel *FluidModel, CConfig *config);
+  su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, su2double Rcritical, CFluidModel *FluidModel, CConfig *config);
 
 };
 

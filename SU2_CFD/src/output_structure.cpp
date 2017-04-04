@@ -2748,7 +2748,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           jPoint = (iProcessor + 1) * nBuffer_Scalar;
         }
       }
-      
+
       /*--- Communicate heat transfer, y+ ---*/
       
       /*--- First, loop through the mesh in order to find and store the
@@ -4055,6 +4055,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char mass_flow_rate[] = ",\"MassFlowRate\"";
   char d_flow_coeff[] = ",\"D(CLift)\",\"D(CDrag)\",\"D(CSideForce)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\"";
   char d_engine[] = ",\"D(AeroCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
+  char two_phase_mom[] = ",\"Mom0\",\"Mom1\",\"Mom2\",\"Mom3\"";
+
 
   /*--- Find the markers being monitored and create a header for them ---*/
   
@@ -4883,8 +4885,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             if (two_phase) {
                 SPRINTF (two_phase_resid, ", %12.10f, %12.10f, %12.10f, %12.10f",
-                		log10(max(residual_2phase[0], 1e-30)), log10(max(residual_2phase[1], 1e-30)),
-						log10(max(residual_2phase[2], 1e-30)), log10(max(residual_2phase[3], 1e-30)));
+                		log10(max(residual_2phase[0], 1e-40)), log10(max(residual_2phase[1], 1e-40)),
+						log10(max(residual_2phase[2], 1e-40)), log10(max(residual_2phase[3], 1e-40)));
             }
 
             /*--- Turbulent residual ---*/
@@ -5626,8 +5628,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           //          if ( nDim==2 ) cout << log10(residual_flow[3]);
           //          if ( nDim==3 ) cout << log10(residual_flow[4]);
 
-          cout.width(14); cout << log10(max(residual_2phase[0], 1e-30));
-          cout.width(15); cout << log10(max(residual_2phase[3], 1e-30));
+          cout.width(14); cout << log10(max(residual_2phase[0], 1e-40));
+          cout.width(15); cout << log10(max(residual_2phase[3], 1e-40));
 
           cout << endl;
     }

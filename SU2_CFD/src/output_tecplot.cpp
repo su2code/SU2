@@ -326,6 +326,19 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   }
   
   
+  ofstream myfile;
+  myfile.open ("moments_trial.dat");
+  myfile<< "VARIABLES = \"x\",\"y\",\"Mom0\", \"Mom3\" \n"<<endl;
+  for (iPoint=0; iPoint<nGlobal_Poin; iPoint++) {
+	  myfile<< scientific << Coords[0][iPoint] << "\t";
+	  myfile<< scientific << Coords[1][iPoint] << "\t";
+	  myfile<< scientific << solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0) << "\t";
+      myfile<< scientific << solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3) << "\t";
+      Tecplot_File << endl;
+  }
+
+
+
   /*--- Write connectivity data. ---*/
   if (surf_sol) {
     

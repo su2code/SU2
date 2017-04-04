@@ -34,6 +34,9 @@
 
 
 CLiquidModel::CLiquidModel() {
+}
+
+CLiquidModel::CLiquidModel(CConfig *config) {
 
   /*--- Attributes initialization ---*/
 
@@ -44,11 +47,18 @@ CLiquidModel::CLiquidModel() {
   Psat   = 0.0;
   sigma  = 0.0;
 
+
+  Gas_Constant = config->GetGas_Constant();
+  Tstar = config->GetTemperature_Critical();
+
 }
 
 CLiquidModel::~CLiquidModel(void) { }
 
-void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var) {
+void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double *Two_Phase_Var) {
+
+	// guess for R critical, a loop is required to evaluate the right properties
+	//Rc = 1e-12;
 
 	SetRadius(Two_Phase_Var);
 
@@ -57,7 +67,7 @@ void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2do
 
 	SetSurfaceTension(T);
 
-    SetTLiquid(T);
+    SetTLiquid(T, Rcritical);
     SetLiquidDensity();
 
     SetLiquidEnthalpy(h_v);
@@ -71,10 +81,10 @@ void CLiquidModel::SetRCritical(su2double P, su2double T) {
 
     if (Psat < P) {
 		dGibbs = T * Gas_Constant * log(P/Psat);
-
 		Rc = 2.0*sigma / (rho_l * dGibbs);
     }
-    else { Rc = 0.0 ;}
+
+    else { Rc = 0.0;}
 
 }
 
@@ -84,12 +94,13 @@ void CLiquidModel::SetDensity_Mixture(su2double rho, su2double *Two_Phase_Var) {
 	    	rho_m = rho;
 	    } else {
 			y = Two_Phase_Var[3]*(rho_l - rho);
-			y = y + 0.75 * rho / 3.14;
+			y = y + 0.75 * rho / 3.1415;
 			y = Two_Phase_Var[3]*rho_l / y;
 
 			rho_m = y/ rho_l + (1.0 - y)/ rho;
 			rho_m = 1.0/ rho_m;
 	    }
+
 }
 
 
@@ -104,7 +115,7 @@ void CLiquidModel::SetRadius(su2double *Two_Phase_Var) {
 
 
 
-CWater::CWater(CConfig *config) : CLiquidModel() {
+CWater::CWater(CConfig *config) : CLiquidModel(config) {
 
 	coeff_saturation  = new su2double [10];
 	coeff_latent_heat = new su2double [4];
@@ -162,6 +173,7 @@ void CWater::SetTsat(su2double P) {
     Tsat = -sqrt(Tsat) + coeff_saturation[9] + Dsat;
 
     Tsat =  Tsat * 0.5;
+
 }
 
 void CWater::SetPsat(su2double T) {
@@ -183,14 +195,14 @@ void CWater::SetSurfaceTension(su2double T) {
 
 	sigma =  1.0 - 1.0 * T/Tstar;
 	sigma =  235.8e-3 * (0.375 + 0.625*(1.0-sigma)) * pow(sigma,1.256);
+
 }
 
-void CWater::SetTLiquid(su2double T) {
+void CWater::SetTLiquid(su2double T, su2double Rcritical) {
 
     	//Guess Rcritical, a loop is required to evaluate the right properties
-		Rc = 1e-15;
 
-		if (R!=0) T_l   = Tsat  - (Tsat - T)*Rc/R;
+		if ((Tsat > T) && (R!=0)) T_l   = Tsat  - (Tsat - T)*Rcritical/R;
 		else      T_l = T;
 
 }

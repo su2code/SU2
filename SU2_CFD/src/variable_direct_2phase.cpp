@@ -102,6 +102,7 @@ C2phase_HillVariable::C2phase_HillVariable(void) : C2phaseVariable() {
 C2phase_HillVariable::C2phase_HillVariable(su2double val_R, su2double val_N, su2double rho_m, unsigned short nDim,
 		unsigned short nVar, CConfig *config): C2phaseVariable(nDim, nVar, config) {
 
+  unsigned short iVar;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
@@ -130,7 +131,7 @@ C2phase_HillVariable::~C2phase_HillVariable(void) {
 
 }
 
-su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Phase_Var,CFluidModel *FluidModel, CConfig *config) {
+su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Phase_Var, su2double Rcritical, CFluidModel *FluidModel, CConfig *config) {
 
 	su2double rho_l, rho_m, T_l, h_l, Psat, Tsat, sigma, Rc, R;
 
@@ -138,8 +139,9 @@ su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *
 	T   = Primitive[0]      * config->GetTemperature_Ref();
 	rho = Primitive[nDim+2] * config->GetDensity_Ref();
 	h   = Primitive[nDim+3] * config->GetEnergy_Ref();
+	Rc  = Rcritical   * config->GetLength_Ref();
 
-	FluidModel->SetLiquidProp(P, T, rho, h, Two_Phase_Var);
+	FluidModel->SetLiquidProp(P, T, rho, h, Rc, Two_Phase_Var);
 
 	T_l = FluidModel->GetLiquidTemperature()/config->GetTemperature_Ref();
 
@@ -169,6 +171,7 @@ su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *
 	Primitive_Liquid[6] = Rc;
 	Primitive_Liquid[7] = R;
 	Primitive_Liquid[8] = rho_m;
+	Primitive_Liquid[9] = 0.0;
 
 	return Primitive_Liquid;
 

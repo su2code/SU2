@@ -269,7 +269,7 @@ public:
 
     virtual void SetTDState_Ps (su2double P, su2double s );
 
-    void SetLiquidProp (su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var);
+    void SetLiquidProp (su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double *Two_Phase_Var);
 
     su2double GetLiquidDensity ();
     su2double GetMixtureDensity ();
