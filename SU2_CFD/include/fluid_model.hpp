@@ -203,6 +203,8 @@ public:
      * \param[in] e - second thermodynamic variable.
      */
 
+//#pragma omp declare simd uniform(this)
+//__attribute__((vector))
     virtual void SetTDState_rhoe (su2double rho, su2double e );
 
     /*!

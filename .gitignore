@@ -2,6 +2,7 @@
 *.slo
 *.lo
 *.o
+*.optrpt
 
 # Autoconf/Automake
 *.Po
