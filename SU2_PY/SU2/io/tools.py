@@ -265,7 +265,9 @@ optnames_aero = [ "LIFT"                    ,
                   "RADIAL_DISTORTION"              ,
                   "CIRCUMFERENTIAL_DISTORTION"              ,
                   "COMBO"                   ,
-                  "NOISE"]
+                  "NOISE"                   ,
+                  "BOOM"
+                ]
 #: optnames_aero
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
@@ -493,8 +495,9 @@ def get_adjointSuffix(objective_function=None):
                  "AERO_DRAG"               : "acd"       ,
                  "RADIAL_DISTORTION"              : "rdis"       ,
                  "CIRCUMFERENTIAL_DISTORTION"              : "cdis"       ,
-                 "COMBO"                   : "combo",
-                 "NOISE"                   : "no"        }
+                 "COMBO"                   : "combo"     ,
+                 "NOISE"                   : "no"        ,      
+                 "BOOM"                    : "boom"}
     
     # if none or false, return map
     if not objective_function:

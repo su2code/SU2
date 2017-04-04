@@ -111,6 +111,9 @@ def direct ( config ):
       noise = noise_file.readline().split(",")[1]
       aerodynamics['NOISE'] = float(noise)
 
+#    if config.get('OBJECTIVE_FUNCTION',"") == 'BOOM':
+      
+
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
                     
