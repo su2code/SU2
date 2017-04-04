@@ -95,7 +95,7 @@ def projection( config, state={}, step = 1e-3 ):
     adj_suffix     = su2io.get_adjointSuffix(objective)
     grad_plotname  = os.path.splitext(grad_filename)[0] + '_' + adj_suffix + plot_extension    
 
-    konfig['EXT_ITER'] = konfig['ITER_AVERAGE_OBJ']
+#    konfig['EXT_ITER'] = konfig['ITER_AVERAGE_OBJ']
     # Run Projection
     SU2_DOT(konfig)
     

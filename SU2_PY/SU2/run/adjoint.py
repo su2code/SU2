@@ -89,6 +89,7 @@ def adjoint( config ):
        konfig['AUTO_DIFF'] = "NO"
        konfig['MATH_PROBLEM'] = 'DISCRETE_ADJOINT'
        konfig['RESTART_SOL'] = "NO"
+       konfig['EXT_ITER'] = konfig['ITER_AVERAGE_OBJ']
 
     if konfig['OBJECTIVE_FUNCTION'] == 'BOOM':
        konfig['RESTART_SOL'] = "YES"
@@ -99,8 +100,6 @@ def adjoint( config ):
        konfig['MATH_PROBLEM'] = "DISCRETE_ADJOINT"
        konfig['RESTART_SOL'] = "NO"
 
-    konfig['EXT_ITER'] = konfig['ITER_AVERAGE_OBJ']
-    
     # Run Solution
     SU2_CFD(konfig)
     
