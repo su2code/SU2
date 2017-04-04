@@ -124,7 +124,9 @@ protected:
   int Restart_ExtIter;     /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
   passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
-  
+
+  su2double ***SlidingState; /*!< \brief Sliding State variables. */
+
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -229,11 +231,11 @@ public:
   //  virtual void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Set the fluid solver nondimensionalization.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  virtual void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  virtual void SetNondimensionalization(CConfig *config, unsigned short iMesh);
   
   /*!
    * \brief Compute the pressure at the infinity.
@@ -501,12 +503,29 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iStep  - Current step in the time accurate local time
-                         stepping algorithm
+   * \param[in]     config          - Definition of the particular problem.
+   * \param[in]     TimeSync        - The synchronization time.
+   * \param[in,out] timeEvolved     - On input the time evolved before the time step,
+                                      on output the time evolved after the time step.
+   * \param[out]    syncTimeReached - Whether or not the synchronization time is reached.
    */
-  virtual void ADER_DG_PredictorStep(CConfig *config, unsigned short iStep);
-  
+  virtual void CheckTimeSynchronization(CConfig         *config,
+                                        const su2double TimeSync,
+                                        su2double       &timeEvolved,
+                                        bool            &syncTimeReached);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  virtual void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
+                                         CNumerics **numerics, CConfig *config,
+                                         unsigned short iMesh, unsigned short RunTime_EqSystem);  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -779,10 +798,11 @@ public:
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] numerics - Description of the numerical method.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -1340,16 +1360,6 @@ public:
   virtual void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                       unsigned short iRKStep);
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iStep - Current step in the time accurate local time stepping.
-   */
-  virtual void ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                 unsigned short iStep);
-  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3639,15 +3649,6 @@ public:
   virtual void SetFreeStream_Solution(CConfig *config);
 
   /*!
-   * \brief A virtual member.
-   * \param[in] iTime - Time index of the time integration point for the
-                        integration over the time slab in the corrector
-                        step of ADER-DG.
-   */
-  virtual void ADER_DG_TimeInterpolatePredictorSol(CConfig       *config,
-                                                   unsigned short iTime);
-  
-  /*!
    * \brief A virtual member
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -3686,15 +3687,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] iTime    - Time index of the time integration point for the
-                           integration over the time slab in the corrector
-                           step of ADER-DG.
-   * \param[in] weight   - Integration weight of this time integration point.
-   */
-  virtual void AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight);
-
-  /*!
-   * \brief A virtual member.
    * \param[in] config  - Definition of the particular problem.
    * \param[in] useADER - Whether or not the ADER residual must be multiplied.
    */
@@ -3710,6 +3702,7 @@ public:
    * \brief A virtual member.
    */
   virtual unsigned long GetnDOFsGlobal(void);
+
 };
 
 /*!
@@ -3779,6 +3772,98 @@ public:
    */
   void SetOutputVariables(CGeometry *geometry, CConfig *config);
   
+};
+
+/*!
+ * \class CBaselineSolver_FEM
+ * \brief Main class for defining a baseline solution from a restart file for the DG-FEM solver output.
+ * \author T. Economon.
+ * \version 5.0.0 "Raven"
+ */
+class CBaselineSolver_FEM : public CSolver {
+protected:
+
+  unsigned long nDOFsLocTot;    /*!< \brief Total number of local DOFs, including halos. */
+  unsigned long nDOFsLocOwned;  /*!< \brief Number of owned local DOFs. */
+  unsigned long nDOFsGlobal;    /*!< \brief Number of global DOFs. */
+
+  unsigned long nVolElemTot;    /*!< \brief Total number of local volume elements, including halos. */
+  unsigned long nVolElemOwned;  /*!< \brief Number of owned local volume elements. */
+  CVolumeElementFEM *volElem;   /*!< \brief Array of the local volume elements, including halos. */
+
+  vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in all the DOFs. */
+
+private:
+
+#ifdef HAVE_MPI
+  int nCommRequests;                 /*!< \brief Number of communication requests in the persistent communication.
+                                      These are both sending and receiving requests. */
+  vector<MPI_Request> commRequests;  /*!< \brief Communication requests in the persistent communication.
+                                      These are both sending and receiving requests. */
+  vector<MPI_Datatype> commTypes;    /*!< \brief MPI derived data types for communicating the solution
+                                      variables of the DOFS. */
+
+  vector<MPI_Request> reverseCommRequests; /*!< \brief Communication requests in the persistent reverse communication.
+                                            These are both sending and receiving requests. */
+  vector<MPI_Datatype> reverseCommTypes;   /*!< \brief MPI derived data types for communicating the residuals
+                                            of the DOFs in the halo elements. */
+
+  vector<vector<unsigned long> > reverseElementsRecv; /*!< \brief Element ID's for which residuals must be
+                                                       updated via the reverse communication pattern. */
+  vector<vector<su2double> >     reverseCommRecvBuf;  /*!< \brief Receive buffers used to receive the residual
+                                                       data in the reverse communication pattern. */
+#endif
+
+  vector<unsigned long> elementsRecvSelfComm;  /*!< \brief The halo elements for self communication.  */
+  vector<unsigned long> elementsSendSelfComm;  /*!< \brief The donor elements for self communication. */
+
+  vector<su2double> rotationMatricesPeriodicity;             /*!< \brief Vector, which contains the rotation matrices
+                                                              for the rotational periodic transformations. */
+  vector<vector<unsigned long> > halosRotationalPeriodicity; /*!< \brief Vector of vectors, which contain the indices
+                                                              of halo elements for which a periodic
+                                                              transformation must be applied. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CBaselineSolver_FEM(void);
+
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBaselineSolver_FEM(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CBaselineSolver_FEM(void);
+
+  /*!
+   * \brief Set the number of variables and string names from the restart file.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetOutputVariables(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
+  /*!
+   * \brief Get a pointer to the vector of the solution degrees of freedom.
+   * \return Pointer to the vector of the solution degrees of freedom.
+   */
+  su2double* GetVecSolDOFs(void);
+
 };
 
 /*!
@@ -4125,11 +4210,11 @@ public:
   //  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Set the fluid solver nondimensionalization.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
   
   /*!
    * \brief Compute the pressure at the infinity.
@@ -4455,10 +4540,11 @@ public:
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] numerics - Description of the numerical method.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
     
   /*!
    * \brief Impose the engine inflow boundary condition.
@@ -6411,11 +6497,11 @@ public:
   //  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Set the fluid solver nondimensionalization.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
   
   /*!
    * \brief Compute the pressure at the infinity.
@@ -8283,7 +8369,8 @@ protected:
   *upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
-  
+  unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
+  *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
 public:
   
   /*!
@@ -8298,6 +8385,7 @@ public:
   
   /*!
    * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
    */
   CTurbSolver(CConfig *config);
   
@@ -8405,6 +8493,23 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
+ /*!
+  * \brief Get the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  */
+  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] component    - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+
 };
 
 /*!
@@ -8578,7 +8683,17 @@ public:
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
-  
+
+  /*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+
   /*!
    * \brief Impose the near-field boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8772,6 +8887,16 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
   
+ /*!
+  * \brief Impose the interface state across sliding meshes.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+
   /*!
    * \brief Get the constants for the SST model.
    * \return A pointer to an array containing a set of constants
@@ -11716,19 +11841,19 @@ public:
  * \class CFEM_DG_EulerSolver
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
- * \author J. Alonso, E. van der Weide, T. Economon
+ * \author E. van der Weide, T. Economon, J. Alonso
  * \version 4.0.2 "Cardinal"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
   
   unsigned long nMarker; /*!< \brief Total number of markers using the grid information. */
-  
-  CFluidModel  *FluidModel; /*!< \brief fluid model used in the solver */
-  
+
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
-  
+
+  CFluidModel  *FluidModel; /*!< \brief fluid model used in the solver */
+
   su2double
   Mach_Inf,	       /*!< \brief Mach number at infinity. */
   Density_Inf,	       /*!< \brief Density at infinity. */
@@ -11814,13 +11939,21 @@ protected:
   unsigned long nVolElemTot;    /*!< \brief Total number of local volume elements, including halos. */
   unsigned long nVolElemOwned;  /*!< \brief Number of owned local volume elements. */
   CVolumeElementFEM *volElem;   /*!< \brief Array of the local volume elements, including halos. */
+
+  const unsigned long *nVolElemOwnedPerTimeLevel;    /*!< \brief Number of owned local volume elements
+                                                                 per time level. Cumulative storage. */
+  const unsigned long *nVolElemInternalPerTimeLevel; /*!< \brief Number of internal local volume elements per
+                                                                 time level. Internal means that the solution
+                                                                 data does not need to be communicated. */
   
   unsigned long nMeshPoints;    /*!< \brief Number of mesh points in the local part of the grid. */
   const CPointFEM *meshPoints;  /*!< \brief Array of the points of the FEM mesh. */
   
-  unsigned long                 nMatchingInternalFacesWithHaloElem;  /*!< \brief Number of local matching internal faces 
-                                                                                 between an owned and a halo element. */
-  unsigned long                 nMatchingInternalFaces;              /*!< \brief Number of local matching internal faces. */
+  const unsigned long *nMatchingInternalFacesWithHaloElem;  /*!< \brief Number of local matching internal faces per time level
+                                                                        between an owned and a halo element. Cumulative storage. */
+  const unsigned long *nMatchingInternalFacesLocalElem;     /*!< \brief Number of local matching internal faces per time level
+                                                                        between local elements. Cumulative storage. */
+
   const CInternalFaceElementFEM *matchingInternalFaces;              /*!< \brief Array of the local matching internal faces. */
   
   const CBoundaryFEM *boundaries;     /*!< \brief Array of the boundaries of the FEM mesh. */
@@ -11866,11 +11999,22 @@ protected:
                                            residual of the faces. Cumulative storage. */
   vector<unsigned long> entriesResFaces;  /*!< \brief The corresponding entries in the residual of the faces. */
   
-  vector<unsigned long> startLocResFacesMarkers; /*!< \brief The starting location in the residual of the
-                                                  faces for the boundary markers. */
+  vector<vector<unsigned long> > startLocResFacesMarkers; /*!< \brief The starting location in the residual of the
+                                                                      faces for the time levels of the boundary
+                                                                      markers. */
+
+  vector<unsigned long> startLocResInternalFacesLocalElem; /*!< \brief The starting location in the residual of the
+                                                                       faces for the time levels of internal faces
+                                                                       between locally owned elements. */
+  vector<unsigned long> startLocResInternalFacesWithHaloElem; /*!< \brief The starting location in the residual of the
+                                                                          faces for the time levels of internal faces
+                                                                          between an owned and a halo element. */
   
   bool symmetrizingTermsPresent;    /*!< \brief Whether or not symmetrizing terms are present in the
                                      discretization. */
+  
+  bool mpiCommsPresent;    /*!< \brief Whether or not we have set up the MPI comms structures. */
+
 private:
   
 #ifdef HAVE_MPI
@@ -11901,19 +12045,28 @@ private:
                                                               of halo elements for which a periodic
                                                               transformation must be applied. */
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CFEM_DG_EulerSolver(void);
-  
+
+  /*!
+   * \overload
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nDim - Dimension of the problem (2D or 3D).
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh);
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Destructor of the class.
    */
@@ -11921,10 +12074,13 @@ public:
   
   /*!
    * \brief Set the fluid solver nondimensionalization.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] config      - Definition of the particular problem.
+   * \param[in] iMesh       - Index of the mesh in multigrid computations.
+   * \param[in] writeOutput - Whether or not output must be written.
    */
-  void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  void SetNondimensionalization(CConfig        *config,
+                                unsigned short iMesh,
+                                const bool     writeOutput);
   
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
@@ -12032,6 +12188,33 @@ public:
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration);
+
+  /*!
+   * \brief Function, which checks whether or not the time synchronization point is reached
+            when explicit time stepping is used.
+   * \param[in]     config          - Definition of the particular problem.
+   * \param[in]     TimeSync        - The synchronization time.
+   * \param[in,out] timeEvolved     - On input the time evolved before the time step,
+                                      on output the time evolved after the time step.
+   * \param[out]    syncTimeReached - Whether or not the synchronization time is reached.
+   */
+  void CheckTimeSynchronization(CConfig         *config,
+                                const su2double TimeSync,
+                                su2double       &timeEvolved,
+                                bool            &syncTimeReached);
+
+  /*!
+   * \brief Function, to carry out the space time integration for ADER
+            with time accurate local time stepping.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
+                                 CNumerics **numerics, CConfig *config,
+                                 unsigned short iMesh, unsigned short RunTime_EqSystem);
 
   /*!
    * \brief Function, carries out the predictor step of the ADER-DG
@@ -12270,7 +12453,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Pressure_Forces(CGeometry *geometry, CConfig *config);
-  
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
@@ -12736,7 +12929,7 @@ private:
  * \class CFEM_DG_NSSolver
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author J. Alonso, E. van der Weide, T. Economon
+ * \author E. van der Weide, T. Economon, J. Alonso
  * \version 4.0.2 "Cardinal"
  */
 class CFEM_DG_NSSolver : public CFEM_DG_EulerSolver {

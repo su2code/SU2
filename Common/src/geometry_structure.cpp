@@ -9844,7 +9844,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
   /*--- Build the ADT of the boundary nodes. ---*/
 
-  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
+  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(),
+                                 PointIDs.data(), true);
 
   /*--- Loop over all interior mesh nodes and compute the distances to each
    of the no-slip boundary nodes. Store the minimum distance to the wall
@@ -12769,7 +12770,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
          << "These are ignored in the partitioning." << endl;
   }
 
-  /*--- In case of a periodic boundaries with only one element in the periodic
+  /*--- In case of periodic boundaries with only one element in the periodic
         direction, there are faces for which both adjacent elements are the
         same. This also means that these faces are still present twice and one
         must be removed. This is done below. ---*/
@@ -12962,6 +12963,25 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   ComputeFEMGraphWeights(config, localFaces, xadj_l, adjacency_l,
                          mapExternalElemIDToTimeLevel, vwgt, adjwgt);
+
+  /*--- It is possible that some neighbors appear multiple times due to e.g.
+        periodic boundary conditions. ParMETIS is not able to deal with this
+        situation, hence these multiple entries must be removed. ---*/
+  unsigned long ii = 0, indBeg = 0;
+  for(unsigned long i=0; i<nElem; ++i) {
+    for(unsigned long j=indBeg; j<xadj_l[i+1];) {
+      adjacency_l[ii] = adjacency_l[j];
+      adjwgt[ii]      = adjwgt[j++];
+      while(j<xadj_l[i+1] && adjacency_l[ii] == adjacency_l[j])
+        adjwgt[ii] += adjwgt[j++];
+      ++ii;
+    }
+
+    /* Set indBeg for the next element and store the corrected
+       value for xadj_l[i+1]. */
+    indBeg = xadj_l[i+1];
+    xadj_l[i+1] = ii;
+  }
 
   /*--- The remainder of this function should only ever be called if we have parallel
         support with MPI and have the ParMETIS library compiled and linked. ---*/
@@ -13600,9 +13620,10 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     /*------------------------------------------------------------------------*/
     /*--- Determine the length scale of the element. This is needed to     ---*/
     /*--- compute the computational weights of an element when time        ---*/
-    /*--- accurate local time stepping is employed. Note that a factor 2   ---*/
-    /*--- must be taken into account, which is the length scale of all the ---*/
-    /*--- reference elements used in this code.                            ---*/
+    /*--- accurate local time stepping is employed and to determine a      ---*/
+    /*--- tolerance when periodic transformations are present. Note that a ---*/
+    /*--- factor 2 must be taken into account, which is the length scale   ---*/
+    /*--- of all the reference elements used in this code.                 ---*/
     /*------------------------------------------------------------------------*/
 
     const su2double lenScale = 2.0*jacMin/jacFaceMax;
@@ -13662,18 +13683,17 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     const su2double Prandtl    = config->GetPrandtl_Lam();
     unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
 
-    /* TEMPORARY IMPLEMENTATION. HARD CODED UNTIL A BETTER SOLUTION IS FOUND. */
-    const su2double Density    = 1.0;
-    const su2double Vel[]      = {0.118322, 0.0, 0.0};
-    const su2double VelMag     = sqrt(Vel[0]*Vel[0] + Vel[1]*Vel[1] + Vel[2]*Vel[2]);
-    const su2double SoundSpeed = 10.0*VelMag;
-    const su2double Viscosity  = 0.00118322;
- // const su2double Viscosity  = 1.97203e-06;
+    const su2double Density   = config->GetDensity_FreeStreamND();
+    const su2double *Vel      = config->GetVelocity_FreeStreamND();
+    const su2double Viscosity = config->GetViscosity_FreeStreamND();
 
-    cout << endl << "     WARNING in CPhysicalGeometry::DetermineTimeLevelElements" << endl;
-    cout << "Free stream velocity and viscosity hard coded at the moment" << endl;
-    cout << endl;
+    su2double VelMag = 0.0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim)
+      VelMag += Vel[iDim]*Vel[iDim];
+    VelMag = sqrt(VelMag);
 
+    const su2double SoundSpeed = VelMag/config->GetMach();
+    
     /*------------------------------------------------------------------------*/
     /*--- Step 1: Estimate the time steps of the locally owned elements.   ---*/
     /*------------------------------------------------------------------------*/
