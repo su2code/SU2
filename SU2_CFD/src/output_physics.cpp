@@ -203,6 +203,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
       TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
       KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
+      PressureRatio[iMarkerTP][iSpan]      = relPressureOut/relPressureIn;
 
     }
   }
