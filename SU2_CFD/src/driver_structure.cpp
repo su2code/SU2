@@ -112,18 +112,35 @@ CDriver::CDriver(char* confFile,
       //CGeometry *periodic = NULL;
       //CGeometry *geometry_aux2 = NULL;
       CGeometry *geometry_aux1 = NULL;
-
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-
-      geometry_aux->SetBoundaries(config_container[iZone]);
-      geometry_aux->SetVertex(config_container[iZone]);
-      geometry_aux->SetPeriodicBoundary(config_container[iZone]);
-      geometry_aux->ReorderPeriodic(geometry_aux, config_container[iZone]);
-      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
-
-      //geometry_aux1->SetColorGrid_Parallel(config_container[iZone]);
+      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
       //geometry_aux = new CPhysicalGeometry(geometry_aux1, config_container[iZone]);
+      //geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+
+      //geometry_aux->SetSendReceive(config_container[iZone]);
+      geometry_aux->SetBoundaries(config_container[iZone]);
+      geometry_aux->SetPoint_Connectivity();
+      geometry_aux->SetElement_Connectivity();
+      geometry_aux->SetBoundVolume();
+      geometry_aux->Check_IntElem_Orientation(config_container[iZone]);
+      geometry_aux->Check_BoundElem_Orientation(config_container[iZone]);
+
+      geometry_aux->SetFaces();
+      geometry_aux->SetEdges();
+      geometry_aux->SetVertex(config_container[iZone]);
+      geometry_aux->SetCoord_CG();
+
+      geometry_aux->SetControlVolume(config_container[iZone], ALLOCATE);
+      geometry_aux->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+
+      geometry_aux->SetPeriodicBoundary(config_container[iZone]);
+      geometry_aux->ReorderPeriodic(geometry_aux, config_container[iZone]);
+      geometry_aux->SetElement_Connectivity();
+      //geometry_aux->SetVertex(config_container[iZone]);
+      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+
+
 
 
       /*
@@ -183,11 +200,10 @@ CDriver::CDriver(char* confFile,
 
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
       /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
     }
 
-
-    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
     /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
