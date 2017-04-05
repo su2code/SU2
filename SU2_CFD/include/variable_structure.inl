@@ -1126,6 +1126,8 @@ inline  void      C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction =
 
 inline su2double*  C2phaseVariable::GetLiquidPrim() {return Primitive_Liquid;}
 
+inline su2double  C2phaseVariable::GetLiquidPrim(unsigned short iVar) { return Primitive_Liquid[iVar];}
+
 inline void  C2phaseVariable::SetLiquidPrim(su2double *Liquid_vec) {Primitive_Liquid = Liquid_vec;}
 
 inline void       C2phaseVariable::SetLiquidPrimZero() {
@@ -1166,6 +1168,8 @@ inline  void      CVariable::SetRadius(su2double R)   {}
 inline  void      CVariable::SetLiquidFrac(su2double Y) {}
 
 inline su2double*  CVariable::GetLiquidPrim() { return 0;}
+
+inline su2double  CVariable::GetLiquidPrim(unsigned short iVar) { return 0;}
 
 inline void  CVariable::SetLiquidPrim(su2double *Liquid_vec) {}
 

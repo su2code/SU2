@@ -77,7 +77,6 @@ su2double CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2doub
 
 	J = J / (1+Theta);
 
-
 	return J;
 
 }
@@ -89,10 +88,9 @@ su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double r
 
 	if (V_l[4] > T) {
 
-
 		G = k * (V_l[4] - T);
 
-		G = G * (1-V_l[6]/(V_l[7] + 1e-30));
+		//if (V_l[7] > V_l[6]) G = G * (1-V_l[6]/V_l[7]);
 
 		G = G / V_l[1] / (h - V_l[2]);
 
@@ -104,7 +102,6 @@ su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double r
 		Lambda = 1.5* mu * sqrt(Gas_Constant * T) / P;
 
 		Pr = Gas_Constant * Gamma / (Gamma - 1) * mu / k;
-
 		Lambda = V_l[7] + 1.89 * (1-Ni) * Lambda / Pr;
 
 		G   = G / Lambda;

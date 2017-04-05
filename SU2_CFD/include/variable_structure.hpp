@@ -2059,6 +2059,8 @@ public:
 
   virtual su2double* GetLiquidPrim();
 
+  virtual su2double  GetLiquidPrim(unsigned short iVar);
+
   virtual void       SetLiquidPrim(su2double *Liquid_vec) ;
 
   virtual void       SetLiquidPrimZero() ;
@@ -3734,6 +3736,8 @@ public:
   void      SetLiquidFrac(su2double Y);
 
   su2double* GetLiquidPrim();
+
+  su2double  GetLiquidPrim(unsigned short iVar);
 
   void      SetLiquidPrim(su2double *Liquid_vec) ;
 

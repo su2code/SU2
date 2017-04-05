@@ -597,6 +597,7 @@ void C2phaseSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_containe
                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
 	 /*--- Convective fluxes across wall are equal to zero. ---*/
+
   
 }
 
@@ -641,8 +642,8 @@ void C2phaseSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
   unsigned short iVar;
   unsigned long iPoint, total_index;
   su2double Delta, Vol, density_old = 0.0, density = 0.0;
-//  su2double *Sol;
-//  Sol = new su2double [4];
+  su2double *Sol;
+  Sol = new su2double [4];
   
   bool adjoint = config->GetContinuous_Adjoint();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -704,11 +705,20 @@ void C2phaseSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
         	for (iVar = 0; iVar < nVar; iVar++) {
         		node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_2phase()*LinSysSol[iPoint*nVar+iVar]);
+
+ /*       		if (LinSysRes[iPoint*nVar+iVar] == 0.0)
+        			Sol[iVar] = 0.0;
+        		else
+        			Sol[iVar] = node[iPoint]->GetSolution(iVar);
+*/
         	}
+
+//        	node[iPoint]-> SetSolution(Sol);
        }
   }
   
-//  delete [] Sol;
+
+  delete [] Sol;
 
   
   /*--- MPI solution ---*/
@@ -1255,6 +1265,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
   bool limiter       = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
 
+
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge and normal vectors ---*/
@@ -1614,13 +1625,9 @@ void C2phase_HillSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
                                 geometry->node[iPoint]->GetGridVel());
       
       /*--- Compute the residual using an upwind scheme ---*/
-
-/*      Liq = node[iPoint]->GetLiquidPrim();
-
-	   cout << " Res upwind " << LinSysRes[iPoint*nVar] << " " << LinSysRes[iPoint*nVar+1] << " " << LinSysRes[iPoint*nVar+2]
-			<< " " << LinSysRes[iPoint*nVar+3] << " ";
-
-	   cout << " Primitive T" << V_domain[0] << " " << "Tsat " << Liq[4] << endl;
+/*
+	   cout << " Sol " << Solution_i[0] << " " << Solution_i[1] << " " << Solution_i[2]
+			<< " " << Solution_i[3] << " ";
 */
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
@@ -1644,8 +1651,6 @@ void C2phase_HillSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
   su2double *V_outlet, *V_domain, *Normal, *Sol;
   
   bool grid_movement  = config->GetGrid_Movement();
-
-
 
   Normal = new su2double[nDim];
 
@@ -1678,6 +1683,13 @@ void C2phase_HillSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
       
+/*
+      cout << " Sol " << Solution_i[0] << " " << Solution_i[1] << " " << Solution_i[2]
+      << " " << Solution_i[3] << " ";
+
+      getchar();
+*/
+
       if (grid_movement)
       conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                 geometry->node[iPoint]->GetGridVel());

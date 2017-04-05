@@ -45,12 +45,13 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   bool grid_movement  = config->GetGrid_Movement();
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  bool two_phase = (config->GetKind_2phase_Model()!=NONE);
 
   char cstr[200], buffer[50];
   string filename;
   
   /*--- Write file name with extension ---*/
-  
+
   if (surf_sol) {
     if (adjoint) filename = config->GetSurfAdjCoeff_FileName();
     else filename = config->GetSurfFlowCoeff_FileName();
@@ -58,6 +59,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   else {
     if (adjoint)
     filename = config->GetAdj_FileName();
+    else if (two_phase ) filename = "two_phase";
     else filename = config->GetFlow_FileName();
   }
   
@@ -90,6 +92,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
+		Kind_Solver == TWO_PHASE_EULER || Kind_Solver == TWO_PHASE_NAVIER_STOKES || Kind_Solver == TWO_PHASE_RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
        Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
       (val_nZone > 1) ) {
@@ -169,6 +172,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         Tecplot_File << ",\"Pressure\",\"Temperature\",\"C<sub>p</sub>\",\"Mach\"";
       }
       
+      if ((Kind_Solver == TWO_PHASE_EULER) || (Kind_Solver == TWO_PHASE_NAVIER_STOKES) || (Kind_Solver == TWO_PHASE_RANS)) {
+        Tecplot_File << ",\"Pressure\",\"Temperature\",\"C<sub>p</sub>\",\"Mach\", \"mom0\", \"mom3\", \"rho_l\"";
+      }
+
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         if (nDim == 2) Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"h\", \"y<sup>+</sup>\"";
         else Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"C<sub>f</sub>_z\", \"h\", \"y<sup>+</sup>\"";
@@ -324,19 +331,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     }
     
   }
-  
-  
-  ofstream myfile;
-  myfile.open ("moments_trial.dat");
-  myfile<< "VARIABLES = \"x\",\"y\",\"Mom0\", \"Mom3\" \n"<<endl;
-  for (iPoint=0; iPoint<nGlobal_Poin; iPoint++) {
-	  myfile<< scientific << Coords[0][iPoint] << "\t";
-	  myfile<< scientific << Coords[1][iPoint] << "\t";
-	  myfile<< scientific << solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0) << "\t";
-      myfile<< scientific << solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3) << "\t";
-      Tecplot_File << endl;
-  }
-
 
 
   /*--- Write connectivity data. ---*/
@@ -442,7 +436,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
   unsigned short iMarker;
   
   /*--- Open Tecplot ASCII file and write the header. ---*/
-  
+
   Tecplot_File.open(mesh_filename, ios::out);
   Tecplot_File.precision(6);
   if (surf_sol) Tecplot_File << "TITLE = \"Visualization of the surface solution\"" << endl;
@@ -498,7 +492,11 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
       
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         Tecplot_File << ", \"Pressure\",\"Temperature\",\"C<sub>p</sub>\",\"Mach\"";
-        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+
+        if ((Kind_Solver == TWO_PHASE_EULER) ||(Kind_Solver == TWO_PHASE_NAVIER_STOKES) || (Kind_Solver == TWO_PHASE_RANS)) {
+        	Tecplot_File << ", \"mom0\",\"mom3\",\"rho_l\"";
+        };
+          if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           if (geometry->GetnDim() == 2) Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"h\", \"y<sup>+</sup>\"";
           else Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"C<sub>f</sub>_z\", \"h\", \"y<sup>+</sup>\"";
           if (Kind_Solver == RANS) { Tecplot_File << ", \"<greek>m</greek><sub>t</sub>\""; }
@@ -952,6 +950,8 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   
+  bool two_phase = (config->GetKind_2phase_Model() != NONE);
+
   int iProcessor;
   
   int rank = MASTER_NODE;
@@ -974,6 +974,8 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   else {
     if (adjoint)
       filename = config->GetAdj_FileName();
+    else if (two_phase)
+      filename = "two_phase";
     else filename = config->GetFlow_FileName();
   }
   
@@ -1007,6 +1009,7 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
+	   Kind_Solver == TWO_PHASE_EULER || Kind_Solver == TWO_PHASE_NAVIER_STOKES || Kind_Solver == TWO_PHASE_RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
        Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
       (val_nZone > 1) ) {
@@ -1178,9 +1181,7 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
   }
-  
-  Tecplot_File.close();
-  
+
 }
 
 void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {

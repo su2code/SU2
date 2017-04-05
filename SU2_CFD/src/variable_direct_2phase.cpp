@@ -133,15 +133,19 @@ C2phase_HillVariable::~C2phase_HillVariable(void) {
 
 su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Phase_Var, su2double Rcritical, CFluidModel *FluidModel, CConfig *config) {
 
-	su2double rho_l, rho_m, T_l, h_l, Psat, Tsat, sigma, Rc, R;
+	su2double rho_l, rho_m, T_l, h_l, Psat, Tsat, sigma, Rc, Rdroplet, mom3;
 
-	P   = Primitive[nDim+1] * config->GetPressure_Ref();
-	T   = Primitive[0]      * config->GetTemperature_Ref();
-	rho = Primitive[nDim+2] * config->GetDensity_Ref();
-	h   = Primitive[nDim+3] * config->GetEnergy_Ref();
-	Rc  = Rcritical   * config->GetLength_Ref();
+	if (Two_Phase_Var[0] != 0) Rdroplet =  Two_Phase_Var[1]/Two_Phase_Var[0] * config->GetLength_Ref();
+	else Rdroplet = 0;
 
-	FluidModel->SetLiquidProp(P, T, rho, h, Rc, Two_Phase_Var);
+    mom3 = Two_Phase_Var[3];
+	P    = Primitive[nDim+1] * config->GetPressure_Ref();
+	T    = Primitive[0]      * config->GetTemperature_Ref();
+	rho  = Primitive[nDim+2] * config->GetDensity_Ref();
+	h    = Primitive[nDim+3] * config->GetEnergy_Ref();
+	Rc   = Rcritical         * config->GetLength_Ref();
+
+	FluidModel->SetLiquidProp(P, T, rho, h, Rc, Rdroplet, mom3);
 
 	T_l = FluidModel->GetLiquidTemperature()/config->GetTemperature_Ref();
 
@@ -157,7 +161,7 @@ su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *
 
 	Rc = FluidModel->GetCriticalRadius()/config->GetLength_Ref();
 
-	R = FluidModel->GetRadius()/config->GetLength_Ref();
+	Rdroplet = Rdroplet/config->GetLength_Ref();
 
 	rho_m = FluidModel->GetMixtureDensity()/config->GetDensity_Ref();
 
@@ -169,7 +173,7 @@ su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *
 	Primitive_Liquid[4] = Tsat;
 	Primitive_Liquid[5] = sigma;
 	Primitive_Liquid[6] = Rc;
-	Primitive_Liquid[7] = R;
+	Primitive_Liquid[7] = Rdroplet;
 	Primitive_Liquid[8] = rho_m;
 	Primitive_Liquid[9] = 0.0;
 

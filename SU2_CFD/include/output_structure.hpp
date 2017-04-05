@@ -623,6 +623,8 @@ public:
    */
   void LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
   
+  void LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
   /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for adjoint flow problems.
    * \param[in] config - Definition of the particular problem.

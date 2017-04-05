@@ -55,26 +55,27 @@ CLiquidModel::CLiquidModel(CConfig *config) {
 
 CLiquidModel::~CLiquidModel(void) { }
 
-void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double *Two_Phase_Var) {
+void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double Radius, su2double mom3) {
 
 	// guess for R critical, a loop is required to evaluate the right properties
 	//Rc = 1e-12;
 
-	SetRadius(Two_Phase_Var);
+	//SetRadius(Two_Phase_Var);
 
 	SetTsat(P);
 	SetPsat(T);
 
 	SetSurfaceTension(T);
 
-    SetTLiquid(T, Rcritical);
+    SetTLiquid(T, Rcritical, Radius);
     SetLiquidDensity();
 
     SetLiquidEnthalpy(h_v);
 
     SetRCritical(P, T);
 
-    SetDensity_Mixture(rho, Two_Phase_Var);
+    SetDensity_Mixture(rho, mom3);
+
 }
 
 void CLiquidModel::SetRCritical(su2double P, su2double T) {
@@ -88,14 +89,14 @@ void CLiquidModel::SetRCritical(su2double P, su2double T) {
 
 }
 
-void CLiquidModel::SetDensity_Mixture(su2double rho, su2double *Two_Phase_Var) {
+void CLiquidModel::SetDensity_Mixture(su2double rho, su2double mom3) {
 
-	    if (Two_Phase_Var[3] == 0) {
+	    if (mom3 == 0) {
 	    	rho_m = rho;
 	    } else {
-			y = Two_Phase_Var[3]*(rho_l - rho);
+			y = mom3*(rho_l - rho);
 			y = y + 0.75 * rho / 3.1415;
-			y = Two_Phase_Var[3]*rho_l / y;
+			y = mom3*rho_l / y;
 
 			rho_m = y/ rho_l + (1.0 - y)/ rho;
 			rho_m = 1.0/ rho_m;
@@ -104,14 +105,14 @@ void CLiquidModel::SetDensity_Mixture(su2double rho, su2double *Two_Phase_Var) {
 }
 
 
-
+/*
 void CLiquidModel::SetRadius(su2double *Two_Phase_Var) {
 
 	if (Two_Phase_Var[0] == 0) R = 0;
 	else 	R = Two_Phase_Var[1]/Two_Phase_Var[0];
 
 }
-
+*/
 
 
 
@@ -193,12 +194,12 @@ void CWater::SetPsat(su2double T) {
 void CWater::SetSurfaceTension(su2double T) {
 
 
-	sigma =  1.0 - 1.0 * T/Tstar;
+	sigma =  1.0 - T/Tstar;
 	sigma =  235.8e-3 * (0.375 + 0.625*(1.0-sigma)) * pow(sigma,1.256);
 
 }
 
-void CWater::SetTLiquid(su2double T, su2double Rcritical) {
+void CWater::SetTLiquid(su2double T, su2double Rcritical, su2double R) {
 
     	//Guess Rcritical, a loop is required to evaluate the right properties
 
