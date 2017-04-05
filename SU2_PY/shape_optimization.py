@@ -125,10 +125,10 @@ def shape_optimization( filename                           ,
     def_dv      = config.DEFINITION_DV
     n_dv        = sum(def_dv['SIZE'])
     x0          = [0.0]*n_dv # initial design
-    xb_low      = [float(bound_lower)]*n_dv # lower dv bound
-#    xb_low      = [-0.025,-0.025, -0.025, -0.05]
-#    xb_up       = [0.025, 0.05, 0.025, 0.025]
-    xb_up       = [float(bound_upper)]*n_dv # upper dv bound
+#    xb_low      = [float(bound_lower)]*n_dv # lower dv bound
+    xb_low      = [-0.025]*n_dv
+    xb_up       = [0.025]*n_dv
+#    xb_up       = [float(bound_upper)]*n_dv # upper dv bound
     xb          = zip(xb_low,xb_up) # design bounds
     
     # State

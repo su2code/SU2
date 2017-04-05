@@ -94,7 +94,7 @@ def adjoint( config ):
     if konfig['OBJECTIVE_FUNCTION'] == 'BOOM':
        konfig['RESTART_SOL'] = "YES"
        konfig['MATH_PROBLEM'] = "DIRECT"
-       konfig['AUTO_DIFF'] = "NO"
+       konfig['AUTO_DIFF'] = "YES"
        su2merge(konfig)
        konfig['AUTO_DIFF'] = "NO"
        konfig['MATH_PROBLEM'] = "DISCRETE_ADJOINT"

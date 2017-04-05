@@ -163,7 +163,6 @@ class Config(ordered_bunch):
         if not dv_old: dv_old = [0.0]*n_dv
         assert len(dv_new) == len(dv_old) , 'unexpected design vector length'
         
-
         # apply scale
         dv_scales = def_dv['SCALE']
 
@@ -175,7 +174,6 @@ class Config(ordered_bunch):
                 k = k + 1
         
         # Change the parameters of the design variables
-
         self['DV_KIND'] = def_dv['KIND']
         # handle param
         self['DV_PARAM'] = {'FFDTAG': "MAIN_BOX", 'SIZE' : 1, 'PARAM': 0.0, }
