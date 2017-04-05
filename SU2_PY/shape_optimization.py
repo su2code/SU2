@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
@@ -37,7 +37,7 @@ sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
@@ -55,14 +55,14 @@ def main():
                       help="OPTIMIZATION techique (SLSQP, CG, BFGS, POWELL)", metavar="OPTIMIZATION")
     parser.add_option("-q", "--quiet", dest="quiet", default="True",
                       help="True/False Quiet all SU2 output (optimizer output only)", metavar="QUIET")
-    
+
     (options, args)=parser.parse_args()
-    
+
     # process inputs
     options.partitions  = int( options.partitions )
     options.quiet       = options.quiet.upper() == 'TRUE'
     options.gradient    = options.gradient.upper()
-    
+
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
     sys.stdout.write('|   / __| | | |_  )   Release 5.0.0 \"Raven\"                             |\n')
@@ -102,7 +102,7 @@ def main():
                         options.gradient     ,
                         options.optimization ,
                         options.quiet         )
-    
+
 #: main()
 
 def shape_optimization( filename                           ,
@@ -111,13 +111,13 @@ def shape_optimization( filename                           ,
                         gradient    = 'CONTINUOUS_ADJOINT' ,
                         optimization = 'SLSQP'             ,
                         quiet       = False                 ):
-  
+
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
     if quiet: config.CONSOLE = 'CONCISE'
     config.GRADIENT_METHOD = gradient
-    
+
     its         = int ( config.OPT_ITERATIONS )
     accu        = float ( config.OPT_ACCURACY )
     bound_upper = float ( config.OPT_BOUND_UPPER )
@@ -125,23 +125,23 @@ def shape_optimization( filename                           ,
     def_dv      = config.DEFINITION_DV
     n_dv        = sum(def_dv['SIZE'])
     x0          = [0.0]*n_dv # initial design
-#    xb_low      = [float(bound_lower)]*n_dv # lower dv bound
-    xb_low      = [-0.025]*n_dv
-    xb_up       = [0.025]*n_dv
-#    xb_up       = [float(bound_upper)]*n_dv # upper dv bound
+    xb_low      = [float(bound_lower)]*n_dv # lower dv bound
+#    xb_low      = [-0.025]*n_dv
+#    xb_up       = [0.025]*n_dv
+    xb_up       = [float(bound_upper)]*n_dv # upper dv bound
     xb          = zip(xb_low,xb_up) # design bounds
-    
+
     # State
     state = SU2.io.State()
     state.find_files(config)
-    
+
     # Project
     if os.path.exists(projectname):
         project = SU2.io.load_data(projectname)
         project.config = config
     else:
         project = SU2.opt.Project(config,state)
-    
+
     # Optimize
     if optimization == 'SLSQP':
       SU2.opt.SLSQP(project,x0,xb,its,accu)
@@ -156,7 +156,7 @@ def shape_optimization( filename                           ,
     # rename project file
     if projectname:
         shutil.move('project.pkl',projectname)
-    
+
     return project
 
 #: shape_optimization()

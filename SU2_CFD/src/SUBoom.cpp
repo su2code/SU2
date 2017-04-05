@@ -9,7 +9,7 @@
 typedef std::complex<su2double> Complex;
 typedef std::valarray<Complex> CArray;
 
-#define N_PROF 150001
+#define N_PROF 80001
 
 SUBoom::SUBoom(){
 
@@ -46,11 +46,21 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 //  SPRINTF (cstr, "tols.in");
 //  tolfile.open(cstr, ios::in);
   tolfile.open("tols.in", ios::in);
-  tolfile >> str >> tol_dphi;
-  tolfile >> str >> tol_dr;
-  tolfile >> str >> tol_m;
-  tolfile >> str >> tol_dp;
-  tolfile >> str >> tol_l;
+  if (tolfile.fail()) {
+    cout << "There is no tol.in file. Using default tolerances for boom propagation. " << endl;
+    tol_dphi = 1.0E-3;
+    tol_dr = 1.0E-3;
+    tol_m = 1.0E6;
+    tol_dp = 1.0E-6;
+    tol_l = 1.0E-6;
+  }
+  else{
+    tolfile >> str >> tol_dphi;
+    tolfile >> str >> tol_dr;
+    tolfile >> str >> tol_m;
+    tolfile >> str >> tol_dp;
+    tolfile >> str >> tol_l;
+  }
 
   /*---Set reference pressure, make sure signal is dimensional---*/
   su2double Pressure_FreeStream=config->GetPressure_FreeStream();
@@ -111,6 +121,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   panelCount = 0;
   signal.x = new su2double[nPanel];
   signal.original_p = new su2double[nPanel];
+  signal.original_T = new su2double[nPanel];
   PointID = new unsigned long[nPanel];
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
@@ -908,6 +919,7 @@ void SUBoom::ODETerms(){
 }
 
 void SUBoom::DistanceToTime(){
+  cout << "Starting distance to time." << endl;
   int len = signal.original_len;
   for(int i = 0; i < len; i++){
     signal.original_T[i] = signal.x[i]/(a_inf*flt_M);
