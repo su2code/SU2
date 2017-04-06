@@ -44,7 +44,7 @@ from ..util import which
 #  Setup
 # ------------------------------------------------------------
 
-SU2_RUN = os.environ['SU2_RUN'] 
+SU2_RUN = os.environ['SU2_RUN']
 sys.path.append( SU2_RUN )
 
 # SU2 suite run command template
@@ -67,13 +67,13 @@ elif not which('mpiexec') is None:
     mpi_Command = 'mpiexec -n %i %s'
 else:
     mpi_Command = ''
-    
+
 from .. import EvaluationFailure, DivergenceFailure
 return_code_map = {
     1 : EvaluationFailure ,
     2 : DivergenceFailure ,
 }
-    
+
 # ------------------------------------------------------------
 #  SU2 Suite Interface Functions
 # ------------------------------------------------------------
@@ -83,7 +83,7 @@ def CFD(config):
         partitions set by config.NUMBER_PART
     """
     konfig = copy.deepcopy(config)
-    
+
     direct_diff = not konfig.get('DIRECT_DIFF',"") in ["NONE", ""]
 
     auto_diff = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
@@ -108,38 +108,38 @@ def CFD(config):
     else:
         tempname = 'config_CFD.cfg'
         konfig.dump(tempname)
-    
+
         processes = konfig['NUMBER_PART']
-    
+
         the_Command = 'SU2_CFD ' + tempname
 
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
-    
+
     #os.remove(tempname)
-    
+
     return
 
 def MSH(config):
     """ run SU2_MSH
         partitions set by config.NUMBER_PART
         currently forced to run serially
-    """    
+    """
     konfig = copy.deepcopy(config)
-    
+
     tempname = 'config_MSH.cfg'
     konfig.dump(tempname)
-    
+
     # must run with rank 1
     processes = konfig['NUMBER_PART']
-    processes = min([1,processes])    
-    
+    processes = min([1,processes])
+
     the_Command = 'SU2_MSH ' + tempname
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
-    
+
     #os.remove(tempname)
-    
+
     return
 
 def DEF(config):
@@ -148,25 +148,25 @@ def DEF(config):
         forced to run in serial, expects merged mesh input
     """
     konfig = copy.deepcopy(config)
-    
+
     tempname = 'config_DEF.cfg'
-    konfig.dump(tempname) 
-    
+    konfig.dump(tempname)
+
     # must run with rank 1
     processes = konfig['NUMBER_PART']
-    
+
     the_Command = 'SU2_DEF ' + tempname
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
-    
+
     #os.remove(tempname)
-    
+
     return
 
 def DOT(config):
     """ run SU2_DOT
         partitions set by config.NUMBER_PART
-    """    
+    """
     konfig = copy.deepcopy(config)
 
     auto_diff = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT' or konfig.get('AUTO_DIFF','NO') == 'YES'
@@ -180,47 +180,47 @@ def DOT(config):
 
         the_Command = 'SU2_DOT_AD ' + tempname
     else:
-    
+
         tempname = 'config_DOT.cfg'
         konfig.dump(tempname)
-    
+
         processes = konfig['NUMBER_PART']
-    
+
         the_Command = 'SU2_DOT ' + tempname
 
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
-    
+
     #os.remove(tempname)
-    
+
     return
 
 def GEO(config):
     """ run SU2_GEO
         partitions set by config.NUMBER_PART
         forced to run in serial
-    """    
+    """
     konfig = copy.deepcopy(config)
-    
+
     tempname = 'config_GEO.cfg'
-    konfig.dump(tempname)   
-    
+    konfig.dump(tempname)
+
     # must run with rank 1
     processes = konfig['NUMBER_PART']
-        
+
     the_Command = 'SU2_GEO ' + tempname
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
-    
+
     #os.remove(tempname)
-    
+
     return
-        
+
 def SOL(config):
     """ run SU2_SOL
       partitions set by config.NUMBER_PART
     """
-  
+
     konfig = copy.deepcopy(config)
 
     auto_diff = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT' or konfig.get('AUTO_DIFF','NO') == 'YES'
@@ -241,32 +241,42 @@ def SOL(config):
         processes = konfig['NUMBER_PART']
 
         the_Command = 'SU2_SOL ' + tempname
+
+    # Only one process for BOOM
+    if config.get('OBJECTIVE_FUNCTION',"") == 'BOOM':
+        tempname = 'config_SOL_AD.cfg'
+        konfig.dump(tempname)
+
+        processes = 1
+
+        the_Command = 'SU2_SOL_AD ' + tempname
+
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
-    
+
     #os.remove(tempname)
-    
+
     return
 
 def SOL_FSI(config):
     """ run SU2_SOL for FSI problems
       partitions set by config.NUMBER_PART
     """
-  
+
     konfig = copy.deepcopy(config)
-    
+
     tempname = 'config_SOL.cfg'
     konfig.dump(tempname)
-  
+
     # must run with rank 1
     processes = konfig['NUMBER_PART']
-    
+
     the_Command = 'SU2_SOL ' + tempname + ' 2'
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
-    
+
     #os.remove(tempname)
-    
+
     return
 
 
@@ -287,15 +297,15 @@ def run_command( Command ):
     """ runs os command with subprocess
         checks for errors from command
     """
-    
+
     sys.stdout.flush()
-    
+
     proc = subprocess.Popen( Command, shell=True    ,
-                             stdout=sys.stdout      , 
+                             stdout=sys.stdout      ,
                              stderr=subprocess.PIPE  )
     return_code = proc.wait()
     message = proc.stderr.read()
-    
+
     if return_code < 0:
         message = "SU2 process was terminated by signal '%s'\n%s" % (-return_code,message)
         raise SystemExit , message
@@ -308,6 +318,6 @@ def run_command( Command ):
         raise exception , message
     else:
         sys.stdout.write(message)
-            
+
     return return_code
 
