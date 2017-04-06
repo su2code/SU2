@@ -1589,16 +1589,19 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (heat) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][HEAT_SOL][VISC_TERM] = new CAvgGradCorrected_Heat(nDim, nVar_Heat, config);
-    numerics_container[MESH_0][HEAT_SOL][VISC_BOUND_TERM] = new CAvgGrad_Heat(nDim, nVar_Heat, config);
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
-    numerics_container[MESH_0][HEAT_SOL][CONV_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
-    numerics_container[MESH_0][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+      numerics_container[iMGlevel][HEAT_SOL][VISC_TERM] = new CAvgGradCorrected_Heat(nDim, nVar_Heat, config);
+      numerics_container[iMGlevel][HEAT_SOL][VISC_BOUND_TERM] = new CAvgGrad_Heat(nDim, nVar_Heat, config);
 
-    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][HEAT_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
-    numerics_container[MESH_0][HEAT_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
-    
+      numerics_container[iMGlevel][HEAT_SOL][CONV_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+      numerics_container[iMGlevel][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+
+      /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+      numerics_container[iMGlevel][HEAT_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
+      numerics_container[iMGlevel][HEAT_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
+    }
+
   }
   
   /*--- Solver definition for the flow adjoint problem ---*/

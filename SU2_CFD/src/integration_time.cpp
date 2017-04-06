@@ -210,7 +210,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
     
-    SetForcing_Term(solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone], iMesh+1);
+    SetForcing_Term(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone], iMesh+1);
     
     /*--- Recursive call to MultiGrid_Cycle ---*/
     
@@ -265,6 +265,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   su2double Area_Parent, Area_Children, *Solution_Fine, *Solution_Coarse;
   
   const unsigned short nVar = sol_coarse->GetnVar();
+  const unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
   
   su2double *Solution = new su2double[nVar];
   
@@ -294,23 +295,27 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   
   /*--- Remove any contributions from no-slip walls. ---*/
   
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    if ((Boundary == HEAT_FLUX             ) ||
-        (Boundary == ISOTHERMAL            )) {
-      
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        
-        /*--- For dirichlet boundary condtions, set the correction to zero.
-         Note that Solution_Old stores the correction not the actual value ---*/
-        
-        sol_coarse->node[Point_Coarse]->SetVelSolutionOldZero();
-        
+  if ( SolContainer_Position == FLOW_SOL ) {
+
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        Boundary = config->GetMarker_All_KindBC(iMarker);
+        if ((Boundary == HEAT_FLUX             ) ||
+            (Boundary == ISOTHERMAL            )) {
+
+          for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+
+            Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+            /*--- For dirichlet boundary condtions, set the correction to zero.
+             Note that Solution_Old stores the correction not the actual value ---*/
+
+            sol_coarse->node[Point_Coarse]->SetVelSolutionOldZero();
+
+          }
+
+        }
       }
-      
-    }
+
   }
   
   /*--- MPI the set solution old ---*/
@@ -503,11 +508,12 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
   }
 }
 
-void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
+void CMultiGridIntegration::SetForcing_Term(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
   unsigned long Point_Fine, Point_Coarse, iVertex;
   unsigned short iMarker, iVar, iChildren;
   su2double *Residual_Fine;
-  
+  const unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
+
   const unsigned short nVar = sol_coarse->GetnVar();
   su2double factor = config->GetDamp_Res_Restric(); //pow(config->GetDamp_Res_Restric(), iMesh);
   
@@ -526,16 +532,18 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
     sol_coarse->node[Point_Coarse]->AddRes_TruncError(Residual);
   }
   
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
+  if ( SolContainer_Position == FLOW_SOL ) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+        for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+          Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+          sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
+        }
       }
     }
   }
-  
+
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     sol_coarse->node[Point_Coarse]->SubtractRes_TruncError(sol_coarse->LinSysRes.GetBlock(Point_Coarse));
   }
@@ -551,10 +559,11 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
   
 }
 
-void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+void CMultiGridIntegration::SetRestricted_Residual(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long iVertex, Point_Fine, Point_Coarse;
   unsigned short iMarker, iVar, iChildren;
   su2double *Residual_Fine;
+  const unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
   
   const unsigned short nVar = sol_coarse->GetnVar();
   
@@ -572,17 +581,19 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *s
     }
     sol_coarse->node[Point_Coarse]->AddRes_TruncError(Residual);
   }
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
-      for (iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
+
+  if ( SolContainer_Position == FLOW_SOL ) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+        for (iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
+          Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+          sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
+        }
       }
     }
   }
-  
+
   delete [] Residual;
 }
 
@@ -620,36 +631,37 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   }
   
   /*--- Update the solution at the no-slip walls ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
-      
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        
-        if (SolContainer_Position == FLOW_SOL) {
-          
-          /*--- At moving walls, set the solution based on the new density and wall velocity ---*/
-          
-          if (grid_movement) {
-            Grid_Vel = geo_coarse->node[Point_Coarse]->GetGridVel();
-            for (iDim = 0; iDim < nDim; iDim++)
-              Vector[iDim] = sol_coarse->node[Point_Coarse]->GetSolution(0)*Grid_Vel[iDim];
-            sol_coarse->node[Point_Coarse]->SetVelSolutionVector(Vector);
-          } else {
-            
-            /*--- For stationary no-slip walls, set the velocity to zero. ---*/
-            
-            sol_coarse->node[Point_Coarse]->SetVelSolutionZero();
+  if ( SolContainer_Position == FLOW_SOL ) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+
+        for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+          Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+          if (SolContainer_Position == FLOW_SOL) {
+
+            /*--- At moving walls, set the solution based on the new density and wall velocity ---*/
+
+            if (grid_movement) {
+              Grid_Vel = geo_coarse->node[Point_Coarse]->GetGridVel();
+              for (iDim = 0; iDim < nDim; iDim++)
+                Vector[iDim] = sol_coarse->node[Point_Coarse]->GetSolution(0)*Grid_Vel[iDim];
+              sol_coarse->node[Point_Coarse]->SetVelSolutionVector(Vector);
+            } else {
+
+              /*--- For stationary no-slip walls, set the velocity to zero. ---*/
+
+              sol_coarse->node[Point_Coarse]->SetVelSolutionZero();
+            }
+
           }
-          
+
+          if (SolContainer_Position == ADJFLOW_SOL) {
+            sol_coarse->node[Point_Coarse]->SetVelSolutionDVector();
+          }
+
         }
-        
-        if (SolContainer_Position == ADJFLOW_SOL) {
-          sol_coarse->node[Point_Coarse]->SetVelSolutionDVector();
-        }
-        
       }
     }
   }

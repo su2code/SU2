@@ -43,12 +43,33 @@ CHeatVariable::CHeatVariable(void) : CVariable() {
 CHeatVariable::CHeatVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
 
+  unsigned short iVar, iMesh, nMGSmooth = 0;
+  bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
   /*--- Initialization of heat variable ---*/
   Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
 
+  /*--- Allocate residual structures ---*/
+
+  Res_TruncError = new su2double [nVar];
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Res_TruncError[iVar] = 0.0;
+  }
+
+  /*--- Only for residual smoothing (multigrid) ---*/
+
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+
+  if ((nMGSmooth > 0) || low_fidelity) {
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
+  }
+
+  /*--- Allocate and initialize solution for dual time strategy ---*/
   if (dual_time) {
     Solution_time_n[0]  = val_Heat;
     Solution_time_n1[0] = val_Heat;
