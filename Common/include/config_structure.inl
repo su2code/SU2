@@ -371,11 +371,11 @@ inline su2double CConfig::GetPrandtl_Turb(void) { return Prandtl_Turb; }
 
 inline su2double CConfig::GetLength_Ref(void) { return Length_Ref; }
 
-inline su2double CConfig::GetMass_Ref(void) { return Force_Ref/Length_Ref*pow(Time_Ref, 2); }
+inline su2double CConfig::GetMass_Ref(void) { return Density_Ref*pow(Length_Ref, 3); }
 
-inline su2double CConfig::GetBoltzmann_Ref(void) { return Force_Ref*Length_Ref/Temperature_Ref; }
+inline su2double CConfig::GetBoltzmann_Ref(void) { return Density_Ref*pow(Length_Ref, 3)*pow(Velocity_Ref, 2)/Temperature_Ref; }
 
-inline su2double CConfig::GetSurfTension_Ref(void) { return Force_Ref/Length_Ref; }
+inline su2double CConfig::GetSurfTension_Ref(void) { return Density_Ref*pow(Length_Ref, 3)/pow(Time_Ref, 2); }
 
 inline su2double CConfig::GetPressure_Ref(void) { return Pressure_Ref; }
 
