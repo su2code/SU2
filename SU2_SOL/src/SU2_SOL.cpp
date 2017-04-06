@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
 	char config_file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+  int nProcessor = 0;
   su2double Objective_Function;
 
   ofstream CFD_pressure_file ;
@@ -56,6 +57,7 @@ int main(int argc, char *argv[]) {
   SU2_Comm MPICommunicator(MPI_COMM_WORLD);
 	MPI_Comm_rank(MPICommunicator,&rank);
   MPI_Comm_size(MPICommunicator,&size);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
@@ -536,6 +538,8 @@ int main(int argc, char *argv[]) {
              AD::StartRecording();
 			 SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
              if(rank == MASTER_NODE){
+             for (int iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+             if(iProcessor == 0){
 			 cout << "SUBoom initialized." << endl;
 			 boom.ConditionAtmosphericData();
              cout << "Condition atmospheric data complete." << endl;
@@ -558,6 +562,8 @@ int main(int argc, char *argv[]) {
              boom.PropagateSignal();
              Objective_Function = boom.p_int2;
              }
+             }
+             }
 
              if (rank==MASTER_NODE){
              SU2_TYPE::SetDerivative(Objective_Function,1.0);
@@ -578,7 +584,7 @@ int main(int argc, char *argv[]) {
              }
 
              cout<<"Finished extracting."<<endl;
-
+s
              boom.WriteSensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
            }
