@@ -981,7 +981,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
       }
     }
-    else if ( Boundary == FLUID_INTERFACE && Monitoring == YES) {
+    else if ( Boundary == CHT_WALL_INTERFACE && Monitoring == YES) {
 
       for( iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
 

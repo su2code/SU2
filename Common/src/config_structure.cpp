@@ -315,7 +315,7 @@ void CConfig::SetPointersNull(void) {
   Marker_All_TagBound         = NULL;    Marker_CfgFile_TagBound = NULL;    Marker_All_KindBC     = NULL;
   Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv     = NULL;    Marker_All_PerBound   = NULL;
   Marker_FSIinterface         = NULL;    Marker_All_FSIinterface = NULL;    Marker_Riemann        = NULL;
-  Marker_Fluid_InterfaceBound = NULL;
+  Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface     = NULL;
 
   
   /*--- Boundary Condition settings ---*/
@@ -751,6 +751,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
   /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: FSI interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_FSI_INTERFACE", nMarker_FSIinterface, Marker_FSIinterface);
+  /*!\brief MARKER_CHT_INTERFACE \n DESCRIPTION: CHT interface boundary marker(s) \ingroup Config*/
+  addStringListOption("MARKER_CHT_INTERFACE", nMarker_CHTInterface, Marker_CHTInterface);
   /*!\brief MARKER_DIRICHLET  \n DESCRIPTION: Dirichlet boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
@@ -3149,7 +3151,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
-  iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
+  iMarker_Clamped, iMarker_FSIinterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Load_Sine,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D;
 
   int size = SINGLE_NODE;
@@ -3163,7 +3165,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
-  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
+  nMarker_InterfaceBound + nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_NRBC + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
@@ -3388,6 +3390,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = FLUID_INTERFACE;
+    iMarker_CfgFile++;
+  }
+
+  for (iMarker_CHTInterface = 0; iMarker_CHTInterface < nMarker_CHTInterface; iMarker_CHTInterface++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_CHTInterface[iMarker_CHTInterface];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = CHT_WALL_INTERFACE;
     iMarker_CfgFile++;
   }
 

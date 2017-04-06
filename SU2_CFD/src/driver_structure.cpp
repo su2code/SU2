@@ -4465,12 +4465,10 @@ void CCHTDriver::Run() {
     // danach Kommunikation mit Target Solver
     /*--- At each pseudo time-step updates transfer data ---*/
     //cout << "                         TRANSFERRING SOLVER DATA" << endl;
-    /*for (iZone = 0; iZone < nZone; iZone++)
+    for (iZone = 0; iZone < nZone; iZone++)
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
           Transfer_Data(iZone, jZone);
-    */
-    Transfer_Data(0,1);
   CHTIter++;
   }  
 }

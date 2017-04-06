@@ -794,6 +794,7 @@ enum BC_TYPE {
   NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
   INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
   FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
+  CHT_WALL_INTERFACE = 40, /*!< \brief Domain interface definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 

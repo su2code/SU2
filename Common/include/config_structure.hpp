@@ -182,6 +182,7 @@ private:
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
   nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
   nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
+  nMarker_CHTInterface,
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
   nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
   nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
@@ -221,6 +222,7 @@ private:
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
   *Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
   *Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
+  *Marker_CHTInterface,
   *Marker_ActDiskInlet,
   *Marker_ActDiskOutlet,
   *Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
