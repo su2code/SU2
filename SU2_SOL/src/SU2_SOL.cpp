@@ -537,33 +537,37 @@ int main(int argc, char *argv[]) {
 
              AD::StartRecording();
 			 SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
-             if(rank == MASTER_NODE){
-             for (int iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-             if(iProcessor == 0){
-			 cout << "SUBoom initialized." << endl;
-			 boom.ConditionAtmosphericData();
-             cout << "Condition atmospheric data complete." << endl;
+			 if (rank == MASTER_NODE)
+               cout << "SUBoom initialized." << endl;
+             boom.ConditionAtmosphericData();
+             if (rank == MASTER_NODE)
+               cout << "Condition atmospheric data complete." << endl;
              boom.ScaleFactors();
-             cout << "Scale factors complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Scale factors complete." << endl;
              boom.InitialWaveNormals();
-             cout << "Initial wave normals complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Initial wave normals complete." << endl;
              boom.RayTracer();
-             cout << "Ray tracer complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Ray tracer complete." << endl;
              boom.RayTubeArea();
-             cout << "Ray tube area complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Ray tube area complete." << endl;
              boom.FindInitialRayTime();
-             cout << "Find initial ray time complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Find initial ray time complete." << endl;
              boom.ODETerms();
-             cout << "ODE terms complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "ODE terms complete." << endl;
              boom.DistanceToTime();
-             cout << "Distance to time complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Distance to time complete." << endl;
              boom.CreateSignature();
-             cout << "Create signature complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Create signature complete." << endl;
              boom.PropagateSignal();
              Objective_Function = boom.p_int2;
-             }
-             }
-             }
 
              if (rank==MASTER_NODE){
              SU2_TYPE::SetDerivative(Objective_Function,1.0);
@@ -594,25 +598,35 @@ int main(int argc, char *argv[]) {
 ////////             FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
              SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
-             cout << "SUBoom initialized." << endl;
+             if (rank == MASTER_NODE)
+               cout << "SUBoom initialized." << endl;
              boom.ConditionAtmosphericData();
-             cout << "Condition atmospheric data complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Condition atmospheric data complete." << endl;
              boom.ScaleFactors();
-             cout << "Scale factors complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Scale factors complete." << endl;
              boom.InitialWaveNormals();
-             cout << "Initial wave normals complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Initial wave normals complete." << endl;
              boom.RayTracer();
-             cout << "Ray tracer complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Ray tracer complete." << endl;
              boom.RayTubeArea();
-             cout << "Ray tube area complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Ray tube area complete." << endl;
              boom.FindInitialRayTime();
-             cout << "Find initial ray time complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Find initial ray time complete." << endl;
              boom.ODETerms();
-             cout << "ODE terms complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "ODE terms complete." << endl;
              boom.DistanceToTime();
-             cout << "Distance to time complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Distance to time complete." << endl;
              boom.CreateSignature();
-             cout << "Create signature complete." << endl;
+             if (rank == MASTER_NODE)
+               cout << "Create signature complete." << endl;
              boom.PropagateSignal();
            }
 
