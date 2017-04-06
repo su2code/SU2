@@ -47,15 +47,15 @@ int main(int argc, char *argv[]) {
   int nProcessor = 0;
   su2double Objective_Function;
 
-  ofstream CFD_pressure_file ;
-  CFD_pressure_file.open("p_CFD.dat");
+//  ofstream CFD_pressure_file ;
+//  CFD_pressure_file.open("p_CFD.dat");
 
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
-	SU2_MPI::Init(&argc,&argv);
+  SU2_MPI::Init(&argc,&argv);
   SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-	MPI_Comm_rank(MPICommunicator,&rank);
+  MPI_Comm_rank(MPICommunicator,&rank);
   MPI_Comm_size(MPICommunicator,&size);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
      read and stored. ---*/
 
     config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
-    config_container[iZone]->SetMPICommunicator(MPICommunicator);
+//    config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
@@ -535,36 +535,27 @@ int main(int argc, char *argv[]) {
              if (rank == MASTER_NODE)
                cout << endl <<"------------------------- Computing Far Field Noise (Primal+Adjoint) -----------------------" << endl;
 
+             if (rank == MASTER_NODE){
              AD::StartRecording();
 			 SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
-			 if (rank == MASTER_NODE)
                cout << "SUBoom initialized." << endl;
              boom.ConditionAtmosphericData();
-             if (rank == MASTER_NODE)
                cout << "Condition atmospheric data complete." << endl;
              boom.ScaleFactors();
-             if (rank == MASTER_NODE)
                cout << "Scale factors complete." << endl;
              boom.InitialWaveNormals();
-             if (rank == MASTER_NODE)
                cout << "Initial wave normals complete." << endl;
              boom.RayTracer();
-             if (rank == MASTER_NODE)
                cout << "Ray tracer complete." << endl;
              boom.RayTubeArea();
-             if (rank == MASTER_NODE)
                cout << "Ray tube area complete." << endl;
              boom.FindInitialRayTime();
-             if (rank == MASTER_NODE)
                cout << "Find initial ray time complete." << endl;
              boom.ODETerms();
-             if (rank == MASTER_NODE)
                cout << "ODE terms complete." << endl;
              boom.DistanceToTime();
-             if (rank == MASTER_NODE)
                cout << "Distance to time complete." << endl;
              boom.CreateSignature();
-             if (rank == MASTER_NODE)
                cout << "Create signature complete." << endl;
              boom.PropagateSignal();
              Objective_Function = boom.p_int2;
@@ -590,6 +581,7 @@ int main(int argc, char *argv[]) {
              cout<<"Finished extracting."<<endl;
 
              boom.WriteSensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
+             }
 
            }
 		   else{

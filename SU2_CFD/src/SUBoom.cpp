@@ -9,7 +9,7 @@
 typedef std::complex<su2double> Complex;
 typedef std::valarray<Complex> CArray;
 
-#define N_PROF 80001
+#define N_PROF 50001
 
 SUBoom::SUBoom(){
 
@@ -17,9 +17,10 @@ SUBoom::SUBoom(){
 
 SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
-  int rank = 0;
 #ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int rank, iProcessor, nProcessor;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
 
 
@@ -114,7 +115,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       nPanel = panelCount;
     }
   }
-
   signal.original_len = nPanel;
   cout << "nPanel = " << nPanel << endl;
 
@@ -195,6 +195,9 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   }
 
   }
+  else{
+    ray_N_phi = 0;
+  }
 
 }
 
@@ -273,6 +276,7 @@ void SUBoom::ConditionAtmosphericData(){
 }
 
 void SUBoom::ScaleFactors(){
+  if(ray_N_phi > 0){
   int len;
   su2double *x;
   su2double L;
@@ -281,8 +285,6 @@ void SUBoom::ScaleFactors(){
 
   len = signal.original_len;
   x = signal.x;
-
-  if(len > 0){
 
   su2double min_x = x[0], max_x = x[len-1];
 
@@ -952,8 +954,8 @@ void SUBoom::ODETerms(){
 }
 
 void SUBoom::DistanceToTime(){
+  if(ray_N_phi > 0){
   int len = signal.original_len;
-  if(len > 0){
   for(int i = 0; i < len; i++){
     signal.original_T[i] = signal.x[i]/(a_inf*flt_M);
   }
@@ -961,8 +963,8 @@ void SUBoom::DistanceToTime(){
 }
 
 void SUBoom::CreateSignature(){
+  if(ray_N_phi > 0){
   int len = signal.original_len;
-  if(len > 0){
   su2double pp[2][len-1];
   su2double ll[len-1];
   su2double mm[len-1];
