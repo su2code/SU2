@@ -249,7 +249,7 @@ def SOL(config):
 
         processes = 1
 
-        the_Command = 'SU2_SOL ' + tempname
+        the_Command = 'SU2_SOL_AD ' + tempname
 
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
