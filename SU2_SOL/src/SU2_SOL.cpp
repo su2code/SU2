@@ -584,7 +584,7 @@ int main(int argc, char *argv[]) {
              }
 
              cout<<"Finished extracting."<<endl;
-s
+
              boom.WriteSensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
            }
