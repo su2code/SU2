@@ -535,6 +535,7 @@ int main(int argc, char *argv[]) {
 
              AD::StartRecording();
 			 SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
+             if(rank == MASTER_NODE){
 			 cout << "SUBoom initialized." << endl;
 			 boom.ConditionAtmosphericData();
              cout << "Condition atmospheric data complete." << endl;
@@ -556,6 +557,7 @@ int main(int argc, char *argv[]) {
              cout << "Create signature complete." << endl;
              boom.PropagateSignal();
              Objective_Function = boom.p_int2;
+             }
 
              if (rank==MASTER_NODE){
              SU2_TYPE::SetDerivative(Objective_Function,1.0);

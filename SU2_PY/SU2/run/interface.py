@@ -242,14 +242,14 @@ def SOL(config):
 
         the_Command = 'SU2_SOL ' + tempname
 
-    # Only one process for BOOM
-    if konfig['OBJECTIVE_FUNCTION'] == 'BOOM':
-        tempname = 'config_SOL_BOOM.cfg'
-        konfig.dump(tempname)
-
-        processes = 1
-
-        the_Command = 'SU2_SOL_AD ' + tempname
+#    # Only one process for BOOM
+#    if konfig['OBJECTIVE_FUNCTION'] == 'BOOM':
+#        tempname = 'config_SOL_BOOM.cfg'
+#        konfig.dump(tempname)
+#
+#        processes = 1
+#
+#        the_Command = 'SU2_SOL_AD ' + tempname
 
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
