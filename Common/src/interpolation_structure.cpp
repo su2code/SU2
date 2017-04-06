@@ -1363,7 +1363,7 @@ CTurboInterpolation::CTurboInterpolation(void):  CInterpolator() { }
 CTurboInterpolation::CTurboInterpolation(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone) {
 
   /*--- Initialize transfer coefficients between the zones ---*/
-  Set_TransferCoeff(config);
+//  Set_TransferCoeff(config);
 
 }
 
@@ -1493,14 +1493,14 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
     Collect_TurboVertexInfo( false, markDonor, markTarget, nVertexSpanDonor, iSpan ,nDim );
 
     if (nVertexSpanTarget != 0 ){
-      MinAngularCoord_Target = target_geometry->GetMinAngularPitch(markTarget, iSpan);
-      MaxAngularCoord_Target = target_geometry->GetMaxAngularPitch(markTarget, iSpan);
+      MinAngularCoord_Target = target_geometry->GetMinAngularCoord(markTarget, iSpan);
+      MaxAngularCoord_Target = target_geometry->GetMaxAngularCoord(markTarget, iSpan);
       PitchTarget = abs(MaxAngularCoord_Target - MinAngularCoord_Target);
     }
 
     if (nVertexSpanDonor != 0 ){
-      MinAngularCoord_Donor = donor_geometry->GetMinAngularPitch(markDonor, iSpan);
-      MaxAngularCoord_Donor = donor_geometry->GetMaxAngularPitch(markDonor, iSpan);
+      MinAngularCoord_Donor = donor_geometry->GetMinAngularCoord(markDonor, iSpan);
+      MaxAngularCoord_Donor = donor_geometry->GetMaxAngularCoord(markDonor, iSpan);
       PitchDonor = abs(MaxAngularCoord_Donor - MinAngularCoord_Donor);
     }
 

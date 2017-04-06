@@ -187,7 +187,7 @@ public:
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
-  void InitStaticMeshMovement(bool print, unsigned long ExtIter);
+  void InitStaticMeshMovement();
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
@@ -640,11 +640,6 @@ public:
   void SetMixingPlane(unsigned short iZone);
 
   /*!
-   * \brief Preprocessing Mixing Plane interface.
-   */
-  void PreprocessingMixingPlane(unsigned short donorZone);
-
-  /*!
    * \brief Set Mixing Plane interface within multiple zones.
    */
   void SetTurboPerformance(unsigned short targetZone);
@@ -749,11 +744,6 @@ public:
    * \brief Set Mixing Plane interface within multiple zones.
    */
   void SetMixingPlane(unsigned short iZone);
-
-  /*!
-   * \brief Preprocessing Mixing Plane interface.
-   */
-  void PreprocessingMixingPlane(unsigned short donorZone);
 
   /*!
    * \brief Set Mixing Plane interface within multiple zones.
@@ -875,16 +865,6 @@ public:
    * \brief Update the solution for the Harmonic Balance.
    */
   void Update();
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetMixingPlane(unsigned short iZone);
-
-  /*!
-   * \brief Preprocessing Mixing Plane interface.
-   */
-  void PreprocessingMixingPlane(unsigned short donorZone);
 
   /*!
    * \brief Set Mixing Plane interface within multiple zones.

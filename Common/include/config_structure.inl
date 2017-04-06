@@ -983,6 +983,8 @@ inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachiner
 
 inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane;}
 
+inline bool CConfig::GetSpatialFourier(void){return SpatialFourier;}
+
 inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[val_iZone];}
 
 inline bool CConfig::GetBoolNRBC(void) { return (nMarker_NRBC!=0);}
@@ -992,6 +994,10 @@ inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0);}
 inline unsigned short CConfig::GetnMarker_MixingPlaneInterface(void) { return nMarker_MixingPlaneInterface;}
 
 inline unsigned short CConfig::GetnMarker_Turbomachinery(void) { return nMarker_Turbomachinery;}
+
+inline unsigned short CConfig::GetnMarker_Shroud(void) { return nMarker_Shroud;}
+
+inline string CConfig::GetMarker_Shroud(unsigned short val_marker){return Marker_Shroud[val_marker];}
 
 inline unsigned short CConfig::GetnMarker_TurboPerformance(void) { return nMarker_TurboPerformance;}
 

@@ -149,7 +149,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
   unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
-  unsigned short iVar, iSpan, iDim, iMarker, nLineLets;
+  unsigned short iVar, iDim, iMarker, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
@@ -163,7 +163,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename_ = config->GetSolution_FlowFileName();
-  unsigned short nSpanMax    = config->GetnSpanMaxAllZones();
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -708,156 +707,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       SlidingState[iMarker] = NULL;
   }
  
-
-
-  /*--- Initialize quantities for the average process for internal flow ---*/
-
-  nSpanWiseSections = config->GetnSpanWiseSections();
-
-  AverageVelocity 									                      = new su2double** [nMarker];
-  AverageTurboVelocity 							                 = new su2double** [nMarker];
-  OldAverageTurboVelocity 					              = new su2double** [nMarker];
-  ExtAverageTurboVelocity 					              = new su2double** [nMarker];
-  AverageFlux 											                          = new su2double** [nMarker];
-  SpanTotalFlux                         										= new su2double** [nMarker];
-  AveragePressure  									                     = new su2double* [nMarker];
-  OldAveragePressure                    							= new su2double* [nMarker];
-  RadialEquilibriumPressure             = new su2double* [nMarker];
-  ExtAveragePressure  							                  = new su2double* [nMarker];
-  AverageDensity                        									= new su2double* [nMarker];
-  OldAverageDensity                     							= new su2double* [nMarker];
-  ExtAverageDensity                     							= new su2double* [nMarker];
-  AverageNu                             												= new su2double* [nMarker];
-  AverageKei                            												= new su2double* [nMarker];
-  AverageOmega 											                         = new su2double* [nMarker];
-  ExtAverageNu 											                         = new su2double* [nMarker];
-  ExtAverageKei 										                        = new su2double* [nMarker];
-  ExtAverageOmega 									                      = new su2double* [nMarker];
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    AverageVelocity[iMarker] 									               = new su2double* [nSpanWiseSections + 1];
-    AverageTurboVelocity[iMarker] 						          = new su2double* [nSpanWiseSections + 1];
-    OldAverageTurboVelocity[iMarker] 					       = new su2double* [nSpanWiseSections + 1];
-    ExtAverageTurboVelocity[iMarker] 					       = new su2double* [nSpanWiseSections + 1];
-    AverageFlux[iMarker] 											                   = new su2double* [nSpanWiseSections + 1];
-    SpanTotalFlux[iMarker] 										                 = new su2double* [nSpanWiseSections + 1];
-    AveragePressure[iMarker]  								              = new su2double [nSpanWiseSections + 1];
-    OldAveragePressure[iMarker]  							           = new su2double [nSpanWiseSections + 1];
-    RadialEquilibriumPressure[iMarker]  			    = new su2double [nSpanWiseSections + 1];
-    ExtAveragePressure[iMarker]  							           = new su2double [nSpanWiseSections + 1];
-    AverageDensity[iMarker]   								              = new su2double [nSpanWiseSections + 1];
-    OldAverageDensity[iMarker]   							           = new su2double [nSpanWiseSections + 1];
-    ExtAverageDensity[iMarker]   							           = new su2double [nSpanWiseSections + 1];
-    AverageNu[iMarker]   							                   = new su2double [nSpanWiseSections + 1];
-    AverageKei[iMarker]   							                  = new su2double [nSpanWiseSections + 1];
-    AverageOmega[iMarker]   							                = new su2double [nSpanWiseSections + 1];
-    ExtAverageNu[iMarker]   							                = new su2double [nSpanWiseSections + 1];
-    ExtAverageKei[iMarker]   							               = new su2double [nSpanWiseSections + 1];
-    ExtAverageOmega[iMarker]   							             = new su2double [nSpanWiseSections + 1];
-
-    for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
-      AverageVelocity[iMarker][iSpan]           												= new su2double [nDim];
-      AverageTurboVelocity[iMarker][iSpan] 										     = new su2double [nDim];
-      OldAverageTurboVelocity[iMarker][iSpan] 							  = new su2double [nDim];
-      ExtAverageTurboVelocity[iMarker][iSpan] 							  	= new su2double [nDim];
-      AverageFlux[iMarker][iSpan] 														              = new su2double [nVar];
-      SpanTotalFlux[iMarker][iSpan] 													            = new su2double [nVar];
-      AveragePressure[iMarker][iSpan]           												= 0.0;
-      OldAveragePressure[iMarker][iSpan]  										      = 0.0;
-      RadialEquilibriumPressure[iMarker][iSpan] 							= 0.0;
-      ExtAveragePressure[iMarker][iSpan]        										= 0.0;
-      AverageDensity[iMarker][iSpan]   												         = 0.0;
-      OldAverageDensity[iMarker][iSpan]   									      = 0.0;
-      ExtAverageDensity[iMarker][iSpan]         										= 0.0;
-      AverageNu[iMarker][iSpan]   										              = 0.0;
-      AverageKei[iMarker][iSpan]   										             = 0.0;
-      AverageOmega[iMarker][iSpan]   										           = 0.0;
-      ExtAverageNu[iMarker][iSpan]   										           = 0.0;
-      ExtAverageKei[iMarker][iSpan]   										          = 0.0;
-      ExtAverageOmega[iMarker][iSpan]   										        = 0.0;
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        AverageVelocity[iMarker][iSpan][iDim] 											           = 0.0;
-        AverageTurboVelocity[iMarker][iSpan][iDim] 									      = 0.0;
-        OldAverageTurboVelocity[iMarker][iSpan][iDim] 							   = 0.0;
-        ExtAverageTurboVelocity[iMarker][iSpan][iDim] 						   	= 0.0;
-      }
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-        AverageFlux[iMarker][iSpan][iVar] 													      = 0.0;
-        SpanTotalFlux[iMarker][iSpan][iVar] 												    = 0.0;
-      }
-    }
-  }
-
-
-  /*--- Initialize primitive quantities for turboperformace ---*/
-
-  nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
-
-  DensityIn                     = new su2double*[nMarkerTurboPerf];
-  PressureIn                    = new su2double*[nMarkerTurboPerf];
-  TurboVelocityIn               = new su2double**[nMarkerTurboPerf];
-  DensityOut                    = new su2double*[nMarkerTurboPerf];
-  PressureOut                   = new su2double*[nMarkerTurboPerf];
-  TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
-
-  for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-    DensityIn[iMarker]          = new su2double [nSpanMax + 1];
-    PressureIn[iMarker]         = new su2double [nSpanMax + 1];
-    TurboVelocityIn[iMarker]    = new su2double*[nSpanMax + 1];
-    DensityOut[iMarker]         = new su2double [nSpanMax + 1];
-    PressureOut[iMarker]        = new su2double [nSpanMax + 1];
-    TurboVelocityOut[iMarker]   = new su2double*[nSpanMax + 1];
-
-
-    for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
-      DensityIn[iMarker][iSpan]          = 0.0;
-      PressureIn[iMarker][iSpan]         = 0.0;
-      TurboVelocityIn[iMarker][iSpan]    = new su2double[nDim];
-      DensityOut[iMarker][iSpan]         = 0.0;
-      PressureOut[iMarker][iSpan]        = 0.0;
-      TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
-
-      for (iDim = 0; iDim < 3; iDim++){
-        TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
-        TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
-      }
-    }
-  }
-
-
-  /*--- Initialize quantities for NR BC ---*/
-
-  if(config->GetBoolNRBC()){
-
-    CkInflow				= new complex<su2double>** [nMarker];
-    CkOutflow1			= new complex<su2double>** [nMarker];
-    CkOutflow2			= new complex<su2double>** [nMarker];
-
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      CkInflow[iMarker]				= new complex<su2double>*[nSpanWiseSections];
-      CkOutflow1[iMarker]			= new complex<su2double>*[nSpanWiseSections];
-      CkOutflow2[iMarker]			= new complex<su2double>*[nSpanWiseSections];
-
-      for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
-        CkInflow[iMarker][iSpan]				= new complex<su2double>[geometry->GetnFreqSpanMax(INFLOW)];
-        CkOutflow1[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
-        CkOutflow2[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
-
-        for (iVar = 0; iVar <geometry->GetnFreqSpanMax(INFLOW) ; iVar++) {
-          CkInflow[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
-        }
-
-        for (iVar = 0; iVar <geometry->GetnFreqSpanMax(OUTFLOW) ; iVar++) {
-          CkOutflow1[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
-          CkOutflow2[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
-        }
-      }
-    }
-  }
-
-
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
   if (config->GetFixed_CL_Mode())
@@ -1259,6 +1108,161 @@ CEulerSolver::~CEulerSolver(void) {
   	}
   	delete [] CkOutflow2;
   }
+
+}
+
+void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
+  unsigned short iMarker, iSpan, iDim, iVar;
+  unsigned short nSpanMax    = config->GetnSpanMaxAllZones();
+
+
+  /*--- Initialize quantities for the average process for internal flow ---*/
+
+  nSpanWiseSections = config->GetnSpanWiseSections();
+
+  AverageVelocity                       = new su2double** [nMarker];
+  AverageTurboVelocity                  = new su2double** [nMarker];
+  OldAverageTurboVelocity               = new su2double** [nMarker];
+  ExtAverageTurboVelocity               = new su2double** [nMarker];
+  AverageFlux                           = new su2double** [nMarker];
+  SpanTotalFlux                         = new su2double** [nMarker];
+  AveragePressure                       = new su2double* [nMarker];
+  OldAveragePressure                    = new su2double* [nMarker];
+  RadialEquilibriumPressure             = new su2double* [nMarker];
+  ExtAveragePressure                    = new su2double* [nMarker];
+  AverageDensity                        = new su2double* [nMarker];
+  OldAverageDensity                     = new su2double* [nMarker];
+  ExtAverageDensity                     = new su2double* [nMarker];
+  AverageNu                             = new su2double* [nMarker];
+  AverageKei                            = new su2double* [nMarker];
+  AverageOmega                          = new su2double* [nMarker];
+  ExtAverageNu                          = new su2double* [nMarker];
+  ExtAverageKei                         = new su2double* [nMarker];
+  ExtAverageOmega                       = new su2double* [nMarker];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    AverageVelocity[iMarker]                = new su2double* [nSpanWiseSections + 1];
+    AverageTurboVelocity[iMarker]           = new su2double* [nSpanWiseSections + 1];
+    OldAverageTurboVelocity[iMarker]        = new su2double* [nSpanWiseSections + 1];
+    ExtAverageTurboVelocity[iMarker]        = new su2double* [nSpanWiseSections + 1];
+    AverageFlux[iMarker]                    = new su2double* [nSpanWiseSections + 1];
+    SpanTotalFlux[iMarker]                  = new su2double* [nSpanWiseSections + 1];
+    AveragePressure[iMarker]                = new su2double [nSpanWiseSections + 1];
+    OldAveragePressure[iMarker]             = new su2double [nSpanWiseSections + 1];
+    RadialEquilibriumPressure[iMarker]      = new su2double [nSpanWiseSections + 1];
+    ExtAveragePressure[iMarker]             = new su2double [nSpanWiseSections + 1];
+    AverageDensity[iMarker]                 = new su2double [nSpanWiseSections + 1];
+    OldAverageDensity[iMarker]              = new su2double [nSpanWiseSections + 1];
+    ExtAverageDensity[iMarker]              = new su2double [nSpanWiseSections + 1];
+    AverageNu[iMarker]                      = new su2double [nSpanWiseSections + 1];
+    AverageKei[iMarker]                     = new su2double [nSpanWiseSections + 1];
+    AverageOmega[iMarker]                   = new su2double [nSpanWiseSections + 1];
+    ExtAverageNu[iMarker]                   = new su2double [nSpanWiseSections + 1];
+    ExtAverageKei[iMarker]                  = new su2double [nSpanWiseSections + 1];
+    ExtAverageOmega[iMarker]                = new su2double [nSpanWiseSections + 1];
+
+    for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+      AverageVelocity[iMarker][iSpan]           = new su2double [nDim];
+      AverageTurboVelocity[iMarker][iSpan]      = new su2double [nDim];
+      OldAverageTurboVelocity[iMarker][iSpan]   = new su2double [nDim];
+      ExtAverageTurboVelocity[iMarker][iSpan]   = new su2double [nDim];
+      AverageFlux[iMarker][iSpan]               = new su2double [nVar];
+      SpanTotalFlux[iMarker][iSpan]             = new su2double [nVar];
+      AveragePressure[iMarker][iSpan]           = 0.0;
+      OldAveragePressure[iMarker][iSpan]        = 0.0;
+      RadialEquilibriumPressure[iMarker][iSpan] = 0.0;
+      ExtAveragePressure[iMarker][iSpan]        = 0.0;
+      AverageDensity[iMarker][iSpan]            = 0.0;
+      OldAverageDensity[iMarker][iSpan]         = 0.0;
+      ExtAverageDensity[iMarker][iSpan]         = 0.0;
+      AverageNu[iMarker][iSpan]                 = 0.0;
+      AverageKei[iMarker][iSpan]                = 0.0;
+      AverageOmega[iMarker][iSpan]              = 0.0;
+      ExtAverageNu[iMarker][iSpan]              = 0.0;
+      ExtAverageKei[iMarker][iSpan]             = 0.0;
+      ExtAverageOmega[iMarker][iSpan]           = 0.0;
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AverageVelocity[iMarker][iSpan][iDim]            = 0.0;
+        AverageTurboVelocity[iMarker][iSpan][iDim]       = 0.0;
+        OldAverageTurboVelocity[iMarker][iSpan][iDim]    = 0.0;
+        ExtAverageTurboVelocity[iMarker][iSpan][iDim]    = 0.0;
+      }
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        AverageFlux[iMarker][iSpan][iVar]       = 0.0;
+        SpanTotalFlux[iMarker][iSpan][iVar]     = 0.0;
+      }
+    }
+  }
+
+
+  /*--- Initialize primitive quantities for turboperformace ---*/
+
+  nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
+
+  DensityIn                     = new su2double*[nMarkerTurboPerf];
+  PressureIn                    = new su2double*[nMarkerTurboPerf];
+  TurboVelocityIn               = new su2double**[nMarkerTurboPerf];
+  DensityOut                    = new su2double*[nMarkerTurboPerf];
+  PressureOut                   = new su2double*[nMarkerTurboPerf];
+  TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
+
+  for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+    DensityIn[iMarker]          = new su2double [nSpanMax + 1];
+    PressureIn[iMarker]         = new su2double [nSpanMax + 1];
+    TurboVelocityIn[iMarker]    = new su2double*[nSpanMax + 1];
+    DensityOut[iMarker]         = new su2double [nSpanMax + 1];
+    PressureOut[iMarker]        = new su2double [nSpanMax + 1];
+    TurboVelocityOut[iMarker]   = new su2double*[nSpanMax + 1];
+
+
+    for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
+      DensityIn[iMarker][iSpan]          = 0.0;
+      PressureIn[iMarker][iSpan]         = 0.0;
+      TurboVelocityIn[iMarker][iSpan]    = new su2double[nDim];
+      DensityOut[iMarker][iSpan]         = 0.0;
+      PressureOut[iMarker][iSpan]        = 0.0;
+      TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
+
+      for (iDim = 0; iDim < 3; iDim++){
+        TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
+        TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
+      }
+    }
+  }
+
+
+  /*--- Initialize quantities for NR BC ---*/
+
+  if(config->GetBoolNRBC()){
+
+    CkInflow= new complex<su2double>** [nMarker];
+    CkOutflow1= new complex<su2double>** [nMarker];
+    CkOutflow2= new complex<su2double>** [nMarker];
+
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      CkInflow[iMarker]= new complex<su2double>*[nSpanWiseSections];
+      CkOutflow1[iMarker]= new complex<su2double>*[nSpanWiseSections];
+      CkOutflow2[iMarker]= new complex<su2double>*[nSpanWiseSections];
+
+      for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
+        CkInflow[iMarker][iSpan]= new complex<su2double>[2*geometry->GetnFreqSpanMax(INFLOW)+1];
+        CkOutflow1[iMarker][iSpan]= new complex<su2double>[2*geometry->GetnFreqSpanMax(OUTFLOW)+1];
+        CkOutflow2[iMarker][iSpan]= new complex<su2double>[2*geometry->GetnFreqSpanMax(OUTFLOW)+1];
+
+        for (iVar = 0; iVar <2*geometry->GetnFreqSpanMax(INFLOW)+1; iVar++) {
+          CkInflow[iMarker][iSpan][iVar]= complex<su2double>(0.0,0.0);
+        }
+
+        for (iVar = 0; iVar <2*geometry->GetnFreqSpanMax(OUTFLOW)+1; iVar++) {
+          CkOutflow1[iMarker][iSpan][iVar]= complex<su2double>(0.0,0.0);
+          CkOutflow2[iMarker][iSpan][iVar]= complex<su2double>(0.0,0.0);
+        }
+      }
+    }
+  }
+
 
 }
 
@@ -11398,21 +11402,19 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag) {
   /* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
   su2double cj_inf,cj_out1, cj_out2, Density_i, Pressure_i, *turboNormal, *turboVelocity, *Velocity_i, AverageSoundSpeed;
-  su2double *deltaprim, *cj, jk_nVert;
+  su2double *deltaprim, *cj, TwoPiThetaFreq_Pitch, pitch, theta, deltaTheta;
   unsigned short iMarker, iSpan, iMarkerTP, iDim;
-  unsigned long  iPoint, kend, k;
-  long iVertex;
+  unsigned long  iPoint, kend_max, k;
+  long iVertex, freq;
   unsigned short  iZone     = config->GetiZone();
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(marker_flag);
-  int j;
   int rank = MASTER_NODE;
   turboNormal 	= new su2double[nDim];
   turboVelocity = new su2double[nDim];
   Velocity_i 		= new su2double[nDim];
   deltaprim     = new su2double[nVar];
   cj				    = new su2double[nVar];
-  complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2, nVert;
-  su2double TwoPi = 2.0*PI_NUMBER;
+  complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2, expArg;
   I = complex<su2double>(0.0,1.0);
 
 #ifdef HAVE_MPI
@@ -11421,9 +11423,10 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 
 #endif
 
-  kend = geometry->GetnFreqSpanMax(marker_flag);
+  kend_max = geometry->GetnFreqSpanMax(marker_flag);
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
-    for(k=1; k < kend+1; k++){
+    for(k=0; k < 2*kend_max+1; k++){
+      freq = k - kend_max;
       cktemp_inf = complex<su2double>(0.0,0.0);
       cktemp_out1 = complex<su2double>(0.0,0.0);
       cktemp_out2 = complex<su2double>(0.0,0.0);
@@ -11431,68 +11434,71 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
           if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
             if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-              nVert = complex<su2double>(geometry->GetnTotVertexSpan(iMarker,iSpan));
               for (iVertex = 0; iVertex < geometry->nVertexSpan[iMarker][iSpan]; iVertex++) {
 
                 /*--- find the node related to the vertex ---*/
                 iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
 
-                if (geometry->node[iPoint]->GetDomain()){
-                  j			 = geometry->turbovertex[iMarker][iSpan][iVertex]->GetGlobalVertexIndex();
+                geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(turboNormal);
+                /*--- Compute the internal state _i ---*/
 
+                Pressure_i = node[iPoint]->GetPressure();
+                Density_i = node[iPoint]->GetDensity();
+                for (iDim = 0; iDim < nDim; iDim++)
+                {
+                  Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+                }
+                ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
-                  geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(turboNormal);
-                  /*--- Compute the internal state _i ---*/
+                if(nDim ==2){
+                  deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
+                  deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
+                  deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
+                  deltaprim[3] = Pressure_i - AveragePressure[iMarker][iSpan];
+                }
+                else{
+                  //Here 3d
+                  deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
+                  deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
+                  deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
+                  deltaprim[3] = turboVelocity[2] - AverageTurboVelocity[iMarker][iSpan][2]; //New char
+                  deltaprim[4] = Pressure_i - AveragePressure[iMarker][iSpan];
+                }
 
-                  Pressure_i = node[iPoint]->GetPressure();
-                  Density_i = node[iPoint]->GetDensity();
-                  for (iDim = 0; iDim < nDim; iDim++)
-                  {
-                    Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
-                  }
-                  ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
+                FluidModel->SetTDState_Prho(AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
+                AverageSoundSpeed = FluidModel->GetSoundSpeed();
+                conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[iMarker][iSpan], deltaprim, cj);
 
-                  if(nDim ==2){
-                    deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
-                    deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
-                    deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
-                    deltaprim[3] = Pressure_i - AveragePressure[iMarker][iSpan];
-                  }
-                  else{
-                    //Here 3d
-                    deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
-                    deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
-                    deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
-                    deltaprim[3] = turboVelocity[2] - AverageTurboVelocity[iMarker][iSpan][2]; //New char
-                    deltaprim[4] = Pressure_i - AveragePressure[iMarker][iSpan];
-                  }
+                /*-----this is only valid 2D ----*/
+                if(nDim ==2){
+                  cj_out1 = cj[1];
+                  cj_out2 = cj[2];
+                  cj_inf  = cj[3];
+                }
+                else{
+                  //Here 3D
+                  cj_out1 = cj[1];
+                  cj_out2 = cj[3];
+                  cj_inf  = cj[4];
+                }
+                pitch      = geometry->GetMaxAngularCoord(iMarker, iSpan) - geometry->GetMinAngularCoord(iMarker,iSpan);
+                theta      = geometry->turbovertex[iMarker][iSpan][iVertex]->GetRelAngularCoord();
+                deltaTheta = geometry->turbovertex[iMarker][iSpan][iVertex]->GetDeltaAngularCoord();
+                TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
 
-                  FluidModel->SetTDState_Prho(AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
-                  AverageSoundSpeed = FluidModel->GetSoundSpeed();
-                  conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[iMarker][iSpan], deltaprim, cj);
-
-                  /*-----this is only valid 2D ----*/
-                  if(nDim ==2){
-                    cj_out1 = cj[1];
-                    cj_out2 = cj[2];
-                    cj_inf  = cj[3];
-                  }
-                  else{
-                    //Here 3D
-                    cj_out1 = cj[1];
-                    cj_out2 = cj[3];
-                    cj_inf  = cj[4];
-                  }
-
-                  jk_nVert = j*k/(nVert.real());
-                  //								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
-                  complex<su2double> expArg = complex<su2double>(cos(TwoPi*jk_nVert)) - I*complex<su2double>(sin(TwoPi*jk_nVert));
-
-                  cktemp_out1 +=  cj_out1*expArg/nVert;
-                  cktemp_out2 +=  cj_out2*expArg/nVert;
-                  cktemp_inf  +=  cj_inf*expArg/nVert;
+                expArg = complex<su2double>(cos(TwoPiThetaFreq_Pitch)) - I*complex<su2double>(sin(TwoPiThetaFreq_Pitch));
+                if (freq != 0){
+                  cktemp_out1 +=  cj_out1*expArg*deltaTheta/pitch;
+                  cktemp_out2 +=  cj_out2*expArg*deltaTheta/pitch;
+                  cktemp_inf  +=  cj_inf*expArg*deltaTheta/pitch;
+                }
+                else{
+                  cktemp_inf += complex<su2double>(0.0,0.0);
+                  cktemp_out1 += complex<su2double>(0.0,0.0);
+                  cktemp_out2 += complex<su2double>(0.0,0.0);
                 }
               }
+
             }
           }
         }
@@ -11531,10 +11537,10 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
             if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
               /*-----this is only valid 2D ----*/
               if (marker_flag == INFLOW){
-                CkInflow[iMarker][iSpan][k-1]= cktemp_inf;
+                CkInflow[iMarker][iSpan][k]= cktemp_inf;
               }else{
-                CkOutflow1[iMarker][iSpan][k-1]=cktemp_out1;
-                CkOutflow2[iMarker][iSpan][k-1]=cktemp_out2;
+                CkOutflow1[iMarker][iSpan][k]=cktemp_out1;
+                CkOutflow2[iMarker][iSpan][k]=cktemp_out2;
               }
             }
           }
@@ -11555,7 +11561,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, iVar, jVar, iSpan;
-  unsigned long  iPoint, Point_Normal, oldVertex, k, kend;
+  unsigned long  iPoint, Point_Normal, oldVertex, k, kend, kend_max;
   long iVertex;
   su2double  *UnitNormal, *turboVelocity, *turboNormal;
 
@@ -11572,7 +11578,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   su2double relfacAvg       = config->GetNRBC_RelaxFactorAverage(Marker_Tag);
   su2double relfacFou       = config->GetNRBC_RelaxFactorFourier(Marker_Tag);
   su2double *Normal;
-  su2double TwoPi = 2.0*PI_NUMBER;
+  su2double TwoPiThetaFreq_Pitch, pitch,theta;
   Normal 		 		= new su2double[nDim];
   turboNormal 	= new su2double[nDim];
   UnitNormal 		= new su2double[nDim];
@@ -11583,20 +11589,12 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
   su2double AverageSoundSpeed, *AverageTurboMach, AverageEntropy, AverageEnthalpy;
   AverageTurboMach = new su2double[nDim];
-
-
-
   S_boundary = new su2double[8];
 
-
-
-  /*--- new declarations ---*/
-
-  su2double  AvgMach ,jk_nVert, *cj, GilesBeta, *delta_c, **R_Matrix, *deltaprim, **R_c_inv,**R_c, alphaIn_BC, gammaIn_BC = 0,
+  su2double  AvgMach , *cj, GilesBeta, *delta_c, **R_Matrix, *deltaprim, **R_c_inv,**R_c, alphaIn_BC, gammaIn_BC = 0,
       P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, c3js_Re, cOutjs_Re, avgVel2 =0.0;
 
-  int j;
-  unsigned long nVert;
+  long freq;
 
   delta_c = new su2double[nVar];
   deltaprim = new su2double[nVar];
@@ -11637,9 +11635,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
     AvgMach = AverageTurboMach[0]*AverageTurboMach[0] + AverageTurboMach[1]*AverageTurboMach[1];
 
-    nVert = geometry->GetnTotVertexSpan(val_marker,iSpan);
-    kend = geometry->GetnFreqSpan(val_marker, iSpan);
-
+    kend     = geometry->GetnFreqSpan(val_marker, iSpan);
+    kend_max = geometry->GetnFreqSpanMax(config->GetMarker_All_TurbomachineryFlag(val_marker));
     conv_numerics->GetRMatrix(AverageSoundSpeed, AverageDensity[val_marker][iSpan], R_Matrix);
 
     switch(config->GetKind_Data_NRBC(Marker_Tag)){
@@ -11911,6 +11908,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       AverageSoundSpeed = FluidModel->GetSoundSpeed();
       conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[val_marker][iSpan], deltaprim, cj);
 
+
+      pitch      = geometry->GetMaxAngularCoord(val_marker, iSpan) - geometry->GetMinAngularCoord(val_marker,iSpan);
+      theta      = geometry->turbovertex[val_marker][iSpan][iVertex]->GetRelAngularCoord();
+
       switch(config->GetKind_Data_NRBC(Marker_Tag))
       {
 
@@ -11919,22 +11920,53 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
       case TOTAL_CONDITIONS_PT: case MIXING_IN:case TOTAL_CONDITIONS_PT_1D: case MIXING_IN_1D:
 
-        if (AvgMach < 1.000){
-          Beta_inf= I*complex<su2double>(sqrt(1.0 - AvgMach));
-          c2js = complex<su2double>(0.0,0.0);
-          c3js = complex<su2double>(0.0,0.0);
-          j = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
-          for(k=1; k < kend+1; k++){
-            jk_nVert = j*k/su2double(nVert);
+        if (AvgMach < 0.999){
+          if(config->GetSpatialFourier()){
+            Beta_inf= I*complex<su2double>(sqrt(1.0 - AvgMach));
+            c2js = complex<su2double>(0.0,0.0);
+            c3js = complex<su2double>(0.0,0.0);
+            for(k=0; k < 2*kend_max+1; k++){
+              freq = k - kend_max;
+              if(freq >= (long)(-kend) && freq <= (long)(kend) && AvgMach > 0.15){
+                TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
 
-            c2ks = -CkInflow[val_marker][iSpan][k-1]*complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
-            c3ks =  CkInflow[val_marker][iSpan][k-1]*complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
-            c3ks *= complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
-            c2js += c2ks*(complex<su2double>(cos(TwoPi*jk_nVert))+I*complex<su2double>(sin(TwoPi*jk_nVert)));
-            c3js += c3ks*(complex<su2double>(cos(TwoPi*jk_nVert))+I*complex<su2double>(sin(TwoPi*jk_nVert)));
+                c2ks = -CkInflow[val_marker][iSpan][k]*complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
+                c3ks =  CkInflow[val_marker][iSpan][k]*complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
+                c3ks *= complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
+                c2js += c2ks*(complex<su2double>(cos(TwoPiThetaFreq_Pitch))+I*complex<su2double>(sin(TwoPiThetaFreq_Pitch)));
+                c3js += c3ks*(complex<su2double>(cos(TwoPiThetaFreq_Pitch))+I*complex<su2double>(sin(TwoPiThetaFreq_Pitch)));
+              }
+              else{
+                c2js += complex<su2double>(0.0,0.0);
+                c3js += complex<su2double>(0.0,0.0);
+              }
+            }
+            c2js_Re = c2js.real();
+            c3js_Re = c3js.real();
+
+            if (nDim == 2){
+              dcjs[0] = 0.0     - cj[0];
+              dcjs[1] = c2js_Re - cj[1];
+              dcjs[2] = c3js_Re - cj[2];
+            }else{
+              dcjs[0] = 0.0     - cj[0];
+              dcjs[1] = c2js_Re - cj[1];
+              dcjs[2] = 0.0     - cj[2];
+              dcjs[3] = c3js_Re - cj[3];
+            }
           }
-          c2js_Re = 2.0*c2js.real();
-          c3js_Re = 2.0*c3js.real();
+          else{
+            if (nDim == 2){
+              dcjs[0] = 0.0;
+              dcjs[1] = 0.0;
+              dcjs[2] = 0.0;
+            }else{
+              dcjs[0] = 0.0;
+              dcjs[1] = 0.0;
+              dcjs[2] = 0.0;
+              dcjs[3] = 0.0;
+            }
+          }
 
         }else{
           if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
@@ -11951,17 +11983,18 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
             c3js_Re = cj[4]*(Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
             c3js_Re *= (Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
           }
-        }
 
-        if (nDim == 2){
-          dcjs[0] = 0.0     - cj[0];
-          dcjs[1] = c2js_Re - cj[1];
-          dcjs[2] = c3js_Re - cj[2];
-        }else{
-          dcjs[0] = 0.0     - cj[0];
-          dcjs[1] = c2js_Re - cj[1];
-          dcjs[2] = 0.0     - cj[2];
-          dcjs[3] = c3js_Re - cj[3];
+
+          if (nDim == 2){
+            dcjs[0] = 0.0     - cj[0];
+            dcjs[1] = c2js_Re - cj[1];
+            dcjs[2] = c3js_Re - cj[2];
+          }else{
+            dcjs[0] = 0.0     - cj[0];
+            dcjs[1] = c2js_Re - cj[1];
+            dcjs[2] = 0.0     - cj[2];
+            dcjs[3] = c3js_Re - cj[3];
+          }
         }
 
         /* --- Impose Inlet BC Reflecting--- */
@@ -11980,7 +12013,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D:
 
         /* --- implementation of NRBC ---*/
-        if (AvgMach >= 1.000){
+        if (AvgMach >= 0.999){
           /* --- supersonic NRBC implementation ---*/
           if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
             GilesBeta= -sqrt(AvgMach - 1.0);
@@ -11994,27 +12027,49 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
           else{
             cOutjs_Re= (2.0 * AverageTurboMach[0])/(GilesBeta - AverageTurboMach[1])*cj[1] - (GilesBeta + AverageTurboMach[1])/(GilesBeta - AverageTurboMach[1])*cj[3];
           }
-
-        }else{
-          /* --- subsonic NRBC implementation ---*/
-          Beta_inf= I*complex<su2double>(sqrt(1.0  - AvgMach));
-          cOutjs 	= complex<su2double>(0.0,0.0);
-          j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
-          for(k=1; k < kend+1; k++){
-            jk_nVert = j*k/su2double(nVert);
-            cOutks  = complex<su2double>(2.0 * AverageTurboMach[0])/complex<su2double>(Beta_inf - AverageTurboMach[1])*CkOutflow1[val_marker][iSpan][k-1];
-            cOutks -= complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>(Beta_inf - AverageTurboMach[1])*CkOutflow2[val_marker][iSpan][k-1];
-
-            cOutjs += cOutks*(complex<su2double>(cos(TwoPi*jk_nVert)) + I*complex<su2double>(sin(TwoPi*jk_nVert)));
+          if (nDim == 2){
+            dcjs[3] = cOutjs_Re - cj[3];
           }
-          cOutjs_Re = 2.0*cOutjs.real();
+          else{
+            dcjs[4] = cOutjs_Re - cj[4];
+          }
+        }else{
+          if(config->GetSpatialFourier()){
+            /* --- subsonic NRBC implementation ---*/
+            Beta_inf= I*complex<su2double>(sqrt(1.0  - AvgMach));
+            cOutjs 	= complex<su2double>(0.0,0.0);
+            for(k=0; k < 2*kend_max+1; k++){
+              freq = k - kend_max;
+              if(freq >= (long)(-kend) && freq <= (long)(kend) && AvgMach > 0.15){
+                TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
+                cOutks  = complex<su2double>(2.0 * AverageTurboMach[0])/complex<su2double>(Beta_inf - AverageTurboMach[1])*CkOutflow1[val_marker][iSpan][k];
+                cOutks -= complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>(Beta_inf - AverageTurboMach[1])*CkOutflow2[val_marker][iSpan][k];
+
+                cOutjs += cOutks*(complex<su2double>(cos(TwoPiThetaFreq_Pitch)) + I*complex<su2double>(sin(TwoPiThetaFreq_Pitch)));
+              }
+              else{
+                cOutjs +=complex<su2double>(0.0,0.0);
+              }
+            }
+            cOutjs_Re = cOutjs.real();
+
+            if (nDim == 2){
+              dcjs[3] = cOutjs_Re - cj[3];
+            }
+            else{
+              dcjs[4] = cOutjs_Re - cj[4];
+            }
+          }
+          else{
+            if (nDim == 2){
+              dcjs[3] = 0.0;
+            }
+            else{
+              dcjs[4] = 0.0;
+            }
+          }
         }
-        if (nDim == 2){
-          dcjs[3] = cOutjs_Re - cj[3];
-        }
-        else{
-          dcjs[4] = cOutjs_Re - cj[4];
-        }
+
         /* --- Impose Outlet BC Non-Reflecting  --- */
         delta_c[0] = cj[0];
         delta_c[1] = cj[1];
@@ -12027,6 +12082,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
           delta_c[4] = relfacAvg*c_avg[4] + relfacFou*dcjs[4];
         }
 
+
+        /*--- Automatically impose supersonic autoflow ---*/
         if (abs(AverageTurboMach[0]) >= 1.0000){
           delta_c[0] = 0.0;
           delta_c[1] = 0.0;
@@ -16080,7 +16137,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
   
   unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
-  unsigned short iVar, iSpan, iDim, iMarker, nLineLets;
+  unsigned short iVar, iDim, iMarker, nLineLets;
   su2double Density, Velocity2, Pressure, Temperature, StaticEnergy;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
@@ -16095,7 +16152,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
-  unsigned short nSpanMax    = config->GetnSpanMaxAllZones();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
 
   int rank = MASTER_NODE;
@@ -16672,153 +16728,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     Exhaust_Area[iMarker]        = 0.0;
 
   }
-  
 
-  /*--- Initialize quantities for the average process for internal flow ---*/
-
-  nSpanWiseSections = config->GetnSpanWiseSections();
-
-  AverageVelocity                       = new su2double** [nMarker];
-  AverageTurboVelocity                  = new su2double** [nMarker];
-  OldAverageTurboVelocity               = new su2double** [nMarker];
-  ExtAverageTurboVelocity               = new su2double** [nMarker];
-  AverageFlux                           = new su2double** [nMarker];
-  SpanTotalFlux                         = new su2double** [nMarker];
-  AveragePressure                       = new su2double* [nMarker];
-  OldAveragePressure                    = new su2double* [nMarker];
-  RadialEquilibriumPressure             = new su2double* [nMarker];
-  ExtAveragePressure                    = new su2double* [nMarker];
-  AverageDensity                        = new su2double* [nMarker];
-  OldAverageDensity                     = new su2double* [nMarker];
-  ExtAverageDensity                     = new su2double* [nMarker];
-  AverageNu                             = new su2double* [nMarker];
-  AverageKei                            = new su2double* [nMarker];
-  AverageOmega                          = new su2double* [nMarker];
-  ExtAverageNu                          = new su2double* [nMarker];
-  ExtAverageKei                         = new su2double* [nMarker];
-  ExtAverageOmega                       = new su2double* [nMarker];
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    AverageVelocity[iMarker]                = new su2double* [nSpanWiseSections + 1];
-    AverageTurboVelocity[iMarker]           = new su2double* [nSpanWiseSections + 1];
-    OldAverageTurboVelocity[iMarker]        = new su2double* [nSpanWiseSections + 1];
-    ExtAverageTurboVelocity[iMarker]        = new su2double* [nSpanWiseSections + 1];
-    AverageFlux[iMarker]                    = new su2double* [nSpanWiseSections + 1];
-    SpanTotalFlux[iMarker]                  = new su2double* [nSpanWiseSections + 1];
-    AveragePressure[iMarker]                = new su2double [nSpanWiseSections + 1];
-    OldAveragePressure[iMarker]             = new su2double [nSpanWiseSections + 1];
-    RadialEquilibriumPressure[iMarker]      = new su2double [nSpanWiseSections + 1];
-    ExtAveragePressure[iMarker]             = new su2double [nSpanWiseSections + 1];
-    AverageDensity[iMarker]                 = new su2double [nSpanWiseSections + 1];
-    OldAverageDensity[iMarker]              = new su2double [nSpanWiseSections + 1];
-    ExtAverageDensity[iMarker]              = new su2double [nSpanWiseSections + 1];
-    AverageNu[iMarker]                      = new su2double [nSpanWiseSections + 1];
-    AverageKei[iMarker]                     = new su2double [nSpanWiseSections + 1];
-    AverageOmega[iMarker]                   = new su2double [nSpanWiseSections + 1];
-    ExtAverageNu[iMarker]                   = new su2double [nSpanWiseSections + 1];
-    ExtAverageKei[iMarker]                  = new su2double [nSpanWiseSections + 1];
-    ExtAverageOmega[iMarker]                = new su2double [nSpanWiseSections + 1];
-
-    for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
-      AverageVelocity[iMarker][iSpan]           = new su2double [nDim];
-      AverageTurboVelocity[iMarker][iSpan]      = new su2double [nDim];
-      OldAverageTurboVelocity[iMarker][iSpan]   = new su2double [nDim];
-      ExtAverageTurboVelocity[iMarker][iSpan]   = new su2double [nDim];
-      AverageFlux[iMarker][iSpan]               = new su2double [nVar];
-      SpanTotalFlux[iMarker][iSpan]             = new su2double [nVar];
-      AveragePressure[iMarker][iSpan]           = 0.0;
-      OldAveragePressure[iMarker][iSpan]        = 0.0;
-      RadialEquilibriumPressure[iMarker][iSpan] = 0.0;
-      ExtAveragePressure[iMarker][iSpan]        = 0.0;
-      AverageDensity[iMarker][iSpan]            = 0.0;
-      OldAverageDensity[iMarker][iSpan]         = 0.0;
-      ExtAverageDensity[iMarker][iSpan]         = 0.0;
-      AverageNu[iMarker][iSpan]                 = 0.0;
-      AverageKei[iMarker][iSpan]                = 0.0;
-      AverageOmega[iMarker][iSpan]              = 0.0;
-      ExtAverageNu[iMarker][iSpan]              = 0.0;
-      ExtAverageKei[iMarker][iSpan]             = 0.0;
-      ExtAverageOmega[iMarker][iSpan]           = 0.0;
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        AverageVelocity[iMarker][iSpan][iDim]            = 0.0;
-        AverageTurboVelocity[iMarker][iSpan][iDim]       = 0.0;
-        OldAverageTurboVelocity[iMarker][iSpan][iDim]    = 0.0;
-        ExtAverageTurboVelocity[iMarker][iSpan][iDim]    = 0.0;
-      }
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-        AverageFlux[iMarker][iSpan][iVar]       = 0.0;
-        SpanTotalFlux[iMarker][iSpan][iVar]     = 0.0;
-      }
-    }
-  }
-
-
-  /*--- Initialize primitive quantities for turboperformace ---*/
-
-  nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
-
-  DensityIn                     = new su2double*[nMarkerTurboPerf];
-  PressureIn                    = new su2double*[nMarkerTurboPerf];
-  TurboVelocityIn               = new su2double**[nMarkerTurboPerf];
-  DensityOut                    = new su2double*[nMarkerTurboPerf];
-  PressureOut                   = new su2double*[nMarkerTurboPerf];
-  TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
-
-  for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-    DensityIn[iMarker]          = new su2double [nSpanMax + 1];
-    PressureIn[iMarker]         = new su2double [nSpanMax + 1];
-    TurboVelocityIn[iMarker]    = new su2double*[nSpanMax + 1];
-    DensityOut[iMarker]         = new su2double [nSpanMax + 1];
-    PressureOut[iMarker]        = new su2double [nSpanMax + 1];
-    TurboVelocityOut[iMarker]   = new su2double*[nSpanMax + 1];
-
-
-    for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
-      DensityIn[iMarker][iSpan]          = 0.0;
-      PressureIn[iMarker][iSpan]         = 0.0;
-      TurboVelocityIn[iMarker][iSpan]    = new su2double[nDim];
-      DensityOut[iMarker][iSpan]         = 0.0;
-      PressureOut[iMarker][iSpan]        = 0.0;
-      TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
-
-      for (iDim = 0; iDim < 3; iDim++){
-        TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
-        TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
-      }
-    }
-  }
-
-  /*--- Initialize quantities for NR BC ---*/
-
-  if(config->GetBoolNRBC()){
-
-    CkInflow				= new complex<su2double>** [nMarker];
-    CkOutflow1			= new complex<su2double>** [nMarker];
-    CkOutflow2			= new complex<su2double>** [nMarker];
-
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      CkInflow[iMarker]				= new complex<su2double>*[nSpanWiseSections];
-      CkOutflow1[iMarker]			= new complex<su2double>*[nSpanWiseSections];
-      CkOutflow2[iMarker]			= new complex<su2double>*[nSpanWiseSections];
-
-      for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
-        CkInflow[iMarker][iSpan]				= new complex<su2double>[geometry->GetnFreqSpanMax(INFLOW)];
-        CkOutflow1[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
-        CkOutflow2[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
-
-        for (iVar = 0; iVar <geometry->GetnFreqSpanMax(INFLOW) ; iVar++) {
-          CkInflow[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
-        }
-
-        for (iVar = 0; iVar <geometry->GetnFreqSpanMax(OUTFLOW) ; iVar++) {
-          CkOutflow1[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
-          CkOutflow2[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
-        }
-      }
-    }
-  }
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 

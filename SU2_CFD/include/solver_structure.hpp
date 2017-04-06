@@ -3321,6 +3321,13 @@ public:
   virtual void SetFreeStream_Solution(CConfig *config);
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void InitTurboContainers(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -5719,6 +5726,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief Initilize turbo containers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InitTurboContainers(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the solution using the Freestream values.

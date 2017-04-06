@@ -33,7 +33,6 @@
 
 #include "../include/driver_structure.hpp"
 
-#include <ostream>
 
 #include "../include/definition_structure.hpp"
 
@@ -356,16 +355,18 @@ CDriver::CDriver(char* confFile,
 
   /*---If the Grid Movement is static initialize the static mesh movment ---*/
   Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(ZONE_0);
-  initStaticMovement = (Kind_Grid_Movement == MOVING_WALL || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION);
+  initStaticMovement = (config_container[ZONE_0]->GetGrid_Movement() && (Kind_Grid_Movement == MOVING_WALL
+                        || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION));
 
 
   if(initStaticMovement){
     if (rank == MASTER_NODE)cout << endl <<"--------------------- Initialize Static Mesh Movement --------------------" << endl;
 
-      InitStaticMeshMovement(true, 0);
+      InitStaticMeshMovement();
   }
 
  if (config_container[ZONE_0]->GetBoolTurbomachinery()){
+   if (rank == MASTER_NODE)cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
       TurbomachineryPreprocessing();
   }
 
@@ -580,8 +581,6 @@ void CDriver::Geometrical_Preprocessing() {
   unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
   unsigned long iPoint;
   int rank = MASTER_NODE;
-  unsigned short nSpanMax = 0;
-  unsigned short nTimeZones = config_container[ZONE_0]->GetnTimeInstances();
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -654,27 +653,6 @@ void CDriver::Geometrical_Preprocessing() {
     if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
     geometry_container[iZone][MESH_0]->ComputeSurf_Curvature(config_container[iZone]);
 
-    /*--- Create turbovertex structure ---*/
-    if (config_container[iZone]->GetBoolTurbomachinery()){
-      geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
-      geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
-      if (rank == MASTER_NODE) cout << "Zone " << iZone << " number of span-wise sections " << config_container[iZone]->GetnSpanWiseSections() << endl;
-      if (config_container[iZone]->GetnSpanWiseSections() > nSpanMax){
-        nSpanMax = config_container[iZone]->GetnSpanWiseSections();
-      }
-      if ( config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-
-      config_container[iZone%nTimeZones]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(), (int)(iZone/nTimeZones));
-      }
-      else {
-      config_container[ZONE_0]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(),iZone);
-      }
-
-      if (rank == MASTER_NODE) cout << "Create TurboVertex structure." << endl;
-      geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
-      geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
-    }
-
     /*--- Check for periodicity and disable MG if necessary. ---*/
 
     if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
@@ -685,11 +663,6 @@ void CDriver::Geometrical_Preprocessing() {
 
   }
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-  	if (config_container[iZone]->GetBoolTurbomachinery()){
-  		config_container[iZone]->SetnSpanMaxAllZones(nSpanMax);
-  	}
-  }
 
   /*--- Loop over all the new grid ---*/
 
@@ -2643,7 +2616,7 @@ void CDriver::Interface_Preprocessing() {
 }
 
 
-void CDriver::InitStaticMeshMovement(bool print, unsigned long ExtIter){
+void CDriver::InitStaticMeshMovement(){
 
   unsigned short iMGlevel;
   unsigned short Kind_Grid_Movement;
@@ -2680,22 +2653,18 @@ void CDriver::InitStaticMeshMovement(bool print, unsigned long ExtIter){
       /*--- Steadily rotating frame: set the grid velocities just once
          before the first iteration flow solver. ---*/
 
-      if (rank == MASTER_NODE && print && ExtIter == 0) {
+      if (rank == MASTER_NODE) {
         cout << endl << " Setting rotating frame grid velocities";
-        cout << " for zone " << iZone << "." << endl;
-      }
-
-      if(rank == MASTER_NODE && print && ExtIter > 0) {
-        cout << endl << " Updated rotating frame grid velocities";
         cout << " for zone " << iZone << "." << endl;
       }
 
       /*--- Set the grid velocities on all multigrid levels for a steadily
            rotating reference frame. ---*/
 
-      for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, print);
-
+      for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
+        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, true);
+        geometry_container[iZone][iMGlevel]->SetShroudVelocity(config_container[iZone]);
+      }
 
       break;
 
@@ -2725,23 +2694,81 @@ void CDriver::TurbomachineryPreprocessing(){
   int rank = MASTER_NODE;
   unsigned short iTimeInstance = 0, jTimeInstance = 0, iGeomZone = 0, jGeomZone = 0;
   unsigned short nTimeInstances = config_container[ZONE_0]->GetnTimeInstances();
+  unsigned short nTotTimeInstances = nZone;
   unsigned short nGeomZones     = nZone/nTimeInstances;
-
+  unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
+  unsigned short nSpanMax = 0;
+  bool mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
+  bool harmonic_balance = config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+  su2double areaIn, areaOut;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  //TODO(turbo) make it general for turbo HB
-  if (rank == MASTER_NODE) cout <<endl<<"Compute average geometrical quantities for turbomachinery simulations." << endl;
+
+  /*--- Create turbovertex structure ---*/
+  if (rank == MASTER_NODE) cout<<endl<<"Initiliaze Turbo Vertex Structure." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
+    geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
+    if (rank == MASTER_NODE) cout <<"Number of span-wise sections in Zone "<< iZone<<": "<< config_container[iZone]->GetnSpanWiseSections() <<"."<< endl;
+    if (config_container[iZone]->GetnSpanWiseSections() > nSpanMax){
+      nSpanMax = config_container[iZone]->GetnSpanWiseSections();
+    }
+    if ( harmonic_balance ) {
+      config_container[iZone%nTimeInstances]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(), (int)(iZone/nTimeInstances));
+    }
+    else {
+      config_container[ZONE_0]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(),iZone);
+    }
+
+    if (rank == MASTER_NODE) cout << "Create TurboVertex structure." << endl;
+    geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
+    geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
+
+  }
+
+  /*--- Set maximum number of Span among all zones ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetnSpanMaxAllZones(nSpanMax);
+  }
+
+  if (rank == MASTER_NODE) cout<<"Max number of span-wise sections among all zones: "<< nSpanMax<<"."<< endl;
+
+
+  if (rank == MASTER_NODE) cout<<"Initialize solver containers for average and performance quantities." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    solver_container[iZone][MESH_0][FLOW_SOL]->InitTurboContainers(geometry_container[iZone][MESH_0],config_container[iZone]);
+  }
+
+  if (rank == MASTER_NODE) cout<<"Compute inflow and outflow average geometric quantities." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
     geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
 
   }
-  if (rank == MASTER_NODE) cout << "Transfer turbo average geometrical quantities to zone 0." << endl;
 
-  if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
+  if (rank == MASTER_NODE) cout<<"Initialize inflow and outflow average solution quantities." << endl;
+  for(iZone = 0; iZone < nZone; iZone++) {
+    solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+    solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+  }
+
+
+  if(mixingplane && !harmonic_balance){
+    if (rank == MASTER_NODE) cout << "Set span-wise sections between zones on Mixing-Plane interface." << endl;
+    for (donorZone = 0; donorZone < nZone; donorZone++) {
+      for (targetZone = 0; targetZone < nZone; targetZone++) {
+        if (targetZone != donorZone){
+          transfer_performance_container[donorZone][targetZone]->SetSpanWiseLevels(config_container[donorZone], config_container[targetZone]);
+        }
+      }
+    }
+  }
+
+  if (rank == MASTER_NODE) cout << "Transfer average geometric quantities to zone 0." << endl;
+  if (harmonic_balance){
     for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++) {
       jTimeInstance = iTimeInstance;
       for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
@@ -2754,6 +2781,40 @@ void CDriver::TurbomachineryPreprocessing(){
   else {
     for (iZone = 1; iZone < nZone; iZone++)
       transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
+  }
+
+//  if (rank == MASTER_NODE){
+//    for (iZone = 0; iZone < nZone; iZone++) {
+//    areaIn  = geometry_container[iZone][MESH_0]->GetSpanAreaIn(iZone, config_container[iZone]->GetnSpanWiseSections());
+//    areaOut = geometry_container[iZone][MESH_0]->GetSpanAreaOut(iZone, config_container[iZone]->GetnSpanWiseSections());
+//    cout << "Inlet area for blade "<< iZone << ": " << areaIn*10000.0 <<" cm^2."  <<endl;
+//    cout << "Oulet area for blade "<< iZone << ": " << areaOut*10000.0 <<" cm^2."  <<endl;
+//    }
+//  }
+
+  if (harmonic_balance){
+    if (rank == MASTER_NODE) cout << "Preprocess Harmonic Balance interface." << endl;
+    for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
+      for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
+        if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
+          interpolator_container[iTimeInstance][jTimeInstance]->Set_TransferCoeff(config_container);
+    }
+  }
+
+  if(mixingplane && !harmonic_balance){
+    if (rank == MASTER_NODE) cout<<"Preprocess of the Mixing-Plane Interface." << endl;
+    for (donorZone = 0; donorZone < nZone; donorZone++) {
+      nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
+      for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+        for (targetZone = 0; targetZone < nZone; targetZone++) {
+          if (targetZone != donorZone){
+            transfer_performance_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
+                config_container[donorZone], config_container[targetZone],
+                iMarkerInt);
+          }
+        }
+      }
+    }
   }
 
 }
@@ -2856,14 +2917,6 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
        (config_container[ZONE_0]->GetKind_Solver() ==  RANS) ) ) {
         for(iZone = 0; iZone < nZone; iZone++) {
           solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
-    }
-  }
-
-  /*--- Set the initial solution for average quantities for EULER/N-S/RANS in turbomachinery simulations ---*/
-  if(ExtIter == 0 && config_container[ZONE_0]->GetBoolTurbomachinery()){
-    for(iZone = 0; iZone < nZone; iZone++) {
-      solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-      solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
     }
   }
 
@@ -3886,7 +3939,7 @@ CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 void CTurbomachineryDriver::Run() {
 
 
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+//  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
   int rank = MASTER_NODE;
 
@@ -3905,13 +3958,7 @@ void CTurbomachineryDriver::Run() {
                                            surface_movement, grid_movement, FFDBox, iZone);
   }
 
-  if(ExtIter == 0){
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if(mixingplane)PreprocessingMixingPlane(iZone);
-    }
-  }
-
-  /* --- Set the mixing-plane interface ---*/
+  /* --- Update the mixing-plane interface ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     if(mixingplane)SetMixingPlane(iZone);
   }
@@ -3946,23 +3993,6 @@ void CTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
         transfer_performance_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone], iMarkerInt );
-      }
-    }
-  }
-}
-
-void CTurbomachineryDriver::PreprocessingMixingPlane(unsigned short donorZone){
-
-  unsigned short targetZone, nMarkerInt, iMarkerInt ;
-  nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
-
-  /* --- transfer the average value from the donorZone to the targetZone*/
-  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-    for (targetZone = 0; targetZone < nZone; targetZone++) {
-      if (targetZone != donorZone){
-        transfer_performance_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
-            config_container[donorZone], config_container[targetZone],
-            iMarkerInt);
       }
     }
   }
@@ -4056,7 +4086,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
     finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(2));
     rot_z_ini = config_container[ZONE_0]->GetRampRotatingFrame_Coeff(0);
-
+    print = ((ExtIter + 1)%40 == 0 && ExtIter > 0);
     if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
 
       for (iZone = 0; iZone < nZone; iZone++) {
@@ -4064,10 +4094,14 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
         if(abs(rot_z_final) > 0.0){
           rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
           config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
+          if(rank == MASTER_NODE && print && ExtIter > 0) {
+            cout << endl << " Updated rotating frame grid velocities";
+            cout << " for zone " << iZone << "." << endl;
+          }
+          geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, print);
+          geometry_container[iZone][MESH_0]->SetShroudVelocity(config_container[iZone]);
         }
       }
-      print = ((ExtIter + 1)%40 == 0 && ExtIter > 0);
-      InitStaticMeshMovement(print, ExtIter);
 
       for (iZone = 0; iZone < nZone; iZone++) {
         geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
@@ -4537,7 +4571,6 @@ CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
 void CDiscAdjTurbomachineryDriver::DirectRun(){
 
   int rank = MASTER_NODE;
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   unsigned short unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                             (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 #ifdef HAVE_MPI
@@ -4557,18 +4590,8 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
 
   }
 
-  if(ExtIter == 0){
-    for (iZone = 1; iZone < nZone; iZone++) {
-      transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
-    }
 
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if(mixingplane)PreprocessingMixingPlane(iZone);
-    }
-  }
-
-
-  /* --- Set the mixing-plane interface ---*/
+  /* --- Update the mixing-plane interface ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     if(mixingplane)SetMixingPlane(iZone);
   }
@@ -4652,23 +4675,6 @@ void CDiscAdjTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
   }
 }
 
-
-void CDiscAdjTurbomachineryDriver::PreprocessingMixingPlane(unsigned short donorZone){
-
-  unsigned short targetZone, nMarkerInt, iMarkerInt ;
-  nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
-
-  /* --- transfer the average value from the donorZone to the targetZone*/
-  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-    for (targetZone = 0; targetZone < nZone; targetZone++) {
-      if (targetZone != donorZone){
-        transfer_performance_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
-            config_container[donorZone], config_container[targetZone],
-            iMarkerInt);
-      }
-    }
-  }
-}
 
 void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 
@@ -5122,11 +5128,11 @@ void CHBMultiZoneDriver::Run() {
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
 
-  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
-    for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
-      if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
-        interpolator_container[iTimeInstance][jTimeInstance]->Set_TransferCoeff(config_container);
-  }
+//  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
+//    for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
+//      if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
+//        interpolator_container[iTimeInstance][jTimeInstance]->Set_TransferCoeff(config_container);
+//  }
 
   /*--- For each time instance update transfer data ---*/
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
@@ -5147,15 +5153,6 @@ void CHBMultiZoneDriver::Run() {
 //      }
 //    }
 
-//    for (iZone = 0; iZone < nZone; iZone++) {
-//      if(mixingplane)PreprocessingMixingPlane(iZone);
-//    }
-//  }
-
-//  /* --- Set the mixing-plane interface ---*/
-//  for (iZone = 0; iZone < nZone; iZone++) {
-//    if(mixingplane)SetMixingPlane(iZone);
-//  }
 
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
     iteration_container[iTimeInstance]->Iterate(output, integration_container, geometry_container,
@@ -5267,40 +5264,6 @@ void CHBMultiZoneDriver::Update() {
 
   }
 
-}
-
-void CHBMultiZoneDriver::SetMixingPlane(unsigned short donorZone){
-
-  unsigned short targetZone, nMarkerInt, iMarkerInt ;
-  nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
-
-  /* --- transfer the average value from the donorZone to the targetZone*/
-  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-    for (targetZone = 0; targetZone < nZone; targetZone++) {
-      if (targetZone != donorZone){
-        transfer_performance_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-            geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-            config_container[donorZone], config_container[targetZone], iMarkerInt );
-      }
-    }
-  }
-}
-
-void CHBMultiZoneDriver::PreprocessingMixingPlane(unsigned short donorZone){
-
-  unsigned short targetZone, nMarkerInt, iMarkerInt ;
-  nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
-
-  /* --- transfer the average value from the donorZone to the targetZone*/
-  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-    for (targetZone = 0; targetZone < nZone; targetZone++) {
-      if (targetZone != donorZone){
-        transfer_performance_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
-            config_container[donorZone], config_container[targetZone],
-            iMarkerInt);
-      }
-    }
-  }
 }
 
 
