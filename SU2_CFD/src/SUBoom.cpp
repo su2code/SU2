@@ -23,9 +23,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
 
-
-  if(rank == MASTER_NODE){
-
   /*---Make sure to read in hard-coded values in the future!---*/
 
   /*---Flight variables---*/
@@ -53,6 +50,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   string str;
   ifstream tolfile;
 
+  if(rank == MASTER_NODE){
   tolfile.open("tols.in", ios::in);
   if (tolfile.fail()) {
     cout << "There is no tol.in file. Using default tolerances for boom propagation. " << endl;
@@ -68,6 +66,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     tolfile >> str >> tol_m;
     tolfile >> str >> tol_dp;
     tolfile >> str >> tol_l;
+  }
   }
 
   /*---Set reference pressure, make sure signal is dimensional---*/
@@ -86,10 +85,13 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     Pressure_Ref      = flt_M*flt_M*atm_g*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
   }
   //p_inf = Pressure_FreeStream;
+  if(rank == MASTER_NODE){
   cout << "Pressure_Ref = " << Pressure_Ref << ", Pressure_FreeStream = " << Pressure_FreeStream << endl;
+  }
 
   /*---Loop over boundary markers to select those to extract pressure signature---*/
   unsigned long nMarker = config->GetnMarker_All();
+  unsigned long sigCount=0;
   unsigned long panelCount=0;
   unsigned long iMarker, iVertex, iPoint;
   su2double x, y, z;
@@ -101,12 +103,13 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   nDim = geometry->GetnDim();
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
+      sigCount++;
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if(geometry->node[iPoint]->GetDomain()){
-            Coord = geometry->node[iPoint]->GetCoord();
-            x = SU2_TYPE::GetValue(Coord[0]);
-            p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
+//            Coord = geometry->node[iPoint]->GetCoord();
+//            x = SU2_TYPE::GetValue(Coord[0]);
+//            p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
             //if(p >= 0.1 || p <= -0.1){
                 panelCount++;
             //}
@@ -115,10 +118,11 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       nPanel = panelCount;
     }
   }
-  signal.original_len = nPanel;
-  cout << "nPanel = " << nPanel << endl;
+  signal.original_len = sigCount;
+  nPanel = sigCount;
 
   /*---Extract signature---*/
+  if (rank == MASTER_NODE){
   ofstream sigFile;
 //  SPRINTF (cstr, "signal_original.dat");
   sigFile.precision(15);
@@ -134,7 +138,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if(geometry->node[iPoint]->GetDomain()){
+        //if(geometry->node[iPoint]->GetDomain()){
           Coord = geometry->node[iPoint]->GetCoord();
           x = SU2_TYPE::GetValue(Coord[0]);
           //p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
@@ -176,7 +180,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
             PointID[panelCount-1] = geometry->node[iPoint]->GetGlobalIndex();
           //}
-        }
+        //}
 
       }
     }
@@ -197,7 +201,10 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   }
   else{
     ray_N_phi = 0;
+    nPanel = 0;
   }
+
+  if(rank == MASTER_NODE) cout << "nPanel = " << nPanel << endl;
 
 }
 

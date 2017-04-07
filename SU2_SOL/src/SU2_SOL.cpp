@@ -535,9 +535,9 @@ int main(int argc, char *argv[]) {
              if (rank == MASTER_NODE)
                cout << endl <<"------------------------- Computing Far Field Noise (Primal+Adjoint) -----------------------" << endl;
 
-             if (rank == MASTER_NODE){
              AD::StartRecording();
 			 SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
+             if (rank == MASTER_NODE){
                cout << "SUBoom initialized." << endl;
              boom.ConditionAtmosphericData();
                cout << "Condition atmospheric data complete." << endl;
