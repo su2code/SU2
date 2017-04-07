@@ -1740,24 +1740,35 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   // denominator floors <jump>
   //  su2double scalar_min = 1.0E-14;
   su2double VelMag, *VelInf, L_Inf, scalar_min;
-  su2double tke_raw, tdr_raw;
+  su2double tke_raw, tdr_raw, v2_raw;
   tke_raw = tke;
   tdr_raw = tdr;
+  v2_raw = v2;
   VelInf = config->GetVelocity_FreeStreamND();
   L_Inf = config->GetLength_Reynolds();
   for (iDim = 0; iDim < nDim; iDim++)
   VelMag += VelInf[iDim]*VelInf[iDim];
   VelMag = sqrt(VelMag);
-  //  su2double solve_tol = config->GetLinear_Solver_Error()
-  scalar_min = 1.0E-8/(VelMag*VelMag); // setting based on tke min being 1e-8
-  //  scalar_min = 1.0E-12;
+
+  su2double solve_tol = config->GetLinear_Solver_Error();
+  su2double Re = config->GetReynolds();
+  su2double iRe = 1.0/Re;
+  su2double scale;
+  scale = 1.0e-8;
+  zeta = max(v2_raw/tke_raw, scale);
+  scalar_min = scale/(VelMag*VelMag); // setting based on tke min being 1e-8
   tke = max(tke, scalar_min*VelMag*VelMag);
   tdr = max(tdr, scalar_min*VelMag*VelMag*VelMag/L_Inf);
-  v2 = max(v2, 2.0/3.0*scalar_min*VelMag*VelMag);
+  //v2 = max(v2, 2.0/3.0*scalar_min*VelMag*VelMag);
   f = max(f, scalar_min*VelMag/L_Inf);
-  zeta = v2/tke;
-  //  S = max(S,scalar_min*VelMag/L_Inf); // no checked...
-  S = max(S,1.0E-14);
+
+  //  tke = max(tke, Re*pow(nu,2.0)/pow(L_Inf,2.0));
+  //  tdr = max(tdr, Re*pow(nu,3.0)/pow(L_Inf,4.0));
+  //  f = max(f, Re*nu/pow(L_Inf,2.0));
+
+  v2 = max(v2, zeta*tke);
+  S = max(S,scalar_min*VelMag/L_Inf); // no checked...
+  //  S = max(S,1.0E-14);
   /*
   tke_d = max(tke,1.0E-8);
   tdr_d = max(tdr,1.0E-8);
@@ -1775,23 +1786,13 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   T2 = 0.6/(sqrt(6.0)*C_mu*S*zeta);
   T3 = C_T*sqrt(nu/tdr);
   T = max(min(T1,T2),T3); 
-  T = max(T,1.0E-8);
-  //  L = min(L,10.0);
-
-  //--- Model rate ---//
-  //  R1 = max(tdr,0.0)/tke_d;
-  //  R2 = (sqrt(6.0)*C_mu*S*zeta)/0.6;
-  //  R3 = 1.0/C_T*sqrt(max(tdr,0.0)/nu);
-  //  R = min(max(R1,R2),R3); 
 
   //--- Model length scale ---//
   L1 = pow(tke,1.5)/tdr;
+  L1 = sqrt(zeta*(3.0/2.0)) * L1;
   L2 = sqrt(tke)/(sqrt(6.0)*C_mu*S*zeta);
   L3 = C_eta*pow(pow(nu,3.0)/tdr,0.25);
   L = C_L * max(min(L1,L2),L3);
-  L = max(L,1.0E-6);
-  //  L = min(L,1.0E6);
-  //  cout << "L:" << L << "\n";
 
   //--- Initial Jacobian ---//
   val_Jacobian_i[0][0] = 0.0;
@@ -1985,11 +1986,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   */
 
     //--- v2-f ---//
-    //    C_2f = C_2p;
-    //    f = (C_2f*pk - ((C_1-6.0)*v2 - 2.0/3.0*(C_1-1.0)*tke)*rho/T)/tke_d;
-    //    su2double kf = (C_2f*pk - ((C_1-6.0)*v2 - 2.0/3.0*(C_1-1.0)*tke)*rho/T);
-    //    kf = max(kf,0.0);
-
     C_e1 = C_e1o*(1.0+0.045*sqrt(tke/v2));
 
     //--- divergence of velocity ---//
@@ -2000,21 +1996,15 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     //--- Production ---// //<warp>//
     //pk = muT*(S*S - 2.0/3.0*diverg*diverg) - 2.0/3.0*rho*tke*diverg;
     pk = muT*S*S - 2.0/3.0*rho*max(tke_raw,0.0)*diverg;
-    //    pk = 0.0;
     pk = max(pk,0.0);
     pe = C_e1*pk/T;
     pv2 = rho*tke*f;
     pv2 = max(pv2,0.0);
     pv2 = min(pv2,2.0/3.0*pk+5.0*rho*v2/tke*tdr);
-    //    pv2 = min(pv2,2.0/3.0*(pk+5.0*rho*tdr));
-    //    pv2 = rho*f; //f=kf
     C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(v2/tke-0.55)));
     //    C_2f = C_2p;
     pf = (C_2f*pk/tke - ((C_1-6.0)*v2/tke - 2.0/3.0*(C_1-1.0))*rho/T) * 1.0/(L*L); // jee C1=1.4
-    //    pf = (C_2f*pk - (v2*(C_1-6.0) - 2.0/3.0*tke*(C_1-1.0))*rho/T) * 1.0/(L*L); //f=kf
     //    pf = (C_2f*pk + C_1*R*(2.0/3.0*tke-v2)*rho + 5.0*v2*R*rho)/tke_d * 1.0/(L*L); C1=0.4
-
-    //    pe = max(pe,0.0);
     //    pf = max(pf,0.0);
 
     //--- Dissipation ---//

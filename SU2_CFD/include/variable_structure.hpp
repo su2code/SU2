@@ -1750,7 +1750,7 @@ public:
 	 */
   //    virtual void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
 
-  virtual void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double StrainMag, su2double VelMag, su2double L_Inf);
+  virtual void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double StrainMag, su2double VelMag, su2double L_Inf, su2double solve_tol);
 
 	/*! swh
 	 * \brief Get model timescale for ke  model.
@@ -3740,7 +3740,7 @@ public:
 	 * \param[in] val_density - Value of the density.
 	 */
   //  void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
-  void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double StrainMag, su2double VelMag, su2double L_Inf);
+  void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double StrainMag, su2double VelMag, su2double L_Inf, su2double solve_tol);
 
 	/*!
 	 * \brief Get the first blending function.
