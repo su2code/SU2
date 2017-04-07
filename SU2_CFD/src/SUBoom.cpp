@@ -126,7 +126,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   unsigned long totSig, iPanel;
   if (rank == MASTER_NODE) Buffer_Recv_sigCount= new unsigned long [nProcessor];
 
-  Buffer_Send_sigCount[0]=sigCount;
+  Buffer_Send_sigCount[0]=nPanel;
 #ifdef HAVE_MPI
    SU2_MPI::Gather(&Buffer_Send_sigCount, 1, MPI_UNSIGNED_LONG, Buffer_Recv_sigCount, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
    SU2_MPI::Allreduce(&nPanel,&totSig,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
