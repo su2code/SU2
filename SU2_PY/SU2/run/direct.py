@@ -116,7 +116,7 @@ def direct ( config ):
       config['RESTART_SOL'] = "YES"
       config['MATH_PROBLEM'] = "DIRECT"
       config['AUTO_DIFF'] = "YES"
-      config['SOLUTION_FLOW_FILENAME'] = config['RESTART_FLOW_FILENAME']
+#      config['SOLUTION_FLOW_FILENAME'] = config['RESTART_FLOW_FILENAME']
       su2mergesol(config)
 
 
