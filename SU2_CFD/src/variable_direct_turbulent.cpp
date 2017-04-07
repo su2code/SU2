@@ -240,11 +240,10 @@ CTurbKEVariable::~CTurbKEVariable(void) {
 }
 
 //void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double val_f, su2double StrainMag) {
-void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double StrainMag, su2double VelInf, su2double L_Inf) {
+void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double StrainMag, su2double VelInf, su2double L_Inf, su2double tol) {
 
 	unsigned short iDim;
 	su2double C_mu, C_T, C_L, C_eta;
-	//        su2double Tm, Lm, nu, temp;
         su2double nu, temp, scalar_min;
   
         /*--- Molecular kinematic viscosity ---*/
@@ -270,16 +269,20 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2
         //--- v2-f ---//
         C_mu = 0.22;
         C_T = 6.0;
-        C_L = 0.23;
-        C_eta = 70.0;
+	//        C_L = 0.23;
+	//        C_eta = 70.0;
+        C_L = 0.115; // jee mods
+        C_eta = 140.0;
 
-	//        scalar_min = 1.0E-12;
-	scalar_min = 1.0E-8/(VelInf*VelInf); // setting based on tke min being 1e-
+	scalar_min = tol/(VelInf*VelInf); // setting based on tke min being 1e-
+        su2double zeta = max(val_zeta/val_kine, scalar_min);
         su2double tke = max(val_kine, scalar_min*VelInf*VelInf);
         su2double tdr = max(val_epsi, scalar_min*VelInf*VelInf*VelInf/L_Inf);
-        su2double v2 = max(val_zeta, 2.0/3.0*scalar_min*VelInf*VelInf);
-	//        su2double S = max(StrainMag,scalar_min*VelInf/L_Inf);
-        su2double S = max(StrainMag,1.0E-14);
+	//	su2double tke = max(tke, VelInf*L_Inf/nu*pow(nu,2.0)/pow(L_Inf,2.0));
+	//	su2double tdr = max(tdr, VelInf*L_Inf/nu*pow(nu,3.0)/pow(L_Inf,4.0));
+        su2double v2 = max(val_zeta, zeta*tke);
+        su2double S = max(StrainMag,scalar_min*VelInf/L_Inf);
+	//        su2double S = max(StrainMag,1.0E-14);
 
         //--- Model time scale ---//
 	//        temp = min(val_kine/val_epsi,0.6*val_kine/(sqrt(6.0)*C_mu*StrainMag*val_zeta));

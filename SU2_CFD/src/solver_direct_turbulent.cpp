@@ -3398,7 +3398,7 @@ su2double* CTurbSSTSolver::GetConstants() {
 }
 
 
-//jump
+
 CTurbKESolver::CTurbKESolver(void) : CTurbSolver() {
   
   /*--- Array initialization ---*/
@@ -3595,7 +3595,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   lowerlimit[3] = -1.0e10; //-1.0e2;
   upperlimit[3] = 1.0e10;
 
-
+//jump
   /*--- Flow infinity initialization stuff ---*/
   su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf, Tm_Inf, Lm_Inf;  
   rhoInf    = config->GetDensity_FreeStreamND();
@@ -3613,13 +3613,17 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   su2double L_Inf = config->GetLength_Reynolds();
   su2double scalar_min;
-  //  scalar_min = 1.0E-12;
-  //  su2double solve_tol = config->GetLinear_Solver_Error()
-  scalar_min = 1.0E-8/(VelMag*VelMag);
+  su2double solve_tol = config->GetLinear_Solver_Error();
+  su2double Re = config->GetReynolds();
+  su2double iRe = 1.0/Re;
+  su2double scale;
+  scale = 1.0e-8;
+  scalar_min = scale/(VelMag*VelMag);
   su2double tke_min = scalar_min*VelMag*VelMag;
   su2double tdr_min = scalar_min*pow(VelMag,3.0)/L_Inf;
-  su2double v2_min = 2.0/3.0*scalar_min*VelMag*VelMag;
-  su2double S_min = scalar_min;
+  //su2double v2_min = 2.0/3.0*scalar_min*VelMag*VelMag;
+  //  su2double S_min = 1.0E-14;
+  //  su2double S_min = max(S,scalar_min*VelMag/L_Inf);
 
   //  cout<<"Intensity: "<<Intensity<<"\n";
   kine_Inf = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
@@ -3801,10 +3805,9 @@ void CTurbKESolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  su2double rho = 0.0, mu = 0.0, dist, epsi, kine, strMag, Lm, Tm, zeta, f, muT, *VelInf, VelMag;
+  su2double rho = 0.0, mu = 0.0, dist, epsi, kine, v2, strMag, Lm, Tm, zeta, f, muT, *VelInf, VelMag;
   su2double Re_t;
   unsigned long iPoint;
-  //su2double C_mu, C_T, C_L, C_eta, nu, temp;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -3837,7 +3840,8 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     /*--- Scalars ---*/
     kine = node[iPoint]->GetSolution(0);
     epsi = node[iPoint]->GetSolution(1);
-    zeta = node[iPoint]->GetSolution(2);
+    //    zeta = node[iPoint]->GetSolution(2);
+    v2 = node[iPoint]->GetSolution(2);
     f = node[iPoint]->GetSolution(3);
     //cout<<"kine: "<<kine<<"\n";
     //cout<<"f: "<<f<<"\n";
@@ -3851,14 +3855,22 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     /*--- T & L ---*/
     dist = geometry->node[iPoint]->GetWall_Distance();
     strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
+    su2double solve_tol = config->GetLinear_Solver_Error();
     su2double L_Inf = config->GetLength_Reynolds();
+    su2double Re = config->GetReynolds();
+    su2double iRe = 1.0/Re;
+    su2double scale;
+    scale = 1.0E-14;
     VelInf = config->GetVelocity_FreeStreamND();
     unsigned short iDim;
     for (iDim = 0; iDim < nDim; iDim++)
     VelMag += VelInf[iDim]*VelInf[iDim];
     VelMag = sqrt(VelMag);
+    zeta = max(v2/kine,scale);
+    kine = max(kine,scale*VelMag*VelMag);
 
-    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, zeta, strMag, VelMag, L_Inf);
+    //    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, zeta, strMag, VelMag, L_Inf, scale);
+    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, v2, strMag, VelMag, L_Inf, scale);
     Tm = node[iPoint]->GetTm();
     //    Lm = node[iPoint]->GetLm();
 
@@ -3868,7 +3880,7 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     //    muT = max(muT,mu);
     //    muT = constants[0]*max(rho*max(zeta*kine,0.0)/max(epsi,1.0E-9),0.0); //v2
     //muT = 0.0;
-    muT = constants[0]*rho*max(zeta*Tm,1.0E-14); //v2
+    muT = constants[0]*rho*zeta*kine*Tm;
 
     //muT = constants[0]*rho*2.0/3.0*kine*Tm; //testing...
     node[iPoint]->SetmuT(muT);
