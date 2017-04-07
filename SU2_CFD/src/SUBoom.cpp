@@ -159,7 +159,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        //if(geometry->node[iPoint]->GetDomain()){
+        if(geometry->node[iPoint]->GetDomain()){
           Coord = geometry->node[iPoint]->GetCoord();
           x = SU2_TYPE::GetValue(Coord[0]);
           //p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
@@ -204,7 +204,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
             //PointID[panelCount-1] = geometry->node[iPoint]->GetGlobalIndex();
           //}
-        //}
+        }
 
       }
     }
