@@ -91,7 +91,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   /*---Loop over boundary markers to select those to extract pressure signature---*/
   unsigned long nMarker = config->GetnMarker_All();
-  unsigned long sigCount=0;
+  unsigned long nSig = 0, sigCount=0;
   unsigned long panelCount=0;
   unsigned long iMarker, iVertex, iPoint;
   su2double x, y, z;
@@ -99,7 +99,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   su2double ux, uy, uz, StaticEnergy, p;
   su2double *Coord;
 
-  nPanel = 0;
+  nSig = 0;
   nDim = geometry->GetnDim();
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
@@ -115,22 +115,22 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
             //}
         }
       }
-      nPanel = panelCount;
+      nSig = panelCount;
     }
   }
-  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
+  cout<<"Rank= "<<rank<<", nSig= "<<nSig<<endl;
 //  signal.original_len = sigCount;
-//  nPanel = sigCount;
+//  nSig = sigCount;
 
   unsigned long Buffer_Send_sigCount[1], *Buffer_Recv_sigCount = NULL;
   unsigned long totSig, iPanel;
   if (rank == MASTER_NODE) Buffer_Recv_sigCount= new unsigned long [nProcessor];
 
-  Buffer_Send_sigCount[0]=nPanel;
+  Buffer_Send_sigCount[0]=nSig;
 #ifdef HAVE_MPI
    SU2_MPI::Gather(&Buffer_Send_sigCount, 1, MPI_UNSIGNED_LONG, Buffer_Recv_sigCount, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
-   SU2_MPI::Allreduce(&nPanel,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD); //find the max num of vertices over all processes
-//   SU2_MPI::Reduce(&nPanel,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+   SU2_MPI::Allreduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD); //find the max num of vertices over all processes
+//   SU2_MPI::Reduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
 #endif
 
   su2double *Buffer_Send_Press = new su2double [totSig];
@@ -211,12 +211,12 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   }
 
   /*---Send signal to MASTER_NODE---*/
- /* for(iPanel=0; iPanel<nPanel; iPanel++){
+ /* for(iPanel=0; iPanel<nSig; iPanel++){
     Buffer_Send_Press[iPanel] = Press[iPanel];
     Buffer_Send_x[iPanel] =
   }
 
-  for (iPanel=0; iPanel<nPanel; iPanel++){
+  for (iPanel=0; iPanel<nSig; iPanel++){
     Buffer_Send_GlobalIndex[iPanel] = PointID[iPanel];
   }*/
 
@@ -235,10 +235,10 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   sigFile << "# x, p" << endl;
   panelCount = 0;
   nPanel = totSig;
-  signal.x = new su2double[nPanel];
-  signal.original_p = new su2double[nPanel];
-  signal.original_T = new su2double[nPanel];
-  PointID = new unsigned long[nPanel];
+  signal.x = new su2double[nSig];
+  signal.original_p = new su2double[nSig];
+  signal.original_T = new su2double[nSig];
+  PointID = new unsigned long[nSig];
 
   int Total_Index;
 
@@ -266,8 +266,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   if(config->GetAD_Mode()){
   dJdU = new su2double* [nDim+3];
   for(int iDim = 0; iDim < nDim+3 ; iDim++){
-      dJdU[iDim] = new su2double[nPanel];
-      for(int iPanel = 0;  iPanel< nPanel; iPanel++){
+      dJdU[iDim] = new su2double[nSig];
+      for(int iPanel = 0;  iPanel< nSig; iPanel++){
           dJdU[iDim][iPanel] = 0.0;
       }
   }
@@ -276,10 +276,10 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   }
   else{
     ray_N_phi = NULL;
-    nPanel = NULL;
+    nSig = NULL;
   }
 
-  if(rank == MASTER_NODE) cout << "Tot_nPanel = " << totSig << endl;
+  if(rank == MASTER_NODE) cout << "Tot_nSig = " << totSig << endl;
 
 }
 
