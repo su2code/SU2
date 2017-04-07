@@ -92,10 +92,10 @@ def adjoint( config ):
        konfig['EXT_ITER'] = konfig['ITER_AVERAGE_OBJ']
 
     if konfig['OBJECTIVE_FUNCTION'] == 'BOOM':
-       konfig['RESTART_SOL'] = "YES"
-       konfig['MATH_PROBLEM'] = "DIRECT"
-       konfig['AUTO_DIFF'] = "YES"
-       su2merge(konfig)
+       #konfig['RESTART_SOL'] = "YES"
+       #konfig['MATH_PROBLEM'] = "DIRECT"
+       #konfig['AUTO_DIFF'] = "YES"
+       #su2merge(konfig)
        konfig['AUTO_DIFF'] = "NO"
        konfig['MATH_PROBLEM'] = "DISCRETE_ADJOINT"
        konfig['RESTART_SOL'] = "NO"
