@@ -129,8 +129,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   Buffer_Send_sigCount[0]=sigCount;
 #ifdef HAVE_MPI
    SU2_MPI::Gather(&Buffer_Send_sigCount, 1, MPI_UNSIGNED_LONG, Buffer_Recv_sigCount, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
-//   SU2_MPI::Allreduce(&sigCount,&totSig,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
-   SU2_MPI::Reduce(&nPanel,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+   SU2_MPI::Allreduce(&nPanel,&totSig,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+//   SU2_MPI::Reduce(&nPanel,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
 #endif
 
   su2double *Buffer_Send_Press = new su2double [totSig];
@@ -275,8 +275,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   }
   else{
-    ray_N_phi = 0;
-    nPanel = 0;
+    ray_N_phi = NULL;
+    nPanel = NULL;
   }
 
   if(rank == MASTER_NODE) cout << "Tot_nPanel = " << totSig << endl;
@@ -358,7 +358,6 @@ void SUBoom::ConditionAtmosphericData(){
 }
 
 void SUBoom::ScaleFactors(){
-  if(ray_N_phi > 0){
   int len;
   su2double *x;
   su2double L;
@@ -388,7 +387,6 @@ void SUBoom::ScaleFactors(){
   scale_C1 = scale_p;    // [Pa]
   scale_C2 = scale_T;    // [s]
 
-  }
 }
 
 void SUBoom::GetAtmosphericData(su2double& a, su2double& rho, su2double& p, su2double h){
@@ -416,7 +414,6 @@ void SUBoom:: Sph2Cart(su2double& nx, su2double& ny, su2double& nz, su2double az
 
 void SUBoom::InitialWaveNormals(){
 
-  if(ray_N_phi > 0){
   su2double a0;
   su2double nx, ny, nz;
   const su2double deg2rad = M_PI/180.;
@@ -472,7 +469,6 @@ void SUBoom::InitialWaveNormals(){
   flt_heading[1] = ny;
   flt_heading[2] = nz;
 
-  }
 }
 
 su2double *derivs(su2double x, int m, su2double y[], SUBoom::RayData data){
@@ -602,7 +598,6 @@ su2double *SUBoom::SplineGetDerivs(su2double x[], su2double y[], int N){
 
 void SUBoom::RayTracer(){
 
-  if(ray_N_phi > 0){
   /*---Scale factors---*/
   su2double L = flt_h;
   su2double T = scale_T;
@@ -850,13 +845,11 @@ void SUBoom::RayTracer(){
   delete [] ky;
   delete [] kz;
 
-  }
 
 }
 
 void SUBoom::RayTubeArea(){
 
-  if(ray_N_phi > 0){
   su2double Ah, x_int, y_int, z_int;
   su2double corners[4][3];
   int M;
@@ -894,7 +887,6 @@ void SUBoom::RayTubeArea(){
     }
   }
 
-  }
 }
 
 su2double SUBoom::matchr(int i, int j, su2double h_L, su2double r0){
@@ -905,7 +897,6 @@ su2double SUBoom::matchr(int i, int j, su2double h_L, su2double r0){
 
 void SUBoom::FindInitialRayTime(){
 
-  if(ray_N_phi > 0){
   su2double h_L = scale_z/scale_L;
   su2double eps;
 
@@ -965,12 +956,10 @@ void SUBoom::FindInitialRayTime(){
   /*---Clear up memory---*/
   delete [] ks;
 
-  }
 }
 
 void SUBoom::ODETerms(){
 
-  if(ray_N_phi > 0){
   su2double t[N_PROF], A[N_PROF];
   su2double *cn;
   su2double *dadt, *drhodt, *dAdt;
@@ -1032,20 +1021,16 @@ void SUBoom::ODETerms(){
   delete [] ray_nu;
   delete [] ray_theta0;
 
-  }
 }
 
 void SUBoom::DistanceToTime(){
-  if(ray_N_phi > 0){
   int len = signal.original_len;
   for(int i = 0; i < len; i++){
     signal.original_T[i] = signal.x[i]/(a_inf*flt_M);
   }
-  }
 }
 
 void SUBoom::CreateSignature(){
-  if(ray_N_phi > 0){
   int len = signal.original_len;
   su2double pp[2][len-1];
   su2double ll[len-1];
@@ -1100,7 +1085,6 @@ void SUBoom::CreateSignature(){
     signal.l[i] = ll[i];
   }
 
-  }
 }
 
 su2double **WaveformToPressureSignal(su2double fvec[], int M, int &Msig){
@@ -1231,7 +1215,6 @@ su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data){
 }
 
 su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
-  if(ray_N_phi > 0){
   su2double m[M], dp[M], l[M];
   su2double dp_seg;
   su2double *fvec_new, **current_signal;
@@ -1305,8 +1288,6 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
 
   return fvec_new;
 
-  }
-
 }
 
 su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2double coeffs[]){
@@ -1345,7 +1326,6 @@ su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2
 
 void SUBoom::PropagateSignal(){
 //  int len = signal.original_len;
-  if(ray_N_phi > 0){
   su2double t0, tf, dt;
   int j0;
   RayData data;
@@ -1491,18 +1471,6 @@ void SUBoom::PropagateSignal(){
   delete [] data.dC1;
   delete [] data.dC2;
 
-  /*---Clear up memory from Signal class---*/
-  /*delete [] signal.m;
-  delete [] signal.dp;
-  delete [] signal.l;
-  delete [] signal.fvec;
-  delete [] signal.x;
-  delete [] signal.original_T;
-  delete [] signal.original_p;
-  delete [] signal.final_T;
-  delete [] signal.final_p;*/
-
-  }
 }
 
 void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geometry){

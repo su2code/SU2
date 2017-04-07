@@ -559,6 +559,7 @@ int main(int argc, char *argv[]) {
                cout << "Create signature complete." << endl;
              boom.PropagateSignal();
              Objective_Function = boom.p_int2;
+             }
 
              if (rank==MASTER_NODE){
              SU2_TYPE::SetDerivative(Objective_Function,1.0);
@@ -568,7 +569,8 @@ int main(int argc, char *argv[]) {
              AD::StopRecording();
              AD::ComputeAdjoint();
 
-             cout<<"Finished computing boom adjoint."<<endl;
+             if (rank==MASTER_NODE)
+               cout<<"Finished computing boom adjoint."<<endl;
 
              su2double extracted_derivative;
 
@@ -578,10 +580,10 @@ int main(int argc, char *argv[]) {
                 }
              }
 
-             cout<<"Finished extracting."<<endl;
+             if(rank==MASTER_NODE)
+               cout<<"Finished extracting."<<endl;
 
              boom.WriteSensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
-             }
 
            }
 		   else{
