@@ -248,6 +248,7 @@ def SOL(config):
         konfig.dump(tempname)
 
         processes = 1
+#        processes = konfig['NUMBER_PART']
 
         the_Command = 'SU2_SOL_AD ' + tempname
 
