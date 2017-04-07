@@ -118,22 +118,43 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       nPanel = panelCount;
     }
   }
-  signal.original_len = sigCount;
-  nPanel = sigCount;
+  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
+//  signal.original_len = sigCount;
+//  nPanel = sigCount;
+
+  unsigned long Buffer_Send_sigCount[1], *Buffer_Recv_sigCount = NULL;
+  unsigned long totSig, iPanel;
+  if (rank == MASTER_NODE) Buffer_Recv_sigCount= new unsigned long [nProcessor];
+
+  Buffer_Send_sigCount[0]=sigCount;
+#ifdef HAVE_MPI
+   SU2_MPI::Gather(&Buffer_Send_sigCount, 1, MPI_UNSIGNED_LONG, Buffer_Recv_sigCount, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+   SU2_MPI::Allreduce(&sigCount,&totSig,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+//   SU2_MPI::Reduce(&nPanel,&Tot_nPanel,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+#endif
+
+  su2double *Buffer_Send_Press = new su2double [totSig];
+  su2double *Buffer_Send_x = new su2double [totSig];
+  unsigned long *Buffer_Send_GlobalIndex = new unsigned long [totSig];
+  //zero send buffers
+  for (int i=0; i <totSig; i++){
+   Buffer_Send_Press[i]=0.0;
+   Buffer_Send_x[i] = 0.0;
+  }
+  for (int i=0; i <totSig; i++){
+   Buffer_Send_GlobalIndex[i]=0;
+  }
+  su2double *Buffer_Recv_Press = NULL;
+  su2double *Buffer_Recv_x = NULL;
+  unsigned long *Buffer_Recv_GlobalIndex = NULL;
+
+  if (rank == MASTER_NODE) {
+   Buffer_Recv_Press = new su2double [nProcessor*totSig];
+   Buffer_Recv_x = new su2double [nProcessor*totSig];
+   Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*totSig];
+  }
 
   /*---Extract signature---*/
-  if (rank == MASTER_NODE){
-  ofstream sigFile;
-//  SPRINTF (cstr, "signal_original.dat");
-  sigFile.precision(15);
-//  sigFile.open(cstr, ios::out);
-  sigFile.open("signal_original.dat");
-  sigFile << "# x, p" << endl;
-  panelCount = 0;
-  signal.x = new su2double[nPanel];
-  signal.original_p = new su2double[nPanel];
-  signal.original_T = new su2double[nPanel];
-  PointID = new unsigned long[nPanel];
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
@@ -174,17 +195,71 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
             StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
             p = (config->GetGamma()-1)*rho*StaticEnergy - Pressure_FreeStream/Pressure_Ref;
 
-            signal.original_p[panelCount-1] = p;
-            signal.x[panelCount-1] = x;
-            sigFile << x << "\t" << p << endl;
+            Buffer_Send_Press[panelCount-1] = p;
+            Buffer_Send_x[panelCount-1] = x;
+            Buffer_Send_GlobalIndex[panelCount-1] = geometry->node[iPoint]->GetGlobalIndex();
+            //signal.original_p[panelCount-1] = p;
+            //signal.x[panelCount-1] = x;
+            //sigFile << x << "\t" << p << endl;
 
-            PointID[panelCount-1] = geometry->node[iPoint]->GetGlobalIndex();
+            //PointID[panelCount-1] = geometry->node[iPoint]->GetGlobalIndex();
           //}
         //}
 
       }
     }
   }
+
+  /*---Send signal to MASTER_NODE---*/
+ /* for(iPanel=0; iPanel<nPanel; iPanel++){
+    Buffer_Send_Press[iPanel] = Press[iPanel];
+    Buffer_Send_x[iPanel] =
+  }
+
+  for (iPanel=0; iPanel<nPanel; iPanel++){
+    Buffer_Send_GlobalIndex[iPanel] = PointID[iPanel];
+  }*/
+
+#ifdef HAVE_MPI
+  SU2_MPI::Gather(Buffer_Send_Press, totSig, MPI_DOUBLE, Buffer_Recv_Press,  totSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_x, totSig, MPI_DOUBLE, Buffer_Recv_x,  totSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_GlobalIndex,totSig, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, totSig , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+  if (rank == MASTER_NODE){
+  ofstream sigFile;
+//  SPRINTF (cstr, "signal_original.dat");
+  sigFile.precision(15);
+//  sigFile.open(cstr, ios::out);
+  sigFile.open("signal_original.dat");
+  sigFile << "# x, p" << endl;
+  panelCount = 0;
+  nPanel = totSig;
+  signal.x = new su2double[nPanel];
+  signal.original_p = new su2double[nPanel];
+  signal.original_T = new su2double[nPanel];
+  PointID = new unsigned long[nPanel];
+
+  int Total_Index;
+
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    for (iPanel = 0; iPanel < Buffer_Recv_sigCount[iProcessor]; iPanel++) {
+      PointID[panelCount] = Buffer_Recv_GlobalIndex[iProcessor*totSig+iPanel ];
+
+      /*--- Current index position and global index ---*/
+      Total_Index  = iProcessor*totSig  + iPanel;
+      signal.x[panelCount] =
+      signal.original_p[panelCount] = Buffer_Recv_Press[Total_Index];
+
+      /*--- Write to file---*/
+      sigFile << scientific << Buffer_Recv_x[Total_Index] << "\t";
+      sigFile << scientific <<  Buffer_Recv_Press[Total_Index]   << "\t";
+      sigFile << endl;
+
+      panelCount++;
+      }
+      }
+
   sigFile.close();
 
   /*---Initialize sensitivities---*/
@@ -204,7 +279,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     nPanel = 0;
   }
 
-  if(rank == MASTER_NODE) cout << "nPanel = " << nPanel << endl;
+  if(rank == MASTER_NODE) cout << "Tot_nPanel = " << totSig << endl;
 
 }
 
