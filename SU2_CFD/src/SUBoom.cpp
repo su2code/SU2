@@ -1451,7 +1451,7 @@ void SUBoom::PropagateSignal(){
 }
 
 void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geometry){
-  unsigned long iVar, iPanel, Max_nPanel, Tot_nPanel, nVar, Global_Index ;
+  unsigned long iVar, iSig, Max_nSig, Tot_nSig, nVar, Global_Index ;
   ofstream Boom_AdjointFile;
 
   int rank, iProcessor, nProcessor;
