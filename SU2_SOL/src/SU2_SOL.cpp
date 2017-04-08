@@ -558,9 +558,12 @@ int main(int argc, char *argv[]) {
              boom.CreateSignature();
                cout << "Create signature complete." << endl;
              boom.PropagateSignal();
-             Objective_Function = boom.p_int2;
              }
+#ifdef HAVE_MPI
+  SU2_MPI::Bcast(boom.p_int2, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#endif
 
+             Objective_Function = boom.p_int2;
              if (rank==MASTER_NODE){
              SU2_TYPE::SetDerivative(Objective_Function,1.0);
                }else{
