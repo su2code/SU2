@@ -90,7 +90,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   /*---Loop over boundary markers to select those to extract pressure signature---*/
   unsigned long nMarker = config->GetnMarker_All();
-  unsigned long nSig = 0, sigCount=0;
+  unsigned long sigCount=0;
   unsigned long panelCount=0;
   unsigned long iMarker, iVertex, iPoint;
   su2double x, y;
