@@ -1531,17 +1531,19 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
   Boom_AdjointFile.close();
   delete [] Buffer_Recv_dJdU;
   delete [] Buffer_Recv_GlobalIndex;
-   }
+  }
 
   delete [] Buffer_Send_dJdU;
   delete [] Buffer_Send_GlobalIndex;
 
   /*---Clear up  memory from dJdU---*/
-/*  for (int i=0; i<nDim+3; i++){
+  for (int i=0; i<nDim+3; i++){
     delete [] dJdU[i];
   }
   delete [] dJdU;
-  delete [] PointID;*/
+  delete [] PointID;
 
-  cout << "\nFinished writing boom adjoint file." << endl;
+  if (rank == MASTER_NODE)
+    cout << "\nFinished writing boom adjoint file." << endl;
+
 }
