@@ -1470,6 +1470,8 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
 
   nVar = nDim+3;
 
+  if (rank == MASTER_NODE)
+    cout << "Packing sensitivities in each processor." << endl;
   /* pack sensitivity values in each processor and send to root */
   su2double *Buffer_Send_dJdU = new su2double [Max_nSig*nVar];
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nSig];
@@ -1499,12 +1501,16 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
      Buffer_Send_GlobalIndex[iSig] = PointID[iSig];
   }
 
+  if (rank == MASTER_NODE)
+    cout << "Sending sensitivities to root." << endl;
+
 #ifdef HAVE_MPI
   SU2_MPI::Gather(Buffer_Send_dJdU, Max_nSig*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nSig*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nSig, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nSig , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
   if (rank == MASTER_NODE){
+  cout << "Writing sensitivities." << endl;
   Boom_AdjointFile.precision(15);
   Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
 
