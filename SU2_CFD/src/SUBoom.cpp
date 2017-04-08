@@ -132,7 +132,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 //   SU2_MPI::Reduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
 #endif
 
-  if(rank == MASTER_NODE) cout << "Tot_nSig = " << totSig << endl;
+  cout << "Tot_nSig = " << totSig << endl;
 
   su2double *Buffer_Send_Press = new su2double [totSig];
   su2double *Buffer_Send_x = new su2double [totSig];
