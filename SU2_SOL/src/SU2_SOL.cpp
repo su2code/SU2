@@ -578,7 +578,7 @@ int main(int argc, char *argv[]) {
                cout<<"Finished computing boom adjoint."<<endl;
 
             su2double extracted_derivative;
-            cout << "nSig = " << nSig << endl;
+            cout << "nSig = " << boom.nSig << endl;
 
              for (int iSig=0; iSig<boom.nSig; iSig++){
                 for (int i =0; i< boom.nDim+3; i++){
