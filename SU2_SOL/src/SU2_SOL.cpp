@@ -578,7 +578,6 @@ int main(int argc, char *argv[]) {
                cout<<"Finished computing boom adjoint."<<endl;
 
             su2double extracted_derivative;
-            cout << "nSig = " << boom.nSig << endl;
 
              for (int iSig=0; iSig<boom.nSig; iSig++){
                 for (int i =0; i< boom.nDim+3; i++){
@@ -586,10 +585,9 @@ int main(int argc, char *argv[]) {
                 }
              }
 
-             if(rank==MASTER_NODE){
+             if(rank==MASTER_NODE)
                cout<<"Finished extracting."<<endl;
              boom.WriteSensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
-             }
 
            }
 		   else{
