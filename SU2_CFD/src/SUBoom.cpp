@@ -211,15 +211,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     }
   }
 
-  /*---Send signal to MASTER_NODE---*/
- /* for(iPanel=0; iPanel<nSig; iPanel++){
-    Buffer_Send_Press[iPanel] = Press[iPanel];
-    Buffer_Send_x[iPanel] =
-  }
-
-  for (iPanel=0; iPanel<nSig; iPanel++){
-    Buffer_Send_GlobalIndex[iPanel] = PointID[iPanel];
-  }*/
   if(rank == MASTER_NODE)
     cout << "Pressure signal extracted." << endl;
 
@@ -228,6 +219,9 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   SU2_MPI::Gather(Buffer_Send_x, totSig, MPI_DOUBLE, Buffer_Recv_x,  totSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_GlobalIndex,totSig, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, totSig , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
+
+  if (rank == MASTER_NODE)
+    cout << "Gathered signal data to MASTER_NODE." << endl;
 
   if (rank == MASTER_NODE){
   ofstream sigFile;
@@ -1530,11 +1524,7 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
 
   /* root opens a file at each time step and write out the merged dJdU values at that time step into the file */
   if (rank == MASTER_NODE){
-//  char cstr [200];
-
-//  SPRINTF (cstr, "Adj_Boom.dat");
   Boom_AdjointFile.precision(15);
-//  Boom_AdjointFile.open(cstr, ios::out);
   Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
 
   /*--- Loop through all of the collected data and write each node's values ---*/
