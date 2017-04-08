@@ -213,6 +213,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   sigFile << "# x, p" << endl;
   panelCount = 0;
   nPanel = totSig;
+  signal.original_len = totSig;
   signal.x = new su2double[nPanel];
   signal.original_p = new su2double[nPanel];
   signal.original_T = new su2double[nPanel];
@@ -246,7 +247,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   dJdU = new su2double* [nDim+3];
   for(int iDim = 0; iDim < nDim+3 ; iDim++){
       dJdU[iDim] = new su2double[nPanel];
-      for(int iPanel = 0;  iPanel< nPanel; iPanel++){
+      for(iPanel = 0;  iPanel< nPanel; iPanel++){
           dJdU[iDim][iPanel] = 0.0;
       }
   }
