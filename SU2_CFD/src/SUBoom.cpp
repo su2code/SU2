@@ -25,6 +25,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   /*---Make sure to read in hard-coded values in the future!---*/
 
+  if (rank == MASTER_NODE){
   /*---Flight variables---*/
   flt_h = 15240; // altitude [m]
   flt_M = config->GetMach();
@@ -50,7 +51,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   string str;
   ifstream tolfile;
 
-  if(rank == MASTER_NODE){
   tolfile.open("tols.in", ios::in);
   if (tolfile.fail()) {
     cout << "There is no tol.in file. Using default tolerances for boom propagation. " << endl;
@@ -195,7 +195,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
             uz = 0.0;
             if(nDim == 3) uz= rho_uz/rho;
             StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
-            p = (config->GetGamma()-1)*rho*StaticEnergy - Pressure_FreeStream/Pressure_Ref;
+            p = (config->GetGamma()-1)*rho*StaticEnergy*Pressure_Ref - Pressure_FreeStream;
 
             Buffer_Send_Press[panelCount-1] = p;
             Buffer_Send_x[panelCount-1] = x;
