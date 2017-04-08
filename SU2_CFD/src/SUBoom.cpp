@@ -128,17 +128,15 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   Buffer_Send_sigCount[0]=nSig;
 #ifdef HAVE_MPI
-   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
    SU2_MPI::Gather(&Buffer_Send_sigCount, 1, MPI_UNSIGNED_LONG, Buffer_Recv_sigCount, 1, MPI_UNSIGNED_LONG, iProcessor, MPI_COMM_WORLD); //send the number of vertices at each process to the master
-   }
-   SU2_MPI::Allreduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD); //find the max num of vertices over all processes
-//   SU2_MPI::Reduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+//   SU2_MPI::Allreduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD); //find the max num of vertices over all processes
+   SU2_MPI::Reduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
 #endif
 
-  totSig = 0;
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-    totSig += Buffer_Recv_sigCount[iProcessor];
-  }
+//  totSig = 0;
+//  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+//    totSig += Buffer_Recv_sigCount[iProcessor];
+//  }
 
   su2double *Buffer_Send_Press = new su2double [totSig];
   su2double *Buffer_Send_x = new su2double [totSig];
