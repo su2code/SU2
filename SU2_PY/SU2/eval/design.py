@@ -303,24 +303,27 @@ def obj_df(dvs,config,state=None):
     state = su2io.State(state)
     grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
-    def_objs = config['OPT_OBJECTIVE']
-    objectives = def_objs.keys()
+    def_objs    = config['OPT_OBJECTIVE']
+    objectives  = def_objs.keys()
     
-    n_obj = len( objectives )
-    multi_objective = (config['OPT_COMBINE_OBJECTIVE']=="YES")
+    # Number of objective functionals
+    n_obj       = len( objectives )     
+    # Whether to calculate gradients one-by-one or all-at-once
+    combine_obj = (config['OPT_COMBINE_OBJECTIVE']=="YES") 
      
     dv_scales = config['DEFINITION_DV']['SCALE']
     dv_size   = config['DEFINITION_DV']['SIZE']
     
-    #  if objectives: print('Evaluate Objective Gradients')
     # evaluate each objective
     vals_out = []
-    if (multi_objective and n_obj>1):
+    if (combine_obj and n_obj>1):
+        # Evaluate objectives all-at-once; for adjoint methods this results in a 
+        # single, combined objective.
         scale = [1.0]*n_obj
         for i_obj,this_obj in enumerate(objectives):
             scale[i_obj] = def_objs[this_obj]['SCALE']
-            
             if def_objs[this_obj]['CTYPE']== 'NONE':
+                # Standard case
                 sign = su2io.get_objectiveSign(this_obj)
                 scale[i_obj]*=sign
             else:
@@ -340,12 +343,16 @@ def obj_df(dvs,config,state=None):
 
         vals_out.append(grad)
     else:
+        # Evaluate objectives one-by-one
         marker_monitored = config['MARKER_MONITORING']
         for i_obj,this_obj in enumerate(objectives):
             scale = def_objs[this_obj]['SCALE']
             sign  = su2io.get_objectiveSign(this_obj)
-            # Correct marker monitoring for case where multiple objectives are evaluated separately
+  
             if n_obj>1 and len(marker_monitored)>1:
+                # For multiple objectives are evaluated one-by-one rather than combined
+                # MARKER_MONITORING should be updated to only include the marker for i_obj
+                # For single objectives, multiple markers can be used 
                 config['MARKER_MONITORING'] = marker_monitored[i_obj]
 
             
