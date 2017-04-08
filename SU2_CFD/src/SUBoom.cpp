@@ -1471,6 +1471,7 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
   nVar = nDim+3;
 
   if (rank == MASTER_NODE)
+    cout << "Max_nSig = " << Max_nSig << endl;
     cout << "Packing sensitivities in each processor." << endl;
   /* pack sensitivity values in each processor and send to root */
   su2double *Buffer_Send_dJdU = new su2double [Max_nSig*nVar];
