@@ -130,15 +130,9 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
    SU2_MPI::Gather(&Buffer_Send_sigCount, 1, MPI_UNSIGNED_LONG, Buffer_Recv_sigCount, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
    SU2_MPI::Allreduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD); //find the max num of vertices over all processes
 //   SU2_MPI::Reduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
-//   MPI_Bcast(&totSig,1,MPI_UNSIGNED_LONG,MASTER_NODE,MPI_COMM_WORLD);
 #endif
 
   if(rank == MASTER_NODE) cout << "Tot_nSig = " << totSig << endl;
-
-//  totSig = 0;
-//  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-//    totSig += Buffer_Recv_sigCount[iProcessor];
-//  }
 
   su2double *Buffer_Send_Press = new su2double [totSig];
   su2double *Buffer_Send_x = new su2double [totSig];
@@ -226,6 +220,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   for (iPanel=0; iPanel<nSig; iPanel++){
     Buffer_Send_GlobalIndex[iPanel] = PointID[iPanel];
   }*/
+  if(rank == MASTER_NODE)
+    cout << "Pressure signal extracted." << endl;
 
 #ifdef HAVE_MPI
   SU2_MPI::Gather(Buffer_Send_Press, totSig, MPI_DOUBLE, Buffer_Recv_Press,  totSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -235,9 +231,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   if (rank == MASTER_NODE){
   ofstream sigFile;
-//  SPRINTF (cstr, "signal_original.dat");
   sigFile.precision(15);
-//  sigFile.open(cstr, ios::out);
   sigFile.open("signal_original.dat");
   sigFile << "# x, p" << endl;
   panelCount = 0;
@@ -264,10 +258,11 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       sigFile << endl;
 
       panelCount++;
-      }
-      }
+    }
+  }
 
   sigFile.close();
+  cout << "Signal written." << endl;
 
   /*---Initialize sensitivities---*/
   if(config->GetAD_Mode()){
@@ -278,6 +273,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           dJdU[iDim][iPanel] = 0.0;
       }
   }
+  cout << "Sensitivities initialized." << endl;
   }
 
   }
