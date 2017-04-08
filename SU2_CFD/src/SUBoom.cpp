@@ -349,13 +349,19 @@ void SUBoom::ScaleFactors(){
   }
   // TODO: get a/c length
   L = max_x - min_x;
+  cout << "L = " << L << endl;
   //L = 1.0;
 
   scale_L = L;    // [m]
+  cout << "scale_L = " << scale_L << endl;
   scale_T = L/(M_inf*a_inf);    // flow over aircraft [s]
+  cout << "scale_T = " << scale_T << endl;
   scale_p = p_inf;    // ambient [Pa]
+  cout << "scale_p = " << scale_p << endl;
   scale_m = scale_p/scale_T;    // slope of boom signal [Pa/s]
+  cout << "scale_m = " << scale_m << endl;
   scale_z = h0;    // altitude [m]
+  cout << "scale_z = " << scale_z << endl;
 
   scale_C1 = scale_p;    // [Pa]
   scale_C2 = scale_T;    // [s]
