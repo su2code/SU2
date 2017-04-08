@@ -492,7 +492,7 @@ int main(int argc, char *argv[]) {
 
 
 
-        if (rank == MASTERNODE)
+        if (rank == MASTER_NODE)
           cout<<"Type= "<<   config_container[ZONE_0]->GetDiscrete_Adjoint() <<endl;  //  <--- returns 1! (cont adj)
 
          if (config_container[ZONE_0]->GetAD_Mode()){
