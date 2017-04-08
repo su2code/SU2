@@ -93,7 +93,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   unsigned long nSig = 0, sigCount=0;
   unsigned long panelCount=0;
   unsigned long iMarker, iVertex, iPoint;
-  su2double x, y, z;
+  su2double x, y;
   su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
   su2double ux, uy, uz, StaticEnergy, p;
   su2double *Coord;
@@ -106,20 +106,12 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if(geometry->node[iPoint]->GetDomain()){
-//            Coord = geometry->node[iPoint]->GetCoord();
-//            x = SU2_TYPE::GetValue(Coord[0]);
-//            p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
-            //if(p >= 0.1 || p <= -0.1){
-                panelCount++;
-            //}
+          panelCount++;
         }
       }
       nSig = panelCount;
     }
   }
-//  cout<<"Rank= "<<rank<<", nSig= "<<nSig<<endl;
-//  signal.original_len = sigCount;
-//  nSig = sigCount;
 
   unsigned long Buffer_Send_sigCount[1], *Buffer_Recv_sigCount = NULL;
   unsigned long totSig, iPanel;
@@ -164,48 +156,39 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
         if(geometry->node[iPoint]->GetDomain()){
           Coord = geometry->node[iPoint]->GetCoord();
           x = SU2_TYPE::GetValue(Coord[0]);
-          //p = solver->node[iPoint]->GetSolution(2*nDim+2)*Pressure_Ref - Pressure_FreeStream;
-          //if(p >= 0.1 || p <= -0.1){
-            panelCount++;
-            y = SU2_TYPE::GetValue(Coord[1]);
-            z = 0.0;
-            if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
+          y = SU2_TYPE::GetValue(Coord[1]);
 
-            /*---Extract conservative flow data---*/
-            rho = solver->node[iPoint]->GetSolution(nDim);
-            rho_ux = solver->node[iPoint]->GetSolution(nDim+1);
-            rho_uy = solver->node[iPoint]->GetSolution(nDim+2);
-            if(nDim == 3) rho_uz = solver->node[iPoint]->GetSolution(nDim+3);
-            rho_E = solver->node[iPoint]->GetSolution(2*nDim+1);
-            TKE = 0.0;
+          /*---Extract conservative flow data---*/
+          rho = solver->node[iPoint]->GetSolution(nDim);
+          rho_ux = solver->node[iPoint]->GetSolution(nDim+1);
+          rho_uy = solver->node[iPoint]->GetSolution(nDim+2);
+          if(nDim == 3) rho_uz = solver->node[iPoint]->GetSolution(nDim+3);
+          rho_E = solver->node[iPoint]->GetSolution(2*nDim+1);
+          TKE = 0.0;
 
-            //Register conservative variables as input for adjoint computation
-            if (config->GetAD_Mode()){
-              AD::RegisterInput(rho );
-              AD::RegisterInput(rho_ux );
-              AD::RegisterInput(rho_uy );
-              if (nDim==3) AD::RegisterInput(rho_uz );
-              AD::RegisterInput(rho_E );
-              AD::RegisterInput(TKE );
-            }
+          //Register conservative variables as input for adjoint computation
+          if (config->GetAD_Mode()){
+            AD::RegisterInput(rho );
+            AD::RegisterInput(rho_ux );
+            AD::RegisterInput(rho_uy );
+            if (nDim==3) AD::RegisterInput(rho_uz );
+            AD::RegisterInput(rho_E );
+            AD::RegisterInput(TKE );
+          }
 
-            /*---Compute pressure---*/
-            ux = rho_ux/rho;
-            uy = rho_uy/rho;
-            uz = 0.0;
-            if(nDim == 3) uz= rho_uz/rho;
-            StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
-            p = (config->GetGamma()-1)*rho*StaticEnergy*Pressure_Ref - Pressure_FreeStream;
+          /*---Compute pressure---*/
+          ux = rho_ux/rho;
+          uy = rho_uy/rho;
+          uz = 0.0;
+          if(nDim == 3) uz= rho_uz/rho;
+          StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
+          p = (config->GetGamma()-1)*rho*StaticEnergy*Pressure_Ref - Pressure_FreeStream;
 
-            Buffer_Send_Press[panelCount-1] = p;
-            Buffer_Send_x[panelCount-1] = x;
-            Buffer_Send_GlobalIndex[panelCount-1] = geometry->node[iPoint]->GetGlobalIndex();
-            //signal.original_p[panelCount-1] = p;
-            //signal.x[panelCount-1] = x;
-            //sigFile << x << "\t" << p << endl;
+          Buffer_Send_Press[panelCount] = p;
+          Buffer_Send_x[panelCount] = x;
+          Buffer_Send_GlobalIndex[panelCount] = geometry->node[iPoint]->GetGlobalIndex();
 
-            //PointID[panelCount-1] = geometry->node[iPoint]->GetGlobalIndex();
-          //}
+          panelCount++;
         }
       }
     }
@@ -239,10 +222,10 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
     for (iPanel = 0; iPanel < Buffer_Recv_sigCount[iProcessor]; iPanel++) {
-      PointID[panelCount] = Buffer_Recv_GlobalIndex[iProcessor*totSig+iPanel ];
-
       /*--- Current index position and global index ---*/
       Total_Index  = iProcessor*totSig  + iPanel;
+
+      PointID[panelCount] = Buffer_Recv_GlobalIndex[iProcessor*totSig+iPanel ];
       signal.x[panelCount] = Buffer_Recv_x[Total_Index];
       signal.original_p[panelCount] = Buffer_Recv_Press[Total_Index];
 
@@ -269,11 +252,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   }
   cout << "Sensitivities initialized." << endl;
   }
-
-  }
-  else{
-    ray_N_phi = NULL;
-    nSig = NULL;
   }
 
 }
