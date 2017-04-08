@@ -587,6 +587,7 @@ int main(int argc, char *argv[]) {
 
              if(rank==MASTER_NODE)
                cout<<"Finished extracting."<<endl;
+
              boom.WriteSensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
            }

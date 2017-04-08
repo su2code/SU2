@@ -219,14 +219,14 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   signal.original_T = new su2double[nPanel];
   PointID = new unsigned long[nPanel];
 
-  int Total_Index;
+  unsigned long Total_Index;
 
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
     for (iPanel = 0; iPanel < Buffer_Recv_sigCount[iProcessor]; iPanel++) {
       /*--- Current index position and global index ---*/
-      Total_Index  = iProcessor*totSig  + iPanel;
+      Total_Index  = iProcessor*totSig + iPanel;
 
-      PointID[panelCount] = Buffer_Recv_GlobalIndex[iProcessor*totSig+iPanel ];
+      PointID[panelCount] = Buffer_Recv_GlobalIndex[Total_Index];
       signal.x[panelCount] = Buffer_Recv_x[Total_Index];
       signal.original_p[panelCount] = Buffer_Recv_Press[Total_Index];
 
@@ -1451,7 +1451,7 @@ void SUBoom::PropagateSignal(){
 }
 
 void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geometry){
-  unsigned long iVar, iSig, Max_nSig, Tot_nSig, nVar, Global_Index ;
+  unsigned long iVar, iSig, Max_nSig, nVar, Global_Index, Total_Index;
   ofstream Boom_AdjointFile;
 
   int rank, iProcessor, nProcessor;
@@ -1465,7 +1465,7 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
 #ifdef HAVE_MPI
   SU2_MPI::Gather(&Buffer_Send_nSig, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nSig, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
   SU2_MPI::Allreduce(&nSig,&Max_nSig,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
-  SU2_MPI::Reduce(&nSig,&Tot_nSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+//  SU2_MPI::Reduce(&nSig,&Tot_nSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
 #endif
 
   nVar = nDim+3;
@@ -1473,7 +1473,7 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
   /* pack sensitivity values in each processor and send to root */
   su2double *Buffer_Send_dJdU = new su2double [Max_nSig*nVar];
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nSig];
-  //zero send buffers
+  /*---Zero send buffers---*/
   for (int i=0; i <Max_nSig*nVar; i++){
     Buffer_Send_dJdU[i]=0.0;
   }
@@ -1488,6 +1488,7 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
     Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nSig];
   }
 
+  /*---Fill send buffers with dJ/dU---*/
   for (iVar=0; iVar<nVar; iVar++){
       for(iSig=0; iSig<nSig; iSig++){
           Buffer_Send_dJdU[iVar*nSig+iSig] = dJdU[iVar][iSig];
@@ -1498,20 +1499,18 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
      Buffer_Send_GlobalIndex[iSig] = PointID[iSig];
   }
 
-
 #ifdef HAVE_MPI
   SU2_MPI::Gather(Buffer_Send_dJdU, Max_nSig*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nSig*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nSig, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nSig , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-  /* root opens a file at each time step and write out the merged dJdU values at that time step into the file */
   if (rank == MASTER_NODE){
   Boom_AdjointFile.precision(15);
   Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
 
   /*--- Loop through all of the collected data and write each node's values ---*/
-  unsigned long Total_Index;
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    cout << "iProcessor = " << iProcessor << endl;
     for (iSig = 0; iSig < Buffer_Recv_nSig[iProcessor]; iSig++) {
         Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nSig+iSig ];
         Boom_AdjointFile  << scientific << Global_Index << "\t";
