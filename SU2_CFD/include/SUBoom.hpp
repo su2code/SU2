@@ -60,7 +60,7 @@ public:
   su2double p_rise, p_max, p_rise2, p_int2;
 
   /*---Sensitivity---*/
-  unsigned long nPanel, nDim;
+  unsigned long nPanel, nDim, nSig;
   unsigned long *PointID;
   su2double **dJdU;
 

@@ -572,18 +572,18 @@ int main(int argc, char *argv[]) {
              if (rank==MASTER_NODE)
                cout<<"Finished computing boom adjoint."<<endl;
 
-             su2double extracted_derivative;
+            su2double extracted_derivative;
 
-             for (int iPanel=0; iPanel<boom.nPanel; iPanel++){
+             for (int iSig=0; iSig<boom.nSig; iSig++){
                 for (int i =0; i< boom.nDim+3; i++){
-                    boom.dJdU[i][iPanel]=SU2_TYPE::GetDerivative(extracted_derivative);
+                    boom.dJdU[i][iSig]=SU2_TYPE::GetDerivative(extracted_derivative);
                 }
              }
 
-             if(rank==MASTER_NODE)
+             if(rank==MASTER_NODE){
                cout<<"Finished extracting."<<endl;
-
              boom.WriteSensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
+             }
 
            }
 		   else{

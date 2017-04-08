@@ -241,19 +241,22 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   sigFile.close();
   cout << "Signal written." << endl;
+  }
 
   /*---Initialize sensitivities---*/
   if(config->GetAD_Mode()){
-  dJdU = new su2double* [nDim+3];
-  for(int iDim = 0; iDim < nDim+3 ; iDim++){
-      dJdU[iDim] = new su2double[nPanel];
-      for(iPanel = 0;  iPanel< nPanel; iPanel++){
-          dJdU[iDim][iPanel] = 0.0;
+    dJdU = new su2double* [nDim+3];
+    for(int iDim = 0; iDim < nDim+3 ; iDim++){
+      dJdU[iDim] = new su2double[nSig];
+      for(iPanel = 0;  iPanel< nSig; iPanel++){
+        dJdU[iDim][iPanel] = 0.0;
       }
+    }
   }
-  cout << "Sensitivities initialized." << endl;
-  }
-  }
+
+  if (rank==MASTER_NODE)
+      cout << "Sensitivities initialized." << endl;
+
 
 }
 
@@ -350,19 +353,13 @@ void SUBoom::ScaleFactors(){
   }
   // TODO: get a/c length
   L = max_x - min_x;
-  cout << "L = " << L << endl;
   //L = 1.0;
 
   scale_L = L;    // [m]
-  cout << "scale_L = " << scale_L << endl;
   scale_T = L/(M_inf*a_inf);    // flow over aircraft [s]
-  cout << "scale_T = " << scale_T << endl;
   scale_p = p_inf;    // ambient [Pa]
-  cout << "scale_p = " << scale_p << endl;
   scale_m = scale_p/scale_T;    // slope of boom signal [Pa/s]
-  cout << "scale_m = " << scale_m << endl;
   scale_z = h0;    // altitude [m]
-  cout << "scale_z = " << scale_z << endl;
 
   scale_C1 = scale_p;    // [Pa]
   scale_C2 = scale_T;    // [s]
@@ -1460,51 +1457,51 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
   int rank, iProcessor, nProcessor;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  unsigned long Buffer_Send_nPanel[1], *Buffer_Recv_nPanel = NULL;
+  unsigned long Buffer_Send_nSig[1], *Buffer_Recv_nSig = NULL;
 
-  if (rank == MASTER_NODE) Buffer_Recv_nPanel= new unsigned long [nProcessor];
+  if (rank == MASTER_NODE) Buffer_Recv_nSig= new unsigned long [nProcessor];
 
-  Buffer_Send_nPanel[0]=nPanel;
+  Buffer_Send_nSig[0]=nSig;
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(&Buffer_Send_nPanel, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPanel, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
-  SU2_MPI::Allreduce(&nPanel,&Max_nPanel,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
-  SU2_MPI::Reduce(&nPanel,&Tot_nPanel,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+  SU2_MPI::Gather(&Buffer_Send_nSig, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nSig, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+  SU2_MPI::Allreduce(&nSig,&Max_nSig,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+  SU2_MPI::Reduce(&nSig,&Tot_nSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
 #endif
 
   nVar = nDim+3;
 
   /* pack sensitivity values in each processor and send to root */
-  su2double *Buffer_Send_dJdU = new su2double [Max_nPanel*nVar];
-  unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nPanel];
+  su2double *Buffer_Send_dJdU = new su2double [Max_nSig*nVar];
+  unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nSig];
   //zero send buffers
-  for (int i=0; i <Max_nPanel*nVar; i++){
+  for (int i=0; i <Max_nSig*nVar; i++){
     Buffer_Send_dJdU[i]=0.0;
   }
-  for (int i=0; i <Max_nPanel; i++){
+  for (int i=0; i <Max_nSig; i++){
     Buffer_Send_GlobalIndex[i]=0;
   }
   su2double *Buffer_Recv_dJdU = NULL;
   unsigned long *Buffer_Recv_GlobalIndex = NULL;
 
   if (rank == MASTER_NODE) {
-    Buffer_Recv_dJdU = new su2double [nProcessor*Max_nPanel*nVar];
-    Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nPanel];
+    Buffer_Recv_dJdU = new su2double [nProcessor*Max_nSig*nVar];
+    Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nSig];
   }
 
   for (iVar=0; iVar<nVar; iVar++){
-      for(iPanel=0; iPanel<nPanel; iPanel++){
-          Buffer_Send_dJdU[iVar*nPanel+iPanel] = dJdU[iVar][iPanel];
+      for(iSig=0; iSig<nSig; iSig++){
+          Buffer_Send_dJdU[iVar*nSig+iSig] = dJdU[iVar][iSig];
         }
     }
 
-  for (iPanel=0; iPanel<nPanel; iPanel++){
-     Buffer_Send_GlobalIndex[iPanel] = PointID[iPanel];
+  for (iSig=0; iSig<nSig; iSig++){
+     Buffer_Send_GlobalIndex[iSig] = PointID[iSig];
   }
 
 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_dJdU, Max_nPanel*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nPanel*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nPanel, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nPanel , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_dJdU, Max_nSig*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nSig*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nSig, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nSig , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
   /* root opens a file at each time step and write out the merged dJdU values at that time step into the file */
@@ -1515,13 +1512,13 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
   /*--- Loop through all of the collected data and write each node's values ---*/
   unsigned long Total_Index;
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-    for (iPanel = 0; iPanel < Buffer_Recv_nPanel[iProcessor]; iPanel++) {
-        Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPanel+iPanel ];
+    for (iSig = 0; iSig < Buffer_Recv_nSig[iProcessor]; iSig++) {
+        Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nSig+iSig ];
         Boom_AdjointFile  << scientific << Global_Index << "\t";
 
        for (iVar = 0; iVar < nVar; iVar++){
          /*--- Current index position and global index ---*/
-         Total_Index  = iProcessor*Max_nPanel*nVar + iVar*Buffer_Recv_nPanel[iProcessor]  + iPanel;
+         Total_Index  = iProcessor*Max_nSig*nVar + iVar*Buffer_Recv_nSig[iProcessor]  + iSig;
 
          /*--- Write to file---*/
          Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
