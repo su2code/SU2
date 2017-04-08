@@ -242,10 +242,10 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   sigFile << "# x, p" << endl;
   panelCount = 0;
   nPanel = totSig;
-  signal.x = new su2double[nSig];
-  signal.original_p = new su2double[nSig];
-  signal.original_T = new su2double[nSig];
-  PointID = new unsigned long[nSig];
+  signal.x = new su2double[nPanel];
+  signal.original_p = new su2double[nPanel];
+  signal.original_T = new su2double[nPanel];
+  PointID = new unsigned long[nPanel];
 
   int Total_Index;
 
@@ -273,8 +273,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   if(config->GetAD_Mode()){
   dJdU = new su2double* [nDim+3];
   for(int iDim = 0; iDim < nDim+3 ; iDim++){
-      dJdU[iDim] = new su2double[nSig];
-      for(int iPanel = 0;  iPanel< nSig; iPanel++){
+      dJdU[iDim] = new su2double[nPanel];
+      for(int iPanel = 0;  iPanel< nPanel; iPanel++){
           dJdU[iDim][iPanel] = 0.0;
       }
   }
