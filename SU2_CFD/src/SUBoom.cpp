@@ -117,9 +117,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       nSig = panelCount;
     }
   }
-  cout<<"Rank= "<<rank<<", nSig= "<<nSig<<endl;
-  if(rank == MASTER_NODE)
-    cout << "nProcessor = " << nProcessor << endl;
+//  cout<<"Rank= "<<rank<<", nSig= "<<nSig<<endl;
 //  signal.original_len = sigCount;
 //  nSig = sigCount;
 
@@ -129,16 +127,18 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   Buffer_Send_sigCount[0]=nSig;
 #ifdef HAVE_MPI
-   SU2_MPI::Allgather(&Buffer_Send_sigCount, 1, MPI_UNSIGNED_LONG, Buffer_Recv_sigCount, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD); //send the number of vertices at each process to the master
-//   SU2_MPI::Allreduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD); //find the max num of vertices over all processes
+   SU2_MPI::Gather(&Buffer_Send_sigCount, 1, MPI_UNSIGNED_LONG, Buffer_Recv_sigCount, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+   SU2_MPI::Allreduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD); //find the max num of vertices over all processes
 //   SU2_MPI::Reduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
 //   MPI_Bcast(&totSig,1,MPI_UNSIGNED_LONG,MASTER_NODE,MPI_COMM_WORLD);
 #endif
 
-  totSig = 0;
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-    totSig += Buffer_Recv_sigCount[iProcessor];
-  }
+  if(rank == MASTER_NODE) cout << "Tot_nSig = " << totSig << endl;
+
+//  totSig = 0;
+//  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+//    totSig += Buffer_Recv_sigCount[iProcessor];
+//  }
 
   su2double *Buffer_Send_Press = new su2double [totSig];
   su2double *Buffer_Send_x = new su2double [totSig];
@@ -285,8 +285,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     ray_N_phi = NULL;
     nSig = NULL;
   }
-
-  if(rank == MASTER_NODE) cout << "Tot_nSig = " << totSig << endl;
 
 }
 
