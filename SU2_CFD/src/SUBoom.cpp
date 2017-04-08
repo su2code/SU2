@@ -255,7 +255,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
       /*--- Current index position and global index ---*/
       Total_Index  = iProcessor*totSig  + iPanel;
-      signal.x[panelCount] =
+      signal.x[panelCount] = Buffer_Recv_x[Total_Index];
       signal.original_p[panelCount] = Buffer_Recv_Press[Total_Index];
 
       /*--- Write to file---*/
