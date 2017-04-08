@@ -132,7 +132,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 //   SU2_MPI::Reduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
 #endif
 
-  cout << "Tot_nSig = " << totSig << endl;
+  if (rank == MASTER_NODE) cout << "Tot_nSig = " << totSig << endl;
 
   su2double *Buffer_Send_Press = new su2double [totSig];
   su2double *Buffer_Send_x = new su2double [totSig];
@@ -156,6 +156,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   }
 
   /*---Extract signature---*/
+  panelCount = 0;
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
@@ -206,7 +207,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
             //PointID[panelCount-1] = geometry->node[iPoint]->GetGlobalIndex();
           //}
         }
-
       }
     }
   }
