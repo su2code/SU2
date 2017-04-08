@@ -1124,11 +1124,17 @@ inline string CConfig::GetBreakdown_FileName(void) { return Breakdown_FileName; 
 
 inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
 
+inline string CConfig::GetSolution_2phaseFileName(void) { return Solution_2phaseFileName; }
+
 inline string CConfig::GetSolution_AdjFileName(void) { return Solution_AdjFileName; }
 
 inline string CConfig::GetSolution_FEMFileName(void) { return Solution_FEMFileName; }
 
 inline string CConfig::GetFlow_FileName(void) { return Flow_FileName; }
+
+
+inline string CConfig::Get2phase_FileName(void) { return Two_phase_FileName; }
+
 
 inline string CConfig::GetStructure_FileName(void) { return Structure_FileName; }
 
@@ -1153,6 +1159,8 @@ inline string CConfig::GetRestart_HeatFileName(void) { return Restart_HeatFileNa
 inline string CConfig::GetRestart_AdjFileName(void) { return Restart_AdjFileName; }
 
 inline string CConfig::GetRestart_FEMFileName(void) { return Restart_FEMFileName; }
+
+inline string CConfig::GetRestart_2phaseFileName(void) { return Restart_2phaseFileName; }
 
 inline string CConfig::GetAdj_FileName(void) { return Adj_FileName; }
 

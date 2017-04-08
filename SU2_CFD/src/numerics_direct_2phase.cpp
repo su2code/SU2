@@ -66,8 +66,6 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
   AD::SetPreaccIn(Two_phaseVar_i,nVar);
   AD::SetPreaccIn(Two_phaseVar_j,nVar);
 
-  AD::SetPreaccIn(Primitive_Liquid,10);
-
   AD::SetPreaccIn(Normal, nDim);
 
   if (grid_movement) {
@@ -78,34 +76,34 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
   AD::SetPreaccIn(V_j, nDim+9);
 
 
-	for (iVar = 0; iVar < nVar; iVar++) val_residual[iVar] = 0.0;
+  qi = 0.0; qj = 0;
+  if (grid_movement) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
+      Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
+      qi += Velocity_i[iDim]*Normal[iDim];
+      qj += Velocity_j[iDim]*Normal[iDim];
+    }
+  }
+  else {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Velocity_i[iDim] = V_i[iDim+1];
+      Velocity_j[iDim] = V_j[iDim+1];
+      qi += Velocity_i[iDim]*Normal[iDim];
+      qj += Velocity_j[iDim]*Normal[iDim];
+    }
+  }
 
 
-	  qi = 0.0;
-	  qj = 0.0;
-	  if (grid_movement) {
-		for (iDim = 0; iDim < nDim; iDim++) {
-		  Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
-		  Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
-		  qi += Velocity_i[iDim]*Normal[iDim];
-		  qj += Velocity_j[iDim]*Normal[iDim];
-		}
-	  }
-	  else {
-		for (iDim = 0; iDim < nDim; iDim++) {
-		  Velocity_i[iDim] = V_i[iDim+1];
-		  Velocity_j[iDim] = V_j[iDim+1];
-		  qi += Velocity_i[iDim]*Normal[iDim];
-		  qj += Velocity_j[iDim]*Normal[iDim];
-		}
-	  }
+  a0 = 0.5*(qi + max(fabs(qi), fabs(qj)));
+  a1 = 0.5*(qj - max(fabs(qi), fabs(qj)));
 
-	  for (iVar=0; iVar<nVar; iVar++) {
-		  val_residual[iVar] = 0.5* qi * Two_phaseVar_i[iVar] + 0.5 * qj* Two_phaseVar_j[iVar];
-		  val_residual[iVar] = val_residual[iVar] - 0.5 * max(qi, qj) * (Two_phaseVar_j[iVar] - Two_phaseVar_i[iVar]);
-	  }
+  val_residual[0] = a0*Two_phaseVar_i[0]+a1*Two_phaseVar_j[0];
+  val_residual[1] = a0*Two_phaseVar_i[1]+a1*Two_phaseVar_j[1];
+  val_residual[2] = a0*Two_phaseVar_i[2]+a1*Two_phaseVar_j[2];
+  val_residual[3] = a0*Two_phaseVar_i[3]+a1*Two_phaseVar_j[3];
 
-  
+
   if (implicit) {
 
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -115,10 +113,11 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
 		}
 	}
 
-		val_Jacobian_i[0][0] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[0][0] = 0.5 * (qi - max(qi, qj));
-		val_Jacobian_i[1][1] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[1][1] = 0.5 * (qi - max(qi, qj));
-		val_Jacobian_i[2][2] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[2][2] = 0.5 * (qi - max(qi, qj));
-		val_Jacobian_i[3][3] = 0.5 * (qi + max(qi, qj));   val_Jacobian_j[3][3] = 0.5 * (qi - max(qi, qj));
+	val_Jacobian_i[0][0] = a0;   val_Jacobian_j[0][0] = a1;
+	val_Jacobian_i[1][1] = a0;   val_Jacobian_j[1][1] = a1;
+	val_Jacobian_i[2][2] = a0;   val_Jacobian_j[2][2] = a1;
+	val_Jacobian_i[3][3] = a0;   val_Jacobian_j[3][3] = a1;
+
   }
 
 
@@ -145,9 +144,6 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 
 	su2double Density_mixture, Critical_radius, Nucleation_rate, Growth_rate;
 	su2double P, T, rho, h, k, mu;
-
-
-	for (iVar = 0; iVar < nVar; iVar++) val_Residual[iVar] = 0.0;
 
 	// compute the source terms for the moments equations
 	Critical_radius = val_liquid_i[6];
@@ -178,21 +174,16 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 		val_Residual[2] = Density_mixture * Nucleation_rate*pow(Critical_radius,2) + 2.0*Growth_rate*Two_phaseVar_i[1];
 		val_Residual[3] = Density_mixture * Nucleation_rate*pow(Critical_radius,3) + 3.0*Growth_rate*Two_phaseVar_i[2];
 
-
 		for (iVar=0; iVar<nVar; iVar++) {
-			val_Residual[iVar] = val_Residual[iVar] * Volume;
+			val_Residual[iVar] = val_Residual[iVar]* Volume ;
 		}
-
 	}	else 	{
+
 		for (iVar=0; iVar<nVar; iVar++) {
 			val_Residual[iVar] = 0.0;
 		}
 		val_liquid_i[9] = 0.0;
 	}
-
-	// compute the Jacobians of the source terms
-
-	//cout << " Tsat " << val_liquid_i[4] << " T " << T << " Res0     " << val_Residual[0];
 
 	if (implicit) {
 
@@ -202,12 +193,12 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 			}
 		}
 
-		if (val_liquid_i[4] > T) {
+/*		if (val_liquid_i[4] > T) {
 			val_Jacobian_i[1][0] =      Growth_rate* Volume;
 			val_Jacobian_i[2][1] = 2.0* Growth_rate* Volume;
 			val_Jacobian_i[3][2] = 3.0* Growth_rate* Volume;
 		}
-
+*/
 	}
 }
 

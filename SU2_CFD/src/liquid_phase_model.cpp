@@ -55,7 +55,7 @@ CLiquidModel::CLiquidModel(CConfig *config) {
 
 CLiquidModel::~CLiquidModel(void) { }
 
-void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double Radius, su2double mom3) {
+void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double Rdroplet, su2double mom3) {
 
 	// guess for R critical, a loop is required to evaluate the right properties
 	//Rc = 1e-12;
@@ -67,7 +67,7 @@ void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2do
 
 	SetSurfaceTension(T);
 
-    SetTLiquid(T, Rcritical, Radius);
+    SetTLiquid(T, Rcritical, Rdroplet);
     SetLiquidDensity();
 
     SetLiquidEnthalpy(h_v);
@@ -103,16 +103,6 @@ void CLiquidModel::SetDensity_Mixture(su2double rho, su2double mom3) {
 	    }
 
 }
-
-
-/*
-void CLiquidModel::SetRadius(su2double *Two_Phase_Var) {
-
-	if (Two_Phase_Var[0] == 0) R = 0;
-	else 	R = Two_Phase_Var[1]/Two_Phase_Var[0];
-
-}
-*/
 
 
 
@@ -199,11 +189,9 @@ void CWater::SetSurfaceTension(su2double T) {
 
 }
 
-void CWater::SetTLiquid(su2double T, su2double Rcritical, su2double R) {
+void CWater::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
 
-    	//Guess Rcritical, a loop is required to evaluate the right properties
-
-		if ((Tsat > T) && (R!=0)) T_l   = Tsat  - (Tsat - T)*Rcritical/R;
+		if (Rdroplet!=0.0) T_l   = Tsat  - (Tsat - T)*Rcritical/Rdroplet;
 		else      T_l = T;
 
 }

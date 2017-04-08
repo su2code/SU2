@@ -129,7 +129,7 @@ public:
     /*!
      * \brief return liquid density value.
      */
-    void Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double Radius, su2double mom3);
+    void Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double Rdroplet, su2double mom3);
 
     void SetRadius(su2double *Two_Phase_Var);
 
@@ -143,7 +143,7 @@ public:
 
     virtual void SetLiquidDensity();
 
-    virtual void SetTLiquid( su2double T, su2double Rcritical, su2double Radius);
+    virtual void SetTLiquid( su2double T, su2double Rcritical, su2double Rdroplet);
 
     virtual void SetLiquidEnthalpy(su2double h_v);
 
@@ -188,7 +188,7 @@ public:
 
   void SetLiquidDensity();
 
-  void SetTLiquid( su2double T, su2double Rcritical, su2double Radius);
+  void SetTLiquid( su2double T, su2double Rcritical, su2double Rdroplet);
 
   void SetLiquidEnthalpy(su2double h_v);
 

@@ -68,12 +68,14 @@ su2double CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2doub
 	// V_l = T, rho, h, Psat, Tsat, sigma, Rc, R, rhom, (G)
 
 	Theta = (h - V_l[2])/Gas_Constant/T - 0.5;
+
 	Theta = Theta * (h - V_l[2])/Gas_Constant/T;
+
 	Theta = Theta * 2 * (Gamma - 1)/(Gamma + 1);
 
-    J  = -4.0*3.1415*V_l[5]*V_l[6]*V_l[6] / 3 / T / Boltzmann;
+    J  = exp(-4.0*3.1415*V_l[5]*V_l[6]*V_l[6] / 3 / T / Boltzmann);
 
-	J = exp(J) * rho/V_l[1]*sqrt(2*V_l[5] / 3.1415 / pow(MolMass,3) );
+	J = J * rho/V_l[1]*sqrt(2*V_l[5] / 3.1415 / pow(MolMass,3) );
 
 	J = J / (1+Theta);
 
@@ -90,7 +92,7 @@ su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double r
 
 		G = k * (V_l[4] - T);
 
-		//if (V_l[7] > V_l[6]) G = G * (1-V_l[6]/V_l[7]);
+		if (V_l[7] > V_l[6]) G = G * (1-V_l[6]/V_l[7]);
 
 		G = G / V_l[1] / (h - V_l[2]);
 
@@ -104,7 +106,8 @@ su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double r
 		Pr = Gas_Constant * Gamma / (Gamma - 1) * mu / k;
 		Lambda = V_l[7] + 1.89 * (1-Ni) * Lambda / Pr;
 
-		G   = G / Lambda;
+		G = G/Lambda;
+
 	} else {
         G = 0;
 	}

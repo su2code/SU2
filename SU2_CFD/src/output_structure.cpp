@@ -3706,6 +3706,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool two_phase = (config->GetKind_Solver() == TWO_PHASE_EULER || config->GetKind_Solver() == TWO_PHASE_RANS ||
+		            config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES);
 
   /*--- Retrieve filename from config ---*/
   
@@ -3714,6 +3716,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
     filename = config->GetRestart_FEMFileName();
+ /* } else if (two_phase) {
+	filename = config->GetRestart_2phaseFileName();*/
   } else {
     filename = config->GetRestart_FlowFileName();
   }
@@ -10982,10 +10986,8 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   }
 
   nVar_First = solver[FirstIndex]->GetnVar();
-  if (SecondIndex == TURB_SOL) nVar_Second = solver[SecondIndex]->GetnVar();
+  if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
   nVar_Consv_Par = nVar_First + nVar_Second;
-  if (SecondIndex == TWO_PHASE_SOL) nVar_Second = solver[SecondIndex]->GetnVar();
-    nVar_Consv_Par = nVar_First + nVar_Second;
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Register the variables that will be output. To register a  ---*/
@@ -11306,11 +11308,24 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
         iVar++;
       }
 
+      if (SecondIndex != NONE) {
+        for (jVar = 0; jVar < nVar_Second; jVar++) {
+          Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
+          iVar++;
+        }
+      }
+
       if (!config->GetLow_MemoryOutput()) {
         if (config->GetWrt_Limiters()) {
           for (jVar = 0; jVar < nVar_First; jVar++) {
             Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
             iVar++;
+          }
+          if (SecondIndex != NONE) {
+            for (jVar = 0; jVar < nVar_Second; jVar++) {
+              Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+              iVar++;
+            }
           }
         }
         if (config->GetWrt_Residuals()) {
@@ -11318,33 +11333,16 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
             Local_Data[jPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
             iVar++;
           }
-        }
-      }
 
-      /*--- If this is RANS, i.e., the second solver container is not empty,
-       then load data for the conservative turbulence variables and the
-       limiters / residuals (if requested). ----*/
-
-      if (SecondIndex != NONE) {
-        for (jVar = 0; jVar < nVar_Second; jVar++) {
-          Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
-          iVar++;
-        }
-        if (!config->GetLow_MemoryOutput()) {
-          if (config->GetWrt_Limiters()) {
-            for (jVar = 0; jVar < nVar_Second; jVar++) {
-              Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
-              iVar++;
-            }
-          }
-          if (config->GetWrt_Residuals()) {
-            for (jVar = 0; jVar < nVar_Second; jVar++) {
-              Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
-              iVar++;
-            }
+          if (SecondIndex != NONE) {
+              for (jVar = 0; jVar < nVar_Second; jVar++) {
+                Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
+                iVar++;
+              }
           }
         }
       }
+
 
       if (!config->GetLow_MemoryOutput()) {
 
@@ -15369,6 +15367,8 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   unsigned short iVar;
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool two_phase = (config->GetKind_Solver() == TWO_PHASE_EULER || config->GetKind_Solver() == TWO_PHASE_RANS ||
+		            config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -15391,7 +15391,10 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
     filename = config->GetRestart_FEMFileName();
-  } else {
+/*  } else if (two_phase){
+	filename = config->GetRestart_2phaseFileName();
+	*/
+   } else {
     filename = config->GetRestart_FlowFileName();
   }
   
@@ -15499,6 +15502,9 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
                     config->GetDiscrete_Adjoint());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool two_phase = (config->GetKind_Solver() == TWO_PHASE_EULER || config->GetKind_Solver() == TWO_PHASE_RANS ||
+		            config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES);
+
   ofstream restart_file;
   string filename;
   char str_buf[CGNS_STRING_SIZE], fname[100];
@@ -15517,6 +15523,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
     filename = config->GetRestart_FEMFileName();
+/*  } else if (two_phase) {
+	filename = config->GetRestart_2phaseFileName();*/
   } else {
     filename = config->GetRestart_FlowFileName();
   }

@@ -615,10 +615,12 @@ private:
   string Mesh_FileName,			/*!< \brief Mesh input file. */
   Mesh_Out_FileName,				/*!< \brief Mesh output file. */
   Solution_FlowFileName,			/*!< \brief Flow solution input file. */
+  Solution_2phaseFileName,			/*!< \brief 2-phase solution input file. */
   Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
   Solution_AdjFileName,			/*!< \brief Adjoint solution input file for drag functional. */
   Solution_FEMFileName,			/*!< \brief Adjoint solution input file for drag functional. */
   Flow_FileName,					/*!< \brief Flow variables output file. */
+  Two_phase_FileName,					/*!< \brief Flow variables output file. */
   Structure_FileName,					/*!< \brief Structure variables output file. */
   SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
   SurfWave_FileName,					/*!< \brief Surface structure variables output file. */
@@ -631,6 +633,7 @@ private:
   Breakdown_FileName,			    /*!< \brief Breakdown output file. */
   Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
   Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
+  Restart_2phaseFileName,			/*!< \brief Restart file for 2phase variables. */
   Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
   Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
   Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
@@ -4174,6 +4177,12 @@ public:
   string GetSolution_FlowFileName(void);
   
   /*!
+   * \brief Get the name of the file with the solution of the 2phase problem.
+   * \return Name of the file with the solution of the 2phase problem.
+   */
+  string GetSolution_2phaseFileName(void);
+
+  /*!
    * \brief Get the name of the file with the solution of the adjoint flow problem
    *		  with drag objective function.
    * \return Name of the file with the solution of the adjoint flow problem with
@@ -4235,6 +4244,12 @@ public:
    */
   string GetFlow_FileName(void);
   
+  /*!
+   * \brief Get the name of the file with the 2phase variables.
+   * \return Name of the file with the primitive variables.
+   */
+  string Get2phase_FileName(void);
+
   /*!
    * \brief Get the name of the file with the structure variables.
    * \return Name of the file with the structure variables.
@@ -4313,6 +4328,12 @@ public:
    */
   string GetRestart_FEMFileName(void);
   
+  /*!
+   * \brief Get the name of the restart file for the 2phase variables.
+   * \return Name of the restart file for the 2phase variables.
+   */
+  string GetRestart_2phaseFileName(void);
+
   /*!
    * \brief Get the name of the file with the adjoint variables.
    * \return Name of the file with the adjoint variables.

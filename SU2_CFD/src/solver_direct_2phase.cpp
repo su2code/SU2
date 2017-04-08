@@ -97,13 +97,10 @@ void C2phaseSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       Buffer_Receive_U = new su2double [nBufferR_Vector];
       Buffer_Send_U = new su2double[nBufferS_Vector];
       
-      Buffer_Receive_muT = new su2double [nBufferR_Scalar];
-      Buffer_Send_muT = new su2double[nBufferS_Scalar];
       
       /*--- Copy the solution that should be sended ---*/
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
         iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        Buffer_Send_muT[iVertex] = node[iPoint]->GetmuT();
         for (iVar = 0; iVar < nVar; iVar++)
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
       }
@@ -113,14 +110,11 @@ void C2phaseSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       /*--- Send/Receive information using Sendrecv ---*/
       SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                    Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-      SU2_MPI::Sendrecv(Buffer_Send_muT, nBufferS_Scalar, MPI_DOUBLE, send_to, 1,
-                   Buffer_Receive_muT, nBufferR_Scalar, MPI_DOUBLE, receive_from, 1, MPI_COMM_WORLD, &status);
 #else
       
       /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
         iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        Buffer_Receive_muT[iVertex] = node[iPoint]->GetmuT();
         for (iVar = 0; iVar < nVar; iVar++)
           Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
       }
@@ -129,7 +123,6 @@ void C2phaseSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       
       /*--- Deallocate send buffer ---*/
       delete [] Buffer_Send_U;
-      delete [] Buffer_Send_muT;
       
       /*--- Do the coordinate transformation ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
@@ -138,20 +131,17 @@ void C2phaseSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
         iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
         
         /*--- Copy conservative variables. ---*/
-        node[iPoint]->SetmuT(Buffer_Receive_muT[iVertex]);
         for (iVar = 0; iVar < nVar; iVar++)
           node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
         
       }
       
       /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_muT;
       delete [] Buffer_Receive_U;
       
     }
     
   }
-  
 }
 
 void C2phaseSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
@@ -429,37 +419,7 @@ void C2phaseSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *confi
   
 }
 
-/*
-void C2phaseSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
 
-  unsigned long iPoint;
-  unsigned short iVar, jVar;
-
-  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-	numerics->Set2phaseVar(solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution(), NULL);
-
-	numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
-
-    numerics->ComputeResidual(Residual, Jacobian_i,
-    		solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(), NULL, config);
-
-    for (iVar=0; iVar<nVar; iVar++) {
-    	Residual[iVar] = Residual[iVar] * (geometry->node[iPoint]->GetVolume());
-    	for (jVar=0; jVar<nVar; jVar++)
-    	Jacobian_i[iVar][jVar] = Jacobian_i[iVar][jVar] * (geometry->node[iPoint]->GetVolume());
-    }
-
-    //--- Subtract residual and the Jacobian --//
-
-    LinSysRes.SubtractBlock(iPoint, Residual);
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-
-  }
-}
-*/
 
 void C2phaseSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
   
@@ -602,7 +562,7 @@ void C2phaseSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_containe
 }
 
 void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res, *Sol, *Sol_Old, *Sol_New;
+  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
   unsigned short iVar;
   unsigned long iPoint;
 
@@ -615,17 +575,20 @@ void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
+    Delta = solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
 
     local_Res_TruncError = node[iPoint]->GetResTruncError();
     local_Residual = LinSysRes.GetBlock(iPoint);
 
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res = local_Residual[iVar] + local_Res_TruncError[iVar];
-        node[iPoint]->AddSolution(iVar, -Res*Delta);
-        AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-      }
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Res = local_Residual[iVar] + local_Res_TruncError[iVar];
+      node[iPoint]->AddSolution(iVar, -Res*Delta);
+      AddRes_RMS(iVar, Res*Res);
+      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+
     }
+
+  }
 
   /*--- MPI solution ---*/
 
@@ -634,6 +597,7 @@ void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
+
 
 }
 
@@ -935,7 +899,7 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 
 	  unsigned short iVar, iMesh;
 	  unsigned long iPoint, index, iChildren, Point_Fine;
-	  su2double Area_Children, Area_Parent, *Solution_Fine;
+	  su2double Area_Children, Area_Parent, *Solution_Fine, *Sol;
 	  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
 	  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -1052,7 +1016,7 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 	      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
 	        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
 	        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-	        Solution_Fine = solver[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
+	        Solution_Fine = solver[iMesh-1][TWO_PHASE_SOL]->node[Point_Fine]->GetSolution();
 	        for (iVar = 0; iVar < nVar; iVar++) {
 	          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
 	        }
@@ -1062,13 +1026,22 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 	    solver[iMesh][TWO_PHASE_SOL]->Set_MPI_Solution(geometry[iMesh], config);
 	    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 	    solver[iMesh][TWO_PHASE_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+
+	    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+	    	Sol = node[iPoint]->SetLiquidPrim(solver[iMesh][FLOW_SOL]->node[iPoint]->GetPrimitive(),
+	    			           node[iPoint]->GetSolution(), 1e-10,
+	    			           solver[iMesh][FLOW_SOL]->GetFluidModel(), config);
+	    }
 	  }
+
 
 	  /*--- Delete the class memory that is used to load the restart. ---*/
 
 	  if (Restart_Vars != NULL) delete [] Restart_Vars;
 	  if (Restart_Data != NULL) delete [] Restart_Data;
 	  Restart_Vars = NULL; Restart_Data = NULL;
+
+
 
 	}
 
@@ -1205,12 +1178,6 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint] = new C2phase_HillVariable(RInf, NInf, DInf, nDim, nVar, config);
-    node[iPoint]->SetSource(0.0);
-    node[iPoint]->SetRadius(0.0);
-    node[iPoint]->SetLiquidFrac(0.0);
-    node[iPoint]->SetLiqEnthalpy(0.0);
-    node[iPoint]->SetLiquidPrimZero();
-
   }
 
   /*--- MPI solution ---*/
@@ -1284,6 +1251,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
     Two_phase_i = node[iPoint]->GetSolution();
     Two_phase_j = node[jPoint]->GetSolution();
+
     numerics->Set2phaseVar(Two_phase_i, Two_phase_j);
 
     /*--- Grid Movement ---*/
@@ -1370,13 +1338,12 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
   }
 
-
 }
 
 void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-  unsigned long iPoint, iNode, rho_m;
-  su2double R, S, y, *Liquid_vec, rho_v, mom0, mom1, mom2, mom3;
+  unsigned long iPoint, iNode;
+  su2double r, s, y, *Liquid_vec, rho_v, rho_m, mom0, mom1, mom3;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1384,33 +1351,33 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
      rho_v   = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-     mom0    = node[iPoint]->GetSolution(0);
-     mom1    = node[iPoint]->GetSolution(1);
-     mom3    = node[iPoint]->GetSolution(3);
+     mom0    = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
+     mom1    = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution(1);
+     mom3    = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3);
 
      Liquid_vec = node[iPoint]->GetLiquidPrim();
 
-     if (mom0 > 0.0 && mom3 > 0) {
-    	 R = mom1 / mom0;
-     	 y = mom3*(Liquid_vec[1] - rho_v);
+     if (mom0 != 0.0 && mom1!=0.0 && Liquid_vec[1]!=0) {
+    	 r = mom1 / mom0;
      	 y = y + 0.75 * rho_v / 3.1415;
      	 y = mom3*Liquid_vec[1] / y;
      	 rho_m = y/ Liquid_vec[1] + (1.0 - y)/ rho_v;
      	 rho_m = 1.0/ rho_m;
 
-     	 S = 3.0 * rho_m * y * Liquid_vec[9];
-     	 S = S/R;
+     	 s = 3.0 * rho_m * y * Liquid_vec[9];
+     	 s = s/r;
 
      } else {
-    	 R = 0; y = 0; rho_m = rho_v; S = 0;
+    	 r = 0; y = 0; rho_m = rho_v; s = 0;
      }
 
-	 node[iPoint]->SetSource(S);
+	 node[iPoint]->SetSource(s);
 	 node[iPoint]->SetLiqEnthalpy(Liquid_vec[2]);
-	 node[iPoint]->SetRadius(R);
+	 node[iPoint]->SetRadius(r);
      node[iPoint]->SetLiquidFrac(y);
     
   }
+
 }
 
 
@@ -1579,7 +1546,7 @@ void C2phase_HillSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double *V_inlet, *V_domain, *Normal, *Sol, *Liq;
+  su2double *V_inlet, *V_domain, *Normal;
 
   Normal = new su2double[nDim];
 
@@ -1625,14 +1592,11 @@ void C2phase_HillSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
                                 geometry->node[iPoint]->GetGridVel());
       
       /*--- Compute the residual using an upwind scheme ---*/
-/*
-	   cout << " Sol " << Solution_i[0] << " " << Solution_i[1] << " " << Solution_i[2]
-			<< " " << Solution_i[3] << " ";
-*/
+
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
       LinSysRes.AddBlock(iPoint, Residual);
-      
+
       /*--- Jacobian contribution for implicit integration ---*/
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
@@ -1648,7 +1612,7 @@ void C2phase_HillSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
   
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;
-  su2double *V_outlet, *V_domain, *Normal, *Sol;
+  su2double *V_outlet, *V_domain, *Normal;
   
   bool grid_movement  = config->GetGrid_Movement();
 
@@ -1668,7 +1632,7 @@ void C2phase_HillSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetPrimitive(V_domain, V_outlet);
+      conv_numerics->SetPrimitive(V_domain, V_domain);
       
       /*Solution_i --> 2phaseVar_internal,
       Solution_j --> 2phaseVar_outlet ---*/
@@ -1682,13 +1646,6 @@ void C2phase_HillSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       for (iDim = 0; iDim < nDim; iDim++)
       Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-      
-/*
-      cout << " Sol " << Solution_i[0] << " " << Solution_i[1] << " " << Solution_i[2]
-      << " " << Solution_i[3] << " ";
-
-      getchar();
-*/
 
       if (grid_movement)
       conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
