@@ -345,8 +345,6 @@ void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
         MPI_Allreduce(SendValLoc, RecvValLoc, count, MPI_DOUBLE_INT,MPI_MAXLOC,comm);
       else if (op == MPI_MIN)
         MPI_Allreduce(SendValLoc, RecvValLoc, count, MPI_DOUBLE_INT,MPI_MINLOC,comm);
-      else if (op == MPI_SUM)
-        MPI_Allreduce(SendValLoc, RecvValLoc, count, MPI_UNSIGNED_LONG,MPI_SUM,comm);
 
       MPI_Status status;
       for (iVal = 0; iVal < count; iVal++) {
