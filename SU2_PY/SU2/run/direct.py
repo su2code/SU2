@@ -97,7 +97,7 @@ def direct ( config ):
     konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME']
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         konfig['SOLUTION_STRUCTURE_FILENAME'] = konfig['RESTART_STRUCTURE_FILENAME']
-    su2merge(konfig)
+    su2mergesol(konfig)
 
     # filenames
     plot_format      = konfig['OUTPUT_FORMAT']
