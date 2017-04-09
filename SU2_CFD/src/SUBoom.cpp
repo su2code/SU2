@@ -1508,10 +1508,10 @@ void SUBoom::WriteSensitivities(){
 #ifdef HAVE_MPI
   SU2_MPI::Gather(Buffer_Send_dJdU, Max_nSig*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nSig*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   if (rank == MASTER_NODE)
-    cout << "dJ/dU sent."
+    cout << "dJ/dU sent." << endl;
   SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nSig, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nSig , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   if (rank == MASTER_NODE)
-    cout << "Global Index sent."
+    cout << "Global Index sent." << endl;
 #endif
 
   if (rank == MASTER_NODE){
