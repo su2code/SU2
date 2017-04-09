@@ -1225,7 +1225,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       PressureOut[iMarker][iSpan]        = 0.0;
       TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
 
-      for (iDim = 0; iDim < 3; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++){
         TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
         TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
       }
@@ -16099,13 +16099,15 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       PressureIn        [markerTP -1][iSpan]      = pressureIn;
       TurboVelocityIn   [markerTP -1][iSpan][0]   = normalVelocityIn;
       TurboVelocityIn   [markerTP -1][iSpan][1]   = tangVelocityIn;
-      TurboVelocityIn   [markerTP -1][iSpan][2]   = radialVelocityIn;
+      if (nDim == 3)
+        TurboVelocityIn   [markerTP -1][iSpan][2]   = radialVelocityIn;
 
       DensityOut        [markerTP -1][iSpan]      = densityOut;
       PressureOut       [markerTP -1][iSpan]      = pressureOut;
       TurboVelocityOut  [markerTP -1][iSpan][0]   = normalVelocityOut;
       TurboVelocityOut  [markerTP -1][iSpan][1]   = tangVelocityOut;
-      TurboVelocityOut  [markerTP -1][iSpan][2]   = radialVelocityOut;
+      if (nDim == 3)
+        TurboVelocityOut  [markerTP -1][iSpan][2]   = radialVelocityOut;
     }
   }
 }
