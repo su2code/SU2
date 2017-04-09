@@ -1424,8 +1424,12 @@ void SUBoom::PropagateSignal(){
     p_rise = signal.final_p[0];
     if(signal.final_p[0] > -signal.final_p[Msig-1]) p_rise2 = signal.final_p[0];
     else p_rise2 = signal.final_p[Msig-1];
-    cout << "Scale_T = " << scale_T << ", Scale_p = " << scale_p << endl;
     cout << "p_rise = " << p_rise << ", p_max = " << p_max << endl;
+
+    /*---Write boom strength metrics to file---*/
+    sigFile.open("pboomSU2", ios::out);
+    sigFile << p_max << "," << p_rise << "," << p_rise2 << "," << p_int2 << endl;
+    sigFile.close();
   }
 
   /*---Clean up---*/
