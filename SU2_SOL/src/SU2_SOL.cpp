@@ -560,7 +560,7 @@ int main(int argc, char *argv[]) {
              boom.PropagateSignal();
              }
              su2double boom_obj[1];
-             if (rank == MASTER_NODE) boom_obj[0] = boom.p_int2;
+             if (rank == MASTER_NODE) boom_obj[0] = boom.p_max;
 #ifdef HAVE_MPI
   SU2_MPI::Bcast(boom_obj, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 #endif

@@ -112,7 +112,7 @@ def direct ( config ):
 
     if config.get('OBJECTIVE_FUNCTION',"") == 'BOOM':
       boom_file = open('pboomSU2')
-      boom = boom_file.readline().split(",")[3]
+      boom = boom_file.readline().split(",")[0]
       aerodynmaics['BOOM'] = float(boom)
 
     # update super config
