@@ -123,6 +123,7 @@ public:
   su2double matchr(int i, int j, su2double h_L, su2double r0);
   su2double *ClipLambdaZeroSegment(su2double fvec[], int &M);
 };
+void QuickSort(su2double x[], su2double p[], int l, int r);
 su2double *derivs(su2double x, int m, su2double y[], SUBoom::RayData data);
 su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data);
 su2double **WaveformToPressureSignal(su2double fvec[], int M, int &Msig);

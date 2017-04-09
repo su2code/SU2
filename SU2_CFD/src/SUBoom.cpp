@@ -224,14 +224,24 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       signal.original_p[panelCount] = Buffer_Recv_Press[Total_Index];
 
       /*--- Write to file---*/
-      sigFile << scientific << Buffer_Recv_x[Total_Index] << "\t";
+/*      sigFile << scientific << Buffer_Recv_x[Total_Index] << "\t";
       sigFile << scientific <<  Buffer_Recv_Press[Total_Index]   << "\t";
-      sigFile << endl;
+      sigFile << endl;*/
 
       panelCount++;
     }
   }
 
+  /*---Sort signal in order of x-coordinate---*/
+  cout << "Sorting signal data." << endl;
+  QuickSort(signal.x, signal.original_p, 0, totSig);
+
+  /*---Now write to file---*/
+  for(iPanel = 0; iPanel < nPanel; iPanel++){
+    sigFile << scientific << signal.x[iPanel] << "\t";
+    sigFile << scientific << signal.original_p[iPanel]   << "\t";
+    sigFile << endl;
+  }
   sigFile.close();
   cout << "Signal written." << endl;
 
@@ -256,6 +266,28 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
 SUBoom::~SUBoom(void){
 
+}
+
+void QuickSort(su2double x[], su2double p[], int l, int r){
+  int i = l, j = r;
+  su2double tmp, pivot=x[(l+r)/2];
+
+  while(i <= j){
+    while(x[i] < pivot) i++;
+    while(x[j] > pivot) j--;
+    if(i <= j){
+        tmp = x[i];
+        x[i] = x[j];
+        x[j] = tmp;
+        tmp = p[i];
+        p[i] = p[j];
+        p[j] = tmp;
+        i++;
+        j--;
+    }
+  }
+  if(l < j) QuickSort(x, p, l, j);
+  if(i < r) QuickSort(x, p, i, r);
 }
 
 void SUBoom::AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
