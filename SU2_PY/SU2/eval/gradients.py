@@ -275,7 +275,7 @@ def adjoint( func_name, config, state=None ):
 
     if config['OBJECTIVE_FUNCTION'] == "BOOM":
         pull.append("tols.in")
-#        pull.append("DIRECT/Adj_Boom.dat")
+        pull.append("DIRECT/Adj_Boom.dat")
 
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
