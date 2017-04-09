@@ -112,7 +112,7 @@ public:
   void DistanceToTime();
   void CreateSignature(); // Note: p is pressure disturbance (relative)
   void PropagateSignal();
-  void WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geometry);
+  void WriteSensitivities();
 
   void GetAtmosphericData(su2double& a, su2double& rho, su2double& p, su2double h);
   void Sph2Cart(su2double& nx, su2double& ny, su2double& nz, su2double az, su2double elev,

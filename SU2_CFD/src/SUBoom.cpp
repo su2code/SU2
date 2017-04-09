@@ -1451,7 +1451,7 @@ void SUBoom::PropagateSignal(){
 
 }
 
-void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geometry){
+void SUBoom::WriteSensitivities(){
   unsigned long iVar, iSig, Max_nSig, nVar, Global_Index, Total_Index;
   ofstream Boom_AdjointFile;
 
