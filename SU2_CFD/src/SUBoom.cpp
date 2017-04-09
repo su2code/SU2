@@ -241,7 +241,17 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   sigFile.close();
   cout << "Signal written." << endl;
+
+  /*---Clear up memory from buffers---*/
+  delete [] Buffer_Recv_sigCount;
+  delete [] Buffer_Recv_GlobalIndex;
+  delete [] Buffer_Recv_x;
+  delete [] Buffer_Recv_Press;
   }
+  delete [] Buffer_Send_sigCount;
+  delete [] Buffer_Send_GlobalIndex;
+  delete [] Buffer_Send_x;
+  delete [] Buffer_Send_Press;
 
   /*---Initialize sensitivities---*/
   if(config->GetAD_Mode()){
@@ -1471,7 +1481,6 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
   nVar = nDim+3;
 
   if (rank == MASTER_NODE)
-    cout << "Max_nSig = " << Max_nSig << endl;
     cout << "Packing sensitivities in each processor." << endl;
   /* pack sensitivity values in each processor and send to root */
   su2double *Buffer_Send_dJdU = new su2double [Max_nSig*nVar];
@@ -1519,7 +1528,7 @@ void SUBoom::WriteSensitivities(CSolver *solver, CConfig *config, CGeometry *geo
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
     cout << "iProcessor = " << iProcessor << endl;
     for (iSig = 0; iSig < Buffer_Recv_nSig[iProcessor]; iSig++) {
-        Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nSig+iSig ];
+        Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nSig+iSig];
         Boom_AdjointFile  << scientific << Global_Index << "\t";
 
        for (iVar = 0; iVar < nVar; iVar++){
