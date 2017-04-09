@@ -84,7 +84,7 @@ def direct ( config ):
       config['RESTART_SOL'] = "YES"
       config['MATH_PROBLEM'] = "DIRECT"
       config['AUTO_DIFF'] = "YES"
-      su2mergesol(config)
+#      su2mergesol(config)
 
 
     # Run Solution
