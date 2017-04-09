@@ -128,27 +128,23 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   su2double *Buffer_Send_Press = new su2double [totSig];
   su2double *Buffer_Send_x = new su2double [totSig];
-  unsigned long *Buffer_Send_GlobalIndex = new unsigned long [totSig];
   //zero send buffers
   for (int i=0; i <totSig; i++){
    Buffer_Send_Press[i]=0.0;
    Buffer_Send_x[i] = 0.0;
   }
-  for (int i=0; i <totSig; i++){
-   Buffer_Send_GlobalIndex[i]=0;
-  }
+
   su2double *Buffer_Recv_Press = NULL;
   su2double *Buffer_Recv_x = NULL;
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
 
   if (rank == MASTER_NODE) {
    Buffer_Recv_Press = new su2double [nProcessor*totSig];
    Buffer_Recv_x = new su2double [nProcessor*totSig];
-   Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*totSig];
   }
 
   /*---Extract signature---*/
   panelCount = 0;
+  PointID = new unsigned long [nSig];
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
@@ -186,7 +182,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
           Buffer_Send_Press[panelCount] = p;
           Buffer_Send_x[panelCount] = x;
-          Buffer_Send_GlobalIndex[panelCount] = geometry->node[iPoint]->GetGlobalIndex();
+          PointID[panelCount] = geometry->node[iPoint]->GetGlobalIndex();
 
           panelCount++;
         }
@@ -200,7 +196,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 #ifdef HAVE_MPI
   SU2_MPI::Gather(Buffer_Send_Press, totSig, MPI_DOUBLE, Buffer_Recv_Press,  totSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_x, totSig, MPI_DOUBLE, Buffer_Recv_x,  totSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_GlobalIndex,totSig, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, totSig , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
   if (rank == MASTER_NODE)
@@ -217,7 +212,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   signal.x = new su2double[nPanel];
   signal.original_p = new su2double[nPanel];
   signal.original_T = new su2double[nPanel];
-  PointID = new unsigned long[nPanel];
 
   unsigned long Total_Index;
 
@@ -226,7 +220,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       /*--- Current index position and global index ---*/
       Total_Index  = iProcessor*totSig + iPanel;
 
-      PointID[panelCount] = Buffer_Recv_GlobalIndex[Total_Index];
       signal.x[panelCount] = Buffer_Recv_x[Total_Index];
       signal.original_p[panelCount] = Buffer_Recv_Press[Total_Index];
 
@@ -1507,11 +1500,7 @@ void SUBoom::WriteSensitivities(){
 
 #ifdef HAVE_MPI
   SU2_MPI::Gather(Buffer_Send_dJdU, Max_nSig*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nSig*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if (rank == MASTER_NODE)
-    cout << "dJ/dU sent." << endl;
   SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nSig, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nSig , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  if (rank == MASTER_NODE)
-    cout << "Global Index sent." << endl;
 #endif
 
   if (rank == MASTER_NODE){
