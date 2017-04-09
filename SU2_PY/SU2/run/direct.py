@@ -39,7 +39,7 @@ import os, sys, shutil, copy
 
 from .. import io  as su2io
 from merge     import merge     as su2merge
-from merge     import merge_solution as su2mergesol
+#from merge     import merge_solution as su2mergesol
 from interface import CFD       as SU2_CFD
 
 # ----------------------------------------------------------------------
@@ -80,13 +80,6 @@ def direct ( config ):
 
     direct_diff = konfig.get('DIRECT_DIFF','NO') == "YES"
 
-    if config.get('OBJECTIVE_FUNCTION',"") == 'BOOM':
-      config['RESTART_SOL'] = "YES"
-      config['MATH_PROBLEM'] = "DIRECT"
-      config['AUTO_DIFF'] = "YES"
-#      su2mergesol(config)
-
-
     # Run Solution
     SU2_CFD(konfig)
 
@@ -97,7 +90,7 @@ def direct ( config ):
     konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME']
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         konfig['SOLUTION_STRUCTURE_FILENAME'] = konfig['RESTART_STRUCTURE_FILENAME']
-    su2mergesol(konfig)
+    su2merge(konfig)
 
     # filenames
     plot_format      = konfig['OUTPUT_FORMAT']
@@ -116,6 +109,12 @@ def direct ( config ):
       noise_file = open('ppaSU2')
       noise = noise_file.readline().split(",")[1]
       aerodynamics['NOISE'] = float(noise)
+
+#    if config.get('OBJECTIVE_FUNCTION',"") == 'BOOM':
+#      config['RESTART_SOL'] = "YES"
+#      config['MATH_PROBLEM'] = "DIRECT"
+#      config['AUTO_DIFF'] = "YES"
+#      su2merge(config)
 
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
