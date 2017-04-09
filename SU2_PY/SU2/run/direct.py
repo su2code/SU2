@@ -110,11 +110,11 @@ def direct ( config ):
       noise = noise_file.readline().split(",")[1]
       aerodynamics['NOISE'] = float(noise)
 
-    if config.get('OBJECTIVE_FUNCTION',"") == 'BOOM':
-      config['RESTART_SOL'] = "YES"
-      config['MATH_PROBLEM'] = "DIRECT"
-      config['AUTO_DIFF'] = "YES"
-      su2merge(config)
+#    if config.get('OBJECTIVE_FUNCTION',"") == 'BOOM':
+#      config['RESTART_SOL'] = "YES"
+#      config['MATH_PROBLEM'] = "DIRECT"
+#      config['AUTO_DIFF'] = "YES"
+#      su2merge(config)
 
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
