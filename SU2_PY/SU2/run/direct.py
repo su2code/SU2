@@ -90,8 +90,6 @@ def direct ( config ):
     konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME']
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         konfig['SOLUTION_STRUCTURE_FILENAME'] = konfig['RESTART_STRUCTURE_FILENAME']
-
-    #konfig['RESTART_SOL'] = "YES"
     su2merge(konfig)
 
     # filenames

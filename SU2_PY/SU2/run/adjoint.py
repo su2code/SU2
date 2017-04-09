@@ -105,8 +105,8 @@ def adjoint( config ):
     SU2_CFD(konfig)
 
     # merge
-#    konfig['SOLUTION_ADJ_FILENAME'] = konfig['RESTART_ADJ_FILENAME']
-#    su2merge(konfig)
+    konfig['SOLUTION_ADJ_FILENAME'] = konfig['RESTART_ADJ_FILENAME']
+    su2merge(konfig)
 
     # filenames
     plot_format      = konfig['OUTPUT_FORMAT']
