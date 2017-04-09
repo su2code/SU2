@@ -234,7 +234,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   /*---Sort signal in order of x-coordinate---*/
   cout << "Sorting signal data." << endl;
-  QuickSort(signal.x, signal.original_p, 0, totSig);
+  QuickSort(signal.x, signal.original_p, 0, totSig-1);
 
   /*---Now write to file---*/
   for(iPanel = 0; iPanel < nPanel; iPanel++){
