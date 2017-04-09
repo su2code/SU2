@@ -242,16 +242,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   sigFile.close();
   cout << "Signal written." << endl;
 
-  /*---Clear up memory from buffers---*/
-  delete [] Buffer_Recv_sigCount;
-  delete [] Buffer_Recv_GlobalIndex;
-  delete [] Buffer_Recv_x;
-  delete [] Buffer_Recv_Press;
   }
-  delete [] Buffer_Send_sigCount;
-  delete [] Buffer_Send_GlobalIndex;
-  delete [] Buffer_Send_x;
-  delete [] Buffer_Send_Press;
 
   /*---Initialize sensitivities---*/
   if(config->GetAD_Mode()){
