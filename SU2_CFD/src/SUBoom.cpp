@@ -1464,7 +1464,6 @@ void SUBoom::WriteSensitivities(){
 
   nVar = nDim+3;
 
-  if (rank == MASTER_NODE)
   /* pack sensitivity values in each processor and send to root */
   su2double *Buffer_Send_dJdU = new su2double [Max_nSig*nVar];
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nSig];
