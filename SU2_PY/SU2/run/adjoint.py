@@ -106,7 +106,7 @@ def adjoint( config ):
 
     # merge
     konfig['SOLUTION_ADJ_FILENAME'] = konfig['RESTART_ADJ_FILENAME']
-    su2merge(konfig)
+#    su2merge(konfig)
 
     # filenames
     plot_format      = konfig['OUTPUT_FORMAT']
