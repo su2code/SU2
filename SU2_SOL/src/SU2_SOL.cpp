@@ -598,36 +598,28 @@ int main(int argc, char *argv[]) {
 ////////             FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
              SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
-             if (rank == MASTER_NODE)
+             if (rank == MASTER_NODE){
                cout << "SUBoom initialized." << endl;
              boom.ConditionAtmosphericData();
-             if (rank == MASTER_NODE)
                cout << "Condition atmospheric data complete." << endl;
              boom.ScaleFactors();
-             if (rank == MASTER_NODE)
                cout << "Scale factors complete." << endl;
              boom.InitialWaveNormals();
-             if (rank == MASTER_NODE)
                cout << "Initial wave normals complete." << endl;
              boom.RayTracer();
-             if (rank == MASTER_NODE)
                cout << "Ray tracer complete." << endl;
              boom.RayTubeArea();
-             if (rank == MASTER_NODE)
                cout << "Ray tube area complete." << endl;
              boom.FindInitialRayTime();
-             if (rank == MASTER_NODE)
                cout << "Find initial ray time complete." << endl;
              boom.ODETerms();
-             if (rank == MASTER_NODE)
                cout << "ODE terms complete." << endl;
              boom.DistanceToTime();
-             if (rank == MASTER_NODE)
                cout << "Distance to time complete." << endl;
              boom.CreateSignature();
-             if (rank == MASTER_NODE)
                cout << "Create signature complete." << endl;
              boom.PropagateSignal();
+             }
            }
 
 
