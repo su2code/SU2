@@ -582,7 +582,7 @@ int main(int argc, char *argv[]) {
              for (int iSig=0; iSig<boom.nSig; iSig++){
                 for (int i =0; i< boom.nDim+3; i++){
                     boom.dJdU[i][iSig]=SU2_TYPE::GetDerivative(extracted_derivative);
-                    cout << "dJdU = " << boom.dJdU[i][iSig] << endl;
+//                    cout << "dJdU = " << boom.dJdU[i][iSig] << endl;
                 }
              }
 

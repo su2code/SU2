@@ -1465,7 +1465,6 @@ void SUBoom::WriteSensitivities(){
   nVar = nDim+3;
 
   if (rank == MASTER_NODE)
-    cout << "Packing sensitivities in each processor." << endl;
   /* pack sensitivity values in each processor and send to root */
   su2double *Buffer_Send_dJdU = new su2double [Max_nSig*nVar];
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nSig];
@@ -1496,7 +1495,6 @@ void SUBoom::WriteSensitivities(){
   }
 
   if (rank == MASTER_NODE)
-    cout << "Sending sensitivities to root." << endl;
 
 #ifdef HAVE_MPI
   SU2_MPI::Gather(Buffer_Send_dJdU, Max_nSig*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nSig*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -1504,13 +1502,11 @@ void SUBoom::WriteSensitivities(){
 #endif
 
   if (rank == MASTER_NODE){
-  cout << "Writing sensitivities." << endl;
   Boom_AdjointFile.precision(15);
   Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
 
   /*--- Loop through all of the collected data and write each node's values ---*/
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-    cout << "iProcessor = " << iProcessor << endl;
     for (iSig = 0; iSig < Buffer_Recv_nSig[iProcessor]; iSig++) {
         Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nSig+iSig];
         Boom_AdjointFile  << scientific << Global_Index << "\t";
