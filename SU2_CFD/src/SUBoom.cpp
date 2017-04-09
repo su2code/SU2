@@ -1418,7 +1418,7 @@ void SUBoom::PropagateSignal(){
       signal.final_p[j] = ground_signal[1][j]*scale_p;
       sigFile << signal.final_T[j] << "\t" << signal.final_p[j] << endl;
       if(signal.final_p[j] > p_max) p_max = signal.final_p[j];
-      if(j > 0) p_int2 = p_int2 + 0.5*(signal.final_p[j]+signal.final_p[j-1])/(signal.final_T[j]-signal.final_T[j]);
+      if(j > 0) p_int2 = p_int2 + 0.5*(signal.final_p[j]+signal.final_p[j-1])*(signal.final_T[j]-signal.final_T[j]);
     }
     sigFile.close();
     p_rise = signal.final_p[0];
