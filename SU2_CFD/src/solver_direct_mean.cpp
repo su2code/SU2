@@ -10436,13 +10436,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
       }
-      
-      /*--- Resolution anisotropy tensor ---*/
-      //TODO: Make config settings for anisotropic eddy viscosity
-      //TODO: Modify geometry to make it pass out pointers, rather than vectors
-      if (true)
-        visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                           geometry->node[iPoint]->GetResolutionTensor());
 
       /*--- Compute the convective residual using an upwind scheme ---*/
       
@@ -10471,6 +10464,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         V_infty[nDim+5] = node[iPoint]->GetLaminarViscosity();
         V_infty[nDim+6] = node[iPoint]->GetEddyViscosity();
         
+        /*--- Pass in the geometry information for the cells ---*/
+
+        if (true) // TODO: Add config setting for hybrid scheme
+          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                             geometry->node[Point_Normal]->GetResolutionTensor());
+
         /*--- Set the normal vector and the coordinates ---*/
         
         visc_numerics->SetNormal(Normal);
@@ -10994,6 +10993,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         /*--- Set the normal vector and the coordinates ---*/
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+        /*--- Pass in the geometry information for the cells ---*/
+        if (true) // TODO: Add config setting for hybrid scheme
+          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                             geometry->node[Point_Normal]->GetResolutionTensor());
         
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetPrimitive(V_domain, V_boundary);
@@ -11793,6 +11797,12 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
+        /*--- Pass in the geometry information for the cells ---*/
+        if (true) // TODO: Add config setting for hybrid scheme
+          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                             geometry->node[Point_Normal]->GetResolutionTensor());
+
+
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetPrimitive(V_domain, V_boundary);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
@@ -12140,6 +12150,12 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+        /*--- Pass in the geometry information for the cells ---*/
+
+        if (true) // TODO: Add config setting for hybrid scheme
+          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                             geometry->node[Point_Normal]->GetResolutionTensor());
         
         /*--- Primitive variables, and gradient ---*/
         
@@ -12318,6 +12334,11 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
+        /*--- Pass in the geometry information for the cells ---*/
+        if (true) // TODO: Add config setting for hybrid scheme
+          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                             geometry->node[Point_Normal]->GetResolutionTensor());
+
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetPrimitive(V_domain, V_outlet);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
@@ -12457,7 +12478,12 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
         
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-        
+
+        /*--- Pass in the geometry information for the cells ---*/
+        if (true) // TODO: Add config setting for hybrid scheme
+          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                             geometry->node[Point_Normal]->GetResolutionTensor());
+
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_inlet);
@@ -12577,6 +12603,11 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
+        /*--- Pass in the geometry information for the cells ---*/
+        if (true) // TODO: Add config setting for hybrid scheme
+          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                             geometry->node[Point_Normal]->GetResolutionTensor());
+
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_outlet);
@@ -12795,6 +12826,11 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
+        /*--- Pass in the geometry information for the cells ---*/
+        if (true) // TODO: Add config setting for hybrid scheme
+          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                             geometry->node[Point_Normal]->GetResolutionTensor());
+
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_inflow);
@@ -13046,6 +13082,11 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
+        /*--- Pass in the geometry information for the cells ---*/
+        if (true) // TODO: Add config setting for hybrid scheme
+          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                             geometry->node[Point_Normal]->GetResolutionTensor());
+
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_exhaust);
@@ -13632,6 +13673,12 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
                     visc_numerics->SetNormal(Normal);
                     visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
+
+                    /*--- Pass in the geometry information for the cells ---*/
+
+                    if (true) // TODO: Add config setting for hybrid scheme
+                      visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                                         geometry->node[iPoint]->GetResolutionTensor());
 
                     /*--- Primitive variables, and gradient ---*/
 
@@ -14522,6 +14569,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
       geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+      geometry[iMesh]->SetResolutionTensor();
     }
   }
   
@@ -15989,6 +16037,12 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
+    /*--- Pass in the geometry information for the cells ---*/
+
+    if (true) // TODO: Add config setting for hybrid scheme
+      numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
+                                         geometry->node[jPoint]->GetResolutionTensor());
+
     /*--- Primitive and secondary variables ---*/
     
     numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());

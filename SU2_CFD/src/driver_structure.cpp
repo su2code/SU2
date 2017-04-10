@@ -1076,6 +1076,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   ns, adj_ns,
   turbulent, adj_turb,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
+  hybrid,
   poisson,
   wave,
   fem,
@@ -1093,6 +1094,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   wave             = false;   heat             = false;   fem        = false;
   spalart_allmaras = false; neg_spalart_allmaras = false;  menter_sst       = false;
+  hybrid           = false;  // FIXME: Hybrid not fully implemented
   transition       = false;
   template_solver  = false;
   
@@ -1328,12 +1330,21 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         
         /*--- Compressible flow Ideal gas ---*/
         numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
-        for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-        
+        for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          if (hybrid) {
+            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config, true);
+          } else {
+            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+          }
+        }
         /*--- Definition of the boundary condition method ---*/
-        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          if (hybrid) {
+            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config, true);
+          } else {
+            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+          }
+        }
         
       } else {
         
