@@ -509,35 +509,16 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       if (rans) {
-
-    	  if (two_phase) {
-    		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 2 + 4];
-    		for (iVar = 0; iVar < nPrimVar + 2 + 4; iVar++) {
+			DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
+			for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
 			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
 			}
-
-    	  } else {
-    	        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
-    	        for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
-    	          DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-    	        }
-    	  }
-
       } else {
-
-      	  if (two_phase) {
-    		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 4];
-    		for (iVar = 0; iVar < nPrimVar + 4; iVar++) {
-			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-			}
-
-    	  } else {
 
     		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
           	for (iVar = 0; iVar < nPrimVar ; iVar++) {
         	  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
           	}
-          }
       }
     }
   }
@@ -2166,13 +2147,9 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
 		  || (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES));
   
   unsigned short nPrimVar_ = nPrimVar;
-  if (rans) {
-	  if (two_phase) nPrimVar_ += 6; // Add two extra variables for the turbulence + 4 for 2 phases.
-	  else nPrimVar_ +=2;
-  } else {
-	  if (two_phase) nPrimVar_ += 4; // Add 4 for 2 phases.
-	  else nPrimVar_ +=0;
-  }
+  if (rans) nPrimVar_ +=2;
+  else  nPrimVar_ +=0;
+
   
 #ifdef HAVE_MPI
   
@@ -14741,30 +14718,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       if (rans) {
-    	  if (two_phase) {
-    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2 + 4];
-    		  for (iVar = 0; iVar < nPrimVar + 2 + 4; iVar++) {
-    			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-    		  }
-    	  } else {
-    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
-    		  for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
-    			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-    		  }
-    	  }
-
+		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
+		  for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
+			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+		  }
       }  else {
-    	  if (two_phase) {
-    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 4];
-    		  for (iVar = 0; iVar < nPrimVar + 4; iVar++) {
-    			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-    		  }
-    	  } else {
+
     		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
     		  for (iVar = 0; iVar < nPrimVar ; iVar++) {
     			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
     		  }
-    	  }
       }
     }
   }
