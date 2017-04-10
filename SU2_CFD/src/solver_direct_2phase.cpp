@@ -952,6 +952,13 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 	    if (nDim == 3) skipVars += 7;
 	  }
 
+	  if (config->GetKind_Turb_Model() != NONE) {
+		  if (config->GetKind_Turb_Model() == SST)
+			  skipVars += 2;
+		  else
+			  skipVars += 1;
+	  }
+
 	  /*--- Load data from the restart into correct containers. ---*/
 
 	  counter = 0;
@@ -1308,9 +1315,13 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
           Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
           Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
         }
+
         if (limiter) {
           Solution_i[iVar] = Two_phase_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
           Solution_j[iVar] = Two_phase_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+
+          //cout << Gradient_i[0][0] << " " << Limiter_i [0] <<endl;
+
         }
         else {
           Solution_i[iVar] = Two_phase_i[iVar] + Project_Grad_i;

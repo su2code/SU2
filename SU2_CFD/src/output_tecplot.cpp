@@ -59,8 +59,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   else {
     if (adjoint)
     filename = config->GetAdj_FileName();
-    else if (two_phase ) filename = config->Get2phase_FileName();
-    else filename = config->GetFlow_FileName();
+    else if (two_phase)
+        filename = config->Get2phase_FileName();
+      else filename = config->GetFlow_FileName();
+
   }
   
   if (Kind_Solver == FEM_ELASTICITY) {

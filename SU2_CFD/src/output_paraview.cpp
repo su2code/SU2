@@ -50,6 +50,8 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   bool adjoint = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool two_phase = (config->GetKind_2phase_Model()!=NONE);
+
 
   char cstr[200], buffer[50];
   string filename, fieldname;
@@ -64,8 +66,10 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   else {
     if (adjoint || disc_adj)
       filename = config->GetAdj_FileName();
-    else
-      filename = config->GetFlow_FileName();
+    else if (two_phase)
+        filename = config->Get2phase_FileName();
+      else filename = config->GetFlow_FileName();
+
   }
   
   if (Kind_Solver == FEM_ELASTICITY) {
@@ -933,6 +937,8 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   bool grid_movement  = config->GetGrid_Movement();
   bool adjoint = config->GetContinuous_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool two_phase = (config->GetKind_2phase_Model()!=NONE);
+
   
   char cstr[200], buffer[50];
   string filename, fieldname;
@@ -948,9 +954,10 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   else {
     if (adjoint)
       filename = config->GetAdj_FileName();
-    else
-      filename = config->GetFlow_FileName();
-  }
+    else if (two_phase)
+        filename = config->Get2phase_FileName();
+      else filename = config->GetFlow_FileName();
+    }
   if (config->GetKind_SU2() == SU2_DEF) {
     if (new_file) {
       if (surf_sol) filename = "surface_grid";
@@ -1745,6 +1752,8 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   bool adjoint = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
+  bool two_phase = (config->GetKind_2phase_Model()!=NONE);
+
 
   char cstr[200], buffer[50];
   string filename, fieldname;
@@ -1769,9 +1778,10 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   else {
     if (adjoint || disc_adj)
       filename = config->GetAdj_FileName();
-    else
-      filename = config->GetFlow_FileName();
-  }
+  else if (two_phase)
+        filename = config->Get2phase_FileName();
+      else filename = config->GetFlow_FileName();
+    }
 
   if (Kind_Solver == FEM_ELASTICITY) {
     if (surf_sol)

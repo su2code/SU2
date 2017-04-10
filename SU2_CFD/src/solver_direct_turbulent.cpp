@@ -545,7 +545,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   unsigned long iEdge, iPoint, jPoint;
-  
+
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge ---*/
@@ -576,7 +576,7 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Compute residual, and Jacobians ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-    
+
     /*--- Add and subtract residual, and update Jacobians ---*/
     
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -1409,7 +1409,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
     
     /*--- Subtract residual and the Jacobian ---*/
-    
+
     LinSysRes.SubtractBlock(iPoint, Residual);
     
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
@@ -1601,6 +1601,8 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
+//      cout << V_inlet[nDim+2] << endl;
+
       /*--- Retrieve solution at the farfield boundary node ---*/
       
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
@@ -1690,7 +1692,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Allocate the value at the outlet ---*/
       
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-      
+
       /*--- Retrieve solution at the farfield boundary node ---*/
       
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
@@ -1752,7 +1754,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       
       LinSysRes.SubtractBlock(iPoint, Residual);
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      
+
     }
   }
   
