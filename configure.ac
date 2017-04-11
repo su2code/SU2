@@ -424,8 +424,10 @@ AC_SUBST([JSONCPP_LD])
 ##########################
 
 # check for lib
-LAPACKlib=liblapacke.a
-LAPACKheader=lapacke.h
+#LAPACKlib=liblapacke.a
+LAPACKlib=libmkl_lapack95_lp64.a
+#LAPACKheader=lapacke.h
+LAPACKheader=mkl_lapack.h
 have_LAPACK="no"
 
 if test "$with_LAPACK_lib" != "no"

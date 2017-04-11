@@ -1756,6 +1756,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   su2double scale;
   scale = 1.0e-8;
   zeta = max(v2_raw/tke_raw, scale);
+  zeta = min(zeta,2.0/3.0);
   scalar_min = scale/(VelMag*VelMag); // setting based on tke min being 1e-8
   tke = max(tke, scalar_min*VelMag*VelMag);
   tdr = max(tdr, scalar_min*VelMag*VelMag*VelMag/L_Inf);
@@ -1767,8 +1768,8 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   //  f = max(f, Re*nu/pow(L_Inf,2.0));
 
   v2 = max(v2, zeta*tke);
-  S = max(S,scalar_min*VelMag/L_Inf); // no checked...
-  //  S = max(S,1.0E-14);
+  //  S = max(S,scalar_min*VelMag/L_Inf); // no checked...
+  S = max(S,1.0E-14);
   /*
   tke_d = max(tke,1.0E-8);
   tdr_d = max(tdr,1.0E-8);
@@ -1783,14 +1784,14 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
 
   //--- Model time scale ---//
   T1 = tke/tdr;
-  T2 = 0.6/(sqrt(6.0)*C_mu*S*zeta);
+  T2 = 1.0E14; //0.6/(sqrt(6.0)*C_mu*S*zeta);
   T3 = C_T*sqrt(nu/tdr);
   T = max(min(T1,T2),T3); 
 
   //--- Model length scale ---//
   L1 = pow(tke,1.5)/tdr;
-  L1 = sqrt(zeta*(3.0/2.0)) * L1;
-  L2 = sqrt(tke)/(sqrt(6.0)*C_mu*S*zeta);
+  //  L1 = sqrt(zeta*(3.0/2.0)) * L1;
+  L2 = 1.0E14; //sqrt(tke)/(sqrt(6.0)*C_mu*S*zeta);
   L3 = C_eta*pow(pow(nu,3.0)/tdr,0.25);
   L = C_L * max(min(L1,L2),L3);
 
