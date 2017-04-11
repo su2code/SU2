@@ -171,6 +171,7 @@ void CAvgGrad_TurbSA::ComputeResidual(su2double *val_residual, su2double **Jacob
   
   val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Kappa[0]/sigma;
   
+
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   
   if (implicit) {
@@ -275,7 +276,8 @@ void CAvgGrad_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **J
   }
   
   val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Kappa[0]/sigma;
-  
+
+
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   
   if (implicit) {
@@ -375,14 +377,14 @@ void CAvgGradCorrected_TurbSA::ComputeResidual(su2double *val_residual, su2doubl
   }
   
   val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;
-  
+
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   
   if (implicit) {
     Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]-nu_e*proj_vector_ij)/sigma;
     Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]+nu_e*proj_vector_ij)/sigma;
   }
-  
+
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
 }
@@ -489,6 +491,8 @@ void CAvgGradCorrected_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2d
   
   val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;
   
+
+
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   
   if (implicit) {

@@ -501,25 +501,75 @@ CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2doub
                          unsigned short val_nDim, unsigned short val_nvar,
                          CConfig *config) : CEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
   
+	unsigned short iDim, iVar;
+
     Temperature_Ref = config->GetTemperature_Ref();
     Viscosity_Ref   = config->GetViscosity_Ref();
     Viscosity_Inf   = config->GetViscosity_FreeStreamND();
     Prandtl_Lam     = config->GetPrandtl_Lam();
     Prandtl_Turb    = config->GetPrandtl_Turb();
+
+
+    Gradient_Primitive = new su2double* [nPrimVarGrad];
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      Gradient_Primitive[iVar] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Primitive[iVar][iDim] = 0.0;
+    }
+
+    Gradient_Secondary = new su2double* [nSecondaryVarGrad];
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      Gradient_Secondary[iVar] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Secondary[iVar][iDim] = 0.0;
+    }
+
   
 }
 
 CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
                          unsigned short val_nvar, CConfig *config) : CEulerVariable(val_solution, val_nDim, val_nvar, config) {
   
+	unsigned short iDim, iVar;
+
     Temperature_Ref = config->GetTemperature_Ref();
     Viscosity_Ref   = config->GetViscosity_Ref();
     Viscosity_Inf   = config->GetViscosity_FreeStreamND();
     Prandtl_Lam     = config->GetPrandtl_Lam();
     Prandtl_Turb    = config->GetPrandtl_Turb();
+
+
+    Gradient_Primitive = new su2double* [nPrimVarGrad];
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      Gradient_Primitive[iVar] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Primitive[iVar][iDim] = 0.0;
+    }
+
+    Gradient_Secondary = new su2double* [nSecondaryVarGrad];
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      Gradient_Secondary[iVar] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Secondary[iVar][iDim] = 0.0;
+    }
+
 }
 
-CNSVariable::~CNSVariable(void) { }
+CNSVariable::~CNSVariable(void) {
+
+	unsigned short iVar, iDim;
+
+	  if (Gradient_Primitive != NULL) {
+	    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+	      if (Gradient_Primitive[iVar] != NULL) delete [] Gradient_Primitive[iVar];
+	    delete [] Gradient_Primitive;
+	  }
+	  if (Gradient_Secondary != NULL) {
+	    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+	      if (Gradient_Secondary[iVar] != NULL) delete [] Gradient_Secondary[iVar];
+	    delete [] Gradient_Secondary;
+	  }
+}
 
 bool CNSVariable::SetVorticity(bool val_limiter) {
   

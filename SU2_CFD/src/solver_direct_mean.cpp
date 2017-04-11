@@ -6551,7 +6551,6 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
         for (jDim = 0; jDim < nDim; jDim++) {
           product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
         }
-
         node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
       }
     }
