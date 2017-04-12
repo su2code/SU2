@@ -801,9 +801,9 @@ inline void CSolver::CheckTimeSynchronization(CConfig         *config,
                                               su2double       &timeEvolved,
                                               bool            &syncTimeReached) {}
 
-inline void CSolver::Spatial_Residual_DG(CGeometry *geometry,  CSolver **solver_container,
-                                         CNumerics **numerics, CConfig *config,
-                                         unsigned short iMesh) {}
+inline void CSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
+                                        CNumerics **numerics, CConfig *config,
+                                        unsigned short iMesh) {}
 
 inline void CSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                CNumerics **numerics, CConfig *config,
@@ -1660,6 +1660,22 @@ inline su2double CFEM_DG_EulerSolver::GetAllBound_CFz_Inv() { return AllBound_CF
 inline void CFEM_DG_EulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf = p_inf;}
 
 inline void CFEM_DG_EulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
+
+inline void CFEM_DG_EulerSolver::BC_HeatFlux_Wall(CConfig                  *config,
+                                                  const unsigned long      surfElemBeg,
+                                                  const unsigned long      surfElemEnd,
+                                                  const CSurfaceElementFEM *surfElem,
+                                                  su2double                *resFaces,
+                                                  CNumerics                *conv_numerics,
+                                                  unsigned short           val_marker) {}
+
+inline void CFEM_DG_EulerSolver::BC_Isothermal_Wall(CConfig                  *config,
+                                                    const unsigned long      surfElemBeg,
+                                                    const unsigned long      surfElemEnd,
+                                                    const CSurfaceElementFEM *surfElem,
+                                                    su2double                *resFaces,
+                                                    CNumerics                *conv_numerics,
+                                                    unsigned short           val_marker) {}
 
 inline su2double CFEM_DG_NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

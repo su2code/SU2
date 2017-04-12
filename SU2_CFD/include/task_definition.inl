@@ -33,14 +33,35 @@
 
 #pragma once
 
-inline CTaskDefinition::CTaskDefinition(void) {task = NO_TASK; timeLevel = 0; indMustBeCompleted = -1;}
+inline CTaskDefinition::CTaskDefinition(void) {
+  task                = NO_TASK;
+  timeLevel           = 0;
+  nIndMustBeCompleted = 0;
+  for(int i=0; i<4; ++i) indMustBeCompleted[i] = -1;
+
+  intPointADER = 0;
+  secondPartTimeIntADER = false;
+}
 
 inline CTaskDefinition::CTaskDefinition(SOLVER_TASK    val_task,
                                         unsigned short val_timeLevel,
-                                        int            val_indMustBeCompleted) {
-  task               = val_task;
-  timeLevel          = val_timeLevel;
-  indMustBeCompleted = val_indMustBeCompleted;
+                                        int            val_ind0MustBeCompleted,
+                                        int            val_ind1MustBeCompleted,
+                                        int            val_ind2MustBeCompleted,
+                                        int            val_ind3MustBeCompleted) {
+  task                  = val_task;
+  timeLevel             = val_timeLevel;
+  indMustBeCompleted[0] = val_ind0MustBeCompleted;
+  indMustBeCompleted[1] = val_ind1MustBeCompleted;
+  indMustBeCompleted[2] = val_ind2MustBeCompleted;
+  indMustBeCompleted[3] = val_ind3MustBeCompleted;
+
+  for(nIndMustBeCompleted=0; nIndMustBeCompleted<4; ++nIndMustBeCompleted) {
+    if(indMustBeCompleted[nIndMustBeCompleted] < 0) break;
+  }
+
+  intPointADER = 0;
+  secondPartTimeIntADER = false;
 }
 
 inline CTaskDefinition::~CTaskDefinition(void) {}
@@ -50,7 +71,12 @@ inline CTaskDefinition::CTaskDefinition(const CTaskDefinition &other){Copy(other
 inline CTaskDefinition& CTaskDefinition::operator=(const CTaskDefinition &other){Copy(other); return (*this);}
 
 inline void CTaskDefinition::Copy(const CTaskDefinition &other) {
-  task               = other.task;
-  timeLevel          = other.timeLevel;
-  indMustBeCompleted = other.indMustBeCompleted;
+  task                  = other.task;
+  timeLevel             = other.timeLevel;
+  intPointADER          = other.intPointADER;
+  secondPartTimeIntADER = other.secondPartTimeIntADER;
+  nIndMustBeCompleted   = other.nIndMustBeCompleted;
+
+  for(int i=0; i<4; ++i)
+    indMustBeCompleted[i] = other.indMustBeCompleted[i];
 }

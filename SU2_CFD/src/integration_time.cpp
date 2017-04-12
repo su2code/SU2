@@ -1080,8 +1080,8 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
   su2double tick = 0.0;
 
   /*--- Runge-Kutta type of time integration schemes. In the first step, i.e.
-        if iStep == 0, compute time step and set the old, and if needed, the
-        new solution. ---*/
+        if iStep == 0, set the old solution (working solution for the DG part),
+        and if needed, the new solution. ---*/
   if (iStep == 0) {
     config->Tick(&tick);
     solver_container[MainSolver]->Set_OldSolution(geometry);
@@ -1094,10 +1094,10 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
     }
   }
 
-  /*--- Compute the spatial residual. ---*/
+  /*--- Compute the spatial residual by processing the task list. ---*/
   config->Tick(&tick);
-  solver_container[MainSolver]->Spatial_Residual_DG(geometry, solver_container, numerics, config, iMesh);
-  config->Tock(tick,"Spatial_Residual",3);
+  solver_container[MainSolver]->ProcessTaskList_DG(geometry, solver_container, numerics, config, iMesh);
+  config->Tock(tick,"ProcessTaskList_DG",3);
 }
 
 void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iStep,

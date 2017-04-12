@@ -34,6 +34,11 @@
 
 #include "../include/adt_structure.hpp"
 
+/* Define the tolerance to decide whether or not a point is inside an element. */
+const su2double tolInsideElem   =  1.e-10;
+const su2double paramLowerBound = -1.0 - tolInsideElem;
+const su2double paramUpperBound =  1.0 + tolInsideElem;
+
 su2_adtComparePointClass::su2_adtComparePointClass(const su2double      *coor,
                                                    const unsigned short splitDir,
                                                    const unsigned short nDimADT)
@@ -1107,7 +1112,7 @@ bool su2_adtElemClass::Dist2ToTriangle(const unsigned long i0,
   s = detInv*(dotV0V2*dotV1V1 - dotV0V1*dotV1V2);
 
   /*--- Check if the projection is inside the triangle. ---*/
-  if((r >= -1.0) && (s >= -1.0) && ((r+s) <= 0.0)) {
+  if((r >= paramLowerBound) && (s >= paramLowerBound) && ((r+s) <= tolInsideElem)) {
 
     /*--- The projection of the coordinate is inside the triangle. Compute the
           minimum distance squared and return true. ---*/
@@ -1159,8 +1164,8 @@ void su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
   }
 
   /*--- Newton algorithm to solve the nonlinear equations
-        (V0 - r*V1 - s*V2 - r*s*V3).(V1 + s*V3) = 0
-        (V0 - r*V1 - s*V2 - r*s*V3).(V2 + r*V3) = 0.
+        (V0 - r*V1 - s*V2 - r*s*V3).(-V1 - s*V3) = 0
+        (V0 - r*V1 - s*V2 - r*s*V3).(-V2 - r*V3) = 0.
         These equations are the gradients of the distance function squared w.r.t.
         the parametric coordinates r and s. ---*/
   unsigned short itCount;
@@ -1169,9 +1174,9 @@ void su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
     /* Compute the vectors needed in the equations to be solved. */
     su2double distVec[3], distVecDr[3], distVecDs[3];
     for(unsigned short k=0; k<nDim; ++k) {
-      distVec[k]   = V0[k] - r*V1[k] - s*V2[k] - r*s*V3[k];
-      distVecDr[k] = V1[k] + s*V3[k];
-      distVecDs[k] = V2[k] + r*V3[k];
+      distVec[k]   =  V0[k] - r*V1[k] - s*V2[k] - r*s*V3[k];
+      distVecDr[k] = -V1[k] - s*V3[k];
+      distVecDs[k] = -V2[k] - r*V3[k];
     }
 
     /*--- The functional to be minimized is the L2 norm (squared) of the
@@ -1181,9 +1186,9 @@ void su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
     for(unsigned short k=0; k<nDim; ++k) {
       dfdr += distVec[k]  *distVecDr[k];
       dfds += distVec[k]  *distVecDs[k];
-      H00  -= distVecDr[k]*distVecDr[k];
-      H11  -= distVecDs[k]*distVecDs[k];
-      H01  += distVec[k]  *V3[k] - distVecDr[k]*distVecDs[k];
+      H00  += distVecDr[k]*distVecDr[k];
+      H11  += distVecDs[k]*distVecDs[k];
+      H01  += distVecDr[k]*distVecDs[k] - distVec[k]*V3[k];
     }
        
     /*--- Make sure that the Hessian is positive definite. This is accomplished
@@ -1228,7 +1233,8 @@ void su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
   }
 
   /*--- Check if the projection is inside the quadrilateral. If not, terminate. ---*/
-  if(r < -1.0 || r > 1.0 || s < -1.0 || s > 1.0) {
+  if(r < paramLowerBound || r > paramUpperBound ||
+     s < paramLowerBound || s > paramUpperBound) {
     cout << "su2_adtElemClass::Dist2ToQuadrilateral: " << endl
          << "Projection not inside the quadrilateral." << endl;
 #ifndef HAVE_MPI
