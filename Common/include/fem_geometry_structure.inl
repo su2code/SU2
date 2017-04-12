@@ -115,6 +115,12 @@ inline unsigned long* CMeshFEM::GetNVolElemOwnedPerTimeLevel(void) {return nVolE
 
 inline unsigned long* CMeshFEM::GetNVolElemInternalPerTimeLevel(void) {return nVolElemInternalPerTimeLevel.data();}
 
+inline unsigned long* CMeshFEM::GetNVolElemHaloPerTimeLevel(void) {return nVolElemHaloPerTimeLevel.data();}
+
+inline vector<vector<unsigned long> > CMeshFEM::GetOwnedElemAdjLowTimeLevel(void) {return ownedElemAdjLowTimeLevel;}
+
+inline vector<vector<unsigned long> > CMeshFEM::GetHaloElemAdjLowTimeLevel(void) {return haloElemAdjLowTimeLevel;}
+
 inline unsigned short CMeshFEM::GetNStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.size();}
 
 inline FEMStandardBoundaryFaceClass* CMeshFEM::GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
@@ -127,9 +133,9 @@ inline const vector<vector<unsigned long> >& CMeshFEM::GetEntitiesRecv(void) con
 
 inline const vector<vector<unsigned long> >& CMeshFEM::GetEntitiesSend(void) const {return entitiesSend;}
 
-inline vector<unsigned short> CMeshFEM::GetRotPerMarkers(void) const {return rotPerMarkers;}
+inline const vector<unsigned short>& CMeshFEM::GetRotPerMarkers(void) const {return rotPerMarkers;}
 
-inline vector<vector<unsigned long> > CMeshFEM::GetRotPerHalos(void) const {return rotPerHalos;}
+inline const vector<vector<unsigned long> >& CMeshFEM::GetRotPerHalos(void) const {return rotPerHalos;}
 
 inline CMeshFEM_DG::CMeshFEM_DG(void) { }
 
@@ -161,6 +167,8 @@ inline long CMeshFEM_DG::GetGlobal_to_Local_Point(unsigned long val_ipoint) {
 inline su2double* CMeshFEM_DG::GetLagrangianBeginTimeIntervalADER_DG(void) {return LagrangianBeginTimeIntervalADER_DG.data();}
 
 inline su2double* CMeshFEM_DG::GetTimeInterpolDOFToIntegrationADER_DG(void) {return timeInterpolDOFToIntegrationADER_DG.data();}
+
+inline su2double* CMeshFEM_DG::GetTimeInterpolAdjDOFToIntegrationADER_DG(void) {return timeInterpolAdjDOFToIntegrationADER_DG.data();}
 
 inline unsigned long *CMeshFEM_DG::GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem.data();}
 

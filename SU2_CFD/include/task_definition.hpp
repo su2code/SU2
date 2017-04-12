@@ -53,23 +53,34 @@ public:
    * \brief Enumerated type, which defines the tasks to be carried out.
    */
   enum SOLVER_TASK {
-    NO_TASK                            =  0,   /*!< \brief Default value used for checking. */
-    INITIATE_MPI_COMMUNICATION         =  1,   /*!< \brief Start the communication of the conserved variables. */
-    COMPLETE_MPI_COMMUNICATION         =  2,   /*!< \brief Complete the communication of the conserved variables. */
-    INITIATE_REVERSE_MPI_COMMUNICATION =  3,   /*!< \brief Start the communication of the residuals. */
-    COMPLETE_REVERSE_MPI_COMMUNICATION =  4,   /*!< \brief Complete the communication of the residuals. */
-    SHOCK_CAPTURING_VISCOSITY          =  5,   /*!< \brief Compute the shock capturing artificial viscosity, if needed. */
-    VOLUME_RESIDUAL                    =  6,   /*!< \brief Compute the contribution to the residual from the volume integral. */
-    SURFACE_RESIDUAL_OWNED_ELEMENTS    =  7,   /*!< \brief Compute the contribution to the residual from the interior surface integral between owned elements. */
-    SURFACE_RESIDUAL_HALO_ELEMENTS     =  8,   /*!< \brief Compute the contribution to the residual from the interior surface integral between an owned and halo element. */
-    BOUNDARY_CONDITIONS                =  9,   /*!< \brief Compute the contribution to the residual from the boundary conditions. */
-    SUM_UP_RESIDUAL_CONTRIBUTIONS      = 10,   /*!< \brief Sum up all contributions to the residual. */
-    MULTIPLY_INVERSE_MASS_MATRIX       = 11    /*!< \brief Multiply the accumulated residual with the inverse of the mass matrix. */
+    NO_TASK                                      =  0,   /*!< \brief Default value used for checking. */
+    ADER_PREDICTOR_STEP_COMM_ELEMENTS            =  1,   /*!< \brief ADER predictor step for elements whose solution must be communicated. */
+    ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS        =  2,   /*!< \brief ADER predictor step for internal elements. */
+    INITIATE_MPI_COMMUNICATION                   =  3,   /*!< \brief Start the communication of the conserved variables. */
+    COMPLETE_MPI_COMMUNICATION                   =  4,   /*!< \brief Complete the communication of the conserved variables. */
+    INITIATE_REVERSE_MPI_COMMUNICATION           =  5,   /*!< \brief Start the communication of the residuals. */
+    COMPLETE_REVERSE_MPI_COMMUNICATION           =  6,   /*!< \brief Complete the communication of the residuals. */
+    ADER_TIME_INTERPOLATE_OWNED_ELEMENTS         =  7,   /*!< \brief Carry out a time interpolation to an integration point for the owned elements. */
+    ADER_TIME_INTERPOLATE_HALO_ELEMENTS          =  8,   /*!< \brief Carry out a time interpolation to an integration point for the halo elements. */
+    SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS     =  9,   /*!< \brief Compute the shock capturing artificial viscosity for the owned elements, if needed. */
+    SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS      = 10,   /*!< \brief Compute the shock capturing artificial viscosity for the halo elements, if needed. */
+    VOLUME_RESIDUAL                              = 11,   /*!< \brief Compute the contribution to the residual from the volume integral. */
+    SURFACE_RESIDUAL_OWNED_ELEMENTS              = 12,   /*!< \brief Compute the contribution to the residual from the interior surface integral between owned elements. */
+    SURFACE_RESIDUAL_HALO_ELEMENTS               = 13,   /*!< \brief Compute the contribution to the residual from the interior surface integral between an owned and halo element. */
+    BOUNDARY_CONDITIONS                          = 14,   /*!< \brief Compute the contribution to the residual from the boundary conditions. */
+    SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS = 15,   /*!< \brief Sum up all contributions to the residual for the owned elements. */
+    SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS  = 16,   /*!< \brief Sum up all contributions to the residual for the halo elements. */
+    MULTIPLY_INVERSE_MASS_MATRIX                 = 17,   /*!< \brief Multiply the accumulated residual with the inverse of the mass matrix. */
+    ADER_UPDATE_SOLUTION                         = 18    /*!< \brief Update the solution for the ADER scheme. */
   };
 
-  SOLVER_TASK    task;               /*!< \brief Task to be carried out. */
-  unsigned short timeLevel;          /*!< \brief Time level of the task to be carried out. */
-  int            indMustBeCompleted; /*!< \brief Index in the list of tasks that must be completed before this task can be carried out. */
+  SOLVER_TASK    task;                  /*!< \brief Task to be carried out. */
+  unsigned short timeLevel;             /*!< \brief Time level of the task to be carried out. */
+  unsigned short intPointADER;          /*!< \brief Time integration point for ADER, if relevant for the task. */
+  bool           secondPartTimeIntADER; /*!< \brief Whether or not this is the second part of the time interval for elements
+                                                    adjacent to a lower time level. */
+  unsigned short nIndMustBeCompleted;   /*!< \brief Number of relevant indices in indMustBeCompleted. */
+  int            indMustBeCompleted[4]; /*!< \brief Indices in the list of tasks that must be completed before this task can be carried out. */
 
   /*!
    * \brief Constructor of the class.
@@ -79,13 +90,19 @@ public:
   /*!
    * \brief Alternative constructor of the class, which initializes the member
             variables to the given arguments.
-   * \param[in] val_task               - Task to be set.
-   * \param[in] val_timeLevel          - Time level to be set.
-   * \param[in] val_indMustBeCompleted - Completed index to be set.
+   * \param[in] val_task                - Task to be set.
+   * \param[in] val_timeLevel           - Time level to be set.
+   * \param[in] val_ind0MustBeCompleted - Completed index to be set, defaulted to -1.
+   * \param[in] val_ind1MustBeCompleted - Completed index to be set, defaulted to -1.
+   * \param[in] val_ind2MustBeCompleted - Completed index to be set, defaulted to -1.
+   * \param[in] val_ind3MustBeCompleted - Completed index to be set, defaulted to -1.
    */
   CTaskDefinition(SOLVER_TASK    val_task,
                   unsigned short val_timeLevel,
-                  int            val_indMustBeCompleted);
+                  int            val_ind0MustBeCompleted = -1,
+                  int            val_ind1MustBeCompleted = -1,
+                  int            val_ind2MustBeCompleted = -1,
+                  int            val_ind3MustBeCompleted = -1);
 
   /*!
    * \brief Destructor of the class.
