@@ -1232,11 +1232,12 @@ void C2phase_HillSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
 void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
   su2double *Two_phase_i, *Two_phase_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
+  su2double V_Left, V_Right, Sol_Left, Sol_Right, Delta, Delta_Left, Delta_Right;
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar, jVar;
 
-  bool second_order  = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
-  bool limiter       = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
+  bool second_order  = ((config->GetSpatialOrder_2phase() == SECOND_ORDER) || (config->GetSpatialOrder_2phase() == SECOND_ORDER_LIMITER));
+  bool limiter       = (config->GetSpatialOrder_2phase() == SECOND_ORDER_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
 
 
@@ -1289,10 +1290,10 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
           Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
         }
         if (limiter) {
-          FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-        }
-        else {
+       		FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+       		FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+
+        } else {
           FlowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
           FlowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
         }
@@ -1316,14 +1317,83 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
           Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
         }
 
-        if (limiter) {
-          Solution_i[iVar] = Two_phase_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          Solution_j[iVar] = Two_phase_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
 
+        if (limiter) {
+
+        	Sol_Left  = Two_phase_i[iVar] - Project_Grad_i;
+        	Sol_Right = Two_phase_j[iVar] - Project_Grad_j;
+
+        	if (config->GetKind_SlopeLimit_2phase() == MINMOD) {
+
+        		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
+
+        		if (Delta_Left > 0 && Delta_Right > 0) {
+        		    Delta    = 1.0;
+        		} else if (Delta_Left < 0 && Delta_Right < 0) {
+        			Delta = -1.0;
+        		} else {
+        			Delta = 0;
+        		}
+        		Delta = Delta *min(abs(Delta_Left),abs(Delta_Right));
+        		Solution_i[iVar] = Two_phase_i[iVar] + Delta;
+
+        		Delta_Left = Sol_Right-Two_phase_j[iVar]; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
+
+        		if (Delta_Left > 0 && Delta_Right > 0) {
+        		    Delta    = 1.0;
+        		} else if (Delta_Left < 0 && Delta_Right < 0) {
+        			Delta = -1.0;
+        		} else {
+        			Delta = 0;
+        		}
+        		Delta = Delta *min(abs(Delta_Left),abs(Delta_Right));
+        		Solution_j[iVar] = Two_phase_j[iVar] - Delta;
+
+
+        	} else if (config->GetKind_SlopeLimit_2phase() == VAN_ALBADA) {
+           		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
+
+        		Delta =  Delta_Left* Delta_Right*(Delta_Left + Delta_Right)/(pow(Delta_Left, 2) + pow(Delta_Right, 2)+1e-15);
+        		Solution_i[iVar] = Two_phase_i[iVar] + Delta;
+
+        		Delta_Left = Sol_Right-Two_phase_j[iVar]; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
+
+        		Delta =  Delta_Left* Delta_Right*(Delta_Left + Delta_Right)/(pow(Delta_Left, 2) + pow(Delta_Right, 2)+1e-15);
+        		Solution_j[iVar] = Two_phase_j[iVar] - Delta;
+
+        	} else if (config->GetKind_SlopeLimit_2phase() ==SUPERBEE) {
+
+        		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
+
+        		if (Delta_Left > 0 && Delta_Right > 0) {
+        		    Delta    = 1.0;
+        		} else if (Delta_Left < 0 && Delta_Right < 0) {
+        			Delta = -1.0;
+        		} else {
+        			Delta = 0;
+        		}
+        		Delta = Delta *max( min(abs(Delta_Left), 2*abs(Delta_Right)) , min(abs(Delta_Right), 2*abs(Delta_Left)));
+        		Solution_i[iVar] = Two_phase_i[iVar] + Delta;
+
+        		Delta_Left = Sol_Right-Two_phase_j[iVar]; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
+
+        		if (Delta_Left > 0 && Delta_Right > 0) {
+        		    Delta    = 1.0;
+        		} else if (Delta_Left < 0 && Delta_Right < 0) {
+        			Delta = -1.0;
+        		} else {
+        			Delta = 0;
+        		}
+        		Delta = Delta *max( min(abs(Delta_Left), 2*abs(Delta_Right)) , min(abs(Delta_Right), 2*abs(Delta_Left)));
+        		Solution_j[iVar] = Two_phase_j[iVar] - Delta;
+
+        	} else {
+        		Solution_i[iVar] = Two_phase_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+        		Solution_j[iVar] = Two_phase_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+        	}
           //cout << Gradient_i[0][0] << " " << Limiter_i [0] <<endl;
 
-        }
-        else {
+        }        else {
           Solution_i[iVar] = Two_phase_i[iVar] + Project_Grad_i;
           Solution_j[iVar] = Two_phase_j[iVar] + Project_Grad_j;
         }
@@ -1859,7 +1929,7 @@ void C2phase_QMOMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
 void C2phase_QMOMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
 	  su2double *Two_phase_i, *Two_phase_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
-	  su2double *Liquid_vec;
+	  su2double *Liquid_vec, *Solution_L, *Solution_Right;
 	  unsigned long iEdge, iPoint, jPoint;
 	  unsigned short iDim, iVar;
 
@@ -1918,10 +1988,11 @@ void C2phase_QMOMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 	          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
 	        }
 	        if (limiter) {
-	          FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-	          FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-	        }
-	        else {
+	        		FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+	        		FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+
+
+	        } else {
 	          FlowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
 	          FlowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
 	        }
@@ -1945,10 +2016,10 @@ void C2phase_QMOMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 	          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
 	        }
 	        if (limiter) {
-	          Solution_i[iVar] = Two_phase_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-	          Solution_j[iVar] = Two_phase_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-	        }
-	        else {
+					Solution_i[iVar] = Two_phase_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+					Solution_j[iVar] = Two_phase_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+
+	        } else {
 	          Solution_i[iVar] = Two_phase_i[iVar] + Project_Grad_i;
 	          Solution_j[iVar] = Two_phase_j[iVar] + Project_Grad_j;
 	        }

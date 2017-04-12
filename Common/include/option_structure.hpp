@@ -628,13 +628,21 @@ enum ENUM_LIMITER {
   VENKATAKRISHNAN = 0,	/*!< \brief Slope limiter using Venkatakrisnan method. */
   BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
   SHARP_EDGES = 2,       /*!< \brief Slope limiter using sharp edges. */
-  SOLID_WALL_DISTANCE = 3       /*!< \brief Slope limiter using wall distance. */
+  SOLID_WALL_DISTANCE = 3,       /*!< \brief Slope limiter using wall distance. */
+  // limiters implemented for two_phase problem
+  MINMOD = 4,       /*!< \brief Slope limiter using mimmod. */
+  VAN_ALBADA = 5,       /*!< \brief Slope limiter using van_albada. */
+  SUPERBEE = 6,       /*!< \brief Slope limiter using van_leer. */
 };
+
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
 ("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("SHARP_EDGES", SHARP_EDGES)
-("WALL_DISTANCE", SOLID_WALL_DISTANCE);
+("WALL_DISTANCE", SOLID_WALL_DISTANCE)
+("MINMOD", MINMOD)
+("VAN_ALBADA", VAN_ALBADA)
+("SUPERBEE", SUPERBEE);
 
 /*!
  * \brief types of turbulent models
