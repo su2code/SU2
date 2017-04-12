@@ -2073,6 +2073,11 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
               donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_forward_point);
             }
             
+            if(donor_iPoint >= nGlobalVertex_Donor){
+              check = true;
+              continue;
+            }
+            
             for(iDim = 0; iDim < nDim; iDim++){
               donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
               donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
@@ -2161,6 +2166,11 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
               donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_forward_point);
             }
 
+            if(donor_iPoint >= nGlobalVertex_Donor){
+              check = true;
+              continue;
+            }
+            
             for(iDim = 0; iDim < nDim; iDim++){
               donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
               donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
