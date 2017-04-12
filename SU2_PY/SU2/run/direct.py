@@ -39,7 +39,7 @@ import os, sys, shutil, copy
 
 from .. import io  as su2io
 from merge     import merge     as su2merge
-#from merge     import merge_solution as su2mergesol
+from merge     import merge_solution as su2mergesol
 from interface import CFD       as SU2_CFD
 
 # ----------------------------------------------------------------------
@@ -111,9 +111,10 @@ def direct ( config ):
       aerodynamics['NOISE'] = float(noise)
 
     if config.get('OBJECTIVE_FUNCTION',"") == 'BOOM':
+#      su2mergesol(konfig)
       boom_file = open('pboomSU2')
       boom = boom_file.readline().split(",")[0]
-      aerodynmaics['BOOM'] = float(boom)
+      aerodynamics['BOOM'] = float(boom)
 
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })

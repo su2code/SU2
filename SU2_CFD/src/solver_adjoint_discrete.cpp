@@ -886,7 +886,7 @@ void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config
 //    }
 
 
-  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
+//  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
 
   /*--- The first line is the header ---*/
 
@@ -922,7 +922,7 @@ void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config
   }
 
 
-  cout<<"Finished reading."<<"iPanel= "<<iPanel<<",  Rank= "<<rank<<endl;
+//  cout<<"Finished reading."<<"iPanel= "<<iPanel<<",  Rank= "<<rank<<endl;
 
   /*--- Close the restart file ---*/
 
@@ -942,7 +942,7 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
    char filename [64];
 
    SPRINTF (filename, "Adj_Boom.dat");
-   cout<<"Accessing Boom Adjoint file: "<< filename << endl;
+//   cout<<"Accessing Boom Adjoint file: "<< filename << endl;
 //   string filename = strcat (cstr);
 //   Boom_AdjointFile.open(filename.data() , ios::in);
    Boom_AdjointFile.open(filename , ios::in);
@@ -982,7 +982,7 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
+//  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
 
   /*--- The first line is the header ---*/
 
@@ -1008,7 +1008,7 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
   }
 
 
-  cout<<"Finished reading."<<"iPanel= "<<iPanel<<",  Rank= "<<rank<<endl;
+//  cout<<"Finished reading."<<"iPanel= "<<iPanel<<",  Rank= "<<rank<<endl;
 
   /*--- Close the restart file ---*/
 
