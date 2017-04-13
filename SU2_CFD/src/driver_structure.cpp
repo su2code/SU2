@@ -3954,7 +3954,7 @@ void CTurbomachineryDriver::Run() {
   bool unsteady;
 
   unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-              || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+                  || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
   //  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
@@ -3981,7 +3981,8 @@ void CTurbomachineryDriver::Run() {
   }
 
   /*--- Updating zone interface communication patterns for unsteady problems ---*/
-  if ( unsteady ) {
+  //  if ( unsteady ) {
+  if ( true ) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && interpolator_container[iZone][jZone] != NULL)
@@ -4011,15 +4012,14 @@ void CTurbomachineryDriver::Run() {
           surface_movement, grid_movement, FFDBox, iZone);
     }
 
-  }
+    if (rank == MASTER_NODE){
+      SetTurboPerformance(ZONE_0);
+    }
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->Postprocess(config_container, geometry_container,
-        solver_container, iZone);
-  }
-
-  if (rank == MASTER_NODE){
-    SetTurboPerformance(ZONE_0);
+    for (iZone = 0; iZone < nZone; iZone++) {
+      iteration_container[iZone]->Postprocess(config_container, geometry_container,
+          solver_container, iZone);
+    }
   }
 
 }
@@ -4212,6 +4212,11 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 void CTurbomachineryDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   bool harmonic_balance = (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -4220,7 +4225,8 @@ void CTurbomachineryDriver::DynamicMeshUpdate(unsigned long ExtIter) {
       iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
 
       /*--- Turbo-vertex update ---*/
-      cout << "Updating turbovertex after rigid mesh transformation" << endl;
+      if (rank == MASTER_NODE)
+        cout << " Updating turbovertex after rigid mesh transformation. " << endl;
       geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, INFLOW);
       geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, OUTFLOW);
     }
