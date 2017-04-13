@@ -1068,7 +1068,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
   /*!\brief LIMITER_COEFF
    *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
-  addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.5);
+  addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.1);
+  /*!\brief LIMITER_COEFF_2PHASE
+   *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
+  addDoubleOption("LIMITER_COEFF_2PHASE", LimiterCoeff_2phase, 0.1);
   /*!\brief LIMITER_ITER
    *  \n DESCRIPTION: Freeze the value of the limiter after a number of iterations. DEFAULT value 999999. \ingroup Config*/
   addUnsignedLongOption("LIMITER_ITER", LimiterIter, 999999);

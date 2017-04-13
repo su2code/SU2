@@ -146,6 +146,7 @@ private:
   su2double DVBound_Upper;		/*!< \brief Previous value of the design variable. */
   su2double DVBound_Lower;		/*!< \brief Previous value of the design variable. */
   su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
+  su2double LimiterCoeff_2phase;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
   su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
@@ -1860,6 +1861,12 @@ public:
    */
   su2double GetLimiterCoeff(void);
   
+  /*!
+   * \brief Get the value of limiter coefficient.
+   * \return Value of the limiter coefficient.
+   */
+  su2double GetLimiterCoeff_2phase(void);
+
   /*!
    * \brief Freeze the value of the limiter after a number of iterations.
    * \return Number of iterations.

@@ -468,6 +468,8 @@ inline su2double CConfig::GetChargeCoeff(void) { return ChargeCoeff; }
 
 inline su2double CConfig::GetLimiterCoeff(void) { return LimiterCoeff; }
 
+inline su2double CConfig::GetLimiterCoeff_2phase(void) { return LimiterCoeff_2phase; }
+
 inline unsigned long CConfig::GetLimiterIter(void) { return LimiterIter; }
 
 inline su2double CConfig::GetSharpEdgesCoeff(void) { return SharpEdgesCoeff; }

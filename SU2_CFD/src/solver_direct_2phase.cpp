@@ -1221,7 +1221,7 @@ void C2phase_HillSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
-  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
+  if (config->GetSpatialOrder_2phase() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
   
   if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
 
@@ -1317,7 +1317,6 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
           Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
         }
 
-
         if (limiter) {
 
         	Sol_Left  = Two_phase_i[iVar] - Project_Grad_i;
@@ -1334,8 +1333,8 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
         		} else {
         			Delta = 0;
         		}
-        		Delta = Delta *min(abs(Delta_Left),abs(Delta_Right));
-        		Solution_i[iVar] = Two_phase_i[iVar] + Delta;
+        		Delta = Delta *min(fabs(Delta_Left),fabs(Delta_Right));
+        		Solution_i[iVar] = Two_phase_i[iVar] + config->GetLimiterCoeff_2phase() * Delta;
 
         		Delta_Left = Sol_Right-Two_phase_j[iVar]; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
@@ -1346,20 +1345,21 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
         		} else {
         			Delta = 0;
         		}
-        		Delta = Delta *min(abs(Delta_Left),abs(Delta_Right));
-        		Solution_j[iVar] = Two_phase_j[iVar] - Delta;
+        		Delta = Delta *min(fabs(Delta_Left),fabs(Delta_Right));
+        		Solution_j[iVar] = Two_phase_j[iVar] - config->GetLimiterCoeff_2phase() * Delta;
 
 
         	} else if (config->GetKind_SlopeLimit_2phase() == VAN_ALBADA) {
+
            		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
-        		Delta =  Delta_Left* Delta_Right*(Delta_Left + Delta_Right)/(pow(Delta_Left, 2) + pow(Delta_Right, 2)+1e-15);
-        		Solution_i[iVar] = Two_phase_i[iVar] + Delta;
+        		Delta =  Delta_Left* Delta_Right*(Delta_Left + Delta_Right)/(pow(Delta_Left, 2) + pow(Delta_Right, 2)+1e-30);
+        		Solution_i[iVar] = Two_phase_i[iVar] + config->GetLimiterCoeff_2phase() * Delta;
 
         		Delta_Left = Sol_Right-Two_phase_j[iVar]; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
-        		Delta =  Delta_Left* Delta_Right*(Delta_Left + Delta_Right)/(pow(Delta_Left, 2) + pow(Delta_Right, 2)+1e-15);
-        		Solution_j[iVar] = Two_phase_j[iVar] - Delta;
+        		Delta =  Delta_Left* Delta_Right*(Delta_Left + Delta_Right)/(pow(Delta_Left, 2) + pow(Delta_Right, 2)+1e-30);
+        		Solution_j[iVar] = Two_phase_j[iVar] - config->GetLimiterCoeff_2phase() * Delta;
 
         	} else if (config->GetKind_SlopeLimit_2phase() ==SUPERBEE) {
 
@@ -1372,8 +1372,8 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
         		} else {
         			Delta = 0;
         		}
-        		Delta = Delta *max( min(abs(Delta_Left), 2*abs(Delta_Right)) , min(abs(Delta_Right), 2*abs(Delta_Left)));
-        		Solution_i[iVar] = Two_phase_i[iVar] + Delta;
+        		Delta = Delta *max( min(fabs(Delta_Left), 2*fabs(Delta_Right)) , min(fabs(Delta_Right), 2*fabs(Delta_Left)));
+        		Solution_i[iVar] = Two_phase_i[iVar] + config->GetLimiterCoeff_2phase() * Delta;
 
         		Delta_Left = Sol_Right-Two_phase_j[iVar]; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
@@ -1384,8 +1384,8 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
         		} else {
         			Delta = 0;
         		}
-        		Delta = Delta *max( min(abs(Delta_Left), 2*abs(Delta_Right)) , min(abs(Delta_Right), 2*abs(Delta_Left)));
-        		Solution_j[iVar] = Two_phase_j[iVar] - Delta;
+        		Delta = Delta *max( min(fabs(Delta_Left), 2*fabs(Delta_Right)) , min(fabs(Delta_Right), 2*fabs(Delta_Left)));
+        		Solution_j[iVar] = Two_phase_j[iVar] - config->GetLimiterCoeff_2phase() * Delta;
 
         	} else {
         		Solution_i[iVar] = Two_phase_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
@@ -1405,7 +1405,6 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
     /*--- Add and subtract residual if in the metastable region---*/
 
     numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
 
     LinSysRes.AddBlock(iPoint, Residual);
     LinSysRes.SubtractBlock(jPoint, Residual);
