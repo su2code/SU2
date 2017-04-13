@@ -649,6 +649,11 @@ public:
    */
   bool Monitor(unsigned long ExtIter);
 
+  /*!
+   * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
+   */
+  void DynamicMeshUpdate(unsigned long ExtIter);
+
 
 
 };

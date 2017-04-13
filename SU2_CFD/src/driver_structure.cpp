@@ -3954,9 +3954,9 @@ void CTurbomachineryDriver::Run() {
   bool unsteady;
 
   unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-          || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+              || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
-//  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  //  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
   int rank = MASTER_NODE;
 
@@ -3971,8 +3971,8 @@ void CTurbomachineryDriver::Run() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
-                                           solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone);
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone);
   }
 
   /* --- Update the mixing-plane interface ---*/
@@ -4005,19 +4005,21 @@ void CTurbomachineryDriver::Run() {
 
     /*--- For each zone runs one single iteration ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
+      config_container[iZone]->SetIntIter(IntIter);
       iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
           solver_container, numerics_container, config_container,
           surface_movement, grid_movement, FFDBox, iZone);
     }
 
-    for (iZone = 0; iZone < nZone; iZone++) {
-      iteration_container[iZone]->Postprocess(config_container, geometry_container,
-          solver_container, iZone);
-    }
+  }
 
-    if (rank == MASTER_NODE){
-      SetTurboPerformance(ZONE_0);
-    }
+  for (iZone = 0; iZone < nZone; iZone++) {
+    iteration_container[iZone]->Postprocess(config_container, geometry_container,
+        solver_container, iZone);
+  }
+
+  if (rank == MASTER_NODE){
+    SetTurboPerformance(ZONE_0);
   }
 
 }
@@ -4206,6 +4208,24 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
 }
 
+
+void CTurbomachineryDriver::DynamicMeshUpdate(unsigned long ExtIter) {
+
+  bool harmonic_balance = (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Dynamic mesh update ---*/
+    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
+      iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
+
+      /*--- Turbo-vertex update ---*/
+      cout << "Updating turbovertex after rigid mesh transformation" << endl;
+      geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, INFLOW);
+      geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, OUTFLOW);
+    }
+  }
+}
 
 CDiscAdjFluidDriver::CDiscAdjFluidDriver(char* confFile,
                                                  unsigned short val_nZone,
