@@ -3949,6 +3949,12 @@ CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 
 void CTurbomachineryDriver::Run() {
 
+  unsigned short jZone;
+  unsigned long IntIter, nIntIter;
+  bool unsteady;
+
+  unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+          || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
 //  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
@@ -3974,21 +3980,45 @@ void CTurbomachineryDriver::Run() {
     if(mixingplane)SetMixingPlane(iZone);
   }
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
-                                        solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, iZone);
+  /*--- Updating zone interface communication patterns for unsteady problems ---*/
+  if ( unsteady ) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      for (jZone = 0; jZone < nZone; jZone++)
+        if(jZone != iZone && interpolator_container[iZone][jZone] != NULL)
+          interpolator_container[iZone][jZone]->Set_TransferCoeff(config_container);
+    }
   }
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->Postprocess(config_container, geometry_container,
-                                            solver_container, iZone);
-  }
+  /*--- Begin Unsteady pseudo-time stepping internal loop, if not unsteady it does only one step --*/
+  if (unsteady)
+    nIntIter = config_container[MESH_0]->GetUnst_nIntIter();
+  else
+    nIntIter = 1;
 
-  if (rank == MASTER_NODE){
-    SetTurboPerformance(ZONE_0);
-  }
+  for (IntIter = 0; IntIter < nIntIter; IntIter++) {
 
+    /*--- At each pseudo time-step updates transfer data ---*/
+    for (iZone = 0; iZone < nZone; iZone++)
+      for (jZone = 0; jZone < nZone; jZone++)
+        if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+          Transfer_Data(iZone, jZone);
+
+    /*--- For each zone runs one single iteration ---*/
+    for (iZone = 0; iZone < nZone; iZone++) {
+      iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+          solver_container, numerics_container, config_container,
+          surface_movement, grid_movement, FFDBox, iZone);
+    }
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      iteration_container[iZone]->Postprocess(config_container, geometry_container,
+          solver_container, iZone);
+    }
+
+    if (rank == MASTER_NODE){
+      SetTurboPerformance(ZONE_0);
+    }
+  }
 
 }
 

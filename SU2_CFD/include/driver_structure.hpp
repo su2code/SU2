@@ -68,8 +68,8 @@ protected:
                 nZone,                          /*!< \brief Total number of zones in the problem. */
                 nDim;                           /*!< \brief Number of dimensions.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
-	     mixingplane,															/*!< \brief mixingplane simulation flag.*/
-			 fsi;                                     /*!< \brief FSI simulation flag.*/
+       mixingplane,                             /*!< \brief mixingplane simulation flag.*/
+       fsi;                                     /*!< \brief FSI simulation flag.*/
   CIteration **iteration_container;             /*!< \brief Container vector with all the iteration methods. */
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
   CIntegration ***integration_container;        /*!< \brief Container vector with all the integration methods. */
