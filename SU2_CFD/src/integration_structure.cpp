@@ -577,7 +577,41 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 
   bool calculate_average = config->GetCalculate_Average();
   su2double *Solution_Avg_Aux;
+  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL;
+  unsigned long iMarker, iVertex;
+     
+  /*--- Copy from COutput::LoadLocalData_Flow for computing mean skin friction values
+   * 
+   * Auxiliary vectors for variables defined on surfaces only. ---*/
   
+  if ( calculate_average && config->GetKind_Solver() == RANS) {
+    Aux_Frict_x = new su2double[geometry->GetnPoint()];
+    Aux_Frict_y = new su2double[geometry->GetnPoint()];
+    Aux_Frict_z = new su2double[geometry->GetnPoint()];
+    
+    /*--- First, loop through the mesh in order to find and store the
+     value of the viscous coefficients at any surface nodes. They
+     will be placed in an auxiliary vector and then communicated like
+     all other volumetric variables. ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      Aux_Frict_x[iPoint] = 0.0;
+      Aux_Frict_y[iPoint] = 0.0;
+      Aux_Frict_z[iPoint] = 0.0;
+    }
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Frict_x[iPoint] = solver->GetCSkinFriction(iMarker, iVertex, 0);
+          //Aux_Frict_y[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1);
+          Aux_Frict_y[iPoint] = solver->GetCSkinFriction(iMarker, iVertex, 1);
+          if (geometry->GetnDim() == 3) Aux_Frict_z[iPoint] = solver->GetCSkinFriction(iMarker, iVertex, 2);
+        }
+      }
+    }
+  }
+    
   /*--- Adding the solution for Calculate Averages ---*/
 
   if (SolContainer_Position == FLOW_SOL && calculate_average) {
@@ -587,11 +621,14 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       for ( iDim = 0; iDim < geometry->GetnDim(); iDim++)
         solver->node[iPoint]->SetSolution_Avg(iDim+1, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);      
       solver->node[iPoint]->SetSolution_Avg(solver->GetnVar()-1, Solution_Avg_Aux[solver->GetnVar()-1]/Solution_Avg_Aux[0]);
-      solver->node[iPoint]->SetSolution_Avg(solver->GetnVar(), solver->node[iPoint]->GetPressure());            
-//      for (iVar = 0; iVar < solver->GetnVar(); iVar++) {
-//        solver->node[iPoint]->AddSolution_Avg(iVar, solver->node[iPoint]->GetSolution(iVar));
-//      }
-//      solver->node[iPoint]->AddSolution_Avg(solver->GetnVar(), solver->node[iPoint]->GetPressure());
+      solver->node[iPoint]->SetSolution_Avg(solver->GetnVar(), solver->node[iPoint]->GetPressure());
+      
+      if (config->GetKind_Solver() == RANS){
+        solver->node[iPoint]->SetSolution_Avg(solver->GetnVar()+1, Aux_Frict_x[iPoint]);
+        solver->node[iPoint]->SetSolution_Avg(solver->GetnVar()+2, Aux_Frict_y[iPoint]);
+        if (geometry->GetnDim() == 3) solver->node[iPoint]->SetSolution_Avg(solver->GetnVar()+3, Aux_Frict_z[iPoint]);
+      }
+        
       if (geometry->GetnDim() == 2){
         for ( iDim = 0; iDim < geometry->GetnDim(); iDim++)
           solver->node[iPoint]->AddSolution_RMS(iDim, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
@@ -694,6 +731,12 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       delete [] owner_all;
     }
 #endif
+  }
+  
+  if ( calculate_average && config->GetKind_Solver() == RANS) {
+    delete [] Aux_Frict_x;
+    delete [] Aux_Frict_y;
+    delete [] Aux_Frict_z;
   }
   
 }

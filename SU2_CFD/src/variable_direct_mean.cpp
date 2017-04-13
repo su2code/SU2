@@ -238,8 +238,19 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   /*--- Allocate vector for Average of primitive variables ---*/
   
   if (calculate_average){
-    Solution_Avg = new su2double [nVar+1];
-    for (iVar = 0; iVar < nVar+1; iVar++)
+    unsigned short nVar_Avg;
+    
+    if (nDim == 2){
+      /*--- Density, U, V, E, Pressure, Cfx, Cfy*/
+      nVar_Avg = nVar + 3;
+    }
+    else{
+      /*--- Density, U, V, W, E, Pressure, Cfx, Cfy, Cfz*/
+      nVar_Avg = nVar + 4;
+    }
+    
+    Solution_Avg = new su2double [nVar_Avg];
+    for (iVar = 0; iVar < nVar_Avg; iVar++)
       Solution_Avg[iVar] = 0.0;
 
     if (nDim == 2){
@@ -412,8 +423,19 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   /*--- Allocate vector for Average of conservative variables ---*/
 
   if (calculate_average){
-    Solution_Avg = new su2double [nVar+1];
-    for (iVar = 0; iVar < nVar+1; iVar++)
+    unsigned short nVar_Avg;
+    
+    if (nDim == 2){
+      /*--- Density, U, V, E, Pressure, Cfx, Cfy*/
+      nVar_Avg = nVar + 3;
+    }
+    else{
+      /*--- Density, U, V, W, E, Pressure, Cfx, Cfy, Cfz*/
+      nVar_Avg = nVar + 4;
+    }
+    
+    Solution_Avg = new su2double [nVar_Avg];
+    for (iVar = 0; iVar < nVar_Avg; iVar++)
       Solution_Avg[iVar] = 0.0;
       
     if (nDim == 2){

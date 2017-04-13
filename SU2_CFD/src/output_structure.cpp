@@ -10575,6 +10575,17 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par +=1;
       Variable_Names.push_back("Mean_P");
       
+      if (config->GetKind_Solver() == RANS){
+        nVar_Par +=1;
+        Variable_Names.push_back("Mean_Cfx");
+        nVar_Par +=1;
+        Variable_Names.push_back("Mean_Cfy");
+        if (geometry->GetnDim()==3){
+          nVar_Par +=1;
+          Variable_Names.push_back("Mean_Cfz");
+        }
+      }
+      
       if (geometry->GetnDim()==2){
         nVar_Par +=1;
         Variable_Names.push_back("U<sup>p</sup>U<sup>p</sup>");
@@ -10831,6 +10842,18 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           }
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First) / Avg_Iter;
           iVar++;
+          
+          if (config->GetKind_Solver() == RANS){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+1) / Avg_Iter;
+            iVar++;
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+2) / Avg_Iter;
+            iVar++;
+            if (geometry->GetnDim() == 3){
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+3) / Avg_Iter;
+              iVar++;
+            }
+          }
+          
           
           if (geometry->GetnDim() == 2){
             for (jVar = 0; jVar < geometry->GetnDim()+2; jVar++) {
