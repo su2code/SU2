@@ -2757,12 +2757,23 @@ void CDriver::TurbomachineryPreprocessing(){
 
 
   if(mixingplane && !harmonic_balance){
-    if (rank == MASTER_NODE) cout << "Set span-wise sections between zones on Mixing-Plane interface." << endl;
+    if (rank == MASTER_NODE) cout << "Set span-wise sections between zone interfaces." << endl;
     for (donorZone = 0; donorZone < nZone; donorZone++) {
       for (targetZone = 0; targetZone < nZone; targetZone++) {
         if (targetZone != donorZone){
           transfer_performance_container[donorZone][targetZone]->SetSpanWiseLevels(config_container[donorZone], config_container[targetZone]);
         }
+      }
+    }
+  }
+
+  if (harmonic_balance){
+    if (rank == MASTER_NODE) cout << "Set span-wise sections between zone interfaces." << endl;
+    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++) {
+      jTimeInstance = iTimeInstance;
+      for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
+        jTimeInstance += nTimeInstances;
+        transfer_performance_container[jTimeInstance][iTimeInstance]->SetSpanWiseLevels(config_container[jTimeInstance], config_container[iTimeInstance]);
       }
     }
   }
