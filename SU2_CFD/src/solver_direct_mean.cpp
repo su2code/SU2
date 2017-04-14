@@ -12219,8 +12219,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						//Based on the marker name determine which velocity polynomial to use - 3D
           
 						if (Marker_Tag == "jet_top") {
-              y_max = 0.12194458;
-              y_min = -0.12194458;
+              y_max = 0.12194440;
+              y_min = -0.12194440;
               z_max = 0.45089150;
               z_min = 0.44939214;
               
@@ -12235,10 +12235,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
 						else if (Marker_Tag == "jet_bottom") {
-              y_max = 0.12194458;
-              y_min = -0.12194458;
+              y_max = 0.12194440;
+              y_min = -0.12194440;
               z_max = 0.00149936;
-              z_min = 0.0;
+              z_min = 0.00000000;
               
               //6.5% scale
 							//y_max = 0.0634202199518;
@@ -12253,8 +12253,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						else if (Marker_Tag == "jet_starboard") {
               y_max = 0.16190000;
               y_min = 0.16040064;
-              z_max = 0.41093608;
-              z_min = 0.03995542;
+              z_max = 0.41077357;
+              z_min = 0.03995536;
               
               //6.5% scale
               //y_max = 0.0842;
@@ -12269,8 +12269,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						else if (Marker_Tag == "jet_port") {
               y_max = -0.16040064;
               y_min = -0.16190000;
-              z_max = 0.41093608;
-              z_min = 0.03995542;
+              z_max = 0.41077357;
+              z_min = 0.03995536;
               
               //6.5% scale
               //y_max = -0.08342022;
