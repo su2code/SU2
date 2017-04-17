@@ -124,7 +124,7 @@ int main() {
       std::cout << correct_output[3] << "]" << std::endl;
       std::cout << "  Found:" << std::endl;
       std::cout << "    [ " << output[0] << ", " << output[1] << ", ";
-      std:;cout << output[2] << ", " << output[3] << "]" << std::endl;
+      std::cout << output[2] << ", " << output[3] << "]" << std::endl;
       return_flag = 1;
       break;
     }

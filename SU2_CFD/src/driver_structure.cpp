@@ -696,7 +696,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
-  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition, hybrid,
   template_solver, disc_adj;
   
   /*--- Initialize some useful booleans ---*/
@@ -709,6 +709,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   fem = false;
   heat             = false;
   transition       = false;
+  hybrid           = false;
   template_solver  = false;
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -735,7 +736,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   /*--- Assign turbulence model booleans ---*/
   
-  if (turbulent)
+  if (turbulent) {
     switch (config->GetKind_Turb_Model()) {
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
@@ -743,6 +744,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
+    if (config->isHybrid_Turb_Model()) hybrid = true;
+    // TODO: Incorporate hybrid solver here...
+  }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
@@ -845,7 +849,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
-  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition, hybrid,
   template_solver, disc_adj;
   
   /*--- Initialize some useful booleans ---*/
@@ -856,6 +860,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;  disc_adj        = false;
   fem = false;
+  hybrid = false;
   heat             = false;
   transition       = false;
   template_solver  = false;
@@ -881,12 +886,17 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   
   /*--- Assign turbulence model booleans ---*/
   
-  if (turbulent)
+  if (turbulent) {
     switch (config->GetKind_Turb_Model()) {
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
       case SST:    menter_sst = true;           break;
+
+      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
+    if (config->isHybrid_Turb_Model()) hybrid = true;
+    // TODO: Incorporate hybrid solver here...
+  }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
@@ -1115,13 +1125,17 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   
   /*--- Assign turbulence model booleans ---*/
   
-  if (turbulent)
+  if (turbulent) {
     switch (config->GetKind_Turb_Model()) {
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
+      case SST:    menter_sst = true;           break;
+
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
+    if (config->isHybrid_Turb_Model()) hybrid = true;
+    // TODO: Incorporate hybrid solver here...
+  }
   
   /*--- Number of variables for the template ---*/
   
@@ -1773,7 +1787,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   wave,
   fem,
   heat,
-  transition,
+  transition, hybrid,
   template_solver;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -1785,6 +1799,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   wave             = false;   heat             = false;   fem        = false;
   spalart_allmaras = false; neg_spalart_allmaras = false; menter_sst       = false;
+  hybrid           = false;
   transition       = false;
   template_solver  = false;
   
@@ -1805,13 +1820,17 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   
   /*--- Assign turbulence model booleans ---*/
   
-  if (turbulent)
+  if (turbulent) {
     switch (config->GetKind_Turb_Model()) {
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;  break;
+      case SST:    menter_sst = true;           break;
         
+      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
+    if (config->isHybrid_Turb_Model()) hybrid = true;
+    // TODO: Incorporate hybrid solver here...
+  }
   
   /*--- Solver definition for the template problem ---*/
   if (template_solver) {

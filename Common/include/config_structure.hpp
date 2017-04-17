@@ -456,6 +456,7 @@ private:
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
+  bool Hybrid_Turb_Model;  /*!< \brief A k-based blending hybrid model will be used. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
   Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
@@ -3266,6 +3267,12 @@ public:
    */
   void SetKind_SU2(unsigned short val_kind_su2);
   
+  /*!
+   * \brief Checks if a hybrid LES/RANS method based on k-blending is used
+   * \return True if a hybrid method is used
+   */
+  bool isHybrid_Turb_Model(void);
+
   /*!
    * \brief Get the kind of the turbulence model.
    * \return Kind of the turbulence model.

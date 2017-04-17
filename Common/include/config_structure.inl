@@ -1236,6 +1236,8 @@ inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 
 inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = val_smoothnumgrid; }
 
+inline bool CConfig::isHybrid_Turb_Model(void) { return Hybrid_Turb_Model; }
+
 inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model; }
 
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }

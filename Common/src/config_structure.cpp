@@ -559,6 +559,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
+
+  /*!\brief HYBRID_TURB_MODEL \n DESCRIPTION: Specify if a hybrid LES/RANS model is used. \n Options: NO, YES \n DEFAULT: NO  \ingroup Config*/
+  addBoolOption("HYBRID_TURB_MODEL", Hybrid_Turb_Model, false);
+
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
@@ -3707,6 +3711,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
           case SST:    cout << "Menter's SST"     << endl; break;
         }
+        if (Hybrid_Turb_Model) cout << "Hybrid LES/RANS model" << endl;
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
