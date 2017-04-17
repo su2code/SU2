@@ -9,7 +9,7 @@
 typedef std::complex<su2double> Complex;
 typedef std::valarray<Complex> CArray;
 
-#define N_PROF 40001
+#define N_PROF 80001
 
 SUBoom::SUBoom(){
 
@@ -153,6 +153,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           Coord = geometry->node[iPoint]->GetCoord();
           x = SU2_TYPE::GetValue(Coord[0]);
           y = SU2_TYPE::GetValue(Coord[1]);
+//          z = 0.0;
+//          if (nDim==3) z = SU2_TYPE::GetValue(Coord[2]);
 
           /*---Extract conservative flow data---*/
           rho = solver->node[iPoint]->GetSolution(nDim);
@@ -378,8 +380,8 @@ void SUBoom::ScaleFactors(){
       min_x = x[i];
   }
   // TODO: get a/c length
-  L = max_x - min_x;
-  //L = 1.0;
+  //L = max_x - min_x;
+  L = 1.0;
 
   scale_L = L;    // [m]
   scale_T = L/(M_inf*a_inf);    // flow over aircraft [s]
@@ -1052,7 +1054,7 @@ void SUBoom::CreateSignature(){
   int M = len-1;
   int i = 0;
   while(i <= M-1){
-    if(mm[i] > tol_m/scale_m || mm[i] < -tol_m/scale_m){  // shock present
+    if(mm[i] > tol_m/scale_m){// || mm[i] < -tol_m/scale_m){  // shock present
       /*---Remove segment i---*/
       for(int j = i; j < M; j++){
         pp[0][j] = pp[0][j+1];
@@ -1065,11 +1067,11 @@ void SUBoom::CreateSignature(){
       i -= 1;
       M -= 1;
     }
-    //else if(mm[i] < -tol_m){  // "expansion shock" present
-    //  /*---Remove segment i---*/
-    //  ll[i] = tol_l;
-    //  mm[i] = (pp[1][i] - pp[0][i])/ll[i];
-    //}
+    else if(mm[i] < -tol_m/scale_m){  // "expansion shock" present
+      /*---Remove segment i---*/
+      ll[i] = tol_l/scale_T;
+      mm[i] = (pp[1][i] - pp[0][i])/ll[i];
+    }
     i += 1;
   }
 
@@ -1243,12 +1245,12 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   /*---Remove segments with l = 0---*/
   int i = 0;
   while(i <= N-1){
-    if(l[i] <= tol_l/scale_T || m[i] >= tol_m/scale_m || m[i] <= -tol_m/scale_m){
+    if(l[i] <= tol_l || m[i] >= tol_m || m[i] <= -tol_m){
       /*---Record pressure gap---*/
       current_signal = WaveformToPressureSignal(fvec, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
       /*---Add to next segment if needed---*/
-      if(dp_seg > tol_dp || dp_seg < -tol_dp){
+      if(dp_seg > tol_dp){
           if(i < N-1){
               dp[i+1] = dp[i+1] + dp_seg;
           }
@@ -1418,13 +1420,14 @@ void SUBoom::PropagateSignal(){
       signal.final_p[j] = ground_signal[1][j]*scale_p;
       sigFile << signal.final_T[j] << "\t" << signal.final_p[j] << endl;
       if(signal.final_p[j] > p_max) p_max = signal.final_p[j];
-      if(j > 0) p_int2 = p_int2 + 0.5*(signal.final_p[j]+signal.final_p[j-1])*(signal.final_T[j]-signal.final_T[j]);
+      if(j > 0) p_int2 = p_int2 + 0.5*(signal.final_p[j]*signal.final_p[j]+signal.final_p[j-1]*signal.final_p[j-1])
+                        *(signal.final_T[j]-signal.final_T[j-1]);
     }
     sigFile.close();
     p_rise = signal.final_p[0];
     if(signal.final_p[0] > -signal.final_p[Msig-1]) p_rise2 = signal.final_p[0];
     else p_rise2 = signal.final_p[Msig-1];
-    cout << "p_rise = " << p_rise << ", p_max = " << p_max << endl;
+    cout << "p_rise = " << p_rise << ", p_max = " << p_max << ", p_int2 = " << p_int2 << endl;
 
     /*---Write boom strength metrics to file---*/
     sigFile.open("pboomSU2", ios::out);

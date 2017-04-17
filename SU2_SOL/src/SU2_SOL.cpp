@@ -560,12 +560,16 @@ int main(int argc, char *argv[]) {
              boom.PropagateSignal();
              }
              su2double boom_obj[1];
-             if (rank == MASTER_NODE) boom_obj[0] = boom.p_max;
-#ifdef HAVE_MPI
-  SU2_MPI::Bcast(boom_obj, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#endif
+             if (rank == MASTER_NODE){
+               boom_obj[0] = boom.p_int2;
+               Objective_Function = boom.p_int2;
+//               AD::RegisterOutput(boom.p_int2);
+             }
+//#ifdef HAVE_MPI
+//  SU2_MPI::Bcast(boom_obj, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//#endif
 
-             Objective_Function = boom_obj[0];
+//             Objective_Function = boom_obj[0];
              if (rank==MASTER_NODE){
              SU2_TYPE::SetDerivative(Objective_Function,1.0);
                }else{
