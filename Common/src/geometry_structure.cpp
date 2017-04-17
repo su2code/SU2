@@ -11781,11 +11781,30 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
   dx, dy, dz, rotCoord[3], epsilon = 1e-10, mindist = 1e6, *Coord_i, *Coord_j, dist = 0.0;
   bool isBadMatch = false;
+  /*--- Local number of faces on a donor marker ---*/
+  unsigned int sizelocal = 0, sizeGlobal = 0, sizekPoint=0, sizeElem=0;
+  unsigned long nVertexDomain = 0, nElemPeriodic=0, nkPoint=0;
+
+  /*--- Determine a mapping from the global point ID to the local index
+        of the points.            ---*/
+  map<unsigned long,unsigned long> globalPointIDToLocalInd;
+  for(unsigned i=0; i<nPoint; ++i) {
+    globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
+  }
 
   /*--- Check this dimensionalization ---*/
 
   vector<unsigned long> OldBoundaryElems[100];
   vector<unsigned long>::iterator IterNewElem[100];
+
+
+
+#ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
 
   /*--- We only create the mirror structure for the second boundary ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -11794,9 +11813,9 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
       nPeriodic++;
     }
   }
-	
-	cout << "nperiodic= "<< nPeriodic << endl;
-	
+
+  cout << "nperiodic= "<< nPeriodic << endl;
+
   bool *CreateMirror = new bool[nPeriodic+1];
   CreateMirror[0] = false;
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
@@ -11804,72 +11823,221 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
     else CreateMirror[iPeriodic] = true;
   }
 
+  /*--- Create a vector to identify the points that belong to each periodic boundary condition ---*/
+  bool *PeriodicBC = new bool [nPoint];
+  for (iPoint = 0; iPoint < nPoint; iPoint++) PeriodicBC[iPoint] = false;
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+        if (node[iPoint]->GetDomain()) PeriodicBC[iPoint] = true;
+      }
+
   /*--- Send an initial message to the console. ---*/
   cout << "Setting the periodic boundary conditions." << endl;
-	
+
   /*--- Loop through each marker to find any periodic boundaries. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      sizelocal = 0; sizeGlobal=0;
+      /*--- Get marker index of the periodic donor boundary. ---*/
+      jMarker = config->GetMarker_Periodic_Donor(config->GetMarker_All_TagBound(iMarker));
 
-			/*--- Get marker index of the periodic donor boundary. ---*/
-			jMarker = config->GetMarker_Periodic_Donor(config->GetMarker_All_TagBound(iMarker));
-			
-			/*--- Write some info to the console. ---*/
-			cout << "Checking " << config->GetMarker_All_TagBound(iMarker);
-			cout << " boundary against periodic donor, " << config->GetMarker_All_TagBound(jMarker) << ". ";
-			
-			/*--- Retrieve the supplied periodic information. ---*/
-			center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
-			angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
-			trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
-			
-			/*--- Store (center+trans) as it is constant and will be added on. ---*/
-			translation[0] = center[0] + trans[0];
-			translation[1] = center[1] + trans[1];
-			translation[2] = center[2] + trans[2];
-			
-			/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-			theta = angles[0];
-			phi   = angles[1];
-			psi   = angles[2];
-			
-			cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
-			sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
-			
-			/*--- Compute the rotation matrix. Note that the implicit
+      /*--- Write some info to the console. ---*/
+      cout << "Checking " << config->GetMarker_All_TagBound(iMarker);
+      cout << " boundary against periodic donor, " << config->GetMarker_All_TagBound(jMarker) << ". ";
+
+      /*--- Retrieve the supplied periodic information. ---*/
+      center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
+      angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
+      trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
+
+      /*--- Store (center+trans) as it is constant and will be added on. ---*/
+      translation[0] = center[0] + trans[0];
+      translation[1] = center[1] + trans[1];
+      translation[2] = center[2] + trans[2];
+
+      /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+      theta = angles[0];
+      phi   = angles[1];
+      psi   = angles[2];
+
+      cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+      sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+
+      /*--- Compute the rotation matrix. Note that the implicit
 			 ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-			rotMatrix[0][0] = cosPhi*cosPsi;
-			rotMatrix[1][0] = cosPhi*sinPsi;
-			rotMatrix[2][0] = -sinPhi;
-			
-			rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-			rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-			rotMatrix[2][1] = sinTheta*cosPhi;
-			
-			rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-			rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-			rotMatrix[2][2] = cosTheta*cosPhi;
-			
-			/*--- Loop through all vertices and find/set the periodic point. ---*/
-			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-				
-				/*--- Retrieve node information for this boundary point. ---*/
-				iPoint  = vertex[iMarker][iVertex]->GetNode();
-				Coord_i = node[iPoint]->GetCoord();
-				
-				/*--- Get the position vector from rot center to point. ---*/
-				dx = Coord_i[0] - center[0];
-				dy = Coord_i[1] - center[1];
-				if (nDim == 3) {
-					dz = Coord_i[2] - center[2];
-				} else {
-					dz = 0.0;
-				}
-				
-				/*--- Compute transformed point coordinates. ---*/
-				rotCoord[0] = rotMatrix[0][0]*dx
-				+ rotMatrix[0][1]*dy
-				+ rotMatrix[0][2]*dz + translation[0];
+      rotMatrix[0][0] = cosPhi*cosPsi;
+      rotMatrix[1][0] = cosPhi*sinPsi;
+      rotMatrix[2][0] = -sinPhi;
+
+      rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+      rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+      rotMatrix[2][1] = sinTheta*cosPhi;
+
+      rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+      rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+      rotMatrix[2][2] = cosTheta*cosPhi;
+
+
+      /*--- Set up donor point lists; compatible with either parallel or not ---*/
+      vector<unsigned long> Buffer_Send_donorPoints(nVertex[jMarker]);
+      vector<su2double> Buffer_Send_Coord(nVertex[jMarker]*nDim);
+      vector<unsigned long> Buffer_Send_nElem(nVertex[jMarker]); // same length as donorPoints
+      vector<unsigned long> Buffer_Send_donorElem(nelem_edge_bound); // max boundary elements
+      vector<unsigned long> Buffer_Send_nElemPts(nelem_edge_bound); // same length as donorElems
+      vector<unsigned long> Buffer_Send_kPoint(nElem_Bound[jMarker]*N_POINTS_HEXAHEDRON);// max # points assc w/ elements on jMarker
+
+      nVertexDomain = 0;
+      nElemPeriodic = 0;
+      nkPoint = 0;
+      for (iVertex = 0; iVertex < nVertex[jMarker]; iVertex++){
+
+        jPoint = vertex[jMarker][iVertex]->GetNode();
+        if (node[jPoint]->GetDomain()){
+          Coord_j = node[jPoint]->GetCoord();
+          Buffer_Send_donorPoints[nVertexDomain] = node[jPoint]->GetGlobalIndex();
+          for (iDim = 0; iDim < nDim; iDim++){
+            Buffer_Send_Coord[iDim+nVertexDomain*nDim] = Coord_j[iDim];
+          }
+
+          Buffer_Send_nElem[nVertexDomain] = node[jPoint]->GetnElem();
+
+          for (iIndex = 0; iIndex < node[jPoint]->GetnElem(); iIndex++) {
+            iElem = node[jPoint]->GetElem(iIndex);
+
+            unsigned short nNodeElem = 0;
+            for (unsigned short iNode = 0; iNode <  elem[iElem]->GetnNodes(); iNode ++) {
+              kPoint = elem[iElem]->GetNode(iNode);
+              //if (iPoint == 15)
+              //cout << "KPoint = " <<kPoint << endl;
+              bool isPoint_marker = true;
+              for (unsigned long jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
+                unsigned long iPoint_mark = vertex[jMarker][jVertex]->GetNode();
+                if(iPoint_mark == kPoint) isPoint_marker = false;
+              }
+              if(isPoint_marker) {
+                Buffer_Send_kPoint[nkPoint] = kPoint;
+                nkPoint++;
+                nNodeElem++;
+                //PeriodicPoint[iPeriodic][0].push_back(kPoint);
+              }
+            }
+            Buffer_Send_donorElem[nElemPeriodic] = iElem;
+            Buffer_Send_nElemPts[nElemPeriodic] = nNodeElem; // elem[iElem]->GetnNodes();
+            nElemPeriodic++;
+          }
+          nVertexDomain++;
+        }
+      }
+
+      sizeGlobal = nVertexDomain;
+
+      Buffer_Send_donorPoints.resize(nVertexDomain);
+      Buffer_Send_Coord.resize(nVertexDomain*nDim);
+      Buffer_Send_nElem.resize(nVertexDomain);
+      Buffer_Send_kPoint.resize(nkPoint);
+      Buffer_Send_nElemPts.resize(nElemPeriodic);
+      Buffer_Send_donorElem.resize(nElemPeriodic);
+
+      /*--- If parallel computation, communicate donor marker info to all processors ---*/
+#ifdef HAVE_MPI
+      /*--- Determine the number of ranks and check if this is indeed
+              a parallel simulation.                       ---*/
+
+      /*--- Allocate memory for size arrays ---*/
+
+      vector<int> recvCounts(size), displs(size);
+      vector<int> recvCountsCoord(size), displsCoord(size);
+      vector<int> recvCountsElem(size), displsElem(size);
+      vector<int> recvCountskPoint(size), displskPoint(size);
+
+      /*--- Communicate number of donor faces per processor ---*/
+      SU2_MPI::Allgather(&nVertexDomain, 1, MPI_INT, recvCounts.data(), 1,
+          MPI_INT, MPI_COMM_WORLD);
+      SU2_MPI::Allgather(&nElemPeriodic, 1, MPI_INT, recvCountsElem.data(), 1,
+                MPI_INT, MPI_COMM_WORLD);
+      SU2_MPI::Allgather(&nkPoint, 1, MPI_INT, recvCountskPoint.data(), 1,
+                MPI_INT, MPI_COMM_WORLD);
+
+      /*--- Create the data for the vector displs from the known values of
+              recvCounts. Also determine the total size of the data.   ---*/
+      displs[0] = 0;
+      displsCoord[0] = 0;
+      displsElem[0] = 0;
+      displskPoint[0] = 0;
+
+      for(int i=0; i<size; ++i)
+        recvCountsCoord[i] = recvCounts[i]*nDim;
+
+      for(int i=1; i<size; ++i){
+          displs[i] = displs[i-1] + recvCounts[i-1];
+          displsCoord[i] = displsCoord[i-1] + recvCountsCoord[i-1];
+          displsElem[i] = displsElem[i-1] + recvCountsElem[i-1];
+          displskPoint[i] = displskPoint[i-1] + recvCountskPoint[i-1];
+      }
+
+      sizeGlobal = displs.back() + recvCounts.back();
+      sizeElem = displsElem.back() + recvCountsElem.back();
+      sizekPoint = displskPoint.back() + recvCountskPoint.back();
+
+      vector<unsigned long> donorPoints(sizeGlobal);
+      vector<su2double> donorCoord(sizeGlobal*nDim);
+      vector<unsigned long> donor_nElems(sizeGlobal);
+      vector<unsigned long> donorElems(sizeElem);
+      vector<unsigned long> donor_nElemPts(sizeElem);
+      vector<unsigned long> donorElemPts(sizekPoint);
+      /*--- The indices of the donor points ---*/
+      MPI_Allgatherv(Buffer_Send_donorPoints.data(), nVertexDomain, MPI_UNSIGNED_LONG,
+          donorPoints.data(), recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+      /*--- The coordinates of the donor points ---*/
+      MPI_Allgatherv(Buffer_Send_Coord.data(), nVertexDomain*nDim, MPI_DOUBLE,
+          donorCoord.data(), recvCountsCoord.data(), displsCoord.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+      /*--- The number of elements connected to each donor point ---*/
+      MPI_Allgatherv(Buffer_Send_nElem.data(), nVertexDomain, MPI_UNSIGNED_LONG,
+                donor_nElems.data(), recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+      /*--- The indices of the donor elements ---*/
+      MPI_Allgatherv(Buffer_Send_donorElem.data(), nElemPeriodic, MPI_UNSIGNED_LONG,
+          donorElems.data(), recvCountsElem.data(), displsElem.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+      /*--- Number of points connected to each donor element ---*/
+      MPI_Allgatherv(Buffer_Send_nElemPts.data(), nElemPeriodic, MPI_UNSIGNED_LONG,
+          donor_nElemPts.data(), recvCountsElem.data(), displsElem.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+      /*--- The point indices connected to the elements ---*/
+      MPI_Allgatherv(Buffer_Send_kPoint.data(), nkPoint, MPI_UNSIGNED_LONG,
+          donorElemPts.data(), recvCountskPoint.data(), displskPoint.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+      cout <<" after allgather2 " << endl;
+#else
+
+      donorPoints = Buffer_Send_donorPoints;
+      donorCoord  = Buffer_Send_donorCoord;
+      donor_nElems = Buffer_Send_nElems;
+      donorElems = Buffer_Send_donorElem;
+      donorElemPts = Buffer_Send_donorElemPts;
+      donor_nElemPts = Buffer_Send_nElemPts;
+
+#endif
+      /*--- Loop through all vertices and find/set the periodic point. ---*/
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+
+        /*--- Retrieve node information for this boundary point. ---*/
+        iPoint  = vertex[iMarker][iVertex]->GetNode();
+        Coord_i = node[iPoint]->GetCoord();
+
+        /*--- Get the position vector from rot center to point. ---*/
+        dx = Coord_i[0] - center[0];
+        dy = Coord_i[1] - center[1];
+        if (nDim == 3) {
+          dz = Coord_i[2] - center[2];
+        } else {
+          dz = 0.0;
+        }
+
+        /*--- Compute transformed point coordinates. ---*/
+        rotCoord[0] = rotMatrix[0][0]*dx
+            + rotMatrix[0][1]*dy
+            + rotMatrix[0][2]*dz + translation[0];
 				
 				rotCoord[1] = rotMatrix[1][0]*dx
 				+ rotMatrix[1][1]*dy
@@ -11879,13 +12047,13 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 				+ rotMatrix[2][1]*dy
 				+ rotMatrix[2][2]*dz + translation[2];
 				
-				/*--- Perform a search to find the closest donor point. ---*/
+				/*--- Perform a local search to find the closest donor point. ---*/
 				mindist = 1e10;
-				for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
-					
+				for (jVertex = 0; jVertex < sizeGlobal; jVertex++) {
 					/*--- Retrieve information for this jPoint. ---*/
-					jPoint = vertex[jMarker][jVertex]->GetNode();
-					Coord_j = node[jPoint]->GetCoord();
+					jPoint = donorPoints[jVertex];
+					for (iDim=0; iDim<nDim; iDim++)
+					  Coord_j[iDim] = donorCoord[iDim+nDim*jVertex];
 					
 					/*--- Check the distance between the computed periodic
 					 location and this jPoint. ---*/
@@ -11893,15 +12061,18 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 					for (iDim = 0; iDim < nDim; iDim++) {
 						dist += (Coord_j[iDim]-rotCoord[iDim])*(Coord_j[iDim]-rotCoord[iDim]);
 					}
-					dist = sqrt(dist);
 					
 					/*---  Store vertex information if this is the closest
 					 point found thus far. ---*/
-					if (dist < mindist) { mindist = dist; pPoint = jPoint; }
+					if (dist < mindist) {
+					  mindist = dist;
+					  pPoint = jPoint;
+					}
+
 				}
-				
+
 				/*--- Set the periodic point for this iPoint. ---*/
-				vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE, 0, jMarker);
+				vertex[iMarker][iVertex]->SetDonorPoint(pPoint, rank, node[pPoint]->GetGlobalIndex(), jMarker);
 				
 				//cout << "\n Point = "<< iPoint << " Marker= " << iMarker << endl;
 				//cout << "iVertex # " << iVertex << endl;
@@ -11927,70 +12098,91 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 			}
 			cout << endl;
 			isBadMatch = false;
-			
-		}
-	
-  
-  /*--- Create a vector to identify the points that belong to each periodic boundary condition ---*/
-  bool *PeriodicBC = new bool [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) PeriodicBC[iPoint] = false;
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        PeriodicBC[iPoint] = true;
-      }
-  
-  /*--- Determine the new points that must be added to each periodic boundary,
+
+			cout << " after looping " << endl;
+
+#ifdef HAVE_MPI
+			cout <<" on rank " << rank << endl;
+#endif
+
+
+
+			/*--- Determine the new points that must be added to each periodic boundary,
    note that only one of the boundaries require the extra data ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      iPeriodic = config->GetMarker_All_PerBound(iMarker);
-      
-      /*--- An integer identify the periodic boundary condition --*/
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        
-        /*--- iPoint is the original point on the surface and jPoint is the
+
+			//for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+			//  if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+			iPeriodic = config->GetMarker_All_PerBound(iMarker);
+
+			/*--- An integer identify the periodic boundary condition --*/
+			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+
+			  /*--- iPoint is the original point on the surface and jPoint is the
          equivalent point in the other periodic surface ---*/
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        jPoint = vertex[iMarker][iVertex]->GetDonorPoint();
-				jMarker = vertex[iMarker][iVertex]->GetDonorMarker();
-				
-        /*--- First the case in which it is necessary to create a mirror set of elements ---*/
-        if (CreateMirror[iPeriodic]) {
-          /*--- Now we must determine the neighbor points (including indirect ones) to the periodic points
+			  iPoint = vertex[iMarker][iVertex]->GetNode();
+			  jPoint = vertex[iMarker][iVertex]->GetDonorPoint();
+			  jMarker = vertex[iMarker][iVertex]->GetDonorMarker();
+
+			  /*--- First the case in which it is necessary to create a mirror set of elements ---*/
+			  if (CreateMirror[iPeriodic]) {
+			    /*--- Now we must determine the neighbor points (including indirect ones) to the periodic points
            and store all the information (in this list we do not include the points
            that already belong to the periodic boundary), we also add the elements that
            share a point with the periodic boundary condition ---*/
-          for (iIndex = 0; iIndex < node[jPoint]->GetnElem(); iIndex++) {
-            iElem = node[jPoint]->GetElem(iIndex);
-            PeriodicElem[iPeriodic].push_back(iElem);
-            for (unsigned short iNode = 0; iNode <	elem[iElem]->GetnNodes(); iNode ++) {
-              kPoint = elem[iElem]->GetNode(iNode);
-							//if (iPoint == 15)
-							//cout << "KPoint = " <<kPoint << endl;
-							bool isPoint_marker = true;
-							for (unsigned long jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
-								unsigned long iPoint_mark = vertex[jMarker][jVertex]->GetNode();
-								if(iPoint_mark == kPoint) isPoint_marker = false;
-							}
-							if(isPoint_marker) {
-								PeriodicPoint[iPeriodic][0].push_back(kPoint);
-							}
-							
-            }
-          }
-        }
-        /*--- Second the case where no new element is added, neither points ---*/
-        else {
-          PeriodicPoint[iPeriodic][0].push_back(jPoint);
-          PeriodicPoint[iPeriodic][1].push_back(iPoint);
-        }
-      }
+
+			    nElemPeriodic = 0;
+			    nkPoint = 0;
+			    /*--- Iterate through to find the matching iIndex for jPoint ---*/
+			    for (iIndex=0; iIndex<donorPoints.size(); iIndex++){
+			      if (donorPoints[iIndex]==jPoint) break;
+			      for (iElem=nElemPeriodic; iElem< nElemPeriodic+donor_nElems[iIndex]; iElem++){
+			        nkPoint+=donor_nElemPts[iElem];
+			      }
+			      nElemPeriodic+=donor_nElems[iIndex];
+			    }
+
+			    for (iElem=nElemPeriodic; iElem< nElemPeriodic+donor_nElems[iIndex]; iElem++){
+
+			      PeriodicElem[iPeriodic].push_back(donorElems[iElem]);
+			      for (unsigned short iNode=0; iNode<donor_nElemPts[iElem]; iNode++){
+			        kPoint = donorElemPts[nkPoint+iNode];
+			        PeriodicPoint[iPeriodic][0].push_back(kPoint);
+			      }
+			      nkPoint+=donor_nElemPts[iElem];
+			    }
+			    nElemPeriodic+=donor_nElems[iIndex];
+			    //
+			    //          for (iIndex = 0; iIndex < node[jPoint]->GetnElem(); iIndex++) {
+			    //            /*-- needs ielem communicated --*/
+			    //            iElem = node[jPoint]->GetElem(iIndex);
+			    //            PeriodicElem[iPeriodic].push_back(iElem);
+			    //            for (unsigned short iNode = 0; iNode <	elem[iElem]->GetnNodes(); iNode ++) {
+			    //              kPoint = elem[iElem]->GetNode(iNode);
+			    //							//if (iPoint == 15)
+			    //							//cout << "KPoint = " <<kPoint << endl;
+			    //							bool isPoint_marker = true;
+			    //							for (unsigned long jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
+			    //								unsigned long iPoint_mark = vertex[jMarker][jVertex]->GetNode();
+			    //								if(iPoint_mark == kPoint) isPoint_marker = false;
+			    //							}
+			    //							if(isPoint_marker) {
+			    //								PeriodicPoint[iPeriodic][0].push_back(kPoint);
+			    //							}
+			    //
+			    //            }
+			    //          }
+			  }
+			  /*--- Second the case where no new element is added, neither points ---*/
+			  else {
+			    PeriodicPoint[iPeriodic][0].push_back(jPoint);
+			    PeriodicPoint[iPeriodic][1].push_back(iPoint);
+			  }
+			}
+			//  }
+			//}
     }
-  }
-  
+
+
   /*--- Sort the points that must be sent and delete repeated points ---*/
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
     if (CreateMirror[iPeriodic]) {
@@ -11998,8 +12190,10 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
       IterPoint[iPeriodic][0] = unique( PeriodicPoint[iPeriodic][0].begin(), PeriodicPoint[iPeriodic][0].end());
       PeriodicPoint[iPeriodic][0].resize( IterPoint[iPeriodic][0] - PeriodicPoint[iPeriodic][0].begin() );
     }
+    cout << PeriodicPoint[iPeriodic][0].size() << endl;
+    cout << PeriodicPoint[iPeriodic][1].size() << endl;
   }
-	
+
   /*--- Create a list of the points that receive the values (only the new points) ---*/
   nPointPeriodic = nPoint;
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
@@ -12011,7 +12205,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
       }
     }
   }
-  
+
   /*--- Sort the elements that must be replicated in the periodic boundary
    and delete the repeated elements ---*/
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
@@ -14699,8 +14893,10 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGe
 	/*--- Puts the new points into the Index vector using the old point number as a key ---*/
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
     if (CreateMirror[iPeriodic]) {
+      cout << geometry->PeriodicPoint[iPeriodic][0].size() << endl;
       for (iIndex = 0; iIndex < geometry->PeriodicPoint[iPeriodic][0].size(); iIndex++) {
         iPoint =  geometry->PeriodicPoint[iPeriodic][0][iIndex];
+        cout << iPeriodic <<" " << iIndex <<" " << iPoint << endl;
         Index[iPeriodic][iPoint] = geometry->PeriodicPoint[iPeriodic][1][iIndex];
 				
       }
@@ -14714,6 +14910,7 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGe
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
         Index[iPeriodic][jPoint] = iPoint;
+        cout <<" Donor pair: " << iPoint << " " << jPoint << endl;
       }
 	
   /*--- Add the new elements due to the periodic boundary condtion ---*/
@@ -14722,6 +14919,7 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGe
     if (CreateMirror[iPeriodic]) {
       for (iIndex = 0; iIndex < geometry->PeriodicElem[iPeriodic].size(); iIndex++) {
         jElem = geometry->PeriodicElem[iPeriodic][iIndex];
+        cout <<" Elem: "<< iIndex <<" " << iPeriodic << " " << jElem << " " << Index[iPeriodic][geometry->elem[jElem]->GetNode(0)] << " " << Index[iPeriodic][geometry->elem[jElem]->GetNode(1)] << endl;
         
         switch(geometry->elem[jElem]->GetVTK_Type()) {
           case TRIANGLE:
