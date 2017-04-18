@@ -11897,7 +11897,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
         jPoint = vertex[jMarker][iVertex]->GetNode();
         if (node[jPoint]->GetDomain()){
           Coord_j = node[jPoint]->GetCoord();
-          Buffer_Send_donorPoints[nVertexDomain] = node[jPoint]->GetGlobalIndex();
+          Buffer_Send_donorPoints[nVertexDomain] = jPoint; //node[jPoint]->GetGlobalIndex();
           for (iDim = 0; iDim < nDim; iDim++){
             Buffer_Send_Coord[iDim+nVertexDomain*nDim] = Coord_j[iDim];
           }
@@ -12011,7 +12011,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 #else
 
       donorPoints = Buffer_Send_donorPoints;
-      donorCoord  = Buffer_Send_donorCoord;
+      donorCoord  = Buffer_Send_Coord;
       donor_nElems = Buffer_Send_nElems;
       donorElems = Buffer_Send_donorElem;
       donorElemPts = Buffer_Send_donorElemPts;
