@@ -1443,9 +1443,27 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
     }
     else if (config->GetKind_HybridRANSLES()==SA_DES){
+      su2double *Coord_i, *Coord_j, aux_delta;
+      unsigned short nNeigh, iNeigh;
+      unsigned long NumNeigh;
+      
+      /*--- Marcello Righi's Delta max ---*/
+      
+      Coord_i = geometry->node[iPoint]->GetCoord();
+      nNeigh = geometry->node[iPoint]->GetnPoint();
+      
+      Delta=0.;      
+      for (iNeigh=0;iNeigh<nNeigh;++iNeigh){
+        NumNeigh = geometry->node[iPoint]->GetPoint(iNeigh);
+        Coord_j = geometry->node[NumNeigh]->GetCoord();
+        
+        aux_delta=0.;
+        for (iDim=0;iDim<nDim;++iDim)
+          aux_delta += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+        
+        Delta=max(Delta,sqrt(aux_delta));
+      }
 
-      dist_wall = geometry->node[iPoint]->GetWall_Distance();
-      Delta = pow(geometry -> node[iPoint]->GetVolume(),1.0/3.0);
       distDES = Const_DES * Delta;
       distDES_tilde = min(distDES,dist_wall);
       
@@ -1461,12 +1479,11 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       /*--- Marcello Righi's Delta max ---*/
       
-        Coord_i = geometry->node[iPoint]->GetCoord();
-        nNeigh = geometry->node[iPoint]->GetnPoint();
-        
-        Delta=0.;
-        
-        for (iNeigh=0;iNeigh<nNeigh;++iNeigh){
+      Coord_i = geometry->node[iPoint]->GetCoord();
+      nNeigh = geometry->node[iPoint]->GetnPoint();
+      
+      Delta=0.;
+      for (iNeigh=0;iNeigh<nNeigh;++iNeigh){
         NumNeigh = geometry->node[iPoint]->GetPoint(iNeigh);
         Coord_j = geometry->node[NumNeigh]->GetCoord();
         
@@ -1475,8 +1492,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
           aux_delta += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
         
         Delta=max(Delta,sqrt(aux_delta));
-        
-        }
+      }
 
       dist_wall = geometry->node[iPoint]->GetWall_Distance();
       
@@ -1550,7 +1566,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       ratio_Omegax = Vorticity_i[0]/Omega;
       ratio_Omegay = Vorticity_i[1]/Omega;
       ratio_Omegaz = Vorticity_i[2]/Omega;
-      
+
       Delta =sqrt(pow(ratio_Omegax,2.0)*deltay*deltaz + pow(ratio_Omegay,2.0)*deltax*deltaz + pow(ratio_Omegaz,2.0)*deltax*deltay);
       
       dist_wall = geometry->node[iPoint]->GetWall_Distance();

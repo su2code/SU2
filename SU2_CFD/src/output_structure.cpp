@@ -10551,7 +10551,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
       nVar_Par +=1;
-      Variable_Names.push_back("DES_LengthScale");      
+      Variable_Names.push_back("DES_LengthScale");
+      nVar_Par +=1;
+      Variable_Names.push_back("Wall_Distance");
     }
     
     if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
@@ -10829,6 +10831,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDES_LengthScale(); iVar++; 
+          Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetWall_Distance(); iVar++;
         }
         
         if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
