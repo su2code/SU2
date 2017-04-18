@@ -1384,6 +1384,11 @@ public:
 	 */
 	virtual void Add_SurfaceLoad_Res(su2double *val_surfForce);
 
+  /*!
+   * \brief  A virtual member.
+   */
+	virtual void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
+
 	/*!
 	 * \brief A virtual member.
 	 */
@@ -2568,6 +2573,11 @@ public:
 	 * \brief Add surface load to the residual term
 	 */
 	void Add_SurfaceLoad_Res(su2double *val_surfForce);
+
+  /*!
+   * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
+   */
+  void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
 
 	/*!
 	 * \brief Get the residual term due to surface load

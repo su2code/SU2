@@ -201,6 +201,7 @@ private:
   nMarker_Clamped,						/*!< \brief Number of clamped markers in the FEM. */
   nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
 	nMarker_Load,					/*!< \brief Number of load surface markers. */
+	nMarker_Damper,         /*!< \brief Number of damper surface markers. */
 	nMarker_Load_Dir,					/*!< \brief Number of load surface markers defined by magnitude and direction. */
   nMarker_Disp_Dir,         /*!< \brief Number of load surface markers defined by magnitude and direction. */
 	nMarker_Load_Sine,					/*!< \brief Number of load surface markers defined by magnitude and direction. */
@@ -243,6 +244,7 @@ private:
 	*Marker_Clamped,						/*!< \brief Clamped markers. */
 	*Marker_Displacement,					/*!< \brief Displacement markers. */
 	*Marker_Load,					/*!< \brief Load markers. */
+  *Marker_Damper,         /*!< \brief Damper markers. */
 	*Marker_Load_Dir,					/*!< \brief Load markers defined in cartesian coordinates. */
   *Marker_Disp_Dir,         /*!< \brief Load markers defined in cartesian coordinates. */
 	*Marker_Load_Sine,					/*!< \brief Sine-wave loaded markers defined in cartesian coordinates. */
@@ -293,6 +295,7 @@ private:
 	su2double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
 	su2double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
 	su2double *Load_Value;    /*!< \brief Specified force for load boundaries. */
+  su2double *Damper_Constant;    /*!< \brief Specified constant for damper boundaries. */
   su2double *Load_Dir_Value;    /*!< \brief Specified force for load boundaries defined in cartesian coordinates. */
 	su2double *Load_Dir_Multiplier;    /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
   su2double *Disp_Dir_Value;    /*!< \brief Specified force for load boundaries defined in cartesian coordinates. */
@@ -6388,6 +6391,13 @@ public:
 	 * \return The load value.
 	 */
 	su2double GetLoad_Value(string val_index);
+
+  /*!
+   * \brief Get the constant value at a damper boundary.
+   * \param[in] val_index - Index corresponding to the load boundary.
+   * \return The damper constant.
+   */
+  su2double GetDamper_Constant(string val_index);
 
 	/*!
 	 * \brief Get the force value at a load boundary defined in cartesian coordinates.

@@ -3313,6 +3313,38 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeomet
                                                                                 solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
                                                                                 solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
 
+      /*--- Add dependencies for element-based simulations. ---*/
+
+      if (solver_container[iZone][MESH_0][FEA_SOL]->IsElementBased()){
+
+          /*--- Neo Hookean Compressible ---*/
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Properties(iVar,
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Density(iVar,
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
+
+          /*--- Ideal DE ---*/
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_IDEALDE]->SetMaterial_Properties(iVar,
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_IDEALDE]->SetMaterial_Density(iVar,
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
+
+          /*--- Knowles ---*/
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_KNOWLES]->SetMaterial_Properties(iVar,
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_KNOWLES]->SetMaterial_Density(iVar,
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
+
+      }
+
+
+
   }
 
   if (config_container[iZone]->GetDE_Effects()){
@@ -3332,6 +3364,8 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeomet
 
   }
 
+  /*--- Add dependencies for element-based simulations. ---*/
+
   switch (config_container[iZone]->GetDV_FEA()) {
     case YOUNG_MODULUS:
     case POISSON_RATIO:
@@ -3350,6 +3384,19 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeomet
             numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_DV_Val(iDV,
                                                                             solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
           }
+
+      }
+
+      if (solver_container[iZone][MESH_0][FEA_SOL]->IsElementBased()){
+
+        for (unsigned short iDV; iDV < nDV; iDV++){
+            numerics_container[iZone][MESH_0][FEA_SOL][MAT_NHCOMP]->Set_DV_Val(iDV,
+                                                                            solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+            numerics_container[iZone][MESH_0][FEA_SOL][MAT_IDEALDE]->Set_DV_Val(iDV,
+                                                                            solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+            numerics_container[iZone][MESH_0][FEA_SOL][MAT_KNOWLES]->Set_DV_Val(iDV,
+                                                                            solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+        }
 
       }
 

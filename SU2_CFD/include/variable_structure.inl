@@ -59,6 +59,8 @@ inline su2double CVariable::GetVonMises_Stress(void) { return 0; }
 
 inline void CVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) { }
 
+inline void CVariable::Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) { }
+
 inline su2double *CVariable::Get_SurfaceLoad_Res(void) { return NULL;}
 
 inline su2double CVariable::Get_SurfaceLoad_Res(unsigned short iVar) { return 0.0;}
@@ -995,6 +997,8 @@ inline void CFEM_ElasVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Residual_Ext_Surf[iVar] += val_surfForce[iVar];
 }
+
+inline void CFEM_ElasVariable::Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) { Residual_Ext_Surf[iVar] = val_surfForce;}
 
 inline su2double *CFEM_ElasVariable::Get_SurfaceLoad_Res(void) { return Residual_Ext_Surf;}
 
