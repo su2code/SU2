@@ -4857,18 +4857,17 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(char* confFile,
       myfile_res << "ResFEA[" << iVar << "]\t";
     }
 
-    if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
-        bool de_effects = config_container[ZONE_0]->GetDE_Effects();
-        for (iVar = 0; iVar < config_container[ZONE_0]->GetnElasticityMod(); iVar++)
-            myfile_res << "Sens_E_" << iVar << "\t";
 
-        for (iVar = 0; iVar < config_container[ZONE_0]->GetnPoissonRatio(); iVar++)
-          myfile_res << "Sens_Nu_" << iVar << "\t";
+    bool de_effects = config_container[ZONE_0]->GetDE_Effects();
+    for (iVar = 0; iVar < config_container[ZONE_0]->GetnElasticityMod(); iVar++)
+        myfile_res << "Sens_E_" << iVar << "\t";
 
-        if (de_effects){
-            for (iVar = 0; iVar < config_container[ZONE_0]->GetnElectric_Field(); iVar++)
-              myfile_res << "Sens_EField_" << iVar << "\t";
-        }
+    for (iVar = 0; iVar < config_container[ZONE_0]->GetnPoissonRatio(); iVar++)
+      myfile_res << "Sens_Nu_" << iVar << "\t";
+
+    if (de_effects){
+        for (iVar = 0; iVar < config_container[ZONE_0]->GetnElectric_Field(); iVar++)
+          myfile_res << "Sens_EField_" << iVar << "\t";
     }
 
     myfile_res << endl;
@@ -5842,10 +5841,11 @@ void CDiscAdjFSIStatDriver::InitializeAdjoint(unsigned short ZONE_FLOW,
   /*--- We need to avoid setting it twice for the crossed terms  ---*/
 
   /*--- Register a flow-type objective function ---*/
-//  if ((kind_recording == FLOW_VARIABLES) ||
-//      (kind_recording == GEOMETRY_VARIABLES)){
-//    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
-//  }
+  if ((kind_recording == FLOW_VARIABLES) ||
+      (kind_recording == GEOMETRY_VARIABLES) ||
+      (kind_recording == FEM_CROSS_TERM_FLOW)) {
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+  }
 
   /*--- Register a structural-type objective function ---*/
   if ((kind_recording == FEM_VARIABLES) ||
@@ -6145,8 +6145,7 @@ void CDiscAdjFSIStatDriver::ConvergenceHistory(unsigned long IntIter,
       if (IntIter == 0){
         cout << endl;
         cout << " Iter" << "    BGSIter" << "    Res[Ux_bar]" << "     Res[Uy_bar]";
-        if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION) cout << "       Sens_E" << "       Sens_Nu" << endl;
-        else cout << endl;
+        cout << "       Sens_E" << "       Sens_Nu" << endl;
       }
     }
 
@@ -6215,7 +6214,7 @@ void CDiscAdjFSIStatDriver::Iterate_Block_FlowOF(unsigned short ZONE_FLOW,
 
     Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CROSS_TERM);
 
-    /*--- Compute cross term (dM / dSv) ---*/
+    /*--- Compute cross term (dS / dMv) ---*/
 
     Iterate_Block(ZONE_FLOW, ZONE_STRUCT, GEOMETRY_CROSS_TERM);
 
@@ -6436,15 +6435,13 @@ bool CDiscAdjFSIStatDriver::BGSConvergence(unsigned long IntIter,
         myfile_res << fixed << residual_struct[iVar] << "\t";
       }
 
-      if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
-          for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnElasticityMod(); iVar++)
-              myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(iVar) << "\t";
-          for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnPoissonRatio(); iVar++)
-              myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar) << "\t";
-          if (de_effects){
-              for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnElectric_Field(); iVar++)
-                myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(0) << "\t";
-          }
+      for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnElasticityMod(); iVar++)
+         myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(iVar) << "\t";
+      for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnPoissonRatio(); iVar++)
+         myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar) << "\t";
+      if (de_effects){
+        for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnElectric_Field(); iVar++)
+          myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(0) << "\t";
       }
 
       myfile_res << endl;

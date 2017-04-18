@@ -1941,38 +1941,8 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
     for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_SurfaceLoad_Res();
   }
 
-//  /*---- If we are solving an adjoint problem, we need to update the values of the design variables ---*/
-//  if (config->GetKind_Solver() == ADJ_ELASTICITY){
-//
-//    /*
-//     * We change the variables only at the beginning of the time step, but not for the first time step
-//     * (when we want the input values to be the true ones computed).
-//     */
-//
-//    if ( ((!restart) && ((!initial_calc) && first_iter)) ||
-//        ( (restart) && ((!initial_calc_restart) && first_iter))
-//    ){
-//      unsigned short i_DV;
-//      cout << " The design variables are now: ";
-//      for (i_DV = 0; i_DV < n_DV; i_DV++){
-//        cout << DV_Val[i_DV] << " ";
-//        switch (config->GetDV_FEA()) {
-//          case YOUNG_MODULUS:
-//            numerics[FEA_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
-//            if(de_effects) numerics[DE_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
-//            break;
-//          case ELECTRIC_FIELD:
-//            numerics[FEA_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
-//            numerics[DE_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
-//            break;
-//        }
-//      }
-//      cout << endl;
-//    }
-//  }
-
   /*
-   * If we apply pressure forces, we need to clear the residual on each iteration
+   * If we apply nonlinear forces, we need to clear the residual on each iteration
    */
   unsigned short iMarker;
   unsigned long iVertex;
@@ -1989,6 +1959,15 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
             /*--- Clear the residual of the node, to avoid adding on previous values ---*/
             node[iPoint]->Clear_SurfaceLoad_Res();
           }
+        }
+        break;
+      case DAMPER_BOUNDARY:
+        /*--- For all the vertices in the marker iMarker ---*/
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          /*--- Retrieve the point ID ---*/
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          /*--- Clear the residual of the node, to avoid adding on previous values ---*/
+          node[iPoint]->Clear_SurfaceLoad_Res();
         }
         break;
     }
@@ -2247,6 +2226,66 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 }
 
 void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+
+  unsigned long iElem, iVar;
+  unsigned short iNode, iDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord;
+  int EL_KIND = 0;
+
+  su2double Mab;
+  unsigned short NelNodes, jNode;
+
+  /*--- Loops over all the elements ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+      }
+    }
+
+    /*--- Set the properties of the element ---*/
+    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
+
+    numerics[FEA_TERM]->Compute_Mass_Matrix(element_container[FEA_TERM][EL_KIND], config);
+
+    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+
+    for (iNode = 0; iNode < NelNodes; iNode++) {
+
+      for (jNode = 0; jNode < NelNodes; jNode++) {
+
+        Mab = element_container[FEA_TERM][EL_KIND]->Get_Mab(iNode, jNode);
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          MassMatrix_ij[iVar][iVar] = Mab;
+        }
+
+        MassMatrix.AddBlock(indexNode[iNode], indexNode[jNode], MassMatrix_ij);
+
+      }
+
+    }
+
+  }
+
+}
+
+void CFEM_ElasticitySolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
   unsigned long iElem, iVar;
   unsigned short iNode, iDim, nNodes = 0;
@@ -3741,6 +3780,54 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
 void CFEM_ElasticitySolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                          unsigned short val_marker) { }
 
+void CFEM_ElasticitySolver::BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                      unsigned short val_marker) {
+
+  unsigned short iVar;
+  su2double dampValue;
+  su2double dampConstant = config->GetDamper_Constant(config->GetMarker_All_TagBound(val_marker));
+
+  unsigned long Point_0, Point_1, Point_2, Point_3;
+  unsigned long iPoint, iElem;
+
+  for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+
+    Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);
+    Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);
+
+    for (iVar = 0; iVar < nVar; iVar++){
+
+        dampValue = - 1.0 * dampConstant * node[Point_0]->GetSolution_Vel(iVar);
+        node[Point_0]->Set_SurfaceLoad_Res(iVar, dampValue);
+
+        dampValue = - 1.0 * dampConstant * node[Point_1]->GetSolution_Vel(iVar);
+        node[Point_1]->Set_SurfaceLoad_Res(iVar, dampValue);
+    }
+
+    if (nDim == 3) {
+
+      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);
+
+      for (iVar = 0; iVar < nVar; iVar++){
+          dampValue = - 1.0 * dampConstant * node[Point_2]->GetSolution_Vel(iVar);
+          node[Point_2]->Set_SurfaceLoad_Res(iVar, dampValue);
+      }
+
+      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL) {
+        Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);
+        for (iVar = 0; iVar < nVar; iVar++){
+            dampValue = - 1.0 * dampConstant * node[Point_3]->GetSolution_Vel(iVar);
+            node[Point_3]->Set_SurfaceLoad_Res(iVar, dampValue);
+        }
+      }
+
+    }
+
+  }
+
+
+}
+
 void CFEM_ElasticitySolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                         unsigned short val_marker) { }
 
@@ -3875,6 +3962,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 
     /*--- Once computed, compute M*TimeRes_Aux ---*/
     MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
+
     /*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       
