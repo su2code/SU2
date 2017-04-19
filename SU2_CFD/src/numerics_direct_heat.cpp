@@ -115,14 +115,9 @@ void CAvgGrad_Heat::ComputeResidual(su2double *val_residual, su2double **Jacobia
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
   AD::SetPreaccIn(ConsVar_Grad_i[0],nDim); AD::SetPreaccIn(ConsVar_Grad_j[0],nDim);
-  AD::SetPreaccIn(Eddy_Viscosity_i); AD::SetPreaccIn(Eddy_Viscosity_j);
+  AD::SetPreaccIn(Thermal_Diffusivity_i); AD::SetPreaccIn(Thermal_Conductivity_j);
 
-  /*--- Compute thermal conductivity ---*/
-
-  Thermal_Conductivity_i = Laminar_Viscosity_i/Prandtl_Lam + Eddy_Viscosity_i/Prandtl_Turb;
-  Thermal_Conductivity_j = Laminar_Viscosity_j/Prandtl_Lam + Eddy_Viscosity_j/Prandtl_Turb;
-
-  Thermal_Conductivity_Mean = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
+  Thermal_Diffusivity_Mean = 0.5*(Thermal_Diffusivity_i + Thermal_Diffusivity_j);
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
@@ -146,12 +141,12 @@ void CAvgGrad_Heat::ComputeResidual(su2double *val_residual, su2double **Jacobia
     Proj_Mean_GradHeatVar_Corrected[iVar] = Proj_Mean_GradHeatVar_Normal[iVar];
   }
 
-  val_residual[0] = Thermal_Conductivity_Mean*Proj_Mean_GradHeatVar_Corrected[0];
+  val_residual[0] = Thermal_Diffusivity_Mean*Proj_Mean_GradHeatVar_Corrected[0];
 
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
-    Jacobian_i[0][0] = -Thermal_Conductivity_Mean*proj_vector_ij;
-    Jacobian_j[0][0] = Thermal_Conductivity_Mean*proj_vector_ij;
+    Jacobian_i[0][0] = -Thermal_Diffusivity_Mean*proj_vector_ij;
+    Jacobian_j[0][0] = Thermal_Diffusivity_Mean*proj_vector_ij;
   }
 
   AD::SetPreaccOut(val_residual, nVar);
@@ -194,14 +189,9 @@ void CAvgGradCorrected_Heat::ComputeResidual(su2double *val_residual, su2double 
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
   AD::SetPreaccIn(ConsVar_Grad_i[0],nDim); AD::SetPreaccIn(ConsVar_Grad_j[0],nDim);
-  AD::SetPreaccIn(Eddy_Viscosity_i); AD::SetPreaccIn(Eddy_Viscosity_j);
+  AD::SetPreaccIn(Thermal_Diffusivity_i); AD::SetPreaccIn(Thermal_Diffusivity_j);
 
-  /*--- Compute thermal conductivity ---*/
-
-  Thermal_Conductivity_i = Laminar_Viscosity_i/Prandtl_Lam + Eddy_Viscosity_i/Prandtl_Turb;
-  Thermal_Conductivity_j = Laminar_Viscosity_j/Prandtl_Lam + Eddy_Viscosity_j/Prandtl_Turb;
-
-  Thermal_Conductivity_Mean = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
+  Thermal_Diffusivity_Mean = 0.5*(Thermal_Diffusivity_i + Thermal_Diffusivity_j);
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
@@ -231,13 +221,13 @@ void CAvgGradCorrected_Heat::ComputeResidual(su2double *val_residual, su2double 
     (Temp_j-Temp_i)*proj_vector_ij;
   }
 
-  val_residual[0] = Thermal_Conductivity_Mean*Proj_Mean_GradHeatVar_Corrected[0];
+  val_residual[0] = Thermal_Diffusivity_Mean*Proj_Mean_GradHeatVar_Corrected[0];
 
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
   if (implicit) {
-    Jacobian_i[0][0] = -Thermal_Conductivity_Mean*proj_vector_ij;
-    Jacobian_j[0][0] = Thermal_Conductivity_Mean*proj_vector_ij;
+    Jacobian_i[0][0] = -Thermal_Diffusivity_Mean*proj_vector_ij;
+    Jacobian_j[0][0] = Thermal_Diffusivity_Mean*proj_vector_ij;
   }
 
   AD::SetPreaccOut(val_residual, nVar);

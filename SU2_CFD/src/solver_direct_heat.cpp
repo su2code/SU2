@@ -173,17 +173,17 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   config->SetTemperature_Ref(config->GetTemperature_FreeStream());
   config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
 
+  /*--- If the heat solver runs stand-alone, we have to set the reference values ---*/
   if(!flow) {
-
-  config->SetViscosity_Ref(config->GetViscosity_FreeStream());
-  config->SetViscosity_FreeStreamND(config->GetViscosity_FreeStream()/config->GetViscosity_Ref());
-  cout << config->GetTemperature_Ref() << endl;
-
+    su2double rho_cp = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
+    su2double thermal_diffusivity_solid = config->GetThermalConductivity_Solid() / rho_cp;
+    config->SetThermalDiffusivity_Solid(thermal_diffusivity_solid);
+    cout << "Solid reference temperature: " << config->GetTemperature_Ref() << ", solid thermal diffusity (m^2/s): " << thermal_diffusivity_solid << endl;
   }
 
   if (!restart || (iMesh != MESH_0)) {
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CHeatVariable(config->GetTemperature_FreeStreamND(), nDim, nVar, config);
+      node[iPoint] = new CHeatVariable(0.0, nDim, nVar, config);
   }
   else {
 
@@ -429,10 +429,15 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
 void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-  su2double eddy_viscosity_i, eddy_viscosity_j, Temp_i, Temp_j, **Temp_i_Grad, **Temp_j_Grad;
+  su2double laminar_viscosity, Prandtl_Lam, Prandtl_Turb, eddy_viscosity_i, eddy_viscosity_j,
+      thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j, **Temp_i_Grad, **Temp_j_Grad;
   unsigned long iEdge, iPoint, jPoint;
 
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
+
+  laminar_viscosity = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam = config->GetPrandtl_Lam();
+  Prandtl_Turb = config->GetPrandtl_Turb();
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -454,20 +459,20 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     Temp_j = node[jPoint]->GetSolution(0);
     numerics->SetTemperature(Temp_i, Temp_j);
 
-    /*--- Laminar viscosity to compute thermal conductivity ---*/
-    numerics->SetLaminarViscosity(config->GetViscosity_FreeStreamND(), config->GetViscosity_FreeStreamND());
-
     /*--- Eddy viscosity to compute thermal conductivity ---*/
     if (flow) {
       eddy_viscosity_i = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
       eddy_viscosity_j = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity();
+
+      thermal_diffusivity_i = (laminar_viscosity/Prandtl_Lam) + (eddy_viscosity_i/Prandtl_Turb);
+      thermal_diffusivity_j = (laminar_viscosity/Prandtl_Lam) + (eddy_viscosity_j/Prandtl_Turb);
     }
     else {
-      eddy_viscosity_i = 0.0;
-      eddy_viscosity_j = 0.0;
+      thermal_diffusivity_i = config->GetThermalDiffusivity_Solid();
+      thermal_diffusivity_j = config->GetThermalDiffusivity_Solid();
     }
 
-    numerics->SetEddyViscosity(eddy_viscosity_i,eddy_viscosity_j);
+    numerics->SetThermalDiffusivity(thermal_diffusivity_i,thermal_diffusivity_j);
 
     /*--- Compute residual, and Jacobians ---*/
 
@@ -491,7 +496,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;
-  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, eddy_viscosity, laminar_viscosity, thermal_conductivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
+  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, eddy_viscosity, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
@@ -525,24 +530,67 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 
         dTdn = -(node[Point_Normal]->GetSolution(0) - Twall)/dist_ij;
 
-        if(false)
+        if(flow) {
           eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+          thermal_diffusivity = eddy_viscosity/Prandtl_Turb + laminar_viscosity/Prandtl_Lam;
+        }
         else
-          eddy_viscosity = 0.0;
+          thermal_diffusivity = config->GetThermalDiffusivity_Solid();
 
-        thermal_conductivity = eddy_viscosity/Prandtl_Turb + laminar_viscosity/Prandtl_Lam;
+        Res_Visc[0] = thermal_diffusivity*dTdn*Area;
 
-        Res_Visc[0] = thermal_conductivity*dTdn*Area;
+        //cout << "Isothermal wall - thermal conductivity = " << thermal_conductivity << ", gradient = " << dTdn << ", area = " << Area << ", Res contribution = " << Res_Visc[0] << endl;
 
         if(implicit) {
 
-          Jacobian_i[0][0] = -thermal_conductivity/dist_ij * Area;
+          Jacobian_i[0][0] = -thermal_diffusivity/dist_ij * Area;
 
         }
         /*--- Viscous contribution to the residual at the wall ---*/
 
         LinSysRes.SubtractBlock(iPoint, Res_Visc);
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    }
+
+  }
+}
+
+void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                                                     unsigned short val_marker) {
+
+  unsigned short iDim;
+  unsigned long iVertex, iPoint;
+  su2double Wall_HeatFlux, Area, *Normal, rho_cp;
+
+  bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
+
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+
+  if(!flow) {
+    rho_cp = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
+    Wall_HeatFlux = Wall_HeatFlux/rho_cp;
+  }
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      Res_Visc[0] = 0.0;
+
+      Res_Visc[0] = Wall_HeatFlux * Area;
+
+      /*--- Viscous contribution to the residual at the wall ---*/
+
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
     }
 
   }
@@ -828,11 +876,11 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
 
   if(flow) {
 
-    //cout << "                             TFFB Interface report for fluid zone - ";
+    cout << "                             TFFB Interface report for fluid zone - ";
     /*--- We have to set temperature BC for the convective zone ---*/
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-      if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
 
         maxTemperature = 0.0;
         maxHeatFluxDensity = 0.0;
@@ -886,17 +934,17 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
 
           }
         }
-        //cout << "max. Heat Flux Density: " << maxHeatFluxDensity << ", max. Temperature (used to compute heat fluxes): " << maxTemperature <<  endl;
+        cout << "max. Heat Flux Density: " << maxHeatFluxDensity << ", max. Temperature (used to compute heat fluxes): " << maxTemperature <<  endl;
       }
     }
   }
   else {
 
-    //cout << "                             TFFB Interface report for solid zone - ";
+    cout << "                             TFFB Interface report for solid zone - ";
     /*--- We have to set heat flux BC for the purely conductive zone ---*/
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-      if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
 
         maxTemperature = 0.0;
         maxHeatFluxDensity = 0.0;
@@ -929,7 +977,7 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
         }
       }
     }
-    //cout << "Heat Flux (to check): " << HeatFluxIntegral << endl;
+    cout << "Heat Flux (to check): " << HeatFluxIntegral << endl;
   }
 }
 
@@ -1033,12 +1081,15 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
   unsigned short iDim, iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
-  su2double *Normal, Area, Vol, laminar_viscosity, Prandtl_Lam, thermal_conductivity, Lambda;
+  su2double *Normal, Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, thermal_conductivity, Lambda;
   su2double Local_Delta_Time, Local_Delta_Time_Visc, K_v = 0.25;
+  bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
 
   laminar_viscosity = config->GetViscosity_FreeStreamND();
   Prandtl_Lam = config->GetPrandtl_Lam();
-  thermal_conductivity = laminar_viscosity/Prandtl_Lam;
+  Prandtl_Turb = config->GetPrandtl_Turb();
+
+  thermal_diffusivity = config->GetThermalDiffusivity_Solid();
 
   /*--- Compute spectral radius based on thermal conductivity ---*/
 
@@ -1059,7 +1110,12 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
     Normal = geometry->edge[iEdge]->GetNormal();
     Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
-    Lambda = thermal_conductivity*Area*Area;
+    if(flow) {
+      eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+      thermal_diffusivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
+    }
+
+    Lambda = thermal_diffusivity*Area*Area;
 
     if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
     if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
@@ -1075,7 +1131,12 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
-      Lambda = thermal_conductivity*Area*Area;
+      if(flow) {
+        eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+        thermal_diffusivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
+      }
+
+      Lambda = thermal_diffusivity*Area*Area;
       if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
 
     }

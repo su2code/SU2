@@ -644,6 +644,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vel_inf);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
+  /* DESCRIPTION: Heat capacity used for heat equation */
+  addDoubleOption("SPECIFIC_HEAT_FLUID", Specific_Heat_Fluid, 0.0);
+  /* DESCRIPTION: Heat capacity used for heat equation */
+  addDoubleOption("SPECIFIC_HEAT_SOLID", Specific_Heat_Solid, 0.0);
+  /* DESCRIPTION: Thermal conductivity used for heat equation */
+  addDoubleOption("THERMAL_CONDUCTIVITY_SOLID", Thermal_Conductivity_Solid, 0.0);
+  /* DESCRIPTION: Density used in solids */
+  addDoubleOption("DENSITY_SOLID", Density_Solid, 0.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
   /* DESCRIPTION:  */
@@ -1646,7 +1654,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*--- options related to the heat solver ---*/
 
   /* DESCRIPTION: Thermal diffusivity constant */
-  addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
+  addDoubleOption("THERMAL_DIFFUSIVITY_SOLID", Thermal_Diffusivity_Solid, 1.172E-5);
 
   /*!\par CONFIG_CATEGORY: Visualize Control Volumes \ingroup Config*/
   /*--- options related to visualizing control volumes ---*/

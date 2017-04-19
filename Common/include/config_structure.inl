@@ -293,7 +293,7 @@ inline su2double CConfig::GetRefAreaCoeff(void) { return RefAreaCoeff; }
 
 inline su2double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
 
-inline su2double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivity; }
+inline su2double CConfig::GetThermalDiffusivity_Solid(void) { return Thermal_Diffusivity_Solid; }
 
 inline su2double CConfig::GetElasticyMod(void) { return ElasticyMod; }
 
@@ -357,6 +357,8 @@ inline su2double CConfig::GetViscosity_FreeStream(void) { return Viscosity_FreeS
 
 inline su2double CConfig::GetDensity_FreeStream(void) { return Density_FreeStream; }
 
+inline su2double CConfig::GetDensity_Solid(void) { return Density_Solid; }
+
 inline su2double CConfig::GetModVel_FreeStream(void) { return ModVel_FreeStream; }
 
 inline su2double CConfig::GetModVel_FreeStreamND(void) { return ModVel_FreeStreamND; }
@@ -368,6 +370,12 @@ inline su2double CConfig::GetTemperature_ve_FreeStream(void) { return Temperatur
 inline su2double CConfig::GetPrandtl_Lam(void) { return Prandtl_Lam; }
 
 inline su2double CConfig::GetPrandtl_Turb(void) { return Prandtl_Turb; }
+
+inline su2double CConfig::GetSpecificHeat_Fluid(void) { return Specific_Heat_Fluid; }
+
+inline su2double CConfig::GetSpecificHeat_Solid(void) { return Specific_Heat_Solid; }
+
+inline su2double CConfig::GetThermalConductivity_Solid(void) { return Thermal_Conductivity_Solid; }
 
 inline su2double CConfig::GetLength_Ref(void) { return Length_Ref; }
 
@@ -539,6 +547,8 @@ inline void CConfig::SetViscosity_Ref(su2double val_viscosity_ref) { Viscosity_R
 inline void CConfig::SetConductivity_Ref(su2double val_conductivity_ref) { Conductivity_Ref = val_conductivity_ref; }
 
 inline void CConfig::SetEnergy_Ref(su2double val_energy_ref) { Energy_Ref = val_energy_ref; }
+
+inline void CConfig::SetThermalDiffusivity_Solid(su2double val_thermal_diffusivity) { Thermal_Diffusivity_Solid = val_thermal_diffusivity; }
 
 inline su2double CConfig::GetAoA(void) { return AoA; }
 

@@ -86,7 +86,9 @@ public:
   su2double Thermal_Conductivity_i, /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_j, /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
-  Thermal_Conductivity_ve_j; /*!< \brief Thermal conductivity at point j. */
+  Thermal_Conductivity_ve_j, /*!< \brief Thermal conductivity at point j. */
+  Thermal_Diffusivity_i, /*!< \brief Thermal diffusivity at point i. */
+  Thermal_Diffusivity_j; /*!< \brief Thermal diffusivity at point j. */
   su2double Cp_i, /*!< \brief Cp at point i. */
   Cp_j;         /*!< \brief Cp at point j. */
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
@@ -499,7 +501,15 @@ public:
    */
   void SetThermalConductivity_ve(su2double val_thermal_conductivity_ve_i,
                                  su2double val_thermal_conductivity_ve_j);
-  
+
+  /*!
+   * \brief Set the thermal diffusivity (translational/rotational)
+   * \param[in] val_thermal_diffusivity_i - Value of the thermal diffusivity at point i.
+   * \param[in] val_thermal_diffusivity_j - Value of the thermal diffusivity at point j.
+   * \param[in] iSpecies - Value of the species.
+   */
+  void SetThermalDiffusivity(su2double val_thermal_diffusivity_i,
+                              su2double val_thermal_diffusivity_j);
   /*!
    * \brief Set the eddy viscosity.
    * \param[in] val_eddy_viscosity_i - Value of the eddy viscosity at point i.
@@ -3769,7 +3779,7 @@ private:
   su2double *Proj_Mean_GradHeatVar_Normal, *Proj_Mean_GradHeatVar_Corrected;
   su2double *Edge_Vector;
   bool implicit;
-  su2double dist_ij_2, proj_vector_ij, Thermal_Conductivity_Mean;
+  su2double dist_ij_2, proj_vector_ij, Thermal_Diffusivity_Mean;
   unsigned short iVar, iDim;
 
 public:
@@ -3810,7 +3820,7 @@ private:
   su2double *Proj_Mean_GradHeatVar_Kappa, *Proj_Mean_GradHeatVar_Edge, *Proj_Mean_GradHeatVar_Corrected;
   su2double *Edge_Vector;
   bool implicit;
-  su2double dist_ij_2, proj_vector_ij, Thermal_Conductivity_Mean;
+  su2double dist_ij_2, proj_vector_ij, Thermal_Diffusivity_Mean;
   unsigned short iVar, iDim;
 
 public:

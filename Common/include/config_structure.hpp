@@ -665,6 +665,11 @@ private:
   Mu_RefND,   /*!< \brief reference viscosity for Sutherland model.  */
   Mu_Temperature_RefND,   /*!< \brief reference Temperature for Sutherland model.  */
   Mu_SND,   /*!< \brief reference S for Sutherland model.  */
+  Specific_Heat_Fluid, /*!< \brief Specific heat in fluids. */
+  Specific_Heat_Solid, /*!< \brief Specific heat in solids. */
+  Thermal_Conductivity_Solid, /*!< \brief Thermal conductivity in solids. */
+  Thermal_Diffusivity_Solid, /*!< \brief Thermal diffusivity in solids. */
+  Density_Solid,      /*!< \brief Total density in solids. */
   *Velocity_FreeStream,     /*!< \brief Total velocity of the fluid.  */
   Energy_FreeStream,     /*!< \brief Total energy of the fluid.  */
   ModVel_FreeStream,     /*!< \brief Total density of the fluid.  */
@@ -716,7 +721,6 @@ private:
   su2double AitkenDynMaxInit;	/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
   su2double AitkenDynMinInit;	/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
   su2double Wave_Speed;			  /*!< \brief Wave speed used in the wave solver. */
-  su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
   string Motion_Filename;			/*!< \brief Arbitrary mesh motion input base filename. */
@@ -1430,6 +1434,12 @@ public:
   su2double GetDensity_FreeStream(void);
   
   /*!
+   * \brief Get the value of the solid density.
+   * \return Solid density.
+   */
+  su2double GetDensity_Solid(void);
+
+  /*!
    * \brief Get the value of the frestream temperature.
    * \return Freestream temperature.
    */
@@ -1459,6 +1469,30 @@ public:
    */
   su2double GetPrandtl_Turb(void);
   
+  /*!
+   * \brief Get the value of the specific heat for fluids.
+   * \return Specific heat number (fluid).
+   */
+  su2double GetSpecificHeat_Fluid(void);
+
+  /*!
+   * \brief Get the value of the specific heat for solids.
+   * \return Specific heat number (solid).
+   */
+  su2double GetSpecificHeat_Solid(void);
+
+  /*!
+   * \brief Get the value of the thermal conductivity for solids.
+   * \return Thermal conductivity (solid).
+   */
+  su2double GetThermalConductivity_Solid(void);
+
+  /*!
+   * \brief Get the value of the thermal diffusivity for solids.
+   * \return Thermal conductivity (solid).
+   */
+  su2double GetThermalDiffusivity_Solid(void);
+
   /*!
    * \brief Get the value of the reference length for non-dimensionalization.
    *        This value should always be 1 internally, and is not user-specified.
@@ -2059,6 +2093,12 @@ public:
    */
   void SetEnergy_FreeStream(su2double val_energy_freestream);
   
+  /*!
+   * \brief Set the thermal diffusivity for solids.
+   * \return Value of the Froude number.
+   */
+  void SetThermalDiffusivity_Solid(su2double val_thermal_diffusivity);
+
   /*!
    * \brief Set the Froude number for free surface problems.
    * \return Value of the Froude number.

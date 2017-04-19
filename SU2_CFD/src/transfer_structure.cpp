@@ -81,7 +81,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   int Marker_Donor = -1, Marker_Target = -1;
   int Target_check, Donor_check;
   
-  unsigned long iVertex;                            // Variables for iteration over vertices and nodes
+  unsigned long iVertex;                                        // Variables for iteration over vertices and nodes
   
   unsigned short iVar;
   

@@ -399,9 +399,12 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   unsigned short nDim, iDim;
   su2double *Coord, *Coord_Normal, *Normal, dist, Twall, dTdn, thermal_conductivity, heat_flux_density;
 
+  /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
+  bool flow = (donor_config->GetKind_Solver() != HEAT_EQUATION);
+
   nDim = donor_geometry->GetnDim();
 
-  /*--- Retrieve temperature solution an set is as the first donor variable ---*/
+  /*--- Retrieve temperature solution and set is as the first donor variable ---*/
   Twall = donor_solution->node[Point_Donor]->GetSolution(0);
   Donor_Variable[0] = Twall;
 
@@ -415,8 +418,12 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
   dist = sqrt(dist);
 
+  if (flow)
+    thermal_conductivity = (donor_config->GetViscosity_FreeStream()/donor_config->GetPrandtl_Lam())*donor_config->GetSpecificHeat_Fluid();
+  else
+    thermal_conductivity = donor_config->GetThermalConductivity_Solid();
+
   dTdn = (Twall - donor_solution->node[PointNormal]->GetSolution(0))/dist;
-  thermal_conductivity = donor_config->GetViscosity_FreeStreamND()/donor_config->GetPrandtl_Lam();
   heat_flux_density = thermal_conductivity * dTdn;
 
   Donor_Variable[1] = heat_flux_density;
