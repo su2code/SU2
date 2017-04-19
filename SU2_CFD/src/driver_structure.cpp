@@ -3981,8 +3981,8 @@ void CTurbomachineryDriver::Run() {
   }
 
   /*--- Updating zone interface communication patterns for unsteady problems ---*/
-  //  if ( unsteady ) {
-  if ( true ) {
+  if ( unsteady ) {
+    //  if ( true ) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && interpolator_container[iZone][jZone] != NULL)
@@ -3998,11 +3998,13 @@ void CTurbomachineryDriver::Run() {
 
   for (IntIter = 0; IntIter < nIntIter; IntIter++) {
 
-    /*--- At each pseudo time-step updates transfer data ---*/
-    for (iZone = 0; iZone < nZone; iZone++)
-      for (jZone = 0; jZone < nZone; jZone++)
-        if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
-          Transfer_Data(iZone, jZone);
+    if (unsteady){
+      /*--- At each pseudo time-step updates transfer data ---*/
+      for (iZone = 0; iZone < nZone; iZone++)
+        for (jZone = 0; jZone < nZone; jZone++)
+          if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+            Transfer_Data(iZone, jZone);
+    }
 
     /*--- For each zone runs one single iteration ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
