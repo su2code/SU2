@@ -125,14 +125,15 @@ CDriver::CDriver(char* confFile,
      between the ranks. ---*/
 
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], true);
 
-    CGeometry *geometry_test = new CPhysicalGeometry(geometry_aux, config_container[iZone], true);
+    //CGeometry *geometry_test;
+    //geometry_test = new CPhysicalGeometry(geometry_aux, config_container[iZone], true);
 
     /*--- Deallocate the memory of geometry_aux ---*/
 
     delete geometry_aux;
-    delete geometry_test;
+    //delete geometry_test;
 
     /*--- Add the Send/Receive boundaries ---*/
 

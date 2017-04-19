@@ -1010,6 +1010,12 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long *ID_Hexa;
   unsigned long *ID_Pris;
   unsigned long *ID_Pyra;
+  unsigned long *Elem_ID_Line;
+  unsigned long *Elem_ID_BoundTria;
+  unsigned long *Elem_ID_BoundQuad;
+  unsigned long *Elem_ID_Line_Linear;
+  unsigned long *Elem_ID_BoundTria_Linear;
+  unsigned long *Elem_ID_BoundQuad_Linear;
 
 public:
   
