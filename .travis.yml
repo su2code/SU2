@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - economon@stanford.edu
   
 branches:
     only:
-        - develop
+        - fix_partitioning
 
 env:
     global:

@@ -4401,6 +4401,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   ID_Pris = NULL;
   ID_Pyra = NULL;
 
+  Elem_ID_Line = NULL;
+  Elem_ID_BoundTria = NULL;
+  Elem_ID_BoundQuad = NULL;
+  Elem_ID_Line_Linear = NULL;
+  Elem_ID_BoundTria_Linear = NULL;
+  Elem_ID_BoundQuad_Linear = NULL;
+
   nDim = geometry->GetnDim();
 
   int rank = MASTER_NODE;
@@ -4456,7 +4463,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   PartitionSurfaceConnectivity(config, geometry, TRIANGLE      );
   PartitionSurfaceConnectivity(config, geometry, QUADRILATERAL );
 
-  cout << " Surface elems for rank " << rank << ": " << nLinear_Line << ", " << nLinear_BoundTria << ", " << nLinear_BoundQuad << endl;
+  //cout << " Surface elems for rank " << rank << ": " << nLinear_Line << ", " << nLinear_BoundTria << ", " << nLinear_BoundQuad << endl;
   //PartitionPeriodicPoints(config, geometry);
 
   /*--- Once the markers are distributed according to the linear partitioning
@@ -4488,7 +4495,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
-  cout << " Dist. surface elems for rank " << rank << ": " << nLocal_Line << ", " << nLocal_BoundTria << ", " << nLocal_BoundQuad << endl;
+  //cout << " Dist. surface elems for rank " << rank << ": " << nLocal_Line << ", " << nLocal_BoundTria << ", " << nLocal_BoundQuad << endl;
 
   /*--- With the distribution of all points, elements, and markers based
    on the ParMETIS coloring complete, begin loading this data into our
@@ -4498,7 +4505,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
 
   LoadVolumeElements(config, geometry);
 
-  // LoadSurfaceElements(config, geometry);
+  LoadSurfaceElements(config, geometry);
 
   /*--- Free memory associated with the redistribution of points and elems. ---*/
 
@@ -4538,6 +4545,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   if (ID_Hexa != NULL) delete [] ID_Hexa;
   if (ID_Pris != NULL) delete [] ID_Pris;
   if (ID_Pyra != NULL) delete [] ID_Pyra;
+
+  if (Elem_ID_Line != NULL) delete [] Elem_ID_Line;
+  if (Elem_ID_BoundTria != NULL) delete [] Elem_ID_BoundTria;
+  if (Elem_ID_BoundQuad != NULL) delete [] Elem_ID_BoundQuad;
+  if (Elem_ID_Line_Linear != NULL) delete [] Elem_ID_Line_Linear;
+  if (Elem_ID_BoundTria_Linear != NULL) delete [] Elem_ID_BoundTria_Linear;
+  if (Elem_ID_BoundQuad_Linear != NULL) delete [] Elem_ID_BoundQuad_Linear;
 
 }
 
@@ -5650,12 +5664,13 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
 
   unsigned long iProcessor;
   unsigned short NODES_PER_ELEMENT;
-  unsigned long nElem_Total = 0, Global_Index;
+  unsigned long nElem_Total = 0, Global_Index, Global_Elem_Index;
 
   unsigned long iMarker;
 
   unsigned long *Conn_Elem      = NULL;
   unsigned long *Linear_Markers = NULL;
+  unsigned long *ID_SurfElem    = NULL;
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -5778,8 +5793,9 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  unsigned long *connSend = NULL;
+  unsigned long *connSend   = NULL;
   unsigned long *markerSend = NULL;
+  unsigned long *idSend     = NULL;
 
   if (rank == MASTER_NODE) {
 
@@ -5790,6 +5806,10 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
     markerSend = new unsigned long[nElem_Send[size]];
     for (int ii = 0; ii < nElem_Send[size]; ii++)
       markerSend[ii] = 0;
+
+    idSend = new unsigned long[nElem_Send[size]];
+    for (int ii = 0; ii < nElem_Send[size]; ii++)
+      idSend[ii] = 0;
 
     /*--- Create an index variable to keep track of our index
      position as we load up the send buffer. ---*/
@@ -5803,6 +5823,7 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
     /*--- Loop through our elements and load the elems and their
      additional data that we will send to the other procs. ---*/
 
+    Global_Elem_Index = 0;
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
 
       /*--- Reset the flag in between markers, just to ensure that we
@@ -5846,9 +5867,10 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
                   connSend[nn] = geometry->bound[iMarker][ii]->GetNode(kk); nn++;
                 }
 
-                /*--- Store the marker index ---*/
+                /*--- Store the marker index and surface elem global ID ---*/
 
                 markerSend[mm] = iMarker;
+                idSend[mm]     = Global_Elem_Index;
 
                 /*--- Increment the index by the message length ---*/
 
@@ -5858,6 +5880,9 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
 
             }
           }
+
+          Global_Elem_Index++;
+
         }
       }
     }
@@ -5883,12 +5908,16 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
   for (int ii = 0; ii < nElem_Recv[size]; ii++)
     markerRecv[ii] = 0;
 
-#ifdef HAVE_MPI
-  /*--- We need double the number of messages to send both the conn.
-   and the flags for the halo cells. ---*/
+  unsigned long *idRecv = new unsigned long[nElem_Recv[size]];
+  for (int ii = 0; ii < nElem_Recv[size]; ii++)
+    idRecv[ii] = 0;
 
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+#ifdef HAVE_MPI
+  /*--- We need triple the number of messages to send the conn.,
+   the marker index, and the global surf elem index. ---*/
+
+  send_req = new MPI_Request[3*nSends];
+  recv_req = new MPI_Request[3*nRecvs];
 
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
 
@@ -5922,7 +5951,7 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
     }
   }
 
-  /*--- Repeat the process to communicate the halo flags. ---*/
+  /*--- Repeat the process to communicate the marker IDs. ---*/
 
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
@@ -5938,7 +5967,7 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
     }
   }
 
-  /*--- Launch the non-blocking sends of the halo flags. ---*/
+  /*--- Launch the non-blocking sends of the marker IDs. ---*/
 
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
@@ -5950,6 +5979,38 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
       int tag    = rank + 1;
       SU2_MPI::Isend(&(markerSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
                      MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+      iMessage++;
+    }
+  }
+
+  /*--- Repeat the process to communicate the surf elem global IDs. ---*/
+
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage+2*nRecvs]));
+      iMessage++;
+    }
+  }
+
+  /*--- Launch the non-blocking sends of the surf elem global IDs. ---*/
+
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll = nElem_Send[ii];
+      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+      int count  = kk;
+      int dest   = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage+2*nSends]));
       iMessage++;
     }
   }
@@ -5971,16 +6032,22 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
 
     for (int nn=ll; nn<kk; nn++, mm++) markerRecv[mm] = markerSend[nn];
 
+    mm = nElem_Recv[rank];
+    ll = nElem_Send[rank];
+    kk = nElem_Send[rank+1];
+
+    for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
+
   }
 
   /*--- Wait for the non-blocking sends and recvs to complete. ---*/
 
 #ifdef HAVE_MPI
-  int number = 2*nSends;
+  int number = 3*nSends;
   for (int ii = 0; ii < number; ii++)
     SU2_MPI::Waitany(number, send_req, &ind, &status);
 
-  number = 2*nRecvs;
+  number = 3*nRecvs;
   for (int ii = 0; ii < number; ii++)
     SU2_MPI::Waitany(number, recv_req, &ind, &status);
 
@@ -6013,6 +6080,14 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
     Linear_Markers[ii] = markerRecv[ii];
   }
 
+  /*--- Store the global surface elem ID for each element. ---*/
+
+  if (nElem_Recv[size] > 0)
+    ID_SurfElem = new unsigned long[nElem_Recv[size]];
+  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+    ID_SurfElem[ii] = idRecv[ii];
+  }
+
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
 
@@ -6020,22 +6095,25 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
     case LINE:
       nLinear_Line = nElem_Total;
       if (nLinear_Line > 0) {
-        Conn_Line_Linear = Conn_Elem;
-        ID_Line_Linear = Linear_Markers;
+        Conn_Line_Linear    = Conn_Elem;
+        ID_Line_Linear      = Linear_Markers;
+        Elem_ID_Line_Linear = ID_SurfElem;
       }
       break;
     case TRIANGLE:
       nLinear_BoundTria = nElem_Total;
       if (nLinear_BoundTria > 0) {
-        Conn_BoundTria_Linear = Conn_Elem;
-        ID_BoundTria_Linear = Linear_Markers;
+        Conn_BoundTria_Linear    = Conn_Elem;
+        ID_BoundTria_Linear      = Linear_Markers;
+        Elem_ID_BoundTria_Linear = ID_SurfElem;
       }
       break;
     case QUADRILATERAL:
       nLinear_BoundQuad = nElem_Total;
       if (nLinear_BoundQuad > 0) {
-        Conn_BoundQuad_Linear = Conn_Elem;
-        ID_BoundQuad_Linear = Linear_Markers;
+        Conn_BoundQuad_Linear    = Conn_Elem;
+        ID_BoundQuad_Linear      = Linear_Markers;
+        Elem_ID_BoundQuad_Linear = ID_SurfElem;
       }
       break;
     default:
@@ -6047,9 +6125,12 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
   
   if (connSend   != NULL) delete [] connSend;
   if (markerSend != NULL) delete [] markerSend;
+  if (idSend     != NULL) delete [] idSend;
   
   delete [] connRecv;
   delete [] markerRecv;
+  delete [] idRecv;
+
   delete [] nElem_Recv;
   delete [] nElem_Send;
   delete [] nElem_Flag;
@@ -6062,10 +6143,12 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
   unsigned short NODES_PER_ELEMENT;
   unsigned long nElem_Total = 0, Global_Index;
 
-  unsigned long *Conn_Linear    = NULL;
-  unsigned long *Conn_Elem      = NULL;
-  unsigned long *Linear_Markers = NULL;
-  unsigned long *Local_Markers  = NULL;
+  unsigned long *Conn_Linear        = NULL;
+  unsigned long *Conn_Elem          = NULL;
+  unsigned long *Linear_Markers     = NULL;
+  unsigned long *ID_SurfElem_Linear = NULL;
+  unsigned long *Local_Markers      = NULL;
+  unsigned long *ID_SurfElem        = NULL;
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -6084,22 +6167,25 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
 
   switch (Elem_Type) {
     case LINE:
-      NELEM             = nLinear_Line;
-      NODES_PER_ELEMENT = N_POINTS_LINE;
-      Conn_Linear       = Conn_Line_Linear;
-      Linear_Markers    = ID_Line_Linear;
+      NELEM              = nLinear_Line;
+      NODES_PER_ELEMENT  = N_POINTS_LINE;
+      Conn_Linear        = Conn_Line_Linear;
+      Linear_Markers     = ID_Line_Linear;
+      ID_SurfElem_Linear = Elem_ID_Line_Linear;
       break;
     case TRIANGLE:
-      NELEM             = nLinear_BoundTria;
-      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-      Conn_Linear       = Conn_BoundTria_Linear;
-      Linear_Markers    = ID_BoundTria_Linear;
+      NELEM              = nLinear_BoundTria;
+      NODES_PER_ELEMENT  = N_POINTS_TRIANGLE;
+      Conn_Linear        = Conn_BoundTria_Linear;
+      Linear_Markers     = ID_BoundTria_Linear;
+      ID_SurfElem_Linear = Elem_ID_BoundTria_Linear;
       break;
     case QUADRILATERAL:
-      NELEM             = nLinear_BoundQuad;
-      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-      Conn_Linear       = Conn_BoundQuad_Linear;
-      Linear_Markers    = ID_BoundQuad_Linear;
+      NELEM              = nLinear_BoundQuad;
+      NODES_PER_ELEMENT  = N_POINTS_QUADRILATERAL;
+      Conn_Linear        = Conn_BoundQuad_Linear;
+      Linear_Markers     = ID_BoundQuad_Linear;
+      ID_SurfElem_Linear = Elem_ID_BoundQuad_Linear;
       break;
     default:
       cout << "Error: Unrecognized element type \n";
@@ -6183,6 +6269,10 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
   unsigned long *markerSend = new unsigned long[nElem_Send[size]];
   for (int ii = 0; ii < nElem_Send[size]; ii++) markerSend[ii] = 0;
 
+  unsigned long *idSend = new unsigned long[nElem_Send[size]];
+  for (int ii = 0; ii < nElem_Send[size]; ii++)
+    idSend[ii] = 0;
+
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
 
@@ -6229,6 +6319,7 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
         /*--- Global marker ID for this element. ---*/
 
         markerSend[mm] = Linear_Markers[ii];
+        idSend[mm]     = ID_SurfElem_Linear[ii];
 
         /*--- Increment the index by the message length ---*/
 
@@ -6257,12 +6348,16 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
   unsigned long *markerRecv = new unsigned long[nElem_Recv[size]];
   for (int ii = 0; ii < nElem_Recv[size]; ii++) markerRecv[ii] = 0;
 
-#ifdef HAVE_MPI
-  /*--- We need double the number of messages to send both the conn.
-   and the flags for the halo cells. ---*/
+  unsigned long *idRecv = new unsigned long[nElem_Recv[size]];
+  for (int ii = 0; ii < nElem_Recv[size]; ii++)
+    idRecv[ii] = 0;
 
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+#ifdef HAVE_MPI
+  /*--- We need triple the number of messages to send the conn.,
+   the marker index, and the global surf elem index. ---*/
+
+  send_req = new MPI_Request[3*nSends];
+  recv_req = new MPI_Request[3*nRecvs];
 
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
 
@@ -6296,7 +6391,7 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
     }
   }
 
-  /*--- Repeat the process to communicate the halo flags. ---*/
+  /*--- Repeat the process to communicate the marker IDs. ---*/
 
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
@@ -6312,7 +6407,7 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
     }
   }
 
-  /*--- Launch the non-blocking sends of the halo flags. ---*/
+  /*--- Launch the non-blocking sends of the marker IDs. ---*/
 
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
@@ -6324,6 +6419,38 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
       int tag   = rank + 1;
       SU2_MPI::Isend(&(markerSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
                      MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+      iMessage++;
+    }
+  }
+
+  /*--- Repeat the process to communicate the surface elem IDs. ---*/
+
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage+2*nRecvs]));
+      iMessage++;
+    }
+  }
+
+  /*--- Launch the non-blocking sends of the surface elem IDs. ---*/
+
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll    = nElem_Send[ii];
+      int kk    = nElem_Send[ii+1] - nElem_Send[ii];
+      int count = kk;
+      int dest  = ii;
+      int tag   = rank + 1;
+      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage+2*nSends]));
       iMessage++;
     }
   }
@@ -6343,14 +6470,20 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
 
   for (int nn=ll; nn<kk; nn++, mm++) markerRecv[mm] = markerSend[nn];
 
+  mm = nElem_Recv[rank];
+  ll = nElem_Send[rank];
+  kk = nElem_Send[rank+1];
+
+  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
+
   /*--- Wait for the non-blocking sends and recvs to complete. ---*/
 
 #ifdef HAVE_MPI
-  int number = 2*nSends;
+  int number = 3*nSends;
   for (int ii = 0; ii < number; ii++)
     SU2_MPI::Waitany(number, send_req, &ind, &status);
 
-  number = 2*nRecvs;
+  number = 3*nRecvs;
   for (int ii = 0; ii < number; ii++)
     SU2_MPI::Waitany(number, recv_req, &ind, &status);
 
@@ -6380,6 +6513,14 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
     Local_Markers[ii] = markerRecv[ii];
   }
 
+  /*--- Store the global surface elem IDs too. ---*/
+
+  if (nElem_Recv[size] > 0)
+    ID_SurfElem = new unsigned long[nElem_Recv[size]];
+  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+    ID_SurfElem[ii] = idRecv[ii];
+  }
+
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
 
@@ -6387,22 +6528,25 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
     case LINE:
       nLocal_Line = nElem_Total;
       if (nLocal_Line > 0) {
-        Conn_Line = Conn_Elem;
-        ID_Line   = Local_Markers;
+        Conn_Line    = Conn_Elem;
+        ID_Line      = Local_Markers;
+        Elem_ID_Line = ID_SurfElem;
       }
       break;
     case TRIANGLE:
       nLocal_BoundTria = nElem_Total;
       if (nLocal_BoundTria > 0) {
-        Conn_BoundTria = Conn_Elem;
-        ID_BoundTria   = Local_Markers;
+        Conn_BoundTria    = Conn_Elem;
+        ID_BoundTria      = Local_Markers;
+        Elem_ID_BoundTria = ID_SurfElem;
       }
       break;
     case QUADRILATERAL:
       nLocal_BoundQuad = nElem_Total;
       if (nLocal_BoundQuad > 0) {
-        Conn_BoundQuad = Conn_Elem;
-        ID_BoundQuad   = Local_Markers;
+        Conn_BoundQuad    = Conn_Elem;
+        ID_BoundQuad      = Local_Markers;
+        Elem_ID_BoundQuad = ID_SurfElem;
       }
       break;
     default:
@@ -6416,6 +6560,8 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
   delete [] connRecv;
   delete [] markerSend;
   delete [] markerRecv;
+  delete [] idSend;
+  delete [] idRecv;
   delete [] nElem_Recv;
   delete [] nElem_Send;
   delete [] nElem_Flag;
@@ -6435,7 +6581,7 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
 
   /*--- The master node will communicate the entire list of marker tags
    (in global ordering) so that it will be simple for each rank to grab
-   the strings name for each marker. This could become a bottleneck if
+   the string name for each marker. This could become a bottleneck if
    a mesh has a massive number of markers, but it is very unlikely. ---*/
 
   nMarker_Global = 0;
@@ -6935,6 +7081,318 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
 void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry) {
 
+  unsigned long iElem, iMarker, Global_Marker;
+
+  unsigned long iElem_Line = 0;
+  unsigned long iElem_Tria = 0;
+  unsigned long iElem_Quad = 0;
+
+  unsigned long Local_Nodes[N_POINTS_HEXAHEDRON];
+
+  unsigned short iNode, nMarker_Max = config->GetnMarker_Max();
+
+  unsigned short NODES_PER_ELEMENT;
+
+  vector<vector<unsigned long> > Line_List;
+  vector<vector<unsigned long> > BoundTria_List;
+  vector<vector<unsigned long> > BoundQuad_List;
+
+  vector<unsigned long> Marker_Local;
+  vector<unsigned long>::iterator it;
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Compute how many markers we have local to this rank by looping
+   through the global marker numbers of each local surface element and 
+   counting the unique set. ---*/
+
+  for (iElem = 0; iElem < nLocal_Line; iElem++) {
+    if (find(Marker_Local.begin(), Marker_Local.end(), ID_Line[iElem]) ==
+        Marker_Local.end()) {
+      Marker_Local.push_back(ID_Line[iElem]);
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_BoundTria; iElem++) {
+    if (find(Marker_Local.begin(), Marker_Local.end(), ID_BoundTria[iElem]) ==
+        Marker_Local.end()) {
+      Marker_Local.push_back(ID_BoundTria[iElem]);
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_BoundQuad; iElem++) {
+    if (find(Marker_Local.begin(), Marker_Local.end(), ID_BoundQuad[iElem]) ==
+        Marker_Local.end()) {
+      Marker_Local.push_back(ID_BoundQuad[iElem]);
+    }
+  }
+
+  /*--- Create a mapping from the global to local marker ID (and vice-versa). ---*/
+
+  map<unsigned long, unsigned long> Marker_Global_to_Local;
+  map<unsigned long, unsigned long> Marker_Local_to_Global;
+  for (iMarker = 0; iMarker < Marker_Local.size(); iMarker++) {
+    Marker_Global_to_Local[Marker_Local[iMarker]] = iMarker;
+    Marker_Local_to_Global[iMarker] = Marker_Local[iMarker];
+  }
+
+  /*--- Set up our element counters on each marker so that we can avoid
+   duplicating any elements from the previous communications. ---*/
+
+  Line_List.resize(Marker_Local.size());
+  BoundTria_List.resize(Marker_Local.size());
+  BoundQuad_List.resize(Marker_Local.size());
+
+  /*--- Count the number of elements on each marker and store in a
+   vector by marker. ---*/
+
+  vector<unsigned long> nElemBound_Local;
+  nElemBound_Local.resize(Marker_Local.size());
+  for (iMarker = 0; iMarker < Marker_Local.size(); iMarker++)
+    nElemBound_Local[iMarker] = 0;
+
+  for (iElem = 0; iElem < nLocal_Line; iElem++) {
+    iMarker = Marker_Global_to_Local[ID_Line[iElem]];
+    if (find(Line_List[iMarker].begin(), Line_List[iMarker].end(),
+             Elem_ID_Line[iElem]) == Line_List[iMarker].end()) {
+      nElemBound_Local[iMarker]++;
+      Line_List[iMarker].push_back(Elem_ID_Line[iElem]);
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_BoundTria; iElem++) {
+    iMarker = Marker_Global_to_Local[ID_BoundTria[iElem]];
+    if (find(BoundTria_List[iMarker].begin(), BoundTria_List[iMarker].end(),
+             Elem_ID_BoundTria[iElem]) == BoundTria_List[iMarker].end()) {
+      nElemBound_Local[iMarker]++;
+      BoundTria_List[iMarker].push_back(Elem_ID_BoundTria[iElem]);
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_BoundQuad; iElem++) {
+    iMarker = Marker_Global_to_Local[ID_BoundQuad[iElem]];
+    if (find(BoundQuad_List[iMarker].begin(), BoundQuad_List[iMarker].end(),
+             Elem_ID_BoundQuad[iElem]) == BoundQuad_List[iMarker].end()) {
+      nElemBound_Local[iMarker]++;
+      BoundQuad_List[iMarker].push_back(Elem_ID_BoundQuad[iElem]);
+    }
+  }
+
+  /*--- Create the domain structures for the boundaries. Initially, stick
+   with nMarkerMax here, but come back and compute size we need.---*/
+
+  nMarker                = Marker_Local.size();
+  nElem_Bound            = new unsigned long[nMarker_Max];
+  Local_to_Global_Marker = new unsigned short[nMarker_Max];
+  Tag_to_Marker          = new string[nMarker_Max];
+  Marker_All_SendRecv    = new short[nMarker_Max];
+
+  //string *TagBound_Copy  = new string[nMarker_Max];
+  //short *SendRecv_Copy   = new short[nMarker_Max];
+
+  /*--- Allocate space for the elements on each marker ---*/
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    nElem_Bound[iMarker] = nElemBound_Local[iMarker];
+
+  bound = new CPrimalGrid**[nMarker+(OVERHEAD*size)];
+  for (iMarker = 0; iMarker < nMarker+(OVERHEAD*size); iMarker++)
+    bound[iMarker] = NULL;
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
+
+  /*--- Initialize boundary element counters ---*/
+
+  iElem_Line = 0;
+  iElem_Tria = 0;
+  iElem_Quad = 0;
+
+  Line_List.clear();      Line_List.resize(Marker_Local.size());
+  BoundTria_List.clear(); BoundTria_List.resize(Marker_Local.size());
+  BoundQuad_List.clear(); BoundQuad_List.resize(Marker_Local.size());
+
+  /*--- Reset our element counter on a marker-basis. ---*/
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    nElemBound_Local[iMarker] = 0;
+
+  /*--- Store the boundary element connectivity. Note here that we have
+   communicated the global index values for the elements, so we need to
+   convert this to the local index when instantiating the element. ---*/
+
+  for (iElem = 0; iElem < nLocal_Line; iElem++) {
+
+    iMarker = Marker_Global_to_Local[ID_Line[iElem]];
+
+    /*--- Avoid duplicates on this marker. ---*/
+
+    if (find(Line_List[iMarker].begin(), Line_List[iMarker].end(),
+             Elem_ID_Line[iElem]) == Line_List[iMarker].end()) {
+
+      /*--- Transform the stored connectivity for this element from global
+       to local values on this rank. ---*/
+
+      NODES_PER_ELEMENT = N_POINTS_LINE;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Line[iElem*NODES_PER_ELEMENT+iNode]];
+      }
+
+      /*--- Create the geometry object for this element. ---*/
+
+      bound[iMarker][nElemBound_Local[iMarker]] = new CLine(Local_Nodes[0],
+                                                            Local_Nodes[1], 2);
+
+      /*--- Increment our counters for this marker and element type. ---*/
+      
+      nElemBound_Local[iMarker]++; iElem_Line++;
+
+      Line_List[iMarker].push_back(Elem_ID_Line[iElem]);
+
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_BoundTria; iElem++) {
+
+    iMarker = Marker_Global_to_Local[ID_BoundTria[iElem]];
+
+    /*--- Avoid duplicates on this marker. ---*/
+
+    if (find(BoundTria_List[iMarker].begin(), BoundTria_List[iMarker].end(),
+             Elem_ID_BoundTria[iElem]) == BoundTria_List[iMarker].end()) {
+
+      /*--- Transform the stored connectivity for this element from global
+       to local values on this rank. ---*/
+
+      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
+        Local_Nodes[iNode] = Global_to_Local_Point[Conn_BoundTria[iElem*NODES_PER_ELEMENT+iNode]];
+
+      /*--- Create the geometry object for this element. ---*/
+
+      bound[iMarker][nElemBound_Local[iMarker]] = new CTriangle(Local_Nodes[0],
+                                                                Local_Nodes[1],
+                                                                Local_Nodes[2], 3);
+
+      /*--- Increment our counters for this marker and element type. ---*/
+      
+      nElemBound_Local[iMarker]++; iElem_Tria++;
+
+      BoundTria_List[iMarker].push_back(Elem_ID_BoundTria[iElem]);
+
+    }
+  }
+
+  for (iElem = 0; iElem < nLocal_BoundQuad; iElem++) {
+
+    iMarker = Marker_Global_to_Local[ID_BoundQuad[iElem]];
+
+    /*--- Avoid duplicates on this marker. ---*/
+
+    if (find(BoundQuad_List[iMarker].begin(), BoundQuad_List[iMarker].end(),
+             Elem_ID_BoundQuad[iElem]) == BoundQuad_List[iMarker].end()) {
+
+      /*--- Transform the stored connectivity for this element from global
+       to local values on this rank. ---*/
+
+      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
+        Local_Nodes[iNode] = Global_to_Local_Point[Conn_BoundQuad[iElem*NODES_PER_ELEMENT+iNode]];
+
+      /*--- Create the geometry object for this element. ---*/
+
+      bound[iMarker][nElemBound_Local[iMarker]] = new CQuadrilateral(Local_Nodes[0],
+                                                                     Local_Nodes[1],
+                                                                     Local_Nodes[2],
+                                                                     Local_Nodes[3], 3);
+
+      /*--- Increment our counters for this marker and element type. ---*/
+      
+      nElemBound_Local[iMarker]++; iElem_Quad++;
+
+      BoundQuad_List[iMarker].push_back(Elem_ID_BoundQuad[iElem]);
+
+    }
+  }
+
+
+  /*--- Set some auxiliary information on a per-marker basis. ---*/
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    Global_Marker = Marker_Local_to_Global[iMarker];
+
+    Tag_to_Marker[iMarker] = Marker_Tags[Global_Marker];
+
+    config->SetMarker_All_TagBound(iMarker, Marker_Tags[Global_Marker]);
+
+    // don't have this info yet, but related to periodic.
+    config->SetMarker_All_SendRecv(iMarker, config->GetMarker_All_SendRecv(Global_Marker)); // SendRecv_Copy[iMarker]);
+  }
+
+  /*--- Store total number of each boundary element type ---*/
+
+  nelem_edge_bound     = iElem_Line;
+  nelem_triangle_bound = iElem_Tria;
+  nelem_quad_bound     = iElem_Quad;
+
+//  /*--- Add the new periodic markers to the domain ---*/
+//
+//  //      iTotalSendDomain_Periodic = 0;
+//  //      iTotalReceivedDomain_Periodic = 0;
+//
+//  for (jDomain = 0; jDomain < nDomain; jDomain++) {
+//
+//    if (nSendDomain_Periodic[jDomain] != 0) {
+//      nVertexDomain[nMarker] = 0;
+//      bound[nMarker] = new CPrimalGrid* [nSendDomain_Periodic[jDomain]];
+//
+//      iVertex = 0;
+//      for (iTotalSendDomain_Periodic = 0; iTotalSendDomain_Periodic < nTotalSendDomain_Periodic; iTotalSendDomain_Periodic++) {
+//        if (Buffer_Receive_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] == jDomain) {
+//          bound[nMarker][iVertex] = new CVertexMPI(Global_to_local_Point_recv[Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic]], nDim);
+//          bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic]);
+//          nVertexDomain[nMarker]++; iVertex++;
+//        }
+//      }
+//
+//      Marker_All_SendRecv[nMarker] = jDomain+1;
+//      nElem_Bound[nMarker] = nVertexDomain[nMarker];
+//      nMarker++;
+//    }
+//
+//    if (nReceivedDomain_Periodic[jDomain] != 0) {
+//      nVertexDomain[nMarker] = 0;
+//      bound[nMarker] = new CPrimalGrid* [nReceivedDomain_Periodic[jDomain]];
+//
+//      iVertex = 0;
+//      for (iTotalReceivedDomain_Periodic = 0; iTotalReceivedDomain_Periodic < nTotalReceivedDomain_Periodic; iTotalReceivedDomain_Periodic++) {
+//        if (Buffer_Receive_ReceivedDomain_PeriodicDonor[iTotalReceivedDomain_Periodic] == jDomain) {
+//          bound[nMarker][iVertex] = new CVertexMPI(Global_to_local_Point_recv[Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic]], nDim);
+//          bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic]);
+//          nVertexDomain[nMarker]++; iVertex++;
+//        }
+//      }
+//
+//      Marker_All_SendRecv[nMarker] = -(jDomain+1);
+//      nElem_Bound[nMarker] = nVertexDomain[nMarker];
+//      nMarker++;
+//    }
+//
+//  }
+//
+//
+//  /*--- Set the value of Marker_All_SendRecv and Marker_All_TagBound in the config structure ---*/
+//
+//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+//    config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
+//  }
+
 }
 
 void CPhysicalGeometry::SetSendReceive(CConfig *config) {
@@ -6951,7 +7409,9 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   vector<vector<unsigned long> > ReceivedTransfLocal;	/*!< \brief Vector to store the type of transformation for this received point. */
 	vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
 	vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
-  
+
+  map<unsigned long, unsigned long>::const_iterator MI;
+
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
@@ -6970,27 +7430,36 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   ReceivedTransfLocal.resize(nDomain);
   SendDomainLocal.resize(nDomain);
   ReceivedDomainLocal.resize(nDomain);
-  
-  /*--- Loop over the all the points of the element
-   to find the points with different colours, and create the send/received list ---*/
+
+  /*--- Loop over the all the points of the elements on this rank in order
+   to find the points with different colors. Create the send/received lists
+   from this information. ---*/
+
   for (iElem = 0; iElem < nElem; iElem++) {
     for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-      iPoint = elem[iElem]->GetNode(iNode);
+
+      iPoint  = elem[iElem]->GetNode(iNode);
       iDomain = node[iPoint]->GetColor();
       
       if (iDomain == rank) {
         for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
-          jPoint = elem[iElem]->GetNode(jNode);
+
+          jPoint  = elem[iElem]->GetNode(jNode);
           jDomain = node[jPoint]->GetColor();
           
-          /*--- If different color and connected by an edge, then we add them to the list ---*/
+          /*--- If one of the neighbors is a different color and connected 
+           by an edge, then we add them to the list. ---*/
+
           if (iDomain != jDomain) {
             
-            /*--- We send from iDomain to jDomain the value of iPoint, we save the
-             global value becuase we need to sort the lists ---*/
+            /*--- We send from iDomain to jDomain the value of iPoint, 
+             we save the global value becuase we need to sort the lists. ---*/
+
             SendDomainLocal[jDomain].push_back(Local_to_Global_Point[iPoint]);
-            /*--- We send from jDomain to iDomain the value of jPoint, we save the
-             global value becuase we need to sort the lists ---*/
+
+            /*--- We send from jDomain to iDomain the value of jPoint, 
+             we save the global value becuase we need to sort the lists. ---*/
+
             ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
             
           }
@@ -6998,21 +7467,23 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
       }
     }
   }
-  
-  /*--- Sort the points that must be sended and delete repeated points, note
-   that the sorting should be done with the global point (not the local) ---*/
+
+  /*--- Sort the points that must be sent and delete repeated points, note
+   that the sorting should be done with the global index (not the local). ---*/
+
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    sort( SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
-    it = unique( SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
-    SendDomainLocal[iDomain].resize( it - SendDomainLocal[iDomain].begin() );
+    sort(SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
+    it = unique(SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
+    SendDomainLocal[iDomain].resize(it - SendDomainLocal[iDomain].begin());
   }
   
   /*--- Sort the points that must be received and delete repeated points, note
-   that the sorting should be done with the global point (not the local) ---*/
+   that the sorting should be done with the global point (not the local). ---*/
+
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    sort( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
+    sort(ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
     it = unique( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
-    ReceivedDomainLocal[iDomain].resize( it - ReceivedDomainLocal[iDomain].begin() );
+    ReceivedDomainLocal[iDomain].resize(it - ReceivedDomainLocal[iDomain].begin());
   }
   
   /*--- Create Global to Local Point array, note that the array is smaller (Max_GlobalPoint) than the total
@@ -7022,21 +7493,22 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     if (Local_to_Global_Point[iPoint] > (long)Max_GlobalPoint)
       Max_GlobalPoint = Local_to_Global_Point[iPoint];
   }
-  
+
   /*--- Set the value of some of the points ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
-  
-  map<unsigned long, unsigned long>::const_iterator MI;
 
-  /*--- Add the new MPI send receive boundaries, reset the transformation, and save the local value ---*/
+  /*--- Add the new MPI send boundaries, reset the transformation, 
+   and save the local value. ---*/
+
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     if (SendDomainLocal[iDomain].size() != 0) {
       nVertexDomain[nMarker] = SendDomainLocal[iDomain].size();
       for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
         
         MI = Global_to_Local_Point.find(SendDomainLocal[iDomain][iVertex]);
-        if (MI != Global_to_Local_Point.end()) iPoint = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
+        if (MI != Global_to_Local_Point.end())
+          iPoint = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
         else iPoint = -1;
           
         SendDomainLocal[iDomain][iVertex] = iPoint;
@@ -7055,7 +7527,8 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
       for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
         
         MI = Global_to_Local_Point.find(ReceivedDomainLocal[iDomain][iVertex]);
-        if (MI != Global_to_Local_Point.end()) iPoint = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
+        if (MI != Global_to_Local_Point.end())
+          iPoint = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
         else iPoint = -1;
         
         ReceivedDomainLocal[iDomain][iVertex] = iPoint;
@@ -7066,7 +7539,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
       nMarker++;
     }
   }
-  
+
   /*--- First compute the Send/Receive boundaries ---*/
   Counter_Send = 0; 	Counter_Receive = 0;
   for (iDomain = 0; iDomain < nDomain; iDomain++)
@@ -7075,9 +7548,9 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   for (iDomain = 0; iDomain < nDomain; iDomain++)
     if (ReceivedDomainLocal[iDomain].size() != 0) Counter_Receive++;
   
-  iMarkerSend = nMarker - Counter_Send - Counter_Receive;
+  iMarkerSend    = nMarker - Counter_Send - Counter_Receive;
   iMarkerReceive = nMarker - Counter_Receive;
-  
+
   /*--- First we do the send ---*/
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     if (SendDomainLocal[iDomain].size() != 0) {
@@ -7090,7 +7563,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
       iMarkerSend++;
     }
   }
-  
+
   /*--- Second we do the receive ---*/
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     if (ReceivedDomainLocal[iDomain].size() != 0) {
@@ -7105,9 +7578,10 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   }
  
   /*--- Free memory ---*/
-  delete [] nVertexDomain;
-}
 
+  delete [] nVertexDomain;
+
+}
 
 void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
