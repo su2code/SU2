@@ -3879,8 +3879,15 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     //    muT = constants[0]*max(rho*zeta*kine*Tm,0.0);
     //    muT = max(muT,mu);
     //    muT = constants[0]*max(rho*max(zeta*kine,0.0)/max(epsi,1.0E-9),0.0); //v2
+
+    // Decompute turbulence from mean
     //muT = 0.0;
-    muT = constants[0]*rho*zeta*kine*Tm;
+
+    // v2-f
+    //muT = constants[0]*rho*zeta*kine*Tm;
+
+    // standard k-epsilon (more or less)
+    muT = (2.0/3.0)*constants[0]*rho*kine*kine/epsi;
 
     //muT = constants[0]*rho*2.0/3.0*kine*Tm; //testing...
     node[iPoint]->SetmuT(muT);
@@ -3888,7 +3895,6 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     //    cout<<"Tm in solver_direct: "<<Tm<<"\n";
     //cout<<"Lm in solver_direct: "<<Lm<<"\n";
   }
-  
 }
 
 void CTurbKESolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
