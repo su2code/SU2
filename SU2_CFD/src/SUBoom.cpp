@@ -53,12 +53,12 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   tolfile.open("tols.in", ios::in);
   if (tolfile.fail()) {
-    cout << "There is no tol.in file. Using default tolerances for boom propagation. " << endl;
+    cout << "There is no tols.in file. Using default tolerances for boom propagation. " << endl;
     tol_dphi = 1.0E-3;
     tol_dr = 1.0E-3;
     tol_m = 1.0E6;
     tol_dp = 1.0E-6;
-    tol_l = 1.0E-6;
+    tol_l = 1.0E-4;
   }
   else{
     tolfile >> str >> tol_dphi;
@@ -106,7 +106,9 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if(geometry->node[iPoint]->GetDomain()){
-          panelCount++;
+          Coord = geometry->node[iPoint]->GetCoord();
+          y = SU2_TYPE::GetValue(Coord[1]);
+          if(nDim == 2 || (nDim == 3 && y < 1E-10)) panelCount++;
         }
       }
       nSig = panelCount;
@@ -153,6 +155,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           Coord = geometry->node[iPoint]->GetCoord();
           x = SU2_TYPE::GetValue(Coord[0]);
           y = SU2_TYPE::GetValue(Coord[1]);
+          
+          if(nDim == 2 || (nDim == 3 && y < 1E-10)){
 //          z = 0.0;
 //          if (nDim==3) z = SU2_TYPE::GetValue(Coord[2]);
 
@@ -187,6 +191,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           PointID[panelCount] = geometry->node[iPoint]->GetGlobalIndex();
 
           panelCount++;
+          }
         }
       }
     }

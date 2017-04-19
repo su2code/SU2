@@ -474,7 +474,7 @@ def findiff( config, state=None ):
         log_findiff = None
 
     # evaluate step
-    step = 0.001 * float(config.REF_LENGTH_MOMENT)
+    step = 0.0001 * float(config.REF_LENGTH_MOMENT)
 
     # ----------------------------------------------------
     #  Redundancy Check
@@ -842,6 +842,9 @@ def directdiff( config, state=None ):
     # files: target heat flux distribution
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
+
+    if config['OBJECTIVE_FUNCTION'] == "BOOM":
+        pull.append("tols.in")
 
     # output redirection
     with redirect_folder('DIRECTDIFF',pull,link) as push:
