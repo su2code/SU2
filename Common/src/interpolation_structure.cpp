@@ -1534,15 +1534,15 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
             AngularCoord_Donor = Buffer_Receive_Coord[ Global_Point_Donor];
             if ( AngularCoord_Donor > MaxAngularCoord_Target ){
-              dist = abs(AngularCoord_Donor - (AngularCoord_Target + PitchDonor));
+              dist = abs(AngularCoord_Donor - (AngularCoord_Target + PitchTarget));
             }
             else if ( AngularCoord_Donor <=  MinAngularCoord_Target  ){
 //              dist = abs( AngularCoord_Donor - (AngularCoord_Target - PitchDonor));
-              dist = abs(AngularCoord_Donor - (AngularCoord_Target - PitchDonor));
+              dist = abs(AngularCoord_Donor - (AngularCoord_Target - PitchTarget));
             }
             else
               dist = abs(AngularCoord_Donor - AngularCoord_Target);
-            cout << "Pitch Donor        : " << PitchDonor << endl;
+            cout << "Pitch Target        : " << PitchTarget << endl;
             cout << "MaxAngular_Target  : " <<  MaxAngularCoord_Target << endl;
             cout << "MinAngular_Target  : " <<  MinAngularCoord_Target << endl;
             cout << "AngularCoord_Donor : " <<  AngularCoord_Donor << endl;
