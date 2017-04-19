@@ -598,6 +598,10 @@ inline su2double CSolver::GetTotal_Sens_E(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetTotal_Sens_Nu(unsigned short iVal) { return 0.0; }
 
+inline su2double CSolver::GetTotal_Sens_Rho(unsigned short iVal) { return 0.0; }
+
+inline su2double CSolver::GetTotal_Sens_Rho_DL(unsigned short iVal) { return 0.0; }
+
 inline su2double CSolver::GetTotal_Sens_EField(unsigned short iEField) { return 0.0; }
 
 inline su2double CSolver::GetTotal_Sens_DVFEA(unsigned short iDVFEA) { return 0.0; }
@@ -605,6 +609,10 @@ inline su2double CSolver::GetTotal_Sens_DVFEA(unsigned short iDVFEA) { return 0.
 inline su2double CSolver::GetGlobal_Sens_E(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetGlobal_Sens_Nu(unsigned short iVal) { return 0.0; }
+
+inline su2double CSolver::GetGlobal_Sens_Rho(unsigned short iVal) { return 0.0; }
+
+inline su2double CSolver::GetGlobal_Sens_Rho_DL(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetGlobal_Sens_EField(unsigned short iEField) { return 0.0; }
 
@@ -2034,6 +2042,10 @@ inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(unsigned short iVal) { retur
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_Nu(unsigned short iVal) { return Total_Sens_Nu[iVal]; }
 
+inline su2double CDiscAdjFEASolver::GetTotal_Sens_Rho(unsigned short iVal) { return Total_Sens_Rho[iVal]; }
+
+inline su2double CDiscAdjFEASolver::GetTotal_Sens_Rho_DL(unsigned short iVal) { return Total_Sens_Rho_DL[iVal]; }
+
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_EField(unsigned short iEField) { return Total_Sens_EField[iEField]; }
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_DVFEA(unsigned short iDVFEA) { return Total_Sens_DV[iDVFEA]; }
@@ -2041,6 +2053,10 @@ inline su2double CDiscAdjFEASolver::GetTotal_Sens_DVFEA(unsigned short iDVFEA) {
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_E(unsigned short iVal) { return Global_Sens_E[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Nu(unsigned short iVal) { return Global_Sens_Nu[iVal]; }
+
+inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Rho(unsigned short iVal) { return Global_Sens_Rho[iVal]; }
+
+inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Rho_DL(unsigned short iVal) { return Global_Sens_Rho_DL[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_EField(unsigned short iEField) { return Global_Sens_EField[iEField]; }
 

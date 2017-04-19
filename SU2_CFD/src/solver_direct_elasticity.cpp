@@ -236,6 +236,12 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
   }
 
+  /*--- Residual i and residual j for the Matrix-Vector Product for the Mass Residual ---*/
+  if (dynamic){
+    Residual_i = new su2double[nVar];        for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
+    Residual_j = new su2double[nVar];        for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
+  }
+
   /*--- Define some auxiliary vectors related to the solution ---*/
 
   Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
@@ -692,6 +698,11 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
   /*--- Initialize the value of the total objective function ---*/
    Total_OFRefGeom = 0.0;
+   Total_OFRefNode = 0.0;
+
+   /*--- Initialize the value of the global objective function ---*/
+   Global_OFRefGeom = 0.0;
+   Global_OFRefNode = 0.0;
 
    /*--- Initialize the value of the total gradient for the forward mode ---*/
    Total_ForwardGradient = 0.0;
@@ -717,6 +728,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
      if (config->GetDirectDiff() == D_PRESSURE) myfile_res.open ("Output_Direct_Diff_Pressure.txt");
 
      myfile_res << "Objective Function " << "\t";
+
+     if (dynamic) myfile_res << "O. Function Averaged " << "\t";
 
      myfile_res << "Sensitivity Local" << "\t";
 
@@ -2287,7 +2300,7 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 
 void CFEM_ElasticitySolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
-  unsigned long iElem, iVar;
+  unsigned long iElem, iVar, iPoint;
   unsigned short iNode, iDim, nNodes = 0;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
   su2double val_Coord;
@@ -2295,6 +2308,13 @@ void CFEM_ElasticitySolver::Compute_MassRes(CGeometry *geometry, CSolver **solve
 
   su2double Mab;
   unsigned short NelNodes, jNode;
+
+  su2double val_iNode, val_jNode;
+
+  /*--- Set vector entries to zero ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+    TimeRes.SetBlock_Zero(iPoint);
+  }
 
   /*--- Loops over all the elements ---*/
 
@@ -2332,10 +2352,12 @@ void CFEM_ElasticitySolver::Compute_MassRes(CGeometry *geometry, CSolver **solve
         Mab = element_container[FEA_TERM][EL_KIND]->Get_Mab(iNode, jNode);
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          MassMatrix_ij[iVar][iVar] = Mab;
+          Residual_i[iVar] = Mab * TimeRes_Aux.GetBlock(indexNode[iNode],iVar);
+          Residual_j[iVar] = Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
         }
 
-        MassMatrix.AddBlock(indexNode[iNode], indexNode[jNode], MassMatrix_ij);
+        TimeRes.AddBlock(indexNode[iNode],Residual_i);
+        TimeRes.AddBlock(indexNode[jNode],Residual_j);
 
       }
 
@@ -3963,6 +3985,8 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
     /*--- Once computed, compute M*TimeRes_Aux ---*/
     MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
 
+//    Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config)
+
     /*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       
@@ -5389,6 +5413,10 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
   unsigned long iPoint;
   unsigned long nTotalPoint = 1;
 
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
+  unsigned long ExtIter = config->GetExtIter();
+
   su2double reference_geometry = 0.0, current_solution = 0.0;
   su2double accel_check = 0.0;
   su2double *solDisp = NULL, *solVel = NULL, predicted_solution[3] = {0.0, 0.0, 0.0};
@@ -5398,6 +5426,8 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
   su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double weight_OF = 1.0;
+
+  su2double objective_function_averaged = 0.0;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -5436,6 +5466,9 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
   Total_OFRefGeom = objective_function_reduce + PenaltyValue;
 
+  Global_OFRefGeom += Total_OFRefGeom;
+  objective_function_averaged = Global_OFRefGeom / (ExtIter + 1.0 + EPS);
+
   bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
                       (config->GetDirectDiff() == D_POISSON) ||
                       (config->GetDirectDiff() == D_RHO) ||
@@ -5459,13 +5492,9 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
     myfile_res.precision(15);
 
-//    if (n_DV > 1){
-//      myfile_res << config->GetnID_DE() << "\t";
-//    }
-
     myfile_res << scientific << Total_OFRefGeom << "\t";
 
-    unsigned long ExtIter = config->GetExtIter();
+    if (dynamic) myfile_res << scientific << objective_function_averaged << "\t";
 
     su2double local_forward_gradient = 0.0;
     su2double averaged_gradient = 0.0;
@@ -5506,7 +5535,8 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
       ofstream myfile_res;
       myfile_res.open ("of_refgeom.dat");
       myfile_res.precision(15);
-      myfile_res << scientific << Total_OFRefGeom << endl;
+      if (dynamic) myfile_res << scientific << objective_function_averaged << endl;
+      else myfile_res << scientific << Total_OFRefGeom << endl;
       myfile_res.close();
       if (fsi){
           ofstream myfile_his;
@@ -5527,6 +5557,10 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
   unsigned long iPoint;
   unsigned long nTotalPoint = 1;
 
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
+  unsigned long ExtIter = config->GetExtIter();
+
   su2double reference_geometry = 0.0, current_solution = 0.0;
   su2double accel_check = 0.0;
   su2double *solDisp = NULL, *solVel = NULL, predicted_solution[3] = {0.0, 0.0, 0.0};
@@ -5535,7 +5569,14 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
   bool predicted_de = config->GetDE_Predicted();
 
   su2double objective_function = 0.0, objective_function_reduce = 0.0;
+  su2double distance_sq = 0.0 ;
   su2double weight_OF = 1.0;
+
+  su2double objective_function_averaged = 0.0;
+
+  /*--- TEMPORARY, for application in dynamic TestCase ---*/
+  su2double difX = 0.0, difX_reduce = 0.0;
+  su2double difY = 0.0, difY_reduce = 0.0;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -5557,8 +5598,13 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
         current_solution = node[iPoint]->GetSolution(iVar);
 
         /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
-        objective_function += weight_OF * (current_solution - reference_geometry)*(current_solution - reference_geometry);
+        distance_sq +=  (current_solution - reference_geometry)*(current_solution - reference_geometry);
       }
+
+      objective_function = weight_OF * sqrt(distance_sq);
+
+      difX = node[iPoint]->GetSolution(0) - config->GetRefNode_Displacement(0);
+      difY = node[iPoint]->GetSolution(1) - config->GetRefNode_Displacement(1);
 
     }
 
@@ -5566,11 +5612,18 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&objective_function,  &objective_function_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&difX,  &difX_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&difY,  &difY_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
     objective_function_reduce        = objective_function;
+    difX_reduce                      = difX;
+    difY_reduce                      = difY;
 #endif
 
-  Total_OFRefNode = objective_function_reduce;
+  Total_OFRefNode = objective_function_reduce + PenaltyValue;
+
+  Global_OFRefNode += Total_OFRefNode;
+  objective_function_averaged = Global_OFRefNode / (ExtIter + 1.0 + EPS);
 
   bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
                       (config->GetDirectDiff() == D_POISSON) ||
@@ -5597,7 +5650,7 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 
     myfile_res << scientific << Total_OFRefNode << "\t";
 
-    unsigned long ExtIter = config->GetExtIter();
+    if (dynamic) myfile_res << scientific << objective_function_averaged << "\t";
 
     su2double local_forward_gradient = 0.0;
     su2double averaged_gradient = 0.0;
@@ -5618,6 +5671,9 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 
     myfile_res << scientific << averaged_gradient << "\t";
 
+    myfile_res << scientific << difX_reduce << "\t";
+    myfile_res << scientific << difY_reduce << "\t";
+
     myfile_res << endl;
 
     myfile_res.close();
@@ -5634,13 +5690,25 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
   {
 
     // TODO: Temporary output file for the objective function. Will be integrated in the output once is refurbished.
-    if (!fsi){
+    if (rank == MASTER_NODE){
       cout << "Objective function: " << Total_OFRefNode << "." << endl;
       ofstream myfile_res;
       myfile_res.open ("of_refnode.dat");
       myfile_res.precision(15);
-      myfile_res << scientific << Total_OFRefNode << endl;
+      if (dynamic) myfile_res << scientific << objective_function_averaged << endl;
+      else myfile_res << scientific << Total_OFRefNode << endl;
       myfile_res.close();
+
+      ofstream myfile_his;
+      myfile_his.open ("history_refnode.dat",ios::app);
+      myfile_his.precision(15);
+      myfile_his << ExtIter << "\t";
+      myfile_his << scientific << Total_OFRefNode << "\t";
+      myfile_his << scientific << objective_function_averaged << "\t";
+      myfile_his << scientific << difX_reduce << "\t";
+      myfile_his << scientific << difY_reduce << endl;
+      myfile_his.close();
+
     }
 
   }
