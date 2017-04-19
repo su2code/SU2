@@ -3195,10 +3195,22 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \return Value of the Mach sensitivity for the Poisson's ratio Nu
+   * \return Value of the sensitivity for the Poisson's ratio Nu
    */
   virtual su2double GetTotal_Sens_Nu(unsigned short iVal);
   
+  /*!
+   * \brief A virtual member.
+   * \return Value of the structural density sensitivity
+   */
+  virtual su2double GetTotal_Sens_Rho(unsigned short iVal);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the structural weight sensitivity
+   */
+  virtual su2double GetTotal_Sens_Rho_DL(unsigned short iVal);
+
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
@@ -3223,6 +3235,18 @@ public:
    */
   virtual su2double GetGlobal_Sens_Nu(unsigned short iVal);
   
+  /*!
+   * \brief A virtual member.
+   * \return Value of the structural density sensitivity
+   */
+  virtual su2double GetGlobal_Sens_Rho(unsigned short iVal);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the structural weight sensitivity
+   */
+  virtual su2double GetGlobal_Sens_Rho_DL(unsigned short iVal);
+
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
@@ -11060,8 +11084,12 @@ private:
   
   su2double PenaltyValue;      /*!< \brief Penalty value to maintain total stiffness constant */
 
-  su2double Total_OFRefGeom;        /*!< \brief Total FEA coefficient for all the boundaries. */
-  su2double Total_OFRefNode;        /*!< \brief Total FEA coefficient for all the boundaries. */
+  su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
+  su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
+
+  su2double Global_OFRefGeom;        /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
+  su2double Global_OFRefNode;        /*!< \brief Global Objective Function (added over time steps): Reference Node. */
+
   su2double Total_ForwardGradient;  /*!< \brief Vector of the total forward gradient. */
   
 public:
@@ -12639,6 +12667,18 @@ public:
   su2double GetTotal_Sens_Nu(unsigned short iVal);
   
   /*!
+   * \brief Get the total sensitivity for the structural density
+   * \return Value of the structural density sensitivity
+   */
+  su2double GetTotal_Sens_Rho(unsigned short iVal);
+
+  /*!
+   * \brief Get the total sensitivity for the structural weight
+   * \return Value of the structural weight sensitivity
+   */
+  su2double GetTotal_Sens_Rho_DL(unsigned short iVal);
+
+  /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField (time averaged)
    */
@@ -12673,6 +12713,19 @@ public:
    * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
    */
   su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA);
+
+  /*!
+   * \brief Get the total sensitivity for the structural density
+   * \return Value of the structural density sensitivity
+   */
+  su2double GetGlobal_Sens_Rho(unsigned short iVal);
+
+  /*!
+   * \brief Get the total sensitivity for the structural weight
+   * \return Value of the structural weight sensitivity
+   */
+  su2double GetGlobal_Sens_Rho_DL(unsigned short iVal);
+
 
   /*!
    * \brief Get the value of the Young modulus from the adjoint solver

@@ -2849,6 +2849,11 @@ CDiscAdjFEAIteration::CDiscAdjFEAIteration(CConfig *config) : CIteration(config)
     for (iVar = 0; iVar < config->GetnPoissonRatio(); iVar++)
       myfile_res << "Sens_Nu_" << iVar << "\t";
 
+    if (config->GetDynamic_Analysis() == DYNAMIC){
+        for (iVar = 0; iVar < config->GetnMaterialDensity(); iVar++)
+          myfile_res << "Sens_Rho_" << iVar << "\t";
+    }
+
     if (de_effects){
         for (iVar = 0; iVar < config->GetnElectric_Field(); iVar++)
           myfile_res << "Sens_EField_" << iVar << "\t";
@@ -3108,6 +3113,10 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
         myfile_res << scientific << solver_container[ZONE_0][MESH_0][ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
     for (iVar = 0; iVar < config_container[val_iZone]->GetnPoissonRatio(); iVar++)
         myfile_res << scientific << solver_container[ZONE_0][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Nu(iVar) << "\t";
+    if (dynamic){
+        for (iVar = 0; iVar < config_container[val_iZone]->GetnMaterialDensity(); iVar++)
+            myfile_res << scientific << solver_container[ZONE_0][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Rho(iVar) << "\t";
+    }
 
     if (de_effects){
         for (iVar = 0; iVar < config_container[val_iZone]->GetnElectric_Field(); iVar++)
@@ -3165,7 +3174,7 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
       for (iDV = 0; iDV < nDV; iDV++){
         myfile_res << iDV;
         myfile_res << "\t";
-        myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_DVFEA(iDV);
+        myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetTotal_Sens_DVFEA(iDV);
         myfile_res << endl;
       }
 

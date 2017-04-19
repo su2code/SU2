@@ -1596,7 +1596,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Modulus of the electric fields */
   addDoubleListOption("REFERENCE_NODE_DISPLACEMENT", nDim_RefNode, RefNode_Displacement);
   /*!\brief REFERENCE_NODE_PENALTY\n DESCRIPTION: Penalty weight value for the objective function \ingroup Config*/
-  addDoubleOption("REFERENCE_NODE_PENALTY", RefNode_Penalty, 1E6);
+  addDoubleOption("REFERENCE_NODE_PENALTY", RefNode_Penalty, 1E3);
 
   /*  DESCRIPTION: Run an adjoint solution of the structural problem (temporary - this will be modified later on)
   *  Options: NO, YES \ingroup Config */
