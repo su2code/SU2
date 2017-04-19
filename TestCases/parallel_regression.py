@@ -127,7 +127,6 @@ def main():
     flatplate.tol       = 0.00001
     test_list.append(flatplate)
 
-
     # Laminar cylinder (steady)
     cylinder           = TestCase('cylinder')
     cylinder.cfg_dir   = "navierstokes/cylinder"
@@ -149,6 +148,17 @@ def main():
     cylinder_lowmach.timeout   = 1600
     cylinder_lowmach.tol       = 0.00001
     test_list.append(cylinder_lowmach)
+
+    # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
+    poiseuille           = TestCase('poiseuille')
+    poiseuille.cfg_dir   = "navierstokes/poiseuille"
+    poiseuille.cfg_file  = "lam_poiseuille.cfg"
+    poiseuille.test_iter = 10
+    poiseuille.test_vals = [-12.027716, -3.326792, -0.000000, 2.351005] #last 4 columns
+    poiseuille.su2_exec  = "parallel_computation.py -f"
+    poiseuille.timeout   = 1600
+    poiseuille.tol       = 0.00001
+    test_list.append(poiseuille)
 
     ##########################
     ### Compressible RANS  ###
@@ -613,6 +623,17 @@ def main():
 #    pipe.tol       = 0.00001
 #    pipe.unsteady  = True
 #    test_list.append(pipe)
+
+    # Bars_SST_2D
+    bars_SST_2D           = TestCase('bars_SST_2D')
+    bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
+    bars_SST_2D.cfg_file  = "bars.cfg"
+    bars_SST_2D.test_iter = 13
+    bars_SST_2D.test_vals = [-2.319527, 0.922201, 0.001254, 0.093163] #last 4 columns
+    bars_SST_2D.su2_exec  = "SU2_CFD"
+    bars_SST_2D.timeout   = 1600
+    bars_SST_2D.tol       = 0.00001
+    test_list.append(bars_SST_2D)
 
     ##########################
     ### FEA - FSI          ###

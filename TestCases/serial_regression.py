@@ -149,6 +149,17 @@ def main():
     cylinder_lowmach.tol       = 0.00001
     test_list.append(cylinder_lowmach)
 
+    # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
+    poiseuille           = TestCase('poiseuille')
+    poiseuille.cfg_dir   = "navierstokes/poiseuille"
+    poiseuille.cfg_file  = "lam_poiseuille.cfg"
+    poiseuille.test_iter = 10
+    poiseuille.test_vals = [-12.272126, -3.335311, 0.000001, 2.351005] #last 4 columns
+    poiseuille.su2_exec  = "SU2_CFD"
+    poiseuille.timeout   = 1600
+    poiseuille.tol       = 0.00001
+    test_list.append(poiseuille)
+
     ##########################
     ### Compressible RANS  ###
     ##########################
@@ -663,6 +674,17 @@ def main():
 #    pipe.tol       = 0.00001
 #    pipe.unsteady  = True
 #    test_list.append(pipe)
+
+    # Bars_SST_2D
+    bars_SST_2D           = TestCase('bars_SST_2D')
+    bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
+    bars_SST_2D.cfg_file  = "bars.cfg"
+    bars_SST_2D.test_iter = 13
+    bars_SST_2D.test_vals = [-2.324765, 0.916963, 0.001254, 0.093163] #last 4 columns
+    bars_SST_2D.su2_exec  = "SU2_CFD"
+    bars_SST_2D.timeout   = 1600
+    bars_SST_2D.tol       = 0.00001
+    test_list.append(bars_SST_2D)
 
     ##########################
     ### FEA - FSI          ###
