@@ -387,6 +387,7 @@ private:
   short *FFD_Fix_IDir, *FFD_Fix_JDir, *FFD_Fix_KDir;	/*!< \brief Exact sections. */
   string CSP_PilotPointFile;
   unsigned short CSP_EnergyDefinition;
+  su2double CSP_ElasticModulus;
   unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
   *MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
@@ -2232,6 +2233,8 @@ public:
   unsigned short GetnCSP_ConstraintGroups();
 
   string GetCSP_ConstraintGroup(unsigned short val_group);
+  
+  su2double GetCSP_ElasticModulus();
   
   /*!
    * \brief Get the number of design variables.

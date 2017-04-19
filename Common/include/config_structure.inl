@@ -1488,6 +1488,8 @@ inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
 
 inline string CConfig::GetCSP_PilotPointFile(){return CSP_PilotPointFile;}
 
+inline su2double CConfig::GetCSP_ElasticModulus(){return CSP_ElasticModulus;}
+
 inline unsigned short CConfig::GetCSP_EnergyDefinition(){return CSP_EnergyDefinition;}
 
 inline string CConfig::GetCSP_ConstraintGroup(unsigned short val_group){return CSP_ConstraintGroups[val_group];}

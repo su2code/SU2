@@ -2197,6 +2197,8 @@ void CSurfaceMovement::SetConstrainedShapeParam(CGeometry *geometry, CConfig *co
     FFDBox->GetLaplacianEnergyMatrix3D(EnergyMatrix);
     break;
   case ELASTIC_ENERGY:
+    if (rank == MASTER_NODE)
+      cout << "Computing CSP Stiffness matrix." << endl;
     FFDBox->GetGlobalStiffnessMatrix(EnergyMatrix, config, geometry);
     break;
   }
@@ -2213,17 +2215,18 @@ void CSurfaceMovement::SetConstrainedShapeParam(CGeometry *geometry, CConfig *co
 
   if (nGroup > 0){
     
-    Eigen::FullPivHouseholderQR<EigenMatrix> QRSystemMatrix;
+    Eigen::ColPivHouseholderQR<EigenMatrix> QRSystemMatrix;
 
     /*--- QR decomposition of the system matrix ---*/
 
-    QRSystemMatrix = SystemMatrix.fullPivHouseholderQr();
+    QRSystemMatrix = SystemMatrix.colPivHouseholderQr();
 
     SystemSol = QRSystemMatrix.solve(SystemRHS);
     ControlPointPositions = SystemSol.block(0, 0, TotalnControl, 1);
 
     if (rank == MASTER_NODE){
       cout << "Quadratic Energy: "<< ControlPointPositions.transpose()*EnergyMatrix*ControlPointPositions <<endl;
+      cout << "Constraints:      "<< (ConstraintMatrix*ControlPointPositions - ParameterValues).norm() << endl;
     }
 
     for (iControl = 0; iControl < lControl; iControl++){
@@ -5340,13 +5343,13 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
       output_file << "FFD_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
       output_file << "FFD_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
       if (nDim == 3) output_file << "FFD_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
-      if (config->GetFFD_Blending() == BSPLINE_UNIFORM) {
+      if (FFDBox[iFFDBox]->BlendingFunction[0]->GetOrder() != FFDBox[iFFDBox]->BlendingFunction[0]->GetnControl()) {
         output_file << "FFD_BLENDING= BSPLINE_UNIFORM" << endl;
         output_file << "BSPLINE_ORDER_I= " << FFDBox[iFFDBox]->BlendingFunction[0]->GetOrder() << endl;
         output_file << "BSPLINE_ORDER_J= " << FFDBox[iFFDBox]->BlendingFunction[1]->GetOrder() << endl;
         if (nDim == 3) output_file << "BSPLINE_ORDER_K= " << FFDBox[iFFDBox]->BlendingFunction[2]->GetOrder() << endl;
       }
-      if (config->GetFFD_Blending() == BEZIER) {
+      else {
         output_file << "FFD_BLENDING= BEZIER" << endl;
       }
 
@@ -6951,7 +6954,7 @@ void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGrou
   }
 }
 
-void CFreeFormDefBox::AddLocalStiffnessContribution(EigenMatrix &StiffMatrix, su2double *uvw, su2double factor){
+void CFreeFormDefBox::AddLocalStiffnessContribution(EigenMatrix &StiffMatrix, su2double *uvw, su2double factor, su2double E){
 
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
@@ -6960,9 +6963,9 @@ void CFreeFormDefBox::AddLocalStiffnessContribution(EigenMatrix &StiffMatrix, su
   unsigned short iDim, lmn[3], jDim;
   su2double  DerivativeBasis[3],ValBasis[3];
 
-  lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
+  lmn[0] = lControl - 1; lmn[1] = mControl - 1; lmn[2] = nControl - 1;
 
-  const su2double E = 1E06, nu = 0.25;
+  const su2double nu = 0.25;
 
   const su2double Lambda = (nu*E)/((1+nu)*(1-2*nu));
   const su2double mu     = E/(2*(1+nu));
@@ -7062,8 +7065,15 @@ void CFreeFormDefBox::GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *con
   unsigned short iMarker, iDim;
   unsigned short lmn_min[3], lmn_max[3];
 
-  su2double *ParamCoord, Area = 0, *Normal, *Coord, ParamCoord_Guess[] = {0.5, 0.5, 0.5}, factor;
+  su2double *ParamCoord, Area = 0, *Normal, *Coord, ParamCoord_Guess[] = {0.5, 0.5, 0.5}, factor, E;
 
+  E = config->GetCSP_ElasticModulus();
+
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
   EigenMatrix LocalStiffness(6, TotalControl*nDim);
   EigenMatrix MyEnergy(TotalControl*nDim, TotalControl*nDim);
   Matrix.resize(TotalControl*nDim, TotalControl*nDim);
@@ -7077,92 +7087,74 @@ void CFreeFormDefBox::GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *con
   Matrix = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
   LocalStiffness = EigenMatrix::Zero(6, TotalControl*nDim);
 
-  cout << "Computing CSP stiffness matrix." << endl;
-
   /*--- Compute the elastic energy as an integral over the surface points ---*/
 
-  for (iSurfacePoints = 0; iSurfacePoints < GetnSurfacePoint(); iSurfacePoints++){
-
-    iMarker = Get_MarkerIndex(iSurfacePoints);
-
-    if (config->GetMarker_All_DV(iMarker) == YES) {
-
-      iVertex = Get_VertexIndex(iSurfacePoints);
-      iPoint  = Get_PointIndex(iSurfacePoints);
-
-      if (geometry->node[iPoint]->GetDomain()){
-
-        ParamCoord = Get_ParametricCoord(iSurfacePoints);
-
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-
-        Area = 0.0;
-        for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-          Area += Normal[iDim]*Normal[iDim];
+    for (iSurfacePoints = 0; iSurfacePoints < GetnSurfacePoint(); iSurfacePoints++){
+  
+      iMarker = Get_MarkerIndex(iSurfacePoints);
+  
+      if (config->GetMarker_All_DV(iMarker) == YES) {
+  
+        iVertex = Get_VertexIndex(iSurfacePoints);
+        iPoint  = Get_PointIndex(iSurfacePoints);
+  
+        if (geometry->node[iPoint]->GetDomain()){
+  
+          ParamCoord = Get_ParametricCoord(iSurfacePoints);
+  
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+  
+          Area = 0.0;
+          for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+            Area += Normal[iDim]*Normal[iDim];
+          }
+          Area = sqrt(Area);
+  
+          factor = 0.5*Area;
+  
+          /*--- Get the local stiffness matrix at the parametric coordinates of the surface point  ---*/
+  
+          AddLocalStiffnessContribution(MyEnergy, ParamCoord, factor, E);
+  
         }
-        Area = sqrt(Area);
-
-        factor = 0.5*Area;
-
-        /*--- Get the local stiffness matrix at the parametric coordinates of the surface point  ---*/
-
-        AddLocalStiffnessContribution(MyEnergy, ParamCoord, factor);
-
       }
     }
-  }
+  
+   /*--- At the moment the receive buffer will be always registered on the tape,
+    * even if the send buffer was not active. This will lead to an extremely high memory consumption
+    * in the subsequent computation when AD is enabled. Since we know that the energy value does not depend on the design
+    * variable values (it only depends on the initial control point positions), we can set the tape to passive here ... ---*/
+  
+  AD_BEGIN_PASSIVE
+    SU2_MPI::Allreduce(MyEnergy.data(), Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  AD_END_PASSIVE
+  
 
- /*--- At the moment the receive buffer will be always registered on the tape,
-  * even if the send buffer was not active. This will lead to an extremely high memory consumption
-  * in the subsequent computation when AD is enabled. Since we know that the energy value does not depend on the design
-  * variable values (it only depends on the initial control point positions), we can set the tape to passive here ... ---*/
-
-AD_BEGIN_PASSIVE
-  SU2_MPI::Allreduce(MyEnergy.data(), Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-AD_END_PASSIVE
-
-
-//  for (iControl = 0; iControl < lControl; iControl++){
-//    for (jControl = 0; jControl < mControl; jControl++){
-//      for (kControl = 0; kControl < nControl; kControl++){
-
-////        if (iControl + 1 - BlendingFunction[0]->GetDegree() >= 0){
-////          lmn_min[0] = iControl + 1 - BlendingFunction[0]->GetDegree();
-////        } else {
-////          lmn_min[0] = 0;
-////        }
-////        if (jControl + 1 - BlendingFunction[1]->GetDegree() >= 0){
-////          lmn_min[1] = jControl + 1 - BlendingFunction[1]->GetDegree();
-////        } else {
-////          lmn_min[1] = 0;
-////        }
-////        if (kControl + 1 - BlendingFunction[2]->GetDegree() >= 0){
-////          lmn_min[2] = kControl + 1 - BlendingFunction[2]->GetDegree();
-////        } else {
-////          lmn_min[2] = 0;
-////        }
-//        lmn_min[0] = 0;
-//        lmn_min[1] = 0;
-//        lmn_min[2] = 0;
-
-//        lmn_max[0] =  lControl - 1;
-//        lmn_max[1] =  mControl - 1;
-//        lmn_max[2] =  nControl - 1;
-
-//        cout << iControl << " " << jControl << " " << kControl << endl;
-
-//        Coord =GetCoordControlPoints(iControl, jControl, kControl);
-
-//        ParamCoord = GetParametricCoord_Iterative(0, Coord, ParamCoord_Guess, config);
-
-//        GetLocalStiffnessMatrix(Matrix, ParamCoord, lmn_min, lmn_max);
-
-////        Matrix.noalias() += 0.5*(LocalStiffness.transpose()*ConstitutiveMatrix*LocalStiffness);
-
+//  //if (rank == MASTER_NODE){
+//    for (iControl = 0; iControl < lControl; iControl++){
+//      for (jControl = 0; jControl < mControl; jControl++){
+//        for (kControl = 0; kControl < nControl; kControl++){
+//
+//  //        Coord = GetCoordControlPoints(iControl, jControl, kControl);
+//
+////          ParamCoord = GetParametricCoord_Iterative(0, Coord, ParamCoord_Guess, config);
+//
+//          ParamCoord = GetParCoordControlPoints(iControl, jControl, kControl);
+//
+//          for (iDim = 0; iDim < nDim; iDim++){
+//            ParamCoord[iDim] = ParamCoord[iDim] + EPS;
+//            if (ParamCoord[iDim] <= 0.0) ParamCoord[iDim] = EPS;
+//            if (ParamCoord[iDim] >= 1.0) ParamCoord[iDim] = 1.0 - EPS;
+//          }
+//          AddLocalStiffnessContribution(Matrix, ParamCoord, 0.0025, E);
+//
+//        }
 //      }
 //    }
-//  }
-AD_END_PASSIVE
+//  //}
+//
+//  //SU2_MPI::Bcast(Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE,MASTER_NODE, MPI_COMM_WORLD);
+//
 }
 
 
@@ -7351,6 +7343,30 @@ void CFreeFormDefBox::GetLaplacianEnergyMatrix3D(EigenMatrix &Matrix){
             StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
             StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
             StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+          }
+          else if ((jControl == mControl - 1) && (iControl == 0)){
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+          }
+          else if ((jControl == mControl - 1) && (iControl == lControl - 1)){
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+          }
+          else if ((jControl == 0) && (iControl == lControl - 1)){
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+          }
+          else if ((jControl == 0) && (iControl == 0)){
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
             StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
           }
           else if ((iControl == 0) && (kControl == nControl - 1)){

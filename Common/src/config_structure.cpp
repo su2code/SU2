@@ -1704,6 +1704,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   addEnumOption("CSP_ENERGY_DEFINITION", CSP_EnergyDefinition, CSP_Energy_Map, ELASTIC_ENERGY);
 
+  addDoubleOption("CSP_ELASTIC_MODULUS", CSP_ElasticModulus, 1e06);
+
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
 

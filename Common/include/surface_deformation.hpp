@@ -950,7 +950,7 @@ public:
 
   void GetLaplacianEnergyMatrix3D(EigenMatrix &Matrix);
 
-  void AddLocalStiffnessContribution(EigenMatrix &StiffMatrix, su2double *uvw, su2double factor);
+  void AddLocalStiffnessContribution(EigenMatrix &StiffMatrix, su2double *uvw, su2double factor, su2double E);
 
   void GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, CGeometry *geometry);
 };
