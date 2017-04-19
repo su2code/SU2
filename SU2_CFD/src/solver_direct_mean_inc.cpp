@@ -1623,7 +1623,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   su2double Temperature_FreeStream = 0.0,  ModVel_FreeStream = 0.0,Energy_FreeStream = 0.0,
   ModVel_FreeStreamND = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0,
-  Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0, Time_Ref = 0.0,
+  Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0,
   Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref= 0.0,
   Froude = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0,
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
@@ -1674,6 +1674,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   Density_Ref  = Density_FreeStream;                      config->SetDensity_Ref(Density_Ref);
   Velocity_Ref = ModVel_FreeStream;                       config->SetVelocity_Ref(Velocity_Ref);
   Pressure_Ref = Density_Ref*(Velocity_Ref*Velocity_Ref); config->SetPressure_Ref(Pressure_Ref);
+  Omega_Ref = Velocity_Ref / Length_Ref;                  config->SetOmega_Ref(Omega_Ref);
 
   if (viscous) {
     Viscosity_FreeStream = config->GetViscosity_FreeStream();
@@ -2964,16 +2965,10 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   RefTemp     = Temperature_Inf;
   RefDensity  = Density_Inf;
   RefPressure = Pressure_Inf;
-  if (grid_movement) {
-    Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
-    Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-  }
+
+  RefVel2 = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
 
   factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
 
@@ -3314,16 +3309,10 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
   RefTemp     = Temperature_Inf;
   RefDensity  = Density_Inf;
-  if (grid_movement) {
-    Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
-    Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-  }
+
+  RefVel2 = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
 
   factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
 
@@ -6658,15 +6647,10 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   RefTemp    = Temperature_Inf;
   RefDensity = Density_Inf;
-  if (grid_movement) {
-    Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
-    Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  } else {
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-  }
+
+  RefVel2 = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
 
   factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
 
