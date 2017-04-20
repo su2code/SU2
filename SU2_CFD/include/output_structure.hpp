@@ -671,6 +671,20 @@ public:
   su2double GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
+   * \brief Give the Entropy Generation performance parameters for turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   * \param[in] iSpan - span section.
+   */
+  su2double GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan);
+
+  /*!
+   * \brief Give the Entropy Generation performance parameters for turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   * \param[in] iSpan - span section.
+   */
+  su2double GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan);
+
+  /*!
    * \brief Write the output file for harmonic balance for each time-instance.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
