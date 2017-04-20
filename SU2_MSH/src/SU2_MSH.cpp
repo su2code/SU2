@@ -95,8 +95,8 @@ int main(int argc, char *argv[]) {
     geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
     
     cout << "Check 1" << endl;
-    for (long nPoint=0; nPoint < geometry_aux->GetGlobal_nPoint(); nPoint++)
-      cout << "Point= " << nPoint << " XCoord = "<< geometry_aux->node[nPoint]->GetCoord()[0] << " YCoord = "<< geometry_aux->node[nPoint]->GetCoord()[1] << endl;
+    //for (long nPoint=0; nPoint < geometry_aux->GetGlobal_nPoint(); nPoint++)
+    //  cout << "Point= " << nPoint << " XCoord = "<< geometry_aux->node[nPoint]->GetCoord()[0] << " YCoord = "<< geometry_aux->node[nPoint]->GetCoord()[1] << endl;
     
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
     
@@ -144,9 +144,9 @@ int main(int argc, char *argv[]) {
   geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
 	
   //Test statement
-  cout << "Check 2" << endl;
-  for (long nPoint=0; nPoint < geometry_container[0]->GetGlobal_nPoint(); nPoint++)
-    cout << "Point= " << nPoint << " XCoord = "<< geometry_container[0]->node[nPoint]->GetCoord()[0] << " YCoord = "<< geometry_container[0]->node[nPoint]->GetCoord()[1] << endl;
+  //cout << "Check 2" << endl;
+  //for (long nPoint=0; nPoint < geometry_container[0]->GetGlobal_nPoint(); nPoint++)
+  //  cout << "Point= " << nPoint << " XCoord = "<< geometry_container[0]->node[nPoint]->GetCoord()[0] << " YCoord = "<< geometry_container[0]->node[nPoint]->GetCoord()[1] << endl;
 
   /*--- Create the edge structure ---*/
   

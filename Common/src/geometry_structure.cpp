@@ -14770,6 +14770,9 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGe
   translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
   dx, dy, dz, rotCoord[3], *Coord_i;
   unsigned short nMarker_Max = config->GetnMarker_Max();
+  vector<unsigned long> donorPoints;
+  vector<su2double> donorCoord;
+
 
   /*--- We only create the mirror structure for the second boundary ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -14882,10 +14885,10 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGe
   /*--- Create a list with all the points and the new index for each marker ---*/
   unsigned long **Index = new unsigned long *[nPeriodic+1];
 	for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++)
-		Index[iPeriodic] = new unsigned long [geometry->GetnPoint()];
+		Index[iPeriodic] = new unsigned long [geometry->GetGlobal_nPoint()];
 	
 	for(iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++){
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++){
+		for (iPoint = 0; iPoint < geometry->GetGlobal_nPoint(); iPoint ++){
 			Index[iPeriodic][iPoint] = 0;
 		}
 	}
@@ -14907,10 +14910,11 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGe
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 				iPeriodic = config->GetMarker_All_PerBound(iMarker);
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
-        Index[iPeriodic][jPoint] = iPoint;
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();// Local Index
+        jPoint = geometry->vertex[iMarker][iVertex]->GetGlobalDonorPoint(); //global index
+        Index[iPeriodic][jPoint] = geometry->node[iPoint]->GetGlobalIndex(); //global index
         cout <<" Donor pair: " << iPoint << " " << jPoint << endl;
+        cout <<" Global Donor pair: " << geometry->node[iPoint]->GetGlobalIndex() << " " << geometry->vertex[iMarker][iVertex]->GetGlobalDonorPoint() << endl;
       }
 	
   /*--- Add the new elements due to the periodic boundary condtion ---*/
@@ -14920,7 +14924,8 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGe
       for (iIndex = 0; iIndex < geometry->PeriodicElem[iPeriodic].size(); iIndex++) {
         jElem = geometry->PeriodicElem[iPeriodic][iIndex];
         cout <<" Elem: "<< iIndex <<" " << iPeriodic << " " << jElem << " " << Index[iPeriodic][geometry->elem[jElem]->GetNode(0)] << " " << Index[iPeriodic][geometry->elem[jElem]->GetNode(1)] << endl;
-        
+        cout <<" Elem: "<< iIndex << " " << jElem << " " << geometry->elem[jElem]->GetNode(0) << " " << geometry->elem[jElem]->GetNode(1)<< endl;
+        // elem[jElem]->GetNode returns global index
         switch(geometry->elem[jElem]->GetVTK_Type()) {
           case TRIANGLE:
             elem[iElem] = new CTriangle(Index[iPeriodic][geometry->elem[jElem]->GetNode(0)],
@@ -14984,7 +14989,7 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGe
   
   nElem = geometry->GetnElem() + nElem_new;
   
-  /*--- Add the old points ---*/
+  /*--- Add the old points : local to partition---*/
 
   nPointNode = geometry->GetnPoint() + nPoint_new;
   node = new CPoint*[geometry->GetnPoint() + nPoint_new];
@@ -14998,7 +15003,18 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGe
                                 geometry->node[iPoint]->GetCoord(2), iPoint, config);
   }
   
+
   /*--- Add the new points due to the periodic boundary condtion (only in the mirror part) ---*/
+  unsigned long nPointSend = 0;
+
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+      if (CreateMirror[iPeriodic]) {
+        nPointSend+=geometry->PeriodicPoint[iPeriodic][0].size();
+      }
+  }
+  vector<unsigned long> Buffer_Send_donorPoints(nPointSend);
+  vector<su2double> Buffer_Send_Coord(nPointSend*nDim);
+
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
     if (CreateMirror[iPeriodic]) {
       for (iIndex = 0; iIndex < geometry->PeriodicPoint[iPeriodic][0].size(); iIndex++) {
@@ -15059,17 +15075,85 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) : CGe
         rotCoord[0] = rotMatrix[0][0]*dx + rotMatrix[0][1]*dy + rotMatrix[0][2]*dz + translation[0];
         rotCoord[1] = rotMatrix[1][0]*dx + rotMatrix[1][1]*dy + rotMatrix[1][2]*dz + translation[1];
         rotCoord[2] = rotMatrix[2][0]*dx + rotMatrix[2][1]*dy + rotMatrix[2][2]*dz + translation[2];
-        
+        /*--- Communicate a list of jPoint, rotCoord to all procs
+         * Create new node only on proc that owns it.
+         */
+        Buffer_Send_donorPoints[iIndex] = jPoint;
+        for (unsigned short iDim=0; iDim<nDim; iDim++)
+          Buffer_Send_Coord[iIndex*nDim+iDim] = rotCoord[iDim];
         /*--- Save the new points with the new coordinates. ---*/
-        if (geometry->GetnDim() == 2)
-          node[jPoint] = new CPoint(rotCoord[0], rotCoord[1], jPoint, config);
-        if (geometry->GetnDim() == 3)
-          node[jPoint] = new CPoint(rotCoord[0], rotCoord[1], rotCoord[2], jPoint, config);
+        //if (geometry->GetnDim() == 2)
+        //  node[jPoint] = new CPoint(rotCoord[0], rotCoord[1], jPoint, config);
+        //if (geometry->GetnDim() == 3)
+        //  node[jPoint] = new CPoint(rotCoord[0], rotCoord[1], rotCoord[2], jPoint, config);
         
       }
     }
   }
   
+  /*--- Communicate ---*/
+#ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  /*--- Allocate memory for size arrays ---*/
+  vector<int> recvCounts(size), displs(size);
+  vector<int> recvCountsCoord(size), displsCoord(size);
+
+  /*--- Communicate number of donor faces per processor ---*/
+  SU2_MPI::Allgather(&nPointSend, 1, MPI_INT, recvCounts.data(), 1,
+            MPI_INT, MPI_COMM_WORLD);
+
+  /*--- Create the data for the vector displs from the known values of
+          recvCounts. Also determine the total size of the data.   ---*/
+  displs[0] = 0;
+  displsCoord[0] = 0;
+
+  for(int i=0; i<size; ++i)
+    recvCountsCoord[i] = recvCounts[i]*nDim;
+
+  for(int i=1; i<size; ++i){
+      displs[i] = displs[i-1] + recvCounts[i-1];
+      displsCoord[i] = displsCoord[i-1] + recvCountsCoord[i-1];
+  }
+  unsigned long sizeGlobal = displs.back() + recvCounts.back();
+  donorPoints.resize(sizeGlobal);
+  donorCoord.resize(sizeGlobal*nDim);
+
+  /*--- The indices of the donor points ---*/
+  MPI_Allgatherv(Buffer_Send_donorPoints.data(), nPointSend, MPI_UNSIGNED_LONG,
+      donorPoints.data(), recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  /*--- The coordinates of the donor points ---*/
+  MPI_Allgatherv(Buffer_Send_Coord.data(), nPointSend*nDim, MPI_DOUBLE,
+      donorCoord.data(), recvCountsCoord.data(), displsCoord.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+
+#else
+  donorPoints = Buffer_Send_donorPoints;
+  donorCoord  = Buffer_Send_Coord;
+#endif
+
+  for (iIndex = 0; iIndex < geometry->PeriodicPoint[iPeriodic][0].size(); iIndex++) {
+
+    /*--- Save the new points with the new coordinates. ---*/
+    bool Domain = false;
+    /*-- Find the matching local index. TODO: use more eff. method--*/
+    for (iPoint=0; iPoint<nPoint; iPoint++){
+      if (node[iPoint]->GetGlobalIndex() == donorPoints[iIndex]){
+        jPoint = iPoint;
+        Domain =node[jPoint]->GetDomain();
+        break;
+      }
+    }
+    if (Domain){
+      if (geometry->GetnDim() == 2)
+        node[jPoint] = new CPoint(donorCoord[iIndex*nDim], rotCoord[iIndex*nDim+1], jPoint, config);
+      if (geometry->GetnDim() == 3)
+        node[jPoint] = new CPoint(rotCoord[iIndex*nDim], rotCoord[iIndex*nDim+1], rotCoord[iIndex*nDim+2], jPoint, config);
+    }
+  }
+
   nPoint = geometry->GetnPoint() + nPoint_new;
   
   /*--- Add the old boundary, reserving space for two new bc (send/recive periodic bc) ---*/
