@@ -1542,27 +1542,27 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
             }
             else
               dist = abs(AngularCoord_Donor - AngularCoord_Target);
-            cout << "Pitch Target        : " << PitchTarget << endl;
-            cout << "MaxAngular_Target  : " <<  MaxAngularCoord_Target << endl;
-            cout << "MinAngular_Target  : " <<  MinAngularCoord_Target << endl;
-            cout << "AngularCoord_Donor : " <<  AngularCoord_Donor << endl;
-            cout << "AngularCoord_Target: " <<  AngularCoord_Target << endl;
-            cout << "Distance           : " <<  dist                << endl;
-            cout << endl;
+//            cout << "Pitch Target        : " << PitchTarget << endl;
+//            cout << "MaxAngular_Target  : " <<  MaxAngularCoord_Target << endl;
+//            cout << "MinAngular_Target  : " <<  MinAngularCoord_Target << endl;
+//            cout << "AngularCoord_Donor : " <<  AngularCoord_Donor << endl;
+//            cout << "AngularCoord_Target: " <<  AngularCoord_Target << endl;
+//            cout << "Distance           : " <<  dist                << endl;
+//            cout << endl;
 
             if (dist < mindist) {
               mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
               donor_count = jVertex;
             }
 
-            cout << "Min Distance       : " <<  mindist             << endl;
+//            cout << "Min Distance       : " <<  mindist             << endl;
             if (dist == 0.0) break;
           }
 
         }
 
-        cout << " ========== " << node_count++  << " ==========="  << endl;
-        cout << " ========== " << donor_count   << " ==========="  << endl;
+//        cout << " ========== " << node_count++  << " ==========="  << endl;
+//        cout << " ========== " << donor_count   << " ==========="  << endl;
         /*--- Store the value of the pair ---*/
         maxdist = max(maxdist, mindist);
         target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorPoint(iDonor, pGlobalPoint);
