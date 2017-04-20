@@ -510,7 +510,7 @@ def read_config(filename):
                     this_name = this_obj[0]
                        
                     # Set up dict for objective, including scale, whether it is a penalty, and constraint value 
-                    this_def.update({ this_name : {'SCALE':this_scale, 'CTYPE':this_type, 'CVAL':this_val} })
+                    this_def.update({ this_name : {'SCALE':this_scale, 'OBJTYPE':this_type, 'CVAL':this_val} })
                     if (len(data_dict['MARKER_MONITORING'])>1):
                         this_def[this_name]['MARKER'] = data_dict['MARKER_MONITORING'][len(this_def)-1]
                     else:
@@ -794,11 +794,11 @@ def write_config(filename,param_dict):
                 i_name = 0
                 for name,value in new_value.iteritems():
                     if i_name>0: output_file.write("; ")
-                    if value['CTYPE']=='NONE':
+                    if value['OBJTYPE']=='DEFAULT':
                         output_file.write( "%s * %s " % (name,value['SCALE']) )
                     else:
                         output_file.write( "( %s %s %s ) * %s" 
-                                           % (name, value['CTYPE'], value['CVAL'], value['SCALE']) )
+                                           % (name, value['OBJTYPE'], value['CVAL'], value['SCALE']) )
                     i_name += 1
                 break
             
