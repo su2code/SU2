@@ -543,6 +543,7 @@ private:
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,	/*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
+  bool TimeDomain3D;	/*!< \brief Use 3D time-domain FWH formulation.*/
   unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
   nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
@@ -3988,6 +3989,13 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void);
+
+  /*!
+ *    * \brief Provides information on which FWH formulation to sue.
+ *       * \return TimeDomain3D information, if <code>TRUE</code> then the code will use the 3D Time domain formulation. Otherwise the frequency domain formulation is used
+ *          */
+  bool GetTimeDomain3D(void);
+
 
   /*!
    * \brief Flag for whether binary SU2 native restart files are written.

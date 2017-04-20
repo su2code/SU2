@@ -138,10 +138,10 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
     geometry_container[iZone]->SetVertex(config_container[iZone]);
     
-    /*--- Store the global to local mapping after preprocessing. ---*/
-
-    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-    geometry_container[iZone]->SetGlobal_to_Local_Point();
+//    /*--- Store the global to local mapping after preprocessing. ---*/
+//
+//    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+//    geometry_container[iZone]->SetGlobal_to_Local_Point();
 
   }
 
@@ -212,6 +212,10 @@ for (iZone = 0; iZone < nZone; iZone++) {
 }
 
 
+    /*--- Store the global to local mapping after preprocessing. ---*/
+
+    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+    geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
 
 
   
@@ -370,10 +374,10 @@ for (iZone = 0; iZone < nZone; iZone++) {
                     (iExtIter == 0 || (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
 										iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
 										iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
-                  solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
+               if(!FWH_container[ZONE_0]->UseAnalytic)  solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
 							SolutionInstantiated[iZone] = true;
 						}
-                  solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+               if(!FWH_container[ZONE_0]->UseAnalytic)   solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
 					}
 					if (config_container[ZONE_0]->GetKind_ObjFunc() != NOISE  ){  // && config_container[ZONE_0]->GetKind_ObjFunc() == NOISE
 						if (rank == MASTER_NODE)
@@ -493,7 +497,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
 
 
 
-        cout<<"Type= "<<   config_container[ZONE_0]->GetDiscrete_Adjoint() <<endl;  //  <--- returns 1! (cont adj)
+       if (rank == MASTER_NODE) cout<<"Type= "<<   config_container[ZONE_0]->GetDiscrete_Adjoint() <<endl;  //  <--- returns 1! (cont adj)
 
          if (config_container[ZONE_0]->GetAD_Mode()){
              if (rank == MASTER_NODE)

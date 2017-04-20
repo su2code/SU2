@@ -51,14 +51,42 @@ typedef std::valarray<Complex> CArray;
 FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
 
     unsigned long  i, nMarker,iMarker,panelCount, end_iter, start_iter, iVertex,iPoint,  iSample,iPanel,iObserver, iDim;
-    su2double FreeStreamPressure,FreeStreamDensity, FreeStreamTemperature;
+  // su2double FreeStreamPressure;
+   su2double FreeStreamTemperature;
     su2double pi=3.141592653589793;
     su2double *Coord,   *Normal;
     su2double  x, y, z, nx, ny, nz,  Area;
     su2double R = 287.058;
     su2double CheckNormal=0.0;
-    unsigned long nFWH, FWHcount;
+    unsigned long nFWH, maxFWHcount;
     nDim = geometry->GetnDim();
+#ifdef HAVE_MPI
+  int rank, nProcessor;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+
+    TimeDomain3D = config->GetTimeDomain3D();
+    UseAnalytic = false;
+    if (rank==MASTER_NODE){
+       cout<<endl<<"-------------- New Mem Reduced --------------"<<endl;
+    if (TimeDomain3D){
+        if(nDim==2){
+        cout<<endl<<"***************  WARNING!!! Time domain FWH implementation NOT available in 2D!!! Use frequency domain!!!  ***************"<<endl;
+          }else{
+         cout<<endl<<"-------------- Initiating 3D FWH Solver in Time Domain --------------"<<endl;
+          }
+
+      }else{
+        if(nDim==2){
+        cout<<endl<<"-------------- Initiating 2D FWH Solver in Frequency Domain --------------"<<endl;
+          }else{
+         cout<<endl<<"-------------- Initiating 3D FWH Solver in Frequency Domain --------------"<<endl;
+          }
+      }
+      }
+
+
     totFWH = 0;
 
     SPL = 0.0;
@@ -80,11 +108,14 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
      point_line >> nObserver ;
     //nObserver = 128;
     Observer_Locations = new su2double* [nObserver];
+    closet_coord_AllObs = new su2double* [nObserver];
     for(iObserver = 0;  iObserver <nObserver  ;  iObserver++)
     {
        Observer_Locations[iObserver] = new su2double[nDim];
+       closet_coord_AllObs[iObserver] = new su2double[nDim];
        for (iDim=0; iDim < nDim; iDim++){
          Observer_Locations[ iObserver][iDim]= 0.0;
+         closet_coord_AllObs[ iObserver][iDim]= 0.0;
        }
     }
 
@@ -106,6 +137,7 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
 
     M = config->GetMach();
     beta_sq = 1-M*M;
+
     FreeStreamPressure=config->GetPressure_FreeStream();
     FreeStreamTemperature = config->GetTemperature_FreeStream();
     FreeStreamDensity = FreeStreamPressure/R/FreeStreamTemperature;
@@ -116,17 +148,26 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
       U1 = M*a_inf*cos(AOA*pi/180) ;
       U2 = M*a_inf*sin(AOA*pi/180) ;
       U3 = 0.0;    //FIX THIS LATER!!!
-   cout<<U1<<",  "<<U2<<",  "<<M<<",  "<<a_inf<<",  "<<FreeStreamPressure<<", "<<FreeStreamDensity<<endl;
-#ifdef HAVE_MPI
-  int rank, nProcessor;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
 
+
+    if (UseAnalytic){
+        FreeStreamPressure=0.0;
+        FreeStreamDensity=1.225;
+        a_inf=340.0;
+        Amp_a = 1.0;
+//        T_a = (nSample-1)*config->GetDelta_UnstTime();
+        T_a = 0.1;
+        Freq_a = 2*M_PI/T_a;
+        U1=0.0; U2=0.0; U3=0.0; M=0.0;
+      }
+
+
+  if (rank==MASTER_NODE && UseAnalytic) cout<<endl<<std::setprecision(8)<<"dt= "<< config->GetDelta_UnstTime()<<", T_a= "<< T_a<<", Freq_a= "<< Freq_a<<endl;
+  if (rank==MASTER_NODE) cout<<U1<<",  "<<U2<<",  "<<M<<",  "<<a_inf<<",  "<<FreeStreamPressure<<", "<<FreeStreamDensity<<endl;
 
         nPanel =  0;
         panelCount = 0;
-        FWHcount = 0;
+        maxFWHcount = 0;
 
     nMarker      = config->GetnMarker_All();
    for (iMarker = 0; iMarker < nMarker; iMarker++){
@@ -141,7 +182,11 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
    //     cout<<"Rank: "<<rank<<", "<< config->GetMarker_All_TagBound(iMarker)<<", trailing digit="<< result <<endl;
 
         cout<<"Rank: "<<rank<<", "<< config->GetMarker_All_TagBound(iMarker)<<", trailing digit="<< f <<", coeff= "<<1.0/f<<endl;
-                FWHcount++;
+
+              if (f>maxFWHcount){
+                maxFWHcount = f;
+              }
+                //FWHcount++;
 
 //       if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
 
@@ -174,23 +219,118 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
            }
           nPanel = panelCount;
      }
-          nFWH = FWHcount;
-    }
 
- cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
+    }
+ nFWH = maxFWHcount;
+ cout<<"Process "<<rank<<" contains "<<nPanel <<" Panels."<<endl;
  //cout<<"Rank= "<<rank<<", nFWH= "<< nFWH<<endl;
  //communicate the global total count of the FWH surfaces to all processors
- unsigned long Buffer_Send_nFWH[1], *Buffer_Recv_nFWH = NULL;
- if (rank == MASTER_NODE) Buffer_Recv_nFWH= new unsigned long [nProcessor];
+ //unsigned long Buffer_Send_nFWH[1], *Buffer_Recv_nFWH = NULL;
+ //if (rank == MASTER_NODE) Buffer_Recv_nFWH= new unsigned long [nProcessor];
 
-  Buffer_Send_nFWH[0]=nFWH;
+//  Buffer_Send_nFWH[0]=nFWH;
 #ifdef HAVE_MPI
-   SU2_MPI::Gather(&Buffer_Send_nFWH, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nFWH, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+ //  SU2_MPI::Gather(&Buffer_Send_nFWH, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nFWH, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
    SU2_MPI::Allreduce(&nFWH,&totFWH,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
  //  SU2_MPI::Reduce(&nPanel,&Tot_nPanel,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
 #endif
 
-  cout<<"Rank= "<<rank<<", nFWH= "<< nFWH<<", totFWH= "<< totFWH <<endl;
+  cout<<"Highest FWH Surface Index Found in Process "<<rank<<": "<< nFWH<<", Total Number of FWH Surfaces for All Processes= "<< totFWH <<endl;
+
+
+
+// //  Interpolation* Interp_container = new Interpolation() ;
+
+
+//  //Interp_container->spline_pchip_set ( int n, double x[], double f[], double d[] );
+//  unsigned long n_x = 9;
+//  unsigned long n_xe = 33;
+
+////  double del_nx = M_PI/4.0;
+////  double del_nx_e = M_PI/16.0;
+////  double sinx[n_x], vec_x[n_x], derivative[n_x], sinx_e[n_xe], vec_x_e[n_xe],sinx_exact[n_xe];
+////  ofstream data_file ;
+////  data_file.open("data");
+////  for (int i = 0; i < n_x; i++)
+////    {
+////      vec_x[i] = i*del_nx;
+////      sinx[i]=sin(i*del_nx);
+////      derivative[i] = 0.0;
+////      cout<<i<<", "<<vec_x[i]<<", "<<sinx[i]<<endl;
+////      data_file<<std::setprecision(15) << vec_x[i]<<", "<<sinx[i]<<endl;
+////    }
+////      cout<<"*****************************************"<<endl;
+////  for (int i = 0; i < n_xe; i++)
+////    {
+////      vec_x_e[i] = i*del_nx_e;
+////      sinx_e[i]=0.0;
+////      sinx_exact[i]=sin(vec_x_e[i]);
+////      cout<<i<<", "<<vec_x_e[i]<<", "<<sinx_e[i]<<endl;
+////    }
+
+////  Interp_container->spline_pchip_set ( n_x , vec_x , sinx ,  derivative );
+////  Interp_container->spline_pchip_val ( n_x , vec_x , sinx ,  derivative  ,n_xe,vec_x_e,sinx_e);
+
+////  cout<<"*****************************************"<<endl;
+////  ofstream interp_file ;
+////  interp_file.open("interp_PCHIP");
+////for (int i = 0; i < n_xe; i++)
+////{
+////     interp_file << std::setprecision(15) << vec_x_e[i]<<", "<<sinx_e[i]<<", "<<sinx_exact[i]<<endl;
+
+////}
+
+
+//su2double del_nx = M_PI/4.0;
+//su2double del_nx_e = M_PI/16.0;
+//vector <su2double> sinx(n_x), vec_x(n_x), derivative(n_x),sinx_exact(n_xe);
+//su2double sinx_e=0.0, vec_x_e=0.0;
+
+//ofstream data_file ;
+//su2double yp1=10.0e31;su2double ypn=10.0e31;
+//data_file.open("data");
+//for (int i = 0; i < n_x; i++)
+//  {
+//    vec_x[i] = i*del_nx;
+//    sinx[i]=sin(i*del_nx);
+//    derivative[i] = 0.0;
+//    cout<<i<<", "<<vec_x[i]<<", "<<sinx[i]<<endl;
+//    data_file<<std::setprecision(15) << vec_x[i]<<", "<<sinx[i]<<endl;
+//  }
+//    cout<<"*****************************************"<<endl;
+//for (int i = 0; i < n_xe; i++)
+//  {
+//   // vec_x_e[i] = i*del_nx_e;
+//  //  sinx_e[i]=0.0;
+//    sinx_exact[i]=sin(i*del_nx_e);
+////    cout<<i<<", "<<vec_x_e[i]<<", "<<sinx_e[i]<<endl;
+//  }
+
+
+////void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2) {
+//geometry->SetSpline(vec_x, sinx, n_x, yp1, ypn, derivative);
+////GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<su2double>&y2a, unsigned long n, su2double x) {
+
+
+////Interp_container->spline_pchip_set ( n_x , vec_x , sinx ,  derivative );
+////Interp_container->spline_pchip_val ( n_x , vec_x , sinx ,  derivative  ,n_xe,vec_x_e,sinx_e);
+
+//cout<<"*****************************************"<<endl;
+//ofstream interp_file ;
+//interp_file.open("interp_Cubic");
+//for (int i = 0; i < n_xe; i++)
+//{
+//    vec_x_e = i*del_nx_e;
+//    sinx_e=geometry->GetSpline(vec_x, sinx, derivative, n_x, vec_x_e);
+//   interp_file << std::setprecision(15) << vec_x_e<<", "<<sinx_e<<", "<<sinx_exact[i]<<endl;
+
+//}
+
+
+
+
+
+
 
    dJdU = new su2double** [nDim+3];
    for(int iDim = 0; iDim < nDim+3 ; iDim++)
@@ -205,6 +345,7 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
        }
    }
 
+   if(!TimeDomain3D){
    G = new complex <su2double>** [nObserver ];
    dGdy1 = new complex <su2double>** [nObserver ];
    dGdy2 = new complex <su2double>** [nObserver ];
@@ -238,6 +379,7 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
    pp = new complex <su2double>* [nObserver];
    pp_CFD = new su2double* [nObserver];
    pp_CFD_mean = new su2double [nObserver];
+   //Fr = new su2double* [nObserver];
    for(iObserver = 0; iObserver < nObserver ; iObserver++)
    {
            fpp[iObserver] = new complex <su2double>[nSample];
@@ -246,30 +388,125 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
            fpp_r[iObserver] = new su2double [nSample];
            fpp_i[iObserver] = new su2double [nSample];
            pp[iObserver] = new complex <su2double> [nSample];
-           pp_CFD[iObserver] = new su2double [nSample];
+           pp_CFD[iObserver] = new su2double [nSample];        
            pp_CFD_mean [iObserver]=0.0;
+          // Fr[iObserver] = new su2double [nSample];
            for (iSample=0; iSample < nSample; iSample++){
               fpp[iObserver][iSample]= 0.0;
               fpp_r_root[iObserver][iSample]= 0.0;
               fpp_i_root[iObserver][iSample]= 0.0;
-              fpp_r[iObserver] = new su2double [nSample];
-              fpp_i[iObserver] = new su2double [nSample];
+              fpp_r[iObserver][iSample]= 0.0;
+              fpp_i[iObserver][iSample]= 0.0;
+//              fpp_r[iObserver] = new su2double [nSample];
+//              fpp_i[iObserver] = new su2double [nSample];
               pp[iObserver][iSample]= 0.0;
+              pp_CFD[iObserver][iSample]= 0.0;
+            //  Fr[iObserver][iSample]= 0.0;
+            }
+
+   }
+   }
+
+   pp_CFD = new su2double* [nObserver];
+   pp_CFD_mean = new su2double [nObserver];
+   for(iObserver = 0; iObserver < nObserver ; iObserver++)
+   {
+
+           pp_CFD[iObserver] = new su2double [nSample];
+           pp_CFD_mean [iObserver]=0.0;
+           for (iSample=0; iSample < nSample; iSample++){
               pp_CFD[iObserver][iSample]= 0.0;
             }
 
    }
 
+
+
+
+
        surface_geo = new su2double* [nPanel];
        for(iPanel = 0;  iPanel< nPanel; iPanel++)
        {
+           if (TimeDomain3D){
+               surface_geo[iPanel] = new su2double[2*nDim+1+4*nObserver];
+               for (i=0; i < 2*nDim+1+4*nObserver; i++){
+                  surface_geo[iPanel][i]= 0.0;
+                 }
+             }else{
            surface_geo[iPanel] = new su2double[2*nDim+1];
            for (i=0; i < 2*nDim+1; i++){
               surface_geo[iPanel][i]= 0.0;
              }
+             }
        }
 
 
+       if(TimeDomain3D){
+
+          t_Obs = new su2double** [nObserver ];
+          pp_interp = new su2double** [nObserver ];
+          for(iObserver = 0; iObserver<nObserver ; iObserver++)
+               {
+                   t_Obs[iObserver] = new su2double*[nPanel];
+                   pp_interp[iObserver] = new su2double*[nPanel];
+                   for(iPanel = 0;  iPanel< nPanel; iPanel++)
+                   {
+                       t_Obs[iObserver][iPanel] = new su2double[nSample];
+                       pp_interp[iObserver][iPanel] = new su2double[nSample];
+
+                       for (iSample=0; iSample < nSample; iSample++){
+
+                          t_Obs[iObserver][iPanel][iSample]= 0.0;
+                          pp_interp[iObserver][iPanel][iSample]= 0.0;
+                        }
+                   }
+               }
+          pp_TimeDomain = new su2double* [nObserver];
+          pp_TimeDomain_root = new su2double* [nObserver];
+          t_interp = new su2double* [nObserver];
+          r_minmax = new su2double* [nObserver];
+          for(iObserver = 0; iObserver<nObserver ; iObserver++)
+               {
+                       pp_TimeDomain[iObserver]= new su2double[nSample];
+                       pp_TimeDomain_root[iObserver]= new su2double[nSample];
+                       t_interp[iObserver]= new su2double[nSample];
+                       r_minmax[iObserver]= new su2double[2];
+                       r_minmax[iObserver][0]= 0.0; r_minmax[iObserver][1]= 0.0;
+                       for (iSample=0; iSample < nSample; iSample++){
+                          pp_TimeDomain[iObserver][iSample]= 0.0;
+                          pp_TimeDomain_root[iObserver][iSample]= 0.0;
+                          t_interp[iObserver][iSample]= 0.0;
+                        }
+
+               }
+
+//          t_interp = new su2double [nSample];
+//          for (iSample=0; iSample < nSample; iSample++){
+//             t_interp[iSample] = 0.0;
+//           }
+          Fr = new su2double** [nObserver ];
+          pp_ret = new su2double** [nObserver ];
+          Fr_mean = new su2double* [nObserver ];
+          for(iObserver = 0; iObserver<nObserver ; iObserver++)
+          {
+              Fr[iObserver] = new su2double*[nPanel];
+              pp_ret[iObserver] = new su2double*[nPanel];
+              Fr_mean[iObserver] = new su2double[nPanel];
+              for(iPanel = 0;  iPanel< nPanel; iPanel++)
+              {
+                  Fr[iObserver][iPanel] = new su2double[nSample];
+                  pp_ret[iObserver][iPanel] = new su2double[nSample];
+                  Fr_mean[iObserver][iPanel] = 0.0;
+                  for (iSample=0; iSample < nSample; iSample++){
+                     Fr[iObserver][iPanel][iSample]= 0.0;
+                     pp_ret[iObserver][iPanel][iSample]= 0.0;
+                   }
+              }
+          }
+
+          }
+
+      if(!TimeDomain3D){
        F = new su2double** [nDim ];
        F_mean = new su2double* [nDim];
        fF = new complex <su2double>**  [nDim ];
@@ -289,29 +526,34 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
                 }
            }
        }
+        }
 
 
-       Q = new su2double* [nPanel];
-       F1 = new su2double* [nPanel];
-       F2 = new su2double* [nPanel];
+
+       if (!TimeDomain3D){
        fQ = new complex <su2double>* [nPanel];
        fF1 = new complex <su2double>* [nPanel];
        fF2 = new complex <su2double>* [nPanel];
        for(iPanel = 0;  iPanel< nPanel; iPanel++)
        {
-          Q [iPanel] = new su2double[nSample];
-          F1 [iPanel] = new su2double[nSample];
-          F2 [iPanel] = new su2double[nSample];
           fQ [iPanel] = new complex <su2double>[nSample];
           fF1 [iPanel] = new complex <su2double>[nSample];
           fF2 [iPanel] = new complex <su2double>[nSample];
           for (iSample=0; iSample < nSample; iSample++){
-            Q[iPanel][iSample]= 0.0;
-            F1[iPanel][iSample]= 0.0;
-            F2[iPanel][iSample]= 0.0;
             fQ[iPanel][iSample]= 0.0;
             fF1[iPanel][iSample]= 0.0;
             fF2[iPanel][iSample]= 0.0;
+          }
+       }
+       }
+
+
+       Q = new su2double* [nPanel];
+       for(iPanel = 0;  iPanel< nPanel; iPanel++)
+       {
+          Q [iPanel] = new su2double[nSample];
+          for (iSample=0; iSample < nSample; iSample++){
+            Q[iPanel][iSample]= 0.0;
           }
        }
 
@@ -333,6 +575,7 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
        Hanning_W = new su2double [nSample];
        idx_window_l = floor(nSample/8);
        idx_window_r =  nSample - floor(nSample/8);
+     //  idx_window_l=0; idx_window_r=nSample+1;
        Hanning_Scale = 0.0;
        for(iSample = 0;  iSample< nSample; iSample ++)
        {
@@ -477,6 +720,7 @@ void FWHSolver::SetAeroacoustic_Analysis(CSolver *solver, CConfig *config,CGeome
                               ofstream &CFD_pressure_file){
 
     unsigned long  nMarker, iObserver;
+    unsigned short iDim;
     su2double Physical_dt,Physical_t;
     su2double  CFD_PressureFluctuation=0.0;
      unsigned long ExtIter = config->GetExtIter();
@@ -499,6 +743,10 @@ void FWHSolver::SetAeroacoustic_Analysis(CSolver *solver, CConfig *config,CGeome
       if (rank == MASTER_NODE){
           CFD_pressure_file  <<  ExtIter  << " ";
           CFD_pressure_file << std::setprecision(15) << Physical_t  << " ";
+     //     t_data  <<  ExtIter  << " ";
+     //     t_data << std::setprecision(15) << Physical_t  << endl;
+     //     t_data << endl;
+
       }
 
 
@@ -510,7 +758,8 @@ void FWHSolver::SetAeroacoustic_Analysis(CSolver *solver, CConfig *config,CGeome
 
 
       if (rank == MASTER_NODE){
-             CFD_pressure_file << std::setprecision(15) << CFD_PressureFluctuation << "\t";;
+
+             CFD_pressure_file << std::setprecision(15) << CFD_PressureFluctuation << "\t";
             // cout<<iSample<<",  "<<iObserver<<endl;
              pp_CFD[iObserver][iSample] = CFD_PressureFluctuation;
              pp_CFD_mean[iObserver] = (pp_CFD_mean[iObserver]*iSample+ pp_CFD[iObserver][iSample])/(iSample+1);
@@ -519,6 +768,29 @@ void FWHSolver::SetAeroacoustic_Analysis(CSolver *solver, CConfig *config,CGeome
    }
       if (rank == MASTER_NODE) CFD_pressure_file << "\n";
 
+      if (rank == MASTER_NODE){
+
+             if (iSample==0){
+                 ofstream closest_obs_coords ;
+                 closest_obs_coords.open("Closest_Coords.dat");
+                 closest_obs_coords <<nObserver<<endl;
+                 for(iObserver = 0;  iObserver <nObserver  ;  iObserver++)
+                 {
+                   for (iDim=0; iDim < nDim; iDim++){
+                        closest_obs_coords << std::setprecision(15) << closet_coord_AllObs[iObserver][iDim] <<"\t";
+                     }
+                    closest_obs_coords<< endl;
+                 }
+               }
+
+
+
+      }
+
+
+
+
+
 
 }
 
@@ -526,12 +798,16 @@ void FWHSolver::SetAeroacoustic_Analysis(CSolver *solver, CConfig *config,CGeome
 
 
 void FWHSolver::SetCFD_PressureFluctuation(CSolver *solver, CConfig *config, CGeometry *geometry, unsigned long iObserver){
-  unsigned long iPoint, ClosestIndex;
+  unsigned long iPoint, ClosestIndex,iSample;
   unsigned short iDim;
   su2double  Local_AvgPressureFluctuation;
   double this_distance, shortest_distance;
-  su2double *Coord, *Observer_Location;
+  su2double *Coord, *Observer_Location, *closest_coord;
+  unsigned long ExtIter = config->GetExtIter();
   Observer_Location  = new su2double [3];
+  closest_coord  = new su2double [nDim];
+  closest_coord[0]=0.0; closest_coord[1]=0.0;
+  if (nDim==3) closest_coord[2]=0.0;
   double ain, aout;
     int  ind;
    ind = 0;
@@ -549,6 +825,7 @@ void FWHSolver::SetCFD_PressureFluctuation(CSolver *solver, CConfig *config, CGe
   CFD_PressureFluctuation= 0.0;
   Local_AvgPressureFluctuation= 0.0;
 
+  iSample = ExtIter - config->GetUnst_RestartIter();
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
           if( geometry->node[iPoint]->GetDomain()){
@@ -577,7 +854,7 @@ void FWHSolver::SetCFD_PressureFluctuation(CSolver *solver, CConfig *config, CGe
             ind = out.rank;
     }
   MPI_Bcast( &ind, 1,MPI_INT , MASTER_NODE, MPI_COMM_WORLD );
-     if (myrank==ind){
+     if (myrank==ind && !UseAnalytic){
          if (config->GetKind_Solver()==NAVIER_STOKES){
 //         Local_AvgPressureFluctuation = solver->node[ClosestIndex]->GetSolution(6);
            Local_AvgPressureFluctuation = solver->node[ClosestIndex]->GetSolution(2*nDim+2);
@@ -586,26 +863,44 @@ void FWHSolver::SetCFD_PressureFluctuation(CSolver *solver, CConfig *config, CGe
 //         Local_AvgPressureFluctuation = solver->node[ClosestIndex]->GetSolution(7);
            Local_AvgPressureFluctuation = solver->node[ClosestIndex]->GetSolution(2*nDim+3);
         }
-           cout<<std::setprecision(9)<<"Obs_x= "<<  SU2_TYPE::GetValue(Observer_Location[0]) << ", Obs_y= "<< SU2_TYPE::GetValue(Observer_Location[1]) <<", x= "<<solver->node[ClosestIndex]->GetSolution(0)<<", y="<<solver->node[ClosestIndex]->GetSolution(1)<<", p="<<Local_AvgPressureFluctuation<<endl;
-//        cout<<"Obs_x= "<<  SU2_TYPE::GetValue(Observer_Location[0]) << ", Obs_y= "<< SU2_TYPE::GetValue(Observer_Location[1]) <<", x= "<<solver->node[ClosestIndex]->GetSolution(0)<<", y="<<solver->node[ClosestIndex]->GetSolution(1)<<", p="<<Local_AvgPressureFluctuation<<endl;
+     if (nDim==2){
+        cout<<std::setprecision(9)<<"Obs_x= "<<  SU2_TYPE::GetValue(Observer_Location[0]) << ", Obs_y= "<< SU2_TYPE::GetValue(Observer_Location[1]) <<", x= "<<solver->node[ClosestIndex]->GetSolution(0)<<", y="<<solver->node[ClosestIndex]->GetSolution(1)<<", p="<<Local_AvgPressureFluctuation<<endl;
+     }else{
+        cout<<std::setprecision(9)<<"Obs_x= "<<  SU2_TYPE::GetValue(Observer_Location[0]) << ", Obs_y= "<< SU2_TYPE::GetValue(Observer_Location[1]) << ", Obs_z= "<< SU2_TYPE::GetValue(Observer_Location[2])<<", x= "<<solver->node[ClosestIndex]->GetSolution(0)<<", y="<<solver->node[ClosestIndex]->GetSolution(1)<<", z="<<solver->node[ClosestIndex]->GetSolution(2)<<", p="<<Local_AvgPressureFluctuation<<endl;
+       }
+
+
+    if (iSample == 0){
+     closest_coord[0]= solver->node[ClosestIndex]->GetSolution(0);
+     closest_coord[1]= solver->node[ClosestIndex]->GetSolution(1);
+     if (nDim==3) closest_coord[2]= solver->node[ClosestIndex]->GetSolution(2);
+
+       }
+        //        cout<<"Obs_x= "<<  SU2_TYPE::GetValue(Observer_Location[0]) << ", Obs_y= "<< SU2_TYPE::GetValue(Observer_Location[1]) <<", x= "<<solver->node[ClosestIndex]->GetSolution(0)<<", y="<<solver->node[ClosestIndex]->GetSolution(1)<<", p="<<Local_AvgPressureFluctuation<<endl;
 
      }
 #ifdef HAVE_MPI
   SU2_MPI::Reduce(&Local_AvgPressureFluctuation,&CFD_PressureFluctuation,1,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+  SU2_MPI::Reduce(closest_coord,closet_coord_AllObs[iObserver],nDim,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
 #endif
-
+//cout<<closest_coord[0]<<" "<<closest_coord[1]<<" "<<closest_coord[2]<<" "<<myrank<<endl;
+  // if (myrank==MASTER_NODE) cout<<endl<<closet_coord_AllObs[iObserver][0]<<" "<<closet_coord_AllObs[iObserver][1]<<" "<<closet_coord_AllObs[iObserver][2]<<endl;
 
 }
 
 
 void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry *geometry){
   unsigned short iDim ;
-  unsigned long iPoint ,iMarker,iVertex,  nMarker,iSample, iPanel;
+  unsigned long iObserver, iPoint ,iMarker,iVertex,  nMarker,iSample, iPanel;
   su2double *Coord,   *Normal;
   su2double  x, y, z, nx, ny, nz, dS, Area;
   su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE, ux, uy, uz, StaticEnergy, p;
   su2double CheckNormal=0.0;
   su2double Area_Factor=1.0;
+  su2double F1, F2, F3;
+  su2double x1,x2,x3,y1,y2,y3,r1,r2,r3,r_mag;
+  su2double theta, r_panel, u_mag;
+
 
   nMarker      = config->GetnMarker_All();
   unsigned long ExtIter = config->GetExtIter();
@@ -622,7 +917,7 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
     /* --- Loop over boundary markers to select those on the FWH surface --- */
       if (config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY) {
 //      if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
-
+  //      cout<<"INTERNAL BOUNDARY DETECTED!!! RANK="<<rank <<endl;
          /* Determine the area factor for outflow boundary averaging */
         size_t last_index = config->GetMarker_All_TagBound(iMarker).find_last_not_of("0123456789");
         string result = config->GetMarker_All_TagBound(iMarker).substr(last_index + 1);
@@ -672,7 +967,7 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
                      CheckNormal =  x*nx+y*ny+z*nz;
                      if(CheckNormal<0) {
                   //    cout<<"Inward Pointing Normal Detected!!! Flipping Normals"<<", x="<<x<<", y="<<y<<", nx="<<nx<<", ny="<<ny<<endl;
-                      nx=-nx; ny=-ny;
+                      nx=-nx; ny=-ny; nz=-nz;
                       }
 
                 //  if (CheckNormal>0){
@@ -687,11 +982,34 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
                             if (nDim==3){
                                 surface_geo[iPanel][5] = z;
                                 surface_geo[iPanel][6] = nz;
+                                if (TimeDomain3D){
+                                    for(iObserver = 0;  iObserver <nObserver  ;  iObserver++)
+                                    {
+                                        r1 = Observer_Locations[iObserver][0]-x;
+                                        r2 = Observer_Locations[iObserver][1]-y;
+                                        r3 = Observer_Locations[iObserver][2]-z;
+                                        r_mag = sqrt(r1*r1+r2*r2+r3*r3);
+                                        r1 = r1/r_mag; r2 = r2/r_mag;r3 = r3/r_mag;
+                                        surface_geo[iPanel][7+iObserver*4] = r1;
+                                        surface_geo[iPanel][8+iObserver*4] = r2;
+                                        surface_geo[iPanel][9+iObserver*4] = r3;
+                                        surface_geo[iPanel][10+iObserver*4] = r_mag;
+                                    }
+                                  }
+
+
                               }
                             PointID[iPanel] = geometry->node[iPoint]->GetGlobalIndex();
                          //   if (rank == MASTER_NODE) cout<<PointID[iPanel]<<",  "<<x<<", "<<y <<",  "<<sqrt(x*x+y*y)<<endl;
+
+             //          cout << std::setprecision(15) << x<<' '<<y<<' '<<z<<' '<<nx<<' '<<ny<<' '<<nz<<' '<< Observer_Locations[0][0]-x<<' '<<Observer_Locations[0][1]-y<<' '<< Observer_Locations[0][2]-z<<' '<<dS<<endl;
+
+
+
+
                       }
 
+                      if(!UseAnalytic){
                       //extract CONSERVATIVE flow data from a particular panel on the FWH surface
                       rho = solver->node[iPoint]->GetSolution(nDim);
                       rho_ux = solver->node[iPoint]->GetSolution(nDim+1);
@@ -699,6 +1017,7 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
                       if (nDim==3)  rho_uz = solver->node[iPoint]->GetSolution(nDim+3);
                       rho_E = solver->node[iPoint]->GetSolution(2*nDim+1);
                       TKE = 0.0;
+                        }
 
                       //Register CONSERVATIVE variables as input for adjoint computation
                       if (config->GetAD_Mode()){
@@ -712,7 +1031,7 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
 
 
 
-
+                      if (!UseAnalytic){
                       //compute primitive variables from conservative variables
                       ux = rho_ux/rho;
                       uy = rho_uy/rho;
@@ -720,50 +1039,240 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
                       if (nDim==3) uz= rho_uz/rho;
                       StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
                       p = (config->GetGamma()-1)*rho*StaticEnergy;
+                        }else{
+                          //use analytic solution on the porous surface
+                          r_panel = sqrt(x*x+y*y+z*z);
+                          theta = (iSample*config->GetDelta_UnstTime()+r_panel/a_inf)*Freq_a;
+                          p=Amp_a/4/M_PI/r_panel*cos(theta);
+                          u_mag = Amp_a/4/M_PI/r_panel/FreeStreamDensity*(sin(theta)/r_panel/Freq_a+cos(theta)/a_inf);
+                          ux = u_mag*nx;
+                          uy = u_mag*ny;
+                          uz = u_mag*nz;
+                          rho = p/a_inf/a_inf+FreeStreamDensity;
+                       //   if (iPanel==0) cout<<p<<' '<<u_mag<<' '<<r_panel<<endl;
+
+                        }
+//                      rho_data << std::setprecision(15) << rho << ' ';
+//                      p_data << std::setprecision(15) << p << ' ';
+//                      ux_data << std::setprecision(15) << ux << ' ';
+//                      uy_data << std::setprecision(15) << uy << ' ';
+//                      uz_data << std::setprecision(15) << uz << ' ';
+
 
                       //compute monopole and dipole source terms on the FWH surface
+                      if (TimeDomain3D){
+                      Q[iPanel][iSample] = rho*(ux*nx+uy*ny+uz*nz)/FreeStreamDensity;
+                      F1= rho*(ux*nx+uy*ny+uz*nz)*(ux)+(p-FreeStreamPressure)*nx;
+                      F2= rho*(ux*nx+uy*ny+uz*nz)*(uy)+(p-FreeStreamPressure)*ny;
+                      F3= rho*(ux*nx+uy*ny+uz*nz)*(uz)+(p-FreeStreamPressure)*nz;
+                      for (iObserver=0; iObserver<nObserver; iObserver++){
+                          Fr [iObserver][iPanel][iSample]= F1*surface_geo[iPanel][7+iObserver*4]+F2*surface_geo[iPanel][8+iObserver*4] +F3*surface_geo[iPanel][9+iObserver*4] ;
+                        }
+                        }
+                      else{
                       Q[iPanel][iSample] = rho*(ux*nx+uy*ny+uz*nz);
-//                      F1[iPanel][iSample]  = rho*(ux*nx+uy*ny)*(ux-2*U1)+p*nx;
-//                      F2[iPanel][iSample]  = rho*(ux*nx+uy*ny)*(uy-2*U2)+p*ny;
                       F[0][iPanel][iSample]  = rho*(ux*nx+uy*ny+uz*nz)*(ux-2*U1)+p*nx;
                       F[1][iPanel][iSample]  = rho*(ux*nx+uy*ny+uz*nz)*(uy-2*U2)+p*ny;
                       if (nDim==3) F[2][iPanel][iSample]  = rho*(ux*nx+uy*ny+uz*nz)*(uz-2*U3)+p*nz;
+                        }
+
+                      //Compute mean source terms
                       Q_mean[iPanel] = (Q_mean[iPanel]*iSample+ Q[iPanel][iSample])/(iSample+1);
-//                      F1_mean[iPanel] = (F1_mean[iPanel]*iSample+ F1[iPanel][iSample])/(iSample+1);
-//                      F2_mean[iPanel] = (F2_mean[iPanel]*iSample+ F2[iPanel][iSample])/(iSample+1);
+                      if (TimeDomain3D){
+                       for (iObserver=0; iObserver<nObserver; iObserver++){
+                      Fr_mean[iObserver][iPanel] = (Fr_mean[iObserver][iPanel]*iSample+ Fr[iObserver][iPanel][iSample])/(iSample+1);
+                         }
+                        }else{
                       for (iDim=0; iDim<nDim; iDim++){
                       F_mean[iDim][iPanel] = (F_mean[iDim][iPanel]*iSample+ F[iDim][iPanel][iSample])/(iSample+1);
                         }
+                        }
                       iPanel++;
-              //      }
+
                 }
           }
 
     }
    }
 
+//  cout<<"loc-1, after extract, Rank= "<<rank<<endl;
+//  p_data <<endl;
+//  ux_data <<endl;
+//  uy_data <<endl;
+//  uz_data <<endl;
+//  rho_data<<endl;
 }
 
 
 
 
 void FWHSolver::Window_SourceTerms(){
-  unsigned long iPanel, iSample,iDim;
+  unsigned long iPanel, iSample,iDim, iObserver;
 
+   if (TimeDomain3D){
+       for (iPanel=0; iPanel<nPanel; iPanel++){
+            for (iSample=0; iSample<nSample; iSample++){
+               Q[iPanel][iSample]=  Q[iPanel][iSample] - Q_mean[iPanel];
+          //     cout<< Q_mean[iPanel]<< endl;
+                for (iObserver=0; iObserver<nObserver; iObserver++){
+               Fr[iObserver][iPanel][iSample] =    Fr[iObserver][iPanel][iSample] - Fr_mean[iObserver][iPanel] ;
+             //  cout<<Fr_mean[iObserver][iPanel] <<endl;
+                  }
+              }
+         }
+     }else{
      for (iPanel=0; iPanel<nPanel; iPanel++){
           for (iSample=0; iSample<nSample; iSample++){
               fQ[iPanel][iSample]=  (Q[iPanel][iSample] - Q_mean[iPanel])*Hanning_W[iSample]*Hanning_Scale ;
-//              fF1[iPanel][iSample]=  (F1[iPanel][iSample] - F1_mean[iPanel])*Hanning_W[iSample]*Hanning_Scale ;
-//              fF2[iPanel][iSample]=  (F2[iPanel][iSample] - F2_mean[iPanel])*Hanning_W[iSample]*Hanning_Scale ;
               for (iDim=0; iDim<nDim; iDim++){
               fF[iDim][iPanel][iSample] =    (F[iDim][iPanel][iSample] - F_mean[iDim][iPanel])*Hanning_W[iSample]*Hanning_Scale ;
                 }
             }
        }
+     }
+
+
+//   ofstream Fr_file ;
+//   ofstream Un_file ;
+//   Fr_file.open("Fr2"); Un_file.open("Un2");
+//   for (iPanel=0; iPanel<nPanel; iPanel++){
+//       for (iSample=0; iSample<nSample; iSample++){
+//           Fr_file  << std::setprecision(15) << Fr[0][iPanel][iSample]<< ' ';
+//           Un_file  << std::setprecision(15) << Q[iPanel][iSample]<< ' ';
+//         }
+//       Fr_file  << endl;Un_file  << endl;
+//     }
+
 
 }
 
 
+void FWHSolver::Compute_TimeDomainPanelSignal(CConfig *config){
+su2double Un_dot, Fr_dot, dt, dS;
+unsigned long iPanel, iSample, iObserver;
+
+  dt = config->GetDelta_UnstTime();
+  for (iObserver=0; iObserver<nObserver; iObserver++){
+      for (iPanel=0; iPanel<nPanel; iPanel++){
+          dS = surface_geo[iPanel][4];
+          for (iSample=0; iSample<nSample; iSample++){
+          if (iSample==0){
+              Un_dot = (-Q[iPanel][iSample+2]+4.0*Q[iPanel][iSample+1]-3.0*Q[iPanel][iSample])/2.0/dt;
+              Fr_dot = (-Fr[iObserver][iPanel][iSample+2]+4.0*Fr[iObserver][iPanel][iSample+1]-3.0*Fr[iObserver][iPanel][iSample])/2.0/dt;
+
+            }else if(iSample==nSample-1){
+              Un_dot = (3.0*Q[iPanel][iSample]-4.0*Q[iPanel][iSample-1]+Q[iPanel][iSample-2])/2.0/dt;
+              Fr_dot = (3.0*Fr[iObserver][iPanel][iSample]-4.0*Fr[iObserver][iPanel][iSample-1]+Fr[iObserver][iPanel][iSample-2])/2.0/dt;
+            }else{
+              Un_dot = (Q[iPanel][iSample+1]-Q[iPanel][iSample-1])/2.0/dt;
+              Fr_dot = (Fr[iObserver][iPanel][iSample+1]-Fr[iObserver][iPanel][iSample-1])/2.0/dt;
+            }
+            pp_ret[iObserver][iPanel][iSample] = FreeStreamDensity*Un_dot/surface_geo[iPanel][10+iObserver*4]+Fr_dot/surface_geo[iPanel][10+iObserver*4]/a_inf+ Fr[iObserver][iPanel][iSample]/surface_geo[iPanel][10+iObserver*4]/surface_geo[iPanel][10+iObserver*4];
+            pp_ret[iObserver][iPanel][iSample] = pp_ret[iObserver][iPanel][iSample]*dS/4/M_PI;
+            }
+
+        }
+    }
+//  ofstream pp_ret_file ;
+//  pp_ret_file.open("pp_ret");
+//  for (iPanel=0; iPanel<nPanel; iPanel++){
+//      for (iSample=0; iSample<nSample; iSample++){
+//          pp_ret_file  << std::setprecision(15) << pp_ret[0][iPanel][iSample]<< ' ';
+//        }
+//      pp_ret_file  << endl;
+//    }
+}
+
+
+void FWHSolver::Compute_ObserverTime(CConfig *config){
+  su2double r, t_src,t_interp_start,t_interp_end, dt_interp, dt;
+unsigned long iPanel, iSample, iObserver;
+unsigned long start_iter  =  config->GetUnst_RestartIter();
+su2double r_min=10.0e31;su2double r_max=0.0;
+
+
+  dt = config->GetDelta_UnstTime();
+  for (iObserver=0; iObserver<nObserver; iObserver++){
+      r_min=10.0e31; r_max=0.0;
+      for (iPanel=0; iPanel<nPanel; iPanel++){
+          r = surface_geo[iPanel][10+iObserver*4];
+          if (r>r_max){
+              r_max = r;
+            }
+          if (r<r_min){
+              r_min = r;
+            }
+
+          for (iSample=0; iSample<nSample; iSample++){
+              t_src = config->GetDelta_UnstTime()*(start_iter+iSample);
+              if(UseAnalytic) t_src = t_src + sqrt(surface_geo[iPanel][0]*surface_geo[iPanel][0]+surface_geo[iPanel][1]*surface_geo[iPanel][1]+surface_geo[iPanel][5]*surface_geo[iPanel][5])/a_inf;
+              t_Obs[iObserver][iPanel][iSample]=t_src + r/a_inf;
+            }
+
+        }
+
+      //send rmax and rmin to root
+    SU2_MPI::Allreduce(&r_min, &r_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD );
+     SU2_MPI::Allreduce(&r_max, &r_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD );
+     r_minmax[iObserver][0]= r_min; r_minmax[iObserver][1]= r_max;
+
+
+    }
+
+
+  //cout<<"Time Shift INFO: "<< r_max<<", "<< r_min<<", "<< ;
+  for (iObserver=0; iObserver<nObserver; iObserver++){
+  t_interp_start = config->GetDelta_UnstTime()*(start_iter)+r_minmax[iObserver][1]/a_inf;
+  t_interp_end = config->GetDelta_UnstTime()*(start_iter+nSample-1)+r_minmax[iObserver][0]/a_inf;
+  dt_interp = (t_interp_end - t_interp_start)/(nSample-1);
+  //cout<<t_interp_start<<", "<<t_interp_end<<", "<< dt_interp;
+  for (iSample=0; iSample<nSample; iSample++){
+      t_interp[iObserver][iSample] = t_interp_start + dt_interp*iSample;
+    }
+    }
+//  ofstream t_obs_file ;
+//  t_obs_file.open("t_obs2");
+//  for (iPanel=0; iPanel<nPanel; iPanel++){
+//      for (iSample=0; iSample<nSample; iSample++){
+//           t_obs_file<< std::setprecision(15) << t_Obs[0][iPanel][iSample]<< ' ';
+//        }
+//       t_obs_file << endl;
+//    }
+//  ofstream t_interp_file ;
+//  t_interp_file.open("t_interp2");
+//  for (iSample=0; iSample<nSample; iSample++){
+//       t_interp_file<< std::setprecision(15) << t_interp[iSample]<< ' ';
+//    }
+}
+
+void FWHSolver::Interpolate_PressureSignal(CGeometry *geometry){
+  vector <su2double> x(nSample), t(nSample), derivative(nSample);
+  unsigned long iPanel, iSample, iObserver;
+//  su2double sinx_e=0.0, vec_x_e=0.0;
+
+  su2double yp1=10.0e31;su2double ypn=10.0e31;
+  for (iObserver=0; iObserver<nObserver; iObserver++){
+      for (iPanel=0; iPanel<nPanel; iPanel++){
+          for (iSample=0; iSample<nSample; iSample++){
+               x[iSample]= pp_ret[iObserver][iPanel][iSample];
+               t[iSample]= t_Obs[iObserver][iPanel][iSample];
+            }
+          geometry->SetSpline(t, x, nSample, yp1, ypn, derivative);
+          for (iSample=0; iSample<nSample; iSample++){
+            pp_interp[iObserver][iPanel][iSample] =geometry->GetSpline(t, x, derivative, nSample, t_interp[iObserver][iSample]);
+            }
+        }
+    }
+
+//  ofstream pp_interp_file ;
+//  pp_interp_file.open("pp_interp2");
+//  for (iPanel=0; iPanel<nPanel; iPanel++){
+//      for (iSample=0; iSample<nSample; iSample++){
+//           pp_interp_file << std::setprecision(15) << pp_interp[0][iPanel][iSample]<< ' ';
+//        }
+//       pp_interp_file << endl;
+//    }
+}
 
 
 void FWHSolver::FFT_SourceTermsR2(){
@@ -820,64 +1329,149 @@ void FWHSolver::FFT_SourceTermsR2(){
 void FWHSolver::Compute_FarfieldNoise(CSolver *solver, CConfig *config, CGeometry *geometry){
 
 #ifdef HAVE_MPI
-  int rank, nProcessor;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+ int rank, nProcessor;
+   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  // cout<<"START OF Compute_FarfieldNoise, Rank= "<<rank<<endl;
 #endif
+
+   //  cout<<"loc0a, Rank= "<<rank;
+  if (!TimeDomain3D){
   if (nDim==2)
   Compute_GreensFunction2D(config);
   if (nDim==3)
   Compute_GreensFunction3D(config);
-  Window_SourceTerms();
-  FFT_SourceTermsR2();
+    }
 
+
+ // cout<<"loc1, Rank= "<<rank;
+  Window_SourceTerms();
+
+ // cout<<"loc2, Rank= "<<rank;
+
+  if (!TimeDomain3D){
+  FFT_SourceTermsR2();
+    }
+
+  if (TimeDomain3D){
+  Compute_TimeDomainPanelSignal(config);
+
+//  cout<<"loc3, Rank= "<<rank;
+  Compute_ObserverTime(config);
+
+ // cout<<"loc4, Rank= "<<rank;
+  Interpolate_PressureSignal(geometry);
+    }
+
+
+ // cout<<"loc5, Rank= "<<rank;
 
   Integrate_Sources(config);
 
+
+//  ofstream pp_FWH_file ;
+//  pp_FWH_file.open("pp_FWH2");
+//  for (int iObserver=0; iObserver<nObserver; iObserver++){
+//      for (int iSample=0; iSample<nSample; iSample++){
+//           pp_FWH_file << std::setprecision(15) << pp_TimeDomain[iObserver][iSample]<< ' ';
+//        }
+//      pp_FWH_file  << endl;
+//    }
+
+
+//cout<<"before MPI Reduce, Rank= "<<rank;
+
 for (int iObserver = 0; iObserver<nObserver; iObserver++){
 #ifdef HAVE_MPI
+    if(TimeDomain3D){
+       SU2_MPI::Reduce( pp_TimeDomain[iObserver],pp_TimeDomain_root[iObserver], nSample,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+   //     SU2_MPI::Reduce( pp_TimeDomain[iObserver],pp[iObserver], nSample,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+      }else{
     SU2_MPI::Reduce( fpp_r[iObserver],fpp_r_root[iObserver], nSample,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
     SU2_MPI::Reduce( fpp_i[iObserver], fpp_i_root[iObserver], nSample,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+      }
 #endif
 }
 
 if (rank==MASTER_NODE){
 
+
+
+if (TimeDomain3D){
+
+ //   for (int iObserver=0; iObserver<nObserver; iObserver++){
+ //       cout << std::setprecision(15) <<"Obs No.: "<<iObserver<<", r_min= "<<r_minmax[iObserver][0]<<", r_max= "<< r_minmax[iObserver][1] <<endl;
+ //    }
+
+Compute_SPL();
+    ofstream pp_FWH_file ;
+    pp_FWH_file.open("pp_FWH");
+
+for (int iSample=0; iSample<nSample; iSample++){
+   //pp_FWH_file << std::setprecision(15)<< t_interp[iSample]<<' ';
+
+     for (int iObserver=0; iObserver<nObserver; iObserver++){
+        pp_FWH_file << std::setprecision(15) <<t_interp[iObserver][iSample] <<' '<<pp_TimeDomain_root[iObserver][iSample]<< ' ';
+    //     pp_FWH_file << std::setprecision(15) <<t_interp[iObserver][iSample] <<' '<<pp[iObserver][iSample]<< ' ';
+      }
+    pp_FWH_file  << endl;
+  }
+
+  }
+
+
+if (!TimeDomain3D){
+
 iFFT_SignalR2();
+
 Compute_SPL();
 
-cout<<std::setprecision(15)<<"Mean SPL= "<<SPL <<endl;
-
-
 ofstream ppa_file ;
-ppa_file.open("ppaSU2");
+ppa_file.open("pp_FWH");
 ofstream ppb_file ;
 ppb_file.open("ppbSU2");
-ofstream pp_CFD_file ;
-pp_CFD_file.open("pp_CFD");
+//ofstream pp_CFD_file ;
+//pp_CFD_file.open("pp_CFD");
 
 unsigned long start_iter  =  config->GetUnst_RestartIter();
 for (int i=0;i<nSample; i++){
      ppa_file <<start_iter+i<<", ";
      ppa_file<<  SPL<< ", ";
-    pp_CFD_file<<start_iter+i<<", "<< config->GetDelta_UnstTime()*(start_iter+i)<<", ";
+ //   pp_CFD_file<<start_iter+i<<", "<< config->GetDelta_UnstTime()*(start_iter+i)<<", ";
     for (int j=0; j<nObserver; j++){
       ppa_file << std::setprecision(15) << real(pp[j][i]);
       if (j != nObserver - 1) ppa_file << ", ";
       ppb_file << std::setprecision(15) << imag(pp[j][i]);
       if (j != nObserver - 1) ppb_file << ", ";
-      pp_CFD_file<< std::setprecision(15) << pp_CFD[j][i]-pp_CFD_mean[j];
-      if (j != nObserver - 1) pp_CFD_file << ", ";
+//      pp_CFD_file<< std::setprecision(15) << pp_CFD[j][i]-pp_CFD_mean[j];
+ //     if (j != nObserver - 1) pp_CFD_file << ", ";
 
       }
     ppa_file << endl;
+ //   pp_CFD_file <<endl;
+  }
+ }
+
+
+
+
+cout<<endl<<std::setprecision(15)<<"****** RMS(p') averaged over "<<nObserver<<" observer locations = "<<SPL <<"  ******"<<endl;
+
+
+//write out static pressure fluctuation
+ofstream pp_CFD_file ;
+pp_CFD_file.open("pp_CFD");
+unsigned long start_iter  =  config->GetUnst_RestartIter();
+for (int i=0;i<nSample; i++){
+    pp_CFD_file<<start_iter+i<<", "<< config->GetDelta_UnstTime()*(start_iter+i)<<", ";
+    for (int j=0; j<nObserver; j++){
+      pp_CFD_file<< std::setprecision(15) << pp_CFD[j][i]-pp_CFD_mean[j];
+      if (j != nObserver - 1) pp_CFD_file << ", ";
+      }
     pp_CFD_file <<endl;
   }
 
-
-
   }
-
 }
 
 
@@ -976,7 +1570,7 @@ void FWHSolver::Compute_GreensFunction3D(CConfig *config){
                   w = 2*pi*iSample/(nSample-1)/dt;
                   arg = -w/a_inf*r_plus;
                   exp_arg = I*arg;
-                  Amp1=  su2double(1.0/4.0/pi/r_star);
+                  Amp1=  su2double(-1.0/4.0/pi/r_star);
                   Amp = Amp1*(su2double(cos(exp_arg.imag()))+su2double(sin(exp_arg.imag()))*I);
                   G[iObserver][iPanel][iSample]= Amp;
 //                  dGdy1[iObserver][iPanel][iSample]= Amp*fac1_y1- Amp*fac2_y1 -w*Amp*I/a_inf/beta_sq*fac3_y1  ;
@@ -1112,8 +1706,18 @@ void FWHSolver::Integrate_Sources(CConfig *config){
   su2double pi =  acos(-1);
   complex <su2double> I = complex<su2double> (0, 1);
 
-       dt = config->GetDelta_UnstTime();
+     if (TimeDomain3D){
+         for (iObserver=0; iObserver<nObserver; iObserver++){
+             for (iSample=0; iSample<nSample; iSample++){
+                 for (iPanel=0; iPanel<nPanel; iPanel++){
+                   pp_TimeDomain[iObserver][iSample] = pp_TimeDomain[iObserver][iSample] + pp_interp[iObserver][iPanel][iSample];
+                   }
+               }
+           }
 
+       }else{
+
+       dt = config->GetDelta_UnstTime();
        for (iObserver=0; iObserver<nObserver; iObserver++){
            for (iSample=0; iSample<nSample; iSample++){
 
@@ -1132,7 +1736,7 @@ void FWHSolver::Integrate_Sources(CConfig *config){
 
              }
          }
-
+       }
 
 }
 
@@ -1188,7 +1792,11 @@ void FWHSolver::Compute_SPL(){
 //           for (iSample=idx_window_l; iSample<idx_window_r; iSample++){
            for (iSample=0; iSample<nSample; iSample++){
 //               cout<<pp[iObserver][iSample].real()<<endl;
+               if (TimeDomain3D){
+               SPL_iObserver  =  SPL_iObserver + pp_TimeDomain_root[iObserver][iSample]*pp_TimeDomain_root[iObserver][iSample];
+                 }else{
                SPL_iObserver  =  SPL_iObserver + real(pp[iObserver][iSample])*real(pp[iObserver][iSample]);
+                 }
              }
             SPL_iObserver = sqrt(SPL_iObserver/nSample);
             SPL = SPL + SPL_iObserver;

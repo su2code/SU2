@@ -64,7 +64,7 @@ class FWHSolver {
   public:
   su2double  CFD_PressureFluctuation;
   su2double  CAA_PressureFluctuation;
-  su2double U1, U2, U3, M, a_inf, AOA, beta_sq;
+  su2double U1, U2, U3, M, a_inf, AOA, beta_sq, FreeStreamDensity, FreeStreamPressure;
   complex <su2double> ***G, ***dGdy1, ***dGdy2, ***dGdy3,**fpp;
   su2double ***dJdU;
   su2double **surface_geo;
@@ -77,8 +77,11 @@ class FWHSolver {
   unsigned long nObserver, nPanel, nSample, idx_window_l, idx_window_r, nDim;
   unsigned long totFWH;
   unsigned long *PointID;
-  su2double **Observer_Locations;
+  su2double **Observer_Locations, **closet_coord_AllObs;
   su2double SPL;
+  su2double ***Fr, **Fr_mean, ***pp_ret, ***t_Obs, **t_interp, ***pp_interp, **pp_TimeDomain , **pp_TimeDomain_root, **r_minmax;
+  bool TimeDomain3D, UseAnalytic;
+  su2double T_a, Freq_a, Amp_a;
 
 
 	/*!
@@ -97,6 +100,9 @@ class FWHSolver {
         void SetCFD_PressureFluctuation(CSolver *solver, CConfig *config, CGeometry *geometry, unsigned long iObserver);
         void Extract_NoiseSources(CSolver *solver, CConfig* config, CGeometry *geometry);
         void Compute_FarfieldNoise(CSolver *solver, CConfig* config, CGeometry *geometry);
+        void Compute_TimeDomainPanelSignal(CConfig* config);
+        void Compute_ObserverTime(CConfig* config);
+        void Interpolate_PressureSignal(CGeometry *geometry);
         void Compute_GreensFunction2D (CConfig* config);
         void Compute_GreensFunction3D (CConfig* config);
         void Window_SourceTerms ();

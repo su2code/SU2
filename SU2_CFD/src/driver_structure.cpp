@@ -3747,9 +3747,9 @@ void CDiscAdjFluidDriver::Run() {
 
   }
 
-  if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
+  if (((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
       integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence() ||
-      (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0)){
+      (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0))|| unsteady ){
 
     /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
      * as argument ensures that all information from a previous recording is removed. ---*/
