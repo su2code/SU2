@@ -235,7 +235,7 @@ def obj_f(dvs,config,state=None):
         sign  = su2io.get_objectiveSign(this_obj)
         # Evaluate Objective Function
         # scaling and sign
-        if def_objs[this_obj]['CTYPE']=='NONE':
+        if def_objs[this_obj]['OBJTYPE']=='DEFAULT':
             func += su2func(this_obj,config,state) * sign * scale
         else:
             func += obj_p(config,state,this_obj,def_objs) * scale
@@ -256,9 +256,9 @@ def obj_p(config,state,this_obj,def_objs):
     value = su2func(this_obj,config,state)
     valuec = float(def_objs[this_obj]['CVAL'])
     penalty = 0.0                   
-    if (def_objs[this_obj]['CTYPE']=='=' or \
-        (def_objs[this_obj]['CTYPE']=='>' and value < valuec) or \
-        (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
+    if (def_objs[this_obj]['OBJTYPE']=='=' or \
+        (def_objs[this_obj]['OBJTYPE']=='>' and value < valuec) or \
+        (def_objs[this_obj]['OBJTYPE']=='<' and value > valuec )):
         penalty = (valuec - value)**2.0
         
     return penalty
@@ -274,10 +274,10 @@ def obj_dp(config,state,this_obj,def_objs):
     dpenalty = 0.0
 
     # Inequalities will be 0 or a positive value
-    if ((def_objs[this_obj]['CTYPE']=='>' and value < valuec)  or\
-         (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
+    if ((def_objs[this_obj]['OBJTYPE']=='>' and value < valuec)  or\
+         (def_objs[this_obj]['OBJTYPE']=='<' and value > valuec )):
         dpenalty=2.0*abs(valuec - value)
-    elif (def_objs[this_obj]['CTYPE']=='='):
+    elif (def_objs[this_obj]['OBJTYPE']=='='):
         # Equalities will be positive if value>constraint, negative if value<constraint
         dpenalty=2.0*(value -valuec)
 
@@ -322,7 +322,7 @@ def obj_df(dvs,config,state=None):
         scale = [1.0]*n_obj
         for i_obj,this_obj in enumerate(objectives):
             scale[i_obj] = def_objs[this_obj]['SCALE']
-            if def_objs[this_obj]['CTYPE']== 'NONE':
+            if def_objs[this_obj]['OBJTYPE']== 'DEFAULT':
                 # Standard case
                 sign = su2io.get_objectiveSign(this_obj)
                 scale[i_obj]*=sign
