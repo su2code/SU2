@@ -495,6 +495,8 @@ void CConfig::SetPointersNull(void) {
 
   Grid_Movement = false;
   Aeroelastic_Simulation = false;
+
+  nSpanMaxAllZones = 1;
   
 }
 
@@ -849,8 +851,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("TURBULENT_MIXINGPLANE", turbMixingPlane, false);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addTurboPerfOption("MARKER_TURBOMACHINERY", nMarker_Turbomachinery, Marker_TurboBoundIn, Marker_TurboBoundOut);
-  /*--- Initialize nspanwise max number for output structure. ---*/
-  nSpanMaxAllZones = 1;
   /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
   addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections_User, 1);
   /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
