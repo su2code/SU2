@@ -260,6 +260,8 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 
 
 su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan){return EntropyGen[iMarkerTP][iSpan];}
+su2double COutput::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan){return FlowAngleOut[iMarkerTP][iSpan];}
+su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan){return MassFlowIn[iMarkerTP][iSpan];}
 
 
 
