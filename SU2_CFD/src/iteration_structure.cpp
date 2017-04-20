@@ -3107,7 +3107,14 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
 
     myfile_res << config_container[val_iZone]->GetExtIter() << "\t";
 
-    myfile_res << scientific << solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << "\t";
+    switch (config_container[val_iZone]->GetKind_ObjFunc()){
+    case REFERENCE_GEOMETRY:
+      myfile_res << scientific << solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << "\t";
+      break;
+    case REFERENCE_NODE:
+      myfile_res << scientific << solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_OFRefNode() << "\t";
+      break;
+    }
 
     for (iVar = 0; iVar < config_container[val_iZone]->GetnElasticityMod(); iVar++)
         myfile_res << scientific << solver_container[ZONE_0][MESH_0][ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
