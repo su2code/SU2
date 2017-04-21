@@ -557,12 +557,11 @@ def structural_adjoint( func_name, problem, state=None ):
             gradients = problem.read_gradients(func_name)
             state.GRADIENTS.update(gradients)
 
-            #TODO: HACK HERE, UNTIL ADJOINT SOLUTIONS ARE ENABLED FOR TIME-DEPENDENT
             # solution files to push
             name = state.FILES[ADJ_NAME]
- #           name = su2io.expand_time(name, problem.physics)
+            name = su2io.expand_time(name, problem.physics)
             # push copies the files that were generated (new restart, for example)
-            push.extend([name])
+            push.extend(name)
 
     #: with output redirection
 

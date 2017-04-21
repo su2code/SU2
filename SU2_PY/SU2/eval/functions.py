@@ -588,9 +588,10 @@ def structural( problem, state=None ):
             name = su2io.expand_time(name, problem.physics)
             link.extend(name)
         else:
-            name = files[key]
-            name = su2io.expand_part(name, problem)
-            link.extend(name)
+            if 'ADJOINT' not in key:
+                name = files[key]
+                name = su2io.expand_part(name, problem)
+                link.extend(name)
 
     # If direct is not in files means that we are not restarting the solution
     # (This may be removed using CONFIG_DIRECT and CONFIG_ADJOINT)

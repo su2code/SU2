@@ -1048,14 +1048,31 @@ def restart2solution(problem, state={}):
         # Retrieve suffix
         func_name = problem.config.OBJECTIVE_FUNCTION
         suffix = get_adjointSuffix(func_name)
+
         # Get files
         restarts, solutions = problem.physics.get_adjoint_files(suffix)
-        # Move files
-        for res,sol in zip(restarts,solutions):
-            shutil.move( res , sol )
+
         # Update state
         ADJ_NAME = 'ADJOINT_' + func_name
         if state: state.FILES[ADJ_NAME] = solutions[0]
+
+        # Append suffix for time dependent simulations
+        if problem.physics.timeDomain:
+            n_time = problem.physics.nTime
+            # Get time-domain names
+            restart_file = restarts[0]
+            solution_file = solutions[0]
+            # Add suffix to restart and solution files
+            restart_pat = add_suffix(restart_file, '%05d')
+            solution_pat = add_suffix(solution_file, '%05d')
+            # Append indices corresponding to time instances
+            restarts  = [restart_pat % i for i in range(n_time)]
+            solutions = [solution_pat % i for i in range(n_time)]
+
+        # Move files
+        for res,sol in zip(restarts,solutions):
+            shutil.move( res , sol )
+
         
     else:
         raise Exception, 'unknown math problem'
