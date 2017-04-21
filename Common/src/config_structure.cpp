@@ -3981,6 +3981,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_GULL:              cout << "FFD (gull) <-> "; break;
           case FFD_TWIST:             cout << "FFD (twist) <-> "; break;
           case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
+          case FFD_ROTATION_TRANS:    cout << "FFD (rotation+translation) <-> "; break;
           case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
           case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
@@ -4023,6 +4024,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
+        if (Design_Variable[iDV] ==  FFD_ROTATION_TRANS) nParamDV = 4;
         if (Design_Variable[iDV] ==  CUSTOM) nParamDV = 1;
         if (Design_Variable[iDV] == FFD_TWIST) nParamDV = 8;
 
@@ -4043,6 +4045,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_GULL) ||
                (Design_Variable[iDV] == FFD_TWIST) ||
                (Design_Variable[iDV] == FFD_ROTATION) ||
+               (Design_Variable[iDV] == FFD_ROTATION_TRANS) ||
                (Design_Variable[iDV] == FFD_CONTROL_SURFACE) ||
                (Design_Variable[iDV] == FFD_CAMBER) ||
                (Design_Variable[iDV] == FFD_THICKNESS))) cout << FFDTag[iDV];

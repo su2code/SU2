@@ -1222,7 +1222,8 @@ enum ENUM_PARAM {
   CUSTOM = 24,               /*!< 'CUSTOM' for use in external python analysis. */
   NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
-  FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
+  FFD_ANGLE_OF_ATTACK = 102,	 /*!< \brief Angle of attack for FFD problem. */
+  FFD_ROTATION_TRANS = 103	 /*!< \brief Free form deformation for 3D design (rotation + translation). */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1241,6 +1242,7 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_CONTROL_POINT", FFD_CONTROL_POINT)
 ("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
 ("FFD_ROTATION", FFD_ROTATION)
+("FFD_ROTATION_TRANS", FFD_ROTATION_TRANS)
 ("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
 ("FFD_NACELLE", FFD_NACELLE)
 ("FFD_GULL", FFD_GULL)
@@ -2216,6 +2218,7 @@ public:
         case FFD_GULL:             nParamDV = 2; break;
         case FFD_TWIST:            nParamDV = 8; break;
         case FFD_ROTATION:         nParamDV = 7; break;
+        case FFD_ROTATION_TRANS:   nParamDV = 4; break;
         case FFD_CONTROL_SURFACE:  nParamDV = 7; break;
         case FFD_CAMBER:           nParamDV = 3; break;
         case FFD_THICKNESS:        nParamDV = 3; break;
@@ -2247,6 +2250,7 @@ public:
              (this->design_variable[iDV] == FFD_GULL) ||
              (this->design_variable[iDV] == FFD_TWIST) ||
              (this->design_variable[iDV] == FFD_ROTATION) ||
+             (this->design_variable[iDV] == FFD_ROTATION_TRANS) ||
              (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
              (this->design_variable[iDV] == FFD_CAMBER) ||
              (this->design_variable[iDV] == FFD_THICKNESS))) {
@@ -2318,8 +2322,11 @@ public:
     this->valueDV = new su2double*[this->nDV];
     this->nDV_Value = new unsigned short[this->nDV];
 
+    /*--- Note we hard-code this for the max possible (6). Ideally this would
+     be a bit more flexible. ---*/
+    
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
-      this->valueDV[iDV] = new su2double[3];
+      this->valueDV[iDV] = new su2double[6];
     }
 
     unsigned short nValueDV = 0;
@@ -2344,6 +2351,9 @@ public:
           } else {
             nValueDV = 1;
           }
+          break;
+        case FFD_ROTATION_TRANS:
+            nValueDV = 6;
           break;
         default :
           nValueDV = 1;

@@ -1668,6 +1668,7 @@ public:
   
   /*!
    * \brief Set a twist angle deformation of the Free From box using the control point position.
+   * \brief Set a rotation angle deformation + a translation of the Free From box using the control point position.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
@@ -1675,6 +1676,17 @@ public:
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  void SetFFDRotationTrans(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
+  
+  /*!
+	 * \brief Set a rotation angle deformation in a control surface of the Free From box using the control point position.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+//	void SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
   
   /*!
    * \brief Set a rotation angle deformation of the Free From box using the control point position.
