@@ -3772,7 +3772,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if ((fem) && (config->GetWrt_Dynamic())) {
+  } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
@@ -14861,6 +14861,7 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
   unsigned short iVar;
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -14883,6 +14884,8 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
     filename = config->GetRestart_FEMFileName();
+  } else if (disc_adj_fem){
+    filename = config->GetRestart_AdjFEMFileName();
   } else {
     filename = config->GetRestart_FlowFileName();
   }
@@ -14896,7 +14899,7 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if ((fem) && (config->GetWrt_Dynamic())) {
+  } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
