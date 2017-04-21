@@ -5578,6 +5578,9 @@ void CSurfaceMovement::SetBoundingFFDBox(CGeometry *geometry, CConfig *config, C
   for (iDim = 0; iDim < 3; iDim++){
     SplineOrder[iDim] = SU2_TYPE::Short(config->GetFFD_BSplineOrder()[iDim]);
   }
+  if (nDim == 2){
+    SplineOrder[2] = 2;
+  }
 
   int rank = MASTER_NODE;
 
