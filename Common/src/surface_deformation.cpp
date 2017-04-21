@@ -5585,10 +5585,6 @@ void CSurfaceMovement::SetBoundingFFDBox(CGeometry *geometry, CConfig *config, C
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  for (iDim = 0; iDim < nDim; iDim++){
-    MyCartCoordMin[iDim] =  1E30;
-    MyCartCoordMax[iDim] = -1E30;
-  }
 
 
   if (rank == MASTER_NODE){
@@ -5599,6 +5595,10 @@ void CSurfaceMovement::SetBoundingFFDBox(CGeometry *geometry, CConfig *config, C
 
     if (config->GetMarker_All_DV(iMarker) == YES) {
 
+      for (iDim = 0; iDim < nDim; iDim++){
+        MyCartCoordMin[iDim] =  1E30;
+        MyCartCoordMax[iDim] = -1E30;
+      }
       /*--- Read the degree of the FFD box ---*/
       TagFFDBox = config->GetMarker_All_TagBound(iMarker) + string("_BOX");
 
