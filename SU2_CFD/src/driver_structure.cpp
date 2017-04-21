@@ -3904,7 +3904,11 @@ void CDiscAdjFluidDriver::SetObjFunction(){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
+  ObjFunc = 0.0;
+
+  for (iZone = 0; iZone < nZone; iZone++){
+    solver_container[iZone][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
+  }
 
   for (iZone = 0; iZone < nZone; iZone++){
     if (output_1d) {
@@ -3929,9 +3933,10 @@ void CDiscAdjFluidDriver::SetObjFunction(){
 
   /*--- Surface based obj. function ---*/
 
-  solver_container[ZONE_0][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[ZONE_0]);
-
-  ObjFunc = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
+  for (iZone = 0; iZone < nZone; iZone++){
+    solver_container[iZone][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[iZone]);
+    ObjFunc += solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
+  }
 
   if (rank == MASTER_NODE){
     AD::RegisterOutput(ObjFunc);
