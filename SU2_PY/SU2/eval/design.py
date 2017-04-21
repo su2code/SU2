@@ -253,14 +253,16 @@ def obj_p(config,state,this_obj,def_objs):
     # Penalty function: square of the difference between value and limit
     # This function is used when a constraint-type term is added to OPT_OBJECTIVE
     # This code, and obj_dp, must be changed to use a non-quadratic penalty function
-    value = su2func(this_obj,config,state)
-    valuec = float(def_objs[this_obj]['CVAL'])
-    penalty = 0.0                   
+    funcval = su2func(this_obj,config,state)
+    constraint = float(def_objs[this_obj]['VALUE'])
+              
     if (def_objs[this_obj]['OBJTYPE']=='=' or \
-        (def_objs[this_obj]['OBJTYPE']=='>' and value < valuec) or \
-        (def_objs[this_obj]['OBJTYPE']=='<' and value > valuec )):
-        penalty = (valuec - value)**2.0
-        
+        (def_objs[this_obj]['OBJTYPE']=='>' and funcval < constraint) or \
+        (def_objs[this_obj]['OBJTYPE']=='<' and funcval > constraint )):
+        penalty = (constraint - funcval)**2.0
+    # If 'DEFAULT' objtype this returns the function value. 
+    else:
+        penalty = funcval
     return penalty
 
 #: def obj_p()
@@ -269,17 +271,21 @@ def obj_dp(config,state,this_obj,def_objs):
     # Partial Derivative of Penalty function: square of the difference between value and limit
     # This function is used when a constraint-type term is added to OPT_OBJECTIVE
     # This code, and obj_p, must be changed to use a non-quadratic penalty function
-    value = su2func(this_obj,config,state)
-    valuec = float(def_objs[this_obj]['CVAL'])
-    dpenalty = 0.0
+    funcval = su2func(this_obj,config,state)
+    constraint = float(def_objs[this_obj]['VALUE'])
+    
 
     # Inequalities will be 0 or a positive value
-    if ((def_objs[this_obj]['OBJTYPE']=='>' and value < valuec)  or\
-         (def_objs[this_obj]['OBJTYPE']=='<' and value > valuec )):
-        dpenalty=2.0*abs(valuec - value)
+    if ((def_objs[this_obj]['OBJTYPE']=='>' and funcval < constraint)  or\
+         (def_objs[this_obj]['OBJTYPE']=='<' and funcval > constraint )):
+        dpenalty=2.0*abs(constraint - funcval)
+    # Equalities dp will be positive if value>constraint, negative if value<constraint
     elif (def_objs[this_obj]['OBJTYPE']=='='):
-        # Equalities will be positive if value>constraint, negative if value<constraint
-        dpenalty=2.0*(value -valuec)
+        dpenalty=2.0*(funcval -constraint)
+    # If 'DEFAULT' objtype, this will return 1.0
+    else:
+        dpenalty = 1.0
+    
 
     return dpenalty
 

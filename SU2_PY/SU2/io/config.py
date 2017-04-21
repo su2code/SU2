@@ -505,12 +505,12 @@ def read_config(filename):
                         this_type = this_sgn
                         this_val = this_obj[1]
                     else:
-                        this_type = 'NONE'
-                        this_val  = 0.0
+                        this_type = 'DEFAULT'
+                        this_val  = 0.0 
                     this_name = this_obj[0]
                        
                     # Set up dict for objective, including scale, whether it is a penalty, and constraint value 
-                    this_def.update({ this_name : {'SCALE':this_scale, 'OBJTYPE':this_type, 'CVAL':this_val} })
+                    this_def.update({ this_name : {'SCALE':this_scale, 'OBJTYPE':this_type, 'VALUE':this_val} })
                     if (len(data_dict['MARKER_MONITORING'])>1):
                         this_def[this_name]['MARKER'] = data_dict['MARKER_MONITORING'][len(this_def)-1]
                     else:
@@ -791,15 +791,15 @@ def write_config(filename,param_dict):
                 break
             
             if case("OPT_OBJECTIVE"):
-                i_name = 0
+                n_obj = 0
                 for name,value in new_value.iteritems():
-                    if i_name>0: output_file.write("; ")
+                    if n_obj>0: output_file.write("; ")
                     if value['OBJTYPE']=='DEFAULT':
                         output_file.write( "%s * %s " % (name,value['SCALE']) )
                     else:
                         output_file.write( "( %s %s %s ) * %s" 
-                                           % (name, value['OBJTYPE'], value['CVAL'], value['SCALE']) )
-                    i_name += 1
+                                           % (name, value['OBJTYPE'], value['VALUE'], value['SCALE']) )
+                    n_obj += 1
                 break
             
             if case("OPT_CONSTRAINT"):
