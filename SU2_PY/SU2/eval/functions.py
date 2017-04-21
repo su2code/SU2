@@ -237,7 +237,7 @@ def aerodynamics( config, state=None ):
         pull.append( 'Observer_Locations.dat')
 
     if config['OBJECTIVE_FUNCTION'] == 'BOOM':
-        pull.append( 'tols.in')
+        pull.append( 'boom.in')
 
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
