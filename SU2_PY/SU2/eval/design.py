@@ -233,15 +233,17 @@ def obj_f(dvs,config,state=None):
     for i_obj,this_obj in enumerate(objectives):
         scale = def_objs[this_obj]['SCALE']
         sign  = su2io.get_objectiveSign(this_obj)
-        # Evaluate Objective Function
-        # scaling and sign
+        # Evaluate Objective Function scaling and sign
+        # If default evaluate as normal, 
         if def_objs[this_obj]['OBJTYPE']=='DEFAULT':
             func += su2func(this_obj,config,state) * sign * scale
+        # otherwise evaluate the penalty function (OBJTYPE = '>','<', or '=')
         else:
             func += obj_p(config,state,this_obj,def_objs) * scale
     vals_out.append(func)
     #: for each objective
-    # If evaluating the combined function is desired, update it here
+    # If evaluating the combined function is desired, update it here.
+    # This is only used when OPT_COMBINE_OBJECTIVE = YES
     if state.FUNCTIONS.has_key('COMBO'):
         state['FUNCTIONS']['COMBO'] = func
         
