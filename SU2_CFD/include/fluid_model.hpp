@@ -199,6 +199,11 @@ public:
     void SetThermalConductivityModel (CConfig *config);
 
     /*!
+     * \brief Set heat capacity model.
+     */
+    void SetHeatCapacityModel (CConfig *config);
+
+    /*!
      * \brief virtual member that would be different for each gas model implemented
      * \param[in] InputSpec - Input pair for FLP calls ("e, rho").
      * \param[in] rho - first thermodynamic variable.

@@ -87,5 +87,23 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
 }
 
 
+void CFluidModel::SetHeatCapacityModel (CConfig *config) {
+
+  switch (config->GetKind_HeatCapacity()) {
+  case WATER:
+    HeatCapacity = new CSteam();
+    break;
+  case CO2:
+	HeatCapacity = new CCo2();
+    break;
+  default:
+	cout << "Warning: constant gamma will be used, no fluid inserted" << endl;
+	getchar();
+	break;
+  }
+
+}
+
+
 
 
