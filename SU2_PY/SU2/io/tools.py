@@ -1015,17 +1015,32 @@ def restart2solution(problem, state={}):
     if problem.kind == 'FUNCTION':
         # Get files
         restarts, solutions = problem.physics.get_direct_files()
-        # Move files
-        for res,sol in zip(restarts,solutions):
-            shutil.move( res , sol )
+
         # update state
-        # TODO: this is a hack here - for multiphysics will need to add DIRECT_1, etc
         if state:
             state.FILES.DIRECT = solutions[0]
             nZone = problem.physics.nZone
             for i in range(1, nZone):
                 DIR_LABEL = 'DIRECT_' + str(i)
                 state.FILES[DIR_LABEL] = solutions[i]
+
+        # Append suffix for time dependent simulations
+        if problem.physics.timeDomain:
+            n_time = problem.physics.nTime
+            # Get time-domain names
+            restart_file = restarts[0]
+            solution_file = solutions[0]
+            # Add suffix to restart and solution files
+            restart_pat = add_suffix(restart_file, '%05d')
+            solution_pat = add_suffix(solution_file, '%05d')
+            # Append indices corresponding to time instances
+            restarts  = [restart_pat % i for i in range(n_time)]
+            solutions = [solution_pat % i for i in range(n_time)]
+
+        # Move files
+        for res,sol in zip(restarts,solutions):
+            shutil.move( res , sol )
+
 
     # adjoint solution
     elif problem.kind == 'ADJOINT_GRADIENT':

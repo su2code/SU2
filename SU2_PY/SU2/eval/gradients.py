@@ -470,11 +470,11 @@ def structural_adjoint( func_name, problem, state=None ):
     #  Initialize    
     # ----------------------------------------------------
 
-    config = problem.config
+    config = problem.config_adj
 
     # initialize
     state = su2io.State(state)
-    special_cases = su2io.get_specialCases(problem.config)
+    special_cases = su2io.get_specialCases(problem.config_adj)
     
     # check for multiple objectives
     multi_objective = (type(func_name)==list)
@@ -484,7 +484,7 @@ def structural_adjoint( func_name, problem, state=None ):
     ADJ_NAME = 'ADJOINT_'+func_name_string
 
     # console output
-    if problem.config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+    if problem.config_adj.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_adjoint = 'log_Adjoint.out'
     else:
         log_adjoint = None
@@ -519,7 +519,7 @@ def structural_adjoint( func_name, problem, state=None ):
             name = files[key]
             name = su2io.expand_time(name, problem.physics)
             link.extend(name)
-        if key == ADJ_NAME:
+        elif key == ADJ_NAME:
             name = files[key]
             name = su2io.expand_time(name, problem.physics)
             link.extend(name)
@@ -557,11 +557,12 @@ def structural_adjoint( func_name, problem, state=None ):
             gradients = problem.read_gradients(func_name)
             state.GRADIENTS.update(gradients)
 
+            #TODO: HACK HERE, UNTIL ADJOINT SOLUTIONS ARE ENABLED FOR TIME-DEPENDENT
             # solution files to push
             name = state.FILES[ADJ_NAME]
-            name = su2io.expand_time(name, problem.physics)
+ #           name = su2io.expand_time(name, problem.physics)
             # push copies the files that were generated (new restart, for example)
-            push.extend(name)
+            push.extend([name])
 
     #: with output redirection
 

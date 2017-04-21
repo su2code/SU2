@@ -73,7 +73,7 @@ def adjoint( problem ):
     
     # local copy
     provlem = copy.deepcopy(problem)
-    konfig = provlem.config
+    konfig = provlem.config_adj
     
     # setup problem
     konfig['MATH_PROBLEM']  = provlem.GRADIENT_METHOD

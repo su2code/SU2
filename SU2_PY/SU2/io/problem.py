@@ -192,6 +192,8 @@ class Problem(ordered_bunch):
                 data_dict[self.DESIGN_VARIABLES[i]] = DV_FEA('dv_young.opt')
             if self.DESIGN_VARIABLES[i] == 'ELECTRIC_FIELD':
                 data_dict[self.DESIGN_VARIABLES[i]] = DV_FEA('dv_efield.opt')
+            if self.DESIGN_VARIABLES[i] == 'STRUCTURAL_DENSITY':
+                data_dict[self.DESIGN_VARIABLES[i]] = DV_FEA('dv_density.opt')
 
         return data_dict
 
@@ -221,6 +223,7 @@ class Problem(ordered_bunch):
             # Choose appropriate file name
             if self.DESIGN_VARIABLES[i] == 'YOUNG_MODULUS': grad_file = 'grad_young.opt'
             elif self.DESIGN_VARIABLES[i] == 'ELECTRIC_FIELD': grad_file = 'grad_efield.opt'
+            elif self.DESIGN_VARIABLES[i] == 'STRUCTURAL_DENSITY': grad_file = 'grad_density.opt'
 
             # Read variables from file (each DV kind has a child class associated, with a method "read")
             nDV, data_list = self.DV_KIND[self.DESIGN_VARIABLES[i]].read_gradient(grad_file)

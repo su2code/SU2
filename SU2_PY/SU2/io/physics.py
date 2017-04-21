@@ -81,20 +81,17 @@ class physics(object):
         restarts = self.files['RESTART_DIRECT']
         solutions = self.files['DIRECT']
 
-        if self.timeDomain:
-            n_time = self.nTime
-            restarts = []
-            solutions = []
-            for j in range(0,len(restarts)):
-                # Add suffix to restart and solution files
-                restart_pat = add_suffix(restarts[j], '%05d')
-                solution_pat = add_suffix(solutions[j], '%05d')
-                # Append indices corresponding to time instances
-                res  = [restart_pat % i for i in range(n_time)]
-                sols = [solution_pat % i for i in range(n_time)]
-                # Append to final restart and solution vectors
-                restarts.append(res)
-                sols.append(sols)
+        # if self.timeDomain:
+        #     n_time = self.nTime
+        #     # Get time-domain names
+        #     restart_file=self.files['RESTART_DIRECT'][0]
+        #     solution_file = self.files['DIRECT'][0]
+        #     # Add suffix to restart and solution files
+        #     restart_pat = add_suffix(restart_file, '%05d')
+        #     solution_pat = add_suffix(solution_file, '%05d')
+        #     # Append indices corresponding to time instances
+        #     restarts  = [restart_pat % i for i in range(n_time)]
+        #     solutions = [solution_pat % i for i in range(n_time)]
 
         return restarts, solutions
 
@@ -103,25 +100,25 @@ class physics(object):
         restarts = self.files['RESTART_ADJOINT']
         solutions = self.files['ADJOINT']
 
-        if self.timeDomain:
-            n_time = self.nTime
-            restarts = []
-            solutions = []
-            for j in range(0,len(restarts)):
-                # Add suffix relative to the kind of objective function
-                # TODO: this if, only until binaries are modified
-                if self.kind != 'FEM_ELASTICITY':
-                    restart = add_suffix(restart, suffix)
-                    solution = add_suffix(solution, suffix)
-                # Add time suffix to restart and solution files
-                restart_pat = add_suffix(restarts[j], '%05d')
-                solution_pat = add_suffix(solutions[j], '%05d')
-                # Append indices corresponding to time instances
-                res  = [restart_pat % i for i in range(n_time)]
-                sols = [solution_pat % i for i in range(n_time)]
-                # Append to final restart and solution vectors
-                restarts.append(res)
-                sols.append(sols)
+        # if self.timeDomain:
+        #     n_time = self.nTime
+        #     restarts = []
+        #     solutions = []
+        #     for j in range(0,len(restarts)):
+        #         # Add suffix relative to the kind of objective function
+        #         # TODO: this if, only until binaries are modified
+        #         if self.kind != 'FEM_ELASTICITY':
+        #             restart = add_suffix(restart, suffix)
+        #             solution = add_suffix(solution, suffix)
+        #         # Add time suffix to restart and solution files
+        #         restart_pat = add_suffix(restarts[j], '%05d')
+        #         solution_pat = add_suffix(solutions[j], '%05d')
+        #         # Append indices corresponding to time instances
+        #         res  = [restart_pat % i for i in range(n_time)]
+        #         sols = [solution_pat % i for i in range(n_time)]
+        #         # Append to final restart and solution vectors
+        #         restarts.append(res)
+        #         sols.append(sols)
 
         return restarts, solutions
 
