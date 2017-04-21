@@ -975,6 +975,8 @@ inline bool CConfig::GetSpatialFourier(void){return SpatialFourier;}
 
 inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[val_iZone];}
 
+inline void CConfig::SetnBlades(unsigned short val_iZone, su2double nblades) { nBlades[val_iZone] = nblades;}
+
 inline bool CConfig::GetBoolNRBC(void) { return (nMarker_NRBC!=0);}
 
 inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0);}

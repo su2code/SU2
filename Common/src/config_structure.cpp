@@ -2208,6 +2208,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   }
   
+  if(GetBoolTurbomachinery()){
+    nBlades = new su2double[nZone];
+
+  }
   /*--- Check for Boundary condition available for NICFD ---*/
   
   if (!ideal_gas) {
@@ -3714,36 +3718,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
       }
     }
   }
-  if(GetBoolTurbomachinery()){
-    unsigned short count = 0;
-    nBlades = new su2double[nZone];
-    su2double pitch;
-    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-      unsigned short iMarker_PerBound;
-      for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
-        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PerBound[iMarker_PerBound]){
-          if (count == 0){
-            pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
-            nBlades[count]= 2*PI_NUMBER/pitch;
-            if (pitch <= EPS){
-              nBlades[count]= 1.0;
-            }
 
-            //						cout << nBlades[count] <<" in zone "<<  count<<endl;
-            count++;
-          }
-          if((pitch != abs(Periodic_RotAngles[iMarker_PerBound][2])  || (pitch <= EPS) ) && (count < nZone)){
-            pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
-            nBlades[count]= 2*PI_NUMBER/pitch;
-            if (pitch <= EPS){
-              nBlades[count]= 1.0;
-            }
-            //						cout << nBlades[count] <<" in zone "<<  count<<endl;
-            count++;
-          }
-        }
-    }
-  }
   /*--- Identification of MixingPlane interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {

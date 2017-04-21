@@ -10983,6 +10983,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
             //							cout << "average  normal "<<AverageNormal[iMarker][iSpan][iDim]<< " in span " << iSpan <<" in rank " <<rank <<endl;
             //						}
 
+
             /*--- Compute the 1D average values ---*/
             AverageTangGridVel[iMarker][nSpanWiseSections[marker_flag-1]]	+= AverageTangGridVel[iMarker][iSpan]/nSpanWiseSections[marker_flag-1];
             SpanArea[iMarker][nSpanWiseSections[marker_flag-1]]				+= SpanArea[iMarker][iSpan];
@@ -11037,14 +11038,16 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   int markerTP;
+  su2double nBlades;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
 
 
   su2double tangGridVelIn, tangGridVelOut;
-  su2double areaIn, areaOut;
+  su2double areaIn, areaOut, pitchIn, Pitch;
   su2double radiusIn, radiusOut, *turboNormal;
 
   turboNormal = new su2double[nDim];
+  Pitch = 0.0;
 
   if(allocate){
     for (iMarkerTP=0; iMarkerTP < config->GetnMarker_TurboPerformance(); iMarkerTP++){
@@ -11076,7 +11079,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
     su2double *TotTurbGeoIn = NULL,*TotTurbGeoOut = NULL;
     int *TotMarkerTP;
 
-    n1          = 5;
+    n1          = 6;
     n2          = 3;
     n1t         = n1*size;
     n2t         = n2*size;
@@ -11088,7 +11091,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
     for (i=0;i<n2;i++)
       TurbGeoOut[i]   = -1.0;
 #endif
-
+    pitchIn           =  0.0;
     areaIn           		 = -1.0;
     tangGridVelIn     = -1.0;
     radiusIn     				     = -1.0;
@@ -11108,6 +11111,9 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
             markerTP        = iMarkerTP;
+            if (iSpan < nSpanWiseSections){
+              pitchIn         = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
+            }
             areaIn          		= SpanArea[iMarker][iSpan];
             tangGridVelIn   = AverageTangGridVel[iMarker][iSpan];
             radiusIn    	    			= TurboRadius[iMarker][iSpan];
@@ -11120,11 +11126,13 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
             TurbGeoIn[2]  = radiusIn;
             TurbGeoIn[3]  = turboNormal[0];
             TurbGeoIn[4]  = turboNormal[1];
+            TurbGeoIn[5]  = pitchIn;
 #endif
           }
 
           /*--- retrieve outlet information ---*/
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
+            pitchIn         = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
             areaOut         		= SpanArea[iMarker][iSpan];
             tangGridVelOut  = AverageTangGridVel[iMarker][iSpan];
             radiusOut   				    = TurboRadius[iMarker][iSpan];
@@ -11169,6 +11177,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
         turboNormal[0]      = TotTurbGeoIn[n1*i+3];
         turboNormal[1]      = 0.0;
         turboNormal[1]      = TotTurbGeoIn[n1*i+4];
+        pitchIn             = 0.0;
+        pitchIn             = TotTurbGeoIn[n1*i+5];
 
         markerTP               = -1;
         markerTP               = TotMarkerTP[i];
@@ -11189,8 +11199,18 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
 #endif
 
-    if (iSpan == nSpanWiseSections)  config->SetFreeStreamTurboNormal(turboNormal);
+    Pitch +=pitchIn/nSpanWiseSections;
 
+    if (iSpan == nSpanWiseSections) {
+      config->SetFreeStreamTurboNormal(turboNormal);
+      if (config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL && nDim == 2){
+        nBlades = 1/Pitch;
+      }
+      else{
+        nBlades = round(2*PI_NUMBER/Pitch);
+      }
+      config->SetnBlades(config->GetiZone(), nBlades);
+    }
 
     if (rank == MASTER_NODE){
       /*----Quantities needed for computing the turbomachinery performance -----*/
@@ -11205,7 +11225,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
     }
   }
-
   delete [] turboNormal;
 
 }

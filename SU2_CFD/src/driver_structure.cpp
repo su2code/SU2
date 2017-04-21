@@ -2670,7 +2670,7 @@ void CDriver::TurbomachineryPreprocessing(){
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
   bool mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
-  su2double areaIn, areaOut;
+  su2double areaIn, areaOut, nBlades;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -2743,8 +2743,10 @@ void CDriver::TurbomachineryPreprocessing(){
     for (iZone = 0; iZone < nZone; iZone++) {
     areaIn  = geometry_container[iZone][MESH_0]->GetSpanAreaIn(iZone, config_container[iZone]->GetnSpanWiseSections());
     areaOut = geometry_container[iZone][MESH_0]->GetSpanAreaOut(iZone, config_container[iZone]->GetnSpanWiseSections());
-    cout << "Inlet area for blade "<< iZone << ": " << areaIn*10000.0 <<" cm^2."  <<endl;
-    cout << "Oulet area for blade "<< iZone << ": " << areaOut*10000.0 <<" cm^2."  <<endl;
+    nBlades = config_container[iZone]->GetnBlades(iZone);
+    cout << "Inlet area for Row "<< iZone + 1<< ": " << areaIn*10000.0 <<" cm^2."  <<endl;
+    cout << "Oulet area for Row "<< iZone + 1<< ": " << areaOut*10000.0 <<" cm^2."  <<endl;
+    cout << "Recomputed number of blades for Row "<< iZone + 1 << ": " << nBlades<<"."  <<endl;
     }
   }
 

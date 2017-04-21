@@ -3876,11 +3876,18 @@ bool GetSpatialFourier(void);
    */
 	bool GetBoolTurbomachinery(void);
   
-  /*!
-	 * \brief number Turbomachinery blades computed using the pitch information.
-	 * \return nBlades.
-   */
-	su2double GetnBlades(unsigned short val_iZone);
+/*!
+ * \brief number Turbomachinery blades computed using the pitch information.
+ * \return nBlades.
+ */
+su2double GetnBlades(unsigned short val_iZone);
+
+/*!
+ * \brief number Turbomachinery blades computed using the pitch information.
+ * \return nBlades.
+ */
+void SetnBlades(unsigned short val_iZone, su2double nblades);
+
   /*!
    * \brief Verify if there is any Non Reflecting Boundary Condition option specified from config file.
    * \return boolean.
