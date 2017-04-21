@@ -10676,10 +10676,28 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
           break;
           
+        case SUPERSONIC_OUTFLOW:
+
+          /*--- Retrieve the staic pressure for this boundary. ---*/
+          Pressure_e = Pressure_i;
+          Pressure_e /= config->GetPressure_Ref();
+          Density_e = Density_i;
+
+          /*--- Compute the boundary state u_e ---*/
+          FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+          Velocity2_e = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity_e[iDim] = Velocity_i[iDim];
+            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+          }
+          Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+          break;
+
         default:
           cout << "Warning! Invalid Riemann input!" << endl;
           exit(EXIT_FAILURE);
           break;
+
           
       }
       

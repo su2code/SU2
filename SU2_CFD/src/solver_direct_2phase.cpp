@@ -1177,9 +1177,9 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
   /*--- Far-field flow state quantities and initialization. ---*/
   su2double RInf, NInf, DInf;
 
-  DInf    = 1.0;
-  RInf    = 0.0;
-  NInf    = 0.0;
+  DInf    = 1;
+  RInf    = 0;
+  NInf    = 0;
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
@@ -1224,8 +1224,6 @@ void C2phase_HillSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   if (config->GetSpatialOrder_2phase() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
   
   if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
-
-
 
 }
 
@@ -1351,9 +1349,10 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
         	} else if (config->GetKind_SlopeLimit_2phase() == VAN_ALBADA) {
 
+        		// test on Put limiter
            		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
-        		Delta =  Delta_Left* Delta_Right*(Delta_Left + Delta_Right)/(pow(Delta_Left, 2) + pow(Delta_Right, 2)+1e-30);
+           		Delta =  Delta_Left* Delta_Right*(Delta_Left + Delta_Right)/(pow(Delta_Left, 2) + pow(Delta_Right, 2)+1e-30);
         		Solution_i[iVar] = Two_phase_i[iVar] + config->GetLimiterCoeff_2phase() * Delta;
 
         		Delta_Left = Sol_Right-Two_phase_j[iVar]; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
@@ -1391,7 +1390,6 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
         		Solution_i[iVar] = Two_phase_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
         		Solution_j[iVar] = Two_phase_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
         	}
-          //cout << Gradient_i[0][0] << " " << Limiter_i [0] <<endl;
 
         }        else {
           Solution_i[iVar] = Two_phase_i[iVar] + Project_Grad_i;
@@ -1711,8 +1709,10 @@ void C2phase_HillSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
+      V_outlet = V_domain;
+
       /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetPrimitive(V_domain, V_domain);
+      conv_numerics->SetPrimitive(V_domain, V_outlet);
       
       /*Solution_i --> 2phaseVar_internal,
       Solution_j --> 2phaseVar_outlet ---*/
