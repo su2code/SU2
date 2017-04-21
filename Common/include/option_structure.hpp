@@ -424,6 +424,18 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("VW_GAS", VW_GAS)
 ("PR_GAS", PR_GAS);
 
+enum ENUM_HEATCAPACITY_MODEL {
+	WATER = 0,
+	CO2 = 1,
+};
+
+static const map<string, ENUM_HEATCAPACITY_MODEL> HeatCapacity_Map = CCreateMap<string, ENUM_HEATCAPACITY_MODEL>
+("WATER", WATER)
+("CO2", CO2);
+
+
+
+
 /*!
  * \brief types of initialization option
  */

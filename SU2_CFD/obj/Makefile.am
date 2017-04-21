@@ -60,6 +60,8 @@ libSU2Core_sources = \
   ../include/definition_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
+  ../include/heat_capacity.hpp \
+  ../include/heat_capacity.hpp \
   ../include/integration_structure.hpp \
   ../include/integration_structure.inl \
   ../include/driver_structure.hpp \
@@ -81,6 +83,7 @@ libSU2Core_sources = \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
+  ../src/heat_capacity.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
   ../src/driver_structure.cpp \

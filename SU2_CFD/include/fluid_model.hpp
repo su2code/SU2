@@ -49,6 +49,7 @@
 using namespace std;
 
 #include "../include/transport_model.hpp"
+#include "../include/heat_capacity.hpp"
 #include "../../Common/include/config_structure.hpp"
 
 
@@ -81,6 +82,7 @@ su2double      StaticEnergy,      /*!< \brief Internal Energy. */
 
 CViscosityModel *LaminarViscosity;            /*!< \brief Laminar Viscosity Model */
 CConductivityModel *ThermalConductivity;    /*!< \brief Thermal Conductivity Model */
+CHeatCapacity *HeatCapacity;    /*!< \brief Heat Capacityy Model */
 
 public:
 

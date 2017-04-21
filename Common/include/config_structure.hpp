@@ -391,6 +391,7 @@ private:
   su2double *LocationStations;   /*!< \brief Airfoil sections in wing slicing subroutine. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
+  Kind_HeatCapacity,			/*!< \brief Fluid for heat capacity calculations... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
   Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
@@ -453,6 +454,7 @@ private:
   SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
+  bool Constant_Gamma;			/*!< \brief polytropic gas... . */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -2944,6 +2946,16 @@ public:
    */
   unsigned short GetKind_FluidModel(void);
   
+  /*!
+    * \brief Fluid name for heat capacity
+    */
+   unsigned short GetKind_HeatCapacity(void);
+
+  /*!
+    * \brief Fluid name for heat capacity
+    */
+   bool Get_ConstantGamma(void);
+
   /*!
    * \brief free stream option to initialize the solution
    * \return free stream option
