@@ -1482,13 +1482,17 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
   switch (config_container[val_iZone]->GetKind_ObjFunc()){
     case REFERENCE_GEOMETRY:
-      if (config_container[val_iZone]->GetDV_FEA() == YOUNG_MODULUS ){
+      if ((config_container[val_iZone]->GetDV_FEA() == YOUNG_MODULUS) || (config_container[val_iZone]->GetDV_FEA() == DENSITY_VAL)){
         solver_container[val_iZone][MESH_0][FEA_SOL]->Stiffness_Penalty(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0],
           numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
       }
       solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_OFRefGeom(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone]);
       break;
     case REFERENCE_NODE:
+      if ((config_container[val_iZone]->GetDV_FEA() == YOUNG_MODULUS) || (config_container[val_iZone]->GetDV_FEA() == DENSITY_VAL)){
+        solver_container[val_iZone][MESH_0][FEA_SOL]->Stiffness_Penalty(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0],
+          numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+      }
        solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_OFRefNode(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone]);
        break;
   }
