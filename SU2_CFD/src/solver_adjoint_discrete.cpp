@@ -524,15 +524,11 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
           solution_n = node[iPoint]->GetSolution_time_n();
           solution_n1 = node[iPoint]->GetSolution_time_n1();
-
           for (iVar=0; iVar < nVar; iVar++) {
               node[iPoint]->SetDual_Time_Derivative(iVar, solution_n[iVar]+node[iPoint]->GetDual_Time_Derivative_n(iVar));
               node[iPoint]->SetDual_Time_Derivative_n(iVar, solution_n1[iVar]);
-
             }
-
         }
-
     }
 }
 

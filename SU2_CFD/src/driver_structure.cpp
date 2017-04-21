@@ -3803,13 +3803,17 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
 
   AD::Reset();
 
-  /*--- Prepare for recording ---*/
+  /*--- Prepare for recording by resetting the flow solution to the initial converged solution---*/
+
   for (iZone = 0; iZone < nZone; iZone++) {
     solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
     if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
+
+
+  /*---Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
 
   if (kind_recording != NONE){
 
@@ -3831,6 +3835,8 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     iteration_container[iZone]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
   }
 
+  /*--- Do one iteration of the direct flow solver ---*/
+
   DirectRun();
 
   /*--- Print residuals in the first iteration ---*/
@@ -3849,6 +3855,8 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->RegisterOutput(solver_container, geometry_container, config_container, output, iZone);
   }
+
+  /*--- Extract the objective function and store it --- */
 
   SetObjFunction();
 
