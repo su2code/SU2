@@ -3436,7 +3436,8 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Dimension of the problem --> dependent of the turbulent model ---*/
-  nVar = 4;
+  nVar = 2;
+  //nVar = 4;
   //  nVar = 3;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -3485,6 +3486,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Initialization of the structure of the whole Jacobian ---*/
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (KE model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    if (rank == MASTER_NODE) cout << "Finished." << endl;
     
     if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
         (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
@@ -3582,18 +3584,18 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   upperlimit[2] = 1000.0; //2.0/3.0*rho;
   */
 
-  // v2
-  //  lowerlimit[2] = 1.0e-14;
-  //  lowerlimit[2] = 0.0;
-  //  lowerlimit[2] = -1.0e-1;
-  lowerlimit[2] = -1.0e10;
-  upperlimit[2] = 1.0e10; 
+  // // v2
+  // //  lowerlimit[2] = 1.0e-14;
+  // //  lowerlimit[2] = 0.0;
+  // //  lowerlimit[2] = -1.0e-1;
+  // lowerlimit[2] = -1.0e10;
+  // upperlimit[2] = 1.0e10; 
   
-  // f
-  //  lowerlimit[3] = 1.0e-14;
-  //  lowerlimit[3] = 0.0;
-  lowerlimit[3] = -1.0e10; //-1.0e2;
-  upperlimit[3] = 1.0e10;
+  // // f
+  // //  lowerlimit[3] = 1.0e-14;
+  // //  lowerlimit[3] = 0.0;
+  // lowerlimit[3] = -1.0e10; //-1.0e2;
+  // upperlimit[3] = 1.0e10;
 
 //jump
   /*--- Flow infinity initialization stuff ---*/
@@ -3841,8 +3843,10 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     kine = node[iPoint]->GetSolution(0);
     epsi = node[iPoint]->GetSolution(1);
     //    zeta = node[iPoint]->GetSolution(2);
-    v2 = node[iPoint]->GetSolution(2);
-    f = node[iPoint]->GetSolution(3);
+    v2 = (2.0/3.0)*kine;
+    f  = 1.0;
+    // v2 = node[iPoint]->GetSolution(2);
+    // f = node[iPoint]->GetSolution(3);
     //cout<<"kine: "<<kine<<"\n";
     //cout<<"f: "<<f<<"\n";
 
@@ -3996,10 +4000,11 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
       // swh: needs a modification here... 
       Solution[0] = 0.0;
+      //Solution[1] = 1.0;
       Solution[1] = 2.0*laminar_viscosity*wall_k/(density*distance*distance); //60.0*laminar_viscosity/(density*beta_1*distance*distance);
-      Solution[2] = 0.0;
-      //      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
-      Solution[3] = 0.0; // v2
+      // Solution[2] = 0.0;
+      // //      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
+      // Solution[3] = 0.0; // v2
       
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);
@@ -4065,9 +4070,9 @@ void CTurbKESolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
       // wall boundary conditions (https://turbmodels.larc.nasa.gov/k-e-zeta-f.html)
       Solution[0] = 0.0;
       Solution[1] = 2.0*laminar_viscosity*wall_k/(density*distance*distance);
-      Solution[2] = 0.0;
-      //      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
-      Solution[3] = 0.0; // v2
+      // Solution[2] = 0.0;
+      // //      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
+      // Solution[3] = 0.0; // v2
       
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);
