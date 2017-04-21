@@ -44,21 +44,21 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     //ray_phi[i] = phi[i];
     ray_phi[i] = 0.0;
   }
-  ray_r0 = 2.0;
 
   /*---Tolerance variables---*/
 //  char cstr [200];
   string str;
   ifstream tolfile;
 
-  tolfile.open("tols.in", ios::in);
+  tolfile.open("boom.in", ios::in);
   if (tolfile.fail()) {
-    cout << "There is no tols.in file. Using default tolerances for boom propagation. " << endl;
+    cout << "There is no boom.in file. Using default tolerances for boom propagation. " << endl;
     tol_dphi = 1.0E-3;
     tol_dr = 1.0E-3;
     tol_m = 1.0E6;
     tol_dp = 1.0E-6;
     tol_l = 1.0E-4;
+    ray_r0 = 5.0;
   }
   else{
     tolfile >> str >> tol_dphi;
@@ -66,6 +66,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     tolfile >> str >> tol_m;
     tolfile >> str >> tol_dp;
     tolfile >> str >> tol_l;
+    tolfile >> str >> ray_r0;
   }
   }
 
