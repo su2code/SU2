@@ -81,6 +81,10 @@ inline su2double CFluidModel::GetdktdT_rho () {
         return dktdT_rho;
 }
 
+inline su2double CIdealGas::GetGamma () {
+        return Gamma;
+}
+
 inline void CFluidModel::SetTDState_rhoe (su2double rho, su2double e ) { }
 inline void CFluidModel::SetTDState_PT (su2double P, su2double T ) { }
 inline void CFluidModel::SetTDState_Prho (su2double P, su2double rho ) { }

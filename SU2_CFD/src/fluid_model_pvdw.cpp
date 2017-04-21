@@ -42,7 +42,7 @@ CVanDerWaalsGas::CVanDerWaalsGas() : CIdealGas() {
 
 
 CVanDerWaalsGas::CVanDerWaalsGas(su2double gamma, su2double R, su2double Pstar, su2double Tstar): CIdealGas(gamma, R) {
-    a = 27.0/64.0*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
+  a = 27.0/64.0*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
   b = 1.0/8.0*Gas_Constant*Tstar/Pstar;
   Zed = 1.0;
 

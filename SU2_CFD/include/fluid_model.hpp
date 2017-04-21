@@ -360,6 +360,11 @@ public:
      */
 
     void SetTDState_Ps (su2double P, su2double s );
+
+    /*!
+     * \brief Return gamma value.
+     */
+    su2double GetGamma ();
 };
 
 
