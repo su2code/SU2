@@ -819,6 +819,17 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                 unsigned short val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
@@ -2398,6 +2409,12 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \return Bool that defines whether the solution has an element-based file or not
+   */
+  virtual bool IsElementBased(void);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
    */
   virtual void SetTotal_CEquivArea(su2double val_cequivarea);
@@ -3178,10 +3195,22 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \return Value of the Mach sensitivity for the Poisson's ratio Nu
+   * \return Value of the sensitivity for the Poisson's ratio Nu
    */
   virtual su2double GetTotal_Sens_Nu(unsigned short iVal);
   
+  /*!
+   * \brief A virtual member.
+   * \return Value of the structural density sensitivity
+   */
+  virtual su2double GetTotal_Sens_Rho(unsigned short iVal);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the structural weight sensitivity
+   */
+  virtual su2double GetTotal_Sens_Rho_DL(unsigned short iVal);
+
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
@@ -3206,6 +3235,18 @@ public:
    */
   virtual su2double GetGlobal_Sens_Nu(unsigned short iVal);
   
+  /*!
+   * \brief A virtual member.
+   * \return Value of the structural density sensitivity
+   */
+  virtual su2double GetGlobal_Sens_Rho(unsigned short iVal);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the structural weight sensitivity
+   */
+  virtual su2double GetGlobal_Sens_Rho_DL(unsigned short iVal);
+
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
@@ -3812,6 +3853,15 @@ public:
    */
   virtual void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -11034,20 +11084,25 @@ private:
   
   su2double PenaltyValue;      /*!< \brief Penalty value to maintain total stiffness constant */
 
-  CSysMatrix MassMatrix;       /*!< \brief Sparse structure for storing the mass matrix. */
-  CSysVector TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
-  CSysVector TimeRes;        /*!< \brief Vector for adding mass and damping contributions to the residual */
-  CSysVector LinSysReact;      /*!< \brief Vector to store the residual before applying the BCs */
-  
-  CSysVector LinSysSol_Adj;		/*!< \brief Vector to store the solution of the adjoint problem */
-  CSysVector LinSysRes_Adj;		/*!< \brief Vector to store the residual of the adjoint problem */
-  
-  su2double Total_OFRefGeom;        /*!< \brief Total FEA coefficient for all the boundaries. */
-  su2double Total_OFRefNode;        /*!< \brief Total FEA coefficient for all the boundaries. */
+  su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
+  su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
+
+  su2double Global_OFRefGeom;        /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
+  su2double Global_OFRefNode;        /*!< \brief Global Objective Function (added over time steps): Reference Node. */
+
   su2double Total_ForwardGradient;  /*!< \brief Vector of the total forward gradient. */
   
 public:
   
+  CSysVector TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
+  CSysVector TimeRes;        /*!< \brief Vector for adding mass and damping contributions to the residual */
+  CSysVector LinSysReact;      /*!< \brief Vector to store the residual before applying the BCs */
+
+  CSysVector LinSysSol_Adj;   /*!< \brief Vector to store the solution of the adjoint problem */
+  CSysVector LinSysRes_Adj;   /*!< \brief Vector to store the residual of the adjoint problem */
+
+  CSysMatrix MassMatrix;       /*!< \brief Sparse structure for storing the mass matrix. */
+
   CElement*** element_container;   /*!< \brief Vector which the define the finite element structure for each problem. */
   CElementProperty** element_properties; /*!< \brief Vector which stores the properties of each element */
 
@@ -11180,6 +11235,15 @@ public:
   void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
   
   /*!
+   * \brief Compute the mass residual of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
+  /*!
    * \brief Compute the nodal stress terms and add them to the residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -11299,6 +11363,17 @@ public:
   void BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                     unsigned short val_marker);
   
+  /*!
+   * \brief Impose a damping load.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                 unsigned short val_marker);
+
   
   /*!
    * \brief Impose a load boundary condition.
@@ -11417,6 +11492,12 @@ public:
    * \param[out] OFRefGeom - value of the objective function.
    */
   su2double GetTotal_OFRefNode(void);
+
+  /*!
+   * \brief Determines whether there is an element-based file or not.
+   * \return Bool that defines whether the solution has an element-based file or not
+   */
+  bool IsElementBased(void);
 
   /*!
    * \brief Set the value of the FEA coefficient.
@@ -12586,6 +12667,18 @@ public:
   su2double GetTotal_Sens_Nu(unsigned short iVal);
   
   /*!
+   * \brief Get the total sensitivity for the structural density
+   * \return Value of the structural density sensitivity
+   */
+  su2double GetTotal_Sens_Rho(unsigned short iVal);
+
+  /*!
+   * \brief Get the total sensitivity for the structural weight
+   * \return Value of the structural weight sensitivity
+   */
+  su2double GetTotal_Sens_Rho_DL(unsigned short iVal);
+
+  /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField (time averaged)
    */
@@ -12620,6 +12713,19 @@ public:
    * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
    */
   su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA);
+
+  /*!
+   * \brief Get the total sensitivity for the structural density
+   * \return Value of the structural density sensitivity
+   */
+  su2double GetGlobal_Sens_Rho(unsigned short iVal);
+
+  /*!
+   * \brief Get the total sensitivity for the structural weight
+   * \return Value of the structural weight sensitivity
+   */
+  su2double GetGlobal_Sens_Rho_DL(unsigned short iVal);
+
 
   /*!
    * \brief Get the value of the Young modulus from the adjoint solver

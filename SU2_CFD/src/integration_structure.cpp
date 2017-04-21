@@ -295,6 +295,9 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	      case PRESSURE_BOUNDARY:
 	        solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
 	        break;
+        case DAMPER_BOUNDARY:
+          solver_container[MainSolver]->BC_Damper(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        break;
 	    }
 	  }
 
@@ -419,7 +422,7 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
         break;
 	      case DISPLACEMENT_BOUNDARY:
 	        solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-	        break;
+	      break;
 	    }
 
 	/*--- Solver linearized system ---*/

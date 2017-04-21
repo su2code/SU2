@@ -410,6 +410,8 @@ inline su2double CSolver::GetTotal_OFRefGeom() { return 0; }
 
 inline su2double CSolver::GetTotal_OFRefNode() { return 0; }
 
+inline bool CSolver::IsElementBased(void){ return false; }
+
 inline void CSolver::AddTotal_ComboObj(su2double val_obj) {}
 
 inline void CSolver::SetTotal_CEquivArea(su2double val_cequivarea) { }
@@ -596,6 +598,10 @@ inline su2double CSolver::GetTotal_Sens_E(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetTotal_Sens_Nu(unsigned short iVal) { return 0.0; }
 
+inline su2double CSolver::GetTotal_Sens_Rho(unsigned short iVal) { return 0.0; }
+
+inline su2double CSolver::GetTotal_Sens_Rho_DL(unsigned short iVal) { return 0.0; }
+
 inline su2double CSolver::GetTotal_Sens_EField(unsigned short iEField) { return 0.0; }
 
 inline su2double CSolver::GetTotal_Sens_DVFEA(unsigned short iDVFEA) { return 0.0; }
@@ -603,6 +609,10 @@ inline su2double CSolver::GetTotal_Sens_DVFEA(unsigned short iDVFEA) { return 0.
 inline su2double CSolver::GetGlobal_Sens_E(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetGlobal_Sens_Nu(unsigned short iVal) { return 0.0; }
+
+inline su2double CSolver::GetGlobal_Sens_Rho(unsigned short iVal) { return 0.0; }
+
+inline su2double CSolver::GetGlobal_Sens_Rho_DL(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetGlobal_Sens_EField(unsigned short iEField) { return 0.0; }
 
@@ -754,7 +764,10 @@ inline void CSolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container
 									 unsigned short val_marker) { }
 									 
 inline void CSolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
-									 unsigned short val_marker) { }									 
+									 unsigned short val_marker) { }		
+									 
+inline void CSolver::BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+                                     unsigned short val_marker) { }             									 							 
                    
 inline void CSolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
 									 unsigned short val_marker) { }
@@ -1024,6 +1037,8 @@ inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_c
 inline void CSolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
 
 inline void CSolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
+
+inline void CSolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
 
 inline void CSolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
 
@@ -1983,6 +1998,8 @@ inline su2double CFEM_ElasticitySolver::GetTotal_OFRefGeom(void){ return Total_O
 
 inline su2double CFEM_ElasticitySolver::GetTotal_OFRefNode(void){ return Total_OFRefNode; }
 
+inline bool CFEM_ElasticitySolver::IsElementBased(void){ return element_based; }
+
 inline void CFEM_ElasticitySolver_Adj::Set_DV_Val(su2double val_EField, unsigned short i_DV){ DV_Val[i_DV] = val_EField;}
 
 inline su2double CFEM_ElasticitySolver_Adj::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
@@ -2025,6 +2042,10 @@ inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(unsigned short iVal) { retur
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_Nu(unsigned short iVal) { return Total_Sens_Nu[iVal]; }
 
+inline su2double CDiscAdjFEASolver::GetTotal_Sens_Rho(unsigned short iVal) { return Total_Sens_Rho[iVal]; }
+
+inline su2double CDiscAdjFEASolver::GetTotal_Sens_Rho_DL(unsigned short iVal) { return Total_Sens_Rho_DL[iVal]; }
+
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_EField(unsigned short iEField) { return Total_Sens_EField[iEField]; }
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_DVFEA(unsigned short iDVFEA) { return Total_Sens_DV[iDVFEA]; }
@@ -2032,6 +2053,10 @@ inline su2double CDiscAdjFEASolver::GetTotal_Sens_DVFEA(unsigned short iDVFEA) {
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_E(unsigned short iVal) { return Global_Sens_E[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Nu(unsigned short iVal) { return Global_Sens_Nu[iVal]; }
+
+inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Rho(unsigned short iVal) { return Global_Sens_Rho[iVal]; }
+
+inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Rho_DL(unsigned short iVal) { return Global_Sens_Rho_DL[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_EField(unsigned short iEField) { return Global_Sens_EField[iEField]; }
 

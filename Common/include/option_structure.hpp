@@ -796,6 +796,7 @@ enum BC_TYPE {
   INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
   FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
   DISP_DIR_BOUNDARY = 40,    /*!< \brief Boundary displacement definition. */
+  DAMPER_BOUNDARY = 41,    /*!< \brief Damper. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
