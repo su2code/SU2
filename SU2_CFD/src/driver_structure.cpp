@@ -2715,7 +2715,6 @@ void CDriver::TurbomachineryPreprocessing(){
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
     geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
-
   }
 
 
@@ -2733,6 +2732,12 @@ void CDriver::TurbomachineryPreprocessing(){
   if (rank == MASTER_NODE) cout << "Transfer average geometric quantities to zone 0." << endl;
   for (iZone = 1; iZone < nZone; iZone++) {
     transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
+  }
+
+  /*--- Transfer number of blade to ZONE_0 to correctly compute turbo performance---*/
+  for (iZone = 1; iZone < nZone; iZone++) {
+    nBlades = config_container[iZone]->GetnBlades(iZone);
+    config_container[ZONE_0]->SetnBlades(iZone, nBlades);
   }
 
   if (rank == MASTER_NODE){
