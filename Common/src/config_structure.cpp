@@ -2210,7 +2210,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if(GetBoolTurbomachinery()){
     nBlades = new su2double[nZone];
-
+    FreeStreamTurboNormal= new su2double[3];
   }
   /*--- Check for Boundary condition available for NICFD ---*/
   
@@ -6825,10 +6825,8 @@ su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<
 
 void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
 
-  FreeStreamTurboNormal= new su2double[3];
-
   FreeStreamTurboNormal[0] = turboNormal[0];
   FreeStreamTurboNormal[1] = turboNormal[1];
-  FreeStreamTurboNormal[0] = 0.0;
+  FreeStreamTurboNormal[2] = 0.0;
 
 }

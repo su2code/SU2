@@ -2670,7 +2670,9 @@ void CDriver::TurbomachineryPreprocessing(){
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
   bool mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
-  su2double areaIn, areaOut, nBlades;
+  bool restart   = (config_container[ZONE_0]->GetRestart() || config_container[ZONE_0]->GetRestart_Flow());
+  bool discrete_adjoint = config_container[ZONE_0]->GetDiscrete_Adjoint();
+  su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -2714,14 +2716,6 @@ void CDriver::TurbomachineryPreprocessing(){
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
     geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
 
-  }
-
-  if (rank == MASTER_NODE) cout<<"Initialize inflow and outflow average solution quantities." << endl;
-  for(iZone = 0; iZone < nZone; iZone++) {
-    solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-    solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-    solver_container[iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-    solver_container[iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
   }
 
 
@@ -2768,6 +2762,34 @@ void CDriver::TurbomachineryPreprocessing(){
       }
     }
   }
+
+  if(!restart && !discrete_adjoint){
+    if (rank == MASTER_NODE) cout<<"Initialize turbomachinery solution quantities." << endl;
+    for(iZone = 0; iZone < nZone; iZone++) {
+      solver_container[iZone][MESH_0][FLOW_SOL]->SetFreeStream_TurboSolution(config_container[iZone]);
+    }
+  }
+
+  if (rank == MASTER_NODE) cout<<"Initialize inflow and outflow average solution quantities." << endl;
+  for(iZone = 0; iZone < nZone; iZone++) {
+    solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+    solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+    solver_container[iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+    solver_container[iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+    solver_container[iZone][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config_container[iZone], geometry_container[iZone][MESH_0]);
+    if (rank == MASTER_NODE){
+      flowAngleIn = solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityIn(iZone, config_container[iZone]->GetnSpanWiseSections())[1];
+      flowAngleIn /= solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityIn(iZone, config_container[iZone]->GetnSpanWiseSections())[0];
+      flowAngleIn = atan(flowAngleIn)*180.0/PI_NUMBER;
+      cout << "Inlet flow angle for Row "<< iZone + 1<< ": "<< flowAngleIn <<"°."  <<endl;
+      flowAngleOut = solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityOut(iZone, config_container[iZone]->GetnSpanWiseSections())[1];
+      flowAngleOut /= solver_container[iZone][MESH_0][FLOW_SOL]->GetTurboVelocityOut(iZone, config_container[iZone]->GetnSpanWiseSections())[0];
+      flowAngleOut = atan(flowAngleOut)*180.0/PI_NUMBER;
+      cout << "Outlet flow angle for Row "<< iZone + 1<< ": "<< flowAngleOut <<"°."  <<endl;
+
+    }
+  }
+
 }
 
 void CDriver::StartSolver() {
