@@ -11207,7 +11207,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
         nBlades = 1/Pitch;
       }
       else{
-        nBlades = round(2*PI_NUMBER/Pitch);
+        nBlades = 2*PI_NUMBER/Pitch;
       }
       config->SetnBlades(config->GetiZone(), nBlades);
     }
