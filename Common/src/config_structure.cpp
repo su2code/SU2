@@ -2249,17 +2249,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Force number of span-wise section to 1 if 2D case ---*/
   if(val_nDim ==2){
-  	nSpanWiseSections_User=1;
-  	Kind_SpanWise= EQUISPACED;
+    nSpanWiseSections_User=1;
+    Kind_SpanWise= EQUISPACED;
   }
 
   /*--- Set number of TurboPerformance markers ---*/
   if(nMarker_Turbomachinery > 0){
-  	if(nMarker_Turbomachinery > 1){
-  		nMarker_TurboPerformance = nMarker_Turbomachinery + int(nMarker_Turbomachinery/2) + 1;
-  	}else{
-  		nMarker_TurboPerformance = nMarker_Turbomachinery;
-  	}
+    if(nMarker_Turbomachinery > 1){
+      nMarker_TurboPerformance = nMarker_Turbomachinery + int(nMarker_Turbomachinery/2) + 1;
+    }else{
+      nMarker_TurboPerformance = nMarker_Turbomachinery;
+    }
   } else {
     nMarker_TurboPerformance = 0;
     nSpanWiseSections =1;
@@ -2267,33 +2267,33 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Set number of TurboPerformance markers ---*/
   if(nMarker_Turbomachinery != 0){
-  	nSpan_iZones = new unsigned short[nZone];
+    nSpan_iZones = new unsigned short[nZone];
   }
 
   /*--- Set number of TurboPerformance markers ---*/
-  if(RampRotatingFrame){
-  	FinalRotation_Rate_Z = new su2double[nZone];
-  	for(iZone=0; iZone <nZone; iZone ++){
-  	 FinalRotation_Rate_Z[iZone] = Rotation_Rate_Z[iZone];
-  	 if(abs(FinalRotation_Rate_Z[iZone]) > 0.0){
-  		 Rotation_Rate_Z[iZone] = RampRotatingFrame_Coeff[0];
-  	 }
-  	}
+  if(RampRotatingFrame && !DiscreteAdjoint){
+    FinalRotation_Rate_Z = new su2double[nZone];
+    for(iZone=0; iZone <nZone; iZone ++){
+      FinalRotation_Rate_Z[iZone] = Rotation_Rate_Z[iZone];
+      if(abs(FinalRotation_Rate_Z[iZone]) > 0.0){
+        Rotation_Rate_Z[iZone] = RampRotatingFrame_Coeff[0];
+      }
+    }
   }
 
-  if(RampOutletPressure){
-  	for (iMarker = 0; iMarker < nMarker_NRBC; iMarker++){
-  		if (Kind_Data_NRBC[iMarker] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker] == STATIC_PRESSURE_1D || Kind_Data_NRBC[iMarker] == RADIAL_EQUILIBRIUM ){
-  			FinalOutletPressure   = NRBC_Var1[iMarker];
-  			NRBC_Var1[iMarker] = RampOutletPressure_Coeff[0];
-  		}
-  	}
-  	for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
-  		if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
-  			FinalOutletPressure      = Riemann_Var1[iMarker];
-  			Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
-  		}
-  	}
+  if(RampOutletPressure && !DiscreteAdjoint){
+    for (iMarker = 0; iMarker < nMarker_NRBC; iMarker++){
+      if (Kind_Data_NRBC[iMarker] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker] == STATIC_PRESSURE_1D || Kind_Data_NRBC[iMarker] == RADIAL_EQUILIBRIUM ){
+        FinalOutletPressure   = NRBC_Var1[iMarker];
+        NRBC_Var1[iMarker] = RampOutletPressure_Coeff[0];
+      }
+    }
+    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
+      if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
+        FinalOutletPressure      = Riemann_Var1[iMarker];
+        Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
+      }
+    }
   }
 
 
@@ -3201,6 +3201,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       default:
         break;
     }
+
+    RampOutletPressure = false;
+    RampRotatingFrame = false;
   }
 
   /*--- Check for 2nd order w/ limiting for JST and correct ---*/
