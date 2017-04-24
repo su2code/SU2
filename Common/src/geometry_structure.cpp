@@ -4805,7 +4805,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
         
         if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
             config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL &&
+            config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE )
           node[Point_Surface]->SetSolidBoundary(true);
       }
     }
@@ -8994,7 +8995,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   unsigned long nVertex_SolidWall = 0;
   for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
       nVertex_SolidWall += GetnVertex(iMarker);
     }
   }
@@ -9011,7 +9013,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   unsigned long ii = 0, jj = 0;
   for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
       for(unsigned long iVertex=0; iVertex<GetnVertex(iMarker); ++iVertex) {
         unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -9082,6 +9085,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
          (Boundary == HEAT_FLUX)               ||
          (Boundary == ISOTHERMAL)              ||
          (Boundary == LOAD_BOUNDARY)           ||
+         (Boundary == CHT_WALL_INTERFACE)      ||
          (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
 
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
@@ -9365,7 +9369,8 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
         
         if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
             config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ||
+            config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)
           node[InvResult[iPoint]]->SetSolidBoundary(true);
       }
     }
@@ -12663,6 +12668,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)      ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
       nVertex_Wall += nVertex[iMarker];
   
@@ -12679,7 +12685,8 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)              ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE))
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
@@ -15136,7 +15143,8 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)      ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL))
       nVertex_Wall += nVertex[iMarker];
   
   
@@ -15152,7 +15160,8 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)              ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE))
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);

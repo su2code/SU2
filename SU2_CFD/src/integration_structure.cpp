@@ -193,11 +193,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-      case CHT_WALL_INTERFACE:
-        if (MainSolver == FLOW_SOL)
-          solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        else if (MainSolver == HEAT_SOL)
+      case CHT_WALL_INTERFACE: 
+        if (MainSolver == HEAT_SOL)
           solver_container[MainSolver]->BC_ConjugateTFFB_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+        else
+          solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       break;
     }
 
