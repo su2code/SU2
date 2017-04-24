@@ -876,7 +876,7 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
 
   if(flow) {
 
-    cout << "                             TFFB Interface report for fluid zone - ";
+    //cout << "                             TFFB Interface report for fluid zone - ";
     /*--- We have to set temperature BC for the convective zone ---*/
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -934,13 +934,13 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
 
           }
         }
-        cout << "max. Heat Flux Density: " << maxHeatFluxDensity << ", max. Temperature (used to compute heat fluxes): " << maxTemperature <<  endl;
+        //cout << "max. Heat Flux Density: " << maxHeatFluxDensity << ", max. Temperature (used to compute heat fluxes): " << maxTemperature <<  endl;
       }
     }
   }
   else {
 
-    cout << "                             TFFB Interface report for solid zone - ";
+    //cout << "                             TFFB Interface report for solid zone - ";
     /*--- We have to set heat flux BC for the purely conductive zone ---*/
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -977,7 +977,7 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
         }
       }
     }
-    cout << "Heat Flux (to check): " << HeatFluxIntegral << endl;
+    //cout << "Heat Flux (to check): " << HeatFluxIntegral << endl;
   }
 }
 

@@ -397,7 +397,7 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
   unsigned long PointNormal;
   unsigned short nDim, iDim;
-  su2double *Coord, *Coord_Normal, *Normal, dist, Twall, dTdn, thermal_conductivity, heat_flux_density;
+  su2double *Coord, *Coord_Normal, *Normal, dist, Twall, dTdn, thermal_diffusivity, heat_flux_density;
 
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
   bool flow = (donor_config->GetKind_Solver() != HEAT_EQUATION);
@@ -419,12 +419,12 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   dist = sqrt(dist);
 
   if (flow)
-    thermal_conductivity = (donor_config->GetViscosity_FreeStream()/donor_config->GetPrandtl_Lam())*donor_config->GetSpecificHeat_Fluid();
+    thermal_diffusivity = (donor_config->GetViscosity_FreeStream()/donor_config->GetPrandtl_Lam())*donor_config->GetSpecificHeat_Fluid();
   else
-    thermal_conductivity = donor_config->GetThermalConductivity_Solid();
+    thermal_diffusivity = donor_config->GetThermalDiffusivity_Solid();
 
   dTdn = (Twall - donor_solution->node[PointNormal]->GetSolution(0))/dist;
-  heat_flux_density = thermal_conductivity * dTdn;
+  heat_flux_density = thermal_diffusivity * dTdn;
 
   Donor_Variable[1] = heat_flux_density;
 }
