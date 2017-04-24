@@ -3806,8 +3806,12 @@ void CFEM_ElasticitySolver::BC_Damper(CGeometry *geometry, CSolver **solver_cont
                                       unsigned short val_marker) {
 
   unsigned short iVar;
-  su2double dampValue;
+  su2double dampValue, dampC;
   su2double dampConstant = config->GetDamper_Constant(config->GetMarker_All_TagBound(val_marker));
+  unsigned long nVertex = geometry->GetnVertex(val_marker);
+
+  /*--- The damping is distributed evenly over all the nodes in the marker ---*/
+  dampC = dampConstant / (nVertex + EPS);
 
   unsigned long Point_0, Point_1, Point_2, Point_3;
   unsigned long iPoint, iElem;
@@ -3819,10 +3823,10 @@ void CFEM_ElasticitySolver::BC_Damper(CGeometry *geometry, CSolver **solver_cont
 
     for (iVar = 0; iVar < nVar; iVar++){
 
-        dampValue = - 1.0 * dampConstant * node[Point_0]->GetSolution_Vel(iVar);
+        dampValue = - 1.0 * dampC * node[Point_0]->GetSolution_Vel(iVar);
         node[Point_0]->Set_SurfaceLoad_Res(iVar, dampValue);
 
-        dampValue = - 1.0 * dampConstant * node[Point_1]->GetSolution_Vel(iVar);
+        dampValue = - 1.0 * dampC * node[Point_1]->GetSolution_Vel(iVar);
         node[Point_1]->Set_SurfaceLoad_Res(iVar, dampValue);
     }
 
@@ -3831,14 +3835,14 @@ void CFEM_ElasticitySolver::BC_Damper(CGeometry *geometry, CSolver **solver_cont
       Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);
 
       for (iVar = 0; iVar < nVar; iVar++){
-          dampValue = - 1.0 * dampConstant * node[Point_2]->GetSolution_Vel(iVar);
+          dampValue = - 1.0 * dampC * node[Point_2]->GetSolution_Vel(iVar);
           node[Point_2]->Set_SurfaceLoad_Res(iVar, dampValue);
       }
 
       if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL) {
         Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);
         for (iVar = 0; iVar < nVar; iVar++){
-            dampValue = - 1.0 * dampConstant * node[Point_3]->GetSolution_Vel(iVar);
+            dampValue = - 1.0 * dampC * node[Point_3]->GetSolution_Vel(iVar);
             node[Point_3]->Set_SurfaceLoad_Res(iVar, dampValue);
         }
       }
