@@ -11897,7 +11897,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
         jPoint = vertex[jMarker][iVertex]->GetNode();
         if (node[jPoint]->GetDomain()){
           Coord_j = node[jPoint]->GetCoord();
-          Buffer_Send_donorPoints[nVertexDomain] = jPoint; //node[jPoint]->GetGlobalIndex();
+          Buffer_Send_donorPoints[nVertexDomain] = node[jPoint]->GetGlobalIndex();
           for (iDim = 0; iDim < nDim; iDim++){
             Buffer_Send_Coord[iDim+nVertexDomain*nDim] = Coord_j[iDim];
           }
@@ -11925,6 +11925,9 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
               }
             }
             Buffer_Send_donorElem[nElemPeriodic] = iElem;
+#ifdef HAVE_MPI
+  cout << " iElem, rank " << iElem <<" " << rank << endl;
+#endif
             Buffer_Send_nElemPts[nElemPeriodic] = nNodeElem; // elem[iElem]->GetnNodes();
             nElemPeriodic++;
           }
@@ -11948,10 +11951,10 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 
       /*--- Allocate memory for size arrays ---*/
 
-      vector<int> recvCounts(size), displs(size);
-      vector<int> recvCountsCoord(size), displsCoord(size);
-      vector<int> recvCountsElem(size), displsElem(size);
-      vector<int> recvCountskPoint(size), displskPoint(size);
+      vector<int> recvCounts(size), displs(size),
+          recvCountsCoord(size), displsCoord(size),
+          recvCountsElem(size), displsElem(size),
+          recvCountskPoint(size), displskPoint(size);
 
       /*--- Communicate number of donor faces per processor ---*/
       SU2_MPI::Allgather(&nVertexDomain, 1, MPI_INT, recvCounts.data(), 1,
@@ -12050,7 +12053,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 				/*--- Perform a local search to find the closest donor point. ---*/
 				mindist = 1e10;
 				for (jVertex = 0; jVertex < sizeGlobal; jVertex++) {
-					/*--- Retrieve information for this jPoint. ---*/
+					/*--- Retrieve information for this jPoint (global index). ---*/
 					jPoint = donorPoints[jVertex];
 					for (iDim=0; iDim<nDim; iDim++)
 					  Coord_j[iDim] = donorCoord[iDim+nDim*jVertex];
@@ -12072,7 +12075,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 				}
 
 				/*--- Set the periodic point for this iPoint. ---*/
-				vertex[iMarker][iVertex]->SetDonorPoint(pPoint, rank, node[pPoint]->GetGlobalIndex(), jMarker);
+				vertex[iMarker][iVertex]->SetDonorPoint(pPoint, rank, pPoint, jMarker);
 				
 				//cout << "\n Point = "<< iPoint << " Marker= " << iMarker << endl;
 				//cout << "iVertex # " << iVertex << endl;
@@ -12120,7 +12123,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 			  /*--- iPoint is the original point on the surface and jPoint is the
          equivalent point in the other periodic surface ---*/
 			  iPoint = vertex[iMarker][iVertex]->GetNode();
-			  jPoint = vertex[iMarker][iVertex]->GetDonorPoint();
+			  jPoint = vertex[iMarker][iVertex]->GetGlobalDonorPoint();
 			  jMarker = vertex[iMarker][iVertex]->GetDonorMarker();
 
 			  /*--- First the case in which it is necessary to create a mirror set of elements ---*/
