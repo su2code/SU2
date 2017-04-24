@@ -144,6 +144,22 @@ public:
    */
   void Collect_VertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim);
 
+  /*!
+   * \brief Transfer pre-processing for turbomachinery interpolation interface.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  virtual void Preprocessing_InterpolationInterface(CGeometry *donor_geometry, CGeometry *target_geometry,  CConfig *donor_config,
+      CConfig *target_config, unsigned short iMarkerInt);
+
+  /*!
+   * \brief Initialize quantities for spanwise sections for turbomachinery interpolation.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  virtual void SetSpanWiseLevels(CConfig *target_config);
+
 
 };
 
@@ -263,6 +279,12 @@ public:
  * \version 5.0.0 "Raven"
  */
 class CTurboInterpolation : public CInterpolator {
+
+protected:
+
+  su2double 	 *SpanValueCoeffTarget;
+  unsigned short *SpanLevelDonor;
+
 public:
 
   /*!
@@ -312,5 +334,22 @@ public:
    * \param[in] nDim - number of physical dimensions.
    */
   void Collect_TurboVertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short iSpan, unsigned short nDim);
+
+  /*!
+   * \brief Transfer pre-processing for turbomachinery interpolation interface.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  void Preprocessing_InterpolationInterface(CGeometry *donor_geometry, CGeometry *target_geometry,  CConfig *donor_config,
+      CConfig *target_config, unsigned short iMarkerInt);
+
+  /*!
+   * \brief Initialize quantities for spanwise sections for interpolation.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  void SetSpanWiseLevels(CConfig *target_config);
+
 
 };

@@ -277,6 +277,10 @@ int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_mark
   return -1;
 }
 
+inline void CInterpolator::Preprocessing_InterpolationInterface(CGeometry *donor_geometry, CGeometry *target_geometry,  CConfig *donor_config,
+      CConfig *target_config, unsigned short iMarkerInt){}
+
+inline void CInterpolator::SetSpanWiseLevels(CConfig *target_config){}
 
 /* Nearest Neighbor Interpolator */
 CNearestNeighbor::CNearestNeighbor(void):  CInterpolator() { }
@@ -1358,16 +1362,27 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   #endif
 }
 
-CTurboInterpolation::CTurboInterpolation(void):  CInterpolator() { }
+CTurboInterpolation::CTurboInterpolation(void):  CInterpolator() {
+
+  SpanLevelDonor     = NULL;
+  SpanValueCoeffTarget = NULL;
+}
 
 CTurboInterpolation::CTurboInterpolation(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone) {
 
-  /*--- Initialize transfer coefficients between the zones ---*/
 //  Set_TransferCoeff(config);
+
+  SpanLevelDonor     = NULL;
+  SpanValueCoeffTarget = NULL;
 
 }
 
-CTurboInterpolation::~CTurboInterpolation() {}
+CTurboInterpolation::~CTurboInterpolation() {
+
+  if (SpanValueCoeffTarget != NULL) delete[] SpanValueCoeffTarget;
+  if (SpanLevelDonor       != NULL) delete[] SpanLevelDonor;
+
+}
 
 void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
@@ -1394,8 +1409,8 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 
-//  if (rank == MASTER_NODE)
-    Buffer_Recv_mark = new int[nProcessor];
+  //  if (rank == MASTER_NODE)
+  Buffer_Recv_mark = new int[nProcessor];
 
 #else
 
@@ -1406,8 +1421,9 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   /*--- Initialize variables --- */
 
   nMarkerInt = (int) ( config[donorZone]->GetMarker_n_FSIinterface() / 2 );
-
+  nSpanSectionsTarget = config[targetZone]->GetnSpanWiseSections();
   nDim = donor_geometry->GetnDim();
+
   iDonor = 0;
 
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
@@ -1417,168 +1433,168 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
-//    for (unsigned short iSpan= 0; iSpan < nSpanSectionsTarget ; iSpan++){
-    unsigned short iSpan = 0;
-    /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
-    markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
+    for (unsigned short iSpan= 0; iSpan < nSpanSectionsTarget ; iSpan++){
+      //    unsigned short iSpan = 0;
+      /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
+      markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
 
-    /*--- On the target side: find the tag of the boundary sharing the interface ---*/
-    markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+      /*--- On the target side: find the tag of the boundary sharing the interface ---*/
+      markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-    #ifdef HAVE_MPI
+#ifdef HAVE_MPI
 
-    Donor_check  = -1;
-    Target_check = -1;
+      Donor_check  = -1;
+      Target_check = -1;
 
-    /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+      /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
 
-    SU2_MPI::Allgather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MPI_COMM_WORLD);
+      SU2_MPI::Allgather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MPI_COMM_WORLD);
 
-    for (iRank = 0; iRank < nProcessor; iRank++)
-      if( Buffer_Recv_mark[iRank] != -1 ) {
-        Donor_check = Buffer_Recv_mark[iRank];
-        break;
-      }
-
-
-    SU2_MPI::Allgather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MPI_COMM_WORLD);
-
-    for (iRank = 0; iRank < nProcessor; iRank++)
-      if( Buffer_Recv_mark[iRank] != -1 ) {
-        Target_check = Buffer_Recv_mark[iRank];
-        break;
-      }
-
-    #else
-    Donor_check  = markDonor;
-    Target_check = markTarget;
-    #endif
-
-    /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(Target_check == -1 || Donor_check == -1)
-      continue;
-
-    if(markDonor != -1){
-      nVertexDonor        = donor_geometry->GetnVertex( markDonor );
-      nVertexSpanDonor   =  donor_geometry->GetnVertexSpan( markDonor, iSpan );
-    }
-    else{
-      nVertexDonor  = 0;
-      nVertexSpanDonor  = 0;
-    }
-
-    if(markTarget != -1){
-      nVertexTarget       = target_geometry->GetnVertex( markTarget );
-      nVertexSpanTarget   = target_geometry->GetnVertexSpan( markTarget, iSpan );
-    }
-    else{
-      nVertexTarget  = 0;
-      nVertexSpanTarget  = 0;
-    }
-    Buffer_Send_nVertex_Donor  = new unsigned long [ 1 ];
-
-    /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
-    Determine_ArraySize(false, markDonor, markTarget, nVertexSpanDonor, iSpan, nDim);
-
-    Buffer_Send_Coord          = new su2double     [ MaxLocalVertex_Donor ];
-    Buffer_Send_GlobalPoint    = new unsigned long [ MaxLocalVertex_Donor ];
-    Buffer_Receive_Coord       = new su2double     [ nProcessor * MaxLocalVertex_Donor ];
-    Buffer_Receive_GlobalPoint = new unsigned long [ nProcessor * MaxLocalVertex_Donor ];
-
-    /*-- Collect coordinates, global points, and normal vectors ---*/
-    Collect_TurboVertexInfo( false, markDonor, markTarget, nVertexSpanDonor, iSpan ,nDim );
-
-    if (nVertexSpanTarget != 0 ){
-      MinAngularCoord_Target = target_geometry->GetMinAngularCoord(markTarget, iSpan);
-      MaxAngularCoord_Target = target_geometry->GetMaxAngularCoord(markTarget, iSpan);
-      PitchTarget = abs(MaxAngularCoord_Target - MinAngularCoord_Target);
-    }
-
-    if (nVertexSpanDonor != 0 ){
-      MinAngularCoord_Donor = donor_geometry->GetMinAngularCoord(markDonor, iSpan);
-      MaxAngularCoord_Donor = donor_geometry->GetMaxAngularCoord(markDonor, iSpan);
-      PitchDonor = abs(MaxAngularCoord_Donor - MinAngularCoord_Donor);
-    }
-
-    /*--- Compute the closest point to a Near-Field boundary point ---*/
-    maxdist = 0.0;
-    su2double node_count = 0;
-
-    for (iVertexTarget = 0; iVertexTarget < nVertexSpanTarget; iVertexTarget++) {
-
-      iPrimalVertex_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetOldVertex();
-      Point_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetNode();
-
-      if ( target_geometry->node[Point_Target]->GetDomain() ) {
-
-        target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetnDonorPoints(1);
-        target_geometry->vertex[markTarget][iPrimalVertex_Target]->Allocate_DonorInfo(); // Possible meme leak?
-
-        /*--- Coordinates of the boundary point ---*/
-        Coord_i = target_geometry->node[Point_Target]->GetCoord();
-        AngularCoord_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetAngularCoord();
-
-        mindist    = HUGE;
-        pProcessor = 0;
-        su2double donor_count = 0;
-
-
-        /*--- Loop over all the boundaries to find the pair ---*/
-
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-          for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
-            Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
-
-            /*--- Compute the dist ---*/
-            dist  = 0.0;
-
-            AngularCoord_Donor = Buffer_Receive_Coord[ Global_Point_Donor];
-            if ( AngularCoord_Donor > MaxAngularCoord_Target ){
-              dist = abs(AngularCoord_Donor - (AngularCoord_Target + PitchTarget));
-            }
-            else if ( AngularCoord_Donor <=  MinAngularCoord_Target  ){
-//              dist = abs( AngularCoord_Donor - (AngularCoord_Target - PitchDonor));
-              dist = abs(AngularCoord_Donor - (AngularCoord_Target - PitchTarget));
-            }
-            else
-              dist = abs(AngularCoord_Donor - AngularCoord_Target);
-//            cout << "Pitch Target        : " << PitchTarget << endl;
-//            cout << "MaxAngular_Target  : " <<  MaxAngularCoord_Target << endl;
-//            cout << "MinAngular_Target  : " <<  MinAngularCoord_Target << endl;
-//            cout << "AngularCoord_Donor : " <<  AngularCoord_Donor << endl;
-//            cout << "AngularCoord_Target: " <<  AngularCoord_Target << endl;
-//            cout << "Distance           : " <<  dist                << endl;
-//            cout << endl;
-
-            if (dist < mindist) {
-              mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
-              donor_count = jVertex;
-            }
-
-//            cout << "Min Distance       : " <<  mindist             << endl;
-            if (dist == 0.0) break;
-          }
-
+      for (iRank = 0; iRank < nProcessor; iRank++)
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Donor_check = Buffer_Recv_mark[iRank];
+          break;
         }
 
-//        cout << " ========== " << node_count++  << " ==========="  << endl;
-//        cout << " ========== " << donor_count   << " ==========="  << endl;
-        /*--- Store the value of the pair ---*/
-        maxdist = max(maxdist, mindist);
-        target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorPoint(iDonor, pGlobalPoint);
-        target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorProcessor(iDonor, pProcessor);
-        target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetDonorCoeff(iDonor, 1.0);
+
+      SU2_MPI::Allgather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MPI_COMM_WORLD);
+
+      for (iRank = 0; iRank < nProcessor; iRank++)
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Target_check = Buffer_Recv_mark[iRank];
+          break;
+        }
+
+#else
+      Donor_check  = markDonor;
+      Target_check = markTarget;
+#endif
+
+      /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
+      if(Target_check == -1 || Donor_check == -1)
+        continue;
+
+      if(markDonor != -1){
+//        nVertexDonor        = donor_geometry->GetnVertex( markDonor );
+        nVertexSpanDonor   =  donor_geometry->GetnVertexSpan( markDonor,  SpanLevelDonor[iSpan] );
       }
+      else{
+//        nVertexDonor  = 0;
+        nVertexSpanDonor  = 0;
+      }
+
+      if(markTarget != -1){
+//        nVertexTarget       = target_geometry->GetnVertex( markTarget );
+        nVertexSpanTarget   = target_geometry->GetnVertexSpan( markTarget, iSpan );
+      }
+      else{
+//        nVertexTarget  = 0;
+        nVertexSpanTarget  = 0;
+      }
+      Buffer_Send_nVertex_Donor  = new unsigned long [ 1 ];
+
+      /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
+      Determine_ArraySize(false, markDonor, markTarget, nVertexSpanDonor, SpanLevelDonor[iSpan], nDim);
+
+      Buffer_Send_Coord          = new su2double     [ MaxLocalVertex_Donor ];
+      Buffer_Send_GlobalPoint    = new unsigned long [ MaxLocalVertex_Donor ];
+      Buffer_Receive_Coord       = new su2double     [ nProcessor * MaxLocalVertex_Donor ];
+      Buffer_Receive_GlobalPoint = new unsigned long [ nProcessor * MaxLocalVertex_Donor ];
+
+      /*-- Collect coordinates, global points, and normal vectors ---*/
+      Collect_TurboVertexInfo( false, markDonor, markTarget, nVertexSpanDonor, SpanLevelDonor[iSpan] ,nDim );
+
+      if (nVertexSpanTarget != 0 ){
+        MinAngularCoord_Target = target_geometry->GetMinAngularCoord(markTarget, iSpan);
+        MaxAngularCoord_Target = target_geometry->GetMaxAngularCoord(markTarget, iSpan);
+        PitchTarget = abs(MaxAngularCoord_Target - MinAngularCoord_Target);
+      }
+
+//      if (nVertexSpanDonor != 0 ){
+//        MinAngularCoord_Donor = donor_geometry->GetMinAngularCoord(markDonor, iSpan);
+//        MaxAngularCoord_Donor = donor_geometry->GetMaxAngularCoord(markDonor, iSpan);
+//        PitchDonor = abs(MaxAngularCoord_Donor - MinAngularCoord_Donor);
+//      }
+
+      /*--- Compute the closest point to a Near-Field boundary point ---*/
+      maxdist = 0.0;
+      su2double node_count = 0;
+
+      for (iVertexTarget = 0; iVertexTarget < nVertexSpanTarget; iVertexTarget++) {
+
+        iPrimalVertex_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetOldVertex();
+        Point_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetNode();
+
+        if ( target_geometry->node[Point_Target]->GetDomain() ) {
+
+          target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetnDonorPoints(1);
+          target_geometry->vertex[markTarget][iPrimalVertex_Target]->Allocate_DonorInfo(); // Possible meme leak?
+
+          /*--- Coordinates of the boundary point ---*/
+          Coord_i = target_geometry->node[Point_Target]->GetCoord();
+          AngularCoord_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetAngularCoord();
+
+          mindist    = HUGE;
+          pProcessor = 0;
+          su2double donor_count = 0;
+
+
+          /*--- Loop over all the boundaries to find the pair ---*/
+
+          for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+            for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
+              Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
+
+              /*--- Compute the dist ---*/
+              dist  = 0.0;
+
+              AngularCoord_Donor = Buffer_Receive_Coord[ Global_Point_Donor];
+              if ( AngularCoord_Donor > MaxAngularCoord_Target ){
+                dist = abs(AngularCoord_Donor - (AngularCoord_Target + PitchTarget));
+              }
+              else if ( AngularCoord_Donor <=  MinAngularCoord_Target  ){
+                //              dist = abs( AngularCoord_Donor - (AngularCoord_Target - PitchDonor));
+                dist = abs(AngularCoord_Donor - (AngularCoord_Target - PitchTarget));
+              }
+              else
+                dist = abs(AngularCoord_Donor - AngularCoord_Target);
+              //            cout << "Pitch Target        : " << PitchTarget << endl;
+              //            cout << "MaxAngular_Target  : " <<  MaxAngularCoord_Target << endl;
+              //            cout << "MinAngular_Target  : " <<  MinAngularCoord_Target << endl;
+              //            cout << "AngularCoord_Donor : " <<  AngularCoord_Donor << endl;
+              //            cout << "AngularCoord_Target: " <<  AngularCoord_Target << endl;
+              //            cout << "Distance           : " <<  dist                << endl;
+              //            cout << endl;
+
+              if (dist < mindist) {
+                mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
+                donor_count = jVertex;
+              }
+
+              //            cout << "Min Distance       : " <<  mindist             << endl;
+              if (dist == 0.0) break;
+            }
+
+          }
+
+          //        cout << " ========== " << node_count++  << " ==========="  << endl;
+          //        cout << " ========== " << donor_count   << " ==========="  << endl;
+          /*--- Store the value of the pair ---*/
+          maxdist = max(maxdist, mindist);
+          target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorPoint(iDonor, pGlobalPoint);
+          target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorProcessor(iDonor, pProcessor);
+          target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetDonorCoeff(iDonor, 1.0);
+        }
+      }
+
+      delete[] Buffer_Send_Coord;
+      delete[] Buffer_Send_GlobalPoint;
+
+      delete[] Buffer_Receive_Coord;
+      delete[] Buffer_Receive_GlobalPoint;
+
+      delete[] Buffer_Send_nVertex_Donor;
     }
-
-    delete[] Buffer_Send_Coord;
-    delete[] Buffer_Send_GlobalPoint;
-
-    delete[] Buffer_Receive_Coord;
-    delete[] Buffer_Receive_GlobalPoint;
-
-    delete[] Buffer_Send_nVertex_Donor;
-
   }
 
   delete[] Buffer_Receive_nVertex_Donor;
@@ -1750,5 +1766,147 @@ void CTurboInterpolation::Collect_TurboVertexInfo(bool faces, int markDonor, int
       Buffer_Receive_Normal[iVertex] = Buffer_Send_Normal[iVertex];
   }
 #endif
+}
+
+void CTurboInterpolation::Preprocessing_InterpolationInterface(CGeometry *donor_geometry, CGeometry *target_geometry,
+    CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
+
+  unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+  unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short iSpan,jSpan, tSpan,kSpan, nSpanDonor, nSpanTarget, Donor_Flag, Target_Flag;
+  int Marker_Donor = -1, Marker_Target = -1;
+
+  su2double *SpanValuesDonor, *SpanValuesTarget, dist, test, dist2, test2;
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE, iSize;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  int *BuffMarkerDonor, *BuffDonorFlag;
+#endif
+
+
+  nMarkerDonor   = donor_geometry->GetnMarker();
+  nMarkerTarget  = target_geometry->GetnMarker();
+  //TODO turbo this approach only works if all the turboamchinery marker of all zones have the same amount of span wise sections.
+  //TODO turbo initialization needed for the MPI routine should be place somewhere else.
+  nSpanDonor     = donor_config->GetnSpanWiseSections()  + 1;
+  nSpanTarget    = target_config->GetnSpanWiseSections() + 1;
+
+  /*--- On the donor side ---*/
+  for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+    /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
+    if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ){
+      /*--- We have identified the local index of the Donor marker ---*/
+      /*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
+      /*--- Store the identifier for the structural marker ---*/
+      Marker_Donor = iMarkerDonor;
+      Donor_Flag = donor_config->GetMarker_All_TurbomachineryFlag(iMarkerDonor);
+      //							cout << " donor is "<< donor_config->GetMarker_All_TagBound(Marker_Donor)<<" in imarker interface "<< iMarkerInt <<endl;
+      /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
+      break;
+    }
+    else {
+      /*--- If the tag hasn't matched any tag within the donor markers ---*/
+      Marker_Donor = -1;
+      Donor_Flag   = -1;
+    }
+  }
+
+#ifdef HAVE_MPI
+  BuffMarkerDonor						 = new int[size];
+  BuffDonorFlag            = new int[size];
+  for (iSize=0; iSize<size;iSize++){
+    BuffMarkerDonor[iSize]							= -1;
+    BuffDonorFlag[iSize]              = -1;
+  }
+
+  SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&Donor_Flag, 1 , MPI_INT, BuffDonorFlag, 1, MPI_INT, MPI_COMM_WORLD);
+
+
+  Marker_Donor= -1;
+  Donor_Flag= -1;
+
+
+  for (iSize=0; iSize<size;iSize++){
+    if(BuffMarkerDonor[iSize] > 0.0){
+      Marker_Donor = BuffMarkerDonor[iSize];
+      Donor_Flag   = BuffDonorFlag[iSize];
+      break;
+    }
+  }
+  delete [] BuffMarkerDonor;
+  delete [] BuffDonorFlag;
+#endif
+
+  /*--- On the target side we have to identify the marker as well ---*/
+
+  for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+    /*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
+    if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
+      /*--- Store the identifier for the fluid marker ---*/
+
+      // here i should then store it in the target zone
+
+      Marker_Target = iMarkerTarget;
+      Target_Flag = target_config->GetMarker_All_TurbomachineryFlag(iMarkerTarget);
+      //					cout << " target is "<< target_config->GetMarker_All_TagBound(Marker_Target) <<" in imarker interface "<< iMarkerInt <<endl;
+      //				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+      break;
+    }
+    else {
+      /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+      Marker_Target = -1;
+    }
+  }
+
+  if (Marker_Target != -1 && Marker_Donor != -1){
+
+    SpanValuesDonor  = donor_geometry->GetSpanWiseValue(Donor_Flag);
+    SpanValuesTarget = target_geometry->GetSpanWiseValue(Target_Flag);
+
+
+    for(iSpan = 1; iSpan <nSpanTarget-2; iSpan++){
+      dist  = 10E+06;
+      dist2 = 10E+06;
+      for(jSpan = 0; jSpan < nSpanDonor;jSpan++){
+        test = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
+        test2 = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
+        if(test < dist && SpanValuesTarget[iSpan] > SpanValuesDonor[jSpan]){
+          dist = test;
+          kSpan = jSpan;
+        }
+        if(test2 < dist2){
+          dist2 = test2;
+          tSpan =jSpan;
+        }
+
+      }
+      SpanLevelDonor[iSpan]        = tSpan;
+      SpanValueCoeffTarget[iSpan]  = 0.0;
+
+    }
+  }
+}
+
+
+void CTurboInterpolation::SetSpanWiseLevels(CConfig *target_config){
+
+  unsigned short iSpan;
+//  nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
+
+
+  SpanValueCoeffTarget = new su2double[target_config->GetnSpanWiseSections() + 1];
+  SpanLevelDonor       = new unsigned short[target_config->GetnSpanWiseSections() + 1];
+
+
+  for (iSpan = 0; iSpan < target_config->GetnSpanWiseSections() + 1;iSpan++){
+    SpanValueCoeffTarget[iSpan] = 0.0;
+    SpanLevelDonor[iSpan]       = 0;
+  }
+
 }
 

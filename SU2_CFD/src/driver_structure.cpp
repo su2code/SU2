@@ -2803,15 +2803,6 @@ void CDriver::TurbomachineryPreprocessing(){
 //    }
 //  }
 
-  if (harmonic_balance){
-    if (rank == MASTER_NODE) cout << "Preprocess Harmonic Balance interface." << endl;
-    for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
-      for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
-        if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
-          interpolator_container[iTimeInstance][jTimeInstance]->Set_TransferCoeff(config_container);
-    }
-  }
-
   if(mixingplane && !harmonic_balance){
     if (rank == MASTER_NODE) cout<<"Preprocess of the Mixing-Plane Interface." << endl;
     for (donorZone = 0; donorZone < nZone; donorZone++) {
@@ -2827,6 +2818,29 @@ void CDriver::TurbomachineryPreprocessing(){
       }
     }
   }
+
+  if (harmonic_balance){
+    if (rank == MASTER_NODE) cout << "Preprocess Harmonic Balance interface." << endl;
+    for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
+      for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
+        if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
+          interpolator_container[jTimeInstance][iTimeInstance]->SetSpanWiseLevels(config_container[iTimeInstance]);
+    }
+
+    for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
+      for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
+        if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
+          interpolator_container[iTimeInstance][jTimeInstance]->Preprocessing_InterpolationInterface(geometry_container[iTimeInstance][MESH_0], geometry_container[jTimeInstance][MESH_0],
+              config_container[iTimeInstance], config_container[jTimeInstance], iMarkerInt);
+    }
+
+    for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
+      for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
+        if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
+          interpolator_container[iTimeInstance][jTimeInstance]->Set_TransferCoeff(config_container);
+    }
+  }
+
 
 }
 
@@ -4223,7 +4237,7 @@ void CTurbomachineryDriver::DynamicMeshUpdate(unsigned long ExtIter) {
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Dynamic mesh update ---*/
-    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
+    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && !mixingplane) {
       iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
 
       /*--- Turbo-vertex update ---*/
