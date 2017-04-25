@@ -1569,9 +1569,13 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
     }
     Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Normal[iVar];
     Proj_Mean_GradTurbVar_Corrected[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
-    (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+      (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+
+    // NB: Jacobian corresponds to just this part
+    //Proj_Mean_GradTurbVar_Corrected[iVar] = (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+
   }
-  
+
   val_residual[0] = diff_kine*Proj_Mean_GradTurbVar_Corrected[0];
   val_residual[1] = diff_epsi*Proj_Mean_GradTurbVar_Corrected[1];
   val_residual[2] = diff_zeta*Proj_Mean_GradTurbVar_Corrected[2];
@@ -1715,13 +1719,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   if(tke < 0.0) std::cout << "WTF!?! k is negative!!!" << std::endl;
   if(tdr < 0.0) std::cout << "WTF!?! epsilon is negative!!!" << std::endl;
 
-
-
   //  zeta = TurbVar_i[2];
-  //v2   = (2.0/3.0)*tke;//TurbVar_i[2];
   v2   = TurbVar_i[2];
-  f    = 1.0;
-  //f    = TurbVar_i[3];
+  f    = TurbVar_i[3];
   mu   = Laminar_Viscosity_i;
   muT  = Eddy_Viscosity_i;
   rho  = Density_i;
@@ -1848,6 +1848,8 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   //pv2 = max(pv2,0.0);
   //pv2 = min(pv2,2.0/3.0*pk+5.0*rho*v2/tke*tdr);
 
+  pf = 0.0;
+  df = f/(0.1*0.1);
 
   //--- Dissipation ---//
   dk = rho*tdr_raw;
@@ -1859,29 +1861,32 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   val_residual[0] = (pk-dk) * Vol;
   val_residual[1] = (pe-de) * Vol;
   val_residual[2] = (pv2-dv2) * Vol;
-  val_residual[3] = 0.0; //(pf-df) * Vol;
+  val_residual[3] = (pf-df) * Vol;
 
   // destruction...
   val_Jacobian_i[0][0] -= 0.0;
   val_Jacobian_i[0][1] -= 1.0 * Vol;
   val_Jacobian_i[0][2] -= 0.0;
-  // val_Jacobian_i[0][3] -= 0.0;
+  val_Jacobian_i[0][3] -= 0.0;
 
 
   val_Jacobian_i[1][0] -= -1.0*C_e2*(tdr_raw/tke_raw)*(tdr_raw/tke_raw)*Vol;
   val_Jacobian_i[1][1] -=  2.0*C_e2*(tdr_raw/tke_raw)                  *Vol;
   val_Jacobian_i[1][2] -= 0.0;
-  // val_Jacobian_i[1][3] -= 0.0;
+  val_Jacobian_i[1][3] -= 0.0;
 
   val_Jacobian_i[2][0] -= -6.0*(v2/tke_raw)*(tdr_raw/tke_raw)*Vol;
   val_Jacobian_i[2][1] -=  6.0*(v2/tke_raw)*Vol;
   val_Jacobian_i[2][2] -=  6.0*(tdr_raw/tke_raw)*Vol;
-  // val_Jacobian_i[2][3] -= 0.0;
+  val_Jacobian_i[2][3] -= 0.0;
 
-  // val_Jacobian_i[3][0] -= 0.0; //dDfdL*dLdrk * Vol;
-  // val_Jacobian_i[3][1] -= 0.0; //dDfdL*dLdre * Vol;
-  // val_Jacobian_i[3][2] -= 0.0; //dDfdL*dLdrv2 * Vol;
-  // val_Jacobian_i[3][3] -= 0.0; //dDfdf * Vol;
+  val_Jacobian_i[3][0] -= 0.0; //dDfdL*dLdrk * Vol;
+  val_Jacobian_i[3][1] -= 0.0; //dDfdL*dLdre * Vol;
+  val_Jacobian_i[3][2] -= 0.0; //dDfdL*dLdrv2 * Vol;
+
+  //val_Jacobian_i[3][3] -= 0.0; //dDfdf * Vol;
+  val_Jacobian_i[3][3] -= 100.0 * Vol;
+  //val_Jacobian_i[3][3] -= Vol/(L*L); //dDfdf * Vol;
 
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
