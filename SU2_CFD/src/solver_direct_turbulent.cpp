@@ -724,13 +724,13 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           }
           
           for (iVar = 0; iVar < nVar; iVar++) {
-            node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+            // node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
 
-            // if (iVar==(nVar-1)) { // f
-            //   node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], 1.0, 1.0, lowerlimit[iVar], upperlimit[iVar]);
-            // } else {
-            //   node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
-            // }
+            if (iVar==(nVar-1)) { // f
+              node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], 1.0, 1.0, lowerlimit[iVar], upperlimit[iVar]);
+            } else {
+              node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+            }
           }
 	  //f          node[iPoint]->AddSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint]);
           
@@ -3443,8 +3443,8 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   
   /*--- Dimension of the problem --> dependent of the turbulent model ---*/
   //nVar = 2;
-  nVar = 3;
-  //nVar = 4;
+  //nVar = 3;
+  nVar = 4;
   //  nVar = 3;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -3601,8 +3601,8 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   // f
   //  lowerlimit[3] = 1.0e-14;
   //  lowerlimit[3] = 0.0;
-  //lowerlimit[3] = -1.0e10; //-1.0e2;
-  //upperlimit[3] = 1.0e10;
+  lowerlimit[3] = -1.0e10; //-1.0e2;
+  upperlimit[3] = 1.0e10;
 
 //jump
   /*--- Flow infinity initialization stuff ---*/
@@ -4012,7 +4012,7 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
       Solution[2] = 0.0;
       //      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
       //Solution[3] = 0.0; // v2
-      //Solution[3] = f_Inf;
+      Solution[3] = f_Inf;
 
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);
@@ -4078,7 +4078,7 @@ void CTurbKESolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
       Solution[1] = 2.0*laminar_viscosity*wall_k/(density*distance*distance);
       Solution[2] = 0.0;
       //      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
-      //Solution[3] = 0.0; // v2
+      Solution[3] = 0.0; // v2
 
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);
@@ -4130,7 +4130,7 @@ void CTurbKESolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       Solution_j[0] = node[iPoint]->GetSolution(0);
       Solution_j[1] = node[iPoint]->GetSolution(1);
       Solution_j[2] = node[iPoint]->GetSolution(2);
-      //Solution_j[3] = node[iPoint]->GetSolution(3);
+      Solution_j[3] = node[iPoint]->GetSolution(3);
       //Solution_j[3] = f_Inf;
 
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -4202,7 +4202,7 @@ void CTurbKESolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       Solution_j[0] = kine_Inf;
       Solution_j[1] = epsi_Inf;
       Solution_j[2] = zeta_Inf;
-      //Solution_j[3] = f_Inf;
+      Solution_j[3] = f_Inf;
       //Solution_j[3] = node[iPoint]->GetSolution(3);
       /*
       Solution_j[0] = node[iPoint]->GetSolution(0);
@@ -4250,11 +4250,11 @@ void CTurbKESolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       LinSysRes.SubtractBlock(iPoint, Residual);
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
-      // /*--- HACKERY ON f-eqn: Set the f solution values and zero the residual ---*/
-      // node[iPoint]->SetSolution_Old(3, f_Inf);
-      // node[iPoint]->SetSolution(3, f_Inf);
-      // LinSysRes.SetBlock_Zero(iPoint, 3);
-      // Jacobian.DeleteValsRowi(iPoint*nVar+3);
+      /*--- HACKERY ON f-eqn: Set the f solution values and zero the residual ---*/
+      node[iPoint]->SetSolution_Old(3, f_Inf);
+      node[iPoint]->SetSolution(3, f_Inf);
+      LinSysRes.SetBlock_Zero(iPoint, 3);
+      Jacobian.DeleteValsRowi(iPoint*nVar+3);
 
     }
   }
@@ -4366,6 +4366,9 @@ void CTurbKESolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, Residual);
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+      // Since Solution_j = Solution_i, need to get this part of the Jacobian also
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_j);
 
       // /*--- HACKERY ON f-eqn: Set the f solution values and zero the residual ---*/
       // node[iPoint]->SetSolution_Old(3, f_Inf);

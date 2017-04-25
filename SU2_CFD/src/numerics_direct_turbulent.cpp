@@ -1278,19 +1278,19 @@ void CUpwSca_TurbKE::ComputeResidual(su2double *val_residual, su2double **val_Ja
   val_residual[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
   val_residual[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
   val_residual[2] = a0*Density_i*TurbVar_i[2]+a1*Density_j*TurbVar_j[2];
-  //val_residual[3] = 0.0; // no convection in f scalar
+  val_residual[3] = 0.0; // no convection in f scalar
 
 
   if (implicit) {
-    val_Jacobian_i[0][0] = a0;   val_Jacobian_i[0][1] = 0.0;  val_Jacobian_i[0][2] = 0.0; //val_Jacobian_i[0][3] = 0.0;
-    val_Jacobian_i[1][0] = 0.0;	 val_Jacobian_i[1][1] = a0;   val_Jacobian_i[1][2] = 0.0; //val_Jacobian_i[1][3] = 0.0;
-    val_Jacobian_i[2][0] = 0.0;	 val_Jacobian_i[2][1] = 0.0;  val_Jacobian_i[2][2] = a0; //val_Jacobian_i[2][3] = 0.0;
-    //val_Jacobian_i[3][0] = 0.0;	 val_Jacobian_i[3][1] = 0.0;  val_Jacobian_i[3][2] = 0.0;  val_Jacobian_i[3][3] = 0.0;
+    val_Jacobian_i[0][0] = a0;   val_Jacobian_i[0][1] = 0.0;  val_Jacobian_i[0][2] = 0.0; val_Jacobian_i[0][3] = 0.0;
+    val_Jacobian_i[1][0] = 0.0;	 val_Jacobian_i[1][1] = a0;   val_Jacobian_i[1][2] = 0.0; val_Jacobian_i[1][3] = 0.0;
+    val_Jacobian_i[2][0] = 0.0;	 val_Jacobian_i[2][1] = 0.0;  val_Jacobian_i[2][2] = a0; val_Jacobian_i[2][3] = 0.0;
+    val_Jacobian_i[3][0] = 0.0;	 val_Jacobian_i[3][1] = 0.0;  val_Jacobian_i[3][2] = 0.0;  val_Jacobian_i[3][3] = 0.0;
 
-    val_Jacobian_j[0][0] = a1;   val_Jacobian_j[0][1] = 0.0; val_Jacobian_j[0][2] = 0.0; //val_Jacobian_j[0][3] = 0.0;
-    val_Jacobian_j[1][0] = 0.0;	 val_Jacobian_j[1][1] = a1;  val_Jacobian_j[1][2] = 0.0; //val_Jacobian_j[1][3] = 0.0;
-    val_Jacobian_j[2][0] = 0.0;	 val_Jacobian_j[2][1] = 0.0;  val_Jacobian_j[2][2] = a1; //val_Jacobian_j[2][3] = 0.0;
-    //val_Jacobian_j[3][0] = 0.0;	 val_Jacobian_j[3][1] = 0.0;  val_Jacobian_j[3][2] = 0.0;  val_Jacobian_j[3][3] = 0.0;
+    val_Jacobian_j[0][0] = a1;   val_Jacobian_j[0][1] = 0.0; val_Jacobian_j[0][2] = 0.0; val_Jacobian_j[0][3] = 0.0;
+    val_Jacobian_j[1][0] = 0.0;	 val_Jacobian_j[1][1] = a1;  val_Jacobian_j[1][2] = 0.0; val_Jacobian_j[1][3] = 0.0;
+    val_Jacobian_j[2][0] = 0.0;	 val_Jacobian_j[2][1] = 0.0;  val_Jacobian_j[2][2] = a1; val_Jacobian_j[2][3] = 0.0;
+    val_Jacobian_j[3][0] = 0.0;	 val_Jacobian_j[3][1] = 0.0;  val_Jacobian_j[3][2] = 0.0;  val_Jacobian_j[3][3] = 0.0;
   }
 
   AD::SetPreaccOut(val_residual, nVar);
@@ -1409,49 +1409,51 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
   val_residual[0] = diff_kine*Proj_Mean_GradTurbVar_Corrected[0];
   val_residual[1] = diff_epsi*Proj_Mean_GradTurbVar_Corrected[1];
   val_residual[2] = diff_zeta*Proj_Mean_GradTurbVar_Corrected[2];
-  //val_residual[3] = diff_f*Proj_Mean_GradTurbVar_Corrected[3];
+  val_residual[3] = diff_f*Proj_Mean_GradTurbVar_Corrected[3];
   
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/ //here
   if (implicit) {
     Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i; 
     Jacobian_i[0][1] = 0.0; 
     Jacobian_i[0][2] = 0.0; 
-    //Jacobian_i[0][3] = 0.0;
+    Jacobian_i[0][3] = 0.0;
 
     Jacobian_i[1][0] = 0.0;
     Jacobian_i[1][1] = -diff_epsi*proj_vector_ij/Density_i;
     Jacobian_i[1][2] = 0.0;
-    //Jacobian_i[1][3] = 0.0;
+    Jacobian_i[1][3] = 0.0;
 
     Jacobian_i[2][0] = 0.0;
     Jacobian_i[2][1] = 0.0;
     Jacobian_i[2][2] = -diff_zeta*proj_vector_ij/Density_i;
-    //Jacobian_i[2][3] = 0.0;
-    
-    // Jacobian_i[3][0] = 0.0;
-    // Jacobian_i[3][1] = 0.0;
-    // Jacobian_i[3][2] = 0.0;
+    Jacobian_i[2][3] = 0.0;
+
+    Jacobian_i[3][0] = 0.0;
+    Jacobian_i[3][1] = 0.0;
+    Jacobian_i[3][2] = 0.0;
+    Jacobian_i[3][3] = -diff_f*proj_vector_ij;
     // Jacobian_i[3][3] = -diff_f*proj_vector_ij/Density_i;
 
 
     Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 
     Jacobian_j[0][1] = 0.0; 
     Jacobian_j[0][2] = 0.0; 
-    //Jacobian_j[0][3] = 0.0;
+    Jacobian_j[0][3] = 0.0;
 
     Jacobian_j[1][0] = 0.0;
     Jacobian_j[1][1] = diff_epsi*proj_vector_ij/Density_j;
     Jacobian_j[1][2] = 0.0;
-    //Jacobian_j[1][3] = 0.0;
+    Jacobian_j[1][3] = 0.0;
 
     Jacobian_j[2][0] = 0.0;
     Jacobian_j[2][1] = 0.0;
     Jacobian_j[2][2] = diff_zeta*proj_vector_ij/Density_j;
-    //Jacobian_j[2][3] = 0.0;
+    Jacobian_j[2][3] = 0.0;
 
-    // Jacobian_j[3][0] = 0.0;
-    // Jacobian_j[3][1] = 0.0;
-    // Jacobian_j[3][2] = 0.0;
+    Jacobian_j[3][0] = 0.0;
+    Jacobian_j[3][1] = 0.0;
+    Jacobian_j[3][2] = 0.0;
+    Jacobian_j[3][3] = diff_f*proj_vector_ij;
     // Jacobian_j[3][3] = diff_f*proj_vector_ij/Density_i;
 
   }
@@ -1573,7 +1575,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
   val_residual[0] = diff_kine*Proj_Mean_GradTurbVar_Corrected[0];
   val_residual[1] = diff_epsi*Proj_Mean_GradTurbVar_Corrected[1];
   val_residual[2] = diff_zeta*Proj_Mean_GradTurbVar_Corrected[2];
-  //val_residual[3] = diff_f*Proj_Mean_GradTurbVar_Corrected[3];
+  val_residual[3] = diff_f*Proj_Mean_GradTurbVar_Corrected[3];
 
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
@@ -1581,42 +1583,44 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
     Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i; 
     Jacobian_i[0][1] = 0.0; 
     Jacobian_i[0][2] = 0.0; 
-    //Jacobian_i[0][3] = 0.0;
+    Jacobian_i[0][3] = 0.0;
 
     Jacobian_i[1][0] = 0.0;
     Jacobian_i[1][1] = -diff_epsi*proj_vector_ij/Density_i;
     Jacobian_i[1][2] = 0.0;
-    //Jacobian_i[1][3] = 0.0;
+    Jacobian_i[1][3] = 0.0;
 
     Jacobian_i[2][0] = 0.0;
     Jacobian_i[2][1] = 0.0;
     Jacobian_i[2][2] = -diff_zeta*proj_vector_ij/Density_i;
-    //Jacobian_i[2][3] = 0.0;
+    Jacobian_i[2][3] = 0.0;
     
-    // Jacobian_i[3][0] = 0.0;
-    // Jacobian_i[3][1] = 0.0;
-    // Jacobian_i[3][2] = 0.0;
+    Jacobian_i[3][0] = 0.0;
+    Jacobian_i[3][1] = 0.0;
+    Jacobian_i[3][2] = 0.0;
+    Jacobian_i[3][3] = -diff_f*proj_vector_ij;
     // Jacobian_i[3][3] = -diff_f*proj_vector_ij/Density_i;
 
 
     Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 
     Jacobian_j[0][1] = 0.0; 
     Jacobian_j[0][2] = 0.0; 
-    //Jacobian_j[0][3] = 0.0;
+    Jacobian_j[0][3] = 0.0;
 
     Jacobian_j[1][0] = 0.0;
     Jacobian_j[1][1] = diff_epsi*proj_vector_ij/Density_j;
     Jacobian_j[1][2] = 0.0;
-    //Jacobian_j[1][3] = 0.0;
+    Jacobian_j[1][3] = 0.0;
 
     Jacobian_j[2][0] = 0.0;
     Jacobian_j[2][1] = 0.0;
     Jacobian_j[2][2] = diff_zeta*proj_vector_ij/Density_j;
-    //Jacobian_j[2][3] = 0.0;
-    
-    // Jacobian_j[3][0] = 0.0;
-    // Jacobian_j[3][1] = 0.0;
-    // Jacobian_j[3][2] = 0.0;
+    Jacobian_j[2][3] = 0.0;
+
+    Jacobian_j[3][0] = 0.0;
+    Jacobian_j[3][1] = 0.0;
+    Jacobian_j[3][2] = 0.0;
+    Jacobian_j[3][3] = diff_f*proj_vector_ij;
     // Jacobian_j[3][3] = diff_f*proj_vector_ij/Density_i;
 
   }
@@ -1807,22 +1811,22 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   val_Jacobian_i[0][0] = 0.0;
   val_Jacobian_i[0][1] = 0.0;
   val_Jacobian_i[0][2] = 0.0;
-  //val_Jacobian_i[0][3] = 0.0;
+  val_Jacobian_i[0][3] = 0.0;
 
   val_Jacobian_i[1][0] = 0.0;
   val_Jacobian_i[1][1] = 0.0;
   val_Jacobian_i[1][2] = 0.0;
-  //val_Jacobian_i[1][3] = 0.0;
+  val_Jacobian_i[1][3] = 0.0;
 
   val_Jacobian_i[2][0] = 0.0;
   val_Jacobian_i[2][1] = 0.0;
   val_Jacobian_i[2][2] = 0.0;
-  //val_Jacobian_i[2][3] = 0.0;
+  val_Jacobian_i[2][3] = 0.0;
 
-  // val_Jacobian_i[3][0] = 0.0;
-  // val_Jacobian_i[3][1] = 0.0;
-  // val_Jacobian_i[3][2] = 0.0;
-  // val_Jacobian_i[3][3] = 0.0;
+  val_Jacobian_i[3][0] = 0.0;
+  val_Jacobian_i[3][1] = 0.0;
+  val_Jacobian_i[3][2] = 0.0;
+  val_Jacobian_i[3][3] = 0.0;
 
   //--- v2-f ---//
   C_e1 = C_e1o*(1.0+0.045*sqrt(tke/v2));
@@ -1855,7 +1859,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   val_residual[0] = (pk-dk) * Vol;
   val_residual[1] = (pe-de) * Vol;
   val_residual[2] = (pv2-dv2) * Vol;
-  //val_residual[3] = 0.0; //(pf-df) * Vol;
+  val_residual[3] = 0.0; //(pf-df) * Vol;
 
   // destruction...
   val_Jacobian_i[0][0] -= 0.0;

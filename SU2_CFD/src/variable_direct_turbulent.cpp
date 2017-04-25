@@ -216,7 +216,7 @@ CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi, su2doub
 	Solution[0] = val_kine; Solution_Old[0] = val_kine;
 	Solution[1] = val_epsi;	Solution_Old[1] = val_epsi;
 	Solution[2] = val_zeta; Solution_Old[2] = val_zeta;
-	//Solution[3] = val_f;	Solution_Old[3] = val_f;
+	Solution[3] = val_f;	Solution_Old[3] = val_f;
 	Tm  = val_Tm; //val_kine/val_epsi;
 	Lm  = val_Lm; //pow(val_kine,1.5)/val_epsi;
   
@@ -228,7 +228,7 @@ CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi, su2doub
 		Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_epsi;
 		Solution_time_n1[0] = val_kine; Solution_time_n1[1] = val_epsi;
 		Solution_time_n[2]  = val_zeta; Solution_time_n[3]  = val_f;
-		//Solution_time_n1[2] = val_zeta; Solution_time_n1[3] = val_f;
+		Solution_time_n1[2] = val_zeta; Solution_time_n1[3] = val_f;
 	}
     
 }
