@@ -12112,16 +12112,33 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       }
 
       /*--- retrieve boundary variables ---*/
-      Density_b = AverageDensity[val_marker][iSpan] + deltaprim[0];
-      turboVelocity[0] = AverageTurboVelocity[val_marker][iSpan][0] + deltaprim[1];
-      turboVelocity[1] = AverageTurboVelocity[val_marker][iSpan][1] + deltaprim[2];
-      if(nDim == 2){
-        Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[3];
+
+      /*--- to avoid back flow ---*/
+      if(AverageTurboVelocity[val_marker][iSpan][0]< 0.0){
+        Density_b = AverageDensity[val_marker][iSpan];
+        turboVelocity[0] = AverageSoundSpeed*0.03;
+        turboVelocity[1] = AverageTurboVelocity[val_marker][iSpan][1];
+        if(nDim == 2){
+          Pressure_b = AveragePressure[val_marker][iSpan];
+        }
+        else{
+          turboVelocity[2] = AverageTurboVelocity[val_marker][iSpan][2];
+          Pressure_b = AveragePressure[val_marker][iSpan];
+        }
       }
       else{
-        turboVelocity[2] = AverageTurboVelocity[val_marker][iSpan][2] + deltaprim[3];
-        Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[4];
+        Density_b = AverageDensity[val_marker][iSpan] + deltaprim[0];
+        turboVelocity[0] = AverageTurboVelocity[val_marker][iSpan][0] + deltaprim[1];
+        turboVelocity[1] = AverageTurboVelocity[val_marker][iSpan][1] + deltaprim[2];
+        if(nDim == 2){
+          Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[3];
+        }
+        else{
+          turboVelocity[2] = AverageTurboVelocity[val_marker][iSpan][2] + deltaprim[3];
+          Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[4];
+        }
       }
+
 
       ComputeBackVelocity(turboVelocity, turboNormal, Velocity_b, config->GetMarker_All_TurbomachineryFlag(val_marker), config->GetKind_TurboMachinery(iZone));
       Velocity2_b = 0.0;
