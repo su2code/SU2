@@ -1955,38 +1955,38 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 }
 
 void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
-                                         unsigned short iZone, unsigned long iter) {
-  
+    unsigned short iZone, unsigned long iter) {
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-	/*--- Local variables ---*/
-	unsigned short iDim, nDim; 
-	unsigned long iPoint;
+
+  /*--- Local variables ---*/
+  unsigned short iDim, nDim;
+  unsigned long iPoint;
   su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord;
   su2double Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, Lref;
   su2double dt, Center_Moment[3] = {0.0,0.0,0.0};
   su2double *GridVel, newGridVel[3] = {0.0,0.0,0.0};
-	su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
-	su2double dTheta, dPhi, dPsi, cosTheta, sinTheta;
-	su2double cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+  su2double dTheta, dPhi, dPsi, cosTheta, sinTheta;
+  su2double cosPhi, sinPhi, cosPsi, sinPsi;
   su2double time;
-	bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-	bool adjoint = config->GetContinuous_Adjoint();
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool adjoint = config->GetContinuous_Adjoint();
 
 
-	/*--- Problem dimension and physical time step ---*/
-	nDim = geometry->GetnDim();
-	dt   = config->GetDelta_UnstTimeND();
-	Lref = config->GetLength_Ref();
+  /*--- Problem dimension and physical time step ---*/
+  nDim = geometry->GetnDim();
+  dt   = config->GetDelta_UnstTimeND();
+  Lref = config->GetLength_Ref();
 
-  /*--- For harmonic balance, motion is the same in each zone (at each instance).
-   *    This is used for calls to the config container ---*/
-  if (harmonic_balance)
-	  iZone = ZONE_0;
-  
+//  /*--- For harmonic balance, motion is the same in each zone (at each instance).
+//   *    This is used for calls to the config container ---*/
+//  if (harmonic_balance)
+//    iZone = ZONE_0;
+
   /*--- For the unsteady adjoint, use reverse time ---*/
   if (adjoint) {
     unsigned long nFlowIter  = config->GetnExtIter();
@@ -2004,7 +2004,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 
 
   /*--- Center of rotation & angular velocity vector from config ---*/
-  
+
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
   Center[2] = config->GetMotion_Origin_Z(iZone);
@@ -2014,57 +2014,57 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 
   /*-- Set dt for harmonic balance cases ---*/
   if (harmonic_balance) {
-	  /*--- period of oscillation & compute time interval using nTimeInstances ---*/
-	  su2double period = config->GetHarmonicBalance_Period();
-	  period /= config->GetTime_Ref();
-	  dt = period * (su2double)iter/(su2double)(config->GetnTimeInstances());
+    /*--- period of oscillation & compute time interval using nTimeInstances ---*/
+    su2double period = config->GetHarmonicBalance_Period();
+    period /= config->GetTime_Ref();
+    dt = period * (su2double)iter/(su2double)(config->GetnTimeInstances());
   }
-  
+
   /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
 
   dTheta = Omega[0]*dt;
   dPhi   = Omega[1]*dt;
   dPsi   = Omega[2]*dt;
 
-	/*--- update periodic mesh taking into account periodicity ---*/
+  /*--- update periodic mesh taking into account periodicity ---*/
   if (config->GetPeriodic_Rigid_Movement()){
 
-  	su2double periodicTheta, periodicPhi, periodicPsi;
+    su2double periodicTheta, periodicPhi, periodicPsi;
     periodicTheta = config->GetPeriodicityRotation_X(iZone)/180*PI_NUMBER;
     periodicPhi   = config->GetPeriodicityRotation_Y(iZone)/180*PI_NUMBER;
     periodicPsi   = config->GetPeriodicityRotation_Z(iZone)/180*PI_NUMBER;
 
-  	su2double dTheta_Periodic, dPhi_Periodic, dPsi_Periodic;
+    su2double dTheta_Periodic, dPhi_Periodic, dPsi_Periodic;
 
-  	if (iter == 0){
+    if (iter == 0){
 
-  		/*--- Initialize variable at first iteration for periodic movement ---*/
-  		periodic_count[0] = 0;
-  		periodic_count[1] = 0;
-  		periodic_count[2] = 0;
-  		dTheta_Periodic = 0.0;
-  		dPhi_Periodic   = 0.0;
-  		dPsi_Periodic   = 0.0;
-  	}
+      /*--- Initialize variable at first iteration for periodic movement ---*/
+      periodic_count[0] = 0;
+      periodic_count[1] = 0;
+      periodic_count[2] = 0;
+      dTheta_Periodic = 0.0;
+      dPhi_Periodic   = 0.0;
+      dPsi_Periodic   = 0.0;
+    }
 
-  	/*--- Compute the global displacement, taking into account the prescribed periodicity ---*/
-  	dTheta_Periodic = fabs(Omega[0]*time) - periodicTheta * periodic_count[0];
-  	dPhi_Periodic   = fabs(Omega[1]*time) - periodicPhi   * periodic_count[1];
-  	dPsi_Periodic   = fabs(Omega[2]*time) - periodicPsi   * periodic_count[2];
+    /*--- Compute the global displacement, taking into account the prescribed periodicity ---*/
+    dTheta_Periodic = fabs(Omega[0]*time) - periodicTheta * periodic_count[0];
+    dPhi_Periodic   = fabs(Omega[1]*time) - periodicPhi   * periodic_count[1];
+    dPsi_Periodic   = fabs(Omega[2]*time) - periodicPsi   * periodic_count[2];
 
-  	/*--- Reset grid movement according the given periodicity ---*/
-  	if ( dTheta_Periodic >= periodicTheta && dTheta !=0. ){
-  		periodic_count[0]++;
-  		(Omega[0] < 0.) ? (dTheta += periodicTheta) : (dTheta -= periodicTheta);
-  	}
-  	if ( dPhi_Periodic >= periodicPhi && dPhi !=0. ){
-  		periodic_count[1]++;
-  		(Omega[1] < 0.) ? (dPhi += periodicPhi) : (dPhi -= periodicPhi);
-  	}
-  	if ( dPsi_Periodic >= periodicPsi && dPsi !=0. ){
-  		periodic_count[2]++;
-  		(Omega[2] < 0.) ? (dPsi += periodicPsi) : (dPsi -= periodicPsi);
-  	}
+    /*--- Reset grid movement according the given periodicity ---*/
+    if ( dTheta_Periodic >= periodicTheta && dTheta !=0. ){
+      periodic_count[0]++;
+      (Omega[0] < 0.) ? (dTheta += periodicTheta) : (dTheta -= periodicTheta);
+    }
+    if ( dPhi_Periodic >= periodicPhi && dPhi !=0. ){
+      periodic_count[1]++;
+      (Omega[1] < 0.) ? (dPhi += periodicPhi) : (dPhi -= periodicPhi);
+    }
+    if ( dPsi_Periodic >= periodicPsi && dPsi !=0. ){
+      periodic_count[2]++;
+      (Omega[2] < 0.) ? (dPsi += periodicPsi) : (dPsi -= periodicPsi);
+    }
 
   }
 
@@ -2073,107 +2073,107 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
     cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
     cout << ", " << Omega[2] << ") rad/s." << endl;
   }
-  
-	/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-  
-	cosTheta = cos(dTheta);  cosPhi = cos(dPhi);  cosPsi = cos(dPsi);
-	sinTheta = sin(dTheta);  sinPhi = sin(dPhi);  sinPsi = sin(dPsi);
-  
-	/*--- Compute the rotation matrix. Note that the implicit
+
+  /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+
+  cosTheta = cos(dTheta);  cosPhi = cos(dPhi);  cosPsi = cos(dPsi);
+  sinTheta = sin(dTheta);  sinPhi = sin(dPhi);  sinPsi = sin(dPsi);
+
+  /*--- Compute the rotation matrix. Note that the implicit
    ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-  
-	rotMatrix[0][0] = cosPhi*cosPsi;
-	rotMatrix[1][0] = cosPhi*sinPsi;
-	rotMatrix[2][0] = -sinPhi;
-  
-	rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-	rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-	rotMatrix[2][1] = sinTheta*cosPhi;
-  
-	rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-	rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-	rotMatrix[2][2] = cosTheta*cosPhi;
-  
-	/*--- Loop over and rotate each node in the volume mesh ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
+
+  rotMatrix[0][0] = cosPhi*cosPsi;
+  rotMatrix[1][0] = cosPhi*sinPsi;
+  rotMatrix[2][0] = -sinPhi;
+
+  rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+  rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+  rotMatrix[2][1] = sinTheta*cosPhi;
+
+  rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+  rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+  rotMatrix[2][2] = cosTheta*cosPhi;
+
+  /*--- Loop over and rotate each node in the volume mesh ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
     /*--- Coordinates of the current point ---*/
     Coord   = geometry->node[iPoint]->GetCoord();
     GridVel = geometry->node[iPoint]->GetGridVel();
-    
+
     /*--- Calculate non-dim. position from rotation center ---*/
     r[0] = (Coord[0]-Center[0])/Lref;
     r[1] = (Coord[1]-Center[1])/Lref;
     if (nDim == 3) r[2] = (Coord[2]-Center[2])/Lref;
-    
+
     /*--- Compute transformed point coordinates ---*/
     rotCoord[0] = rotMatrix[0][0]*r[0] 
-                + rotMatrix[0][1]*r[1] 
-                + rotMatrix[0][2]*r[2];
-    
+                                    + rotMatrix[0][1]*r[1]
+                                                        + rotMatrix[0][2]*r[2];
+
     rotCoord[1] = rotMatrix[1][0]*r[0] 
-                + rotMatrix[1][1]*r[1] 
-                + rotMatrix[1][2]*r[2];
-    
+                                    + rotMatrix[1][1]*r[1]
+                                                        + rotMatrix[1][2]*r[2];
+
     rotCoord[2] = rotMatrix[2][0]*r[0] 
-                + rotMatrix[2][1]*r[1] 
-                + rotMatrix[2][2]*r[2];
-    
+                                    + rotMatrix[2][1]*r[1]
+                                                        + rotMatrix[2][2]*r[2];
+
     /*--- Cross Product of angular velocity and distance from center.
      Note that we have assumed the grid velocities have been set to
      an initial value in the plunging routine. ---*/
-    
+
     newGridVel[0] = GridVel[0] + Omega[1]*rotCoord[2] - Omega[2]*rotCoord[1];
     newGridVel[1] = GridVel[1] + Omega[2]*rotCoord[0] - Omega[0]*rotCoord[2];
     newGridVel[2] = GridVel[2] + Omega[0]*rotCoord[1] - Omega[1]*rotCoord[0];
-    
+
     /*--- Store new node location & grid velocity. Add center. 
      Do not store the grid velocity if this is an adjoint calculation.---*/
-    
+
     for (iDim = 0; iDim < nDim; iDim++) {
       geometry->node[iPoint]->SetCoord(iDim, rotCoord[iDim] + Center[iDim]);
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
-      
+
     }
   }
-  
+
   /*--- Set the moment computation center to the new location after
    incrementing the position with the rotation. ---*/
-  
+
   for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
-    
+
     Center_Moment[0] = config->GetRefOriginMoment_X(jMarker);
     Center_Moment[1] = config->GetRefOriginMoment_Y(jMarker);
     Center_Moment[2] = config->GetRefOriginMoment_Z(jMarker);
-    
+
     /*--- Calculate non-dim. position from rotation center ---*/
-    
+
     for (iDim = 0; iDim < nDim; iDim++)
       r[iDim] = (Center_Moment[iDim]-Center[iDim])/Lref;
     if (nDim == 2) r[nDim] = 0.0;
-    
+
     /*--- Compute transformed point coordinates ---*/
-    
+
     rotCoord[0] = rotMatrix[0][0]*r[0]
-    + rotMatrix[0][1]*r[1]
-    + rotMatrix[0][2]*r[2];
-    
+                                    + rotMatrix[0][1]*r[1]
+                                                        + rotMatrix[0][2]*r[2];
+
     rotCoord[1] = rotMatrix[1][0]*r[0]
-    + rotMatrix[1][1]*r[1]
-    + rotMatrix[1][2]*r[2];
-    
+                                    + rotMatrix[1][1]*r[1]
+                                                        + rotMatrix[1][2]*r[2];
+
     rotCoord[2] = rotMatrix[2][0]*r[0]
-    + rotMatrix[2][1]*r[1]
-    + rotMatrix[2][2]*r[2];
-    
+                                    + rotMatrix[2][1]*r[1]
+                                                        + rotMatrix[2][2]*r[2];
+
     config->SetRefOriginMoment_X(jMarker, Center[0]+rotCoord[0]);
     config->SetRefOriginMoment_Y(jMarker, Center[1]+rotCoord[1]);
     config->SetRefOriginMoment_Z(jMarker, Center[2]+rotCoord[2]);
   }
-  
-	/*--- After moving all nodes, update geometry class ---*/
-  
-	UpdateDualGrid(geometry, config);
+
+  /*--- After moving all nodes, update geometry class ---*/
+
+  UpdateDualGrid(geometry, config);
 
 }
 
@@ -2345,12 +2345,12 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 }
 
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
-  
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Local variables ---*/
   su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
   su2double *GridVel, newGridVel[3], xDot[3];
@@ -2360,16 +2360,16 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = config->GetContinuous_Adjoint();
 
-  
+
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
-  
+
   /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
   if (harmonic_balance) {
-	  iZone = ZONE_0;
+    iZone = ZONE_0;
   }
-  
+
   /*--- Plunging frequency and amplitude from config. ---*/
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
@@ -2380,14 +2380,14 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   Ampl[0]   = config->GetPlunging_Ampl_X(iZone)/Lref;
   Ampl[1]   = config->GetPlunging_Ampl_Y(iZone)/Lref;
   Ampl[2]   = config->GetPlunging_Ampl_Z(iZone)/Lref;
-  
+
   if (harmonic_balance) {
-	  /*--- period of oscillation & time interval using nTimeInstances ---*/
-	  su2double period = config->GetHarmonicBalance_Period();
-	  period /= config->GetTime_Ref();
-	  deltaT = period/(su2double)(config->GetnTimeInstances());
+    /*--- period of oscillation & time interval using nTimeInstances ---*/
+    su2double period = config->GetHarmonicBalance_Period();
+    period /= config->GetTime_Ref();
+    deltaT = period/(su2double)(config->GetnTimeInstances());
   }
-  
+
   /*--- Compute delta time based on physical time step ---*/
   if (adjoint) {
     /*--- For the unsteady adjoint, we integrate backwards through
@@ -2401,78 +2401,78 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
     /*--- Forward time for the direct problem ---*/
     time_new = static_cast<su2double>(iter)*deltaT;
     if (harmonic_balance) {
-    	/*--- For harmonic balance, begin movement from the zero position ---*/
-    	time_old = 0.0;
+      /*--- For harmonic balance, begin movement from the zero position ---*/
+      time_old = 0.0;
     } else {
-    	time_old = time_new;
-    	if (iter != 0) time_old = (static_cast<su2double>(iter)-1.0)*deltaT;
+      time_old = time_new;
+      if (iter != 0) time_old = (static_cast<su2double>(iter)-1.0)*deltaT;
     }
   }
-  
-	/*--- Compute delta change in the position in the x, y, & z directions. ---*/
-	deltaX[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
-	deltaX[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
-	deltaX[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
-  
+
+  /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+  deltaX[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
+  deltaX[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
+  deltaX[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
+
   /*--- Compute grid velocity due to plunge in the x, y, & z directions. ---*/
-	xDot[0] = -Ampl[0]*Omega[0]*(cos(Omega[0]*time_new));
-	xDot[1] = -Ampl[1]*Omega[1]*(cos(Omega[1]*time_new));
-	xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
-  
+  xDot[0] = -Ampl[0]*Omega[0]*(cos(Omega[0]*time_new));
+  xDot[1] = -Ampl[1]*Omega[1]*(cos(Omega[1]*time_new));
+  xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
+
   if (rank == MASTER_NODE && iter == 0) {
     cout << " Plunging frequency: (" << Omega[0] << ", " << Omega[1];
     cout << ", " << Omega[2] << ") rad/s." << endl;
     cout << " Plunging amplitude: (" << Ampl[0] << ", ";
     cout << Ampl[1] << ", " << Ampl[2] <<  ") m."<< endl;
   }
-  
-	/*--- Loop over and move each node in the volume mesh ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
+
+  /*--- Loop over and move each node in the volume mesh ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
     /*--- Coordinates of the current point ---*/
     Coord   = geometry->node[iPoint]->GetCoord();
     GridVel = geometry->node[iPoint]->GetGridVel();
-    
+
     /*--- Increment the node position using the delta values. ---*/
     for (iDim = 0; iDim < nDim; iDim++)
       newCoord[iDim] = Coord[iDim] + deltaX[iDim];
-    
+
     /*--- Cross Product of angular velocity and distance from center.
      Note that we have assumed the grid velocities have been set to
      an initial value in the plunging routine. ---*/
-    
+
     newGridVel[0] = GridVel[0] + xDot[0];
     newGridVel[1] = GridVel[1] + xDot[1];
     newGridVel[2] = GridVel[2] + xDot[2];
-    
+
     /*--- Store new node location & grid velocity. Do not store the grid
      velocity if this is an adjoint calculation. ---*/
-    
+
     for (iDim = 0; iDim < nDim; iDim++) {
       geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
     }
   }
-  
+
   /*--- Set the mesh motion center to the new location after
    incrementing the position with the rigid translation. This
    new location will be used for subsequent pitching/rotation.---*/
-  
+
   config->SetMotion_Origin_X(iZone, Center[0]+deltaX[0]);
   config->SetMotion_Origin_Y(iZone, Center[1]+deltaX[1]);
   config->SetMotion_Origin_Z(iZone, Center[2]+deltaX[2]);
-  
+
   /*--- As the body origin may have moved, print it to the console ---*/
-  
-//  if (rank == MASTER_NODE) {
-//    cout << " Body origin: (" << Center[0]+deltaX[0];
-//    cout << ", " << Center[1]+deltaX[1] << ", " << Center[2]+deltaX[2];
-//    cout << ")." << endl;
-//  }
-  
+
+  //  if (rank == MASTER_NODE) {
+  //    cout << " Body origin: (" << Center[0]+deltaX[0];
+  //    cout << ", " << Center[1]+deltaX[1] << ", " << Center[2]+deltaX[2];
+  //    cout << ")." << endl;
+  //  }
+
   /*--- Set the moment computation center to the new location after
    incrementing the position with the plunging. ---*/
-  
+
   for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
@@ -2481,11 +2481,11 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
     config->SetRefOriginMoment_Y(jMarker, Center[1]);
     config->SetRefOriginMoment_Z(jMarker, Center[2]);
   }
-  
-	/*--- After moving all nodes, update geometry class ---*/
-	
+
+  /*--- After moving all nodes, update geometry class ---*/
+
   UpdateDualGrid(geometry, config);
-  
+
 }
 
 void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
@@ -2558,46 +2558,46 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   }
 
 
-	/*--- update periodic mesh taking into account periodicity ---*/
+  /*--- update periodic mesh taking into account periodicity ---*/
   if (config->GetPeriodic_Rigid_Movement()){
 
 
-  	su2double periodicX[3];
+    su2double periodicX[3];
     periodicX[0] = config->GetPeriodicityTranslation_X(iZone);
     periodicX[1] = config->GetPeriodicityTranslation_Y(iZone);
     periodicX[2] = config->GetPeriodicityTranslation_Z(iZone);
 
-  	su2double deltaX_Periodic[3];
+    su2double deltaX_Periodic[3];
 
-  	if (iter == 0){
+    if (iter == 0){
 
-  		/*--- Initialize variable at first iteration for periodic movement ---*/
-  		periodic_count[0]  = 0;
-  		periodic_count[1]  = 0;
-  		periodic_count[2]  = 0;
-  		deltaX_Periodic[0] = 0.0;
-  		deltaX_Periodic[1] = 0.0;
-  		deltaX_Periodic[2] = 0.0;
-  	}
+      /*--- Initialize variable at first iteration for periodic movement ---*/
+      periodic_count[0]  = 0;
+      periodic_count[1]  = 0;
+      periodic_count[2]  = 0;
+      deltaX_Periodic[0] = 0.0;
+      deltaX_Periodic[1] = 0.0;
+      deltaX_Periodic[2] = 0.0;
+    }
 
-  	/*--- Compute the global displacement, taking into account the prescribed periodicity ---*/
-  	deltaX_Periodic[0] = fabs(xDot[0]*time_new) - periodicX[0]*periodic_count[0];
-  	deltaX_Periodic[1] = fabs(xDot[1]*time_new) - periodicX[1]*periodic_count[1];
-  	deltaX_Periodic[2] = fabs(xDot[2]*time_new) - periodicX[2]*periodic_count[2];
+    /*--- Compute the global displacement, taking into account the prescribed periodicity ---*/
+    deltaX_Periodic[0] = fabs(xDot[0]*time_new) - periodicX[0]*periodic_count[0];
+    deltaX_Periodic[1] = fabs(xDot[1]*time_new) - periodicX[1]*periodic_count[1];
+    deltaX_Periodic[2] = fabs(xDot[2]*time_new) - periodicX[2]*periodic_count[2];
 
-  	/*--- Reset grid movement according the given periodicity ---*/
-  	if ( deltaX_Periodic[0] >= periodicX[0] && deltaX[0] !=0. ){
-  		periodic_count[0]++;
-  		(xDot[0] < 0.) ? (deltaX[0] += periodicX[0]) : (deltaX[0] -= periodicX[0]);
-  	}
-  	if ( deltaX_Periodic[1] >= periodicX[1] && deltaX[1] !=0. ){
-  		periodic_count[1]++;
-  		(xDot[1] < 0.) ? (deltaX[1] += periodicX[1]) : (deltaX[1] -= periodicX[1]);
-  	}
-  	if ( deltaX_Periodic[2] >= periodicX[2] && deltaX[2] !=0. ){
-  		periodic_count[2]++;
-  		(xDot[2] < 0.) ? (deltaX[2] += periodicX[2]) : (deltaX[2] -= periodicX[2]);
-  	}
+    /*--- Reset grid movement according the given periodicity ---*/
+    if ( deltaX_Periodic[0] >= periodicX[0] && deltaX[0] !=0. ){
+      periodic_count[0]++;
+      (xDot[0] < 0.) ? (deltaX[0] += periodicX[0]) : (deltaX[0] -= periodicX[0]);
+    }
+    if ( deltaX_Periodic[1] >= periodicX[1] && deltaX[1] !=0. ){
+      periodic_count[1]++;
+      (xDot[1] < 0.) ? (deltaX[1] += periodicX[1]) : (deltaX[1] -= periodicX[1]);
+    }
+    if ( deltaX_Periodic[2] >= periodicX[2] && deltaX[2] !=0. ){
+      periodic_count[2]++;
+      (xDot[2] < 0.) ? (deltaX[2] += periodicX[2]) : (deltaX[2] -= periodicX[2]);
+    }
 
   }
   

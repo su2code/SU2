@@ -4927,7 +4927,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
 
           if (!adjoint) {
             U[iVar] = solver_container[jTimeInstance+iGeomZone*nTimeInstances][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-            Source[iVar] += U[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
+//            Source[iVar] += U[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
 
             if (implicit) {
               U_old[iVar] = solver_container[jTimeInstance+iGeomZone*nTimeInstances][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
@@ -4944,7 +4944,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
             if (implicit) {
               Psi_old[iVar] = solver_container[iTimeInstance][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
               deltaPsi = Psi[iVar] - Psi_old[iVar];
-              Source[iVar] += deltaPsi*D[jTimeInstance][iTimeInstance%nTimeInstances];
+//              Source[iVar] += deltaPsi*D[jTimeInstance][iTimeInstance%nTimeInstances];
             }
           }
         }
@@ -4980,7 +4980,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
         /*--- Retrieve solution at this node in current zone ---*/
         for (iVar = 0; iVar < nVar_Turb; iVar++) {
           U_Turb[iVar] = solver_container[jTimeInstance+iGeomZone*nTimeInstances][MESH_0][TURB_SOL]->node[iPoint]->GetSolution(iVar);
-          Source_Turb[iVar] += U_Turb[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
+//          Source_Turb[iVar] += U_Turb[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
         }
       }
 
