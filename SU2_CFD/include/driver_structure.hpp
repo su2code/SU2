@@ -62,7 +62,7 @@ protected:
             StopTime,                           /*!< \brief Stop point of the timer for performance benchmarking.*/
             UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
   unsigned long ExtIter;                        /*!< \brief External iteration.*/
-  ofstream ConvHist_file;                       /*!< \brief Convergence history file.*/
+  ofstream *ConvHist_file;                       /*!< \brief Convergence history file.*/
   unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
                 iZone,                          /*!< \brief Iterator on zones.*/
                 nZone,                          /*!< \brief Total number of zones in the problem. */

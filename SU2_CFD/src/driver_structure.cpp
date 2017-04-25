@@ -373,9 +373,12 @@ CDriver::CDriver(char* confFile,
 
   /*--- Open the convergence history file ---*/
 
-  if (rank == MASTER_NODE)
-    output->SetConvHistory_Header(&ConvHist_file, config_container[ZONE_0]);
-
+  if (rank == MASTER_NODE){
+    ConvHist_file = new ofstream[nZone];
+    for (iZone = 0; iZone < nZone; iZone++) {
+      output->SetConvHistory_Header(&ConvHist_file[iZone], config_container[ZONE_0], iZone);
+    }
+  }
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
     ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
@@ -428,8 +431,10 @@ void CDriver::Postprocessing() {
       cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
 
     /*--- Close the convergence history file. ---*/
+    for (iZone = 0; iZone < nZone; iZone++) {
+      ConvHist_file[iZone].close();
+    }
 
-    ConvHist_file.close();
     cout << "History file, closed." << endl;
   }
 
@@ -2929,7 +2934,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   /*--- Update the convergence history file (serial and parallel computations). ---*/
   
   if (!fsi) {
-    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+    output->SetConvHistory_Body(&ConvHist_file[ZONE_0], geometry_container, solver_container,
                                 config_container, integration_container, false, UsedTime, ZONE_0);
     
   }
@@ -4036,9 +4041,10 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
   /*--- Update the convergence history file (serial and parallel computations). ---*/
 
-  output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-      config_container, integration_container, false, UsedTime, ZONE_0);
-
+  for (iZone = 0; iZone < nZone; iZone++) {
+    output->SetConvHistory_Body(&ConvHist_file[iZone], geometry_container, solver_container,
+        config_container, integration_container, false, UsedTime, iZone);
+  }
 
 
   /*--- Evaluate the new CFL number (adaptive). ---*/

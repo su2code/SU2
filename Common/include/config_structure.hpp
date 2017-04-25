@@ -4427,6 +4427,12 @@ string GetMarker_Shroud(unsigned short val_marker);
    * \return Name of the restart file for the flow variables.
    */
   string GetMultizone_FileName(string val_filename, int val_iZone);
+
+  /*!
+   * \brief Append the zone index to the restart or the solution files.
+   * \return Name of the restart file for the flow variables.
+   */
+  string GetMultizone_HistoryFileName(string val_filename, int val_iZone);
   
   /*!
    * \brief Get the name of the restart file for the flow variables.
