@@ -24,3 +24,4 @@ README.md
 config_*.cfg
 *.ref*
 *.eqn
+*.pkl

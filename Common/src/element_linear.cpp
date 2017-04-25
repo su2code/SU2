@@ -2,7 +2,7 @@
  * \file element_linear.cpp
  * \brief Definition of the linear element structure for structural applications
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -68,59 +68,59 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
   /*--- Initialize structure for current and reference configuration ---*/
   
   CurrentCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     CurrentCoord [iNode] = new su2double[nDim];
   }
   
   RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     RefCoord [iNode] = new su2double[nDim];
   }
   
   GaussWeight = new su2double [nGaussPoints];
   
   GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     GaussCoord [iGauss] = new su2double[nDim];
   }
   
   GaussCoord[0][0] = 0.333333333333333;  GaussCoord[0][1] = 0.333333333333333;  GaussWeight[0] = 0.5;
   
   Mab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Mab[iNode] = new su2double [nNodes];
   }
   
   Kab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Kab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++){
+    for (jNode = 0; jNode < nNodes; jNode++) {
       Kab [iNode][jNode] = new su2double[nDimSq];
     }
   }
   
   Ks_ab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Ks_ab[iNode] = new su2double [nNodes];
   }
   
   Kt_a = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Kt_a[iNode] = new su2double [nDim];
   }
   
-  if (body_forces){
+  if (body_forces) {
     FDL_a = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
       FDL_a[iNode] = new su2double [nDim];
     }
   }
-  else{
+  else {
     FDL_a = NULL;
   }
   
   su2double Xi, Eta, val_Ni;
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
     
@@ -144,14 +144,14 @@ CTRIA1::~CTRIA1(void) {
   
 }
 
-void CTRIA1::ComputeGrad_Linear(void){
+void CTRIA1::ComputeGrad_Linear(void) {
   
   su2double Jacobian[2][2], dNiXj[3][2];
   su2double detJac, GradNi_Xj;
   su2double ad[2][2];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     
     /*--- dN/d xi, dN/d eta ---*/
     
@@ -195,9 +195,9 @@ void CTRIA1::ComputeGrad_Linear(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj += Jacobian[iDim][jDim]*dNiXj[iNode][jDim];
         }
         GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj, iDim, iNode);
@@ -207,14 +207,14 @@ void CTRIA1::ComputeGrad_Linear(void){
   
 }
 
-void CTRIA1::ComputeGrad_NonLinear(void){
+void CTRIA1::ComputeGrad_NonLinear(void) {
   
   su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[3][2];
   su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
   su2double ad_Ref[2][2], ad_Curr[2][2];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     
     /*--- dN/d xi, dN/d eta ---*/
     
@@ -268,10 +268,10 @@ void CTRIA1::ComputeGrad_NonLinear(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj_Ref = 0.0;
         GradNi_Xj_Curr = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
           GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
         }
@@ -319,19 +319,19 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
   /*--- Initialize structure for current and reference configuration ---*/
   
   CurrentCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     CurrentCoord [iNode] = new su2double[nDim];
   }
   
   RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     RefCoord [iNode] = new su2double[nDim];
   }
   
   GaussWeight = new su2double [nGaussPoints];
   
   GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     GaussCoord [iGauss] = new su2double[nDim];
   }
   
@@ -341,41 +341,41 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
   GaussCoord[3][0] = -0.577350269189626;  GaussCoord[3][1] = 0.577350269189626;   GaussWeight[3] = 1.0;
   
   Mab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Mab[iNode] = new su2double [nNodes];
   }
   
   Kab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Kab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++){
+    for (jNode = 0; jNode < nNodes; jNode++) {
       Kab [iNode][jNode] = new su2double[nDimSq];
     }
   }
   
   Ks_ab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Ks_ab[iNode] = new su2double [nNodes];
   }
   
   Kt_a = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Kt_a[iNode] = new su2double [nDim];
   }
   
-  if (body_forces){
+  if (body_forces) {
     FDL_a = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
       FDL_a[iNode] = new su2double [nDim];
     }
   }
-  else{
+  else {
     FDL_a = NULL;
   }
   
   /*--- Store the shape functions (they only need to be computed once) ---*/
   su2double Xi, Eta, val_Ni;
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
     
@@ -393,7 +393,7 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
   ExtrapCoord[3][0] = -1.732050807568877;  ExtrapCoord[3][1] = 1.732050807568877;
   
   /*--- Store the shape functions (they only need to be computed once) ---*/
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Xi = ExtrapCoord[iNode][0];
     Eta = ExtrapCoord[iNode][1];
     
@@ -410,7 +410,7 @@ CQUAD4::~CQUAD4(void) {
   
 }
 
-void CQUAD4::ComputeGrad_Linear(void){
+void CQUAD4::ComputeGrad_Linear(void) {
   
   su2double Xi, Eta;
   su2double Jacobian[2][2], dNiXj[4][2];
@@ -418,7 +418,7 @@ void CQUAD4::ComputeGrad_Linear(void){
   su2double ad[2][2];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
@@ -466,9 +466,9 @@ void CQUAD4::ComputeGrad_Linear(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj += Jacobian[iDim][jDim]*dNiXj[iNode][jDim];
         }
         GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj, iDim, iNode);
@@ -478,7 +478,7 @@ void CQUAD4::ComputeGrad_Linear(void){
   
 }
 
-void CQUAD4::ComputeGrad_NonLinear(void){
+void CQUAD4::ComputeGrad_NonLinear(void) {
   
   su2double Xi, Eta;
   su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
@@ -486,7 +486,7 @@ void CQUAD4::ComputeGrad_NonLinear(void){
   su2double ad_Ref[2][2], ad_Curr[2][2];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
@@ -544,10 +544,10 @@ void CQUAD4::ComputeGrad_NonLinear(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj_Ref = 0.0;
         GradNi_Xj_Curr = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
           GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
         }
@@ -586,16 +586,16 @@ CQUAD4P1::CQUAD4P1(unsigned short val_nDim, CConfig *config)
   GaussWeightP = new su2double [nGaussPointsP];
   
   GaussCoordP = new su2double*[nGaussPointsP];
-  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++) {
     GaussCoordP [iGauss] = new su2double[nDim];
   }
   
   GaussCoordP[0][0] = 0.0;  GaussCoordP[0][1] = 0.0;  GaussWeightP[0] = 4.0;
   
   Kk_ab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Kk_ab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++){
+    for (jNode = 0; jNode < nNodes; jNode++) {
       Kk_ab [iNode][jNode] = new su2double[nDimSq];
     }
   }
@@ -607,7 +607,7 @@ CQUAD4P1::~CQUAD4P1(void) {
 }
 
 
-void CQUAD4P1::ComputeGrad_Pressure(void){
+void CQUAD4P1::ComputeGrad_Pressure(void) {
   
   su2double Xi, Eta;
   su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
@@ -615,7 +615,7 @@ void CQUAD4P1::ComputeGrad_Pressure(void){
   su2double ad_Ref[2][2], ad_Curr[2][2];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++) {
     
     Xi = GaussCoordP[iGauss][0];
     Eta = GaussCoordP[iGauss][1];
@@ -673,10 +673,10 @@ void CQUAD4P1::ComputeGrad_Pressure(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj_Ref = 0.0;
         GradNi_Xj_Curr = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
           GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
         }
@@ -723,60 +723,60 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
   /*--- Initialize structure for current and reference configuration ---*/
   
   CurrentCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     CurrentCoord [iNode] = new su2double[nDim];
   }
   
   RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     RefCoord [iNode] = new su2double[nDim];
   }
   
   GaussWeight = new su2double [nGaussPoints];
   
   GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     GaussCoord [iGauss] = new su2double[nDim];
   }
   
   GaussCoord[0][0] = 0.25;  GaussCoord[0][1] = 0.25; GaussCoord[0][2] = 0.25;  GaussWeight[0] = 0.166666666666666;
   
   Mab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Mab[iNode] = new su2double [nNodes];
   }
   
   Kab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Kab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++){
+    for (jNode = 0; jNode < nNodes; jNode++) {
       Kab [iNode][jNode] = new su2double[nDimSq];
     }
   }
   
   Ks_ab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Ks_ab[iNode] = new su2double [nNodes];
   }
   
   Kt_a = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Kt_a[iNode] = new su2double [nDim];
   }
   
-  if (body_forces){
+  if (body_forces) {
     FDL_a = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
       FDL_a[iNode] = new su2double [nDim];
     }
   }
-  else{
+  else {
     FDL_a = NULL;
   }
   
   /*--- Store the shape functions (they only need to be computed once) ---*/
   su2double Xi, Eta, Zeta, val_Ni;
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
     Zeta = GaussCoord[iGauss][2];
@@ -800,14 +800,14 @@ CTETRA1::~CTETRA1(void) {
   
 }
 
-void CTETRA1::ComputeGrad_Linear(void){
+void CTETRA1::ComputeGrad_Linear(void) {
   
   su2double Jacobian[3][3], dNiXj[4][3];
   su2double detJac, GradNi_Xj;
   su2double ad[3][3];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     
     /*--- dN/d xi, dN/d eta ---*/
     
@@ -857,9 +857,9 @@ void CTETRA1::ComputeGrad_Linear(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj += Jacobian[iDim][jDim]*dNiXj[iNode][jDim];
         }
         GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj, iDim, iNode);
@@ -869,14 +869,14 @@ void CTETRA1::ComputeGrad_Linear(void){
   
 }
 
-void CTETRA1::ComputeGrad_NonLinear(void){
+void CTETRA1::ComputeGrad_NonLinear(void) {
   
   su2double Jac_Ref[3][3], Jac_Curr[3][3], dNiXj[4][3];
   su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
   su2double ad_Ref[3][3], ad_Curr[3][3];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     
     /*--- dN/d xi, dN/d eta ---*/
     
@@ -942,10 +942,10 @@ void CTETRA1::ComputeGrad_NonLinear(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj_Ref = 0.0;
         GradNi_Xj_Curr = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
           GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
         }
@@ -992,19 +992,19 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
   /*--- Initialize structure for current and reference configuration ---*/
   
   CurrentCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     CurrentCoord [iNode] = new su2double[nDim];
   }
   
   RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     RefCoord [iNode] = new su2double[nDim];
   }
   
   GaussWeight = new su2double [nGaussPoints];
   
   GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     GaussCoord [iGauss] = new su2double[nDim];
   }
   
@@ -1018,42 +1018,42 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
   GaussCoord[7][0] = -0.577350269189626;  GaussCoord[7][1] = 0.577350269189626;  	GaussCoord[7][2] = 0.577350269189626;  	GaussWeight[7] = 1.0;
   
   Mab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Mab[iNode] = new su2double [nNodes];
   }
   
   Kab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Kab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++){
+    for (jNode = 0; jNode < nNodes; jNode++) {
       Kab [iNode][jNode] = new su2double[nDimSq];
     }
   }
   
   Ks_ab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Ks_ab[iNode] = new su2double [nNodes];
   }
   
   Kt_a = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Kt_a[iNode] = new su2double [nDim];
   }
   
-  if (body_forces){
+  if (body_forces) {
     FDL_a = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
       FDL_a[iNode] = new su2double [nDim];
     }
   }
-  else{
+  else {
     FDL_a = NULL;
   }
   
   
   /*--- Store the shape functions (they only need to be computed once) ---*/
   su2double Xi, Eta, Zeta, val_Ni;
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
     Zeta = GaussCoord[iGauss][2];
@@ -1082,7 +1082,7 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
   
   
   /*--- Store the shape functions (they only need to be computed once) ---*/
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Xi = ExtrapCoord[iNode][0];
     Eta = ExtrapCoord[iNode][1];
     Zeta = ExtrapCoord[iNode][2];
@@ -1103,7 +1103,7 @@ CHEXA8::~CHEXA8(void) {
   
 }
 
-void CHEXA8::ComputeGrad_Linear(void){
+void CHEXA8::ComputeGrad_Linear(void) {
   
   su2double Xi, Eta, Zeta;
   su2double Jacobian[3][3], dNiXj[8][3];
@@ -1111,7 +1111,7 @@ void CHEXA8::ComputeGrad_Linear(void){
   su2double ad[3][3];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
@@ -1192,9 +1192,9 @@ void CHEXA8::ComputeGrad_Linear(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj += Jacobian[iDim][jDim]*dNiXj[iNode][jDim];
         }
         GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj, iDim, iNode);
@@ -1205,7 +1205,7 @@ void CHEXA8::ComputeGrad_Linear(void){
   
 }
 
-void CHEXA8::ComputeGrad_NonLinear(void){
+void CHEXA8::ComputeGrad_NonLinear(void) {
   
   su2double Xi, Eta, Zeta;
   su2double Jac_Ref[3][3], Jac_Curr[3][3], dNiXj[8][3];
@@ -1213,7 +1213,7 @@ void CHEXA8::ComputeGrad_NonLinear(void){
   su2double ad_Ref[3][3], ad_Curr[3][3];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
@@ -1311,10 +1311,10 @@ void CHEXA8::ComputeGrad_NonLinear(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj_Ref = 0.0;
         GradNi_Xj_Curr = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
           GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
         }
@@ -1349,16 +1349,16 @@ CHEXA8P1::CHEXA8P1(unsigned short val_nDim, CConfig *config)
   GaussWeightP = new su2double [nGaussPointsP];
   
   GaussCoordP = new su2double*[nGaussPointsP];
-  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++) {
     GaussCoordP [iGauss] = new su2double[nDim];
   }
   
   GaussCoordP[0][0] = 0.0;  GaussCoordP[0][1] = 0.0;  GaussCoordP[0][1] = 0.0;  GaussWeightP[0] = 8.0;
   
   Kk_ab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     Kk_ab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++){
+    for (jNode = 0; jNode < nNodes; jNode++) {
       Kk_ab [iNode][jNode] = new su2double[nDimSq];
     }
   }
@@ -1369,7 +1369,7 @@ CHEXA8P1::~CHEXA8P1(void) {
   
 }
 
-void CHEXA8P1::ComputeGrad_Pressure(void){
+void CHEXA8P1::ComputeGrad_Pressure(void) {
   
   su2double Xi, Eta, Zeta;
   su2double Jac_Ref[3][3], Jac_Curr[3][3], dNiXj[8][3];
@@ -1377,7 +1377,7 @@ void CHEXA8P1::ComputeGrad_Pressure(void){
   su2double ad_Ref[3][3], ad_Curr[3][3];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++) {
     
     Xi = GaussCoordP[iGauss][0];
     Eta = GaussCoordP[iGauss][1];
@@ -1475,10 +1475,10 @@ void CHEXA8P1::ComputeGrad_Pressure(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj_Ref = 0.0;
         GradNi_Xj_Curr = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
           GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
         }
@@ -1511,19 +1511,19 @@ CBOUND2D::CBOUND2D(unsigned short val_nDim, CConfig *config)
   /*--- Initialize structure for current and reference configuration ---*/
   
   CurrentCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     CurrentCoord [iNode] = new su2double[nDim];
   }
   
   RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = 0; iNode < nNodes; iNode++) {
     RefCoord [iNode] = new su2double[nDim];
   }
   
   GaussWeight = new su2double [nGaussPoints];
   
   GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     GaussCoord [iGauss] = new su2double[1];
   }
   
@@ -1532,7 +1532,7 @@ CBOUND2D::CBOUND2D(unsigned short val_nDim, CConfig *config)
   
   /*--- Store the shape functions (they only need to be computed once) ---*/
   su2double Xi, val_Ni;
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     Xi = GaussCoord[iGauss][0];
     
     val_Ni = 0.5*(1.0-Xi);   GaussPoint[iGauss]->SetNi(val_Ni,0);
@@ -1546,14 +1546,14 @@ CBOUND2D::~CBOUND2D(void) {
   
 }
 
-void CBOUND2D::ComputeGrad_Linear(void){
+void CBOUND2D::ComputeGrad_Linear(void) {
   
   su2double Jacobian[2][2], dNiXj[2][1];
   su2double detJac, GradNi_Xj;
   su2double ad[2][2];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     
     /*--- dN/d xi ---*/
     
@@ -1596,9 +1596,9 @@ void CBOUND2D::ComputeGrad_Linear(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj += Jacobian[iDim][jDim]*dNiXj[iNode][jDim];
         }
         GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj, iDim, iNode);
@@ -1609,14 +1609,14 @@ void CBOUND2D::ComputeGrad_Linear(void){
   
 }
 
-void CBOUND2D::ComputeGrad_NonLinear(void){
+void CBOUND2D::ComputeGrad_NonLinear(void) {
   
   su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
   su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
   su2double ad_Ref[2][2], ad_Curr[2][2];
   unsigned short iNode, iDim, jDim, iGauss;
   
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     
     /*--- dN/d xi ---*/
     
@@ -1669,10 +1669,10 @@ void CBOUND2D::ComputeGrad_NonLinear(void){
     /*--- Derivatives with respect to global coordinates ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Xj_Ref = 0.0;
         GradNi_Xj_Curr = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++){
+        for (jDim = 0; jDim < nDim; jDim++) {
           GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
           GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
         }

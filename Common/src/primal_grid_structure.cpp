@@ -2,7 +2,7 @@
  * \file primal_grid_structure.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,6 +42,8 @@ CPrimalGrid::CPrimalGrid(void) {
 	Neighbor_Elements = NULL;
 	Coord_CG = NULL;
 	Coord_FaceElems_CG = NULL;
+  GlobalIndex = 0;
+	ResolutionTensor = NULL;
   
 }
 
@@ -50,6 +52,7 @@ CPrimalGrid::~CPrimalGrid() {
 	if (Nodes != NULL) delete[] Nodes;
 	if (Coord_CG != NULL) delete[] Coord_CG;
   if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
+  if (ResolutionTensor != NULL) delete[] ResolutionTensor;
    
 }
 
@@ -87,6 +90,87 @@ void CPrimalGrid::GetAllNeighbor_Elements() {
 		cout << GetNeighbor_Elements(iFace) << ", ";
 	}
 	cout << ")"  << endl;
+}
+
+void CPrimalGrid::SetResolutionTensor(su2double** val_coord) {
+  unsigned short iDim, jDim;
+  unsigned short iNode;
+  su2double* coord_max = new su2double[nDim];
+  su2double* coord_min = new su2double[nDim];
+
+  /*--- Allocate Resolution Tensor ---*/
+  ResolutionTensor = new su2double* [nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ResolutionTensor[iDim] = new su2double [nDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      ResolutionTensor[iDim][jDim] = 0.0;
+    }
+  }
+
+  /*--- Initialize the maximum and minimum as the CG ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    coord_max[iDim] = GetCG(iDim);
+    coord_min[iDim] = GetCG(iDim);
+  }
+
+  /*--- Find the maximum and minimum x,y,z values ---*/
+  for (iNode = 0; iNode < GetnNodes(); iNode++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      if (val_coord[iNode][iDim] > coord_max[iDim]) {
+        coord_max[iDim] = val_coord[iNode][iDim];
+      } else if (val_coord[iNode][iDim] < coord_min[iDim]) {
+        coord_min[iDim] = val_coord[iNode][iDim];
+      }
+    }
+  }
+
+  /*--- Set the elements of the resolution tensor ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      if (iDim == jDim) ResolutionTensor[iDim][jDim] =
+          coord_max[iDim] - coord_min[iDim];
+    }
+  }
+
+  delete[] coord_max;
+  delete[] coord_min;
+};
+
+void CPrimalGrid::GramSchmidt(std::vector<std::vector<su2double> > &w,
+                              std::vector<std::vector<su2double> > &v) {
+  unsigned short iDim, jDim;
+  const unsigned short nDim = w.size();
+
+  /*-- Set the first basis vector to the first input vector --*/
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    v[0][iDim] = w[0][iDim];
+  }
+
+  if (nDim > 1) {
+    /*-- Compute the next orthogonal vector --*/
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      v[1][iDim] = w[1][iDim] -
+          inline_dot_prod(w[1],v[0])/inline_dot_prod(v[0],v[0])*v[0][iDim];
+    }
+  }
+
+  if (nDim > 2) {
+    /*-- Compute the next orthogonal vector --*/
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      v[2][iDim] = w[2][iDim] -
+          inline_dot_prod(w[2],v[0])/inline_dot_prod(v[0],v[0])*v[0][iDim] -
+          inline_dot_prod(w[2],v[1])/inline_dot_prod(v[1],v[1])*v[1][iDim];
+    }
+  }
+
+  /*-- Normalize results of the Gram-Schmidt --*/
+  su2double mag;
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    mag = inline_magnitude(v[iDim]);
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      v[iDim][jDim] /= mag;
+    }
+  }
 }
 
 unsigned short CVertexMPI::nFaces = 0;
@@ -314,6 +398,108 @@ CQuadrilateral::~CQuadrilateral() {
   
 }
 
+void CQuadrilateral::SetResolutionTensor(su2double **val_coord) {
+  unsigned short iDim, jDim, kDim, lDim;
+  unsigned short iFace;
+  unsigned short* paired_faces;
+  /** paired_faces is used to sort the faces into matching pairs.
+      The code will look for pairs of faces that are mostly opposite, then
+      sort them so that the face indices in paired_faces[0] and paired_faces[1]
+      match, then paired_faces[2] and paired_faces[3] match, etc.
+   */
+
+  /*-- Allocate ResolutionTensor --*/
+  ResolutionTensor = new su2double* [nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ResolutionTensor[iDim] = new su2double [nDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      ResolutionTensor[iDim][jDim] = 0.0;
+    }
+  }
+
+  paired_faces = new unsigned short [nFaces];
+  vector<vector<su2double> > eigvecs(nDim, vector<su2double>(nDim));
+
+  /*-- Create cell center to face vectors --*/
+  vector<vector<su2double> > center2face(nFaces, vector<su2double>(nDim));
+  for (iFace = 0; iFace < nFaces; ++iFace) {
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      center2face[iFace][iDim] = Coord_FaceElems_CG[iFace][iDim] - Coord_CG[iDim];
+    }
+  }
+
+  /*-- First vector --*/
+
+  /*-- Choose vector 1 as our first vector to pair up --*/
+  paired_faces[0] = 0;
+
+  /*-- Find vector mostly parallel to first --*/
+  su2double min_dp = 1.0;
+  su2double current_dp;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    current_dp = inline_dot_prod(center2face[0],center2face[iFace])
+              /(inline_magnitude(center2face[0])*
+                  inline_magnitude(center2face[iFace]));
+    if (current_dp < min_dp) {
+      min_dp = current_dp;
+      paired_faces[1] = iFace;
+    }
+  }
+
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    eigvecs[0][iDim] = Coord_FaceElems_CG[0][iDim] -
+        Coord_FaceElems_CG[paired_faces[1]][iDim];
+  }
+
+  /*-- second vector --*/
+
+  paired_faces[2] = 0;
+  paired_faces[3] = 0;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    if (iFace != paired_faces[1]) {
+      if (paired_faces[2] == 0) {
+        paired_faces[2] = iFace;
+      } else {
+        paired_faces[3] = iFace;
+      }
+    }
+  }
+
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    eigvecs[1][iDim] = Coord_FaceElems_CG[paired_faces[2]][iDim] -
+        Coord_FaceElems_CG[paired_faces[3]][iDim];
+  }
+
+  /*-- Get magnitudes --*/
+  su2double eigvalues[nDim][nDim];
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvalues[iDim][jDim] = 0.0;
+    }
+    eigvalues[iDim][iDim] = inline_magnitude(eigvecs[iDim]);
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvecs[iDim][jDim] /= eigvalues[iDim][iDim];
+    }
+  }
+
+  /*-- Gram-Schmidt Process to make the vectors orthogonal --*/
+  vector<vector<su2double> > temp_eigvecs = eigvecs;
+  GramSchmidt(temp_eigvecs, eigvecs);
+
+  /*-- Perform matrix multiplication --*/
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      for (kDim = 0; kDim < nDim; ++kDim) {
+        for (lDim = 0; lDim < nDim; ++lDim) {
+          ResolutionTensor[iDim][jDim] += eigvecs[kDim][iDim]*
+              eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
+        }
+      }
+    }
+  }
+
+};
+
 void CQuadrilateral::Change_Orientation(void) {
 	unsigned long jPoint, Point_3;
 	jPoint = Nodes[1];
@@ -473,6 +659,127 @@ void CHexahedron::Change_Orientation(void) {
 	Nodes[7] = Point_2;
   
 }
+
+void CHexahedron::SetResolutionTensor(su2double** val_coord) {
+
+  unsigned short iDim, jDim, kDim, lDim;
+  unsigned short iFace;
+  unsigned short* paired_faces;
+  /** paired_faces is used to sort the faces into matching pairs.
+      The code will look for pairs of faces that are mostly opposite, then
+      sort them so that the face indices in paired_faces[0] and paired_faces[1]
+      match, then paired_faces[2] and paired_faces[3] match, etc.
+   */
+
+  /*-- Allocate ResolutionTensor --*/
+  ResolutionTensor = new su2double* [nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ResolutionTensor[iDim] = new su2double [nDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      ResolutionTensor[iDim][jDim] = 0.0;
+    }
+  }
+
+  paired_faces = new unsigned short [nFaces];
+
+  vector<vector<su2double> > eigvecs(nDim, vector<su2double>(nDim));
+
+  /*-- Create cell center to face vectors --*/
+  vector<vector<su2double> > center2face(nFaces, vector<su2double>(nDim));
+  for (iFace = 0; iFace < nFaces; ++iFace) {
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      center2face[iFace][iDim] = Coord_FaceElems_CG[iFace][iDim] - Coord_CG[iDim];
+    }
+  }
+
+  /*-- First vector --*/
+
+  /*-- Choose vector 1 as our first vector to pair up --*/
+  paired_faces[0] = 0;
+  /*-- Find vector mostly parallel to first --*/
+  su2double min_dp = 1.0;
+  su2double current_dp;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    current_dp = inline_dot_prod(center2face[0],center2face[iFace])
+        /(inline_magnitude(center2face[0])*inline_magnitude(center2face[iFace]));
+    if (current_dp < min_dp) {
+      min_dp = current_dp;
+      paired_faces[1] = iFace;
+    }
+  }
+
+  /*-- Second vector --*/
+
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    if (iFace != paired_faces[1]) {
+      paired_faces[2] = iFace;
+      break;
+    }
+  }
+
+  min_dp = 1.0;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    if (iFace == paired_faces[1]) continue;
+    current_dp = inline_dot_prod(center2face[paired_faces[2]],center2face[iFace])
+        /(inline_magnitude(center2face[paired_faces[2]])
+            *inline_magnitude(center2face[1]));
+    if (current_dp < min_dp) {
+      min_dp = current_dp;
+      paired_faces[3] = iFace;
+    }
+  }
+
+  /*-- Third vector --*/
+
+  paired_faces[4] = 0;
+  paired_faces[5] = 0;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    if (iFace != paired_faces[1] &&
+        iFace != paired_faces[2] &&
+        iFace != paired_faces[3]) {
+      if (paired_faces[4] == 0) {
+        paired_faces[4] = iFace;
+      } else {
+        paired_faces[5] = iFace;
+      }
+    }
+  }
+
+  /*-- Use paired_faces list to build vectors --*/
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvecs[jDim][iDim] = Coord_FaceElems_CG[paired_faces[jDim*2]][iDim] -
+          Coord_FaceElems_CG[paired_faces[jDim*2+1]][iDim];
+    }
+  }
+
+  /*-- Get lengths of vectors --*/
+  su2double eigvalues[nDim][nDim];
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvalues[iDim][jDim] = 0.0;
+    }
+    eigvalues[iDim][iDim] = inline_magnitude(eigvecs[iDim]);
+  }
+
+  /*-- Gram-Schmidt Process to make the vectors orthogonal --*/
+  vector<vector<su2double> > temp_eigvecs = eigvecs;
+  GramSchmidt(temp_eigvecs, eigvecs);
+
+  /*-- Perform matrix multiplication --*/
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      for (kDim = 0; kDim < nDim; ++kDim) {
+        for (lDim = 0; lDim < nDim; ++lDim) {
+          ResolutionTensor[iDim][jDim] += eigvecs[kDim][iDim]
+              *eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
+        }
+      }
+    }
+  }
+
+
+};
 
 unsigned short CPrism::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
 

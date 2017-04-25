@@ -2,7 +2,7 @@
  * \file primal_grid_structure.inl
  * \brief In-Line subroutines of the <i>primal_grid_structure.hpp</i> file.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,19 @@
  */
  
 #pragma once
+
+inline su2double inline_dot_prod(vector<su2double> v, vector<su2double> w) {
+  su2double dot_product = 0.0;
+  unsigned short nDim = v.size();
+  for (unsigned int iDim = 0; iDim < nDim; ++iDim) {
+    dot_product += v[iDim]*w[iDim];
+  }
+  return dot_product;
+}
+
+inline su2double inline_magnitude(vector<su2double> v) {
+  return std::sqrt(inline_dot_prod(v,v));
+}
 
 inline unsigned short CPrimalGrid::GetnNodesFace(unsigned short val_face) { return 0; }
 
@@ -59,7 +72,13 @@ inline void CPrimalGrid::SetDivide (bool val_divide) {	Divide = val_divide; }
 
 inline bool CPrimalGrid::GetDivide (void) { return Divide; }
 
+inline unsigned long CPrimalGrid::GetGlobalIndex(void) { return GlobalIndex; }
+
+inline void CPrimalGrid::SetGlobalIndex(unsigned long val_globalindex) { GlobalIndex = val_globalindex; }
+
 inline void CPrimalGrid::SetNode(unsigned short val_node, unsigned long val_point) { }
+
+inline su2double** CPrimalGrid::GetResolutionTensor(void) { return ResolutionTensor; }
 
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 
@@ -138,7 +157,6 @@ inline unsigned short CTriangle::GetnNeighbor_Elements(void) { return nNeighbor_
 inline void CTriangle::SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
 
 inline unsigned long CTriangle::GetDomainElement(void) { return DomainElement; }
-
 inline unsigned short CQuadrilateral::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
 inline unsigned short CQuadrilateral::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }

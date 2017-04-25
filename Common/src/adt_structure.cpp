@@ -3,7 +3,7 @@
  * \brief Main subroutines for for carrying out geometrical searches using an
  *        alternating digital tree (ADT).
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -68,7 +68,7 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
   isEmpty = false;
   nLeaves = nPoints -1;
   if(nPoints <= 1) ++nLeaves;
-  if(nLeaves == 0){isEmpty = true; return;}
+  if(nLeaves == 0) {isEmpty = true; return;}
 
   /*--- Allocate the memory for the leaves of the ADT and the minimum and
         maximum coordinates of the leaves. Note that these coordinates are
@@ -356,9 +356,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
                                                   unsigned long   &pointID,
                                                   int             &rankID) {
 
-  AD::StartPreacc();
-  AD::SetPreaccIn(coor, nDimADT);
-  AD::SetPreaccIn(coorPoints.data(), (int)coorPoints.size());
+  AD_BEGIN_PASSIVE
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the nearest node to the central node of the     ---*/
@@ -366,12 +364,12 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
   /*---         to avoid a sqrt.                                           ---*/
   /*--------------------------------------------------------------------------*/
 
-  unsigned long kk = leaves[0].centralNodeID;
+  unsigned long kk = leaves[0].centralNodeID, minIndex;
   const su2double *coorTarget = coorPoints.data() + nDimADT*kk;
 
-  pointID = localPointIDs[kk];
-  rankID  = ranksOfPoints[kk];
-
+  pointID  = localPointIDs[kk];
+  rankID   = ranksOfPoints[kk];
+  minIndex = kk;
   dist = 0.0;
   for(unsigned short l=0; l<nDimADT; ++l) {
     const su2double ds = coor[l] - coorTarget[l];
@@ -420,9 +418,10 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
           }
 
           if(distTarget < dist) {
-            dist    = distTarget;
-            pointID = localPointIDs[kk];
-            rankID  = ranksOfPoints[kk];
+            dist     = distTarget;
+            pointID  = localPointIDs[kk];
+            rankID   = ranksOfPoints[kk];
+            minIndex = kk;
           }
         }
         else {
@@ -455,9 +454,10 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
             }
 
             if(distTarget < dist) {
-              dist    = distTarget;
-              pointID = localPointIDs[jj];
-              rankID  = ranksOfPoints[jj];
+              dist     = distTarget;
+              pointID  = localPointIDs[jj];
+              rankID   = ranksOfPoints[jj];
+              minIndex = jj;
             }
           }
         }
@@ -472,10 +472,19 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
     if(frontLeaves.size() == 0) break;
   }
 
+  AD_END_PASSIVE
+
+  /* Recompute the distance to get the correct dependency if we use AD */
+  coorTarget = coorPoints.data() + nDimADT*minIndex;
+  dist = 0.0;
+  for(unsigned short l=0; l<nDimADT; ++l) {
+    const su2double ds = coor[l] - coorTarget[l];
+    dist += ds*ds;
+  }
+
+
   /* At the moment the distance squared to the nearest node is stored.
      Take the sqrt to obtain the correct value. */
   dist = sqrt(dist);
 
-  AD::SetPreaccOut(dist);
-  AD::EndPreacc();
 }

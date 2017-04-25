@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CDualGrid{
 protected:
@@ -135,7 +135,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CPoint : public CDualGrid {
 private:
@@ -171,6 +171,8 @@ private:
   unsigned long GlobalIndex;          /*!< \brief Global index in the parallel simulation. */
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
+  su2double** ResolutionTensor;       /*!< \brief A rank-2 tensor representing separation distances across the CV */
+  su2double*** ResolutionTensorGradient; /*!< \brief A rank-3 tensor representing gradients in the resolution. */
 
 public:
 	
@@ -651,18 +653,18 @@ public:
 	 */
 	su2double **GetGridVel_Grad(void);
 	
-	/*! 
+	/*!
 	 * \brief Add the value of the coordinates to the <i>Coord_Sum</i> vector for implicit smoothing.
 	 * \param[in] val_coord_sum - Value of the coordinates to add.
 	 */	
 	void AddCoord_Sum(su2double *val_coord_sum);
 	
-	/*! 
+	/*!
 	 * \brief Initialize the vector <i>Coord_Sum</i>.
 	 */	
 	void SetCoord_SumZero(void);
 	
-	/*! 
+	/*!
 	 * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
 	 * \param[in] val_coord_old - Value of the coordinates.
 	 */	
@@ -736,13 +738,63 @@ public:
 	 *        definition of the function in all the derived classes).
 	 */
 	void AddNormal(su2double *val_face_normal);
+
+  /*!
+   * \brief Sets the resolution tensor for the given control volume.
+   *
+   * \param[in] iDim - The first array index of the entry to be set.
+   * \param[in] jDim - The second array index of the entry to be set.
+   * \param[in] tensor_value - The value to be set.
+   */
+  void SetResolutionTensor(unsigned short iDim, unsigned short jDim,
+                           su2double tensor_value);
+
+  /*!
+   * \brief Adds to the existing resolution tensor for the given control volume
+   *
+   * \param[in] iDim - The first array index of the entry to be added.
+   * \param[in] jDim - The second array index of the entry to be added.
+   * \param[in] tensor_value - The value to be added.
+   */
+  void AddResolutionTensor(unsigned short iDim, unsigned short jDim,
+                           su2double tensor_value);
+
+  /*!
+   * \brief Gets the resolution tensor for the given control volume
+   *
+   * \return A tensor representing the separation distances
+   *         across the cell in the global coordinates.
+   */
+  su2double** GetResolutionTensor(void) const;
+
+  /*!
+   * \brief Sets the gradient of the resolution tensor for the control volume.
+   *
+   * The format is dM_{jk}/dx_{i}
+   *
+   * \param[in] iDim - The direction for the gradient operator.
+   * \param[in] jDim - The first array index of the entry to be set.
+   * \param[in] kDim - The second array index of the entry to be set.
+   * \param[in] grad_value - The scalar value to be used for the entry.
+   */
+  void SetResolutionGradient(unsigned short iDim, unsigned short jDim,
+                             unsigned short kDim, su2double grad_value);
+
+  /*!
+   * \brief Gets the gradient of the resolution tensor for the given CV
+   *
+   * \param[in] iDim - The direction in which to take the gradient
+   * \return A rank 2 tensor representing the gradient of the separation
+   *         distances across the cell in the global coordinates.
+   */
+  vector<vector<su2double> > GetResolutionGradient(unsigned short iDim);
 };
 
 /*! 
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CEdge : public CDualGrid {
 private:
@@ -879,7 +931,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CVertex : public CDualGrid {
 private:
@@ -889,7 +941,8 @@ private:
 	su2double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
 	su2double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
 	su2double *VarRot;   /*!< \brief Used for storing the rotation variation due to a surface modification. */
-	long PeriodicPoint[3];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
+	long PeriodicPoint[5];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
+  bool ActDisk_Perimeter;     /*!< \brief Identify nodes at the perimeter of the actuator disk */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
 	unsigned long *Donor_Points; /*!< \brief indices of donor points for interpolation across zones */
@@ -1047,6 +1100,13 @@ public:
 	 */
 	void SetDonorPoint(long val_periodicpoint, long val_processor);
 	
+  /*!
+   * \overload
+   * \param[in] val_periodicpoint - Value of periodic point of the vertex.
+   * \param[in] val_processor - Processor where the point belong.
+   */
+  void SetDonorPoint(long val_periodicpoint, long val_periodicglobalindex, long val_periodicvertex, long val_periodicmarker, long val_processor);
+  
 	/*! 
 	 * \overload
 	 * \param[in] val_periodicpoint - Value of periodic point of the vertex.
@@ -1054,6 +1114,13 @@ public:
 	 * \param[in] val_globalindex - Global index of the donor point.
 	 */
 	void SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex);
+  
+  /*!
+   * \overload
+   * \param[in] val_periodicpoint - Value of periodic point of the vertex.
+   * \param[in] val_processor - Processor where the point belong.
+   */
+  void SetActDisk_Perimeter(bool val_actdisk_perimeter);
 
 	/*!
 	 * \brief Get the value of the periodic point of a vertex.
@@ -1062,16 +1129,34 @@ public:
 	long GetDonorPoint(void);
   
   /*!
+   * \brief Get the value of the periodic point of a vertex.
+   * \return Value of the periodic point of a vertex.
+   */
+  long GetDonorMarker(void);
+  
+  /*!
+   * \brief Get the value of the periodic point of a vertex.
+   * \return Value of the periodic point of a vertex.
+   */
+  long GetDonorVertex(void);
+
+  /*!
+   * \brief Get the value of the periodic point of a vertex.
+   * \return Value of the periodic point of a vertex.
+   */
+  long GetDonorGlobalIndex(void);
+  
+  /*!
+   * \brief Get the value of the periodic point of a vertex.
+   * \return Value of the periodic point of a vertex.
+   */
+  long GetGlobalDonorPoint(void);
+
+  /*!
 	 * \brief Get the value of the periodic point of a vertex.
 	 * \return Value of the periodic point of a vertex.
 	 */
 	long GetDonorProcessor(void);
-
-  /*!
-	 * \brief Get the value of the global index for the donor point of a vertex.
-	 * \return Value of the global index for the donor point of a vertex.
-	 */
-	long GetGlobalDonorPoint(void);
   
 	/*! 
 	 * \brief Get the value of the periodic point of a vertex, and its somain
@@ -1079,6 +1164,12 @@ public:
 	 */
 	long *GetPeriodicPointDomain(void);	
   
+  /*!
+   * \brief Get the value of the periodic point of a vertex, and its somain
+   * \return Value of the periodic point of a vertex, and the domain.
+   */
+  bool GetActDisk_Perimeter(void);
+
   /*!
 	 * \brief Set the donor element of a vertex for interpolation across zones.
 	 * \param[in] val_donorelem - donor element index.

@@ -2,7 +2,7 @@
  * \file mpi_structure.cpp
  * \brief Main subroutines for the mpi structures.
  * \author T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -199,7 +199,7 @@ void CAuxMPIWrapper::Waitall(int nrequests, MPI_Request *request,
 }
 
 void CAuxMPIWrapper::Waitany(int nrequests, MPI_Request *request,
-                             int *index, MPI_Status *status){
+                             int *index, MPI_Status *status) {
 
   /*--- Wait for any normal request to finish ---*/
 
@@ -367,7 +367,9 @@ void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
       if (rank == root)
         std::cout << "Reduce operation not implemented for this kind of operation" <<
                   std::endl;
+      MPI_Barrier(comm);
       MPI_Abort(comm,1);
+      MPI_Finalize();
     }
   }
 }
@@ -446,7 +448,7 @@ void CAuxMPIWrapper::Scatter(void *sendbuf, int sendcnt,
     su2double *SendBuffer =  static_cast< su2double* >(sendbuf);
     su2double *RecvBuffer =  static_cast< su2double* >(recvbuf);
 
-    if (rank == root){
+    if (rank == root) {
       SendValueBuffer = new double[sendcnt];
       SendAuxBuffer    = new double[sendcnt];
 
@@ -468,7 +470,7 @@ void CAuxMPIWrapper::Scatter(void *sendbuf, int sendcnt,
     delete [] RecvValueBuffer;
     delete [] RecvAuxBuffer;
 
-    if (rank == root){
+    if (rank == root) {
       delete [] SendValueBuffer;
       delete [] SendAuxBuffer;
     }

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,16 +48,18 @@ using namespace std;
 /*!
  * \class CPrimalGrid
  * \brief Class to define the numerical primal grid.
- * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \author F. Palacios, T. Economon
+ * \version 5.0.0 "Raven"
  */
 class CPrimalGrid {
 protected:
 	unsigned long *Nodes;         /*!< \brief Vector to store the global nodes of an element. */
+  unsigned long GlobalIndex;    /*!< \brief The global index of an element. */
 	long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
 	su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
 	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
                                  elements. */
+  su2double **ResolutionTensor; /*! < \brief A resolution tensor, representing separation distances in the global coordinate system. */
 	static unsigned short nDim;		/*!< \brief Dimension of the element (2D or 3D) useful for triangles,
                                  quadrilateral and edges. */
 	unsigned long DomainElement;	/*!< \brief Only for boundaries, in this variable the 3D elements which
@@ -65,6 +67,20 @@ protected:
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
                                  in the adaptation proccess. */
   su2double Volume;    /*!< \brief Volume of the element. */
+
+  /*!
+   * \brief Gram-Schmidt orthogonalization process
+   *
+   * This could be merged with the Gram-Schmidt implementation in the CSysSolve
+   * object, but in the current state ModGramSchmidt in CSysSolve is a private
+   * method, and would need to be exposed to be used here.
+   *
+   * @param[in]  w - The vectors to be made orthogonal
+   * @param[out] v - A set of orthonormal basis vectors, using the first vector
+   *                 a reference vector.
+   */
+  void GramSchmidt(std::vector<std::vector<su2double> > &w,
+                   std::vector<std::vector<su2double> > &v);
 
 public:
 	
@@ -151,6 +167,18 @@ public:
 	 * \return <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
 	 */
 	bool GetDivide(void);
+  
+  /*!
+   * \brief Get the element global index in a parallel computation.
+   * \return Global index of the element in a parallel computation.
+   */
+  unsigned long GetGlobalIndex(void);
+  
+  /*!
+   * \brief Set the global index for an element in a parallel computation.
+   * \return Global index of an element in a parallel computation.
+   */
+  void SetGlobalIndex(unsigned long val_globalindex);
 	
 	/*!
 	 * \brief A virtual member.
@@ -232,7 +260,6 @@ public:
 	 */
 	virtual unsigned long GetNode(unsigned short val_node) = 0;
   
-  
   /*!
 	 * \brief A pure virtual member.
 	 * \param[in] val_node - Local index of a node.
@@ -256,6 +283,17 @@ public:
 	 * \return Local index of the nodes that are neighbor to <i>val_node</i>.
 	 */
 	virtual unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) = 0;
+
+	/*!
+	 * \brief Sets the resolution tensor for the given grid object.
+   * \param[in] val_coord - Coordinates of the element.
+	 */
+  virtual void SetResolutionTensor(su2double **val_coord);
+
+  /*!
+   * \brief Gets the resolution tensor for the given grid object.
+   */
+  su2double** GetResolutionTensor(void);
 };
 
 /*!
@@ -263,7 +301,7 @@ public:
  * \brief Class for vertex element definition. This kind
  *        of element is used in the parallelization stuff.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CVertexMPI : public CPrimalGrid {
 private:
@@ -380,7 +418,7 @@ public:
  * \class CLine
  * \brief Class for line element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CLine : public CPrimalGrid {
 private:
@@ -506,7 +544,7 @@ public:
  * \class CTriangle
  * \brief Class for triangle element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CTriangle : public CPrimalGrid {
 private:
@@ -634,7 +672,7 @@ public:
  * \class CQuadrilateral
  * \brief Class for quadrilateral element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CQuadrilateral : public CPrimalGrid {
 private:
@@ -756,13 +794,19 @@ public:
 	 * \return Domain element which shares a face with the boundary element.
 	 */
 	unsigned long GetDomainElement(void);
+
+  /*!
+   * \brief Sets the resolution tensor for a quadrilateral element.
+   * \param[in] val_coord - Coordinates of the element.
+   */
+  void SetResolutionTensor(su2double **val_coord);
 };
 
 /*!
  * \class CTetrahedron
  * \brief Class for tetrahedron element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CTetrahedron : public CPrimalGrid {
 private:
@@ -877,7 +921,7 @@ public:
  * \class CHexahedron
  * \brief Class for hexahedron element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CHexahedron : public CPrimalGrid {
 private:
@@ -993,13 +1037,19 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  /*!
+   * \brief Sets the resolution tensor for a hexahedral element.
+   * \param[in] val_coord - Coordinates of the element.
+   */
+  void SetResolutionTensor(su2double **val_coord);
 };
 
 /*!
  * \class CPrism
  * \brief Class for prism element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CPrism : public CPrimalGrid {
 private:
@@ -1117,7 +1167,7 @@ public:
  * \class CPyramid
  * \brief Class for pyramid element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CPyramid : public CPrimalGrid {
 private:
