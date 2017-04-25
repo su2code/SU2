@@ -663,6 +663,15 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     }
   }
   
+
+//   int rank = MASTER_NODE;
+// #ifdef HAVE_MPI
+//   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+// #endif
+
+//   if (rank == MASTER_NODE) {
+//     std::cout << "Solving turb model system!" << std::endl;
+//   }
   /*--- Solve or smooth the linear system ---*/  
   CSysSolve system;
   system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
@@ -4005,6 +4014,8 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
       //      wall_zeta = (node[jPoint]->GetSolution(2) - node[iPoint]->GetSolution(2));
       //      dkdn = numerics->GetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
 
+      su2double fwall = node[iPoint]->GetSolution(3);
+
       // swh: needs a modification here... 
       Solution[0] = 0.0;
       //Solution[1] = 1.0;
@@ -4012,12 +4023,16 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
       Solution[2] = 0.0;
       //      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
       //Solution[3] = 0.0; // v2
-      Solution[3] = f_Inf;
+      Solution[3] = fwall; //f_Inf; // don't override soln here.  let linear solve do it.
 
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);
       node[iPoint]->SetSolution(Solution);
       LinSysRes.SetBlock_Zero(iPoint);
+
+      // Set f residual correctly to get right update
+      //LinSysRes.SetBlock(iPoint, 3, fwall - f_Inf);
+      LinSysRes.SetBlock(iPoint, 3, fwall - 0.0);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -4251,10 +4266,15 @@ void CTurbKESolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
       /*--- HACKERY ON f-eqn: Set the f solution values and zero the residual ---*/
-      node[iPoint]->SetSolution_Old(3, f_Inf);
-      node[iPoint]->SetSolution(3, f_Inf);
-      LinSysRes.SetBlock_Zero(iPoint, 3);
+
+      // Set f residual correctly to get right update
+      LinSysRes.SetBlock(iPoint, 3, Solution_i[3] - f_Inf);
       Jacobian.DeleteValsRowi(iPoint*nVar+3);
+
+      // node[iPoint]->SetSolution_Old(3, f_Inf);
+      // node[iPoint]->SetSolution(3, f_Inf);
+      // LinSysRes.SetBlock_Zero(iPoint, 3);
+      // Jacobian.DeleteValsRowi(iPoint*nVar+3);
 
     }
   }
@@ -4371,6 +4391,12 @@ void CTurbKESolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_j);
 
       // /*--- HACKERY ON f-eqn: Set the f solution values and zero the residual ---*/
+
+      // // Set f residual correctly to get right update
+      // LinSysRes.SetBlock(iPoint, 3, Solution_i[3] - f_Inf);
+      // Jacobian.DeleteValsRowi(iPoint*nVar+3);
+
+
       // node[iPoint]->SetSolution_Old(3, f_Inf);
       // node[iPoint]->SetSolution(3, f_Inf);
       // LinSysRes.SetBlock_Zero(iPoint, 3);
