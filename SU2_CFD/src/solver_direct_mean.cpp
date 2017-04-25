@@ -12112,31 +12112,15 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       }
 
       /*--- retrieve boundary variables ---*/
-
-      /*--- to avoid back flow ---*/
-      if(AverageTurboVelocity[val_marker][iSpan][0]< 0.0){
-        Density_b = AverageDensity[val_marker][iSpan];
-        turboVelocity[0] = AverageSoundSpeed*0.03;
-        turboVelocity[1] = AverageTurboVelocity[val_marker][iSpan][1];
-        if(nDim == 2){
-          Pressure_b = AveragePressure[val_marker][iSpan];
-        }
-        else{
-          turboVelocity[2] = AverageTurboVelocity[val_marker][iSpan][2];
-          Pressure_b = AveragePressure[val_marker][iSpan];
-        }
+      Density_b = AverageDensity[val_marker][iSpan] + deltaprim[0];
+      turboVelocity[0] = AverageTurboVelocity[val_marker][iSpan][0] + deltaprim[1];
+      turboVelocity[1] = AverageTurboVelocity[val_marker][iSpan][1] + deltaprim[2];
+      if(nDim == 2){
+        Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[3];
       }
       else{
-        Density_b = AverageDensity[val_marker][iSpan] + deltaprim[0];
-        turboVelocity[0] = AverageTurboVelocity[val_marker][iSpan][0] + deltaprim[1];
-        turboVelocity[1] = AverageTurboVelocity[val_marker][iSpan][1] + deltaprim[2];
-        if(nDim == 2){
-          Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[3];
-        }
-        else{
-          turboVelocity[2] = AverageTurboVelocity[val_marker][iSpan][2] + deltaprim[3];
-          Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[4];
-        }
+        turboVelocity[2] = AverageTurboVelocity[val_marker][iSpan][2] + deltaprim[3];
+        Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[4];
       }
 
 
@@ -15763,6 +15747,10 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             /*--- compute cartesian average Velocity ---*/
             ComputeBackVelocity(AverageTurboVelocity[iMarker][iSpan], AverageTurboNormal , AverageVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
 
+            /*--- to avoid back flow ---*/
+            if (AverageTurboVelocity[iMarker][iSpan] < 0.0){
+              AverageTurboVelocity[iMarker][iSpan] = soundSpeed*config->GetAverageMachLimit();
+            }
 
             /*--- Store averaged performance value for the selected average method ---*/
             switch(performance_average_process){
