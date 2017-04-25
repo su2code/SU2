@@ -98,7 +98,7 @@ def adjoint( config ):
 #       su2merge(konfig)
        konfig['AUTO_DIFF'] = "NO"
        konfig['MATH_PROBLEM'] = "DISCRETE_ADJOINT"
-#       konfig['RESTART_SOL'] = "NO"
+       konfig['RESTART_SOL'] = "NO"
 
     # Run Solution
 
