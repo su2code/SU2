@@ -9,7 +9,7 @@
 typedef std::complex<su2double> Complex;
 typedef std::valarray<Complex> CArray;
 
-#define N_PROF 100001
+#define N_PROF 80001
 
 SUBoom::SUBoom(){
 
