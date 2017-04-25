@@ -15744,13 +15744,15 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               }
             }
 
-            /*--- compute cartesian average Velocity ---*/
-            ComputeBackVelocity(AverageTurboVelocity[iMarker][iSpan], AverageTurboNormal , AverageVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
 
             /*--- to avoid back flow ---*/
             if (AverageTurboVelocity[iMarker][iSpan][0] < 0.0){
               AverageTurboVelocity[iMarker][iSpan][0] = soundSpeed*config->GetAverageMachLimit();
             }
+
+            /*--- compute cartesian average Velocity ---*/
+            ComputeBackVelocity(AverageTurboVelocity[iMarker][iSpan], AverageTurboNormal , AverageVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+
 
             /*--- Store averaged performance value for the selected average method ---*/
             switch(performance_average_process){
