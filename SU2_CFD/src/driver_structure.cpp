@@ -4119,8 +4119,12 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
           KindBC = config_container[iZone]->GetMarker_All_KindBC(iMarker);
           switch (KindBC) {
           case RIEMANN_BOUNDARY:
-            cout << "only implemented for NRBC" <<endl;
-            exit(EXIT_FAILURE);
+            Marker_Tag         = config_container[iZone]->GetMarker_All_TagBound(iMarker);
+            KindBCOption       = config_container[iZone]->GetKind_Data_Riemann(Marker_Tag);
+            if(KindBCOption == STATIC_PRESSURE || KindBCOption == RADIAL_EQUILIBRIUM ){
+              cout << "Outlet pressure ramp only implemented for NRBC" <<endl;
+              exit(EXIT_FAILURE);
+            }
             break;
           case NRBC_BOUNDARY:
             Marker_Tag         = config_container[iZone]->GetMarker_All_TagBound(iMarker);
