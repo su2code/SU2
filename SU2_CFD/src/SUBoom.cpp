@@ -36,6 +36,9 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   atm_g = config->GetGamma();
   atm_noise_flag = 0;
 
+  /*---Scale factors---*/
+  scale_L = config->GetRefLengthMoment();
+
   /*---Ray variables---*/
   int N_phi = 1;
   ray_N_phi = N_phi;
@@ -369,31 +372,31 @@ void SUBoom::ConditionAtmosphericData(){
 }
 
 void SUBoom::ScaleFactors(){
-  int len;
-  su2double *x;
-  su2double L;
-  su2double h0 = flt_h;
-  su2double M_inf = flt_M;
+  //int len;
+  //su2double *x;
+  //su2double L;
+  //su2double h0 = flt_h;
+  //su2double M_inf = flt_M;
 
-  len = signal.original_len;
-  x = signal.x;
+  //len = signal.original_len;
+  //x = signal.x;
 
-  su2double min_x = x[0], max_x = x[len-1];
+  /*su2double min_x = x[0], max_x = x[len-1];
 
   for(int i = 0; i < len; i++){
       max_x = x[i];
     if(x[i] < min_x)
       min_x = x[i];
-  }
-  // TODO: get a/c length
-  //L = max_x - min_x;
-  L = 1.0;
+  }*/
 
-  scale_L = L;    // [m]
-  scale_T = L/(M_inf*a_inf);    // flow over aircraft [s]
+  //L = max_x - min_x;
+  //L = 1.0;
+
+  //scale_L = L;    // [m]
+  scale_T = scale_L/(flt_M*a_inf);    // flow over aircraft [s]
   scale_p = p_inf;    // ambient [Pa]
   scale_m = scale_p/scale_T;    // slope of boom signal [Pa/s]
-  scale_z = h0;    // altitude [m]
+  scale_z = flt_h;    // altitude [m]
 
   scale_C1 = scale_p;    // [Pa]
   scale_C2 = scale_T;    // [s]
