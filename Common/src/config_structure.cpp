@@ -5767,6 +5767,20 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
     return multizone_filename;
 }
 
+string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+    if (GetnZone() > 1 ) {
+        unsigned short lastindex = multizone_filename.find_last_of(".");
+        multizone_filename = multizone_filename.substr(0, lastindex);
+        SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
+        multizone_filename.append(string(buffer));
+    }
+    return multizone_filename;
+}
+
 string CConfig::GetObjFunc_Extension(string val_filename) {
 
   string AdjExt, Filename = val_filename;
