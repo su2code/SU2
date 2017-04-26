@@ -1840,8 +1840,8 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   //pk = muT*(S*S - 2.0/3.0*diverg*diverg) - 2.0/3.0*rho*tke*diverg;
   pk = muT*S*S - 2.0/3.0*rho*max(tke_raw,0.0)*diverg;
   pk = max(pk,0.0);
-  //pe = C_e1*pk/T;
-  pe = C_e1*pk/T1;
+  pe = C_e1*pk/T;
+  //pe = C_e1*pk/T1;
 
 
   //pv2 = (2.0/3.0)*pk;

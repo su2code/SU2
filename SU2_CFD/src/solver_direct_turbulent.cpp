@@ -3858,10 +3858,10 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     /*--- Scalars ---*/
     kine = node[iPoint]->GetSolution(0);
     epsi = node[iPoint]->GetSolution(1);
-    zeta = node[iPoint]->GetSolution(2);
+    //zeta = node[iPoint]->GetSolution(2);
     //v2 = (2.0/3.0)*kine;
     //f  = 1.0;
-    // v2 = node[iPoint]->GetSolution(2);
+    v2 = node[iPoint]->GetSolution(2);
     f = node[iPoint]->GetSolution(3);
     //cout<<"kine: "<<kine<<"\n";
     //cout<<"f: "<<f<<"\n";
@@ -3904,10 +3904,10 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     //muT = 0.0;
 
     // v2-f
-    //muT = constants[0]*rho*zeta*kine*Tm;
+    muT = constants[0]*rho*zeta*kine*Tm;
 
     // standard k-epsilon (more or less)
-    muT = (2.0/3.0)*constants[0]*rho*kine*kine/epsi;
+    //muT = (2.0/3.0)*constants[0]*rho*kine*kine/epsi;
 
     //muT = constants[0]*rho*2.0/3.0*kine*Tm; //testing...
     node[iPoint]->SetmuT(muT);
