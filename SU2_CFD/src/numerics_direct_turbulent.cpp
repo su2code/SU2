@@ -1848,8 +1848,13 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   //pv2 = max(pv2,0.0);
   //pv2 = min(pv2,2.0/3.0*pk+5.0*rho*v2/tke*tdr);
 
-  pf = 0.0;
-  df = f/(0.1*0.1);
+  const su2double Lsq = L*L;
+
+  //pf = 0.0;
+  const su2double C1m6 = C_1 - 6.0;
+  const su2double ttC1m1 = (2.0/3.0)*(C_1 - 1.0);
+  pf = (C_2f*pk/tke_raw - (C1m6*v2/tke_raw - ttC1m1)*rho/T) / Lsq;
+  df = f/Lsq;
 
   //--- Dissipation ---//
   dk = rho*tdr_raw;
@@ -1885,8 +1890,8 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   val_Jacobian_i[3][2] -= 0.0; //dDfdL*dLdrv2 * Vol;
 
   //val_Jacobian_i[3][3] -= 0.0; //dDfdf * Vol;
-  val_Jacobian_i[3][3] -= 100.0 * Vol;
-  //val_Jacobian_i[3][3] -= Vol/(L*L); //dDfdf * Vol;
+  //val_Jacobian_i[3][3] -= 100.0 * Vol;
+  val_Jacobian_i[3][3] -= Vol/Lsq; //dDfdf * Vol;
 
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
