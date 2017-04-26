@@ -1844,7 +1844,8 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   pe = C_e1*pk/T1;
 
 
-  pv2 = (2.0/3.0)*pk; //rho*tke*f;
+  //pv2 = (2.0/3.0)*pk;
+  pv2 = rho*tke*f;
   //pv2 = max(pv2,0.0);
   //pv2 = min(pv2,2.0/3.0*pk+5.0*rho*v2/tke*tdr);
 
@@ -1853,6 +1854,8 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   //pf = 0.0;
   const su2double C1m6 = C_1 - 6.0;
   const su2double ttC1m1 = (2.0/3.0)*(C_1 - 1.0);
+
+  C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(v2/tke-0.55)));
   pf = (C_2f*pk/tke_raw - (C1m6*v2/tke_raw - ttC1m1)*rho/T) / Lsq;
   df = f/Lsq;
 
@@ -1868,12 +1871,17 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   val_residual[2] = (pv2-dv2) * Vol;
   val_residual[3] = (pf-df) * Vol;
 
+  // production (just v2 eqn)...
+  val_Jacobian_i[2][0] += f*Vol;
+  val_Jacobian_i[2][1] += 0.0;
+  val_Jacobian_i[2][2] += 0.0;
+  val_Jacobian_i[2][3] += rho*tke*Vol;
+
   // destruction...
   val_Jacobian_i[0][0] -= 0.0;
   val_Jacobian_i[0][1] -= 1.0 * Vol;
   val_Jacobian_i[0][2] -= 0.0;
   val_Jacobian_i[0][3] -= 0.0;
-
 
   val_Jacobian_i[1][0] -= -1.0*C_e2*(tdr_raw/tke_raw)*(tdr_raw/tke_raw)*Vol;
   val_Jacobian_i[1][1] -=  2.0*C_e2*(tdr_raw/tke_raw)                  *Vol;
