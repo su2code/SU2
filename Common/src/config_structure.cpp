@@ -451,6 +451,7 @@ void CConfig::SetPointersNull(void) {
   default_grid_fix      = NULL;
   default_inc_crit      = NULL;
   default_htp_axis      = NULL;
+  default_body_force    = NULL;
 
   Riemann_FlowDir= NULL;
   NRBC_FlowDir = NULL;
@@ -518,6 +519,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_grid_fix      = new su2double[6];
   default_inc_crit      = new su2double[3];
   default_htp_axis      = new su2double[2];
+  default_body_force    = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -547,10 +549,21 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
+  /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
+  addBoolOption("BODY_FORCE", Body_Force, false);
+  default_body_force[0] = 0.0; default_body_force[1] = 0.0; default_body_force[2] = 0.0;
+  /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
+  addDoubleArrayOption("BODY_FORCE_VECTOR", 3, Body_Force_Vector, default_body_force);
   /* DESCRIPTION: Perform a low fidelity simulation */
   addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
+  /*!\brief UPDATE_RESTART_PARAMS \n DESCRIPTION: Update some parameters from a metadata file when restarting \n Options: NO, YES \ingroup Config */
+  addBoolOption("UPDATE_RESTART_PARAMS", Update_Restart_Params, false);
+  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_BINARY_RESTART", Wrt_Binary_Restart, true);
+  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
+  addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
@@ -3755,6 +3768,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if (Restart) {
+      if (Read_Binary_Restart) cout << "Reading and writing binary SU2 native restart files." << endl;
+      else cout << "Reading and writing ASCII SU2 native restart files." << endl;
       if (!ContinuousAdjoint && Kind_Solver != FEM_ELASTICITY) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
       if (ContinuousAdjoint) cout << "Read adjoint solution from: " << Solution_AdjFileName << "." << endl;
       if (Kind_Solver == FEM_ELASTICITY) cout << "Read structural solution from: " << Solution_FEMFileName << "." << endl;
@@ -4350,6 +4365,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "A Linelet method is used for smoothing the linear system." << endl;
               break;
           }
+          break;
+        case CLASSICAL_RK4_EXPLICIT:
+          cout << "Classical RK4 explicit method for the flow equations." << endl;
+          cout << "Number of steps: " << 4 << endl;
+          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
+          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
           break;
       }
     }
@@ -5511,6 +5532,7 @@ CConfig::~CConfig(void) {
   if (default_grid_fix      != NULL) delete [] default_grid_fix;
   if (default_inc_crit      != NULL) delete [] default_inc_crit;
   if (default_htp_axis      != NULL) delete [] default_htp_axis;
+  if (default_body_force    != NULL) delete [] default_body_force;
 
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;
