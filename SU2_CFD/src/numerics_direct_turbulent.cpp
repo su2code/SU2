@@ -1673,8 +1673,11 @@ CSourcePieceWise_TurbKE::CSourcePieceWise_TurbKE(unsigned short val_nDim, unsign
 
 CSourcePieceWise_TurbKE::~CSourcePieceWise_TurbKE(void) { }
 
-void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
+                                              su2double **val_Jacobian_i,
+                                              su2double **val_Jacobian_j,
+                                              CConfig *config) {
+
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+7);
   AD::SetPreaccIn(StrainMag_i);
@@ -1684,23 +1687,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   //  AD::SetPreaccIn(Lm_i); AD::SetPreaccIn(Tm_i);
 
-  unsigned short iDim;
-  su2double alfa_blended, beta_blended;
-  su2double diverg, pk, pe, pz, pf, pv2;
-  su2double dk, de, dz, df, dv2, S, Vol;
-  su2double T1, T2, T3, L1, L2, L3, R1, R2, R3, R;
-  su2double yplus, C_e2star, eta, C_2f, C_e1;
-  su2double tke, tdr, zeta, v2, f, L, T, mu, nu, nuT, muT, rho;
-  su2double tke_d, tdr_d, zeta_d, v2_d, f_d;
-  su2double dTdrk, dTdre, dTdrz, dLdrk, dLdre, dLdrz;
-  su2double dTdk, dTde, dTdz, dLdk, dLde, dLdz, dCe1dz, dPedT, dPedC, dDzdz, dDzdT,
-    dDede, dDedT, dPzdf, dDzdk, dPfdT, dPfdL, dPfdz, dPfde, dDfdL, dDfdf, dDkde;
-  su2double dTdrv2, dLdrv2, dTdv2, dLdv2, dCe1dv2, dDv2dv2, dDv2dT, dPv2df, dDv2dk, 
-    dPfdv2, dCe1dk, dPv2dk, dPfdk, dDv2de, dPede, dPkde;
-
-
-  //yplus = CNSSolver.YPlus;
-  
+  // Pull variables out of V_i
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
@@ -1713,197 +1700,288 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   }
 
   // for readability...
-  tke  = TurbVar_i[0]; ///Density_i;
-  tdr  = TurbVar_i[1]; ///Density_i;
+  const su2double tke = TurbVar_i[0];
+  const su2double tdr = TurbVar_i[1];
+  const su2double v20 = TurbVar_i[2];
+  const su2double f   = TurbVar_i[3];
 
-  if(tke < 0.0) std::cout << "WTF!?! k is negative!!!" << std::endl;
-  if(tdr < 0.0) std::cout << "WTF!?! epsilon is negative!!!" << std::endl;
-
-  //  zeta = TurbVar_i[2];
-  v2   = TurbVar_i[2];
-  f    = TurbVar_i[3];
-  mu   = Laminar_Viscosity_i;
-  muT  = Eddy_Viscosity_i;
-  rho  = Density_i;
-  S    = StrainMag_i; //*sqrt(2.0) already included
-  Vol  = Volume;
-  //v2 = zeta*tke;
-  //  zeta = v2/tke;
-  nu = mu/rho;
-  nuT = muT/rho;
-
-  //  if (tke>=20.0) {cout << "TKE: " << tke << "\n";}
-
-  // limits?
-  //  tke  = max(tke,0.0);
-  //  tdr  = max(tdr,0.0);
-  //  zeta = min(zeta,2.0/3.0);
-  //  zeta = max(zeta,0.0);
-  //  v2 = min(v2,2.0/3.0*tke);
-  //  v2 = max(v2,0.0);
-  //  f  = max(f,0.0);
-
-  // from previous timestep
-  //  tke0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(6);
-  //  tdr0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(7);
-  //  zeta0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(8);
-  //  f0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(9);
-
-  // denominator floors <jump>
-  //  su2double scalar_min = 1.0E-14;
-  su2double VelMag, *VelInf, L_Inf, scalar_min;
-  su2double tke_raw, tdr_raw, v2_raw;
-  tke_raw = tke;
-  tdr_raw = tdr;
-  v2_raw = v2;
-  VelInf = config->GetVelocity_FreeStreamND();
-  L_Inf = config->GetLength_Reynolds();
-  for (iDim = 0; iDim < nDim; iDim++)
-  VelMag += VelInf[iDim]*VelInf[iDim];
-  VelMag = sqrt(VelMag);
-
-  su2double solve_tol = config->GetLinear_Solver_Error();
-  su2double Re = config->GetReynolds();
-  su2double iRe = 1.0/Re;
-  su2double scale;
-  scale = 1.0e-8;
-  zeta = max(v2_raw/tke_raw, scale);
+  // make sure v2 is well-behaved
+  const su2double scale = 1.0e-8;
+  su2double zeta = max(v20/tke, scale);
   zeta = min(zeta,2.0/3.0);
-  scalar_min = scale/(VelMag*VelMag); // setting based on tke min being 1e-8
-  tke = max(tke, scalar_min*VelMag*VelMag);
-  tdr = max(tdr, scalar_min*VelMag*VelMag*VelMag/L_Inf);
-  //v2 = max(v2, 2.0/3.0*scalar_min*VelMag*VelMag);
-  f = max(f, scalar_min*VelMag/L_Inf);
 
-  //  tke = max(tke, Re*pow(nu,2.0)/pow(L_Inf,2.0));
-  //  tdr = max(tdr, Re*pow(nu,3.0)/pow(L_Inf,4.0));
-  //  f = max(f, Re*nu/pow(L_Inf,2.0));
+  const su2double v2 = max(v20, zeta*tke);
 
-  v2 = max(v2, zeta*tke);
-  //  S = max(S,scalar_min*VelMag/L_Inf); // no checked...
-  S = max(S,1.0E-14);
-  /*
-  tke_d = max(tke,1.0E-8);
-  tdr_d = max(tdr,1.0E-8);
-  zeta_d = max(zeta,1.0E-8);
-  v2_d = max(v2,1.0E-8);
-  f_d = max(f,1.0E-8);
-  */
+  const su2double rho = Density_i;
 
-  // must find T&L here due to Jacobian branching...
-  //L = Lm_i;
-  //T = Tm_i;
+  const su2double mu  = Laminar_Viscosity_i;
+  const su2double muT = Eddy_Viscosity_i;
+
+  const su2double nu  = mu/rho;
+  const su2double nuT = muT/rho;
+
+  const su2double S   = StrainMag_i; //*sqrt(2.0) already included
+  const su2double Vol = Volume;
+
+  su2double diverg = 0.0;
+  for (unsigned int iDim = 0; iDim < nDim; iDim++)
+    diverg += PrimVar_Grad_i[iDim+1][iDim];
+
+  //----------------------------------------------------------------------------
+  // Scream if tke, tdr, etc are out of bounds?
+  //
+  // if(tke < 0.0) std::cout << "WTF!?! k is negative!!!" << std::endl;
+  // if(tdr < 0.0) std::cout << "WTF!?! epsilon is negative!!!" << std::endl;
+  //  if (tke>=20.0) {cout << "TKE: " << tke << "\n";}
+  //----------------------------------------------------------------------------
+
+  //----------------------------------------------------------------------------
+  // Impose some bounds on turb variables?
+  //
+  // // denominator floors
+  // su2double VelMag, *VelInf, L_Inf, scalar_min;
+  // su2double tke_raw, tdr_raw, v2_raw;
+  // tke_raw = tke;
+  // tdr_raw = tdr;
+  // v2_raw = v2;
+  // VelInf = config->GetVelocity_FreeStreamND();
+  // L_Inf = config->GetLength_Reynolds();
+  // for (iDim = 0; iDim < nDim; iDim++)
+  // VelMag += VelInf[iDim]*VelInf[iDim];
+  // VelMag = sqrt(VelMag);
+
+  // su2double solve_tol = config->GetLinear_Solver_Error();
+  // su2double Re = config->GetReynolds();
+  // su2double iRe = 1.0/Re;
+  // su2double scale;
+  // scale = 1.0e-8;
+  // zeta = max(v2_raw/tke_raw, scale);
+  // zeta = min(zeta,2.0/3.0);
+  // scalar_min = scale/(VelMag*VelMag); // setting based on tke min being 1e-8
+  // tke = max(tke, scalar_min*VelMag*VelMag);
+  // tdr = max(tdr, scalar_min*VelMag*VelMag*VelMag/L_Inf);
+  // //v2 = max(v2, 2.0/3.0*scalar_min*VelMag*VelMag);
+  // f = max(f, scalar_min*VelMag/L_Inf);
+
+  // v2 = max(v2, zeta*tke);
+  // //  S = max(S,scalar_min*VelMag/L_Inf); // no checked...
+  // S = max(S,1.0E-14);
+  //----------------------------------------------------------------------------
+
+  // NB: We determine time and length scales here due to Jacobian branching
+  // TODO: Could replace max and min with differentiable approximations
+  // TODO: Write a function that evaluates T and L along with derivatives
 
   //--- Model time scale ---//
-  T1 = tke/tdr;
-  T2 = 1.0E14; //0.6/(sqrt(6.0)*C_mu*S*zeta);
-  T3 = C_T*sqrt(nu/tdr);
-  T = max(min(T1,T2),T3); 
+  const su2double T1     = tke/tdr;
+  const su2double T1_rk  =  1.0/(rho*tdr);
+  const su2double T1_re  = - T1/(rho*tdr);
+  const su2double T1_rv2 = 0.0;
+
+  const su2double T2     = 1.0E14; //0.6/(sqrt(6.0)*C_mu*S*zeta);
+  const su2double T2_rk  = 0.0;
+  const su2double T2_re  = 0.0;
+  const su2double T2_rv2 = 0.0;
+
+  const su2double T3     = C_T*sqrt(nu/tdr);
+  const su2double T3_rk  = 0.0;
+  const su2double T3_re  = -0.5*T3/(rho*tdr);
+  const su2double T3_rv2 = 0.0;
+
+  // T = max(min(T1,T2),T3)
+  su2double T     = T1;
+  su2double T_rk  = T1_rk;
+  su2double T_re  = T1_re;
+  su2double T_rv2 = T1_rv2;
+
+  // Use smooth version of maximum?
+  // // T = smooth_max(T1,T3)
+  // const su2double del  = T1 - T3;
+  // const su2double sabs = sqrt( del*del + 1.0 );
+
+  // T = 0.5*(T1 + T3 + sabs );
+
+  // T_rk  = 0.5*(T1_rk  + T3_rk  + (T1_rk  - T3_rk )*del/sabs );
+  // T_re  = 0.5*(T1_re  + T3_re  + (T1_re  - T3_re )*del/sabs );
+  // T_rv2 = 0.5*(T1_rv2 + T3_rv2 + (T1_rv2 - T3_rv2)*del/sabs );
+
+  // Use maximum?
+  // if (T>T2) {
+  //   T = T2;
+  //   T_rk = T2_rk; T_re = T2_re; T_rv2 = T2_rv2;
+  // }
+
+  // if (T<T3) {
+  //   T = T3;
+  //   T_rk = T3_rk; T_re = T3_re; T_rv2 = T3_rv2;
+  // }
+
+  const su2double Tsq = T*T;
+
 
   //--- Model length scale ---//
-  L1 = pow(tke,1.5)/tdr;
-  //  L1 = sqrt(zeta*(3.0/2.0)) * L1;
-  L2 = 1.0E14; //sqrt(tke)/(sqrt(6.0)*C_mu*S*zeta);
-  L3 = C_eta*pow(pow(nu,3.0)/tdr,0.25);
-  L = C_L * max(min(L1,L2),L3);
+  const su2double L1     = pow(tke,1.5)/tdr;
+  const su2double L1_rk  =    -L1/(rho*tke);
+  const su2double L1_re  = 1.5*L1/(rho*tdr);
+  const su2double L1_rv2 = 0.0;
 
-  //--- Initial Jacobian ---//
-  val_Jacobian_i[0][0] = 0.0;
-  val_Jacobian_i[0][1] = 0.0;
-  val_Jacobian_i[0][2] = 0.0;
+  const su2double L2     = 1.0E14; //sqrt(tke)/(sqrt(6.0)*C_mu*S*zeta);
+  const su2double L2_rk  = 0.0;
+  const su2double L2_re  = 0.0;
+  const su2double L2_rv2 = 0.0;
+
+  const su2double L3     = C_eta*pow(pow(nu,3.0)/tdr,0.25);
+  const su2double L3_rk  = 0.0;
+  const su2double L3_re  = -0.25*L3/(rho*tdr);
+  const su2double L3_rv2 = 0.0;
+
+  // L = max(min(L1,L2),L3)... mult by C_L below
+  su2double L     = L1;
+  su2double L_rk  = L1_rk;
+  su2double L_re  = L1_re;
+  su2double L_rv2 = L1_rv2;
+
+  if (L>L2) {
+    L = L2;
+    L_rk = L2_rk; L_re = L2_re; L_rv2 = L2_rv2;
+  }
+
+  if (L<L3) {
+    L = L3;
+    L_rk = L3_rk; L_re = L3_re; L_rv2 = L3_rv2;
+  }
+
+  L *= C_L;
+  L_rk *= C_L; L_re *= C_L; L_rv2 *= C_L;
+
+  const su2double Lsq = L*L;
+
+  //--- v2-f ---//
+
+  // 4 equations.  For each equation, we identify production and
+  // dissipation terms.  This is somewhat artificial for f.  The
+  // Jacobian is abused to help keep k and epsilon positive.
+
+
+  // TKE equation...
+  su2double Pk, Pk_rk, Pk_re, Pk_rv2;
+  su2double Dk, Dk_rk, Dk_re, Dk_rv2;
+
+  //... production
+  // NB: we ignore the jacobian of production here
+  Pk     = muT*S*S - 2.0/3.0*rho*tke*diverg;
+
+  Pk_rk  = 0.0;
+  Pk_re  = 0.0;
+  Pk_rv2 = 0.0;
+
+  //... dissipation
+  Dk     = rho*tdr;
+
+  Dk_rk  = 0.0;
+  Dk_re  = 1.0;
+  Dk_rv2 = 0.0;
+
+
+  // Dissipation equation...
+  su2double Pe, Pe_rk, Pe_re, Pe_rv2;
+  su2double De, De_rk, De_re, De_rv2;
+
+  // NB: C_e1 depends on tke and v2 in v2-f
+  const su2double C_e1 = C_e1o*(1.0+0.045*sqrt(tke/v2));
+
+  // ... production
+  Pe = C_e1*Pk/T;
+
+  Pe_rk  = 0.0;
+  Pe_re  = 0.0;
+  Pe_rv2 = 0.0;
+
+  // ... dissipation
+  De = C_e2*rho*tdr/T;
+
+  De_rk  =        - C_e2*rho*tdr*T_rk /Tsq;
+  De_re  = C_e2/T - C_e2*rho*tdr*T_re /Tsq;
+  De_rv2 =        - C_e2*rho*tdr*T_rv2/Tsq;
+
+
+  // v2 equation...
+  su2double Pv2, Pv2_rk, Pv2_re, Pv2_rv2, Pv2_f;
+  su2double Dv2, Dv2_rk, Dv2_re, Dv2_rv2, Dv2_f;
+
+  // ... production
+  Pv2 = rho*tke*f;
+
+  Pv2_rk  = f;
+  Pv2_re  = 0.0;
+  Pv2_rv2 = 0.0;
+  Pv2_f   = rho*tke; // keep this?
+
+  // ... dissipation
+  Dv2     =  6.0*(v2/tke)*rho*tdr;
+
+  Dv2_rk  = -6.0*(v2/tke)*(tdr/tke);
+  Dv2_re  =  6.0*(v2/tke);
+  Dv2_rv2 =  6.0*(tdr/tke);
+  Dv2_f   =  0.0;
+
+
+  // f equation...
+  su2double Pf;
+  su2double Df, Df_f;
+
+  //... production
+  const su2double C1m6 = C_1 - 6.0;
+  const su2double ttC1m1 = (2.0/3.0)*(C_1 - 1.0);
+  const su2double C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(v2/tke-0.55)));
+
+  Pf = (C_2f*Pk/tke - (C1m6*v2/tke - ttC1m1)*rho/T) / Lsq;
+
+  // not keeping any derivatives of Pf
+
+  //... dissipation
+  Df = f/Lsq;
+
+  Df_f = 1.0/Lsq;
+
+
+  // form source term and Jacobian...
+
+  // TKE
+  val_residual[0]      = (Pk      - Dk     ) * Vol;
+
+  val_Jacobian_i[0][0] = (Pk_rk   - Dk_rk  ) * Vol;
+  val_Jacobian_i[0][1] = (Pk_re   - Dk_re  ) * Vol;
+  val_Jacobian_i[0][2] = (Pk_rv2  - Dk_rv2 ) * Vol;
   val_Jacobian_i[0][3] = 0.0;
 
-  val_Jacobian_i[1][0] = 0.0;
-  val_Jacobian_i[1][1] = 0.0;
-  val_Jacobian_i[1][2] = 0.0;
+  // Dissipation
+  val_residual[1]      = (Pe      - De     ) * Vol;
+
+  val_Jacobian_i[1][0] = (Pe_rk   - De_rk  ) * Vol;
+  val_Jacobian_i[1][1] = (Pe_re   - De_re  ) * Vol;
+  val_Jacobian_i[1][2] = (Pe_rv2  - De_rv2 ) * Vol;
   val_Jacobian_i[1][3] = 0.0;
 
-  val_Jacobian_i[2][0] = 0.0;
-  val_Jacobian_i[2][1] = 0.0;
-  val_Jacobian_i[2][2] = 0.0;
-  val_Jacobian_i[2][3] = 0.0;
+  // v2
+  val_residual[2]      = (Pv2     - Dv2    ) * Vol;
+
+  val_Jacobian_i[2][0] = (Pv2_rk  - Dv2_rk ) * Vol;
+  val_Jacobian_i[2][1] = (Pv2_re  - Dv2_re ) * Vol;
+  val_Jacobian_i[2][2] = (Pv2_rv2 - Dv2_rv2) * Vol;
+  val_Jacobian_i[2][3] = (Pv2_f   - Dv2_f  ) * Vol;
+
+  // f
+  val_residual[3]      = (Pf      - Df     ) * Vol;
 
   val_Jacobian_i[3][0] = 0.0;
   val_Jacobian_i[3][1] = 0.0;
   val_Jacobian_i[3][2] = 0.0;
-  val_Jacobian_i[3][3] = 0.0;
+  val_Jacobian_i[3][3] = (        - Df_f   ) * Vol;
 
-  //--- v2-f ---//
-  C_e1 = C_e1o*(1.0+0.045*sqrt(tke/v2));
-
-  //--- divergence of velocity ---//
-  diverg = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    diverg += PrimVar_Grad_i[iDim+1][iDim];
-
-  //--- Production ---// //<warp>//
-  //pk = muT*(S*S - 2.0/3.0*diverg*diverg) - 2.0/3.0*rho*tke*diverg;
-  pk = muT*S*S - 2.0/3.0*rho*max(tke_raw,0.0)*diverg;
-  pk = max(pk,0.0);
-  pe = C_e1*pk/T;
-  //pe = C_e1*pk/T1;
-
-
-  //pv2 = (2.0/3.0)*pk;
-  pv2 = rho*tke*f;
-  //pv2 = max(pv2,0.0);
-  //pv2 = min(pv2,2.0/3.0*pk+5.0*rho*v2/tke*tdr);
-
-  const su2double Lsq = L*L;
-
-  //pf = 0.0;
-  const su2double C1m6 = C_1 - 6.0;
-  const su2double ttC1m1 = (2.0/3.0)*(C_1 - 1.0);
-
-  C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(v2/tke-0.55)));
-  pf = (C_2f*pk/tke_raw - (C1m6*v2/tke_raw - ttC1m1)*rho/T) / Lsq;
-  df = f/Lsq;
-
-  //--- Dissipation ---//
-  dk = rho*tdr_raw;
-  de = C_e2*rho*tdr_raw*tdr_raw/tke_raw;
-
-  dv2 = 6.0*(v2/tke_raw)*rho*tdr_raw;
-
-
-  val_residual[0] = (pk-dk) * Vol;
-  val_residual[1] = (pe-de) * Vol;
-  val_residual[2] = (pv2-dv2) * Vol;
-  val_residual[3] = (pf-df) * Vol;
-
-  // production (just v2 eqn)...
-  val_Jacobian_i[2][0] += f*Vol;
-  val_Jacobian_i[2][1] += 0.0;
-  val_Jacobian_i[2][2] += 0.0;
-  val_Jacobian_i[2][3] += rho*tke*Vol;
-
-  // destruction...
-  val_Jacobian_i[0][0] -= 0.0;
-  val_Jacobian_i[0][1] -= 1.0 * Vol;
-  val_Jacobian_i[0][2] -= 0.0;
-  val_Jacobian_i[0][3] -= 0.0;
-
-  val_Jacobian_i[1][0] -= -1.0*C_e2*(tdr_raw/tke_raw)*(tdr_raw/tke_raw)*Vol;
-  val_Jacobian_i[1][1] -=  2.0*C_e2*(tdr_raw/tke_raw)                  *Vol;
-  val_Jacobian_i[1][2] -= 0.0;
-  val_Jacobian_i[1][3] -= 0.0;
-
-  val_Jacobian_i[2][0] -= -6.0*(v2/tke_raw)*(tdr_raw/tke_raw)*Vol;
-  val_Jacobian_i[2][1] -=  6.0*(v2/tke_raw)*Vol;
-  val_Jacobian_i[2][2] -=  6.0*(tdr_raw/tke_raw)*Vol;
-  val_Jacobian_i[2][3] -= 0.0;
-
-  val_Jacobian_i[3][0] -= 0.0; //dDfdL*dLdrk * Vol;
-  val_Jacobian_i[3][1] -= 0.0; //dDfdL*dLdre * Vol;
-  val_Jacobian_i[3][2] -= 0.0; //dDfdL*dLdrv2 * Vol;
-
-  //val_Jacobian_i[3][3] -= 0.0; //dDfdf * Vol;
-  //val_Jacobian_i[3][3] -= 100.0 * Vol;
-  val_Jacobian_i[3][3] -= Vol/Lsq; //dDfdf * Vol;
 
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
-
 }
 
 
