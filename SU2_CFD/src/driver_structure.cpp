@@ -774,7 +774,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -877,7 +877,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     
     if (disc_adj) {
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
-      if (turbulent)
+      if (adj_turb)
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
     }
   }
@@ -914,12 +914,12 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (adj_euler || adj_ns) {
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
-    if (adj_turb) {
+    if (adj_turb && !disc_adj) {
       no_restart = true;
     }
     if (disc_adj) {
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
-      if (turbulent)
+      if (adj_turb)
         solver_container[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
   }
@@ -3802,7 +3802,7 @@ void CDiscAdjFluidDriver::Run() {
 
 
 void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
-  unsigned short iZone;
+  unsigned short iZone, iMesh;
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
@@ -3814,8 +3814,10 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   /*--- Prepare for recording by resetting the flow solution to the initial converged solution---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
-    if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+      solver_container[iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][iMesh], config_container[iZone]);
+    }
+    if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc()) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
@@ -3850,9 +3852,10 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   /*--- Print residuals in the first iteration ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
+    //if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
+    if (rank == MASTER_NODE ) {
       cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
-      if ( config_container[iZone]->GetKind_Turb_Model() != NONE) {
+      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc()) {
         cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
       }
     }
