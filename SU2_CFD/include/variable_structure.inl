@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -562,6 +562,23 @@ inline void CVariable::SetPrestretch(unsigned short iVar, su2double val_prestret
 inline su2double *CVariable::GetPrestretch(void) { return NULL; }
 
 inline su2double CVariable::GetPrestretch(unsigned short iVar) { return 0.0; }
+
+inline su2double CVariable::GetSolution_New(unsigned short val_var) { return 0.0; }
+
+inline void CVariable::SetSolution_New(void) { }
+
+inline void CVariable::AddSolution_New(unsigned short val_var, su2double val_solution) { }
+
+inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
+
+inline void CEulerVariable::SetSolution_New(void) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_New[iVar] = Solution[iVar];
+}
+
+inline void CEulerVariable::AddSolution_New(unsigned short val_var, su2double val_solution) {
+  Solution_New[val_var] += val_solution;
+}
 
 inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }
 

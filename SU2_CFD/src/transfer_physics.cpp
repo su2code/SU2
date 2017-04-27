@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for physics of the information transfer between zones
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -360,22 +360,37 @@ void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, 
 void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
                                                 unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  unsigned short iVar;
+  unsigned short iVar, nDonorVar;
+  nDonorVar = donor_solution->GetnPrimVar();
 
-  /*--- Retrieve solution and set it as the donor variable ---*/
+  /*---  the number of primitive variables is set to two by default for the turbulent solver ---*/
+  bool turbulent = (nDonorVar == 2) ;
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+  if (turbulent){
+
+    /*---  for turbulent solver retrieve solution and set it as the donor variable ---*/
+    Donor_Variable[0] = donor_solution->node[Point_Donor]->GetSolution(0);
+    Donor_Variable[1] = donor_solution->node[Point_Donor]->GetSolution(1);
+
+  } else{
+
+    /*---  Retrieve primitive variables and set them as the donor variables ---*/
+    for (iVar = 0; iVar < nDonorVar; iVar++)
+      Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+
+  }
 }
 
 void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
                           CConfig *target_config, unsigned long Marker_Target,
                           unsigned long Vertex_Target, unsigned long Point_Target) {
 
-  unsigned short iVar;
+  unsigned short iVar, nTargetVar;
+  nTargetVar = target_solution->GetnPrimVar();
+
   /*--- Set the Sliding solution with the value of the Target Variable ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (iVar = 0; iVar < nTargetVar; iVar++)
     target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, Target_Variable[iVar]);
 
 }

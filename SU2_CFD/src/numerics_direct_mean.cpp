@@ -2,7 +2,7 @@
  * \file numerics_direct_mean.cpp
  * \brief This file contains the numerical methods for compressible flow.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3991,6 +3991,52 @@ void CSourceGravity::ComputeResidual(su2double *val_residual, CConfig *config) {
     
   }
   
+}
+
+CSourceBodyForce::CSourceBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+  /*--- Store the pointer to the constant body force vector. ---*/
+
+  Body_Force_Vector = new su2double[nDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Body_Force_Vector[iDim] = config->GetBody_Force_Vector()[iDim];
+
+  /*--- Check for compressibility ---*/
+
+  compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+
+}
+
+CSourceBodyForce::~CSourceBodyForce(void) {
+
+  if (Body_Force_Vector != NULL) delete [] Body_Force_Vector;
+
+}
+
+void CSourceBodyForce::ComputeResidual(su2double *val_residual, CConfig *config) {
+
+  unsigned short iDim;
+  su2double Force_Ref = config->GetForce_Ref();
+
+  if (compressible) {
+
+    /*--- Zero the continuity contribution ---*/
+
+    val_residual[0] = 0.0;
+
+    /*--- Momentum contribution ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
+
+    /*--- Energy contribution ---*/
+
+    val_residual[nDim+1] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
+
+  }
+
 }
 
 CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

@@ -2,7 +2,7 @@
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,6 +57,8 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   nSecondaryVarGrad = 0;
  
   Undivided_Laplacian = NULL;
+
+  Solution_New = NULL;
  
 }
 
@@ -69,7 +71,8 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
-  
+  bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+
   /*--- Array initialization ---*/
   
   HB_Source = NULL;
@@ -92,6 +95,8 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   nSecondaryVarGrad = 0;
 
   Undivided_Laplacian = NULL;
+
+  Solution_New = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
@@ -157,6 +162,16 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   Solution[nVar-1] = val_density*val_energy;
   Solution_Old[nVar-1] = val_density*val_energy;
 
+  /*--- New solution initialization for Classical RK4 ---*/
+
+  if (classical_rk4) {
+    Solution_New = new su2double[nVar];
+    Solution_New[0] = val_density;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Solution_New[iDim+1] = val_density*val_velocity[iDim];
+    }
+    Solution_New[nVar-1] = val_density*val_energy;
+  }
 
     /*--- Allocate and initialize solution for dual time strategy ---*/
   
@@ -221,7 +236,8 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
-  
+  bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+
   /*--- Array initialization ---*/
   
   HB_Source = NULL;
@@ -244,6 +260,8 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   nSecondaryVarGrad = 0;
  
   Undivided_Laplacian = NULL;
+
+  Solution_New = NULL;
  
     /*--- Allocate and initialize the primitive variables and gradients ---*/
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
@@ -298,7 +316,16 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
     Solution[iVar] = val_solution[iVar];
     Solution_Old[iVar] = val_solution[iVar];
   }
-  
+
+  /*--- New solution initialization for Classical RK4 ---*/
+
+  if (classical_rk4) {
+    Solution_New = new su2double[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Solution_New[iVar] = val_solution[iVar];
+    }
+  }
+
   /*--- Allocate and initializate solution for dual time strategy ---*/
   if (dual_time) {
     Solution_time_n = new su2double [nVar];
@@ -372,6 +399,8 @@ CEulerVariable::~CEulerVariable(void) {
   }
 
   if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
+
+  if (Solution_New != NULL) delete [] Solution_New;
   
 }
 

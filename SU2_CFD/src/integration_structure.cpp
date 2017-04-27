@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -89,7 +89,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
-  solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+  solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config);
 
   /*--- Weak boundary conditions ---*/
   
@@ -324,15 +324,18 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
   if (KindSolver != FEM_ELASTICITY) {
 
     switch (config->GetKind_TimeIntScheme()) {
-    case (RUNGE_KUTTA_EXPLICIT):
-      solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
-      break;
-    case (EULER_EXPLICIT):
-      solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
-      break;
-    case (EULER_IMPLICIT):
-      solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
-      break;
+      case (RUNGE_KUTTA_EXPLICIT):
+        solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+        break;
+      case (CLASSICAL_RK4_EXPLICIT):
+        solver_container[MainSolver]->ClassicalRK4_Iteration(geometry, solver_container, config, iRKStep);
+        break;
+      case (EULER_EXPLICIT):
+        solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
+        break;
+      case (EULER_IMPLICIT):
+        solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+        break;
     }
 
    /*--- Structural time integration schemes ---*/

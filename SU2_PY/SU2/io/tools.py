@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -285,6 +285,13 @@ optnames_geo = [ "MAX_THICKNESS"      ,
                  "AREA"               ,
                  "AOA"                ,
                  "CHORD"              ,
+                 "WING_VOLUME"           ,
+                 "WING_MIN_MAXTHICKNESS" ,
+                 "WING_MAX_CHORD"        ,
+                 "WING_MIN_TOC"          ,
+                 "WING_MAX_TWIST"        ,
+                 "WING_MAX_CURVATURE"    ,
+                 "WING_MAX_DIHEDRAL"     ,
                  "MAX_THICKNESS_SEC1" ,
                  "MAX_THICKNESS_SEC2" ,
                  "MAX_THICKNESS_SEC3" ,

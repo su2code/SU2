@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -110,6 +110,18 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   if (runtime_file) {
     config->SetnExtIter(nExtIter);
   }
+
+}
+
+SU2_Comm CConfig::GetMPICommunicator() {
+
+  return SU2_Communicator;
+
+}
+
+void CConfig::SetMPICommunicator(SU2_Comm Communicator) {
+
+  SU2_Communicator = Communicator;
 
 }
 
@@ -269,6 +281,7 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
   return (unsigned short) nDim;
 }
+
 void CConfig::SetPointersNull(void) {
   
   Marker_CfgFile_Out_1D       = NULL;   Marker_All_Out_1D        = NULL;
@@ -384,7 +397,7 @@ void CConfig::SetPointersNull(void) {
   PlaneTag            = NULL;
   Kappa_Flow	      = NULL;    
   Kappa_AdjFlow       = NULL;
-  Section_Location    = NULL;
+  Section_WingBounds    = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
   Design_Variable     = NULL;
@@ -404,7 +417,7 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Moving mesh pointers ---*/
 
-  Kind_GridMovement	  = NULL;
+  Kind_GridMovement	  = NULL;    LocationStations	  = NULL;
   Motion_Origin_X     = NULL;    Motion_Origin_Y     = NULL;    Motion_Origin_Z	    = NULL;
   Translation_Rate_X  = NULL;    Translation_Rate_Y  = NULL;    Translation_Rate_Z  = NULL;
   Rotation_Rate_X     = NULL;    Rotation_Rate_Y     = NULL;    Rotation_Rate_Z     = NULL;
@@ -438,6 +451,7 @@ void CConfig::SetPointersNull(void) {
   default_grid_fix      = NULL;
   default_inc_crit      = NULL;
   default_htp_axis      = NULL;
+  default_body_force    = NULL;
 
   Riemann_FlowDir= NULL;
   NRBC_FlowDir = NULL;
@@ -505,6 +519,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_grid_fix      = new su2double[6];
   default_inc_crit      = new su2double[3];
   default_htp_axis      = new su2double[2];
+  default_body_force    = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -534,10 +549,21 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
+  /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
+  addBoolOption("BODY_FORCE", Body_Force, false);
+  default_body_force[0] = 0.0; default_body_force[1] = 0.0; default_body_force[2] = 0.0;
+  /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
+  addDoubleArrayOption("BODY_FORCE_VECTOR", 3, Body_Force_Vector, default_body_force);
   /* DESCRIPTION: Perform a low fidelity simulation */
   addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
+  /*!\brief UPDATE_RESTART_PARAMS \n DESCRIPTION: Update some parameters from a metadata file when restarting \n Options: NO, YES \ingroup Config */
+  addBoolOption("UPDATE_RESTART_PARAMS", Update_Restart_Params, false);
+  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_BINARY_RESTART", Wrt_Binary_Restart, true);
+  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
+  addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
@@ -683,6 +709,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
   /*!\brief REF_AREA\n DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) \ingroup Config*/
   addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
+  /*!\brief SEMI_SPAN\n DESCRIPTION: Wing semi-span (1 by deafult) \ingroup Config*/
+  addDoubleOption("SEMI_SPAN", SemiSpan, 1.0);
   /*!\brief REF_LENGTH_MOMENT\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
   addDoubleOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
   /*!\brief REF_ELEM_LENGTH\n DESCRIPTION: Reference element length for computing the slope limiter epsilon \ingroup Config*/
@@ -1114,15 +1142,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   default_geo_loc[0] = 0.0; default_geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
-  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_geo_loc);
+  addDoubleArrayOption("GEO_WING_BOUNDS", 2, Section_WingBounds, default_geo_loc);
   /* DESCRIPTION: Identify the axis of the section */
-  addEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, Y_AXIS);
-  /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
-  addUnsignedShortOption("GEO_NUMBER_SECTIONS", nSections, 5);
+  addEnumOption("GEO_AXIS_STATIONS", Axis_Stations, Axis_Stations_Map, Y_AXIS);
   /* DESCRIPTION: Number of section cuts to make when calculating internal volume */
-  addUnsignedShortOption("GEO_VOLUME_SECTIONS", nVolSections, 101);
+  addUnsignedShortOption("GEO_WING_STATIONS", nWingStations, 101);
+  /* DESCRIPTION: Definition of the airfoil sections */
+  addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
   /* DESCRIPTION: Output sectional forces for specified markers. */
-  addBoolOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, false);
+  addBoolOption("GEO_PLOT_STATIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
   addEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, FUNCTION);
 
@@ -2926,7 +2954,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == RANS                   ) ||
              ( Kind_Solver == ADJ_RANS               ) );
   
-  
+  /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
+
+  Section_WingBounds[0] += EPS;
+  Section_WingBounds[1] += EPS;
+
+  for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+    LocationStations[iSections] += EPS;
+  }
+
   /*--- Re-scale the length based parameters. The US system uses feet,
    but SU2 assumes that the grid is in inches ---*/
   
@@ -2950,13 +2986,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
     Highlite_Area = Highlite_Area/144.0;
+    SemiSpan = SemiSpan/12.0;
 
     EA_IntLimit[0] = EA_IntLimit[0]/12.0;
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;
     
-    Section_Location[0] = Section_Location[0]/12.0;
-    Section_Location[1] = Section_Location[1]/12.0;
+    for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+      LocationStations[iSections] = LocationStations[iSections]/12.0;
+    }
+
+    Section_WingBounds[0] = Section_WingBounds[0]/12.0;
+    Section_WingBounds[1] = Section_WingBounds[1]/12.0;
     
     SubsonicEngine_Cyl[0] = SubsonicEngine_Cyl[0]/12.0;
     SubsonicEngine_Cyl[1] = SubsonicEngine_Cyl[1]/12.0;
@@ -3587,7 +3628,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.3.0  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 5.0.0  \"Raven\"                            |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3613,7 +3654,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
   cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |" << endl;
+  cout << "| Copyright (C) 2012-2017 SU2, the open-source CFD code.                |" << endl;
   cout << "|                                                                       |" << endl;
   cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
   cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -3724,6 +3765,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if (Restart) {
+      if (Read_Binary_Restart) cout << "Reading and writing binary SU2 native restart files." << endl;
+      else cout << "Reading and writing ASCII SU2 native restart files." << endl;
       if (!ContinuousAdjoint && Kind_Solver != FEM_ELASTICITY) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
       if (ContinuousAdjoint) cout << "Read adjoint solution from: " << Solution_AdjFileName << "." << endl;
       if (Kind_Solver == FEM_ELASTICITY) cout << "Read structural solution from: " << Solution_FEMFileName << "." << endl;
@@ -4319,6 +4362,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "A Linelet method is used for smoothing the linear system." << endl;
               break;
           }
+          break;
+        case CLASSICAL_RK4_EXPLICIT:
+          cout << "Classical RK4 explicit method for the flow equations." << endl;
+          cout << "Number of steps: " << 4 << endl;
+          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
+          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
           break;
       }
     }
@@ -5148,6 +5197,10 @@ CConfig::~CConfig(void) {
 
  if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
 
+ /*--- Free memory for airfoil sections ---*/
+
+ if (LocationStations   != NULL) delete [] LocationStations;
+
   /*--- motion origin: ---*/
   
   if (Motion_Origin_X   != NULL) delete [] Motion_Origin_X;
@@ -5476,6 +5529,7 @@ CConfig::~CConfig(void) {
   if (default_grid_fix      != NULL) delete [] default_grid_fix;
   if (default_inc_crit      != NULL) delete [] default_inc_crit;
   if (default_htp_axis      != NULL) delete [] default_htp_axis;
+  if (default_body_force    != NULL) delete [] default_body_force;
 
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;

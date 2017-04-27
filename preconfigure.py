@@ -3,7 +3,7 @@
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -567,7 +567,7 @@ def header():
 
     print '-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 4.3.0 \'Cardinal\'                          | \n'\
+          '|   / __| | | |_  )   Release 5.0.0 \'Raven\'                             | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
@@ -584,7 +584,7 @@ def header():
           '| - Prof. Edwin van der Weide\'s group at the University of Twente.      | \n'\
           '| - Prof. Vincent Terrapon\'s group at the University of Liege.          | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| Copyright (C) 2012-2016 SU2, the open-source CFD code.                | \n'\
+          '| Copyright (C) 2012-2017 SU2, the open-source CFD code.                | \n'\
           '|                                                                       | \n'\
           '| SU2 is free software; you can redistribute it and/or                  | \n'\
           '| modify it under the terms of the GNU Lesser General Public            | \n'\

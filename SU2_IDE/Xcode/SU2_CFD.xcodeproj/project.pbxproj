@@ -144,14 +144,14 @@
 		05E6DB9117EB61E600FA1F7E /* vector_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = vector_structure.cpp; path = ../../Common/src/vector_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBB017EB624700FA1F7E /* integration_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = integration_structure.inl; path = ../../SU2_CFD/include/integration_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBB117EB624700FA1F7E /* numerics_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = numerics_structure.inl; path = ../../SU2_CFD/include/numerics_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		05E6DBB217EB624700FA1F7E /* solver_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = solver_structure.inl; path = ../../SU2_CFD/include/solver_structure.inl; sourceTree = "<group>"; };
+		05E6DBB217EB624700FA1F7E /* solver_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = solver_structure.inl; path = ../../SU2_CFD/include/solver_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBB317EB624700FA1F7E /* variable_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = variable_structure.inl; path = ../../SU2_CFD/include/variable_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBB417EB627400FA1F7E /* definition_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = definition_structure.hpp; path = ../../SU2_CFD/include/definition_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBB517EB627400FA1F7E /* integration_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = integration_structure.hpp; path = ../../SU2_CFD/include/integration_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBB617EB627400FA1F7E /* iteration_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = iteration_structure.hpp; path = ../../SU2_CFD/include/iteration_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBB717EB627400FA1F7E /* numerics_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = numerics_structure.hpp; path = ../../SU2_CFD/include/numerics_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBB817EB627400FA1F7E /* output_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = output_structure.hpp; path = ../../SU2_CFD/include/output_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		05E6DBB917EB627400FA1F7E /* solver_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = solver_structure.hpp; path = ../../SU2_CFD/include/solver_structure.hpp; sourceTree = "<group>"; };
+		05E6DBB917EB627400FA1F7E /* solver_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = solver_structure.hpp; path = ../../SU2_CFD/include/solver_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBBA17EB627400FA1F7E /* SU2_CFD.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = SU2_CFD.hpp; path = ../../SU2_CFD/include/SU2_CFD.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBBB17EB627400FA1F7E /* variable_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = variable_structure.hpp; path = ../../SU2_CFD/include/variable_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = definition_structure.cpp; path = ../../SU2_CFD/src/definition_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -167,7 +167,7 @@
 		05E6DBD017EB62A100FA1F7E /* numerics_direct_wave.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_direct_wave.cpp; path = ../../SU2_CFD/src/numerics_direct_wave.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBD317EB62A100FA1F7E /* numerics_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_structure.cpp; path = ../../SU2_CFD/src/numerics_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBD417EB62A100FA1F7E /* numerics_template.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_template.cpp; path = ../../SU2_CFD/src/numerics_template.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		05E6DBD517EB62A100FA1F7E /* output_cgns.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = output_cgns.cpp; path = ../../SU2_CFD/src/output_cgns.cpp; sourceTree = "<group>"; };
+		05E6DBD517EB62A100FA1F7E /* output_cgns.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = output_cgns.cpp; path = ../../SU2_CFD/src/output_cgns.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBD617EB62A100FA1F7E /* output_paraview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = output_paraview.cpp; path = ../../SU2_CFD/src/output_paraview.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBD717EB62A100FA1F7E /* output_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = output_structure.cpp; path = ../../SU2_CFD/src/output_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DBD817EB62A100FA1F7E /* output_tecplot.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = output_tecplot.cpp; path = ../../SU2_CFD/src/output_tecplot.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -287,10 +287,6 @@
 		E941BB911B71D124005C6C06 /* mpi_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = mpi_structure.cpp; path = ../../Common/src/mpi_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BB951B71D1AB005C6C06 /* datatype_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = datatype_structure.hpp; path = ../../Common/include/datatype_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BB961B71D1AB005C6C06 /* datatype_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = datatype_structure.inl; path = ../../Common/include/datatype_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		E941BB981B71D1AB005C6C06 /* adolc_forward_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = adolc_forward_structure.hpp; sourceTree = "<group>"; };
-		E941BB991B71D1AB005C6C06 /* adolc_forward_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = adolc_forward_structure.inl; sourceTree = "<group>"; };
-		E941BB9A1B71D1AB005C6C06 /* adolc_reverse_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = adolc_reverse_structure.hpp; sourceTree = "<group>"; };
-		E941BB9B1B71D1AB005C6C06 /* adolc_reverse_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = adolc_reverse_structure.inl; sourceTree = "<group>"; };
 		E941BB9C1B71D1AB005C6C06 /* codi_forward_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; path = codi_forward_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BB9D1B71D1AB005C6C06 /* codi_forward_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; path = codi_forward_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BB9E1B71D1AB005C6C06 /* codi_reverse_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; path = codi_reverse_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -307,13 +303,13 @@
 		E9AA98A61BB3436900B7FE37 /* driver_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = driver_structure.cpp; path = ../../SU2_CFD/src/driver_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9AA98A81BB3438F00B7FE37 /* driver_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = driver_structure.hpp; path = ../../SU2_CFD/include/driver_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9D85B4B1C3F1B9E0077122F /* ad_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = ad_structure.cpp; path = ../../Common/src/ad_structure.cpp; sourceTree = "<group>"; };
-		E9D85B4D1C3F1BE00077122F /* ad_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ad_structure.hpp; path = ../../Common/include/ad_structure.hpp; sourceTree = "<group>"; };
-		E9D85B4E1C3F1BE00077122F /* ad_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ad_structure.inl; path = ../../Common/include/ad_structure.inl; sourceTree = "<group>"; };
+		E9D85B4D1C3F1BE00077122F /* ad_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = ad_structure.hpp; path = ../../Common/include/ad_structure.hpp; sourceTree = "<group>"; };
+		E9D85B4E1C3F1BE00077122F /* ad_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = ad_structure.inl; path = ../../Common/include/ad_structure.inl; sourceTree = "<group>"; };
 		E9D85B4F1C3F1BE00077122F /* element_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = element_structure.hpp; path = ../../Common/include/element_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9D85B501C3F1BE00077122F /* element_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = element_structure.inl; path = ../../Common/include/element_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9D85B511C3F1BE10077122F /* gauss_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = gauss_structure.hpp; path = ../../Common/include/gauss_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9D85B521C3F1BE10077122F /* gauss_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = gauss_structure.inl; path = ../../Common/include/gauss_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		E9D9CE851C62A1A7004119E9 /* interpolation_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = interpolation_structure.cpp; path = ../../Common/src/interpolation_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		E9D9CE851C62A1A7004119E9 /* interpolation_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = interpolation_structure.cpp; path = ../../Common/src/interpolation_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9D9CE871C62A1C8004119E9 /* transfer_physics.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = transfer_physics.cpp; path = ../../SU2_CFD/src/transfer_physics.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9D9CE881C62A1C8004119E9 /* transfer_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = transfer_structure.cpp; path = ../../SU2_CFD/src/transfer_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9D9CE951C62A272004119E9 /* transfer_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = transfer_structure.hpp; path = ../../SU2_CFD/include/transfer_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -321,14 +317,14 @@
 		E9D9CE971C62A2A7004119E9 /* interpolation_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = interpolation_structure.hpp; path = ../../Common/include/interpolation_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9D9CE981C6563B3004119E9 /* parallel_regression_AD.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = parallel_regression_AD.py; sourceTree = "<group>"; };
 		E9D9CE991C6563B3004119E9 /* serial_regression_AD.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = serial_regression_AD.py; sourceTree = "<group>"; };
-		E9F130C51D513DA300EC8963 /* numerics_adjoint_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_adjoint_mean_inc.cpp; path = ../../SU2_CFD/src/numerics_adjoint_mean_inc.cpp; sourceTree = "<group>"; };
-		E9F130C61D513DA300EC8963 /* numerics_direct_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_mean_inc.cpp; path = ../../SU2_CFD/src/numerics_direct_mean_inc.cpp; sourceTree = "<group>"; };
+		E9F130C51D513DA300EC8963 /* numerics_adjoint_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_adjoint_mean_inc.cpp; path = ../../SU2_CFD/src/numerics_adjoint_mean_inc.cpp; sourceTree = "<group>"; };
+		E9F130C61D513DA300EC8963 /* numerics_direct_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_direct_mean_inc.cpp; path = ../../SU2_CFD/src/numerics_direct_mean_inc.cpp; sourceTree = "<group>"; };
 		E9F130C71D513DA300EC8963 /* solver_adjoint_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_mean_inc.cpp; path = ../../SU2_CFD/src/solver_adjoint_mean_inc.cpp; sourceTree = "<group>"; };
-		E9F130C81D513DA300EC8963 /* solver_direct_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_mean_inc.cpp; path = ../../SU2_CFD/src/solver_direct_mean_inc.cpp; sourceTree = "<group>"; };
-		E9F130C91D513DA300EC8963 /* variable_adjoint_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_adjoint_mean_inc.cpp; path = ../../SU2_CFD/src/variable_adjoint_mean_inc.cpp; sourceTree = "<group>"; };
-		E9F130CA1D513DA300EC8963 /* variable_direct_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_mean_inc.cpp; path = ../../SU2_CFD/src/variable_direct_mean_inc.cpp; sourceTree = "<group>"; };
-		E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity_linear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_linear.cpp; sourceTree = "<group>"; };
-		E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity_nonlinear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_nonlinear.cpp; sourceTree = "<group>"; };
+		E9F130C81D513DA300EC8963 /* solver_direct_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = solver_direct_mean_inc.cpp; path = ../../SU2_CFD/src/solver_direct_mean_inc.cpp; sourceTree = "<group>"; };
+		E9F130C91D513DA300EC8963 /* variable_adjoint_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = variable_adjoint_mean_inc.cpp; path = ../../SU2_CFD/src/variable_adjoint_mean_inc.cpp; sourceTree = "<group>"; };
+		E9F130CA1D513DA300EC8963 /* variable_direct_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = variable_direct_mean_inc.cpp; path = ../../SU2_CFD/src/variable_direct_mean_inc.cpp; sourceTree = "<group>"; };
+		E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_direct_elasticity_linear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_linear.cpp; sourceTree = "<group>"; };
+		E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_direct_elasticity_nonlinear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_nonlinear.cpp; sourceTree = "<group>"; };
 		E9F5F1B41CFF9CA200522F68 /* def_brick_hex.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_brick_hex.cfg; sourceTree = "<group>"; };
 		E9F5F1B71CFF9CA200522F68 /* def_brick_hex_rans.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_brick_hex_rans.cfg; sourceTree = "<group>"; };
 		E9F5F1BA1CFF9CA200522F68 /* def_brick_prism.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_brick_prism.cfg; sourceTree = "<group>"; };
@@ -340,7 +336,7 @@
 		E9F5F1D11CFF9CA200522F68 /* def_RAE2822.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_RAE2822.cfg; sourceTree = "<group>"; };
 		E9FDF6E91D2DD0560066E49C /* adt_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = adt_structure.cpp; path = ../../Common/src/adt_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9FDF6EB1D2DD0710066E49C /* adt_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = adt_structure.inl; path = ../../Common/include/adt_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		E9FDF6EC1D2DD0860066E49C /* adt_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = adt_structure.hpp; path = ../../Common/include/adt_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		E9FDF6EC1D2DD0860066E49C /* adt_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = adt_structure.hpp; path = ../../Common/include/adt_structure.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1353,10 +1349,6 @@
 		E941BB971B71D1AB005C6C06 /* datatypes */ = {
 			isa = PBXGroup;
 			children = (
-				E941BB981B71D1AB005C6C06 /* adolc_forward_structure.hpp */,
-				E941BB991B71D1AB005C6C06 /* adolc_forward_structure.inl */,
-				E941BB9A1B71D1AB005C6C06 /* adolc_reverse_structure.hpp */,
-				E941BB9B1B71D1AB005C6C06 /* adolc_reverse_structure.inl */,
 				E941BB9C1B71D1AB005C6C06 /* codi_forward_structure.hpp */,
 				E941BB9D1B71D1AB005C6C06 /* codi_forward_structure.inl */,
 				E941BB9E1B71D1AB005C6C06 /* codi_reverse_structure.hpp */,
@@ -1624,7 +1616,7 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4.3.0;
+				CURRENT_PROJECT_VERSION = 5.0.0;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -1679,7 +1671,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CURRENT_PROJECT_VERSION = 4.3.0;
+				CURRENT_PROJECT_VERSION = 5.0.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;

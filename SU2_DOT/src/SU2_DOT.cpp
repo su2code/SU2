@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -46,8 +46,11 @@ int main(int argc, char *argv[]) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
+  MPI_Comm_rank(MPICommunicator,&rank);
+  MPI_Comm_size(MPICommunicator,&size);
+#else
+  SU2_Comm MPICommunicator(0);
 #endif
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -84,7 +87,10 @@ int main(int argc, char *argv[]) {
      read and stored. ---*/
     
     config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
-    
+
+    /*--- Set the MPI communicator ---*/
+    config_container[iZone]->SetMPICommunicator(MPICommunicator);
+        
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
     CGeometry *geometry_aux = NULL;
@@ -153,7 +159,12 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
   geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
-  
+
+  /*--- Store the global to local mapping after preprocessing. ---*/
+ 
+  if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+  geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
+ 
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
