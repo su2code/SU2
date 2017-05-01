@@ -12142,18 +12142,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       Energy_b = FluidModel->GetStaticEnergy() + 0.5*Velocity2_b;
       Temperature_b= FluidModel->GetTemperature();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
-      if (abs(AverageTurboMach[0]) >= 1.0000){
-        Pressure_b = Pressure_i;
-        Density_b = Density_i;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity_b[iDim]= Velocity_i[iDim];
-        }
-        Velocity2_b = Velocity2_i;
-        FluidModel->SetTDState_Prho(Pressure_b, Density_b);
-        Energy_b = FluidModel->GetStaticEnergy() + 0.5*Velocity2_b;
-        Temperature_b= FluidModel->GetTemperature();
-        Enthalpy_b = Energy_b + Pressure_b/Density_b;
-      }
 
       /*--- Primitive variables, using the derived quantities ---*/
       V_boundary[0] = Temperature_b;
