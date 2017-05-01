@@ -72,6 +72,8 @@ void CVanDerWaalsGas::SetTDState_rhoe (su2double rho, su2double e ) {
 }
 
 
+
+
 void CVanDerWaalsGas::SetTDState_PT (su2double P, su2double T ) {
   su2double toll= 1e-5;
   unsigned short nmax = 20, count=0;
@@ -113,6 +115,10 @@ void CVanDerWaalsGas::SetTDState_PT (su2double P, su2double T ) {
 //  cout <<"After  "<< Pressure <<" "<< Temperature << endl;
 
 }
+
+
+
+
 
 void CVanDerWaalsGas::SetTDState_Prho (su2double P, su2double rho ) {
 
@@ -305,5 +311,391 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 }
 
 
+
+
+void CVanDerWaalsGas_Generic::SetTDState_PT (su2double P, su2double T ) {
+  su2double toll= 1e-5, error;
+  unsigned short nmax = 20, count=0;
+  su2double A, B, Z, DZ=1.0, F, F1;
+  A= a*P/(T*Gas_Constant)/(T*Gas_Constant);
+  B= b*P/(T*Gas_Constant);
+
+//    Z= max(B, 0.99);
+
+//  cout <<"Before  "<< P <<" "<< T << endl;
+  if (Zed > 0.1)
+    Z=min(Zed, 0.99);
+  else
+    Z=0.99;
+
+  do{
+    F = Z*Z*Z - Z*Z*(B+1.0) + Z*A - A*B;
+    F1 = 3*Z*Z - 2*Z*(B+1.0) + A;
+    DZ = F/F1;
+    Z-= 0.7*DZ;
+    count++;
+  }while(abs(DZ)>toll && count < nmax);
+
+  if (count == nmax) {
+    cout << "Warning Newton-Raphson exceed number of max iteration in PT"<< endl;
+    cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<< endl;
+  }
+
+  // check if the solution is physical otherwise uses previous point  solution
+  if (Z <= 1.01 && Z >= 0.05 && count < nmax)
+    Zed = Z;
+
+
+  Density = P/(Zed*Gas_Constant*T);
+
+  HeatCapacity->Set_Cv0 (Temperature);
+  Cv = HeatCapacity->Get_Cv0 ();
+
+  su2double e = T*Cv - a*Density;
+  SetTDState_rhoe(Density, e);
+
+
+}
+
+void CVanDerWaalsGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
+
+  su2double toll = 1e-5;
+  unsigned short count=0, ITMAX=100;
+  su2double Temperature_new, error;
+
+  Density = rho;
+  StaticEnergy = e;
+
+  Cv    = Gas_Constant/(Gamma-1);
+  Temperature = (StaticEnergy + a*Density) * Gas_Constant / (Gamma - 1);
+
+  count= 0;
+
+  do{
+	Temperature_new = Temperature;
+	HeatCapacity->Set_Cv0 (Temperature_new);
+	Cv = HeatCapacity->Get_Cv0 ();
+	Temperature = (StaticEnergy + a*Density)/ Cv;
+	error = abs(Temperature_new-Temperature)/Temperature_new;
+	count++;
+	}
+
+  while(error > toll && count<ITMAX);
+
+  if (count==ITMAX) {
+	 cout <<"Too many iterations for T in e-rho call" << endl;
+  }
+
+  SetGamma_Trho (Temperature, rho);
+
+  Gamma_Minus_One = Gamma - 1;
+  Pressure =Temperature*Gas_Constant*Density/(1.0-Density*b) - a*Density*Density;
+  Entropy = Cv * log(Temperature) + Gas_Constant * log(1/Density - b);
+
+
+  dPde_rho = Density*Gamma_Minus_One/(1.0 - Density*b);
+  dPdrho_e = Gamma_Minus_One/(1.0 - Density*b)*((StaticEnergy + 2*Density*a) + Density*b*(StaticEnergy + Density*a)/(1.0 - Density*b)) - 2*Density*a;
+  dTdrho_e = Gamma_Minus_One/Gas_Constant*a;
+  dTde_rho = Gamma_Minus_One/Gas_Constant;
+
+  SoundSpeed2 = dPdrho_e + Pressure/(Density*Density)*dPde_rho;
+
+  Zed = Pressure/(Gas_Constant*Temperature*Density);
+
+
+}
+
+
+void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
+
+    su2double v, T, rho, f, fmid, rtb, T_new, error;
+    su2double x1,x2,xmid, dx, fx1, fx2;
+    su2double toll = 1e-5, FACTOR=0.2;
+    unsigned short count=0, NTRY=10, ITMAX=100;
+    su2double cons_s, cons_h;
+
+
+    Cp = Gamma*Gas_Constant /(Gamma - 1);
+    T_new  = h/Cp;
+
+	  do{
+		T = T_new;
+		HeatCapacity->Set_Cv0 (T);
+		Cv = HeatCapacity->Get_Cv0 ();
+		Cp = -Gas_Constant * T/ pow(1/rho - b, 2) + 2*a*pow(rho, 3);
+		Cp = Cv - T* pow(Gas_Constant / ( 1/rho - b ) , 2 ) / Cp;
+		T_new = h/Cp;
+		error = abs(T - T_new)/T;
+
+		count++;
+	  }while(error >toll && count < ITMAX);
+
+	  // check on count
+
+	  count = 0;
+	  error = 1;
+
+	  v = exp((s - Cv*log(T)) / Gas_Constant) ;
+
+	  if (Zed<0.9999) {
+		x1 = Zed*v;
+		x2 = v;
+
+	  } else {
+		x1 = 0.5*v;
+		x2 = v;
+	  }
+
+
+	  fx2 = log(x2-b) - s/Gas_Constant + log(T)*Cv/Gas_Constant;
+	  T_new = (h+ 2*a/x1)/(Cv + Gas_Constant * x1/(x1-b));
+
+	  do{
+		T = T_new;
+		HeatCapacity->Set_Cv0 (T);
+		Cv = HeatCapacity->Get_Cv0 ();
+		T_new = (h+ 2*a/x1)/(Cv + Gas_Constant * x1/(x1-b));
+		error = abs(T - T_new)/T;
+		count++;
+	  }while(error >toll && count < ITMAX);
+	  count = 0;
+	  error = 1;
+
+	  fx1 = log(x1-b) - s/Gas_Constant + log(T)*Cv/Gas_Constant;
+
+	  // zbrac algorithm NR
+
+	  for (int j=1; j<=NTRY; j++) {
+		if (fx1*fx2 > 0.0) {
+		  if (fabs(fx1) < fabs(fx2)) {
+			x1 += FACTOR*(x1-x2);
+			T_new = (h+ 2*a/x1)/(Cv + Gas_Constant * x1/(x1-b));
+
+			do{
+				T = T_new;
+				HeatCapacity->Set_Cv0 (T);
+				Cv = HeatCapacity->Get_Cv0 ();
+				T_new = (h+ 2*a/x1)/(Cv + Gas_Constant * x1/(x1-b));
+				error = abs(T - T_new)/T;
+				count++;
+			}while(error >toll && count < ITMAX);
+			  count = 0;
+			  error = 1;
+
+
+			fx1 = log(x1-b) - s/Gas_Constant + log(T)*Cv/Gas_Constant;
+		  } else {
+			x2 += FACTOR*(x2-x1);
+			T_new = (h+ 2*a/x2)/(Cv + Gas_Constant * x2/(x2-b));
+
+			do{
+				T = T_new;
+				HeatCapacity->Set_Cv0 (T);
+				Cv = HeatCapacity->Get_Cv0 ();
+				T_new = (h+ 2*a/x2)/(Cv + Gas_Constant * x2/(x2-b));
+				error = abs(T - T_new)/T;
+				count++;
+			}while(error >toll && count < ITMAX);
+			  count = 0;
+			  error = 1;
+
+
+			fx2 = log(x2-b) - s/Gas_Constant + log(T)*Cv/Gas_Constant;
+			}
+		}
+	  }
+
+
+	  // rtbis algorithm NR
+
+	f=fx1;
+	fmid=fx2;
+	if (f*fmid >= 0.0) {
+	  cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+	  SetTDState_rhoT(Density, Temperature);
+	}
+	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+	do{
+	  xmid=rtb+(dx *= 0.5);
+
+	  do{
+		  T = T_new;
+		  HeatCapacity->Set_Cv0 (T);
+		  Cv = HeatCapacity->Get_Cv0 ();
+		  T_new = (h+ 2*a/xmid)/(Cv + Gas_Constant * xmid/(xmid-b));
+		  error = abs(T - T_new)/T;
+		  count++;
+	  }while(error >toll && count < ITMAX);
+	  count = 0;
+	  error = 1;
+
+	  fmid = log(xmid-b) - s/Gas_Constant + log(T)*Cv/Gas_Constant;
+
+	  if (fmid <= 0.0) rtb=xmid;
+	  count++;
+	  }while(abs(fmid) > toll && count<ITMAX);
+
+	  v = xmid;
+	  if (count==ITMAX) {
+		cout <<"Too many bisections in rtbis" << endl;
+	  }
+
+
+	rho = 1/v;
+	T= (h+ 2*a/v)/(Cv + Gas_Constant * v/(v-b));
+	SetTDState_rhoT(rho, T);
+
+	cons_h= abs(((StaticEnergy + Pressure/Density) - h)/h);
+	cons_s= abs((Entropy-s)/s);
+
+	if (cons_h >1e-3 || cons_s >1e-3) {
+	  cout<< "TD consistency not verified in hs call"<< endl;
+	}
+
+	SetGamma_Trho (T, rho);
+}
+
+
+
+void CVanDerWaalsGas_Generic::SetEnergy_Prho (su2double P, su2double rho ) {
+  su2double T = (P+rho*rho*a)*(1-rho*b)/(rho*Gas_Constant);
+  HeatCapacity->Set_Cv0 (T);
+  Cv = HeatCapacity->Get_Cv0 ();
+  StaticEnergy = T*Cv - rho*a;
+}
+
+void CVanDerWaalsGas_Generic::SetTDState_rhoT (su2double rho, su2double T) {
+
+  HeatCapacity->Set_Cv0 (T);
+  Cv = HeatCapacity->Get_Cv0 ();
+  su2double e = T*Cv - a*rho;
+  SetTDState_rhoe(rho, e);
+
+}
+
+void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
+
+  su2double T, rho, cons_P, cons_s, T_new, error, v, Tmid;
+  su2double x1,x2, fx1, fx2,f, fmid, T1,T2, rtb, dx, xmid;
+  su2double toll = 1e-5, FACTOR=0.2;
+  unsigned short count=0, NTRY=10, ITMAX=100;
+
+
+  T_new   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+
+  do{
+     	  T = T_new;
+		  HeatCapacity->Set_Cv0 (T);
+		  Cv = HeatCapacity->Get_Cv0 ();
+
+		  v =  exp((s - Cv*log(T))/Gas_Constant) + b;
+		  T_new = (P + a/v/v) * (v - b)/ Gas_Constant;
+
+		  error = abs(T - T_new)/T;
+		  count++;
+	}while(error >toll && count < ITMAX);
+    count = 0;
+    error = 1;
+
+	rho = 1/v;
+
+	if(Zed<0.9999) {
+	  x1 = rho;
+	  x2 = rho/Zed;
+
+	}else {
+	  x1 = rho;
+	  x2 = rho/0.5;
+	}
+
+	T1 = (P+x1*x1*a)*((1-x1*b)/(x1*Gas_Constant));
+	HeatCapacity->Set_Cv0 (T1);
+	Cv = HeatCapacity->Get_Cv0 ();
+
+	fx1 = log(T1)*Cv + Gas_Constant *log(1/x1 - b) - s;
+
+	T2 = (P+x2*x2*a)*((1-x2*b)/(x2*Gas_Constant));
+	HeatCapacity->Set_Cv0 (T2);
+	Cv = HeatCapacity->Get_Cv0 ();
+	fx2 = log(T2)*Cv + Gas_Constant *log(1/x2 - b) - s;
+
+	// zbrac algorithm NR
+
+	for (int j=1;j<=NTRY;j++) {
+	  if (fx1*fx2 > 0.0) {
+		if (fabs(fx1) < fabs(fx2)) {
+		  x1 += FACTOR*(x1-x2);
+		  T1 = (P+x1*x1*a)*((1-x1*b)/(x1*Gas_Constant));
+		  HeatCapacity->Set_Cv0 (T1);
+		  Cv = HeatCapacity->Get_Cv0 ();
+
+		  fx1 = log(T1)*Cv + Gas_Constant *log(1/x1 - b) - s;
+		}else {
+		  x2 += FACTOR*(x2-x1);
+		  T2 = (P+x2*x2*a)*((1-x2*b)/(x2*Gas_Constant));
+		  HeatCapacity->Set_Cv0 (T2);
+		  Cv = HeatCapacity->Get_Cv0 ();
+		  fx2 = log(T2)*Cv + Gas_Constant *log(1/x2 - b) - s;
+		  }
+	  }
+	}
+
+
+	// rtbis algorithm NR
+
+  f=fx1;
+  fmid=fx2;
+  if (f*fmid >= 0.0) {
+	cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+	SetTDState_rhoT(Density, Temperature);
+  }
+  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+
+  do{
+	xmid=rtb+(dx *= 0.5);
+	Tmid = (P+xmid*xmid*a)*((1-xmid*b)/(xmid*Gas_Constant));
+	HeatCapacity->Set_Cv0 (Tmid);
+	Cv = HeatCapacity->Get_Cv0 ();
+	fmid = log(Tmid)*Cv + Gas_Constant *log(1/xmid - b) - s;
+	if (fmid <= 0.0) rtb=xmid;
+	count++;
+	}while(abs(fmid) > toll && count<ITMAX);
+
+	if(count==ITMAX) {
+	  cout <<"Too many bisections in rtbis" << endl;
+	}
+
+    count = 0;
+    error = 1;
+
+
+  rho = xmid;
+  T= (P+rho*rho*a)*((1-rho*b)/(rho*Gas_Constant));
+  SetTDState_rhoT(rho, T);
+
+  cons_P= abs((Pressure -P)/P);
+  cons_s= abs((Entropy-s)/s);
+
+  if(cons_P >1e-3 || cons_s >1e-3) {
+	cout<< "TD consistency not verified in hs call"<< endl;
+  }
+
+  SetGamma_Trho (T, rho);
+
+}
+
+
+void CVanDerWaalsGas_Generic::SetGamma_Trho (su2double T, su2double rho) {
+
+  su2double CpmCv;
+
+  CpmCv = -T * pow(Gas_Constant / (1/rho - b), 2);
+  CpmCv = CpmCv / (-Gas_Constant*T / pow(1/rho-b, 2) + 2*a * pow(rho, 3));
+
+  Cp = Cv + CpmCv;
+
+  Gamma = Cp/Cv;
+
+}
 
 
