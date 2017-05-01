@@ -2824,14 +2824,17 @@ void CDriver::TurbomachineryPreprocessing(){
     for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
       for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
         if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
-          interpolator_container[jTimeInstance][iTimeInstance]->SetSpanWiseLevels(config_container[iTimeInstance]);
+          interpolator_container[iTimeInstance][jTimeInstance]->SetSpanWiseLevels(config_container[jTimeInstance]);
     }
 
     for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
-      for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
-        if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
-          interpolator_container[iTimeInstance][jTimeInstance]->Preprocessing_InterpolationInterface(geometry_container[iTimeInstance][MESH_0], geometry_container[jTimeInstance][MESH_0],
-              config_container[iTimeInstance], config_container[jTimeInstance], iMarkerInt);
+      nMarkerInt     = config_container[iTimeInstance]->GetnMarker_MixingPlaneInterface()/2;
+      for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+        for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
+          if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
+            interpolator_container[iTimeInstance][jTimeInstance]->Preprocessing_InterpolationInterface(geometry_container[iTimeInstance][MESH_0], geometry_container[jTimeInstance][MESH_0],
+                config_container[iTimeInstance], config_container[jTimeInstance], iMarkerInt);
+      }
     }
 
     for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
@@ -4927,7 +4930,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
 
           if (!adjoint) {
             U[iVar] = solver_container[jTimeInstance+iGeomZone*nTimeInstances][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-//            Source[iVar] += U[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
+            Source[iVar] += U[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
 
             if (implicit) {
               U_old[iVar] = solver_container[jTimeInstance+iGeomZone*nTimeInstances][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
@@ -4944,7 +4947,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
             if (implicit) {
               Psi_old[iVar] = solver_container[iTimeInstance][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
               deltaPsi = Psi[iVar] - Psi_old[iVar];
-//              Source[iVar] += deltaPsi*D[jTimeInstance][iTimeInstance%nTimeInstances];
+              Source[iVar] += deltaPsi*D[jTimeInstance][iTimeInstance%nTimeInstances];
             }
           }
         }

@@ -1400,7 +1400,8 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   su2double PitchTarget, AngularCoord_Target,  MinAngularCoord_Target, MaxAngularCoord_Target;
   su2double PitchDonor, AngularCoord_Donor, MinAngularCoord_Donor, MaxAngularCoord_Donor;
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
-
+// TEST VARIABLES
+  su2double x_don, x_tar, y_don, y_tar, R;
 #ifdef HAVE_MPI
 
   int rank = MASTER_NODE;
@@ -1533,6 +1534,8 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
           /*--- Coordinates of the boundary point ---*/
           Coord_i = target_geometry->node[Point_Target]->GetCoord();
           AngularCoord_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetAngularCoord();
+//          RADIUS FOR TEST ONLY
+          R = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetRadiusCoord();
 
           mindist    = HUGE;
           pProcessor = 0;
@@ -1543,12 +1546,14 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
           for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
             for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
+
               Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
 
               /*--- Compute the dist ---*/
               dist  = 0.0;
 
               AngularCoord_Donor = Buffer_Receive_Coord[ Global_Point_Donor];
+
               if ( AngularCoord_Donor > MaxAngularCoord_Target ){
                 dist = abs(AngularCoord_Donor - (AngularCoord_Target + PitchTarget));
               }
@@ -1558,20 +1563,29 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
               }
               else
                 dist = abs(AngularCoord_Donor - AngularCoord_Target);
-              //            cout << "Pitch Target        : " << PitchTarget << endl;
-              //            cout << "MaxAngular_Target  : " <<  MaxAngularCoord_Target << endl;
-              //            cout << "MinAngular_Target  : " <<  MinAngularCoord_Target << endl;
-              //            cout << "AngularCoord_Donor : " <<  AngularCoord_Donor << endl;
-              //            cout << "AngularCoord_Target: " <<  AngularCoord_Target << endl;
-              //            cout << "Distance           : " <<  dist                << endl;
-              //            cout << endl;
+
+//              cout << endl;
+//              cout << "SpanTarget-->Donor : " << iSpan << " --> " << SpanLevelDonor[iSpan] << endl;
+//              cout << "Pitch Target       : " << PitchTarget << endl;
+//              cout << "Radius             : " << R << endl;
+//              cout << "MaxAngular_Target  : " <<  MaxAngularCoord_Target << endl;
+//              cout << "MinAngular_Target  : " <<  MinAngularCoord_Target << endl;
+//              cout << "AngularCoord_Donor : " <<  AngularCoord_Donor << endl;
+//              cout << "AngularCoord_Target: " <<  AngularCoord_Target << endl;
+//              cout << "Linear Pitch       : " << PitchTarget*R << endl;
+//              cout << "xy_Max_Target      : " << R*cos(MaxAngularCoord_Target) << "   " << R*sin(MaxAngularCoord_Target) << endl;
+//              cout << "xy_Min_Target      : " << R*cos(MinAngularCoord_Target) << "   " << R*sin(MinAngularCoord_Target) << endl;
+//              cout << "xy Coord_Donor     : " << R*cos(AngularCoord_Donor)     << "   " << R*sin(AngularCoord_Donor) << endl;
+//              cout << "xy Coord_Target    : " << R*cos(AngularCoord_Target)    << "   " << R*sin(AngularCoord_Target) << endl;
+//              cout << "Distance           : " <<  dist                << endl;
+//              cout << endl;
 
               if (dist < mindist) {
                 mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
                 donor_count = jVertex;
               }
 
-              //            cout << "Min Distance       : " <<  mindist             << endl;
+//              cout << "Min Distance       : " <<  mindist             << endl;
               if (dist == 0.0) break;
             }
 
@@ -1579,6 +1593,8 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
           //        cout << " ========== " << node_count++  << " ==========="  << endl;
           //        cout << " ========== " << donor_count   << " ==========="  << endl;
+//          cout << " ========== ==========="  << endl;
+
           /*--- Store the value of the pair ---*/
           maxdist = max(maxdist, mindist);
           target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorPoint(iDonor, pGlobalPoint);
@@ -1845,16 +1861,12 @@ void CTurboInterpolation::Preprocessing_InterpolationInterface(CGeometry *donor_
   /*--- On the target side we have to identify the marker as well ---*/
 
   for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+//TODO this should not work with the MixingPlane interface marker. To be changed.
     /*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
     if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
       /*--- Store the identifier for the fluid marker ---*/
-
-      // here i should then store it in the target zone
-
       Marker_Target = iMarkerTarget;
       Target_Flag = target_config->GetMarker_All_TurbomachineryFlag(iMarkerTarget);
-      //					cout << " target is "<< target_config->GetMarker_All_TagBound(Marker_Target) <<" in imarker interface "<< iMarkerInt <<endl;
-      //				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
       break;
     }
     else {
@@ -1868,8 +1880,8 @@ void CTurboInterpolation::Preprocessing_InterpolationInterface(CGeometry *donor_
     SpanValuesDonor  = donor_geometry->GetSpanWiseValue(Donor_Flag);
     SpanValuesTarget = target_geometry->GetSpanWiseValue(Target_Flag);
 
-
-    for(iSpan = 1; iSpan <nSpanTarget-2; iSpan++){
+    /*--- Look for span level using nearest neighbor approach ---*/
+    for(iSpan = 0; iSpan <nSpanTarget-2; iSpan++){
       dist  = 10E+06;
       dist2 = 10E+06;
       for(jSpan = 0; jSpan < nSpanDonor;jSpan++){
