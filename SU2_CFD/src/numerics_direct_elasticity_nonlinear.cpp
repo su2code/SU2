@@ -1382,8 +1382,8 @@ CFEM_Knowles_NearInc::CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned sho
 	 * -- DOI: 10.2478/v10180-011-0021-7
 	 */
 
-	Bk = 1.0;
-	Nk = 1.0;
+	Bk = config->GetKnowles_B();
+	Nk = config->GetKnowles_N();
 
 	trbbar 	= 0.0;
 	Ek		= 0.0;

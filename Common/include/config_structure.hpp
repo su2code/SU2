@@ -726,6 +726,8 @@ private:
 	unsigned short nElectric_Constant; /*!< \brief Number of different electric constants. */
 	su2double *Electric_Constant;   /*!< \brief Dielectric constant modulus. */
 	su2double DE_Rate;							/*!< \brief Dielectric elastomer maximum rate of change. */
+  su2double Knowles_B,      /*!< \brief Knowles material model constant B. */
+  Knowles_N;                /*!< \brief Knowles material model constant N. */
 	bool DE_Effects; 						/*!< Application of DE effects to FE analysis */
   bool DE_Predicted;            /*!< Application of DE effects to FE analysis */
 	bool RefGeom; 						/*!< Read a reference geometry for optimization purposes. */
@@ -1789,6 +1791,18 @@ public:
 	 * \return Value of the DE rate of change from one iter to the next.
 	 */
 	su2double GetDE_Rate(void);
+
+  /*!
+   * \brief Get the value of the B constant in the Knowles material model.
+   * \return Value of the B constant in the Knowles material model.
+   */
+  su2double GetKnowles_B(void);
+
+  /*!
+   * \brief Get the value of the N constant in the Knowles material model.
+   * \return Value of the N constant in the Knowles material model.
+   */
+  su2double GetKnowles_N(void);
 
 	/*!
 	 * \brief Get the kind of design variable for FEA.

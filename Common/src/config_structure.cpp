@@ -1539,6 +1539,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Material density */
   //addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
   addDoubleListOption("MATERIAL_DENSITY", nMaterialDensity, MaterialDensity);
+  /* DESCRIPTION: Knowles B constant */
+  addDoubleOption("KNOWLES_B", Knowles_B, 1.0);
+  /* DESCRIPTION: Knowles N constant */
+  addDoubleOption("KNOWLES_N", Knowles_N, 1.0);
+
 
   /*  DESCRIPTION: Include DE effects
   *  Options: NO, YES \ingroup Config */

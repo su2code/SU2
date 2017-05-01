@@ -307,6 +307,10 @@ inline su2double CConfig::GetElectric_Constant(unsigned short iVar) { return Ele
 
 inline su2double CConfig::GetDE_Rate(void) { return DE_Rate; }
 
+inline su2double CConfig::GetKnowles_B(void) { return Knowles_B; }
+
+inline su2double CConfig::GetKnowles_N(void) { return Knowles_N; }
+
 inline unsigned short CConfig::GetDV_FEA(void) { return Kind_DV_FEA; }
 
 inline bool CConfig::GetStructural_Adj(void) { return Structural_Adj; }
