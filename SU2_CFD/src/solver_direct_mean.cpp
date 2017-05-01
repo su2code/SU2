@@ -11630,7 +11630,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
     AverageTurboMach[1] = AverageTurboVelocity[val_marker][iSpan][1]/AverageSoundSpeed;
 
     if(grid_movement){
-      AverageTurboMach[1] -= geometry->GetAverageTangGridVel(val_marker,iSpan);
+      AverageTurboMach[1] -= geometry->GetAverageTangGridVel(val_marker,iSpan)/AverageSoundSpeed;
     }
 
     AvgMach = AverageTurboMach[0]*AverageTurboMach[0] + AverageTurboMach[1]*AverageTurboMach[1];
@@ -11919,15 +11919,14 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
 
       case TOTAL_CONDITIONS_PT: case MIXING_IN:case TOTAL_CONDITIONS_PT_1D: case MIXING_IN_1D:
-
-        if (AvgMach < 0.999){
-          if(config->GetSpatialFourier()){
+        if(config->GetSpatialFourier()){
+          if (AvgMach <= 1.0){
             Beta_inf= I*complex<su2double>(sqrt(1.0 - AvgMach));
             c2js = complex<su2double>(0.0,0.0);
             c3js = complex<su2double>(0.0,0.0);
             for(k=0; k < 2*kend_max+1; k++){
               freq = k - kend_max;
-              if(freq >= (long)(-kend) && freq <= (long)(kend) && AvgMach > 0.15){
+              if(freq >= (long)(-kend) && freq <= (long)(kend) && AverageTurboMach[0] > config->GetAverageMachLimit()){
                 TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
 
                 c2ks = -CkInflow[val_marker][iSpan][k]*complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>( 1.0 + AverageTurboMach[0]);
@@ -11954,49 +11953,48 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
               dcjs[2] = 0.0     - cj[2];
               dcjs[3] = c3js_Re - cj[3];
             }
-          }
-          else{
-            if (nDim == 2){
-              dcjs[0] = 0.0;
-              dcjs[1] = 0.0;
-              dcjs[2] = 0.0;
+
+          }else{
+            if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
+              Beta_inf2= -sqrt(AvgMach - 1.0);
             }else{
-              dcjs[0] = 0.0;
-              dcjs[1] = 0.0;
-              dcjs[2] = 0.0;
-              dcjs[3] = 0.0;
+              Beta_inf2= sqrt(AvgMach-1.0);
+            }
+            if (nDim == 2){
+              c2js_Re = -cj[3]*(Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
+              c3js_Re = cj[3]*(Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
+              c3js_Re *= (Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
+            }else{
+              c2js_Re = -cj[4]*(Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
+              c3js_Re = cj[4]*(Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
+              c3js_Re *= (Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
+            }
+
+
+            if (nDim == 2){
+              dcjs[0] = 0.0     - cj[0];
+              dcjs[1] = c2js_Re - cj[1];
+              dcjs[2] = c3js_Re - cj[2];
+            }else{
+              dcjs[0] = 0.0     - cj[0];
+              dcjs[1] = c2js_Re - cj[1];
+              dcjs[2] = 0.0     - cj[2];
+              dcjs[3] = c3js_Re - cj[3];
             }
           }
-
-        }else{
-          if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
-            Beta_inf2= -sqrt(AvgMach - 1.0);
-          }else{
-            Beta_inf2= sqrt(AvgMach-1.0);
-          }
+        }
+        else{
           if (nDim == 2){
-            c2js_Re = -cj[3]*(Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
-            c3js_Re = cj[3]*(Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
-            c3js_Re *= (Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
+            dcjs[0] = 0.0;
+            dcjs[1] = 0.0;
+            dcjs[2] = 0.0;
           }else{
-            c2js_Re = -cj[4]*(Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
-            c3js_Re = cj[4]*(Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
-            c3js_Re *= (Beta_inf2 + AverageTurboMach[1])/( 1.0 + AverageTurboMach[0]);
-          }
-
-
-          if (nDim == 2){
-            dcjs[0] = 0.0     - cj[0];
-            dcjs[1] = c2js_Re - cj[1];
-            dcjs[2] = c3js_Re - cj[2];
-          }else{
-            dcjs[0] = 0.0     - cj[0];
-            dcjs[1] = c2js_Re - cj[1];
-            dcjs[2] = 0.0     - cj[2];
-            dcjs[3] = c3js_Re - cj[3];
+            dcjs[0] = 0.0;
+            dcjs[1] = 0.0;
+            dcjs[2] = 0.0;
+            dcjs[3] = 0.0;
           }
         }
-
         /* --- Impose Inlet BC Reflecting--- */
         delta_c[0] = relfacAvg*c_avg[0] + relfacFou*dcjs[0];
         delta_c[1] = relfacAvg*c_avg[1] + relfacFou*dcjs[1];
@@ -12013,34 +12011,35 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D:
 
         /* --- implementation of NRBC ---*/
-        if (AvgMach >= 0.999){
-          /* --- supersonic NRBC implementation ---*/
-          if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
-            GilesBeta= -sqrt(AvgMach - 1.0);
+        if(config->GetSpatialFourier()){
+          if (AvgMach > 1.0){
+            /* --- supersonic NRBC implementation ---*/
+            if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
+              GilesBeta= -sqrt(AvgMach - 1.0);
 
+            }else{
+              GilesBeta= sqrt(AvgMach - 1.0);
+            }
+            if(nDim == 2){
+              cOutjs_Re= (2.0 * AverageTurboMach[0])/(GilesBeta - AverageTurboMach[1])*cj[1] - (GilesBeta + AverageTurboMach[1])/(GilesBeta - AverageTurboMach[1])*cj[2];
+            }
+            else{
+              cOutjs_Re= (2.0 * AverageTurboMach[0])/(GilesBeta - AverageTurboMach[1])*cj[1] - (GilesBeta + AverageTurboMach[1])/(GilesBeta - AverageTurboMach[1])*cj[3];
+            }
+            if (nDim == 2){
+              dcjs[3] = cOutjs_Re - cj[3];
+            }
+            else{
+              dcjs[4] = cOutjs_Re - cj[4];
+            }
           }else{
-            GilesBeta= sqrt(AvgMach - 1.0);
-          }
-          if(nDim == 2){
-            cOutjs_Re= (2.0 * AverageTurboMach[0])/(GilesBeta - AverageTurboMach[1])*cj[1] - (GilesBeta + AverageTurboMach[1])/(GilesBeta - AverageTurboMach[1])*cj[2];
-          }
-          else{
-            cOutjs_Re= (2.0 * AverageTurboMach[0])/(GilesBeta - AverageTurboMach[1])*cj[1] - (GilesBeta + AverageTurboMach[1])/(GilesBeta - AverageTurboMach[1])*cj[3];
-          }
-          if (nDim == 2){
-            dcjs[3] = cOutjs_Re - cj[3];
-          }
-          else{
-            dcjs[4] = cOutjs_Re - cj[4];
-          }
-        }else{
-          if(config->GetSpatialFourier()){
+
             /* --- subsonic NRBC implementation ---*/
             Beta_inf= I*complex<su2double>(sqrt(1.0  - AvgMach));
             cOutjs 	= complex<su2double>(0.0,0.0);
             for(k=0; k < 2*kend_max+1; k++){
               freq = k - kend_max;
-              if(freq >= (long)(-kend) && freq <= (long)(kend) && AvgMach > 0.15){
+              if(freq >= (long)(-kend) && freq <= (long)(kend) && AverageTurboMach[0] > config->GetAverageMachLimit()){
                 TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
                 cOutks  = complex<su2double>(2.0 * AverageTurboMach[0])/complex<su2double>(Beta_inf - AverageTurboMach[1])*CkOutflow1[val_marker][iSpan][k];
                 cOutks -= complex<su2double>(Beta_inf + AverageTurboMach[1])/complex<su2double>(Beta_inf - AverageTurboMach[1])*CkOutflow2[val_marker][iSpan][k];
@@ -12060,16 +12059,15 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
               dcjs[4] = cOutjs_Re - cj[4];
             }
           }
+        }
+        else{
+          if (nDim == 2){
+            dcjs[3] = 0.0;
+          }
           else{
-            if (nDim == 2){
-              dcjs[3] = 0.0;
-            }
-            else{
-              dcjs[4] = 0.0;
-            }
+            dcjs[4] = 0.0;
           }
         }
-
         /* --- Impose Outlet BC Non-Reflecting  --- */
         delta_c[0] = cj[0];
         delta_c[1] = cj[1];
@@ -12084,7 +12082,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 
         /*--- Automatically impose supersonic autoflow ---*/
-        if (abs(AverageTurboMach[0]) >= 1.0000){
+        if (abs(AverageTurboMach[0]) > 1.0000){
           delta_c[0] = 0.0;
           delta_c[1] = 0.0;
           delta_c[2] = 0.0;
