@@ -53,25 +53,27 @@ public:
    * \brief Enumerated type, which defines the tasks to be carried out.
    */
   enum SOLVER_TASK {
-    NO_TASK                                      =  0,   /*!< \brief Default value used for checking. */
-    ADER_PREDICTOR_STEP_COMM_ELEMENTS            =  1,   /*!< \brief ADER predictor step for elements whose solution must be communicated. */
-    ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS        =  2,   /*!< \brief ADER predictor step for internal elements. */
-    INITIATE_MPI_COMMUNICATION                   =  3,   /*!< \brief Start the communication of the conserved variables. */
-    COMPLETE_MPI_COMMUNICATION                   =  4,   /*!< \brief Complete the communication of the conserved variables. */
-    INITIATE_REVERSE_MPI_COMMUNICATION           =  5,   /*!< \brief Start the communication of the residuals. */
-    COMPLETE_REVERSE_MPI_COMMUNICATION           =  6,   /*!< \brief Complete the communication of the residuals. */
-    ADER_TIME_INTERPOLATE_OWNED_ELEMENTS         =  7,   /*!< \brief Carry out a time interpolation to an integration point for the owned elements. */
-    ADER_TIME_INTERPOLATE_HALO_ELEMENTS          =  8,   /*!< \brief Carry out a time interpolation to an integration point for the halo elements. */
-    SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS     =  9,   /*!< \brief Compute the shock capturing artificial viscosity for the owned elements, if needed. */
-    SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS      = 10,   /*!< \brief Compute the shock capturing artificial viscosity for the halo elements, if needed. */
-    VOLUME_RESIDUAL                              = 11,   /*!< \brief Compute the contribution to the residual from the volume integral. */
-    SURFACE_RESIDUAL_OWNED_ELEMENTS              = 12,   /*!< \brief Compute the contribution to the residual from the interior surface integral between owned elements. */
-    SURFACE_RESIDUAL_HALO_ELEMENTS               = 13,   /*!< \brief Compute the contribution to the residual from the interior surface integral between an owned and halo element. */
-    BOUNDARY_CONDITIONS                          = 14,   /*!< \brief Compute the contribution to the residual from the boundary conditions. */
-    SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS = 15,   /*!< \brief Sum up all contributions to the residual for the owned elements. */
-    SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS  = 16,   /*!< \brief Sum up all contributions to the residual for the halo elements. */
-    MULTIPLY_INVERSE_MASS_MATRIX                 = 17,   /*!< \brief Multiply the accumulated residual with the inverse of the mass matrix. */
-    ADER_UPDATE_SOLUTION                         = 18    /*!< \brief Update the solution for the ADER scheme. */
+    NO_TASK                                           =  0,   /*!< \brief Default value used for checking. */
+    ADER_PREDICTOR_STEP_COMM_ELEMENTS                 =  1,   /*!< \brief ADER predictor step for elements whose solution must be communicated. */
+    ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS             =  2,   /*!< \brief ADER predictor step for internal elements. */
+    INITIATE_MPI_COMMUNICATION                        =  3,   /*!< \brief Start the communication of the conserved variables. */
+    COMPLETE_MPI_COMMUNICATION                        =  4,   /*!< \brief Complete the communication of the conserved variables. */
+    INITIATE_REVERSE_MPI_COMMUNICATION                =  5,   /*!< \brief Start the communication of the residuals. */
+    COMPLETE_REVERSE_MPI_COMMUNICATION                =  6,   /*!< \brief Complete the communication of the residuals. */
+    ADER_TIME_INTERPOLATE_OWNED_ELEMENTS              =  7,   /*!< \brief Carry out a time interpolation to an integration point for the owned elements. */
+    ADER_TIME_INTERPOLATE_HALO_ELEMENTS               =  8,   /*!< \brief Carry out a time interpolation to an integration point for the halo elements. */
+    SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS          =  9,   /*!< \brief Compute the shock capturing artificial viscosity for the owned elements, if needed. */
+    SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS           = 10,   /*!< \brief Compute the shock capturing artificial viscosity for the halo elements, if needed. */
+    VOLUME_RESIDUAL                                   = 11,   /*!< \brief Compute the contribution to the residual from the volume integral. */
+    SURFACE_RESIDUAL_OWNED_ELEMENTS                   = 12,   /*!< \brief Compute the contribution to the residual from the interior surface integral between owned elements. */
+    SURFACE_RESIDUAL_HALO_ELEMENTS                    = 13,   /*!< \brief Compute the contribution to the residual from the interior surface integral between an owned and halo element. */
+    BOUNDARY_CONDITIONS                               = 14,   /*!< \brief Compute the contribution to the residual from the boundary conditions. */
+    SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS      = 15,   /*!< \brief Sum up all contributions to the residual for the owned elements. */
+    SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS       = 16,   /*!< \brief Sum up all contributions to the residual for the halo elements. */
+    ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS = 17,   /*!< \brief Accumlate the ADER space time residual for the owned elements. */
+    ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS  = 18,   /*!< \brief Accumlate the ADER space time residual for the halo elements. */
+    MULTIPLY_INVERSE_MASS_MATRIX                      = 19,   /*!< \brief Multiply the accumulated residual with the inverse of the mass matrix. */
+    ADER_UPDATE_SOLUTION                              = 20    /*!< \brief Update the solution for the ADER scheme. */
   };
 
   SOLVER_TASK    task;                  /*!< \brief Task to be carried out. */

@@ -49,6 +49,8 @@ inline CTaskDefinition::CTaskDefinition(SOLVER_TASK    val_task,
                                         int            val_ind1MustBeCompleted,
                                         int            val_ind2MustBeCompleted,
                                         int            val_ind3MustBeCompleted) {
+
+  /* Copy the data from the arguments. */
   task                  = val_task;
   timeLevel             = val_timeLevel;
   indMustBeCompleted[0] = val_ind0MustBeCompleted;
@@ -56,10 +58,15 @@ inline CTaskDefinition::CTaskDefinition(SOLVER_TASK    val_task,
   indMustBeCompleted[2] = val_ind2MustBeCompleted;
   indMustBeCompleted[3] = val_ind3MustBeCompleted;
 
+  /* Make sure that the -1 values are numbered last. */
+  sort(indMustBeCompleted, indMustBeCompleted+4, greater<int>());
+
+  /* Determine the actual number of tasks that must be completed. */
   for(nIndMustBeCompleted=0; nIndMustBeCompleted<4; ++nIndMustBeCompleted) {
     if(indMustBeCompleted[nIndMustBeCompleted] < 0) break;
   }
 
+  /* Initialize the other member variables to their default values. */
   intPointADER = 0;
   secondPartTimeIntADER = false;
 }
