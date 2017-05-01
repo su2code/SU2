@@ -400,7 +400,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     const unsigned long  elem0     = matchingInternalFaces[i].elemID0;
     const unsigned long  elem1     = matchingInternalFaces[i].elemID1;
     const unsigned short timeLevel = min(volElem[elem0].timeLevel,
-                                         volElem[elem1].timeLevel); 
+                                         volElem[elem1].timeLevel);
 
     /* The terms that only contribute to the DOFs located on the face.
        Check the time level of the element compared to the face. */
@@ -1332,6 +1332,11 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
     const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
 
+    /* Define the two dimensional vector to store the latest index for a
+       certain task for every time level. */
+    vector<vector<int> > indexInList(CTaskDefinition::ADER_UPDATE_SOLUTION+1,
+                                     vector<int>(nTimeLevels, -1));
+
     /* Loop over the number of subtime steps in the algorithm. */
     for(unsigned int step=0; step<nSubTimeSteps; ++step) {
 
@@ -1341,63 +1346,514 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
       unsigned short timeLevel = 0;
       while( !(ii%2) ) {ii/=2; ++timeLevel;}
 
-      /* Carry out the predictor step of the communication elements of level 0
-         and initiate their communication. */
-      unsigned long currentSize = tasksList.size();
-      long prevInd0;
-      for(prevInd0=currentSize; prevInd0>=0; --prevInd0)
-        if(tasksList[prevInd0].task == CTaskDefinition::ADER_UPDATE_SOLUTION) break;
+      /* Definition of the variable to store a previous indices of
+         tasks that must have been completed. */
+      int prevInd[4];
 
-      tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS, 0, prevInd0));
-      const unsigned long indCommLevel0 = tasksList.size();
-      tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION, 0, currentSize));
+      /* Carry out the predictor step of the communication elements of level 0
+         if these elements are present on this rank. */
+      unsigned long elemBeg = nVolElemOwnedPerTimeLevel[0]
+                            + nVolElemInternalPerTimeLevel[0];
+      unsigned long elemEnd = nVolElemOwnedPerTimeLevel[1];
+      if(elemEnd > elemBeg) {
+        prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][0];
+        indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][0] = tasksList.size();
+        tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS, 0, prevInd[0]));
+      }
+
+      /* Initiate the communication of elements of level 0, if there is
+         something to be communicated. */
+#ifdef HAVE_MPI
+      if( nCommRequests[0] ) {
+        if(elemEnd > elemBeg)   // Data needs to be computed before sending.
+          prevInd[0] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][0];
+        else                    // Data only needs to be received.
+          prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][0];
+
+        indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][0] = tasksList.size();
+        tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION, 0, prevInd[0]));
+      }
+#endif
 
       /* Check if the time level is not nTimeLevels-1. In that case carry out
          the predictor step of the communication elements for the next time
-         level and initiate their communication. */
-      unsigned long indCommLevelNL = 0;
-      long prevIndNL = -1;
+         level and initiate their communication, if appropriate on this rank. */
       if(timeLevel < (nTimeLevels-1)) {
         const unsigned short nL = timeLevel+1;
 
-        currentSize = tasksList.size();
-        for(prevIndNL=currentSize; prevIndNL>=0; --prevIndNL)
-          if((tasksList[prevIndNL].task == CTaskDefinition::ADER_UPDATE_SOLUTION) &&
-             (tasksList[prevIndNL].timeLevel >= nL)) break;
+        /* Carry out the predictor step of the communication elements of level nL
+           if these elements are present on this rank. */
+        elemBeg = nVolElemOwnedPerTimeLevel[nL] + nVolElemInternalPerTimeLevel[nL];
+        elemEnd = nVolElemOwnedPerTimeLevel[nL+1];
 
-        tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS, nL, prevIndNL));
-        indCommLevelNL = tasksList.size();
-        tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION, nL, currentSize));
+        if(elemEnd > elemBeg) {
+          prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][nL];
+          indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][nL] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS, nL, prevInd[0]));
+        }
+
+        /* Initiate the communication of elements of level nL, if there is
+           something to be communicated. */
+#ifdef HAVE_MPI
+        if( nCommRequests[nL] ) {
+          if(elemEnd > elemBeg)   // Data needs to be computed before sending.
+            prevInd[0] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][nL];
+          else                    // Data only needs to be received.
+            prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][nL];
+
+          indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][nL] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION, nL, prevInd[0]));
+        }
+#endif
       }
 
-      /* The predictor step for the internal elements of time level 0 and the
-         completion of the communication of this level. The index for the
-         completion of the communication task is stored for later purposes. */
-      tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS, 0, prevInd0));
-      prevInd0 = tasksList.size();
-      tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION,  0, indCommLevel0));
+      /* Carry out the predictor step of the internal elements of time level 0,
+         if these elements are present on this rank. */
+      elemBeg = nVolElemOwnedPerTimeLevel[0];
+      elemEnd = nVolElemOwnedPerTimeLevel[0] + nVolElemInternalPerTimeLevel[0];
 
-      /* The predictor step for the internal elements of the next time level,
-         if present. Also complete the communication task for that time level,
-         which index is stored for later purposes. */
+      if(elemEnd > elemBeg) {
+        prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][0];
+        indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][0] = tasksList.size();
+        tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS, 0, prevInd[0]));
+      }
+
+      /* Determine the tasks to be completed before the communication of time
+         level 0 can be completed. */
+      prevInd[0] = prevInd[1] = prevInd[2] = -1;
+#ifdef HAVE_MPI
+      if( nCommRequests[0] )
+        prevInd[0] = indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][0];
+#endif
+
+      if( elementsSendSelfComm[0].size() ) {
+        prevInd[1] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][0];
+        prevInd[2] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][0];
+      }
+
+      /* Make sure that the -1 in prevInd, if any, are numbered last. */
+      sort(prevInd, prevInd+3, greater<int>());
+
+      /* Complete the communication of time level 0, if there is something
+         to be completed. */
+      if(prevInd[0] > -1) {
+        indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][0] = tasksList.size();
+        tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION, 0,
+                                            prevInd[0], prevInd[1], prevInd[2]));
+      }
+
+      /* Check if the time level is not nTimeLevels-1. In that case carry out
+         the predictor step of the internal elements for the next time
+         level and complete the communication for this time level,
+         if appropriate on this rank. */
       if(timeLevel < (nTimeLevels-1)) {
         const unsigned short nL = timeLevel+1;
-        tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS, nL, prevIndNL));
-        prevIndNL = tasksList.size();
-        tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION, nL, indCommLevelNL));
+
+        /* Carry out the predictor step of the internal elements of level nL
+           if these elements are present on this rank. */
+        elemBeg = nVolElemOwnedPerTimeLevel[nL];
+        elemEnd = nVolElemOwnedPerTimeLevel[nL] + nVolElemInternalPerTimeLevel[nL];
+
+        if(elemEnd > elemBeg) {
+          prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][nL];
+          indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][nL] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS, nL, prevInd[0]));
+        }
+
+        /* Determine the tasks to be completed before the communication of time
+           level nL can be completed. */
+        prevInd[0] = prevInd[1] = prevInd[2] = -1;
+  #ifdef HAVE_MPI
+        if( nCommRequests[nL] )
+          prevInd[0] = indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][nL];
+  #endif
+
+        if( elementsSendSelfComm[nL].size() ) {
+          prevInd[1] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][nL];
+          prevInd[2] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][nL];
+        }
+
+        /* Make sure that the -1 in prevInd, if any, are numbered last. */
+        sort(prevInd, prevInd+3, greater<int>());
+
+        /* Complete the communication of time level nL, if there is something
+           to be completed. */
+        if(prevInd[0] > -1) {
+          indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][nL] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION, nL,
+                                              prevInd[0], prevInd[1], prevInd[2]));
+        }
       }
 
       /* Loop over the time integration points to compute the space time
          integral for the corrector step. */
       for(unsigned short intPoint=0; intPoint<nTimeIntegrationPoints; ++intPoint) {
 
+        /* Loop over the time levels to be treated. */
+        for(unsigned short level=0; level<=timeLevel; ++level) {
+
+          /* The solution of the owned elements of the current time level and
+             the adjacent owned elements of the next time level must be
+             interpolated to the integration point intPoint. Check if these
+             elements are present. */
+          unsigned long nAdjOwnedElem = 0;
+          if(level < (nTimeLevels-1))
+            nAdjOwnedElem = ownedElemAdjLowTimeLevel[level+1].size();
+
+          unsigned long nOwnedElem = nVolElemOwnedPerTimeLevel[level+1]
+                                   - nVolElemOwnedPerTimeLevel[level];
+          if(nAdjOwnedElem || nOwnedElem) {
+
+            /* Determine the tasks that should have been completed before this
+               task can be carried out. This depends on the time integration
+               point. */
+            if(intPoint == 0) {
+
+              /* First time integration point. The predictor steps of the
+                 owned elements must have been completed before this task
+                 can be carried out. */
+              if( nOwnedElem ) {
+                prevInd[0] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][level];
+                prevInd[1] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][level];
+              }
+              else {
+                prevInd[0] = prevInd[1] = -1;
+              }
+
+              if( nAdjOwnedElem ) {
+                prevInd[2] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][level+1];
+                prevInd[3] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][level+1];
+              }
+              else {
+                prevInd[2] = prevInd[3] = -1;
+              }
+            }
+            else {
+
+              /* Not the first integration point. The residual computations of
+                 the previous integration point must have been completed, because
+                 the solution in the work vectors is overwritten. */
+              prevInd[0] = indexInList[CTaskDefinition::VOLUME_RESIDUAL][level];
+              prevInd[1] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS][level];
+              prevInd[2] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
+              prevInd[3] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level];
+            }
+
+            /* Create the task. */
+            indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS,
+                                                level, prevInd[0], prevInd[1], prevInd[2], prevInd[3]));
+
+            /* The info on the integration point and whether or not this
+               time integration corresponds to the second part for the
+               adjacent elements must be added to the task just created. */
+            tasksList.back().intPointADER          = intPoint;
+            tasksList.back().secondPartTimeIntADER = level < timeLevel;
+
+            /* If artificial viscosity is used for the shock capturing
+               terms, these terms must be computed for the owned elements,
+               including the adjacent ones. */
+            prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS][level];
+            indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS,
+                                                level, prevInd[0]));
+          }
+
+          /* The solution of the halo elements of the current time level and
+             the adjacent halo elements of the next time level must be
+             interpolated to the integration point intPoint. Check if these
+             elements are present. */
+          unsigned long nAdjHaloElem = 0;
+          if(level < (nTimeLevels-1))
+            nAdjHaloElem = haloElemAdjLowTimeLevel[level+1].size();
+
+          unsigned long nHaloElem = nVolElemHaloPerTimeLevel[level+1]
+                                  - nVolElemHaloPerTimeLevel[level];
+          if(nAdjHaloElem || nHaloElem) {
+
+            /* Determine the tasks that should have been completed before this
+               task can be carried out. This depends on the time integration
+               point. */
+            if(intPoint == 0) {
+
+              /* First time integration point. The communication of the
+                 halo elements must have been completed before this task
+                 can be carried out. */
+             if( nHaloElem )
+               prevInd[0] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][level];
+             else
+               prevInd[0] = -1;
+
+             if( nAdjHaloElem )
+               prevInd[1] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][level+1];
+             else
+               prevInd[1] = -1;
+            }
+            else {
+
+              /* Not the first integration point. The residual computation of
+                 the previous integration point must have been completed, because
+                 the solution in the work vectors is overwritten. */
+              prevInd[0] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
+              prevInd[1] = -1;
+            }
+
+            /* Create the task. */
+            indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS,
+                                                level, prevInd[0], prevInd[1]));
+
+            /* The info on the integration point and whether or not this
+               time integration corresponds to the second part for the
+               adjacent elements must be added to the task just created. */
+            tasksList.back().intPointADER          = intPoint;
+            tasksList.back().secondPartTimeIntADER = level < timeLevel;
+
+            /* If artificial viscosity is used for the shock capturing
+               terms, these terms must be computed for the halo elements,
+               including the adjacent ones. */
+            prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][level];
+            indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS,
+                                                level, prevInd[0]));
+          }
+
+          /* Compute the surface residuals for this time level that involve
+             halo elements, if present. Afterwards, accumulate the space time
+             residuals for the halo elements. */
+          if(nMatchingInternalFacesWithHaloElem[level+1] >
+             nMatchingInternalFacesWithHaloElem[level]) {
+
+            /* Create the dependencies for the surface residual part that involve
+               halo elements. For all but the first integration point, make sure
+               that the previous residual is already accumulated, because this
+               task will overwrite that residual. */
+            prevInd[0] = indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS][level];
+            prevInd[1] = indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS][level];
+
+            if(intPoint == 0)
+              prevInd[2] = -1;
+            else
+              prevInd[2] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level];
+
+            /* Create the task for the surface residual. */
+            indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS,
+                                                level, prevInd[0], prevInd[1], prevInd[2]));
+
+            /* Create the task to accumulate the surface residuals of the halo
+               elements. Make sure to set the integration point for this task. */
+            prevInd[0] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
+            indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS,
+                                                level, prevInd[0]));
+            tasksList.back().intPointADER = intPoint;
+          }
+
+          /* If this is the last integration point, initiate the reverse
+             communication for the residuals of this time level, if there
+             is something to communicate. */
+          if(intPoint == (nTimeIntegrationPoints-1)) {
+
+            /* Check if there is something to communicate. Despite the fact
+               that self communication takes place when the reverse communication
+               is completed, a check for self communication is still needed,
+               because of the periodic transformations. */
+            bool commData = false;
+
+#ifdef HAVE_MPI
+            if( nCommRequests[level] ) commData = true;
+#endif
+            if(commData || elementsSendSelfComm[level].size()) {
+
+              /* Determine the dependencies before the reverse communication
+                 can start. */
+              prevInd[0] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level];
+              if( haloElemAdjLowTimeLevel[level].size() )
+                prevInd[1] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level-1];
+              else
+                prevInd[1] = -1;
+
+              /* Create the task. */
+              indexInList[CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION][level] = tasksList.size();
+              tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION,
+                                                  level, prevInd[0], prevInd[1]));
+            }
+          }
+
+          /* Compute the contribution of the volume integral, boundary conditions and
+             surface integral between owned elements for this time level, if present. */
+          if( nOwnedElem ) {
+
+            /* Create the dependencies for this task. The shock capturing viscosity of
+               the owned elements must be completed and for all integration points but
+               the first, the computed residuals must have been accumulated in the space
+               time residual, because the tasks below will overwrite the residuals. */
+            prevInd[0] = indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS][level];
+            if(intPoint == 0)
+              prevInd[1] = -1;
+            else
+              prevInd[1] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level];
+
+            /* Create the tasks. */
+            indexInList[CTaskDefinition::VOLUME_RESIDUAL][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::VOLUME_RESIDUAL, level,
+                                                prevInd[0], prevInd[1]));
+
+            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS, level,
+                                                prevInd[0], prevInd[1]));
+
+            if(nMatchingInternalFacesLocalElem[level+1] >
+               nMatchingInternalFacesLocalElem[level]) {
+              indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level] = tasksList.size();
+              tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS,
+                                                  level, prevInd[0], prevInd[1]));
+            }
+          }
+
+          /* Accumulate the space time residuals for the owned elements of this
+             level, if these elements are present. */
+          if(nAdjOwnedElem || nOwnedElem) {
+
+            /* Create the dependencies for this task. */
+            prevInd[0] = indexInList[CTaskDefinition::VOLUME_RESIDUAL][level];
+            prevInd[1] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS][level];
+            prevInd[2] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level];
+            prevInd[3] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
+
+            /* Create the task. */
+            indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS,
+                                                level, prevInd[0], prevInd[1], prevInd[2], prevInd[3]));
+            tasksList.back().intPointADER = intPoint;
+          }
+
+          /* If this is the last integration point, complete the reverse
+             communication for the residuals of this time level, if there
+             is something to communicate. */
+          if(intPoint == (nTimeIntegrationPoints-1)) {
+
+            bool commData = false;
+
+#ifdef HAVE_MPI
+            if( nCommRequests[level] ) commData = true;
+#endif
+            if(commData || elementsSendSelfComm[level].size()) {
+
+              /* Determine the dependencies before the reverse communication
+                 can be completed. */
+              prevInd[0] = indexInList[CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION][level];
+              prevInd[1] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level];
+              if( ownedElemAdjLowTimeLevel[level].size() )
+                prevInd[2] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level-1];
+              else
+                prevInd[2] = -1;
+
+              /* Create the task. */
+              indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][level] = tasksList.size();
+              tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION,
+                                                  level, prevInd[0], prevInd[1], prevInd[2]));
+            }
+          }
+
+        } /* End loop time level. */
+
+      } /* End loop time integration points. */
+
+      /* Loop again over the number of active time levels for this subtime
+         step and compute the update for the DOFs of the owned elements. */
+      for(unsigned short level=0; level<=timeLevel; ++level) {
+        if(nVolElemOwnedPerTimeLevel[level+1] > nVolElemOwnedPerTimeLevel[level]) {
+
+          /* Updates must be carried out for this time level. First multiply the
+             residuals by the inverse of the mass matrix. This task can be
+             completed if the communication of this level has been completed.
+             However, it is possible that no communication is needed and
+             therefore the accumulation of the space time residuals is also
+             added to the dependency list. */
+          prevInd[0] = indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][level];
+          prevInd[1] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level];
+          if( ownedElemAdjLowTimeLevel[level].size() )
+            prevInd[2] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level-1];
+          else
+            prevInd[2] = -1;
+
+          indexInList[CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX][level] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX,
+                                               level, prevInd[0], prevInd[1], prevInd[2]));
+
+          /* Compute the new state vector for this time level. */
+          prevInd[0] = indexInList[CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX][level];
+          indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][level] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_UPDATE_SOLUTION,
+                                               level, prevInd[0]));
+        }
+      }
+
+    } /* End loop subtime steps. */
+
+
+    // EXTRA FOR DEBUGGING
+    int rank = MASTER_NODE, nProc = 1;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nProc);
+#endif
+
+    for(int i=0; i<nProc; ++i) {
+      if(i == rank) {
+        cout << endl;
+        cout << "Task list for rank " << rank << endl;
+        cout << "------------------------------------------------" << endl;
+        cout << "Number of tasks: " << tasksList.size() << endl;
+        for(unsigned long j=0; j<tasksList.size(); ++j) {
+
+          cout << "Task " << j << ": ";
+          switch( tasksList[j].task ) {
+            case CTaskDefinition::NO_TASK: cout << "NO_TASK" << endl; break;
+            case CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS: cout << "ADER_PREDICTOR_STEP_COMM_ELEMENTS" << endl; break;
+            case CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS: cout << "ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS" << endl; break;
+            case CTaskDefinition::INITIATE_MPI_COMMUNICATION: cout << "INITIATE_MPI_COMMUNICATION" << endl; break;
+            case CTaskDefinition::COMPLETE_MPI_COMMUNICATION: cout << "COMPLETE_MPI_COMMUNICATION" << endl; break;
+            case CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION: cout << "INITIATE_REVERSE_MPI_COMMUNICATION" << endl; break;
+            case CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION: cout << "COMPLETE_REVERSE_MPI_COMMUNICATION" << endl; break;
+            case CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS: cout << "ADER_TIME_INTERPOLATE_OWNED_ELEMENTS" << endl; break;
+            case CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS: cout << "ADER_TIME_INTERPOLATE_HALO_ELEMENTS" << endl; break;
+            case CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS: cout << "SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS" << endl; break;
+            case CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS: cout << "SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS" << endl; break;
+            case CTaskDefinition::VOLUME_RESIDUAL: cout << "VOLUME_RESIDUAL" << endl; break;
+            case CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS: cout << "SURFACE_RESIDUAL_OWNED_ELEMENTS" << endl; break;
+            case CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS: cout << "SURFACE_RESIDUAL_HALO_ELEMENTS" << endl; break;
+            case CTaskDefinition::BOUNDARY_CONDITIONS: cout << "BOUNDARY_CONDITIONS" << endl; break;
+            case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS: cout << "SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS" << endl; break;
+            case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS: cout << "SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS" << endl; break;
+            case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS: cout << "ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS" << endl; break;
+            case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS: cout << "ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS" << endl; break;
+            case CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX: cout << "MULTIPLY_INVERSE_MASS_MATRIX" << endl; break;
+            case CTaskDefinition::ADER_UPDATE_SOLUTION: cout << "ADER_UPDATE_SOLUTION" << endl; break;
+            default: cout << "This cannot happen" << endl;
+          }
+          cout << " Time level: " << tasksList[j].timeLevel
+               << " Integration point: " << tasksList[j].intPointADER
+               << " Second part: " << tasksList[j].secondPartTimeIntADER << endl;
+          cout << " Depends on tasks:";
+          for(unsigned short k=0; k<tasksList[j].nIndMustBeCompleted; ++k)
+            cout << " " << tasksList[j].indMustBeCompleted[k];
+          cout << endl << endl;
+        }
 
       }
 
+#ifdef HAVE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
     }
 
     cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER not implemented yet";
     exit(1);
+
+    // END EXTRA FOR DEBUGGING.
   }
   else {
 
@@ -1637,10 +2093,6 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   /*--- Step 4. Set up the persistent reverse MPI communication for the    ---*/
   /*---         residuals.                                                 ---*/
   /*--------------------------------------------------------------------------*/
-
-  /* Allocate the memory for the vector of bools, which indicate whether or
-     the reverse communication has been completed for the time levels. */
-  reverseCommCompleted.assign(nTimeLevels, true);
 
   /* Determine the number of derived data types necessary in the reverse
      communication. This is the number of ranks to which this rank has to send
@@ -1970,69 +2422,37 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
     rotMatrix[1][2] = rotationMatricesPeriodicity[ii++];
     rotMatrix[2][2] = rotationMatricesPeriodicity[ii++];
 
-    /* Loop over the time levels until the required time level. Note
-       that the residuals must be communicated for all time levels less
-       equal the given time level. */
-    for(unsigned short level=0; level<=timeLevel; ++level) {
+    /* Determine the number of elements for this transformation and
+       loop over them. */
+    const unsigned long nHaloElem = halosRotationalPeriodicity[timeLevel][k].size();
+    for(unsigned long j=0; j<nHaloElem; ++j) {
 
-      /* Determine the number of elements for this transformation and
-         loop over them. */
-      const unsigned long nHaloElem = halosRotationalPeriodicity[level][k].size();
-      for(unsigned long j=0; j<nHaloElem; ++j) {
+      /* Easier storage of the halo index and loop over its DOFs. */
+      const unsigned long ind = halosRotationalPeriodicity[timeLevel][k][j];
+      for(unsigned short i=0; i<volElem[ind].nDOFsSol; ++i) {
 
-        /* Easier storage of the halo index and loop over its DOFs. */
-        const unsigned long ind = halosRotationalPeriodicity[level][k][j];
-        for(unsigned short i=0; i<volElem[ind].nDOFsSol; ++i) {
+        /* Determine the pointer in VecResDOFs where the residual of this DOF
+           is stored and copy the momentum residuals. Note that a rotational
+           correction can only take place for a 3D simulation. */
+        su2double *res = resComm + nVar*(volElem[ind].offsetDOFsSolLocal + i);
 
-          /* Determine the pointer in VecResDOFs where the residual of this DOF
-             is stored and copy the momentum residuals. Note that a rotational
-             correction can only take place for a 3D simulation. */
-          su2double *res = resComm + nVar*(volElem[ind].offsetDOFsSolLocal + i);
+        const su2double ru = res[1], rv = res[2], rw = res[3];
 
-          const su2double ru = res[1], rv = res[2], rw = res[3];
-
-          /* Correct the momentum variables. */
-          res[1] = rotMatrix[0][0]*ru + rotMatrix[0][1]*rv + rotMatrix[0][2]*rw;
-          res[2] = rotMatrix[1][0]*ru + rotMatrix[1][1]*rv + rotMatrix[1][2]*rw;
-          res[3] = rotMatrix[2][0]*ru + rotMatrix[2][1]*rv + rotMatrix[2][2]*rw;
-        }
+        /* Correct the momentum variables. */
+        res[1] = rotMatrix[0][0]*ru + rotMatrix[0][1]*rv + rotMatrix[0][2]*rw;
+        res[2] = rotMatrix[1][0]*ru + rotMatrix[1][1]*rv + rotMatrix[1][2]*rw;
+        res[3] = rotMatrix[2][0]*ru + rotMatrix[2][1]*rv + rotMatrix[2][2]*rw;
       }
     }
   }
 
-  /*--- Start the MPI communication, if needed. Note that all time levels
-        up till timeLevel must be started. ---*/
+  /*--- Start the MPI communication, if needed. ---*/
 
 #ifdef HAVE_MPI
-  for(unsigned short level=0; level<=timeLevel; ++level) {
-    if( nCommRequests[level] ) {
-      MPI_Startall(nCommRequests[level], reverseCommRequests[level].data());
-      reverseCommCompleted[level] = false;
-    }
-  }
+  if( nCommRequests[timeLevel] )
+    MPI_Startall(nCommRequests[timeLevel], reverseCommRequests[timeLevel].data());
 #endif
 
-  /*-----------------------------------------------------------------------*/
-  /*---               Carry out the self communication.                 ---*/
-  /*-----------------------------------------------------------------------*/
-
-  /*--- Loop over the time levels up till the given level and the
-        corresponding number of elements involved and update the residuals
-        of the owned DOFs. ---*/
-  for(unsigned short level=0; level<=timeLevel; ++level) {
-    const unsigned long nSelfElements = elementsSendSelfComm[level].size();
-    for(unsigned long i=0; i<nSelfElements; ++i) {
-
-      const unsigned long volOwned = elementsSendSelfComm[level][i];
-      const unsigned long volHalo  = elementsRecvSelfComm[level][i];
-      su2double *resOwned = resComm + nVar*volElem[volOwned].offsetDOFsSolLocal;
-      su2double *resHalo  = resComm + nVar*volElem[volHalo].offsetDOFsSolLocal;
-
-      const unsigned short nRes = nVar*volElem[volOwned].nDOFsSol;
-      for(unsigned short j=0; j<nRes; ++j)
-        resOwned[j] += resHalo[j];
-    }
-  }
 }
 
 bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
@@ -2044,37 +2464,26 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
   /*---   Complete the MPI communication, if needed and if possible.    ---*/
   /*-----------------------------------------------------------------------*/
 
-  /* Loop over all the time levels, for which the communication should
-     be completed. Keep track whether all communication can be completed. */
-  bool communicationCompleted = true;
+  /* Check if there are any requests to complete for this time level. */
+  if( nCommRequests[timeLevel] ) {
 
-  for(unsigned short level=0; level<=timeLevel; ++level) {
-
-    /* Check if there are any requests to complete for this level and whether
-       these have not been completed yet in a previous call. */
-    if(nCommRequests[level] && !reverseCommCompleted[level]) {
-
-      /*--- There are communication requests to be completed. Check if these
-            requests must be completed. In that case MPI_Waitall is used.
-            Otherwise, MPI_Testall is used to check if all the requests have
-            been completed. If not, communicationCompleted is set to false. ---*/
-      if( commMustBeCompleted ) {
-        SU2_MPI::Waitall(nCommRequests[level], reverseCommRequests[level].data(),
-                         MPI_STATUSES_IGNORE);
-        reverseCommCompleted[level] = true;
-      }
-      else {
-        int flag;
-        MPI_Testall(nCommRequests[level], reverseCommRequests[level].data(),
-                    &flag, MPI_STATUSES_IGNORE);
-        if( flag ) reverseCommCompleted[level] = true;
-        else       communicationCompleted      = false;
-      }
+    /*--- There are communication requests to be completed. Check if these
+          requests must be completed. In that case MPI_Waitall is used.
+          Otherwise, MPI_Testall is used to check if all the requests have
+          been completed. If not, return false. ---*/
+    if( commMustBeCompleted ) {
+      SU2_MPI::Waitall(nCommRequests[timeLevel], reverseCommRequests[timeLevel].data(),
+                       MPI_STATUSES_IGNORE);
+    }
+    else {
+      int flag;
+      MPI_Testall(nCommRequests[timeLevel], reverseCommRequests[timeLevel].data(),
+                  &flag, MPI_STATUSES_IGNORE);
+      if( !flag ) return false;
     }
   }
 
-  /* Return false if not all communication requests have been completed yet. */
-  if( !communicationCompleted ) return false;
+#endif
 
   /*---------------------------------------------------------------------------*/
   /*---    Update the residuals of the owned DOFs with the data received.   ---*/
@@ -2085,32 +2494,51 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
   if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) resComm = VecTotResDOFsADER.data();
   else                                                resComm = VecResDOFs.data();
 
-  /*--- Loop over the received residual data from all time levels and ranks
-        and update the residual of the DOFs of the corresponding elements. ---*/
-  for(unsigned short level=0; level<=timeLevel; ++level) {
-    for(unsigned long i=0; i<reverseElementsRecv[level].size(); ++i) {
+#ifdef HAVE_MPI
 
-      /* Loop over the elements that must be updated. */
-      unsigned long nn = 0;
-      for(unsigned long j=0; j<reverseElementsRecv[level][i].size(); ++j) {
-        const unsigned long jj = reverseElementsRecv[level][i][j];
+  /*--- Loop over the received residual data from all ranks and update the
+        residual of the DOFs of the corresponding elements. ---*/
+  for(unsigned long i=0; i<reverseElementsRecv[timeLevel].size(); ++i) {
 
-        /* Easier storage of the starting residual of this element, loop over the
-           DOFs of this element and update the residuals of the DOFs. */
-        su2double *res = resComm + nVar*volElem[jj].offsetDOFsSolLocal;
-        const unsigned short nRes = nVar*volElem[jj].nDOFsSol;
-        for(unsigned short k=0; k<nRes; ++k, ++nn)
-          res[k] += reverseCommRecvBuf[level][i][nn];
-      }
+    /* Loop over the elements that must be updated. */
+    unsigned long nn = 0;
+    for(unsigned long j=0; j<reverseElementsRecv[timeLevel][i].size(); ++j) {
+      const unsigned long jj = reverseElementsRecv[timeLevel][i][j];
+
+      /* Easier storage of the starting residual of this element, loop over the
+         DOFs of this element and update the residuals of the DOFs. */
+      su2double *res = resComm + nVar*volElem[jj].offsetDOFsSolLocal;
+      const unsigned short nRes = nVar*volElem[jj].nDOFsSol;
+      for(unsigned short k=0; k<nRes; ++k, ++nn)
+        res[k] += reverseCommRecvBuf[timeLevel][i][nn];
     }
   }
 
 #endif
 
+  /*-----------------------------------------------------------------------*/
+  /*---               Carry out the self communication.                 ---*/
+  /*-----------------------------------------------------------------------*/
+
+  /*--- Loop over the number of elements involved and update the residuals
+        of the owned DOFs. ---*/
+  const unsigned long nSelfElements = elementsSendSelfComm[timeLevel].size();
+  for(unsigned long i=0; i<nSelfElements; ++i) {
+
+    const unsigned long volOwned = elementsSendSelfComm[timeLevel][i];
+    const unsigned long volHalo  = elementsRecvSelfComm[timeLevel][i];
+    su2double *resOwned = resComm + nVar*volElem[volOwned].offsetDOFsSolLocal;
+    su2double *resHalo  = resComm + nVar*volElem[volHalo].offsetDOFsSolLocal;
+
+    const unsigned short nRes = nVar*volElem[volOwned].nDOFsSol;
+    for(unsigned short j=0; j<nRes; ++j)
+      resOwned[j] += resHalo[j];
+  }
+
   /* Initialize the halo residuals of the just completed communication pattern
      to zero if ADER-DG is used. */
   if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
-    const unsigned long iBeg      = nVar*volElem[nVolElemHaloPerTimeLevel[0]].offsetDOFsSolLocal;
+    const unsigned long iBeg      = nVar*volElem[nVolElemHaloPerTimeLevel[timeLevel]].offsetDOFsSolLocal;
     const unsigned long volIndEnd = nVolElemHaloPerTimeLevel[timeLevel+1]-1;
     const unsigned long iEnd      = nVar*(volElem[volIndEnd].offsetDOFsSolLocal
                                   +       volElem[volIndEnd].nDOFsSol);
@@ -2810,11 +3238,36 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               break;
             }
 
+            case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS: {
+
+              /* Accumulate the space time residuals for the owned elements
+                 for ADER-DG. */
+              config->Tick(&tick);
+              AccumulateSpaceTimeResidualADEROwnedElem(config, tasksList[i].timeLevel,
+                                                       tasksList[i].intPointADER);
+              config->Tock(tick,"AccumulateSpaceTimeResidualADEROwnedElem",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS: {
+
+              /* Accumulate the space time residuals for the halo elements
+                 for ADER-DG. */
+              config->Tick(&tick);
+              AccumulateSpaceTimeResidualADERHaloElem(config, tasksList[i].timeLevel,
+                                                      tasksList[i].intPointADER);
+              config->Tock(tick,"AccumulateSpaceTimeResidualADERHaloElem",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
             case CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX: {
 
               /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
               config->Tick(&tick);
-              MultiplyResidualByInverseMassMatrix(config, false);
+              const bool useADER = config->GetKind_TimeIntScheme() == ADER_DG;
+              MultiplyResidualByInverseMassMatrix(config, useADER);
               config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -2874,88 +3327,6 @@ void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolve
   config->Tick(&tick);
   Postprocessing(geometry, solver_container, config, iMesh);
   config->Tock(tick,"Postprocessing",2);
-
-
-  /******** THE REMAINDER OF THIS FUNCTION MUST BE DELETED AS SOON AS EVERYTHING IS READY. *****************/
-
-
-  /*--- Carry out the predictor step and set the number
-        of time integration points and the corresponding weights. ---*/
-  config->Tick(&tick);
-  ADER_DG_PredictorStep(config, 0, nVolElemOwned);
-  config->Tock(tick,"ADER_DG_PredictorStep",2);
-
-  const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
-  const su2double     *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
-
-  /* Loop over the number of integration points in time. */
-  for(unsigned short iTime=0; iTime<nTimeIntegrationPoints; iTime++) {
-
-    /* The predictor solution must be interpolated in time to the correct
-       time location of the current integration point. */
-    config->Tick(&tick);
-    ADER_DG_TimeInterpolatePredictorSol(config, iTime, 0, nVolElemOwned, 0,
-                                        NULL, false, VecWorkSolDOFs[0].data());
-    config->Tock(tick,"ADER_DG_TimeInterpolatePredictorSol",3);
-
-    /* Start the MPI communication of the solution in the halo elements. */
-    Initiate_MPI_Communication(0);
-
-    /* Compute the artificial viscosity for shock capturing in DG. */
-    config->Tick(&tick);
-    Shock_Capturing_DG(config, 0, nVolElemTot);
-    config->Tock(tick,"Shock_Capturing",3);
-
-    /*--- Compute the volume portion of the residual. ---*/
-    config->Tick(&tick);
-    Volume_Residual(config, 0, nVolElemOwned);
-    config->Tock(tick,"Volume_Residual",3);
-
-    /*--- Compute source term residuals ---*/
-    config->Tick(&tick);
-    Source_Residual(config, 0, nVolElemOwned);
-    config->Tock(tick,"Source_Residual",3);
-
-    /*--- Apply the boundary conditions ---*/
-    config->Tick(&tick);
-    Boundary_Conditions(0, config, numerics);
-    config->Tock(tick,"Boundary_Conditions",3);
-
-    /* Complete the MPI communication of the solution data. */
-    Complete_MPI_Communication(config, 0, true);
-
-    /* Compute the residual of the faces that involve a halo element. */
-    unsigned long indResFaces = startLocResInternalFacesWithHaloElem[0];
-    ResidualFaces(config, nMatchingInternalFacesWithHaloElem[0],
-                  nMatchingInternalFacesWithHaloElem[1],
-                  indResFaces, numerics[CONV_TERM]);
-
-    /* Start the communication of the residuals, for which the
-       reverse communication must be used. */
-    Initiate_MPI_ReverseCommunication(config, 0);
-
-    /* Compute the residual of the faces that only involve owned elements. */
-    indResFaces = startLocResInternalFacesLocalElem[0];
-    ResidualFaces(config, nMatchingInternalFacesLocalElem[0],
-                  nMatchingInternalFacesLocalElem[1],
-                  indResFaces, numerics[CONV_TERM]);
-
-    /* Complete the communication of the residuals. */
-    Complete_MPI_ReverseCommunication(config, 0, true);
-
-    /*--- Accumulate the space time residual. ---*/
-    AccumulateSpaceTimeResidualADER(config, 0, timeIntegrationWeights[iTime]);
-  }
-
-  /*--- Multiply the residual by the mass matrix, to obtain the final value. ---*/
-  config->Tick(&tick);
-  MultiplyResidualByInverseMassMatrix(config, true);
-  config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
-
-  /*--- Perform the time integration ---*/
-  config->Tick(&tick);
-  ADER_DG_Iteration(0, nVolElemOwned);
-  config->Tock(tick,"ADER_DG_Iteration",3);
 }
 
 void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
@@ -3910,40 +4281,37 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
                             solIntL, solIntR, fluxes, numerics);
 }
 
-void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADER(CConfig             *config,
-                                                          const unsigned short timeLevel,
-                                                          const su2double      weight) {
+void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADEROwnedElem(
+                                                     CConfig             *config,
+                                                     const unsigned short timeLevel,
+                                                     const unsigned short intPoint) {
 
   /* Compute half the integration weight. The reason for doing this is that the
      given integration weight is based on the normalized interval [-1..1], i.e.
      a length of two. Also compute a quarter of the weight, which is necessary
      to accumulate the face residuals of the DOFs of elements adjacent to
      element of a lower time level. */
-  const su2double halfWeight  = 0.5 *weight;
-  const su2double quartWeight = 0.25*weight;
+  const su2double *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
 
-  /* Determine the owned element range and the halo element range that
-     must be considered. */
+  const su2double halfWeight  = 0.5 *timeIntegrationWeights[intPoint];
+  const su2double quartWeight = 0.25*timeIntegrationWeights[intPoint];
+
+  /* Determine the owned element range that must be considered. */
   const unsigned long elemBegOwned = nVolElemOwnedPerTimeLevel[timeLevel];
   const unsigned long elemEndOwned = nVolElemOwnedPerTimeLevel[timeLevel+1];
 
-  const unsigned long elemBegHalo = nVolElemHaloPerTimeLevel[timeLevel];
-  const unsigned long elemEndHalo = nVolElemHaloPerTimeLevel[timeLevel+1];
-
-  /* Add the residuals coming from the volume integral to VecTotResDOFsADER.
-     Only owned elements need to be considered here. */
+  /* Add the residuals coming from the volume integral to VecTotResDOFsADER. */
   for(unsigned long l=elemBegOwned; l<elemEndOwned; ++l) {
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
     const su2double    *res     = VecResDOFs.data() + offset;
-    su2double          *resADER = VecTotResDOFsADER.data() + offset;         
+    su2double          *resADER = VecTotResDOFsADER.data() + offset;
 
     for(unsigned short i=0; i<(nVar*volElem[l].nDOFsSol); ++i)
       resADER[i] += halfWeight*res[i];
   }
 
   /* Add the residuals coming from the surface integral to VecTotResDOFsADER.
-     This part is from faces with the same time level as the element. First
-     the DOFs of the owned elements. */
+     This part is from faces with the same time level as the element. */
   for(unsigned long l=elemBegOwned; l<elemEndOwned; ++l) {
     for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
       const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
@@ -3957,7 +4325,56 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADER(CConfig             *c
     }
   }
 
-  /* Same for the halo elements. */
+  /* Check if this is not the last time level. */
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+  if(timeLevel < (nTimeLevels-1)) {
+
+    /* There may exist faces of this time level, which have a neighboring
+       element of the next time level. The residuals of the DOFs of such
+       elements must be updated with the face residuals of the current
+       time level. However, on these elements the time step is twice as
+       large. This is taken into account by multiplying the face residual
+       with quartWeight when accumulating. */
+    const unsigned long nAdjElem = ownedElemAdjLowTimeLevel[timeLevel+1].size();
+    const unsigned long *adjElem = ownedElemAdjLowTimeLevel[timeLevel+1].data();
+
+    for(unsigned l=0; l<nAdjElem; ++l) {
+      const unsigned long ll = adjElem[l];
+      for(unsigned short i=0; i<volElem[ll].nDOFsSol; ++i) {
+        const unsigned long ii = volElem[ll].offsetDOFsSolLocal + i;
+        su2double *resADER = VecTotResDOFsADER.data() + nVar*ii;
+
+        for(unsigned long j=nEntriesResAdjFaces[ii]; j<nEntriesResAdjFaces[ii+1]; ++j) {
+          const su2double *resFace = VecResFaces.data() + nVar*entriesResAdjFaces[j];
+          for(unsigned short k=0; k<nVar; ++k)
+            resADER[k] += quartWeight*resFace[k];
+        }
+      }
+    }
+  }
+}
+
+void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADERHaloElem(
+                                                     CConfig             *config,
+                                                     const unsigned short timeLevel,
+                                                     const unsigned short intPoint) {
+
+  /* Compute half the integration weight. The reason for doing this is that the
+     given integration weight is based on the normalized interval [-1..1], i.e.
+     a length of two. Also compute a quarter of the weight, which is necessary
+     to accumulate the face residuals of the DOFs of elements adjacent to
+     element of a lower time level. */
+  const su2double *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
+
+  const su2double halfWeight  = 0.5 *timeIntegrationWeights[intPoint];
+  const su2double quartWeight = 0.25*timeIntegrationWeights[intPoint];
+
+  /* Determine the halo element range that must be considered. */
+  const unsigned long elemBegHalo = nVolElemHaloPerTimeLevel[timeLevel];
+  const unsigned long elemEndHalo = nVolElemHaloPerTimeLevel[timeLevel+1];
+
+  /* Add the residuals coming from the surface integral to VecTotResDOFsADER.
+     This part is from faces with the same time level as the element. */
   for(unsigned long l=elemBegHalo; l<elemEndHalo; ++l) {
     for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
       const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
@@ -3980,9 +4397,9 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADER(CConfig             *c
        elements must be updated with the face residuals of the current
        time level. However, on these elements the time step is twice as
        large. This is taken into account by multiplying the face residual
-       with quartWeight when accumulating. First the owned elements. */
-    unsigned long       nAdjElem = ownedElemAdjLowTimeLevel[timeLevel+1].size();
-    const unsigned long *adjElem = ownedElemAdjLowTimeLevel[timeLevel+1].data();
+       with quartWeight when accumulating. */
+    const unsigned long nAdjElem = haloElemAdjLowTimeLevel[timeLevel+1].size();
+    const unsigned long *adjElem = haloElemAdjLowTimeLevel[timeLevel+1].data();
 
     for(unsigned l=0; l<nAdjElem; ++l) {
       const unsigned long ll = adjElem[l];
@@ -3990,24 +4407,6 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADER(CConfig             *c
         const unsigned long ii = volElem[ll].offsetDOFsSolLocal + i;
         su2double *resADER = VecTotResDOFsADER.data() + nVar*ii;
 
-        for(unsigned long j=nEntriesResAdjFaces[ii]; j<nEntriesResAdjFaces[ii+1]; ++j) {
-          const su2double *resFace = VecResFaces.data() + nVar*entriesResAdjFaces[j];
-          for(unsigned short k=0; k<nVar; ++k)
-            resADER[k] += quartWeight*resFace[k];
-        }
-      }
-    }
-
-    /* And the halo elements. */
-    nAdjElem = haloElemAdjLowTimeLevel[timeLevel+1].size();
-    adjElem  = haloElemAdjLowTimeLevel[timeLevel+1].data();
-
-    for(unsigned l=0; l<nAdjElem; ++l) {
-      const unsigned long ll = adjElem[l];
-      for(unsigned short i=0; i<volElem[ll].nDOFsSol; ++i) {
-        const unsigned long ii = volElem[ll].offsetDOFsSolLocal + i;
-        su2double *resADER = VecTotResDOFsADER.data() + nVar*ii;
-      
         for(unsigned long j=nEntriesResAdjFaces[ii]; j<nEntriesResAdjFaces[ii+1]; ++j) {
           const su2double *resFace = VecResFaces.data() + nVar*entriesResAdjFaces[j];
           for(unsigned short k=0; k<nVar; ++k)
@@ -4082,7 +4481,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CConfig    *config
        the lumped mass matrix or the full mass matrix. Note that it is crucial
        that the test is performed with the lumpedMassMatrix and not with
        massMatrix. The reason is that for implicit time stepping schemes
-       both arrays are in use. */
+       both arrays may be in use. */
     if( volElem[l].lumpedMassMatrix.size() ) {
 
       /* Multiply the residual with the inverse of the lumped mass matrix. */

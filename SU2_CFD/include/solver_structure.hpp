@@ -12006,9 +12006,6 @@ private:
   vector<MPI_Datatype> commTypes;    /*!< \brief MPI derived data types for communicating the solution
                                                  variables of the DOFS. */
 
-  vector<bool> reverseCommCompleted;  /*!< \brief Vector of booleans to indicate whether or not the reverse communication
-                                                  of the time levels has already been completed. */
-
   vector<vector<MPI_Request> > reverseCommRequests; /*!< \brief Communication requests in the persistent reverse communication
                                                                 for all time levels. These are both sending and receiving requests. */
   vector<MPI_Datatype> reverseCommTypes;   /*!< \brief MPI derived data types for communicating the residuals
@@ -12327,15 +12324,27 @@ public:
 
   /*!
    * \brief Function, which accumulates the space time residual of the ADER-DG
-            time integration scheme.
+            time integration scheme for the owned elements.
    * \param[in] config    - Definition of the particular problem.
    * \param[in] timeLevel - time level for which the residuals must be
                             accumulated.
-   * \param[in] weight    - Integration weight of the time integration point.
+   * \param[in] intPoint  - Index of the time integration point.
    */
-   void AccumulateSpaceTimeResidualADER(CConfig             *config,
-                                        const unsigned short timeLevel,
-                                        const su2double      weight);
+  void AccumulateSpaceTimeResidualADEROwnedElem(CConfig             *config,
+                                                const unsigned short timeLevel,
+                                                const unsigned short intPoint);
+
+  /*!
+   * \brief Function, which accumulates the space time residual of the ADER-DG
+            time integration scheme for the halo elements.
+   * \param[in] config    - Definition of the particular problem.
+   * \param[in] timeLevel - time level for which the residuals must be
+                            accumulated.
+   * \param[in] intPoint  - Index of the time integration point.
+   */
+  void AccumulateSpaceTimeResidualADERHaloElem(CConfig             *config,
+                                               const unsigned short timeLevel,
+                                               const unsigned short intPoint);
 
   /*!
    * \brief Compute primitive variables and their gradients.
