@@ -4550,7 +4550,53 @@ void CFSIDriver::Update(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
                                                    grid_movement, FFDBox, solver_container,
                                                    config_container, ZONE_FLOW, IntIter, ExtIter);
 
-  /*----------- Store the solution_pred as solution_pred_old --------------*/
+
+  /*--- TODO: Temporary output of objective function for Flow OFs. Needs to be integrated into the refurbished output ---*/
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (rank == MASTER_NODE){
+
+  /*--- Choose the filename of the objective function ---*/
+
+    ofstream myfile_res;
+    bool of_output = false;
+    su2double objective_function = 0.0;
+
+    switch (config_container[ZONE_FLOW]->GetKind_ObjFunc()) {
+      case DRAG_COEFFICIENT:
+        myfile_res.open("of_drag.opt");
+        objective_function = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CD();
+        of_output = true;
+        break;
+      case LIFT_COEFFICIENT:
+        myfile_res.open("of_lift.opt");
+        objective_function = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CL();
+        of_output = true;
+      break;
+      case EFFICIENCY:
+        myfile_res.open("of_efficiency.opt");
+        objective_function = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CEff();
+        of_output = true;
+        break;
+      default:
+        of_output = false;
+        break;
+    }
+
+    if (of_output){
+
+        myfile_res.precision(15);
+        myfile_res << scientific << objective_function << endl;
+        myfile_res.close();
+
+    }
+
+  }
+
 
 }
 
@@ -6554,6 +6600,7 @@ void CDiscAdjFSIStatDriver::Postprocess(unsigned short ZONE_FLOW,
         config_container[ZONE_STRUCT], iMarker);
     break;
   }
+
 
 }
 
