@@ -642,11 +642,11 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
-//    if (dual_time){
+    if (dual_time){
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
-//    }
+    }
 //    direct_solver->node[iPoint]->SetAdjointSolution_Old(node[iPoint]->GetSolution_Old());
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }

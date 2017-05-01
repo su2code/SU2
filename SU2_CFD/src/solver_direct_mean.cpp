@@ -7945,29 +7945,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   }
   if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
 
-
-  
-
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
-
-  su2double Physical_t;
-  su2double Physical_dt;
-  /*--- Calculation of Physical time step for unsteady simulation ---*/
-  if (harmonic_balance) {
-
-    /*--- time interval using nTimeInstances ---*/
-    Physical_dt  = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
-
-    /*--- Non-dimensionalization of time step.  ---*/
-    Physical_dt /= config->GetTime_Ref();
-    Physical_t  = config->GetiZone()*Physical_dt;
-  }
-  else {
-    Physical_dt = (su2double)config->GetDelta_UnstTimeND();
-    Physical_t  = (config->GetExtIter())*Physical_dt;
-  }
-  if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
-
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
   	V_boundary= GetCharacPrimVar(val_marker, iVertex);
