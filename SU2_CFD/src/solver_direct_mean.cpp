@@ -351,7 +351,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nDim = geometry->GetnDim();
 
   nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+4;
   nSecondaryVar = 2; nSecondaryVarGrad = 2;
 
   
@@ -14505,7 +14505,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nDim = geometry->GetnDim();
   
   nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+4;
   nSecondaryVar = 8; nSecondaryVarGrad = 2;
 
   

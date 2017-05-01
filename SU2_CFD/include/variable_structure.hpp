@@ -2029,6 +2029,8 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
+
+  virtual void SetGamma (su2double value_Gamma);
 };
 
 /*!
@@ -3080,6 +3082,8 @@ public:
    * \param[in] Value of the derivatives of the wind gust
    */
   void SetWindGustDer(su2double* val_WindGust);
+
+  void SetGamma (su2double value_Gamma);
 };
 
 /*!
@@ -3317,7 +3321,6 @@ public:
    * \brief Set all the primitive variables for incompressible flows.
    */
   bool SetPrimVar(su2double Density_Inf, CConfig *config);
-  
 };
 
 /*!

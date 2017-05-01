@@ -602,6 +602,10 @@ inline bool CEulerVariable::SetDensity(void) {
   else return true;
 }
 
+inline void CEulerVariable::SetGamma (su2double value_Gamma) { Primitive[nDim+9] = value_Gamma;}
+
+inline void CVariable::SetGamma (su2double value_Gamma) { }
+
 inline bool CEulerVariable::SetPressure(su2double pressure) {
   Primitive[nDim+1] = pressure;
   if (Primitive[nDim+1] > 0.0) return false;

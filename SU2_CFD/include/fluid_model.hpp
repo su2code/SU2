@@ -271,6 +271,7 @@ public:
 
     virtual void SetGamma_Trho (su2double T, su2double rho);
 
+    virtual su2double GetGamma ();
 };
 
 
@@ -366,6 +367,7 @@ public:
     /*!
      * \brief Return gamma value.
      */
+
     su2double GetGamma ();
 };
 
