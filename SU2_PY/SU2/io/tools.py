@@ -368,7 +368,10 @@ optnames_geo = [ "MAX_THICKNESS"      ,
 
 # Structural Optimizer Function Names
 optnames_fea = [ "REFERENCE_GEOMETRY",
-                 "REFERENCE_NODE"]
+                 "REFERENCE_NODE",
+                 "EFFICIENCY_FSI",
+                 "DRAG_FSI",
+                 "LIFT_FSI"]
 #: optnames_fea
 
 grad_names_directdiff = ["D_LIFT"                  ,
@@ -462,7 +465,9 @@ def get_objectiveSign( ObjFun_name ):
     
     # flip sign for maximization problems
     if ObjFun_name == "LIFT"            : return -1.0
+    if ObjFun_name == "LIFT_FSI"        : return -1.0
     if ObjFun_name == "EFFICIENCY"      : return -1.0
+    if ObjFun_name == "EFFICIENCY_FSI"  : return -1.0
     if ObjFun_name == "THRUST"          : return -1.0
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
     if ObjFun_name == "MASS_FLOW_RATE" : return -1.0
@@ -528,7 +533,10 @@ def get_adjointSuffix(objective_function=None):
                  "CIRCUMFERENTIAL_DISTORTION"              : "cdis"       ,
                  "COMBO"                   : "combo"     ,
                  "REFERENCE_GEOMETRY"      : "refgeom"   ,
-                 "REFERENCE_NODE"          : "refnode"}
+                 "REFERENCE_NODE"          : "refnode"   ,
+                 "EFFICIENCY_FSI"          : "eff"       ,
+                 "DRAG_FSI"                : "cd"        ,
+                 "LIFT_FSI"                : "cl"}
     
     # if none or false, return map
     if not objective_function:

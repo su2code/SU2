@@ -544,6 +544,12 @@ def structural_adjoint( func_name, problem, state=None ):
             # setup config
             if multi_objective:
                 config['OBJECTIVE_FUNCTION'] = ", ".join(func_name)
+            elif func_name == "EFFICIENCY_FSI":
+                config['OBJECTIVE_FUNCTION'] = "EFFICIENCY"
+            elif func_name == "DRAG_FSI":
+                config['OBJECTIVE_FUNCTION'] = "DRAG"
+            elif func_name == "LIFT_FSI":
+                config['OBJECTIVE_FUNCTION'] = "LIFT"
             else:
                 config['OBJECTIVE_FUNCTION'] = func_name
 
@@ -558,7 +564,15 @@ def structural_adjoint( func_name, problem, state=None ):
             state.GRADIENTS.update(gradients)
 
             # solution files to push
-            name = state.FILES[ADJ_NAME]
+            # TODO: hack here for using Efficiency, Drag and Lift in FSI problems. Need to sort it out
+            if func_name == "EFFICIENCY_FSI":
+                name = state.FILES["ADJOINT_EFFICIENCY"]
+            elif func_name == "DRAG_FSI":
+                name = state.FILES["ADJOINT_DRAG"]
+            elif func_name == "LIFT_FSI":
+                name = state.FILES["ADJOINT_LIFT"]
+            else:
+                name = state.FILES[ADJ_NAME]
             name = su2io.expand_time(name, problem.physics)
             # push copies the files that were generated (new restart, for example)
             push.extend(name)

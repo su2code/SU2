@@ -193,3 +193,21 @@ class of_fea(ofunction):
             plot_file = open(ofunction_filename)
             line = plot_file.readline()
             state.FUNCTIONS.REFERENCE_NODE = float(line)
+
+        if 'EFFICIENCY_FSI' in self.list_of:
+            ofunction_filename = 'of_efficiency.opt'
+            plot_file = open(ofunction_filename)
+            line = plot_file.readline()
+            state.FUNCTIONS.EFFICIENCY_FSI = float(line)
+
+        if 'DRAG_FSI' in self.list_of:
+            ofunction_filename = 'of_drag.opt'
+            plot_file = open(ofunction_filename)
+            line = plot_file.readline()
+            state.FUNCTIONS.DRAG_FSI = float(line)
+
+        if 'LIFT_FSI' in self.list_of:
+            ofunction_filename = 'of_lift.opt'
+            plot_file = open(ofunction_filename)
+            line = plot_file.readline()
+            state.FUNCTIONS.LIFT_FSI = float(line)
