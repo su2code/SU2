@@ -2896,12 +2896,12 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
   err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
 
 
-  if (abs((D - delta_p*err_P)/Density_i)>1e-3 && abs(delta_rho/Density_i)>1e-3 && s/Density_i > 1e-3) {
-
-    RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);
-    RoeChi = (D*RoeChi+ s*s*delta_rho*err_P)/(D - delta_p*err_P);
-
-  }
+//  if (abs((D - delta_p*err_P)/Density_i)>1e-3 && abs(delta_rho/Density_i)>1e-3 && s/Density_i > 1e-3) {
+//
+//    RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);
+//    RoeChi = (D*RoeChi+ s*s*delta_rho*err_P)/(D - delta_p*err_P);
+//
+//  }
 
   RoeSoundSpeed2 = RoeChi + RoeKappa*(RoeEnthalpy-0.5*sq_vel);
 
