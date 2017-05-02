@@ -856,6 +856,7 @@ private:
   su2double *RampRotatingFrame_Coeff; /*!< \brief coefficient for Rotating frame ramp */
   su2double *RampOutletPressure_Coeff; /*!< \brief coefficient for outlet pressure ramp */
   su2double AverageMachLimit;       /*!< \brief option for turbulent mixingplane */
+  su2double UpwindMachLimit;        /*!< \brief Upwind mach limit */
   su2double *FinalRotation_Rate_Z; /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure; /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
@@ -3827,6 +3828,11 @@ public:
 	 */
 	su2double GetAverageMachLimit(void);
 
+/*!
+ * \brief Get mach limit for upwind 2nd order reconstruction.
+ * \return mach limit.
+ */
+su2double GetUpwindMachLimit(void);
 
   /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.

@@ -959,6 +959,8 @@ inline su2double CConfig::GetMixedout_Coeff(unsigned short iCoeff) { return Mixe
 
 inline su2double CConfig::GetAverageMachLimit(void) { return AverageMachLimit;}
 
+inline su2double CConfig::GetUpwindMachLimit(void) { return UpwindMachLimit;}
+
 inline unsigned short CConfig::GetKind_MixingPlaneInterface(void) { return Kind_MixingPlaneInterface;}
 
 inline unsigned short CConfig::GetKind_TurboMachinery(unsigned short val_iZone) { return Kind_TurboMachinery[val_iZone]; }
