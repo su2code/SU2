@@ -376,8 +376,100 @@ public:
      */
 
     su2double GetGamma ();
+
+
 };
 
+
+class CIdealGas_Generic : public CIdealGas {
+
+protected:
+  su2double Gamma,             /*!< \brief Heat Capacity Ratio. */
+          Gamma_Minus_One,       /*!< \brief Heat Capacity Ratio Minus One. */
+          Gas_Constant;        /*!< \brief Gas Constant. */
+
+
+public:
+
+     /*!
+     * \brief Constructor of the class.
+     */
+    CIdealGas_Generic(void);
+
+    /*!
+     * \brief Constructor of the class.
+     */
+    CIdealGas_Generic(su2double gamma, su2double R);
+
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    virtual ~CIdealGas_Generic(void);
+
+    /*!
+     * \brief Set the Dimensionless State using Density and Internal Energy
+     * \param[in] rho - first thermodynamic variable.
+     * \param[in] e - second thermodynamic variable.
+     */
+
+    void SetTDState_rhoe (su2double rho, su2double e );
+
+    /*!
+     * \brief Set the Dimensionless State using Pressure  and Temperature
+     * \param[in] P - first thermodynamic variable.
+     * \param[in] T - second thermodynamic variable.
+     */
+
+    void SetTDState_PT (su2double P, su2double T );
+
+    /*!
+     * \brief Set the Dimensionless State using Pressure and Density
+     * \param[in] P - first thermodynamic variable.
+     * \param[in] rho - second thermodynamic variable.
+     */
+
+    void SetTDState_Prho (su2double P, su2double rho );
+
+    /*!
+     * \brief Set the Dimensionless Internal Energy using Pressure and Density
+     * \param[in] P - first thermodynamic variable.
+     * \param[in] rho - second thermodynamic variable.
+     */
+
+    void SetEnergy_Prho (su2double P, su2double rho );
+
+    /*!
+     * \brief Set the Dimensionless State using Enthalpy and Entropy
+     * \param[in] th1 - first thermodynamic variable (h).
+     * \param[in] th2 - second thermodynamic variable (s).
+     *
+     */
+    void SetTDState_hs (su2double h, su2double s );
+
+
+    /*!
+     * \brief Set the Dimensionless State using Density and Temperature
+     * \param[in] th1 - first thermodynamic variable (rho).
+     * \param[in] th2 - second thermodynamic variable (T).
+     *
+     */
+    void SetTDState_rhoT (su2double rho, su2double T );
+
+    /*!
+     * \brief Set the Dimensionless State using Pressure and Entropy
+     * \param[in] th1 - first thermodynamic variable (P).
+     * \param[in] th2 - second thermodynamic variable (s).
+     */
+
+    void SetTDState_Ps (su2double P, su2double s );
+
+    /*!
+     * \brief Return gamma value.
+     */
+
+    void SetGamma_Trho(su2double T, su2double rho);
+};
 
 /*!
  * derived class CVanDerWaalsGas
@@ -464,6 +556,7 @@ public:
      */
 
     void SetTDState_Ps (su2double P, su2double s );
+
 
 };
 

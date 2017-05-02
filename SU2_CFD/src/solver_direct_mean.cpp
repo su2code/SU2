@@ -3427,8 +3427,12 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
     case IDEAL_GAS:
 
-      FluidModel = new CIdealGas(config->GetGamma(), config->GetGas_Constant());
-      FluidModel-> SetHeatCapacityModel_Dimensional(config);
+    	if (polytropic)  {
+    		FluidModel = new CIdealGas(config->GetGamma(), config->GetGas_Constant());
+    	} else {
+    	    FluidModel = new CIdealGas(config->GetGamma(), config->GetGas_Constant());
+    	    FluidModel-> SetHeatCapacityModel_Dimensional(config);
+    	}
 
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
@@ -3445,9 +3449,14 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
     case VW_GAS:
 
-   	  FluidModel = new CVanDerWaalsGas_Generic(config->GetGamma(), config->GetGas_Constant(),
-                                       config->GetPressure_Critical(), config->GetTemperature_Critical());
-   	  FluidModel-> SetHeatCapacityModel_Dimensional(config);
+    	if (polytropic)  {
+    		FluidModel = new CVanDerWaalsGas(config->GetGamma(), config->GetGas_Constant(),
+                    config->GetPressure_Critical(), config->GetTemperature_Critical());
+    	} else {
+    	    FluidModel = new CVanDerWaalsGas_Generic(config->GetGamma(), config->GetGas_Constant(),
+    	                                       config->GetPressure_Critical(), config->GetTemperature_Critical());
+    	   	FluidModel-> SetHeatCapacityModel_Dimensional(config);
+    	}
 
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
@@ -3463,9 +3472,15 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
     case PR_GAS:
 
-      FluidModel = new CPengRobinson(config->GetGamma(), config->GetGas_Constant(), config->GetPressure_Critical(),
-                                     config->GetTemperature_Critical(), config->GetAcentric_Factor());
-      FluidModel-> SetHeatCapacityModel_Dimensional(config);
+    	if (polytropic)  {
+    		FluidModel = new CPengRobinson(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                    config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
+    	} else {
+    		FluidModel = new CPengRobinson(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                    config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
+    		FluidModel-> SetHeatCapacityModel_Dimensional(config);
+    	}
+
 
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
@@ -3663,29 +3678,48 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       
     case STANDARD_AIR:
 
+
       FluidModel = new CIdealGas(1.4, Gas_ConstantND);
       FluidModel-> SetHeatCapacityModel_Dimensionless(config);
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
     case IDEAL_GAS:
-      FluidModel = new CIdealGas(config->GetGamma(), Gas_ConstantND);
-      FluidModel-> SetHeatCapacityModel_Dimensionless(config);
-      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
-      break;
-      
-    case VW_GAS:
-      FluidModel = new CVanDerWaalsGas_Generic(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
-                                           config->GetTemperature_Critical()/config->GetTemperature_Ref());
-      FluidModel-> SetHeatCapacityModel_Dimensionless(config);
+    	if (polytropic)  {
+    		FluidModel = new CIdealGas(Gamma, Gas_ConstantND);
+    	} else {
+    		FluidModel = new CIdealGas_Generic(Gamma, Gas_ConstantND);
+    		FluidModel-> SetHeatCapacityModel_Dimensionless(config);
+    	}
 
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
+    case VW_GAS:
+
+    	if (polytropic)  {
+    		FluidModel = new CVanDerWaalsGas(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                    config->GetTemperature_Critical()/config->GetTemperature_Ref());
+    	} else {
+    		FluidModel = new CVanDerWaalsGas_Generic(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                    config->GetTemperature_Critical()/config->GetTemperature_Ref());
+    		FluidModel-> SetHeatCapacityModel_Dimensionless(config);
+    	}
+
+    	FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
+      
     case PR_GAS:
-      FluidModel = new CPengRobinson(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
-                                     config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
-      FluidModel-> SetHeatCapacityModel_Dimensionless(config);
+
+    	if (polytropic)  {
+    		FluidModel = new CPengRobinson(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                    config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
+    	} else {
+    		FluidModel = new CPengRobinson(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                    config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
+    		FluidModel-> SetHeatCapacityModel_Dimensionless(config);
+    	}
+
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
