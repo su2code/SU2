@@ -2954,6 +2954,8 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
         }
       }
     }
+    delete sources;
+    delete resTemp;
   }
 }
 
@@ -6530,6 +6532,8 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
         }
       }
     }
+    delete sources;
+    delete resTemp;
   }
 }
 
