@@ -4651,7 +4651,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0;
   
   su2double z, velocity2_i, velocity2_j, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
-  
+  su2double mach_test;
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
   
@@ -4667,7 +4667,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA;
   bool low_mach_corr    = config->Low_Mach_Correction();
-
+  bool turbo            = config->GetBoolTurbomachinery();
   /*--- Loop over all the edges ---*/
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -4814,6 +4814,40 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = V_j[iVar];
         Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1];
         counter_local++;
+      }
+
+      /*--- Check maximum mach number value for Upwind Reconstruction ---*/
+      if(turbo){
+        mach_test = 0.0;
+        for(iDim = 0; iDim < nDim; iDim++){
+          mach_test += Primitive_i[iDim+1]*Primitive_i[iDim+1];
+        }
+        mach_test = sqrt(mach_test)/Primitive_i[nDim+4];
+
+        if (mach_test > config->GetUpwindMachLimit()){
+          for (iVar = 0; iVar < nPrimVar; iVar++) {
+            Primitive_i[iVar] = V_i[iVar];
+            Primitive_j[iVar] = V_j[iVar];
+          }
+          Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
+          Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1];
+        }
+
+        mach_test = 0.0;
+        for(iDim = 0; iDim < nDim; iDim++){
+          mach_test += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+        }
+        mach_test = sqrt(mach_test)/Primitive_j[nDim+4];
+
+        if (mach_test > config->GetUpwindMachLimit()){
+          for (iVar = 0; iVar < nPrimVar; iVar++) {
+            Primitive_i[iVar] = V_i[iVar];
+            Primitive_j[iVar] = V_j[iVar];
+          }
+          Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
+          Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1];
+        }
+
       }
 
       numerics->SetPrimitive(Primitive_i, Primitive_j);
