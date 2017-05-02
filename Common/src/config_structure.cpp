@@ -441,6 +441,7 @@ void CConfig::SetPointersNull(void) {
   default_ffd_axis      = NULL;
   default_eng_cyl       = NULL;
   default_eng_val       = NULL;
+  default_heat_capacity = NULL;
   default_cfl_adapt     = NULL;
   default_ad_coeff_flow = NULL;
   default_ad_coeff_adj  = NULL;
@@ -509,6 +510,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_ffd_axis      = new su2double[3];
   default_eng_cyl       = new su2double[7];
   default_eng_val       = new su2double[5];
+  default_heat_capacity = new su2double[5];
   default_cfl_adapt     = new su2double[4];
   default_ad_coeff_flow = new su2double[3];
   default_ad_coeff_adj  = new su2double[3];
@@ -570,11 +572,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
   /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n DEFAULT: STANDARD_AIR \ingroup Config*/
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
-
-  /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
-  /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n DEFAULT: STANDARD_AIR \ingroup Config*/
-  addEnumOption("HEAT_CAPACITY_MODEL", Kind_HeatCapacity, HeatCapacity_Map, WATER);
-
 
   /*!\par CONFIG_CATEGORY: Freestream Conditions \ingroup Config*/
   /*--- Options related to freestream specification ---*/
@@ -851,6 +848,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_eng_val[0]=0.0; default_eng_val[1]=0.0; default_eng_val[2]=0.0;
   default_eng_val[3]=0.0;  default_eng_val[4]=0.0;
   addDoubleArrayOption("SUBSONIC_ENGINE_VALUES", 5, SubsonicEngine_Values, default_eng_val);
+
+  default_heat_capacity[0]= Gas_Constant*Gamma/(Gamma-1); default_heat_capacity[1]=0.0; default_heat_capacity[2]=0.0;
+  default_heat_capacity[3]=0.0;  default_heat_capacity[4]=0.0;
+  addDoubleArrayOption("HEAT_CAPACITY_MODEL", 5, Coeff_HeatCapacity, default_heat_capacity);
+
   /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle cylinder (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax, Radius) */
   default_eng_cyl[0] = 0.0; default_eng_cyl[1] = 0.0; default_eng_cyl[2] = 0.0;
   default_eng_cyl[3] =  1E15; default_eng_cyl[4] =  1E15; default_eng_cyl[5] =  1E15; default_eng_cyl[6] =  1E15;
@@ -5525,6 +5527,7 @@ CConfig::~CConfig(void) {
   if (default_ffd_axis      != NULL) delete [] default_ffd_axis;
   if (default_eng_cyl       != NULL) delete [] default_eng_cyl;
   if (default_eng_val       != NULL) delete [] default_eng_val;
+  if (default_heat_capacity != NULL) delete [] default_heat_capacity;
   if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
   if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
   if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;

@@ -59,8 +59,8 @@ using namespace std;
  */
 class CHeatCapacity {
 
-protected: su2double Gas_Constant, Cv0, *coeff_Cp0;
-
+protected: su2double Gas_Constant, Gas_ConstantND, Cv0, Gamma, *coeff_Cp0, Tref;
+           bool Constant_Gamma;
 CConfig *config;
 
 
@@ -85,52 +85,45 @@ public:
     /*!
      * \brief return liquid density value.
      */
+    virtual void Set_Cv0 (su2double T);
+};
+
+
+class CHeatCapacity_Dimensionless : public CHeatCapacity {
+
+public:
+
+     CHeatCapacity_Dimensionless();
+
+     CHeatCapacity_Dimensionless(CConfig *config);
+    /*!
+     * \brief Destructor of the class.
+     */
+     ~CHeatCapacity_Dimensionless(void);
+
+    /*!
+     * \brief return liquid density value.
+     */
     void Set_Cv0 (su2double T);
 };
 
-
-/*!
- * \class CSteam
- * \version 1.0
- */
-class CSteam : public CHeatCapacity {
-protected:
-
-
-public:
-  
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CSteam();
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  virtual ~CSteam(void);
-
-};
-
-class CCo2 : public CHeatCapacity {
-protected:
-
+class CHeatCapacity_Dimensional : public CHeatCapacity {
 
 public:
 
+     CHeatCapacity_Dimensional();
 
-  /*!
-   * \brief Constructor of the class.
-   */
-  CCo2();
+     CHeatCapacity_Dimensional(CConfig *config);
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CHeatCapacity_Dimensional(void);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  virtual ~CCo2(void);
-
+    /*!
+     * \brief return liquid density value.
+     */
+    void Set_Cv0 (su2double T);
 };
-
 
 
 

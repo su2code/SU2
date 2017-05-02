@@ -34,3 +34,4 @@
 #pragma once
 
 inline su2double CHeatCapacity::Get_Cv0() { return Cv0; }
+inline void      CHeatCapacity::Set_Cv0( su2double T) {  }

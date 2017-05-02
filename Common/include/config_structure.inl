@@ -663,7 +663,7 @@ inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 
 inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel; }
 
-inline unsigned short CConfig::GetKind_HeatCapacity(void) { return Kind_HeatCapacity; }
+inline su2double* CConfig::GetCoeff_HeatCapacity(void) { return Coeff_HeatCapacity; }
 
 inline bool           CConfig::Get_ConstantGamma(void) { return Constant_Gamma; }
 

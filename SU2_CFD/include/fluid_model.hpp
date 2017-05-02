@@ -73,6 +73,8 @@ su2double      StaticEnergy,      /*!< \brief Internal Energy. */
        dTdrho_e,         /*!< \brief DTDd_e. */
        dTde_rho,         /*!< \brief DTDe_d. */
              Cp,                    /*!< \brief Specific Heat Capacity at constant pressure. */
+			 Cv,
+			 Cv0,
        Mu,          /*!< \brief Specific Heat Capacity at constant pressure. */
          dmudrho_T,       /*!< \brief Specific Heat Capacity at constant pressure. */
          dmudT_rho,        /*!< \brief Specific Heat Capacity at constant pressure. */
@@ -83,6 +85,7 @@ su2double      StaticEnergy,      /*!< \brief Internal Energy. */
 CViscosityModel *LaminarViscosity;            /*!< \brief Laminar Viscosity Model */
 CConductivityModel *ThermalConductivity;    /*!< \brief Thermal Conductivity Model */
 CHeatCapacity *HeatCapacity;    /*!< \brief Heat Capacityy Model */
+
 
 public:
 
@@ -272,6 +275,10 @@ public:
     virtual void SetGamma_Trho (su2double T, su2double rho);
 
     virtual su2double GetGamma ();
+
+    void SetHeatCapacityModel_Dimensionless (CConfig *config);
+
+    void SetHeatCapacityModel_Dimensional   (CConfig *config);
 };
 
 
@@ -383,7 +390,7 @@ class CVanDerWaalsGas : public CIdealGas {
 protected:
   su2double
       a, b, Zed;             /*!< \brief Parameters for the Dimensionless Equation. */
-  su2double Cv, Cv0, Cp, Cp0; /* brief auxiliary variables for gamma evaluation*/
+
 
 public:
 
@@ -429,6 +436,8 @@ public:
      * \param[in] P - first thermodynamic variable.
      * \param[in] rho - second thermodynamic variable.
      */
+
+
     void SetEnergy_Prho (su2double P, su2double rho );
 
     /*!
@@ -477,7 +486,9 @@ public:
     /*!
      * \brief Destructor of the class.
      */
-    virtual ~CVanDerWaalsGas_Generic(void);
+    ~CVanDerWaalsGas_Generic(void);
+
+    CVanDerWaalsGas_Generic (su2double gamma, su2double R, su2double Pstar, su2double Tstar);
 
     /*!
      * \brief Set the Dimensionless State using Density and Internal Energy
@@ -493,7 +504,7 @@ public:
      */
     void SetTDState_PT (su2double P, su2double T );
 
-
+    void SetTDState_Prho (su2double P, su2double rho );
     /*!
      * \brief Set the Dimensionless Internal Energy using Pressure and Density
      * \param[in] P - first thermodynamic variable.

@@ -38,60 +38,84 @@ CHeatCapacity::CHeatCapacity() {
 
 CHeatCapacity::CHeatCapacity(CConfig *config) {
 
-	Gas_Constant = config->GetGas_Constant();
-	coeff_Cp0  = new su2double [5];
+	Gas_Constant   = config->GetGas_Constant();
+	Gas_ConstantND = config->GetGas_ConstantND();
+	Gamma          = config->GetGamma();
+	Constant_Gamma = config->Get_ConstantGamma();
+	Tref           = config->GetTemperature_Ref();
+
+	coeff_Cp0      = config->GetCoeff_HeatCapacity();
 
 }
 
 CHeatCapacity::~CHeatCapacity(void) {
 
-	delete [] coeff_Cp0;
 }
 
 
+CHeatCapacity_Dimensional::CHeatCapacity_Dimensional() : CHeatCapacity() {
 
-void CHeatCapacity::Set_Cv0(su2double T) {
+}
+
+CHeatCapacity_Dimensional::CHeatCapacity_Dimensional(CConfig *config) : CHeatCapacity(config) {
+
+}
+
+CHeatCapacity_Dimensional::~CHeatCapacity_Dimensional(void) {
+
+}
+
+void CHeatCapacity_Dimensional::Set_Cv0(su2double T) {
 
 	unsigned short i;
     su2double Cp0;
 
-    Cp0 = 0;
+    if (Constant_Gamma) {
+    	Cp0 = Gas_Constant * Gamma / (Gamma-1);
 
-    for (i=0;i<5;i++)
-       Cp0 += coeff_Cp0[i] * pow(T, i);
+
+    } else {
+
+    	Cp0 = 0;
+        for (i=0;i<5;i++)
+           Cp0 += coeff_Cp0[i] * pow(T, i);
+    }
 
     Cv0 = Cp0 - Gas_Constant;
 
 }
 
 
-CSteam::CSteam() : CHeatCapacity() {
-
-    coeff_Cp0[0] =  34.51/0.018      ;
-    coeff_Cp0[1] = - 0.01/0.018      ;
-    coeff_Cp0[2] =   4.686e-05/0.018 ;
-    coeff_Cp0[3] = - 3.781e-08/0.018 ;
-    coeff_Cp0[3] =   1.173e-11/0.018 ;
-}
-
-
-
-CSteam::~CSteam(void) {
+CHeatCapacity_Dimensionless::CHeatCapacity_Dimensionless() : CHeatCapacity() {
 
 }
 
-CCo2::CCo2() : CHeatCapacity() {
+CHeatCapacity_Dimensionless::CHeatCapacity_Dimensionless(CConfig *config) : CHeatCapacity(config) {
 
-    coeff_Cp0[0] =  17.46/0.044      ;
-    coeff_Cp0[1] =   0.09/0.044      ;
-    coeff_Cp0[2] = - 1.008e-04/0.044 ;
-    coeff_Cp0[3] =   6.539e-08/0.044 ;
-    coeff_Cp0[3] = - 1.845e-11/0.044 ;
 }
 
+CHeatCapacity_Dimensionless::~CHeatCapacity_Dimensionless(void) {
 
+}
 
-CCo2::~CCo2(void) {
+void CHeatCapacity_Dimensionless::Set_Cv0(su2double T) {
+
+	unsigned short i;
+    su2double Cp0;
+
+    if (Constant_Gamma) {
+    	Cp0 = Gas_Constant * Gamma / (Gamma-1);
+
+    } else {
+        Cp0 = 0;
+        for (i=0;i<5;i++) {
+           Cp0 += coeff_Cp0[i] * pow(T*Tref, i);
+        }
+    }
+
+    Cp0 = Cp0 / Gas_Constant * Gas_ConstantND;
+    Cv0 = Cp0 - Gas_ConstantND;
+
 
 }
 

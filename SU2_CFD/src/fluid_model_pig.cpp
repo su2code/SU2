@@ -54,6 +54,7 @@ CIdealGas::~CIdealGas(void) {
 
 }
 
+/*
 void CIdealGas::SetTDState_rhoe (su2double rho, su2double e ) {
   
   Density = rho;
@@ -68,25 +69,94 @@ void CIdealGas::SetTDState_rhoe (su2double rho, su2double e ) {
   dTde_rho = Gamma_Minus_One/Gas_Constant;
 
 }
+*/
+void CIdealGas::SetTDState_rhoe (su2double rho, su2double e ) {
+
+  su2double Temperature_new, error;
+  su2double toll = 1e-3;
+  unsigned int ITMAX = 1000, count = 0;
+
+  Density = rho;
+  StaticEnergy = e;
+
+  Temperature = Gamma_Minus_One/Gas_Constant*StaticEnergy;
+
+  do{
+  	Temperature_new = Temperature;
+  	HeatCapacity->Set_Cv0 (Temperature_new);
+  	Cv = HeatCapacity->Get_Cv0 ();
+  	Temperature = StaticEnergy/ Cv;
+  	error = abs(Temperature_new-Temperature)/Temperature_new;
+//  	cout << Temperature << " " << Cv << endl;
+  	count++;
+  	}
+  while(error > toll && count<ITMAX);
+
+  if (count==ITMAX) {
+	 cout <<"Too many iterations for T in e-rho call" << endl;
+  }
+
+  SetGamma_Trho (Temperature, rho);
+  Gamma_Minus_One = Gamma - 1;
+
+  Pressure = Gas_Constant*Density*Temperature;
+  SoundSpeed2 = Gamma*Pressure/Density;
+  Entropy = Cv*log(Temperature) + log(1.0/Density)*Gas_Constant;
+  dPdrho_e = Gamma_Minus_One*StaticEnergy;
+  dPde_rho = Gamma_Minus_One*Density;
+  dTdrho_e = 0.0;
+  dTde_rho = Gamma_Minus_One/Gas_Constant;
+
+}
+/*
+void CIdealGas::SetTDState_PT (su2double P, su2double T ) {
+  su2double e = T*Gas_Constant/(Gamma_Minus_One);
+  su2double rho = P/(T*Gas_Constant);
+  SetTDState_rhoe(rho, e);
+}
+*/
 
 void CIdealGas::SetTDState_PT (su2double P, su2double T ) {
-  su2double e = T*Gas_Constant/Gamma_Minus_One;
+  HeatCapacity->Set_Cv0 (T);
+  Cv = HeatCapacity->Get_Cv0 ();
+  su2double e = T*Cv;
   su2double rho = P/(T*Gas_Constant);
   SetTDState_rhoe(rho, e);
 
 }
 
+/*
 void CIdealGas::SetTDState_Prho (su2double P, su2double rho ) {
   su2double e = P/(Gamma_Minus_One*rho);
   SetTDState_rhoe(rho, e);
 
 }
+*/
 
+
+void CIdealGas::SetTDState_Prho (su2double P, su2double rho ) {
+  su2double T = P/(Gas_Constant*rho);
+  SetTDState_PT(P, T);
+
+}
+
+
+/*
 void CIdealGas::SetEnergy_Prho (su2double P, su2double rho ) {
   StaticEnergy = P/(rho*Gamma_Minus_One);
 
 }
+*/
 
+void CIdealGas::SetEnergy_Prho (su2double P, su2double rho ) {
+	su2double T = P/(Gas_Constant*rho);
+	HeatCapacity->Set_Cv0 (T);
+	Cv = HeatCapacity->Get_Cv0 ();
+	StaticEnergy = T*Cv;
+
+}
+
+/*
 void CIdealGas::SetTDState_hs (su2double h, su2double s ) {
 
   su2double T = h*Gamma_Minus_One/Gas_Constant/Gamma;
@@ -96,7 +166,37 @@ void CIdealGas::SetTDState_hs (su2double h, su2double s ) {
   SetTDState_rhoe(1/v, e);
 
 }
+*/
 
+void CIdealGas::SetTDState_hs (su2double h, su2double s ) {
+
+	  su2double error, T;
+	  su2double toll = 1e-3;
+	  unsigned int ITMAX = 1000, count = 0;
+
+	  su2double T_new = h*Gamma_Minus_One/Gas_Constant/Gamma;
+
+	  do{
+	  	T = T_new;
+	  	HeatCapacity->Set_Cv0 (T);
+	  	Cv = HeatCapacity->Get_Cv0 ();
+	  	Cp = Cv + Gas_Constant;
+	  	T_new = h/ Cp;
+	  	error = abs(T_new-T)/T_new;
+	  	count++;
+	  	}
+
+	  while(error > toll && count<ITMAX);
+
+
+      su2double e = T*Cv;
+      su2double  v = exp((s - Cv*log(T)) / Gas_Constant) ;
+
+      SetTDState_rhoe(1/v, e);
+
+}
+
+/*
 void CIdealGas::SetTDState_Ps (su2double P, su2double s ) {
 
   su2double T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
@@ -104,7 +204,31 @@ void CIdealGas::SetTDState_Ps (su2double P, su2double s ) {
 
   SetTDState_Prho(P, rho);
 
+}*/
+
+void CIdealGas::SetTDState_Ps (su2double P, su2double s ) {
+
+	su2double T_new   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+	su2double T, v, error, toll = 1e-3;
+	unsigned int ITMAX = 1000, count = 0;
+
+	do{
+	   	  T = T_new;
+	   	  HeatCapacity->Set_Cv0 (T);
+		  Cv = HeatCapacity->Get_Cv0 ();
+
+		  v =  exp((s - Cv*log(T))/Gas_Constant);
+		  T_new = P*v / Gas_Constant;
+
+		  error = abs(T - T_new)/T;
+		  count++;
+	}while(error >toll && count < ITMAX);
+
+    SetTDState_Prho(P, 1/v);
+
 }
+
+/*
 
 void CIdealGas::SetTDState_rhoT (su2double rho, su2double T ) {
 
@@ -112,6 +236,20 @@ void CIdealGas::SetTDState_rhoT (su2double rho, su2double T ) {
   SetTDState_rhoe(rho, e);
 
 }
+*/
+
+void CIdealGas::SetTDState_rhoT (su2double rho, su2double T ) {
+
+  HeatCapacity->Set_Cv0 (T);
+  Cv = HeatCapacity->Get_Cv0 ();
+
+  su2double e = T*Cv;
+  SetTDState_rhoe(rho, e);
+
+
+}
+
+
 
 
 
