@@ -179,22 +179,28 @@ def scipy_cg(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     else:
         fprime         = obj_df
 
-    # number of design variables
-    n_dv = len( project.config['DEFINITION_DV']['KIND'] )
-    project.n_dv = n_dv
 
+    # number of design variables
+    dv_size = project.config['DEFINITION_DV']['SIZE']
+    n_dv = sum( dv_size)
+    project.n_dv = n_dv
+    
     # Initial guess
     if not x0: x0 = [0.0]*n_dv
-
+    
     # prescale x0
     dv_scales = project.config['DEFINITION_DV']['SCALE']
-    x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]
+    k = 0
+    for i, dv_scl in enumerate(dv_scales):
+        for j in range(dv_size[i]):
+            x0[k] =x0[k]/dv_scl;
+            k = k + 1
 
     # scale accuracy
     obj = project.config['OPT_OBJECTIVE']
-    obj_scale = obj[obj.keys()[0]]['SCALE']
-    accu = accu*obj_scale
-
+    obj_scale = []
+    for this_obj in obj.keys():
+        obj_scale = obj_scale + [obj[this_obj]['SCALE']]
     # scale accuracy
     eps = 1.0e-04
 

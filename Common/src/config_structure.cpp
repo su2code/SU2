@@ -1707,6 +1707,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_ad_coeff_flow[0] = 2; default_ad_coeff_flow[1] = 2; default_ad_coeff_flow[2] = 2;
   addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, FFD_BSpline_Order,default_ad_coeff_flow);
 
+  addStringOption("CSP_PILOTPOINT_FILE", CSP_PilotPointFile, "PilotPoints.dat");
+
+  addStringListOption("CSP_CONSTRAINT_GROUPS", nCSP_ConstraintGroups, CSP_ConstraintGroups);
+
+  addEnumOption("CSP_ENERGY_DEFINITION", CSP_EnergyDefinition, CSP_Energy_Map, ELASTIC_ENERGY);
+
+  addDoubleOption("CSP_ELASTIC_MODULUS", CSP_ElasticModulus, 1e06);
+
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
 
@@ -3986,6 +3994,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
           case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
           case FFD_ANGLE_OF_ATTACK:   cout << "FFD (angle of attack) <-> "; break;
+          case FFD_DIRECT_MANIPULATION:    cout << "FFD (direct) <-> "; break;
+          case FFD_DIRECT_MANIPULATION_2D: cout << "FFD (direct) <-> "; break;
           case CUSTOM:                cout << "Custom DV <-> "; break;
         }
         
@@ -4020,6 +4030,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] ==  FFD_TWIST_2D) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
+        if (Design_Variable[iDV] == FFD_DIRECT_MANIPULATION) nParamDV = 4;
+        if (Design_Variable[iDV] == FFD_DIRECT_MANIPULATION_2D) nParamDV = 3;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
@@ -4048,7 +4060,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_ROTATION_TRANS) ||
                (Design_Variable[iDV] == FFD_CONTROL_SURFACE) ||
                (Design_Variable[iDV] == FFD_CAMBER) ||
-               (Design_Variable[iDV] == FFD_THICKNESS))) cout << FFDTag[iDV];
+               (Design_Variable[iDV] == FFD_THICKNESS) ||
+               (Design_Variable[iDV] == FFD_DIRECT_MANIPULATION) ||
+               (Design_Variable[iDV] == FFD_DIRECT_MANIPULATION_2D))) cout << FFDTag[iDV];
           else cout << ParamDV[iDV][iParamDV];
 
           if (iParamDV < nParamDV-1) cout << ", ";

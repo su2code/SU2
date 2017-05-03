@@ -1505,3 +1505,13 @@ inline su2double CConfig::GetZonal_Dist(void) {return Zonal_Dist;}
 inline bool CConfig::GetZonal_DES(void) {return Zonal_DES;}
 
 inline bool CConfig::GetQCR(void) {return QCR;}
+
+inline string CConfig::GetCSP_PilotPointFile(){return CSP_PilotPointFile;}
+
+inline su2double CConfig::GetCSP_ElasticModulus(){return CSP_ElasticModulus;}
+
+inline unsigned short CConfig::GetCSP_EnergyDefinition(){return CSP_EnergyDefinition;}
+
+inline string CConfig::GetCSP_ConstraintGroup(unsigned short val_group){return CSP_ConstraintGroups[val_group];}
+
+inline unsigned short CConfig::GetnCSP_ConstraintGroups(){return nCSP_ConstraintGroups;}

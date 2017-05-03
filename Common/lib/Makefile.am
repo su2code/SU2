@@ -90,6 +90,8 @@ lib_sources = \
   ../include/element_structure.inl \
   ../include/adt_structure.hpp \
   ../include/adt_structure.inl \
+  ../include/surface_deformation.hpp \
+  ../include/surface_deformation.inl \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/geometry_structure.cpp \
@@ -107,7 +109,8 @@ lib_sources = \
   ../src/element_structure.cpp \
   ../src/element_linear.cpp \
   ../src/interpolation_structure.cpp \
-  ../src/adt_structure.cpp
+  ../src/adt_structure.cpp \
+  ../src/surface_deformation.cpp
 
 lib_cxxflags = -fPIC
 lib_ldadd =
