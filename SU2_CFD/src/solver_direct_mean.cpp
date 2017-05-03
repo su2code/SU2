@@ -11687,8 +11687,8 @@ su2double CEulerSolver::polydisc(su2double A , su2double y_max, su2double y_min,
 	su2double rho = 1.217; // Average jet density @ T=290 P=101325 R=287.058
   //su2double mu = 1.768269e-05; // Viscosity @ T=283.8075
   su2double mu = 1.7982099e-05; // Viscosity @ T=290
-	//su2double W = 0.3238; // Truck width
-  su2double W = 0.1684; // Truck width
+	//su2double W = 0.3238; // Truck width 1/8th scale
+  su2double W = 0.1684; // Truck width 6.5% scale
 	su2double Vel = 0;
 	
 	su2double Re = rho*A*W/mu; // Calculates the Reynolds Number to show jet development
@@ -12005,6 +12005,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						//Based on the marker name determine which velocity polynomial to use - 3D
           
 						if (Marker_Tag == "jet_top") {
+              // 1/8th scale
               //y_max = 0.12194458;
               //y_min = -0.12194458;
               //z_max = 0.45089150;
@@ -12021,6 +12022,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
 						else if (Marker_Tag == "jet_bottom") {
+              // 1/8th scale
               //y_max = 0.12194458;
               //y_min = -0.12194458;
               //z_max = 0.00149936;
@@ -12037,6 +12039,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
 						else if (Marker_Tag == "jet_starboard") {
+              // 1/8th scale
               //y_max = 0.16190000;
               //y_min = 0.16040064;
               //z_max = 0.41093608;
@@ -12053,6 +12056,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag *= polydisc(A , z_max, z_min, Coord[2]);
 						}
 						else if (Marker_Tag == "jet_port") {
+              // 1/8th scale
               //y_max = -0.16040064;
               //y_min = -0.16190000;
               //z_max = 0.41093608;
