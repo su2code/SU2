@@ -272,7 +272,7 @@ public:
 
     virtual void SetTDState_Ps (su2double P, su2double s );
 
-    virtual void SetGamma_Trho (su2double T, su2double rho);
+    virtual void SetGamma_Trho ();
 
     virtual su2double GetGamma ();
 
@@ -468,7 +468,7 @@ public:
      * \brief Return gamma value.
      */
 
-    void SetGamma_Trho(su2double T, su2double rho);
+    void SetGamma_Trho();
 };
 
 /*!
@@ -630,7 +630,7 @@ public:
 
     void SetTDState_Ps (su2double P, su2double s );
 
-    void SetGamma_Trho (su2double T, su2double rho);
+    void SetGamma_Trho ();
 
 };
 

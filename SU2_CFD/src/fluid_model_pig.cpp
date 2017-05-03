@@ -140,15 +140,6 @@ void CIdealGas_Generic::SetTDState_rhoT (su2double rho, su2double T ) {
 }
 
 
-void CIdealGas_Generic::SetGamma_Trho (su2double Temperature, su2double Density) {
-
-  Cp = Cv + Gas_Constant;
-  Gamma = Cp/Cv;
-
-}
-
-
-
 
 CIdealGas_Generic::CIdealGas_Generic() : CIdealGas() {
 
@@ -200,7 +191,7 @@ void CIdealGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 //	 cout <<"Too many iterations for T in e-rho call" << endl;
   }
 
-  SetGamma_Trho (Temperature, rho);
+  SetGamma_Trho ();
   Gamma_Minus_One = Gamma - 1;
 
   Pressure = Gas_Constant*Density*Temperature;
@@ -286,4 +277,11 @@ void CIdealGas_Generic::SetTDState_Ps (su2double P, su2double s ) {
 	}while(error >toll && count_T < ITMAX);
 
     SetTDState_Prho(P, 1/v);
+}
+
+void CIdealGas_Generic::SetGamma_Trho () {
+
+    Cp = Cv + Gas_Constant;
+    Gamma = Cp/Cv;
+
 }

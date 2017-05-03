@@ -439,7 +439,6 @@ bool CEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
   SetVelocity();   // Computes velocity and velocity^2
   su2double density = GetDensity();
   su2double staticEnergy = GetEnergy()-0.5*Velocity2;
-  
 
   /*--- Check will be moved inside fluid model plus error description strings ---*/
   

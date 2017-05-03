@@ -70,9 +70,13 @@ void CHeatCapacity_Dimensional::Set_Cv0(su2double T) {
 	unsigned short i;
     su2double Cp0;
 
+    if (coeff_Cp0[0] == 0.0) {
+    	cout << "Warning: no value set for HEAT_CAPACITY_MODEL" << endl;
+        getchar();
+    }
+
     if (Constant_Gamma) {
     	Cp0 = Gas_Constant * Gamma / (Gamma-1);
-
 
     } else {
 
@@ -102,6 +106,12 @@ void CHeatCapacity_Dimensionless::Set_Cv0(su2double T) {
 
 	unsigned short i;
     su2double Cp0;
+
+    if (coeff_Cp0[0] == 0.0) {
+    	cout << "Warning: no value set for HEAT_CAPACITY_MODEL" << endl;
+        getchar();
+    }
+
 
     if (Constant_Gamma) {
     	Cp0 = Gas_Constant * Gamma / (Gamma-1);

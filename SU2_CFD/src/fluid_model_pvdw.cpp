@@ -106,10 +106,9 @@ void CVanDerWaalsGas::SetTDState_PT (su2double P, su2double T ) {
   if (Z <= 1.01 && Z >= 0.05 && count < nmax)
     Zed = Z;
 
-
   Density = P/(Zed*Gas_Constant*T);
 
-    su2double e = T*Gas_Constant/Gamma_Minus_One - a*Density;
+  su2double e = T*Gas_Constant/Gamma_Minus_One - a*Density;
   SetTDState_rhoe(Density, e);
 
 //  cout <<"After  "<< Pressure <<" "<< Temperature << endl;
@@ -202,8 +201,6 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
 //  cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy<<" "<< fmid <<" "<< f<< " "<< count<< endl;
 
 
-
-
 //  T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
 //  do{
 //    f=  log(v-b) - s/Gas_Constant + log(T)/Gamma_Minus_One;
@@ -213,11 +210,6 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
 //    T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
 //    count++;
 //  }while(abs(dv/v) > toll && count < nmax);
-
-
-
-
-
 }
 
 void CVanDerWaalsGas::SetEnergy_Prho (su2double P, su2double rho ) {
@@ -333,39 +325,39 @@ CVanDerWaalsGas_Generic::~CVanDerWaalsGas_Generic(void) { }
 
 
 void CVanDerWaalsGas_Generic::SetTDState_PT (su2double P, su2double T ) {
-  su2double toll= 1e-5, error;
-  unsigned short nmax = 20, count=0;
-  su2double A, B, Z, DZ=1.0, F, F1;
-  A= a*P/(T*Gas_Constant)/(T*Gas_Constant);
-  B= b*P/(T*Gas_Constant);
+	  su2double toll= 1e-5;
+	  unsigned short nmax = 200, count=0;
+	  su2double A, B, Z, DZ=1.0, F, F1;
+	  A= a*P/(T*Gas_Constant)/(T*Gas_Constant);
+	  B= b*P/(T*Gas_Constant);
 
-//    Z= max(B, 0.99);
+	//    Z= max(B, 0.99);
 
-//  cout <<"Before  "<< P <<" "<< T << endl;
-  if (Zed > 0.1)
-    Z=min(Zed, 0.99);
-  else
-    Z=0.99;
+	//  cout <<"Before  "<< P <<" "<< T << endl;
+	  if (Zed > 0.1)
+	    Z=min(Zed, 0.99);
+	  else
+	    Z=0.99;
 
-  do{
-    F = Z*Z*Z - Z*Z*(B+1.0) + Z*A - A*B;
-    F1 = 3*Z*Z - 2*Z*(B+1.0) + A;
-    DZ = F/F1;
-    Z-= 0.7*DZ;
-    count++;
-  }while(abs(DZ)>toll && count < nmax);
+	  do{
+	    F = Z*Z*Z - Z*Z*(B+1.0) + Z*A - A*B;
+	    F1 = 3*Z*Z - 2*Z*(B+1.0) + A;
+	    DZ = F/F1;
+	    Z-= 0.7*DZ;
+	    count++;
+	  }while(abs(DZ)>toll && count < nmax);
 
-  if (count == nmax) {
-    cout << "Warning Newton-Raphson exceed number of max iteration in PT"<< endl;
-    cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<< endl;
-  }
+	  if (count == nmax) {
+	    cout << "Warning Newton-Raphson exceed number of max iteration in PT"<< endl;
+	    cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<< endl;
+	  }
 
-  // check if the solution is physical otherwise uses previous point  solution
-  if (Z <= 1.01 && Z >= 0.05 && count < nmax)
-    Zed = Z;
-
+	  // check if the solution is physical otherwise uses previous point  solution
+	  if (Z <= 1.01 && Z >= 0.05 && count < nmax)
+	    Zed = Z;
 
   Density = P/(Zed*Gas_Constant*T);
+
 
   HeatCapacity->Set_Cv0 (T);
   Cv = HeatCapacity->Get_Cv0 ();
@@ -378,24 +370,23 @@ void CVanDerWaalsGas_Generic::SetTDState_PT (su2double P, su2double T ) {
 
 void CVanDerWaalsGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
-  su2double toll = 1e-6;
+  su2double toll = 1e-5;
   unsigned short count_T=0, ITMAX=1000;
   su2double Temperature_new, error = 1.0;
 
 
   Density = rho;
   StaticEnergy = e;
-
   Cv    = Gas_Constant/(Gamma-1);
 
   Temperature = (StaticEnergy + a*Density)/ Cv;
-
 
   do{
 	Temperature_new = Temperature;
 	HeatCapacity->Set_Cv0 (Temperature_new);
 	Cv = HeatCapacity->Get_Cv0 ();
 	Temperature = (StaticEnergy + a*Density)/ Cv;
+
 	error = abs(Temperature_new-Temperature)/Temperature_new;
 	count_T++;
 	}
@@ -409,7 +400,7 @@ void CVanDerWaalsGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
   Pressure =Temperature*Gas_Constant*Density/(1.0-Density*b) - a*Density*Density;
   Entropy = Cv * log(Temperature) + Gas_Constant * log(1/Density - b);
 
-  SetGamma_Trho (Temperature, 1/Density);
+  SetGamma_Trho ();
   Gamma_Minus_One = Gamma - 1;
 
   dPde_rho = Density*Gamma_Minus_One/(1.0 - Density*b);
@@ -421,7 +412,6 @@ void CVanDerWaalsGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
   Zed = Pressure/(Gas_Constant*Temperature*Density);
 
-
 }
 
 
@@ -429,15 +419,13 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 
     su2double v, T, rho, f, fmid, rtb, T_new, error;
     su2double x1,x2,xmid, dx, fx1, fx2;
-    su2double toll = 1e-3, FACTOR=0.2;
+    su2double toll = 1e-5, FACTOR=0.2;
     unsigned short count=0, count_T = 0, NTRY=10, ITMAX=100;
     su2double cons_s, cons_h;
 
 
     Cp = Gamma*Gas_Constant /(Gamma - 1);
     T_new = h/Cp;
-    v = exp((s - Cv*log(T_new)) / Gas_Constant)+ b ;
-    T_new = (h+ 2*a/v)/(Cv + Gas_Constant * v/(v-b));
 
 	  do{
 		T = T_new;
@@ -454,8 +442,6 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 	  count_T = 0;
 	  error = 1;
 
-
-
 	  if (Zed<0.9999) {
 		x1 = Zed*v;
 		x2 = v;
@@ -464,7 +450,6 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 		x1 = 0.5*v;
 		x2 = v;
 	  }
-
 
 	  fx2 = log(x2-b) - s/Gas_Constant + log(T)*Cv/Gas_Constant;
 	  T_new = (h+ 2*a/x1)/(Cv + Gas_Constant * x1/(x1-b));
@@ -499,6 +484,7 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 			  count_T = 0;
 			  error = 1;
 			fx1 = log(x1-b) - s/Gas_Constant + log(T)*Cv/Gas_Constant;
+
 		  } else {
 			x2 += FACTOR*(x2-x1);
 			T_new = (h+ 2*a/x2)/(Cv + Gas_Constant * x2/(x2-b));
@@ -516,6 +502,7 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 
 
 			fx2 = log(x2-b) - s/Gas_Constant + log(T)*Cv/Gas_Constant;
+
 			}
 		}
 	  }
@@ -526,7 +513,7 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 	f=fx1;
 	fmid=fx2;
 	if (f*fmid >= 0.0) {
-	  cout<< "Root must be bracketed for bisection in rtbis, h-s call"<< endl;
+//	  cout<< "Root must be bracketed for bisection in rtbis, h-s call"<< endl;
 	  SetTDState_rhoT(Density, Temperature);
 	}
 	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
@@ -557,8 +544,9 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 
 	rho = 1/v;
 	T= (h+ 2*a/v)/(Cv + Gas_Constant * v/(v-b));
-	SetTDState_rhoT(rho, T);
 
+	StaticEnergy = T*Cv - a*rho;
+	SetTDState_rhoe(rho, StaticEnergy);
 	cons_h= abs(((StaticEnergy + Pressure/Density) - h)/h);
 	cons_s= abs((Entropy-s)/s);
 
@@ -572,7 +560,6 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 void CVanDerWaalsGas_Generic::SetTDState_Prho (su2double P, su2double rho ) {
 
   SetEnergy_Prho(P, rho);
-
   SetTDState_rhoe(rho, StaticEnergy);
 
 }
@@ -599,7 +586,7 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
 
   su2double T, rho, cons_P, cons_s, T_new, error, v, Tmid;
   su2double x1,x2, fx1, fx2,f, fmid, T1,T2, rtb, dx, xmid;
-  su2double toll = 1e-4, FACTOR=0.2;
+  su2double toll = 1e-5, FACTOR=0.2;
   unsigned short count=0, count_T = 0, NTRY=10, ITMAX=100;
 
 
@@ -689,6 +676,8 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
 
   rho = xmid;
   T= (P+rho*rho*a)*((1-rho*b)/(rho*Gas_Constant));
+
+
   SetTDState_rhoT(rho, T);
 
   cons_P= abs((Pressure -P)/P);
@@ -698,23 +687,25 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
 	cout<< "TD consistency not verified in Ps call"<< endl;
   }
 
-
 }
 
 
-void CVanDerWaalsGas_Generic::SetGamma_Trho (su2double T, su2double v) {
+void CVanDerWaalsGas_Generic::SetGamma_Trho () {
 
-  su2double CpmCv;
+  Cp = -Gas_Constant*Temperature/pow((1/Density-b), 2);
+  Cp = Cp + 2*a*pow(Density, 3);
 
+  Cp = Cp * pow(Gas_Constant,2) / pow((1/Density - b), 2);
+  Cp = - Cp * Temperature;
 
-	  CpmCv = -Gas_Constant*T/(v-b)/(v-b) + 2*a/v/v/v;
-	  CpmCv = CpmCv * (Gas_Constant / (v - b)) * (Gas_Constant / (v - b));
-	  CpmCv = - CpmCv * T;
+  if (Cp < 0.0) {
+//		  cout << "Warning: Heat Capacity Ratio less than one, ideal gas correction adopted"<< endl;
+	  Cp = Gas_Constant;
+  }
 
-	  Cp = Cv + CpmCv;
-//cout << "Cp " << Cp << " Cv " << Cv << " rho " << 1/v << " T " << T << " R " << Gas_Constant << " b " << b << " a " << a<< endl ;
-	  Gamma = Cp/Cv;
-//	  getchar();
+  Cp = Cv + Cp;
+  Gamma = Cp/Cv;
+
 }
 
 

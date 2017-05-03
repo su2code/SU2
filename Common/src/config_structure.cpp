@@ -849,7 +849,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_eng_val[3]=0.0;  default_eng_val[4]=0.0;
   addDoubleArrayOption("SUBSONIC_ENGINE_VALUES", 5, SubsonicEngine_Values, default_eng_val);
 
-  default_heat_capacity[0]= Gas_Constant*Gamma/(Gamma-1); default_heat_capacity[1]=0.0; default_heat_capacity[2]=0.0;
+  default_heat_capacity[0]= 0.0; default_heat_capacity[1]=0.0; default_heat_capacity[2]=0.0;
   default_heat_capacity[3]=0.0;  default_heat_capacity[4]=0.0;
   addDoubleArrayOption("HEAT_CAPACITY_MODEL", 5, Coeff_HeatCapacity, default_heat_capacity);
 
@@ -3114,7 +3114,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == JST) && (SpatialOrder_AdjFlow == SECOND_ORDER_LIMITER))
     SpatialOrder_AdjFlow = SECOND_ORDER;
-  
+
+
   delete [] tmp_smooth;
   
 }

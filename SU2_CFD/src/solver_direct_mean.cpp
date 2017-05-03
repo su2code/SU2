@@ -3680,7 +3680,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
 
       FluidModel = new CIdealGas(1.4, Gas_ConstantND);
-      FluidModel-> SetHeatCapacityModel_Dimensionless(config);
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
@@ -10427,7 +10426,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Retrieve solution at this boundary node ---*/
       V_domain = node[iPoint]->GetPrimitive();
-      
+
       /*--- Compute the internal state u_i ---*/
       Velocity2_i = 0;
       for (iDim=0; iDim < nDim; iDim++)
@@ -10435,13 +10434,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
         Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
       }
-      
-      
+
       Density_i = node[iPoint]->GetDensity();
       
       Energy_i = node[iPoint]->GetEnergy();
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
-      
+
       FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
       
       Pressure_i = FluidModel->GetPressure();
@@ -10491,7 +10489,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             for (iDim = 0; iDim < nDim; iDim++)
               Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
           }
-          StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+
+          FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
           FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
           Density_e = FluidModel->GetDensity();
           StaticEnergy_e = FluidModel->GetStaticEnergy();
