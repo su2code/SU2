@@ -67,8 +67,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
     /*--- Read the FFD information from the config file ---*/
 
-//    ReadFFDInfo(geometry, config, FFDBox);
-    SetBoundingFFDBox(geometry, config, FFDBox);
+    ReadFFDInfo(geometry, config, FFDBox);
+//    SetBoundingFFDBox(geometry, config, FFDBox);
 
     /*--- If there is a FFDBox in the input file ---*/
 
@@ -6523,9 +6523,9 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
          ((ParamCoord[2] < 0.0) || (ParamCoord[2] > 1.0)))) {
 
       for (iDim = 0; iDim < nDim; iDim++){
-        ParamCoord[iDim] = ParamCoordGuess[iDim];
+        ParamCoord[iDim] = su2double(rand())/su2double(RAND_MAX);
       }
-      SOR_Factor = 0.9*SOR_Factor;
+      SOR_Factor = 0.5*SOR_Factor;
     }
 
   }
@@ -7092,72 +7092,74 @@ void CFreeFormDefBox::GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *con
 
   /*--- Compute the elastic energy as an integral over the surface points ---*/
 
-    for (iSurfacePoints = 0; iSurfacePoints < GetnSurfacePoint(); iSurfacePoints++){
-  
-      iMarker = Get_MarkerIndex(iSurfacePoints);
-  
-      if (config->GetMarker_All_DV(iMarker) == YES) {
-  
-        iVertex = Get_VertexIndex(iSurfacePoints);
-        iPoint  = Get_PointIndex(iSurfacePoints);
-  
-        if (geometry->node[iPoint]->GetDomain()){
-  
-          ParamCoord = Get_ParametricCoord(iSurfacePoints);
-  
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-  
-          Area = 0.0;
-          for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-            Area += Normal[iDim]*Normal[iDim];
-          }
-          Area = sqrt(Area);
-  
-          factor = 0.5*Area;
-  
-          /*--- Get the local stiffness matrix at the parametric coordinates of the surface point  ---*/
-  
-          AddLocalStiffnessContribution(MyEnergy, ParamCoord, factor, E);
-  
-        }
-      }
-    }
-  
-   /*--- At the moment the receive buffer will be always registered on the tape,
-    * even if the send buffer was not active. This will lead to an extremely high memory consumption
-    * in the subsequent computation when AD is enabled. Since we know that the energy value does not depend on the design
-    * variable values (it only depends on the initial control point positions), we can set the tape to passive here ... ---*/
-  
-  AD_BEGIN_PASSIVE
-    SU2_MPI::Allreduce(MyEnergy.data(), Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AD_END_PASSIVE
-  
-
-//  //if (rank == MASTER_NODE){
-//    for (iControl = 0; iControl < lControl; iControl++){
-//      for (jControl = 0; jControl < mControl; jControl++){
-//        for (kControl = 0; kControl < nControl; kControl++){
-//
-//  //        Coord = GetCoordControlPoints(iControl, jControl, kControl);
-//
-////          ParamCoord = GetParametricCoord_Iterative(0, Coord, ParamCoord_Guess, config);
-//
-//          ParamCoord = GetParCoordControlPoints(iControl, jControl, kControl);
-//
-//          for (iDim = 0; iDim < nDim; iDim++){
-//            ParamCoord[iDim] = ParamCoord[iDim] + EPS;
-//            if (ParamCoord[iDim] <= 0.0) ParamCoord[iDim] = EPS;
-//            if (ParamCoord[iDim] >= 1.0) ParamCoord[iDim] = 1.0 - EPS;
+//    for (iSurfacePoints = 0; iSurfacePoints < GetnSurfacePoint(); iSurfacePoints++){
+//  
+//      iMarker = Get_MarkerIndex(iSurfacePoints);
+//  
+//      if (config->GetMarker_All_DV(iMarker) == YES) {
+//  
+//        iVertex = Get_VertexIndex(iSurfacePoints);
+//        iPoint  = Get_PointIndex(iSurfacePoints);
+//  
+//        if (geometry->node[iPoint]->GetDomain()){
+//  
+//          ParamCoord = Get_ParametricCoord(iSurfacePoints);
+//  
+//          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+//  
+//          Area = 0.0;
+//          for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+//            Area += Normal[iDim]*Normal[iDim];
 //          }
-//          AddLocalStiffnessContribution(Matrix, ParamCoord, 0.0025, E);
-//
+//          Area = sqrt(Area);
+//  
+//          factor = 0.5*Area;
+//  
+//          /*--- Get the local stiffness matrix at the parametric coordinates of the surface point  ---*/
+//  
+//          AddLocalStiffnessContribution(MyEnergy, ParamCoord, factor, E);
+//  
 //        }
 //      }
 //    }
-//  //}
-//
-//  //SU2_MPI::Bcast(Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE,MASTER_NODE, MPI_COMM_WORLD);
-//
+//  
+//   /*--- At the moment the receive buffer will be always registered on the tape,
+//    * even if the send buffer was not active. This will lead to an extremely high memory consumption
+//    * in the subsequent computation when AD is enabled. Since we know that the energy value does not depend on the design
+//    * variable values (it only depends on the initial control point positions), we can set the tape to passive here ... ---*/
+//  
+//  AD_BEGIN_PASSIVE
+//    SU2_MPI::Allreduce(MyEnergy.data(), Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  AD_END_PASSIVE
+  
+
+  //if (rank == MASTER_NODE){
+    for (iControl = 0; iControl < lControl; iControl++){
+      for (jControl = 0; jControl < mControl; jControl++){
+        for (kControl = 0; kControl < nControl; kControl++){
+
+          Coord = GetCoordControlPoints(iControl, jControl, kControl);
+
+          ParamCoord = GetParametricCoord_Iterative(0, Coord, ParamCoord_Guess, config);
+
+//          ParamCoord = GetParCoordControlPoints(iControl, jControl, kControl);
+  
+          cout << ParamCoord[0] << " " << ParamCoord[1] << " " << ParamCoord[2] << endl;
+          for (iDim = 0; iDim < nDim; iDim++){
+            
+            ParamCoord[iDim] = ParamCoord[iDim] + EPS;
+            if (ParamCoord[iDim] <= 0.0) ParamCoord[iDim] = EPS;
+            if (ParamCoord[iDim] >= 1.0) ParamCoord[iDim] = 1.0 - EPS;
+          }
+          AddLocalStiffnessContribution(Matrix, ParamCoord, 0.0025, E);
+
+        }
+      }
+    }
+  //}
+
+  //SU2_MPI::Bcast(Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE,MASTER_NODE, MPI_COMM_WORLD);
+
 }
 
 
