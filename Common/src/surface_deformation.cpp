@@ -306,9 +306,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
               }
             }
 
-            if (config->GetDesign_Variable(0) == FFD_DIRECT_MANIPULATION ||
-                config->GetDesign_Variable(0) == FFD_DIRECT_MANIPULATION_2D)
-              SetConstrainedShapeParam(geometry, config, FFDBox[iFFDBox], FFDBox, false);
+            SetConstrainedShapeParam(geometry, config, FFDBox[iFFDBox], FFDBox, false);
 
 
             /*--- Recompute cartesian coordinates using the new control point location ---*/
@@ -2132,7 +2130,8 @@ void CSurfaceMovement::SetConstrainedShapeParam(CGeometry *geometry, CConfig *co
     GroupActive[iGroup] = false;
 
     for (iDV = 0; iDV < config->GetnDV(); iDV++){
-      if (config->GetFFDTag(iDV) == FFDBox->CSPPilotGroupNames[iGroup]){
+      if ((config->GetDesign_Variable(iDV) == FFD_DIRECT_MANIPULATION || config->GetDesign_Variable(iDV) == FFD_DIRECT_MANIPULATION_2D)
+          &&  config->GetFFDTag(iDV) == FFDBox->CSPPilotGroupNames[iGroup]){
         GroupActive[iGroup] = true;   
       }
     }
@@ -2188,60 +2187,61 @@ void CSurfaceMovement::SetConstrainedShapeParam(CGeometry *geometry, CConfig *co
       displ += Block.rows();
     }
   }
+  if (nParameter > 0){
 
-  switch(config->GetCSP_EnergyDefinition()){
-  case LEAST_SQUARES:
-    EnergyMatrix = EigenMatrix::Identity(TotalnControl, TotalnControl);
-    break;
-  case LAPLACIAN_ENERGY:
-    FFDBox->GetLaplacianEnergyMatrix3D(EnergyMatrix);
-    break;
-  case ELASTIC_ENERGY:
-    if (rank == MASTER_NODE)
-      cout << "Computing CSP Stiffness matrix." << endl;
-    FFDBox->GetGlobalStiffnessMatrix(EnergyMatrix, config, geometry);
-    break;
-  }
-
-  /* Set up the KKT system matrix --- */
-
-  SystemMatrix.block(0, 0, TotalnControl, TotalnControl)          = EnergyMatrix;
-  SystemMatrix.block(0, TotalnControl, TotalnControl, nParameter) = -ConstraintMatrix.transpose();
-  SystemMatrix.block(TotalnControl, 0, nParameter, TotalnControl) = ConstraintMatrix;
-
-  /* Set up the KKT right-hand side--- */
-
-  SystemRHS.block(TotalnControl, 0, nParameter, 1) = ParameterValues;
-
-  if (nGroup > 0){
-    
-    Eigen::ColPivHouseholderQR<EigenMatrix> QRSystemMatrix;
-
-    /*--- QR decomposition of the system matrix ---*/
-
-    QRSystemMatrix = SystemMatrix.colPivHouseholderQr();
-
-    SystemSol = QRSystemMatrix.solve(SystemRHS);
-    ControlPointPositions = SystemSol.block(0, 0, TotalnControl, 1);
-
-    if (rank == MASTER_NODE){
-      cout << "Quadratic Energy: "<< ControlPointPositions.transpose()*EnergyMatrix*ControlPointPositions <<endl;
-      cout << "Constraints:      "<< (ConstraintMatrix*ControlPointPositions - ParameterValues).norm() << endl;
+    switch(config->GetCSP_EnergyDefinition()){
+      case LEAST_SQUARES:
+        EnergyMatrix = EigenMatrix::Identity(TotalnControl, TotalnControl);
+        break;
+      case LAPLACIAN_ENERGY:
+        FFDBox->GetLaplacianEnergyMatrix3D(EnergyMatrix);
+        break;
+      case ELASTIC_ENERGY:
+        if (rank == MASTER_NODE)
+          cout << "Computing CSP Stiffness matrix." << endl;
+        FFDBox->GetGlobalStiffnessMatrix(EnergyMatrix, config, geometry);
+        break;
     }
 
-    for (iControl = 0; iControl < lControl; iControl++){
-      for (jControl = 0; jControl < mControl; jControl++){
-        for (kControl = 0; kControl < nControl; kControl++){
-          Movement[0] =  ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 0);
-          Movement[1] =  ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 1);
-          Movement[2] =  ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 2);
-          index[0] = iControl; index[1] = jControl; index[2] = kControl;
-          FFDBox->SetControlPoints(index, Movement);
+    /* Set up the KKT system matrix --- */
+
+    SystemMatrix.block(0, 0, TotalnControl, TotalnControl)          = EnergyMatrix;
+    SystemMatrix.block(0, TotalnControl, TotalnControl, nParameter) = -ConstraintMatrix.transpose();
+    SystemMatrix.block(TotalnControl, 0, nParameter, TotalnControl) = ConstraintMatrix;
+
+    /* Set up the KKT right-hand side--- */
+
+    SystemRHS.block(TotalnControl, 0, nParameter, 1) = ParameterValues;
+
+    if (nGroup > 0){
+
+      Eigen::ColPivHouseholderQR<EigenMatrix> QRSystemMatrix;
+
+      /*--- QR decomposition of the system matrix ---*/
+
+      QRSystemMatrix = SystemMatrix.colPivHouseholderQr();
+
+      SystemSol = QRSystemMatrix.solve(SystemRHS);
+      ControlPointPositions = SystemSol.block(0, 0, TotalnControl, 1);
+
+      if (rank == MASTER_NODE){
+        cout << "Quadratic Energy: "<< ControlPointPositions.transpose()*EnergyMatrix*ControlPointPositions <<endl;
+        cout << "Constraints:      "<< (ConstraintMatrix*ControlPointPositions - ParameterValues).norm() << endl;
+      }
+
+      for (iControl = 0; iControl < lControl; iControl++){
+        for (jControl = 0; jControl < mControl; jControl++){
+          for (kControl = 0; kControl < nControl; kControl++){
+            Movement[0] =  ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 0);
+            Movement[1] =  ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 1);
+            Movement[2] =  ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 2);
+            index[0] = iControl; index[1] = jControl; index[2] = kControl;
+            FFDBox->SetControlPoints(index, Movement);
+          }
         }
       }
     }
   }
-
   delete [] GroupActive;
 }
 
