@@ -9782,7 +9782,7 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
       Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
       break;
     case LIFT_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
+      Total_ComboObj+=Weight_ObjFunc*((1.9758-Surface_CL[iMarker_Monitoring])/1.9758);
       break;
     case SIDEFORCE_COEFFICIENT:
       Total_ComboObj+=Weight_ObjFunc*(Surface_CSF[iMarker_Monitoring]);

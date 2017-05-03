@@ -506,6 +506,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
              AD::StartRecording();
              FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
              Objective_Function = FWH_container[ZONE_0]-> SPL;
+              if (rank == MASTER_NODE) cout<<"Primal Part Finished"<<endl;
 
              //cout<<Objective_Function.getGradientData()<<endl;
              if (rank==MASTER_NODE){
@@ -516,7 +517,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
              AD::StopRecording();
              AD::ComputeAdjoint();
 
-             cout<<"Finished Computing FWH Adjoint"<<endl;
+             if (rank == MASTER_NODE) cout<<"Finished Computing FWH Adjoint"<<endl;
 
              su2double extracted_derivative;
 
@@ -530,7 +531,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
              }
 
 
-             cout<<"Finished Extracting"<<endl;
+            if (rank == MASTER_NODE) cout<<"Finished Extracting"<<endl;
 
             FWH_container[ZONE_0]->Write_Sensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 

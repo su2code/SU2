@@ -5167,11 +5167,12 @@ void CSurfaceMovement::SetFFDRotationTrans(CGeometry *geometry,
    we are always resetting to the baseline and then performing
    delta changes the angle and the translation. ---*/
   
-  FFDBox->SetOriginalControlPoints();
+//  FFDBox->SetOriginalControlPoints();
   
   design_FFDBox = config->GetFFDTag(iDV);
   
   if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
+  FFDBox->SetOriginalControlPoints();
     
     /*--- Get the center of rotation. ---*/
     
