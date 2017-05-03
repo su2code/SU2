@@ -11683,9 +11683,12 @@ su2double CEulerSolver::poly2D(su2double C1, su2double C2, su2double C3, su2doub
  * \return Velocity profile with amplitude A.
  */
 su2double CEulerSolver::polydisc(su2double A , su2double y_max, su2double y_min, su2double y){
-  su2double rho = 1.19778; // Average jet density @ T=283.8075 P=97582.179399 R=287.058
-	su2double mu = 1.768269e-05; // Viscosity @ T=283.8075
-	su2double W = 0.3238; // Truck width
+  //su2double rho = 1.19778; // Average jet density @ T=283.8075 P=97582.179399 R=287.058
+	su2double rho = 1.217; // Average jet density @ T=290 P=101325 R=287.058
+  //su2double mu = 1.768269e-05; // Viscosity @ T=283.8075
+  su2double mu = 1.7982099e-05; // Viscosity @ T=290
+	//su2double W = 0.3238; // Truck width
+  su2double W = 0.1684; // Truck width
 	su2double Vel = 0;
 	
 	su2double Re = rho*A*W/mu; // Calculates the Reynolds Number to show jet development
@@ -12002,64 +12005,64 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						//Based on the marker name determine which velocity polynomial to use - 3D
           
 						if (Marker_Tag == "jet_top") {
-              y_max = 0.12194458;
-              y_min = -0.12194458;
-              z_max = 0.45089150;
-              z_min = 0.44939214;
+              //y_max = 0.12194458;
+              //y_min = -0.12194458;
+              //z_max = 0.45089150;
+              //z_min = 0.44939214;
               
               //6.5% scale
-							//y_max = 0.0634202199518;
-							//y_min = -0.0634202199518;
-							//z_max = 0.2344128;
-							//z_min = 0.23363302;
+							y_max = 0.0634202199518;
+							y_min = -0.0634202199518;
+							z_max = 0.2344128;
+							z_min = 0.23363302;
 							
 							z = ScaleCoordinate(z_max, z_min, Coord[2]);
 							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440,-0.2913746290723793 ,-0.0082599222660065 , 0.9999361038208008, z);
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
 						else if (Marker_Tag == "jet_bottom") {
-              y_max = 0.12194458;
-              y_min = -0.12194458;
-              z_max = 0.00149936;
-              z_min = 0.00000000;
+              //y_max = 0.12194458;
+              //y_min = -0.12194458;
+              //z_max = 0.00149936;
+              //z_min = 0.00000000;
               
               //6.5% scale
-							//y_max = 0.0634202199518;
-							//y_min = -0.0634202199518;
-							//z_max = 0.00077978;
-							//z_min = 0.0;
+							y_max = 0.0634202199518;
+							y_min = -0.0634202199518;
+							z_max = 0.00077978;
+							z_min = 0.0;
 							
 							z = ScaleCoordinate(z_max, z_min, Coord[2]);
 							Vel_Mag = poly2D( -0.7085458261471165, -0.0082692314282440,-0.2913746290723793 , 0.0082599222660065 , 0.9999361038208008, z);
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
 						else if (Marker_Tag == "jet_starboard") {
-              y_max = 0.16190000;
-              y_min = 0.16040064;
-              z_max = 0.41093608;
-              z_min = 0.03995542;
+              //y_max = 0.16190000;
+              //y_min = 0.16040064;
+              //z_max = 0.41093608;
+              //z_min = 0.03995542;
               
               //6.5% scale
-              //y_max = 0.0842;
-							//y_min = 0.08342022;
-							//z_max = 0.213633019741;
-							//z_min = 0.02077978;
+              y_max = 0.0842;
+							y_min = 0.08342022;
+							z_max = 0.213633019741;
+							z_min = 0.02077978;
 							
 							y = ScaleCoordinate(y_max, y_min, Coord[1]);
 							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440, -0.2913746290723793 , -0.0082599222660065 , 0.9999361038208008, y);
 							Vel_Mag *= polydisc(A , z_max, z_min, Coord[2]);
 						}
 						else if (Marker_Tag == "jet_port") {
-              y_max = -0.16040064;
-              y_min = -0.16190000;
-              z_max = 0.41093608;
-              z_min = 0.03995542;
+              //y_max = -0.16040064;
+              //y_min = -0.16190000;
+              //z_max = 0.41093608;
+              //z_min = 0.03995542;
               
               //6.5% scale
-              //y_max = -0.08342022;
-							//y_min = -0.0842;
-							//z_max = 0.213633019741;
-							//z_min = 0.02077978;
+              y_max = -0.08342022;
+							y_min = -0.0842;
+							z_max = 0.213633019741;
+							z_min = 0.02077978;
 							
 							y = ScaleCoordinate(y_max, y_min, Coord[1]);
 							Vel_Mag = poly2D( -0.7085458261471165, -0.0082692314282440,-0.2913746290723793 , 0.0082599222660065 , 0.9999361038208008, y);
