@@ -116,6 +116,13 @@ public:
    * \param[in] val_marker_interface - Interface tag.
    */
   int Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface);
+  
+  /*!
+   * \brief compute distance between 2 points
+   * \param[in] point_i
+   * \param[in] point_i
+   */
+  su2double PointsDistance(su2double *point_i, su2double *point_j);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -292,13 +299,6 @@ public:
    * \param[in] element  - double array where element node coordinates will be stored
    */  
   int Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element);
-  
-  /*!
-   * \brief compute distance between 2 points
-   * \param[in] point_i
-   * \param[in] point_i
-   */
-  su2double PointsDistance(su2double *point_i, su2double *point_j);
    
   /*!
    * \brief For 2-Dimensional grids, compute intersection length of two segments projected along a given direction
@@ -309,13 +309,6 @@ public:
    * \param[in] Direction - along which segments are projected
    */
   su2double ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction);
-  
-  /*!
-   * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction
-   * \param[in] map - array containing the index of the boundary points connected to the node
-   * \param[in] PreviousNode - label of the previous point so that the the function return the other one
-   */
-  int FindNextNode_2D(unsigned long *map, unsigned long PreviousNode);
   
   /*!
    * \brief For 3-Dimensional grids, compute intersection area between two triangle projected on a given plane
