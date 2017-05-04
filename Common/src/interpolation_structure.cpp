@@ -1574,7 +1574,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     Buffer_Send_StartLinkedNodes   = new unsigned long [ nVertexTarget ];
     Aux_Send_Map                   = new unsigned long*[ nVertexTarget ];
         
-    /*--- Copy coordinates and point to the auxiliar vector --*/
+    /*--- Copy coordinates and point to the auxiliar vector ---*/
   
     nGlobalVertex_Target = 0;
     nLocalVertex_Target  = 0;
@@ -1649,6 +1649,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
         delete [] Aux_Send_Map[iVertexTarget];
     }
     delete [] Aux_Send_Map; Aux_Send_Map = NULL;
+
+/*--- Reconstruct Target boundary by gathering data from all ranks ---*/
 
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nLocalVertex_Target, &nGlobalVertex_Target, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -1780,7 +1782,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     Buffer_Send_StartLinkedNodes  = new unsigned long [ nVertexDonor ];
     Aux_Send_Map                  = new unsigned long*[ nVertexDonor ];
     
-    /*--- Copy coordinates and point to the auxiliar vector --*/
+    /*--- Copy coordinates and point to the auxiliar vector ---*/
   
     nGlobalVertex_Donor = 0;
     nLocalVertex_Donor  = 0;
@@ -1858,6 +1860,9 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
       }
       delete [] Aux_Send_Map; Aux_Send_Map = NULL;
     }
+    
+    /*--- Reconstruct Donor boundary by gathering data from all ranks ---*/
+    
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nLocalVertex_Donor, &nGlobalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&nLocalLinkedNodes,  &nGlobalLinkedNodes,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -1985,6 +1990,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     if( Buffer_Send_StartLinkedNodes  != NULL) {delete [] Buffer_Send_StartLinkedNodes;  Buffer_Send_StartLinkedNodes  = NULL;}
     if( Buffer_Send_Donor_GlobalPoint != NULL) {delete [] Buffer_Send_Donor_GlobalPoint; Buffer_Send_Donor_GlobalPoint = NULL;}
 
+
+    /*--- Starts building the supermesh layer (2D and 3D) ---*/
 
     if(nDim == 2){
         
