@@ -3476,7 +3476,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     		FluidModel = new CPengRobinson(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                     config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
     	} else {
-    		FluidModel = new CPengRobinson(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+    		FluidModel = new CPengRobinson_Generic(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                     config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
     		FluidModel-> SetHeatCapacityModel_Dimensional(config);
     	}
@@ -3716,7 +3716,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     		FluidModel = new CPengRobinson(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                     config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
     	} else {
-    		FluidModel = new CPengRobinson(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+    		FluidModel = new CPengRobinson_Generic(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                     config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
     		FluidModel-> SetHeatCapacityModel_Dimensionless(config);
     	}
