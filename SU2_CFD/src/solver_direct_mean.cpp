@@ -3504,6 +3504,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     config->GetVelocity_FreeStream()[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
     config->GetVelocity_FreeStream()[1] = sin(Alpha)*Mach*Mach2Vel_FreeStream;
   }
+
+
   if (nDim == 3) {
     config->GetVelocity_FreeStream()[0] = cos(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
     config->GetVelocity_FreeStream()[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
@@ -10472,12 +10474,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           /*--- Non-dim. the inputs if necessary. ---*/
           P_Total /= config->GetPressure_Ref();
           T_Total /= config->GetTemperature_Ref();
-          
+
           /*--- Computes the total state ---*/
           FluidModel->SetTDState_PT(P_Total, T_Total);
+
           Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
           Entropy_e = FluidModel->GetEntropy();
-          
+
           /*--- Compute the boundary state u_e ---*/
           Velocity2_e = Velocity2_i;
           if (nDim == 2) {
@@ -10490,7 +10493,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
               Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
           }
 
-          FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+          StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+
           FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
           Density_e = FluidModel->GetDensity();
           StaticEnergy_e = FluidModel->GetStaticEnergy();
