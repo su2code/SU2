@@ -280,6 +280,19 @@ int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_mark
   return -1;
 }
 
+su2double CInterpolator::PointsDistance(su2double *point_i, su2double *point_j){
+
+  /*--- Compute distance between 2 points ---*/
+
+  unsigned short iDim, nDim = donor_geometry->GetnDim();
+  su2double m;
+
+  m = 0 ;
+  for(iDim = 0; iDim < nDim; iDim++)
+    m += (point_j[iDim] - point_i[iDim])*(point_j[iDim] - point_i[iDim]);
+
+  return sqrt(m);
+}
 
 /* Nearest Neighbor Interpolator */
 CNearestNeighbor::CNearestNeighbor(void):  CInterpolator() { }
@@ -302,7 +315,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   unsigned long nVertexDonor, nVertexTarget, Point_Target, jVertex, iVertexTarget;
   unsigned long Global_Point_Donor, pGlobalPoint=0;
 
-  su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
+  su2double *Coord_i, *Coord_j, dist, mindist, maxdist;
 
 #ifdef HAVE_MPI
 
@@ -429,12 +442,9 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
           for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
             Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
 
-            /*--- Compute the dist ---*/
-            dist = 0.0; 
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-              dist += pow(Coord_j[iDim] - Coord_i[iDim], 2.0);
-            }
+            Coord_j = &Buffer_Receive_Coord[ Global_Point_Donor*nDim];
+
+            dist = PointsDistance(Coord_i, Coord_j);
 
             if (dist < mindist) {
               mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
@@ -1507,7 +1517,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     Donor_check  = -1;
     Target_check = -1;
 
-    /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+    /*--- We gather a vector in MASTER_NODE to determine whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
 
     SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
@@ -2063,14 +2073,22 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
           while( !check ){
   
             /*--- Proceeds until the value of the intersection area is null ---*/
-            
+
             if ( Buffer_Receive_nLinkedNodes[donor_iPoint] == 1 ){
               donor_forward_point  = Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ];
               donor_backward_point = donor_iPoint;
             }
             else{
-              donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_OldiPoint    );
-              donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_forward_point);
+              uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ];
+              
+              if( donor_OldiPoint != uptr[0] ){
+                donor_forward_point  = uptr[0];
+                donor_backward_point = uptr[1];
+              }
+              else{
+                donor_forward_point  = uptr[1];
+                donor_backward_point = uptr[0];
+              }
             }
             
             if(donor_iPoint >= nGlobalVertex_Donor){
@@ -2143,10 +2161,9 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
           if ( Buffer_Receive_nLinkedNodes[donor_StartIndex] == 2 ){
             check = false;
            
-            donor_iPoint    = donor_StartIndex;
-            donor_OldiPoint = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ],  donor_iPoint);                
-            donor_iPoint    = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ],  donor_OldiPoint);
+            uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_StartIndex] ];
 
+            donor_iPoint = uptr[1];
             donor_OldiPoint = donor_StartIndex;
           }
           else
@@ -2162,8 +2179,16 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
               donor_backward_point = donor_iPoint;
             }
             else{
-              donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_OldiPoint    );
-              donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_forward_point);
+              uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ];
+              
+              if( donor_OldiPoint != uptr[0] ){
+                donor_forward_point  = uptr[0];
+                donor_backward_point = uptr[1];
+              }
+              else{
+                donor_forward_point  = uptr[1];
+                donor_backward_point = uptr[0];
+              }
             }
 
             if(donor_iPoint >= nGlobalVertex_Donor){
@@ -2574,20 +2599,6 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     
 }
 
-su2double CSlidingmesh::PointsDistance(su2double *point_i, su2double *point_j){
-
-  /*--- Compute distance between 2 points ---*/
-
-  unsigned short iDim, nDim = donor_geometry->GetnDim();
-  su2double m;
-
-  m = 0 ;
-  for(iDim = 0; iDim < nDim; iDim++)
-    m += (point_j[iDim] - point_i[iDim])*(point_j[iDim] - point_i[iDim]);
-
-  return sqrt(m);
-}
-
 int CSlidingmesh::Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element){
     
   /*--- Given a node "centralNode", this routines reconstruct the vertex centered surface element around the node and store it into "element" ---*/
@@ -2751,17 +2762,6 @@ su2double CSlidingmesh::ComputeLineIntersectionLength(su2double* A1, su2double* 
     return fabs( dotA2 );
 
   return 0.0;
-}
-
-int CSlidingmesh::FindNextNode_2D(unsigned long *map, unsigned long PreviousNode){
-        
-  /*--- ONLY for 2D grids ---*/
-  /*--- It takes as input the grid, then starts from the NodeID and searches for its neigbours on the specified markID ---*/
-  /*--- Since in 2D there are 2 possible neighbours, PreviousNode is needed to move along a certain direction along the boundary ---*/ 
-  if( PreviousNode != map[0] )
-    return map[0];
-  else
-    return map[1];
 }
 
 su2double CSlidingmesh::Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction){
