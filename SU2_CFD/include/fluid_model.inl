@@ -89,7 +89,7 @@ inline su2double CFluidModel::GetGamma () { return 0;}
 
 inline void CFluidModel::SetGamma_Trho () {};
 
-inline void CFluidModel::Set_Cv () {};
+inline void CFluidModel::Set_Cv (su2double T, su2double v) {};
 
 inline void CFluidModel::SetTDState_rhoe (su2double rho, su2double e ) { }
 inline void CFluidModel::SetTDState_PT (su2double P, su2double T ) { }

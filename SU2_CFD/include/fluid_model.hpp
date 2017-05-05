@@ -280,7 +280,7 @@ public:
 
     void SetHeatCapacityModel_Dimensional   (CConfig *config);
 
-    virtual void Set_Cv();
+    virtual void Set_Cv(su2double T, su2double v);
 };
 
 
@@ -573,6 +573,7 @@ protected:
 
 public:
 
+
      /*!
      * \brief Constructor of the class.
      */
@@ -757,11 +758,10 @@ protected:
 
 private:
 
-       /*!
+  /*!
       * \brief Internal model parameter.
       */
       su2double  alpha2 (su2double T);
-
 
      /*!
     * \brief Internal function for the implicit call hs.
@@ -846,7 +846,7 @@ public:
 
     void SetGamma_Trho ();
 
-    void Set_Cv();
+    void Set_Cv(su2double T, su2double v);
 
 };
 

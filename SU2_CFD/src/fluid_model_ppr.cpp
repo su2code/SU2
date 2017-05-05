@@ -466,11 +466,6 @@ CPengRobinson_Generic::CPengRobinson_Generic(su2double gamma, su2double R, su2do
 CPengRobinson_Generic::~CPengRobinson_Generic(void) { }
 
 
-su2double CPengRobinson_Generic::alpha2(su2double T) {
-
-  return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
-}
-
 su2double CPengRobinson_Generic::T_v_h(su2double v, su2double h) {
   su2double fv, A, B, C, T, d, atanh;
   su2double sqrt2=sqrt(2.0);
@@ -559,6 +554,9 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 }
 
 void CPengRobinson_Generic::SetTDState_PT (su2double P, su2double T ) {
+
+// PT call corrected
+
   su2double toll= 1e-6;
   su2double A, B, Z, DZ=1.0, F, F1, atanh;
   su2double rho, fv, e;
@@ -596,7 +594,7 @@ void CPengRobinson_Generic::SetTDState_PT (su2double P, su2double T ) {
   HeatCapacity->Set_Cv0(T);
   Cv0 = HeatCapacity->Get_Cv0();
 
-  Set_Cv();
+  Set_Cv(T, 1/rho);
 
   e = T*Cv - a*(k+1)*sqrt( alpha2(T) )*fv / (b*sqrt2);
 
@@ -604,6 +602,7 @@ void CPengRobinson_Generic::SetTDState_PT (su2double P, su2double T ) {
 }
 
 void CPengRobinson_Generic::SetTDState_Prho (su2double P, su2double rho ) {
+	// Prho call corrected
 
     SetEnergy_Prho(P, rho);
 
@@ -747,13 +746,15 @@ void CPengRobinson_Generic::SetEnergy_Prho (su2double P, su2double rho) {
     HeatCapacity->Set_Cv0(T);
     Cv0 = HeatCapacity->Get_Cv0();
 
-    Set_Cv();
+    Set_Cv(T, 1/rho);
 
     StaticEnergy = T * Cv - ad;
 
 }
 
 void CPengRobinson_Generic::SetTDState_rhoT (su2double rho, su2double T) {
+
+	// rhoT call corrected
   su2double fv, e, atanh;
 
   atanh = (log(1.0+( rho * b * sqrt(2.0)/(1 + rho*b))) - log(1.0-( rho * b * sqrt(2.0)/(1 + rho*b))))/2.0;
@@ -762,7 +763,7 @@ void CPengRobinson_Generic::SetTDState_rhoT (su2double rho, su2double T) {
   HeatCapacity->Set_Cv0(T);
   Cv0 = HeatCapacity->Get_Cv0();
 
-  Set_Cv();
+  Set_Cv(T, 1/rho);
 
   e = T * Cv - - a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2.0) ) * fv;
 
@@ -866,16 +867,39 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
 
 void CPengRobinson_Generic::SetGamma_Trho () {
 
-  Cp = Gas_Constant;
+	// Gamma call corrected
 
-  Cp = Cv + Cp;
+  su2double dPodT, dPodv, CpmCv;
+
+  dPodT = Gas_Constant/ (1/Density - b) - a * alpha2(Temperature) * k /  sqrt(TstarCrit * Temperature);
+  dPodv = -b *b + 2 * b / Density + pow(Density, -2);
+  dPodv = -Gas_Constant * Temperature / pow(1/Density - b, 2) + 2* a * alpha2(Temperature) * (1/ Density - b) / pow(dPodv, 2);
+
+  CpmCv = -Temperature * pow(dPodT, 2)/dPodv;
+
+  Cp = Cv + CpmCv;
   Gamma = Cp/Cv;
 
 }
 
-void CPengRobinson_Generic::Set_Cv () {
+su2double CPengRobinson_Generic::alpha2(su2double T) {
 
-  Cv = Cv0;
+	// alpha call corrected
+
+  return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
+}
+
+void CPengRobinson_Generic::Set_Cv (su2double T, su2double v) {
+	// cv call corrected
+  su2double CvmCv0;
+
+  CvmCv0 = -0.25 * sqrt(alpha2(T)) * k / sqrt(TstarCrit) * pow(T, -1.5);
+  CvmCv0 = CvmCv0 + 0.25 * k * k / TstarCrit / T;
+  CvmCv0 = -2 * a * CvmCv0 * T;
+
+  CvmCv0 = CvmCv0 * 0.5 * (log( v + b - sqrt(2)*b) - log( v + b + sqrt(2)*b));
+
+  Cv = Cv0 + CvmCv0;
 
 }
 
