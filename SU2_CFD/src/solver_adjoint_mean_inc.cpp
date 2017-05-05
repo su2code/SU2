@@ -259,8 +259,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==OUTFLOW_GENERALIZED || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-    config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE || config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -2225,8 +2224,8 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
       (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-     (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+ if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+   factor = 1.0/Area_Monitored;
   
   /*--- Initialize sensitivities to zero ---*/
   
@@ -3490,51 +3489,11 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       case MASS_FLOW_RATE:
         Psi_outlet[0]+=1;
         break;
-      case OUTFLOW_GENERALIZED:
-        density_gradient = config->GetCoeff_ObjChainRule(0);
-        velocity_gradient = 0.0;    /*Inside the option, this term is $\vec{v} \cdot \frac{dg}{d\vec{v}}$ */
-        for (iDim=0; iDim<nDim; iDim++)
-          velocity_gradient += Velocity[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
-        /* repeated term */
-        /* Characteristic-based version (for possible future use.)
-        a1 = 1.0/(SoundSpeed+Vn_Exit); // Repeated term
-        normgrad = 0.0;   // n dot dgdv
-        velgradcross=0.0; // (v x n ) dot (dgdv x n)
-        for (iDim=0; iDim<nDim; iDim++){
-          normgrad += UnitNormal[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
-        }
-        velgradcross = (config->GetCoeff_ObjChainRule(1)*UnitNormal[1]-config->GetCoeff_ObjChainRule(2)*UnitNormal[0])*(Velocity[0]*UnitNormal[1]-Velocity[1]*UnitNormal[0]);
-        if (nDim==3){
-          velgradcross += (config->GetCoeff_ObjChainRule(2)*UnitNormal[2]-config->GetCoeff_ObjChainRule(3)*UnitNormal[1])*(Velocity[1]*UnitNormal[2]-Velocity[2]*UnitNormal[1]);
-          velgradcross +=(config->GetCoeff_ObjChainRule(3)*UnitNormal[0]-config->GetCoeff_ObjChainRule(1)*UnitNormal[2])*(Velocity[2]*UnitNormal[0]-Velocity[0]*UnitNormal[2]);
-        }
-        Psi_outlet[0]+= ((SoundSpeed+Vn_Exit+Vn)*density_gradient/Vn_Exit -SoundSpeed*Vn_Exit*pressure_gradient - velocity_gradient/Density )*a1;
-        Psi_outlet[0]-= velgradcross/Density/Vn_Exit*SoundSpeed*a1;
-        for (iDim=0; iDim<nDim; iDim++){
-          Psi_outlet[iDim+1]+=a1*UnitNormal[iDim]*(-density_gradient/Vn_Exit+ SoundSpeed*pressure_gradient - normgrad*SoundSpeed/Density/Vn_Exit);
-          Psi_outlet[iDim+1]+=(config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit);
-        }
-         */
-        /*Pressure-fixed version*/
-        if (Vn_Exit != 0.0){
-          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit;
-          for (iDim=0; iDim<nDim; iDim++){
-            Psi_outlet[iDim+1]+=config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit;
-          }
-        }
-        break;
       case AVG_TOTAL_PRESSURE:
         /*--- For total pressure objective function. NOTE: this is AREA averaged term---*/
         Velocity2  = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity2 += Velocity[iDim]*Velocity[iDim];
-        /* Characteristic-based version
-        a1 = 1.0/(SoundSpeed+Vn_Exit);
-        Psi_outlet[0]-=a1*SoundSpeed*Velocity2/Vn_rel;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi_outlet[iDim+1] +=a1*UnitNormal[iDim]*(-Velocity2)/(2.0*Vn_Exit)+Velocity[iDim]/Vn_Exit;
-         */
-        /*Pressure-fixed version*/
         if (Vn_Exit !=0.0){
           a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/(Gamma_Minus_One));
           density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
@@ -3547,13 +3506,7 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
         }
         break;
       case AVG_OUTLET_PRESSURE:
-        /* Characteristic-based version
-        a1 = 1.0/(SoundSpeed+Vn_Exit);
-        Psi_outlet[0]+=-SoundSpeed*Vn_Exit*a1;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi_outlet[iDim+1]+=UnitNormal[iDim]*SoundSpeed*a1;
-         */
-        /*Pressure-fixed version: all 0s*/
+        /*Pressure-fixed and subsonic -> all 0s*/
         break;
       default:
         break;
@@ -4012,8 +3965,7 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==OUTFLOW_GENERALIZED || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-    config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -4390,8 +4342,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
       (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-     (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+ if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)) factor = 1.0/Area_Monitored;
 
 
   /*--- Compute gradient of the grid velocity, if applicable ---*/
