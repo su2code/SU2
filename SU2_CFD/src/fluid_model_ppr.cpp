@@ -465,28 +465,74 @@ CPengRobinson_Generic::CPengRobinson_Generic(su2double gamma, su2double R, su2do
 
 CPengRobinson_Generic::~CPengRobinson_Generic(void) { }
 
+su2double CPengRobinson_Generic::alpha2(su2double T) {
+
+	// alpha call corrected
+
+  return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
+}
+
+su2double CPengRobinson_Generic::dalphadT(su2double T) {
+
+	// alpha call corrected
+
+  return ( -0.5*k / sqrt(T*TstarCrit));
+}
+
+su2double CPengRobinson_Generic::dalpha2dT2(su2double T) {
+
+	// alpha call corrected
+
+  return ( 0.25 * k * pow(T*TstarCrit, -1.5) * TstarCrit);
+}
+
 
 su2double CPengRobinson_Generic::T_v_h(su2double v, su2double h) {
-  su2double fv, A, B, C, T, d, atanh;
+
+	//corrected
+  su2double fv, A, B, C, T, d, atanh, T_new;
+  su2double toll = 1e-5, error = 1;
+  unsigned int count_T = 0, ITMAX = 1000;
   su2double sqrt2=sqrt(2.0);
 
   d = (v*v+2*b*v-b*b);
 
   atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
-
   fv = atanh;
 
   A = Gas_Constant*(1 / Gamma_Minus_One + v/(v-b)) - a*v*k*k / (TstarCrit * d);
   B = a*k*(k+1)/sqrt(TstarCrit) *( fv/(b*sqrt2) + 2*v/d );
   C = h + a*(1+k)*(1+k)*(fv/(b*sqrt2) + v/d);
 
-  T = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
+  T_new = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
+  T_new *= T_new;
+
+  do {
+	  T = T_new;
+	  HeatCapacity->Set_Cv0(T);
+	  HeatCapacity->Get_Cv0();
+	  Set_Cv(T, v);
+
+      A = Cv + Gas_Constant*v/(v-b) - a*v*k*k / (TstarCrit * d);
+      B = a*k*(k+1)/sqrt(TstarCrit) *( fv/(b*sqrt2) + 2*v/d );
+      C = h + a*(1+k)*(1+k)*(fv/(b*sqrt2) + v/d);
+
+      T = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
+      error = abs(T - T_new)/T_new;
+      count_T++;
+  } while (count_T < ITMAX || error > toll);
+
+  if (count_T == ITMAX)
+  	cout << "Too many iterations in T_v_h function" << endl;
 
   return T*T;
 }
 
 su2double CPengRobinson_Generic::T_P_rho(su2double P, su2double rho) {
-  su2double A, B, C, T, vb1, vb2;
+  su2double A, B, C, T, vb1, vb2, T_new;
+  su2double error = 1, toll = 1e-5;
+  unsigned int count_T = 0, ITMAX = 1000;
+
   vb1 = (1/rho -b);
   vb2 = (1/rho/rho + 2*b/rho - b*b);
 
@@ -496,8 +542,28 @@ su2double CPengRobinson_Generic::T_P_rho(su2double P, su2double rho) {
 
   C = - P - a*(1+k)*(1+k)/vb2;
 
-  T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
-  T *= T;
+  T_new = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
+  T_new *= T_new;
+
+  do {
+	  T = T_new;
+	  HeatCapacity->Set_Cv0(T);
+	  HeatCapacity->Get_Cv0();
+	  Set_Cv(T, 1/rho);
+
+	  A =   Gas_Constant/vb1 - a*k*k/TstarCrit/vb2;
+	  B =   2*a*k*(k+1)/sqrt(TstarCrit)/vb2;
+	  C = - P - a*(1+k)*(1+k)/vb2;
+	  T_new = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
+	  T_new *= T_new;
+	  error = abs(T-T_new)/T_new;
+	  count_T++;
+
+  } while (count_T < ITMAX || error > toll);
+
+  if (count_T == ITMAX)
+  	cout << "Too many iterations in T_P_rho function" << endl;
+
   return T;
 }
 
@@ -670,13 +736,14 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
   atanh = (log(1.0+( b*sqrt2 / (x1 + b))) - log(1.0-( b*sqrt2 / (x1 + b))))/2.0;
   fv = atanh;
 
-  fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+  fx1 = Cv*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+
   T = T_v_h(x2, h);
 
   atanh = (log(1.0+( b*sqrt2 / (x2 + b))) - log(1.0-( b*sqrt2 / (x2 + b))))/2.0;
   fv = atanh;
 
-  fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+  fx2 = Cv*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
   // zbrac algorithm NR
 
@@ -687,13 +754,13 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
         T = T_v_h(x1, h);
         atanh = (log(1.0+( b*sqrt2/(x1 + b))) - log(1.0-( b*sqrt2/(x1 + b))))/2.0;
         fv = atanh;
-        fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+        fx1 = Cv*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
       } else {
         x2 += FACTOR*(x2-x1);
         T = T_v_h(x2, h);
         atanh = (log(1.0+( b*sqrt2/(x2 + b))) - log(1.0-( b*sqrt2/(x2 + b))))/2.0;
         fv = atanh;
-        fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+        fx2 = Cv*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
       }
     }
   }
@@ -712,7 +779,7 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
     T = T_v_h(xmid, h);
     atanh = (log(1.0+( b* sqrt2/(xmid + b))) - log(1.0-( b* sqrt2/(xmid + b))))/2.0;
     fv = atanh;
-    fmid= A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+    fmid= Cv*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
     if (fmid <= 0.0) rtb=xmid;
     countrtb++;
@@ -826,13 +893,13 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
   atanh = (log(1.0 + ( b*sqrt2 / (x1 + b) )) - log(1.0-( b*sqrt2 / (x1 + b) )))/2.0;
   fv = atanh;
 
-  fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+  fx1 = Cv*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
   T = T_P_rho(P,1.0/x2);
 
   atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
   fv = atanh;
 
-  fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+  fx2 = Cv*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
   // zbrac algorithm NR
 
@@ -845,14 +912,14 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
         atanh = (log(1.0 + ( b*sqrt2 / (x1 + b) )) - log(1.0-( b*sqrt2 / (x1 + b) )))/2.0;
         fv = atanh;
 
-        fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+        fx1 = Cv*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
       }else {
         T = T_P_rho(P,1.0/x2);
 
         atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
         fv = atanh;
 
-        fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+        fx2 = Cv*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
         }
     }
   }
@@ -874,7 +941,7 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
     atanh = (log(1.0 + ( b*sqrt2 / (xmid + b) )) - log(1.0-( b*sqrt2 / (xmid + b) )))/2.0;
     fv = atanh;
 
-    fmid = A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+    fmid = Cv*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
     if (fmid <= 0.0) rtb=xmid;
     count++;
     }while(abs(fmid) > toll && count<ITMAX);
@@ -903,7 +970,10 @@ void CPengRobinson_Generic::SetGamma_Trho () {
 
   su2double dPodT, dPodv, CpmCv;
 
-  dPodT = Gas_Constant/ (1/Density - b) - a * alpha2(Temperature) * k /  sqrt(TstarCrit * Temperature);
+  dPodT = 2 * a*sqrt(alpha2(Temperature)) * dalphadT(Temperature);
+  dPodT = dPodT / (1/Density/Density + 2*b/Density - b*b);
+
+  dPodT = Gas_Constant/ (1/Density - b) - dPodT;
   dPodv = -b *b + 2 * b / Density + pow(Density, -2);
   dPodv = -Gas_Constant * Temperature / pow(1/Density - b, 2) + 2* a * alpha2(Temperature) * (1/ Density - b) / pow(dPodv, 2);
 
@@ -914,19 +984,13 @@ void CPengRobinson_Generic::SetGamma_Trho () {
 
 }
 
-su2double CPengRobinson_Generic::alpha2(su2double T) {
-
-	// alpha call corrected
-
-  return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
-}
 
 void CPengRobinson_Generic::Set_Cv (su2double T, su2double v) {
 	// cv call corrected
   su2double CvmCv0;
 
-  CvmCv0 = +0.25 * sqrt(alpha2(T)) * k / sqrt(TstarCrit) * pow(T, -1.5);
-  CvmCv0 = CvmCv0 + 0.25 * k * k / TstarCrit / T;
+  CvmCv0 = sqrt(alpha2(T)) * dalpha2dT2(T);
+  CvmCv0 = CvmCv0 + pow(dalphadT(T), 2);
   CvmCv0 = -2 * a * CvmCv0 * T;
 
   CvmCv0 = CvmCv0 * 0.5 * (log( v + b - sqrt(2)*b) - log( v + b + sqrt(2)*b));

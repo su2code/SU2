@@ -763,6 +763,10 @@ private:
       */
       su2double  alpha2 (su2double T);
 
+      su2double  dalphadT (su2double T);
+
+      su2double  dalpha2dT2 (su2double T);
+
      /*!
     * \brief Internal function for the implicit call hs.
     */
