@@ -665,7 +665,6 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
     x2 = v;
   }
 
-
   T = T_v_h(x1, h);
 
   atanh = (log(1.0+( b*sqrt2 / (x1 + b))) - log(1.0-( b*sqrt2 / (x1 + b))))/2.0;
@@ -758,6 +757,7 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
 
 void CPengRobinson_Generic::SetEnergy_Prho (su2double P, su2double rho) {
 
+	// Energy _ Prho call corrected
     su2double ad;
     su2double A, B, C, T, vb1, vb2, atanh;
     vb1 = (1/rho -b);
@@ -925,7 +925,7 @@ void CPengRobinson_Generic::Set_Cv (su2double T, su2double v) {
 	// cv call corrected
   su2double CvmCv0;
 
-  CvmCv0 = -0.25 * sqrt(alpha2(T)) * k / sqrt(TstarCrit) * pow(T, -1.5);
+  CvmCv0 = +0.25 * sqrt(alpha2(T)) * k / sqrt(TstarCrit) * pow(T, -1.5);
   CvmCv0 = CvmCv0 + 0.25 * k * k / TstarCrit / T;
   CvmCv0 = -2 * a * CvmCv0 * T;
 
