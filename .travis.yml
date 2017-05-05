@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - giulio.gori@polimi.it
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_sliding_interface
+        - develop
 
 env:
     global:
