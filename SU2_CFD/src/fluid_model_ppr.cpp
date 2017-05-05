@@ -492,7 +492,7 @@ su2double CPengRobinson_Generic::T_v_h(su2double v, su2double h) {
 	//corrected
   su2double fv, A, B, C, T, d, atanh, T_new;
   su2double toll = 1e-5, error = 1;
-  unsigned int count_T = 0, ITMAX = 1000;
+  unsigned int count_T = 0, ITMAX = 100;
   su2double sqrt2=sqrt(2.0);
 
   d = (v*v+2*b*v-b*b);
@@ -510,17 +510,15 @@ su2double CPengRobinson_Generic::T_v_h(su2double v, su2double h) {
   do {
 	  T = T_new;
 	  HeatCapacity->Set_Cv0(T);
-	  HeatCapacity->Get_Cv0();
+	  Cv0 = HeatCapacity->Get_Cv0();
 	  Set_Cv(T, v);
-
       A = Cv + Gas_Constant*v/(v-b) - a*v*k*k / (TstarCrit * d);
-      B = a*k*(k+1)/sqrt(TstarCrit) *( fv/(b*sqrt2) + 2*v/d );
-      C = h + a*(1+k)*(1+k)*(fv/(b*sqrt2) + v/d);
-
-      T = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
-      error = abs(T - T_new)/T_new;
+      T_new = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
+      T_new *= T_new;
+      error = abs((T - T_new)/T);
       count_T++;
-  } while (count_T < ITMAX || error > toll);
+
+  } while (count_T < ITMAX && error > toll);
 
   if (count_T == ITMAX)
   	cout << "Too many iterations in T_v_h function" << endl;
@@ -548,7 +546,7 @@ su2double CPengRobinson_Generic::T_P_rho(su2double P, su2double rho) {
   do {
 	  T = T_new;
 	  HeatCapacity->Set_Cv0(T);
-	  HeatCapacity->Get_Cv0();
+	  Cv0 = HeatCapacity->Get_Cv0();
 	  Set_Cv(T, 1/rho);
 
 	  A =   Gas_Constant/vb1 - a*k*k/TstarCrit/vb2;
@@ -559,7 +557,7 @@ su2double CPengRobinson_Generic::T_P_rho(su2double P, su2double rho) {
 	  error = abs(T-T_new)/T_new;
 	  count_T++;
 
-  } while (count_T < ITMAX || error > toll);
+  } while (count_T < ITMAX && error > toll);
 
   if (count_T == ITMAX)
   	cout << "Too many iterations in T_P_rho function" << endl;
@@ -572,9 +570,9 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 	// rhoe call corrected
 
     su2double DpDd_T, DpDT_d, DeDd_T, der, Temperature_new;
-    su2double error = 1, toll = 1e-5;
+    su2double error = 1, toll = 1e-9;
     su2double A, B, C, sqrt2, fv, a2T, rho2, atanh;
-    unsigned int count_T = 0, ITMAX = 1000;
+    unsigned int count_T = 0, ITMAX = 100;
 
     Density = rho;
     StaticEnergy = e;
@@ -584,7 +582,7 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
     atanh = (log(1.0+( rho * b * sqrt2/(1 + rho*b))) - log(1.0-( rho * b * sqrt2/(1 + rho*b))))/2.0;
 	fv = atanh;
 
-	A = Gas_Constant/Gamma_Minus_One;
+	A = Gas_Constant/(Gamma-1);
 	B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
 	C = a*(k+1)*(k+1)*fv/(b*sqrt2) + e;
 
@@ -592,23 +590,28 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 	Temperature_new *= Temperature_new;
 
     do {
-		Temperature = Temperature_new;
+    	Temperature = Temperature_new;
+
     	HeatCapacity->Set_Cv0(Temperature);
     	Cv0 = HeatCapacity->Get_Cv0();
     	Set_Cv( Temperature, 1/rho);
 
 		A = Cv;
-		B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-		C = a*(k+1)*(k+1)*fv/(b*sqrt2) + e;
 
-		Temperature = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
-		Temperature *= Temperature;
+		Temperature_new = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
+		Temperature_new *= Temperature_new;
 		error = abs(Temperature - Temperature_new)/Temperature;
 		count_T++;
-    } while (count_T < ITMAX || error > toll);
+
+    } while (count_T < ITMAX && error > toll);
 
     if (count_T == ITMAX)
-    	cout << "Too many iterations in rho_e call" << endl;
+//    	cout << "Too many iterations in rho_e call" << endl;
+
+    Temperature = Temperature_new;
+	HeatCapacity->Set_Cv0(Temperature);
+	Cv0 = HeatCapacity->Get_Cv0();
+	Set_Cv( Temperature, 1/rho);
 
     a2T = alpha2(Temperature);
 
@@ -702,7 +705,7 @@ void CPengRobinson_Generic::SetTDState_PT (su2double P, su2double T ) {
 void CPengRobinson_Generic::SetTDState_Prho (su2double P, su2double rho ) {
 	// Prho call corrected
 
-    SetEnergy_Prho(P, rho);
+  SetEnergy_Prho(P, rho);
 
   SetTDState_rhoe(rho, StaticEnergy);
 
@@ -713,9 +716,9 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
   su2double T, fv, sqrt2=sqrt(2.0), A;
   su2double f, v, atanh;
   su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
-  su2double toll = 1e-9, FACTOR=0.2;
+  su2double toll = 1e-5, FACTOR=0.2;
   su2double cons_s, cons_h;
-  unsigned short countrtb=0, NTRY=10, ITMAX=100;
+  unsigned short countrtb=0, NTRY=10, ITMAX=1000;
 
   A = Gas_Constant / Gamma_Minus_One;
   T = h*Gamma_Minus_One/Gas_Constant/Gamma;
@@ -770,7 +773,7 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
   f=fx1;
   fmid=fx2;
   if (f*fmid >= 0.0) {
-    cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+//    cout<< "Root must be bracketed for bisection in rtbis"<< endl;
     SetTDState_rhoT(Density, Temperature);
   }
   rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
@@ -787,19 +790,8 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
 
   v = xmid;
   if (countrtb==ITMAX) {
-    cout <<"Too many bisections in rtbis" << endl;
-//      do{
-//          atanh = (log(1.0+( b/v* sqrt2/(1 + b/v))) - log(1.0-( b/v* sqrt2/(1 + b/v))))/2.0;
-//          fv = atanh;
-//          T=T_v_h(v, h);
-//          f = A*log(T) + Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-//          f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(T)) *k/(sqrt(T*TstarCrit)*(v*v - b*b - 2*v*b));
-//          dv= f/f1;
-//          v-= dv;
-//          countnw++;
-//      }while(abs(f/x2) > toll && countnw<ITMAXNW);
-//
-//    } else {
+//    cout <<"Too many bisections in rtbis" << endl;
+
   }
   if (v!=v) {
     cout <<"not physical solution found, h and s input " << h << " "<< s << endl;
@@ -807,17 +799,18 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
   }
 
   T=T_v_h(v, h);
+
   SetTDState_rhoT(1/v, T);
 
   // consistency check
   cons_h= abs(((StaticEnergy + Pressure/Density) - h)/h);
   cons_s= abs((Entropy-s)/s);
 
-  if (cons_h >1e-4 || cons_s >1e-4) {
-    cout<< "TD consistency not verified in hs call"<< endl;
-       //cout <<"Before  "<< h <<" "<< s << endl;
-       //cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< countrtb<<" "<< countnw<< endl;
-       //getchar();
+  if (cons_h >1e-3 || cons_s >1e-3) {
+//    cout<< "TD consistency not verified in hs call"<< endl;
+//       cout <<"Before  "<< h <<" "<< s << endl;
+//       cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< countrtb<<" "<< endl;
+//      getchar();
   }
 }
 
@@ -849,22 +842,24 @@ void CPengRobinson_Generic::SetEnergy_Prho (su2double P, su2double rho) {
 
     StaticEnergy = T * Cv - ad;
 
+
 }
 
 void CPengRobinson_Generic::SetTDState_rhoT (su2double rho, su2double T) {
 
 	// rhoT call corrected
-  su2double fv, e, atanh;
+  su2double fv, e, atanh, a2T;
+
+  a2T = alpha2(T);
 
   atanh = (log(1.0+( rho * b * sqrt(2.0)/(1 + rho*b))) - log(1.0-( rho * b * sqrt(2.0)/(1 + rho*b))))/2.0;
   fv = atanh;
 
   HeatCapacity->Set_Cv0(T);
   Cv0 = HeatCapacity->Get_Cv0();
-
   Set_Cv(T, 1/rho);
 
-  e = T * Cv - - a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2.0) ) * fv;
+  e = T * Cv - a*(k+1)*sqrt( a2T ) / ( b*sqrt(2.0) ) * fv;
 
   SetTDState_rhoe(rho, e);
 }
@@ -968,9 +963,12 @@ void CPengRobinson_Generic::SetGamma_Trho () {
 
 	// Gamma call corrected
 
-  su2double dPodT, dPodv, CpmCv;
+  su2double dPodT, dPodv, CpmCv, daT, a2T;
 
-  dPodT = 2 * a*sqrt(alpha2(Temperature)) * dalphadT(Temperature);
+  daT = dalphadT(Temperature);
+  a2T = alpha2(Temperature);
+
+  dPodT = 2 * a*sqrt(a2T) * daT;
   dPodT = dPodT / (1/Density/Density + 2*b/Density - b*b);
 
   dPodT = Gas_Constant/ (1/Density - b) - dPodT;
@@ -987,15 +985,20 @@ void CPengRobinson_Generic::SetGamma_Trho () {
 
 void CPengRobinson_Generic::Set_Cv (su2double T, su2double v) {
 	// cv call corrected
-  su2double CvmCv0;
+  su2double CvmCv0, a2T, daT, da2T;
 
-  CvmCv0 = sqrt(alpha2(T)) * dalpha2dT2(T);
-  CvmCv0 = CvmCv0 + pow(dalphadT(T), 2);
+  a2T = alpha2(T);
+  da2T = dalpha2dT2(T);
+  daT = dalphadT(T);
+
+  CvmCv0 = sqrt(a2T) * da2T;
+  CvmCv0 = CvmCv0 + pow( daT, 2);
   CvmCv0 = -2 * a * CvmCv0 * T;
 
   CvmCv0 = CvmCv0 * 0.5 * (log( v + b - sqrt(2)*b) - log( v + b + sqrt(2)*b));
 
   Cv = Cv0 + CvmCv0;
+
 
 }
 
