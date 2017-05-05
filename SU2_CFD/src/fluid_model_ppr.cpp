@@ -503,25 +503,46 @@ su2double CPengRobinson_Generic::T_P_rho(su2double P, su2double rho) {
 
 void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
-    su2double DpDd_T, DpDT_d, DeDd_T, Cv;
+	// rhoe call corrected
+
+    su2double DpDd_T, DpDT_d, DeDd_T, der, Temperature_new;
+    su2double error = 1, toll = 1e-5;
     su2double A, B, C, sqrt2, fv, a2T, rho2, atanh;
+    unsigned int count_T = 0, ITMAX = 1000;
 
     Density = rho;
     StaticEnergy = e;
 
     rho2 = rho*rho;
     sqrt2=sqrt(2.0);
-
     atanh = (log(1.0+( rho * b * sqrt2/(1 + rho*b))) - log(1.0-( rho * b * sqrt2/(1 + rho*b))))/2.0;
+	fv = atanh;
 
-    fv = atanh;
+	A = Gas_Constant/Gamma_Minus_One;
+	B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
+	C = a*(k+1)*(k+1)*fv/(b*sqrt2) + e;
 
-    A = Gas_Constant / Gamma_Minus_One;
-    B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-    C = a*(k+1)*(k+1)*fv/(b*sqrt2) + e;
+	Temperature_new = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
+	Temperature_new *= Temperature_new;
 
-    Temperature = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
-    Temperature *= Temperature;
+    do {
+		Temperature = Temperature_new;
+    	HeatCapacity->Set_Cv0(Temperature);
+    	Cv0 = HeatCapacity->Get_Cv0();
+    	Set_Cv( Temperature, 1/rho);
+
+		A = Cv;
+		B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
+		C = a*(k+1)*(k+1)*fv/(b*sqrt2) + e;
+
+		Temperature = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
+		Temperature *= Temperature;
+		error = abs(Temperature - Temperature_new)/Temperature;
+		count_T++;
+    } while (count_T < ITMAX || error > toll);
+
+    if (count_T == ITMAX)
+    	cout << "Too many iterations in rho_e call" << endl;
 
     a2T = alpha2(Temperature);
 
@@ -530,15 +551,26 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
     Pressure = Temperature*Gas_Constant / B - a*a2T / A;
 
-    Entropy = Gas_Constant / Gamma_Minus_One*log(Temperature) + Gas_Constant*log(B) - a*sqrt(a2T) *k*fv/(b*sqrt2*sqrt(Temperature*TstarCrit));
+    SetGamma_Trho();
+
+    if 	(Gamma > 4 || Gamma < 1) {
+    	cout << "Warning: Gamma value greater than 3, switch to CONSTANT_GAMMA" << endl;
+    	cout << "Ideal gas correction implemented, Cp = Cv + R" << endl;
+    	Cp = Cv + Gas_Constant;
+    	Gamma = Cp/Cv;
+    	Gamma_Minus_One = Gamma - 1;
+		getchar();
+    }
+
+    Entropy = Cv*log(Temperature) + Gas_Constant*log(B) - a*sqrt(a2T) *k*fv/(b*sqrt2*sqrt(Temperature*TstarCrit));
 
     DpDd_T =  ( Temperature*Gas_Constant /(B*B    ) - 2*a*a2T*(1/rho + b) /( A*A ) ) /(rho2);
 
     DpDT_d = Gas_Constant /B + a*k / A * sqrt( a2T/(Temperature*TstarCrit) );
 
-    Cv = Gas_Constant/Gamma_Minus_One + ( a*k*(k+1)*fv ) / ( 2*b*sqrt(2*Temperature*TstarCrit) );
+    der = Cv + ( a*k*(k+1)*fv ) / ( 2*b*sqrt(2*Temperature*TstarCrit) );
 
-    dPde_rho = DpDT_d/Cv;
+    dPde_rho = DpDT_d/der;
 
     DeDd_T = - a*(1+k) * sqrt( a2T ) / A / (rho2);
 
@@ -546,7 +578,7 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
     SoundSpeed2 = dPdrho_e + Pressure/(rho2)*dPde_rho;
 
-    dTde_rho = 1/Cv;
+    dTde_rho = 1/der;
 
     Zed = Pressure/(Gas_Constant*Temperature*Density);
 
