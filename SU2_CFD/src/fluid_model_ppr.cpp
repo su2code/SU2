@@ -718,7 +718,7 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
   su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
   su2double toll = 1e-5, FACTOR=0.2;
   su2double cons_s, cons_h;
-  unsigned short countrtb=0, NTRY=10, ITMAX=1000;
+  unsigned short countrtb=0, NTRY=10, ITMAX=100;
 
   A = Gas_Constant / Gamma_Minus_One;
   T = h*Gamma_Minus_One/Gas_Constant/Gamma;
@@ -790,7 +790,10 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
 
   v = xmid;
   if (countrtb==ITMAX) {
-//    cout <<"Too many bisections in rtbis" << endl;
+ //   cout <<"Too many bisections in rtbis" << endl;
+ //   cout << Cv <<  endl;
+ //   cout << rtb << " " << f << " " << xmid << " " << fmid << endl;
+ //   getchar();
 
   }
   if (v!=v) {
