@@ -81,6 +81,7 @@ def function( func_name, config, state=None ):
     
     # check for multiple objectives
     multi_objective = (type(func_name)==list)
+
     # func_name_string is only used to check whether the function has already been evaluated. 
     func_name_string = func_name
     if multi_objective:   func_name_string = func_name[0]  
@@ -110,15 +111,17 @@ def function( func_name, config, state=None ):
         func_out = state['FUNCTIONS']
     elif (multi_objective):
         # If combine_objective is true, use the 'combo' output.
-        objectives=config.OPT_OBJECTIVE
-        func_out = 0.0
-        for func in func_name:
-            sign = su2io.get_objectiveSign(func)
-            func_out+=state['FUNCTIONS'][func]*objectives[func]['SCALE']*sign
-        state['FUNCTIONS']['COMBO'] = func_out
+        func_out = state['FUNCTIONS']['COMBO']
     else:
         func_out = state['FUNCTIONS'][func_name]
-        
+
+    if config['OPT_OBJECTIVE'].has_key(func_name_string):
+        marker = config['OPT_OBJECTIVE'][func_name_string]['MARKER']
+        if su2io.per_surface_map.has_key(func_name_string):
+            name = su2io.per_surface_map[func_name_string]+'_'+marker
+            if state['FUNCTIONS'].has_key(name):
+                func_out = state['FUNCTIONS'][name]
+
     
     return copy.deepcopy(func_out)
 
@@ -260,6 +263,7 @@ def aerodynamics( config, state=None ):
                 push.append(info.FILES['TARGET_HEATFLUX'])
                 
     #: with output redirection
+    su2io.update_persurface(config,state)
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_aero + su2io.grad_names_directdiff:
