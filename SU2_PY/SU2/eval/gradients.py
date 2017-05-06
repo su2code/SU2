@@ -80,38 +80,38 @@ def gradient( func_name, method, config, state=None ):
     state = su2io.State(state)
     if func_name == 'ALL':
         raise Exception , "func_name = 'ALL' not yet supported"
-    func_name_string = func_name
+    func_output = func_name
     if (type(func_name)==list):
         if (config.OPT_COMBINE_OBJECTIVE=="YES"):
-            func_name_string = 'COMBO'
+            func_output = 'COMBO'
         else:
             func_name = func_name[0]
     else:
         config.OPT_COMBINE_OBJECTIVE="NO"
         config.OBJECTIVE_WEIGHT = "1.0"
     # redundancy check
-    if not state['GRADIENTS'].has_key(func_name_string):
+    if not state['GRADIENTS'].has_key(func_output):
 
         # Adjoint Gradients
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
               
             # Aerodynamics
-            if func_name_string in su2io.optnames_aero:
+            if func_output in su2io.optnames_aero:
                 grads = adjoint( func_name, config, state )
 
             elif func_name[0] in su2io.optnames_aero:
                 grads = adjoint( func_name, config, state )
                 
             # Stability
-            elif func_name_string in su2io.optnames_stab:
+            elif func_output in su2io.optnames_stab:
                 grads = stability( func_name, config, state )
 
             # Geometry (actually a finite difference)
-            elif func_name_string in su2io.optnames_geo:
+            elif func_output in su2io.optnames_geo:
                 grads = geometry( func_name, config, state )
 
             else:
-                raise Exception, 'unknown function name: %s' % func_name_string
+                raise Exception, 'unknown function name: %s' % func_output
 
         # Finite Difference Gradients
         elif method == 'FINDIFF':
@@ -129,7 +129,7 @@ def gradient( func_name, method, config, state=None ):
     # if not redundant
 
     # prepare output
-    grads_out = state['GRADIENTS'][func_name_string]
+    grads_out = state['GRADIENTS'][func_output]
 
     return copy.deepcopy(grads_out)
 
@@ -178,12 +178,13 @@ def adjoint( func_name, config, state=None ):
     state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
     
-    # check for multiple objectives
+    # When a list of objectives is used, they are combined 
+    # and the output name is 'COMBO'
     multi_objective = (type(func_name)==list)
-    func_name_string = func_name
-    if multi_objective:   func_name_string = 'COMBO'
+    func_output = func_name
+    if multi_objective:   func_output = 'COMBO'
 
-    ADJ_NAME = 'ADJOINT_'+func_name_string
+    ADJ_NAME = 'ADJOINT_'+func_output
 
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
@@ -196,7 +197,7 @@ def adjoint( func_name, config, state=None ):
     # ----------------------------------------------------    
 
     # master redundancy check
-    if state['GRADIENTS'].has_key(func_name_string):
+    if state['GRADIENTS'].has_key(func_output):
         grads = state['GRADIENTS']
         return copy.deepcopy(grads)
 
@@ -258,7 +259,7 @@ def adjoint( func_name, config, state=None ):
     with redirect_folder( ADJ_NAME, pull, link ) as push:
         with redirect_output(log_adjoint):        
 
-            # setup config
+            # Format objective list in config
             if multi_objective:
                 config['OBJECTIVE_FUNCTION'] = ", ".join(func_name)
             else:
@@ -282,7 +283,7 @@ def adjoint( func_name, config, state=None ):
 
     # return output 
     grads = su2util.ordered_bunch()
-    grads[func_name_string] = state['GRADIENTS'][func_name_string]
+    grads[func_output] = state['GRADIENTS'][func_output]
     return grads
 
 #: def adjoint()
@@ -450,8 +451,11 @@ def findiff( config, state=None ):
     else:
         log_findiff = None
 
-    # evaluate step
-    step = 0.001 * float(config.REF_LENGTH_MOMENT)
+    # evaluate step length or set default value
+    if config.has_key('FIN_DIFF_STEP'):
+        step = float(config.FIN_DIFF_STEP)
+    else:
+        step = 0.001 
 
     # ----------------------------------------------------
     #  Redundancy Check
