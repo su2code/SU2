@@ -1370,8 +1370,13 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
         else                    // Data only needs to be received.
           prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][0];
 
+        /* Make sure that any previous communication has been completed. */
+        prevInd[1] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][0];
+
+        /* Create the task. */
         indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][0] = tasksList.size();
-        tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION, 0, prevInd[0]));
+        tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION, 0,
+                                            prevInd[0], prevInd[1]));
       }
 #endif
 
@@ -1401,8 +1406,13 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
           else                    // Data only needs to be received.
             prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][nL];
 
+          /* Make sure that any previous communication has been completed. */
+          prevInd[1] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][nL];
+
+          /* Create the actual task. */
           indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][nL] = tasksList.size();
-          tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION, nL, prevInd[0]));
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION, nL,
+                                              prevInd[0], prevInd[1]));
         }
 #endif
       }
@@ -1674,10 +1684,12 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
               else
                 prevInd[1] = -1;
 
+              prevInd[2] = indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][level];
+
               /* Create the task. */
               indexInList[CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION][level] = tasksList.size();
               tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION,
-                                                  level, prevInd[0], prevInd[1]));
+                                                  level, prevInd[0], prevInd[1], prevInd[2]));
             }
           }
 
@@ -1795,7 +1807,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
 
     // EXTRA FOR DEBUGGING
-    int rank = MASTER_NODE, nProc = 1;
+/*  int rank = MASTER_NODE, nProc = 1;
 #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nProc);
@@ -1848,10 +1860,10 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 #ifdef HAVE_MPI
       MPI_Barrier(MPI_COMM_WORLD);
 #endif
-    }
+    } */
 
-    cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER not implemented yet";
-    exit(1);
+//  cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER not implemented yet";
+//  exit(1);
 
     // END EXTRA FOR DEBUGGING.
   }
@@ -3265,9 +3277,12 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
             case CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX: {
 
               /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
               config->Tick(&tick);
               const bool useADER = config->GetKind_TimeIntScheme() == ADER_DG;
-              MultiplyResidualByInverseMassMatrix(config, useADER);
+              MultiplyResidualByInverseMassMatrix(config, useADER,
+                                                  nVolElemOwnedPerTimeLevel[level],
+                                                  nVolElemOwnedPerTimeLevel[level+1]);
               config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4249,10 +4264,10 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   /* Determine the offset between the numbering used in the DOFs of the face
      and the numbering used in the working solution vectors, see above for a
      more detailed explanation. */
-  if(timeLevelFace == volElem[elem0].timeLevel)
-    offset = volElem[elem0].offsetDOFsSolLocal - volElem[elem0].offsetDOFsSolThisTimeLevel;
+  if(timeLevelFace == volElem[elem1].timeLevel)
+    offset = volElem[elem1].offsetDOFsSolLocal - volElem[elem1].offsetDOFsSolThisTimeLevel;
   else
-    offset = volElem[elem0].offsetDOFsSolLocal - volElem[elem0].offsetDOFsSolPrevTimeLevel;
+    offset = volElem[elem1].offsetDOFsSolLocal - volElem[elem1].offsetDOFsSolPrevTimeLevel;
 
   /*--- Store the solution of the DOFs of side 1 of the face in contiguous memory
         such that the function DenseMatrixProduct can be used to compute the right
@@ -4460,8 +4475,11 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(const unsigned short timeLevel,
   }
 }
 
-void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CConfig    *config,
-                                                              const bool useADER) {
+void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
+                                              CConfig            *config,
+                                              const bool          useADER,
+                                              const unsigned long elemBeg,
+                                              const unsigned long elemEnd) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *tmpRes = VecTmpMemory.data();
@@ -4472,7 +4490,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CConfig    *config
   vector<su2double> &VecRes = useADER ? VecTotResDOFsADER : VecResDOFs;
 
   /* Loop over the owned volume elements. */
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
 
     /* Easier storage of the residuals for this volume element. */
     su2double *res = VecRes.data() + nVar*volElem[l].offsetDOFsSolLocal;
