@@ -13050,9 +13050,13 @@ private:
             of the (lumped) mass matrix.
    * \param[in] config  - Definition of the particular problem.
    * \param[in] useADER - Whether or not the ADER residual must be multiplied.
+   * \param[in] elemBeg - Begin index of the element range to be computed.
+   * \param[in] elemEnd - End index (not included) of the element range to be computed.
    */
-  void MultiplyResidualByInverseMassMatrix(CConfig    *config,
-                                           const bool useADER);
+  void MultiplyResidualByInverseMassMatrix(CConfig             *config,
+                                           const bool          useADER,
+                                           const unsigned long elemBeg,
+                                           const unsigned long elemEnd);
 
   /*!
    * \brief Function, which computes the residual contribution from a boundary
