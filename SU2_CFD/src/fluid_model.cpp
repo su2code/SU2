@@ -88,6 +88,7 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
   
 }
 
+
 void CFluidModel::SetLiquidPhaseModel (CConfig *config) {
 
 	switch (config->GetKind_Liquid_Model() ) {
@@ -96,4 +97,18 @@ void CFluidModel::SetLiquidPhaseModel (CConfig *config) {
 	}
 
 }
+
+
+void CFluidModel::SetHeatCapacityModel_Dimensional (CConfig *config) {
+
+    HeatCapacity = new CHeatCapacity_Dimensional(config);
+
+}
+
+void CFluidModel::SetHeatCapacityModel_Dimensionless (CConfig *config) {
+
+    HeatCapacity = new CHeatCapacity_Dimensionless(config);
+
+}
+
 

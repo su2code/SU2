@@ -353,7 +353,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nDim = geometry->GetnDim();
 
   nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+4;
   nSecondaryVar = 2; nSecondaryVarGrad = 2;
 
   
@@ -3381,6 +3381,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   su2double Reynolds         = config->GetReynolds();
   bool unsteady           = (config->GetUnsteady_Simulation() != NO);
   bool viscous            = config->GetViscous();
+  bool polytropic         = config->Get_ConstantGamma();
   bool grid_movement      = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
@@ -3419,6 +3420,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.49);
 
       FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
+      FluidModel-> SetHeatCapacityModel_Dimensional(config);
+
       if (free_stream_temp) {
         if (aeroelastic) {
           Temperature_FreeStream = TgammaR / (config->GetGas_Constant()*1.4);
@@ -3437,11 +3440,18 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
     case IDEAL_GAS:
 
-      FluidModel = new CIdealGas(Gamma, config->GetGas_Constant());
+    	if (polytropic)  {
+    		FluidModel = new CIdealGas(config->GetGamma(), config->GetGas_Constant());
+    	} else {
+    	    FluidModel = new CIdealGas(config->GetGamma(), config->GetGas_Constant());
+    	    FluidModel-> SetHeatCapacityModel_Dimensional(config);
+    	}
+
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
         Density_FreeStream = FluidModel->GetDensity();
         config->SetDensity_FreeStream(Density_FreeStream);
+
       }
       else {
         FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
@@ -3452,8 +3462,15 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
     case VW_GAS:
 
-      FluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(),
-                                       config->GetPressure_Critical(), config->GetTemperature_Critical());
+    	if (polytropic)  {
+    		FluidModel = new CVanDerWaalsGas(config->GetGamma(), config->GetGas_Constant(),
+                    config->GetPressure_Critical(), config->GetTemperature_Critical());
+    	} else {
+    	    FluidModel = new CVanDerWaalsGas_Generic(config->GetGamma(), config->GetGas_Constant(),
+    	                                       config->GetPressure_Critical(), config->GetTemperature_Critical());
+    	   	FluidModel-> SetHeatCapacityModel_Dimensional(config);
+    	}
+
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
         Density_FreeStream = FluidModel->GetDensity();
@@ -3468,8 +3485,16 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
     case PR_GAS:
 
-      FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
-                                     config->GetTemperature_Critical(), config->GetAcentric_Factor());
+    	if (polytropic)  {
+    		FluidModel = new CPengRobinson(config->GetGamma(), config->GetGas_Constant(), config->GetPressure_Critical(),
+                    config->GetTemperature_Critical(), config->GetAcentric_Factor());
+    	} else {
+    		FluidModel = new CPengRobinson_Generic(config->GetGamma(), config->GetGas_Constant(), config->GetPressure_Critical(),
+                    config->GetTemperature_Critical(), config->GetAcentric_Factor());
+    		FluidModel-> SetHeatCapacityModel_Dimensional(config);
+    	}
+
+
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
         Density_FreeStream = FluidModel->GetDensity();
@@ -3477,12 +3502,14 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       }
       else {
         FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+
         Temperature_FreeStream = FluidModel->GetTemperature();
         config->SetTemperature_FreeStream(Temperature_FreeStream);
       }
       break;
 
   }
+
 
   Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
 
@@ -3492,6 +3519,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     config->GetVelocity_FreeStream()[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
     config->GetVelocity_FreeStream()[1] = sin(Alpha)*Mach*Mach2Vel_FreeStream;
   }
+
+
   if (nDim == 3) {
     config->GetVelocity_FreeStream()[0] = cos(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
     config->GetVelocity_FreeStream()[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
@@ -3625,7 +3654,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Froude            = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);         config->SetFroude(Froude);
   
   /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
-  
+
   Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref();  config->SetPressure_FreeStreamND(Pressure_FreeStreamND);
   Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();    config->SetDensity_FreeStreamND(Density_FreeStreamND);
   
@@ -3636,8 +3665,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
   
   Gas_ConstantND = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
-  
-  
+
   ModVel_FreeStreamND = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
   ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
@@ -3666,24 +3694,48 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   switch (config->GetKind_FluidModel()) {
       
     case STANDARD_AIR:
+
+
       FluidModel = new CIdealGas(1.4, Gas_ConstantND);
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
     case IDEAL_GAS:
-      FluidModel = new CIdealGas(Gamma, Gas_ConstantND);
+    	if (polytropic)  {
+    		FluidModel = new CIdealGas(Gamma, Gas_ConstantND);
+    	} else {
+    		FluidModel = new CIdealGas_Generic(Gamma, Gas_ConstantND);
+    		FluidModel-> SetHeatCapacityModel_Dimensionless(config);
+    	}
+
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
     case VW_GAS:
-      FluidModel = new CVanDerWaalsGas(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
-                                       config->GetTemperature_Critical()/config->GetTemperature_Ref());
-      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+
+    	if (polytropic)  {
+    		FluidModel = new CVanDerWaalsGas(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                    config->GetTemperature_Critical()/config->GetTemperature_Ref());
+    	} else {
+    		FluidModel = new CVanDerWaalsGas_Generic(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                    config->GetTemperature_Critical()/config->GetTemperature_Ref());
+    		FluidModel-> SetHeatCapacityModel_Dimensionless(config);
+    	}
+
+    	FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
     case PR_GAS:
-      FluidModel = new CPengRobinson(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
-                                     config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
+
+    	if (polytropic)  {
+    		FluidModel = new CPengRobinson(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                    config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
+    	} else {
+    		FluidModel = new CPengRobinson_Generic(config->GetGamma(), Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                    config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
+    		FluidModel-> SetHeatCapacityModel_Dimensionless(config);
+    	}
+
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
@@ -10467,7 +10519,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Retrieve solution at this boundary node ---*/
       V_domain = node[iPoint]->GetPrimitive();
-      
+
       /*--- Compute the internal state u_i ---*/
       Velocity2_i = 0;
       for (iDim=0; iDim < nDim; iDim++)
@@ -10475,13 +10527,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
         Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
       }
-      
-      
+
       Density_i = node[iPoint]->GetDensity();
       
       Energy_i = node[iPoint]->GetEnergy();
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
-      
+
       FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
       
       Pressure_i = FluidModel->GetPressure();
@@ -10514,12 +10565,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           /*--- Non-dim. the inputs if necessary. ---*/
           P_Total /= config->GetPressure_Ref();
           T_Total /= config->GetTemperature_Ref();
-          
+
           /*--- Computes the total state ---*/
           FluidModel->SetTDState_PT(P_Total, T_Total);
+
           Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
           Entropy_e = FluidModel->GetEntropy();
-          
+
           /*--- Compute the boundary state u_e ---*/
           Velocity2_e = Velocity2_i;
           if (nDim == 2) {
@@ -10531,7 +10583,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             for (iDim = 0; iDim < nDim; iDim++)
               Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
           }
+
           StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+
           FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
           Density_e = FluidModel->GetDensity();
           StaticEnergy_e = FluidModel->GetStaticEnergy();
@@ -12984,14 +13038,15 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
   
 }
 
-void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                          CConfig *config) {
   
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iDim, iVar, iMarker;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
+  bool viscous       = config->GetViscous();
   
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
@@ -13008,6 +13063,8 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
         if (geometry->node[iPoint]->GetDomain()) {
 
+          Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
           for (iVar = 0; iVar < nPrimVar; iVar++) {
             PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
             PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
@@ -13015,7 +13072,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
           /*--- Set primitive variables ---*/
 
-          numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+          conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
           
           if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ) {
           Secondary_i = node[iPoint]->GetSecondary();
@@ -13027,7 +13084,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             Secondary_j[0] = FluidModel->GetdPdrho_e();
             Secondary_j[1] = FluidModel->GetdPde_rho();  
 
-            numerics->SetSecondary(Secondary_i, Secondary_j);
+            conv_numerics->SetSecondary(Secondary_i, Secondary_j);
           }
 
           /*--- Set the normal vector ---*/
@@ -13036,20 +13093,52 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           for (iDim = 0; iDim < nDim; iDim++) 
             Normal[iDim] = -Normal[iDim];
 
-          numerics->SetNormal(Normal);
+          conv_numerics->SetNormal(Normal);
 
           if (grid_movement)
-            numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+            conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
           /*--- Compute the convective residual using an upwind scheme ---*/
 
-          numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
           /*--- Add Residuals and Jacobians ---*/
 
           LinSysRes.AddBlock(iPoint, Residual);
           if (implicit) 
             Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+          if (viscous) {
+
+            PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5);
+            PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6);
+
+            /*--- Set the normal vector and the coordinates ---*/
+
+            visc_numerics->SetNormal(Normal);
+            visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+            /*--- Primitive variables, and gradient ---*/
+
+            visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+            visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+            /*--- Turbulent kinetic energy ---*/
+
+            if (config->GetKind_Turb_Model() == SST)
+              visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
+            /*--- Compute and update residual ---*/
+
+            visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+            LinSysRes.SubtractBlock(iPoint, Residual);
+
+            /*--- Jacobian contribution for implicit integration ---*/
+
+            if (implicit)
+              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          }
         }
       }
     }
@@ -14581,7 +14670,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nDim = geometry->GetnDim();
   
   nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+4;
   nSecondaryVar = 8; nSecondaryVarGrad = 2;
 
   

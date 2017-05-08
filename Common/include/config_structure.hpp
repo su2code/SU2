@@ -90,6 +90,7 @@ private:
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   su2double* SubsonicEngine_Cyl; /*!< \brief Coordinates of the box subsonic region */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
+  su2double* Coeff_HeatCapacity; /*!< \brief Values of the box subsonic region */
   su2double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
   su2double *DistortionRack;
   su2double *PressureLimits,
@@ -463,6 +464,7 @@ private:
   SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
+  bool Constant_Gamma;			/*!< \brief polytropic gas... . */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -830,6 +832,7 @@ private:
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
+  *default_heat_capacity,     /*!< \brief Default heat capacity coefficients. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
@@ -2986,6 +2989,16 @@ public:
    */
   unsigned short GetKind_FluidModel(void);
   
+  /*!
+    * \brief Fluid name for heat capacity
+    */
+   su2double* GetCoeff_HeatCapacity(void);
+
+  /*!
+    * \brief Fluid name for heat capacity
+    */
+   bool Get_ConstantGamma(void);
+
   /*!
    * \brief free stream option to initialize the solution
    * \return free stream option

@@ -2034,7 +2034,6 @@ public:
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
 
-
   // classes for 2phase solver
 
   virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, su2double Rcritical, CFluidModel *FluidModel, CConfig *config);
@@ -2065,9 +2064,7 @@ public:
 
   virtual void       SetLiquidPrimZero() ;
 
-
-
-
+  virtual void SetGamma (su2double value_Gamma);
 };
 
 /*!
@@ -3120,6 +3117,7 @@ public:
    */
   void SetWindGustDer(su2double* val_WindGust);
 
+<<<<<<< HEAD
   /*!
    * \brief Set the value of the mu in case of 2phase calculations
    */
@@ -3130,6 +3128,9 @@ public:
    */
   void SetThermalConductivity (su2double k);
 
+=======
+  void SetGamma (su2double value_Gamma);
+>>>>>>> feature_polytropicGas
 };
 
 /*!
@@ -3367,7 +3368,6 @@ public:
    * \brief Set all the primitive variables for incompressible flows.
    */
   bool SetPrimVar(su2double Density_Inf, CConfig *config);
-  
 };
 
 /*!
