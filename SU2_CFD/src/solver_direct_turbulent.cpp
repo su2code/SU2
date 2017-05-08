@@ -3688,7 +3688,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
       int Unst_RestartIter;
       if (adjoint) {
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || time_stepping)
       Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else
       Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
@@ -3699,7 +3699,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Open the restart file, throw an error if this fails. ---*/
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
-      cout << "There is no turbulent restart file!!" << endl;
+      cout << "There is no turbulent restart file named " << filename << " !!" << endl;
       exit(EXIT_FAILURE);
     }
     
