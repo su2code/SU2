@@ -138,17 +138,11 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../include/transfer_structure.inl \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
-<<<<<<< HEAD
-	../src/fluid_model_ppr.cpp ../src/integration_structure.cpp \
-	../src/integration_time.cpp ../src/driver_structure.cpp \
-	../src/iteration_structure.cpp ../src/liquid_phase_model.cpp \
-	../src/nucleation_model.cpp ../src/numerics_adjoint_mean.cpp \
-=======
 	../src/fluid_model_ppr.cpp ../src/heat_capacity.cpp \
 	../src/integration_structure.cpp ../src/integration_time.cpp \
 	../src/driver_structure.cpp ../src/iteration_structure.cpp \
+	../src/liquid_phase_model.cpp ../src/nucleation_model.cpp \
 	../src/numerics_adjoint_mean.cpp \
->>>>>>> feature_polytropicGas
 	../src/numerics_adjoint_mean_inc.cpp \
 	../src/numerics_adjoint_turbulent.cpp \
 	../src/numerics_direct_2phase.cpp \
@@ -304,17 +298,11 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/transfer_structure.inl \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
-<<<<<<< HEAD
-	../src/fluid_model_ppr.cpp ../src/integration_structure.cpp \
-	../src/integration_time.cpp ../src/driver_structure.cpp \
-	../src/iteration_structure.cpp ../src/liquid_phase_model.cpp \
-	../src/nucleation_model.cpp ../src/numerics_adjoint_mean.cpp \
-=======
 	../src/fluid_model_ppr.cpp ../src/heat_capacity.cpp \
 	../src/integration_structure.cpp ../src/integration_time.cpp \
 	../src/driver_structure.cpp ../src/iteration_structure.cpp \
+	../src/liquid_phase_model.cpp ../src/nucleation_model.cpp \
 	../src/numerics_adjoint_mean.cpp \
->>>>>>> feature_polytropicGas
 	../src/numerics_adjoint_mean_inc.cpp \
 	../src/numerics_adjoint_turbulent.cpp \
 	../src/numerics_direct_2phase.cpp \
@@ -461,17 +449,11 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/transfer_structure.inl \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
-<<<<<<< HEAD
-	../src/fluid_model_ppr.cpp ../src/integration_structure.cpp \
-	../src/integration_time.cpp ../src/driver_structure.cpp \
-	../src/iteration_structure.cpp ../src/liquid_phase_model.cpp \
-	../src/nucleation_model.cpp ../src/numerics_adjoint_mean.cpp \
-=======
 	../src/fluid_model_ppr.cpp ../src/heat_capacity.cpp \
 	../src/integration_structure.cpp ../src/integration_time.cpp \
 	../src/driver_structure.cpp ../src/iteration_structure.cpp \
+	../src/liquid_phase_model.cpp ../src/nucleation_model.cpp \
 	../src/numerics_adjoint_mean.cpp \
->>>>>>> feature_polytropicGas
 	../src/numerics_adjoint_mean_inc.cpp \
 	../src/numerics_adjoint_turbulent.cpp \
 	../src/numerics_direct_2phase.cpp \

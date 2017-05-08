@@ -3117,7 +3117,6 @@ public:
    */
   void SetWindGustDer(su2double* val_WindGust);
 
-<<<<<<< HEAD
   /*!
    * \brief Set the value of the mu in case of 2phase calculations
    */
@@ -3128,9 +3127,7 @@ public:
    */
   void SetThermalConductivity (su2double k);
 
-=======
   void SetGamma (su2double value_Gamma);
->>>>>>> feature_polytropicGas
 };
 
 /*!
