@@ -1187,8 +1187,7 @@ enum ENUM_PARAM {
   CUSTOM = 24,               /*!< 'CUSTOM' for use in external python analysis. */
   NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
-  FFD_ANGLE_OF_ATTACK = 102,	 /*!< \brief Angle of attack for FFD problem. */
-  FFD_PLANE = 23              /*!< \brief planar movement for FFD problem. */
+  FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1197,7 +1196,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_ANGLE_OF_ATTACK", FFD_ANGLE_OF_ATTACK)
 ("FFD_CAMBER_2D", FFD_CAMBER_2D)
 ("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
-("FFD_PLANE", FFD_PLANE)
 ("HICKS_HENNE", HICKS_HENNE)
 ("SURFACE_BUMP", SURFACE_BUMP)
 ("ANGLE_OF_ATTACK", ANGLE_OF_ATTACK)
@@ -2181,7 +2179,6 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
-        case FFD_PLANE:            nParamDV = 3; break;
         case CUSTOM:               nParamDV = 1; break;
         default : {
           string newstring;
@@ -2210,8 +2207,7 @@ public:
              (this->design_variable[iDV] == FFD_ROTATION) ||
              (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
              (this->design_variable[iDV] == FFD_CAMBER) ||
-             (this->design_variable[iDV] == FFD_THICKNESS) ||
-             (this->design_variable[iDV] == FFD_PLANE) )) {
+             (this->design_variable[iDV] == FFD_THICKNESS) )) {
               ss >> this->FFDTag[iDV];
               this->paramDV[iDV][iParamDV] = 0;
             }
