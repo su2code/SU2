@@ -4249,7 +4249,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0;
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_AvgPress = 0.0, OneD_AvgDensity = 0.0, OneD_AvgVelocity = 0.0,OneD_AvgEnthalpy,
-    Total_ComboObj=0.0;
+    Total_ComboObj=0.0, Total_AeroCD = 0.0, Total_RadialDistortion = 0.0, Total_CircumferentialDistortion = 0.0,
+    Ave_Total_RadialDistortion = 0.0, Ave_Total_CircumferentialDistortion = 0.0;
     
     /*--- Initialize variables to store information from all zone for turboperformance (direct solution) ---*/
     

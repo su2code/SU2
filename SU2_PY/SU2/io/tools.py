@@ -591,7 +591,6 @@ def get_dvMap():
                17  : "FFD_THICKNESS_2D"      ,
                19  : "CUSTOM"                ,
                20  : "CST"                   ,
-               21  : "FFD_PLANE"             ,
                101 : "ANGLE_OF_ATTACK"       ,
                102 : "FFD_ANGLE_OF_ATTACK"                    }
     
@@ -727,9 +726,6 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         write_format.append(r', %s, %s, %s')
     elif kindID == "FFD_THICKNESS"      : 
         header.append(r',"FFD_Box_ID","xIndex","yIndex"')
-        write_format.append(r', %s, %s, %s')
-    elif kindID == "FFD_PLANE"      : 
-        header.append(r',"FFD_Box_ID","Direction","Index"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "ANGLE_OF_ATTACK"      : pass
     elif kindID == "FFD_ANGLE_OF_ATTACK"  : pass

@@ -640,8 +640,8 @@ private:
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
-  Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
-  unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
+  Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
+  unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_OneD;        /*!< \brief Write one-dimensionalized output on specified markers. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
@@ -669,7 +669,6 @@ private:
   TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
   Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
->>>>>>> upstream/develop
   NuFactor_Engine,  /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
   SecondaryFlow_ActDisk,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Initial_BCThrust,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
