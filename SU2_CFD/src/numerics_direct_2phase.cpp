@@ -143,7 +143,7 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 	unsigned short iVar, jVar;
 
 	su2double Density_mixture, Critical_radius, Nucleation_rate, Growth_rate;
-	su2double P, T, rho, h, k, mu;
+	su2double P, T, rho, h, k, mu, CpoCv;
 
 	// compute the source terms for the moments equations
 	Critical_radius = val_liquid_i[6];
@@ -151,19 +151,20 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 
 	// retrieve the thermodynamic properties of the continuum phase primitive
 
-	T   = V_i[0];
-	P   = V_i[nDim+1];
-	rho = V_i[nDim+2];
-	h   = V_i[nDim+3];
-	mu  = V_i[nDim+5];
-	k   = V_i[nDim+7];
+	T     = V_i[0];
+	P     = V_i[nDim+1];
+	rho   = V_i[nDim+2];
+	h     = V_i[nDim+3];
+	mu    = V_i[nDim+5];
+	k     = V_i[nDim+7];
+	CpoCv = V_i[nDim+9];
 
 	// compute the nucleation rate and the growth rate
 
 	if (val_liquid_i[4] > T) {
 
-		Nucleation_rate = GetNucleation_Rate(P, T, rho, h, k, mu, val_liquid_i);
-		Growth_rate = GetGrowth_Rate(P, T, rho, h, k, mu, val_liquid_i);
+		Nucleation_rate = GetNucleation_Rate(P, T, rho, h, k, mu, CpoCv, val_liquid_i);
+		Growth_rate = GetGrowth_Rate(P, T, rho, h, k, mu, CpoCv, val_liquid_i);
 
 		// store G for source term euler
 		val_liquid_i[9] = Growth_rate;

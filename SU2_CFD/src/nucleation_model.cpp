@@ -46,7 +46,6 @@ CNucleationModel::~CNucleationModel(void) { }
 
 CClassicalTheory::CClassicalTheory(CConfig *config) : CNucleationModel() {
 
-	Gamma = config->GetGamma();
 	Gas_Constant = config -> GetGas_ConstantND();
 
 	Boltzmann = 1.38064852 * 1.0e-23 /config->GetBoltzmann_Ref();
@@ -63,7 +62,7 @@ CClassicalTheory::~CClassicalTheory(void) {
 
 
 su2double CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2double rho,
-		                      su2double h, su2double k, su2double mu, su2double *V_l) {
+		                      su2double h, su2double k, su2double mu, su2double Gamma, su2double *V_l) {
 
 	// V_l = T, rho, h, Psat, Tsat, sigma, Rc, R, rhom, (G)
 
@@ -84,7 +83,7 @@ su2double CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2doub
 }
 
 su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double rho,
-		                      su2double h, su2double k, su2double mu, su2double *V_l) {
+		                      su2double h, su2double k, su2double mu, su2double Gamma, su2double *V_l) {
 
 	// V_l = T, rho, h, Psat, Tsat, sigma, Rc, R, rho_m, (G)
 
