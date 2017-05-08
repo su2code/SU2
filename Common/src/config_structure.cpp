@@ -3954,9 +3954,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
           case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
-          case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
+          case FFD_THICKNESS:         cout << "FFD (thickness) -> "; break;
           case FFD_ANGLE_OF_ATTACK:   cout << "FFD (angle of attack) <-> "; break;
-          case CUSTOM:                cout << "Custom DV <-> "; break;
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -3994,7 +3993,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
-        if (Design_Variable[iDV] ==  CUSTOM) nParamDV = 1;
         if (Design_Variable[iDV] == FFD_TWIST) nParamDV = 8;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
