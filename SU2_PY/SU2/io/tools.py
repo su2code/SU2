@@ -196,12 +196,12 @@ history_header_map = { "Iteration"       : "ITERATION"               ,
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
-                 "Avg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
+                 "AreaAvg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
                  "Avg_Pressure"    : "AVG_OUTLET_PRESSURE"     ,
                  "Avg_Density"     : "AVG_OUTLET_DENSITY"      ,
                  "Avg_Velocity"    : "AVG_OUTLET_VELOCITY"     ,
-                 "Avg_Mach"        : "AVG_OUTLET_MACH"         ,
-                 "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
+                 "AreaAvg_Mach"        : "AVG_OUTLET_MACH"         ,
+                 "AreaAvg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
                  "AeroCDrag"       : "AERO_DRAG"               ,
                  "Radial_Distortion"      : "RADIAL_DISTORTION"              ,
@@ -788,7 +788,7 @@ def get_optFileFormat(plot_format,special_cases=None):
             header_list.extend(["AeroCDrag","Distortion"])
             write_format.append(r', %.10f, %.10f')
         if key == "1D_OUTPUT":
-            header_list.extend(["Avg_TotalPress","Avg_Mach","Avg_Temperature","MassFlowRate","Avg_Pressure","Avg_Density","Avg_Velocity","Avg_Enthalpy"])
+            header_list.extend(["AreaAvg_TotalPress","AreaAvg_Mach","AreaAvg_Temperature","MassFlowRate","Avg_Pressure","Avg_Density","Avg_Velocity","Avg_Enthalpy"])
             write_format.append(r', %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         if key == "INV_DESIGN_CP"     :
             header_list.extend(["Cp_Diff"])
