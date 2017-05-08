@@ -4019,29 +4019,57 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
       su2double fwall = node[iPoint]->GetSolution(3);
 
-      // swh: needs a modification here... 
-      Solution[0] = 0.0;
-      //Solution[1] = 1.0;
-      Solution[1] = 2.0*laminar_viscosity*wall_k/(density*distance*distance); //60.0*laminar_viscosity/(density*beta_1*distance*distance);
-      Solution[2] = 0.0;
-      //      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
-      //Solution[3] = 0.0; // v2
-      Solution[3] = fwall; //f_Inf; // don't override soln here.  let linear solve do it.
+      // // swh: needs a modification here... 
+      // Solution[0] = 0.0;
+      // //Solution[1] = 1.0;
+      // Solution[1] = 2.0*laminar_viscosity*wall_k/(density*distance*distance); //60.0*laminar_viscosity/(density*beta_1*distance*distance);
+      // Solution[2] = 0.0;
+      // //      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
+      // //Solution[3] = 0.0; // v2
+      // Solution[3] = fwall; //f_Inf; // don't override soln here.  let linear solve do it.
 
-      /*--- Set the solution values and zero the residual ---*/
-      node[iPoint]->SetSolution_Old(Solution);
-      node[iPoint]->SetSolution(Solution);
+      // /*--- Set the solution values and zero the residual ---*/
+      // node[iPoint]->SetSolution_Old(Solution);
+      // node[iPoint]->SetSolution(Solution);
       LinSysRes.SetBlock_Zero(iPoint);
 
-      // Set f residual correctly to get right update
-      //LinSysRes.SetBlock(iPoint, 3, fwall - f_Inf);
-      LinSysRes.SetBlock(iPoint, 3, fwall - 0.0);
 
-      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
+      
+
+      // Don't set solution directly... put in constraint as part of linear system
+      LinSysRes.SetBlock(iPoint, 0, node[iPoint]->GetSolution(0) - 0.0);
+      Jacobian.DeleteValsRowi(iPoint*nVar+0); // zeros this row and puts 1 on diagonal
+      Jacobian_j[0][0] = 0.0;
+      Jacobian_j[0][1] = 0.0;
+      Jacobian_j[0][2] = 0.0;
+      Jacobian_j[0][3] = 0.0;
+
+
+      LinSysRes.SetBlock(iPoint, 1, node[iPoint]->GetSolution(1) - 2.0*laminar_viscosity*wall_k/(density*distance*distance));
+      Jacobian.DeleteValsRowi(iPoint*nVar+1); // zeros this row and puts 1 on diagonal
+      Jacobian_j[1][0] = -2.0*laminar_viscosity/(density*distance*distance);
+      Jacobian_j[1][1] = 0.0;
+      Jacobian_j[1][2] = 0.0;
+      Jacobian_j[1][3] = 0.0;
+
+
+      LinSysRes.SetBlock(iPoint, 2, node[iPoint]->GetSolution(2) - 0.0);
+      Jacobian.DeleteValsRowi(iPoint*nVar+2); // zeros this row and puts 1 on diagonal
+      Jacobian_j[2][0] = 0.0;
+      Jacobian_j[2][1] = 0.0;
+      Jacobian_j[2][2] = 0.0;
+      Jacobian_j[2][3] = 0.0;
+
+      LinSysRes.SetBlock(iPoint, 3, node[iPoint]->GetSolution(3) - 0.0);
+      Jacobian.DeleteValsRowi(iPoint*nVar+3); // zeros this row and puts 1 on diagonal
+      Jacobian_j[3][0] = 0.0;
+      Jacobian_j[3][1] = 0.0;
+      Jacobian_j[3][2] = 0.0;
+      Jacobian_j[3][3] = 0.0;
+
+
+      Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+
     }
   }
 }
