@@ -4012,7 +4012,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char wave_coeff[]= ",\"CWave\"";
   char fem_coeff[]= ",\"VM_Stress\"";
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
-  char oneD_outputs[]= ",\"Avg_TotalPress\",\"Avg_Mach\",\"Avg_Temperature\",\"MassFlowRate\",\"Avg_Pressure\",\"Avg_Density\",\"Avg_Velocity\",\"Avg_Enthalpy\"";
+  char oneD_outputs[]= ",\"AreaAvg_TotalPress\",\"AreaAvg_Mach\",\"AreaAvg_Temperature\",\"MassFlowRate\",\"Avg_Pressure\",\"Avg_Density\",\"Avg_Velocity\",\"Avg_Enthalpy\"";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   char mass_flow_rate[] = ",\"MassFlowRate\"";
@@ -7679,18 +7679,6 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
             Enthalpy1D+=Enthalpy*Area;
             Density1D+=Density*Area;
             break;
-          case ONED_LANGLEY:
-            Pressure1D += Pressure * Area; // area averaged pressure
-            Velocity1D+=RhoUA*Velocity2*Density; // mass flux averaged momentum
-            Enthalpy1D+=RhoUA*Enthalpy; // mass flux averaged enthalpy
-            // Density determined from others
-            break;
-          case ONED_LANGLEY_V1:
-            Pressure1D += Pressure * Area; // area averaged pressure
-            Velocity1D+=RhoUA*Vn*Vn; // mass flux averaged V.n magnitude
-            Enthalpy1D+=RhoUA*Enthalpy; // mass flux averaged enthalpy
-            // Density determined from others
-            break;
 
           }
           /* Always area-averaged */
@@ -7746,22 +7734,6 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
     Pressure1D/=MassFlowRate;
     Enthalpy1D/=MassFlowRate;
     Density1D/=MassFlowRate;
-    break;
-  case ONED_LANGLEY:
-    /*---Area-averaged pressure, mass flux averaged enthalpy and momentum, density from thermo ---*/
-    Pressure1D = Pressure1D/TotalArea;
-    Velocity1D = Velocity1D/MassFlowRate; // Velocity 1D is momentum here
-    Enthalpy1D = Enthalpy1D/MassFlowRate;
-    Density1D  = (Pressure1D*Gamma/(Gamma-1) + 0.5*Velocity1D)/(Enthalpy1D);
-    Velocity1D = sqrt(Velocity1D/Density1D);
-    break;
-  case ONED_LANGLEY_V1:
-    /*---Area-averaged pressure, mass flux averaged enthalpy and velocity magnitude, density from thermo ---*/
-    Pressure1D=Pressure1D/TotalArea;
-    Velocity1D=sqrt(Velocity1D/MassFlowRate);
-    Enthalpy1D=Enthalpy1D/MassFlowRate;
-    /*--- Density1D depends on the final values of other flux avg variables ---*/
-    Density1D =Pressure1D*Gamma/(Gamma-1)/(Enthalpy1D-0.5*Velocity1D*Velocity1D);
     break;
   }
 
