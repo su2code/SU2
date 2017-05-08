@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,6 +48,9 @@ int main(int argc, char *argv[]) {
   char *buffptr;
   SU2_MPI::Init(&argc, &argv);
   MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
+  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
+#else
+  SU2_Comm MPICommunicator(0);
 #endif
   
   /*--- Create a pointer to the main SU2 Driver ---*/
@@ -75,35 +78,38 @@ int main(int argc, char *argv[]) {
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
-  if ( (config->GetKind_Solver() == FEM_ELASTICITY || config->GetKind_Solver() == POISSON_EQUATION || config->GetKind_Solver() == WAVE_EQUATION || config->GetKind_Solver() == HEAT_EQUATION) ) {
+  if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
+        config->GetKind_Solver() == POISSON_EQUATION ||
+        config->GetKind_Solver() == WAVE_EQUATION ||
+        config->GetKind_Solver() == HEAT_EQUATION) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     
-    if(nZone > 1 ) {
+    if (nZone > 1 ) {
       cout << "The required solver doesn't support multizone simulations" << endl; 
       exit(EXIT_FAILURE);
     }
     
-    driver = new CGeneralDriver(config_file_name, nZone, nDim);
+    driver = new CGeneralDriver(config_file_name, nZone, nDim, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
     /*--- Use the Harmonic Balance driver. ---*/
 
-    driver = new CHBDriver(config_file_name, nZone, nDim);
+    driver = new CHBDriver(config_file_name, nZone, nDim, MPICommunicator);
 
   } else if ((nZone == 2) && fsi) {
 
     /*--- FSI problem: instantiate the FSI driver class. ---*/
 
-    driver = new CFSIDriver(config_file_name, nZone, nDim);
+    driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
 
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-    driver = new CFluidDriver(config_file_name, nZone, nDim);
+    driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
 
   }
 

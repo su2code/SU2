@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -98,7 +98,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank;
   
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[size];
@@ -170,9 +170,9 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 
     SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -183,9 +183,9 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 
     SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -199,7 +199,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1){
+    if(Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
@@ -407,7 +407,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
       Buffer_Recv_TargetIndices[iVariable] = Buffer_Send_TargetIndices[iVariable];
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check =0;
     
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -492,7 +492,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank;
   
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[size];
@@ -560,9 +560,9 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
     SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -573,9 +573,9 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
     SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -589,14 +589,14 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1){
+    if(Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
     nLocalVertexDonorOwned = 0;
     nLocalVertexDonor      = 0;
 
-    if( Marker_Donor != -1 ){
+    if( Marker_Donor != -1 ) {
       nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
 
       for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
@@ -724,7 +724,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check=0;
 
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -811,7 +811,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank;
   
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[size];
@@ -886,9 +886,9 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
     SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -899,9 +899,9 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
     SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -915,14 +915,14 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1){
+    if(Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
     nLocalVertexDonorOwned = 0;
     nLocalVertexDonor      = 0;
     
-    if( Marker_Donor != -1 ){
+    if( Marker_Donor != -1 ) {
         nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
     
         for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
@@ -1050,7 +1050,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check=0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
     
@@ -1150,7 +1150,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   int rank = MASTER_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank;
   
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[size];
@@ -1224,9 +1224,9 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
     SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -1237,9 +1237,9 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
     SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -1253,7 +1253,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1){
+    if(Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
@@ -1339,7 +1339,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
       Buffer_Recv_DonorIndices[iVariable] = Buffer_Send_DonorIndices[iVariable];
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check = 0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
     
