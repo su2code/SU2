@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -876,7 +876,6 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   
 }
 
-
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
@@ -905,8 +904,10 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
         geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
 
     }
+
     if (config->GetKind_Solver() == DISC_ADJ_RANS)
       geometry_container[MESH_0]->ComputeWall_Distance(config);
+
 }
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
@@ -1362,6 +1363,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
@@ -2908,6 +2910,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long iElemPris = 0;
   unsigned long iElemPyra = 0;
   
+  unsigned long iElemRecv = 0;
+  
   /*--- Reset presence before storing elems now that we know nElem ---*/
   
   Triangle_presence.clear();
@@ -2983,6 +2987,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
        reusing the presence arrays to make sure that we find the exact same
        set of elements that were counted above to get nElem. ---*/
       
+      iElemRecv = 0;
+      
       for (iElemTriangle = 0; iElemTriangle < nElemTriangle_r[iDomain]; iElemTriangle++) {
         map<unsigned long, bool>::const_iterator MI = Triangle_presence.find(Buffer_Receive_Triangle_presence[iDomain][iElemTriangle]);
         if (MI == Triangle_presence.end()) {
@@ -2990,8 +2996,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           elem[iElem] = new CTriangle(Global_to_local_Point_recv[Buffer_Receive_Triangle[iElemTriangle*3+0]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle[iElemTriangle*3+1]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle[iElemTriangle*3+2]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemTria++;
         }
+        iElemRecv++;
       }
       
       for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral_r[iDomain]; iElemQuadrilateral++) {
@@ -3002,8 +3010,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+1]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+2]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+3]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemRect++;
         }
+        iElemRecv++;
       }
       
       for (iElemTetrahedron = 0; iElemTetrahedron < nElemTetrahedron_r[iDomain]; iElemTetrahedron++) {
@@ -3014,8 +3024,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron[iElemTetrahedron*4+1]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron[iElemTetrahedron*4+2]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron[iElemTetrahedron*4+3]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemTetr++;
         }
+        iElemRecv++;
       }
       
       for (iElemHexahedron = 0; iElemHexahedron < nElemHexahedron_r[iDomain]; iElemHexahedron++) {
@@ -3030,8 +3042,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron[iElemHexahedron*8+5]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron[iElemHexahedron*8+6]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron[iElemHexahedron*8+7]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemHexa++;
         }
+        iElemRecv++;
       }
       
       for (iElemPrism = 0; iElemPrism < nElemPrism_r[iDomain]; iElemPrism++) {
@@ -3044,8 +3058,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                    Global_to_local_Point_recv[Buffer_Receive_Prism[iElemPrism*6+3]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism[iElemPrism*6+4]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism[iElemPrism*6+5]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemPris++;
         }
+        iElemRecv++;
       }
       
       for (iElemPyramid = 0; iElemPyramid < nElemPyramid_r[iDomain]; iElemPyramid++) {
@@ -3057,8 +3073,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid[iElemPyramid*5+2]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid[iElemPyramid*5+3]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid[iElemPyramid*5+4]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemPyra++;
         }
+        iElemRecv++;
       }
       
       /*--- Free memory for the element data --*/
@@ -3084,6 +3102,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Store the element data from our local rank ---*/
       
+      iElemRecv = 0;
+      
       for (iElemTriangle = 0; iElemTriangle < nElemTriangle_r[iDomain]; iElemTriangle++) {
         map<unsigned long, bool>::const_iterator MI = Triangle_presence.find(Buffer_Receive_Triangle_presence_loc[iElemTriangle]);
         if (MI == Triangle_presence.end()) {
@@ -3091,8 +3111,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           elem[iElem] = new CTriangle(Global_to_local_Point_recv[Buffer_Receive_Triangle_loc[iElemTriangle*3+0]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle_loc[iElemTriangle*3+1]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle_loc[iElemTriangle*3+2]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemTria++;
         }
+        iElemRecv++;
       }
       
       for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral_r[iDomain]; iElemQuadrilateral++) {
@@ -3103,8 +3125,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+1]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+2]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+3]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemRect++;
         }
+        iElemRecv++;
       }
       
       for (iElemTetrahedron = 0; iElemTetrahedron < nElemTetrahedron_r[iDomain]; iElemTetrahedron++) {
@@ -3115,8 +3139,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron_loc[iElemTetrahedron*4+1]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron_loc[iElemTetrahedron*4+2]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron_loc[iElemTetrahedron*4+3]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemTetr++;
         }
+        iElemRecv++;
       }
       
       for (iElemHexahedron = 0; iElemHexahedron < nElemHexahedron_r[iDomain]; iElemHexahedron++) {
@@ -3131,8 +3157,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron_loc[iElemHexahedron*8+5]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron_loc[iElemHexahedron*8+6]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron_loc[iElemHexahedron*8+7]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemHexa++;
         }
+        iElemRecv++;
       }
       
       for (iElemPrism = 0; iElemPrism < nElemPrism_r[iDomain]; iElemPrism++) {
@@ -3145,8 +3173,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                    Global_to_local_Point_recv[Buffer_Receive_Prism_loc[iElemPrism*6+3]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism_loc[iElemPrism*6+4]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism_loc[iElemPrism*6+5]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemPris++;
         }
+        iElemRecv++;
       }
       
       for (iElemPyramid = 0; iElemPyramid < nElemPyramid_r[iDomain]; iElemPyramid++) {
@@ -3158,8 +3188,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid_loc[iElemPyramid*5+2]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid_loc[iElemPyramid*5+3]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid_loc[iElemPyramid*5+4]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemPyra++;
         }
+        iElemRecv++;
       }
       
       /*--- Free memory for element data ---*/
@@ -3244,6 +3276,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << Global_nElem << " interior elements including halo cells. " << endl;
   
+  /*--- Set the value of Global_nElemDomain (stored in the geometry container that is passed in) ---*/
+
+  Global_nElemDomain = geometry->GetGlobal_nElemDomain();
+
   /*--- Store total number of each element type after incrementing the
    counters in the recv loop above (to make sure there aren't repeats). ---*/
   
@@ -4401,7 +4437,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
   
-  map<long, long>::const_iterator MI;
+  map<unsigned long, unsigned long>::const_iterator MI;
 
   /*--- Add the new MPI send receive boundaries, reset the transformation, and save the local value ---*/
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
@@ -4859,6 +4895,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
@@ -5160,28 +5197,28 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             case TRIANGLE:
               elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
               InElem = false;
-              for (i = 0; i < N_POINTS_TRIANGLE; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
                 if (ActDisk_Bool[vnodes_triangle[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_TRIANGLE; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
                   VolumePoint.push_back(vnodes_triangle[i]); } }
               break;
             case QUADRILATERAL:
               elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
               InElem = false;
-              for (i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
                 if (ActDisk_Bool[vnodes_quad[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
                   VolumePoint.push_back(vnodes_quad[i]); } }
               break;
             case TETRAHEDRON:
               elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
               InElem = false;
-              for (i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_TETRAHEDRON; i++) {
                 if (ActDisk_Bool[vnodes_tetra[i]]) { InElem = true; break; }              }
               if (InElem) {
-                for (i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_TETRAHEDRON; i++) {
                   VolumePoint.push_back(vnodes_tetra[i]); } }
               break;
             case HEXAHEDRON:
@@ -5189,30 +5226,30 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
               elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
               InElem = false;
-              for (i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_HEXAHEDRON; i++) {
                 if (ActDisk_Bool[vnodes_hexa[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_HEXAHEDRON; i++) {
                   VolumePoint.push_back(vnodes_hexa[i]); } }
               break;
             case PRISM:
               elem_line >> vnodes_prism[0]; elem_line >> vnodes_prism[1]; elem_line >> vnodes_prism[2];
               elem_line >> vnodes_prism[3]; elem_line >> vnodes_prism[4]; elem_line >> vnodes_prism[5];
               InElem = false;
-              for (i = 0; i < N_POINTS_PRISM; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_PRISM; i++) {
                 if (ActDisk_Bool[vnodes_prism[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_PRISM; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_PRISM; i++) {
                   VolumePoint.push_back(vnodes_prism[i]); } }
               break;
             case PYRAMID:
               elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
               elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
               InElem = false;
-              for (i = 0; i < N_POINTS_PYRAMID; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_PYRAMID; i++) {
                 if (ActDisk_Bool[vnodes_pyramid[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_PYRAMID; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_PYRAMID; i++) {
                   VolumePoint.push_back(vnodes_pyramid[i]); } }
               break;
           }
@@ -5325,7 +5362,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     
   }
   
-  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
+  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0; Global_nElemDomain = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
   nelem_quad     = 0; Global_nelem_quad     = 0;
@@ -5353,6 +5390,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -5500,6 +5538,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
+        MPI_Barrier(MPI_COMM_WORLD);
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
 #endif
@@ -5701,7 +5740,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_TRIANGLE; i++) {
+            for (unsigned short i = 0; i < N_POINTS_TRIANGLE; i++) {
               
               local_index = vnodes_triangle[i]-starting_node[rank];
               
@@ -5716,7 +5755,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                for (int j=0; j<N_POINTS_TRIANGLE; j++) {
+                for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_triangle[j]);
                 }
 #endif
@@ -5767,7 +5806,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+            for (unsigned short i = 0; i < N_POINTS_QUADRILATERAL; i++) {
               
               local_index = vnodes_quad[i]-starting_node[rank];
               
@@ -5832,7 +5871,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+            for (unsigned short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
               
               local_index = vnodes_tetra[i]-starting_node[rank];
               
@@ -5847,7 +5886,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                for (int j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
                 }
 #endif
@@ -5898,7 +5937,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+            for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
               
               local_index = vnodes_hexa[i]-starting_node[rank];
               
@@ -5967,7 +6006,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_PRISM; i++) {
+            for (unsigned short i = 0; i < N_POINTS_PRISM; i++) {
               
               local_index = vnodes_prism[i]-starting_node[rank];
               
@@ -6035,7 +6074,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_PYRAMID; i++) {
+            for (unsigned short i = 0; i < N_POINTS_PYRAMID; i++) {
               
               local_index = vnodes_pyramid[i]-starting_node[rank];
               
@@ -6078,6 +6117,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   mesh_file.close();
   
+  /*--- Store the number of elements on the whole domain, excluding halos. ---*/
+
+  Global_nElemDomain = element_count;
+
   /*--- Store the number of local elements on each rank after determining
    which elements must be kept in the loop above. ---*/
   
@@ -6592,6 +6635,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
+                    MPI_Barrier(MPI_COMM_WORLD);
                     MPI_Abort(MPI_COMM_WORLD,1);
                     MPI_Finalize();
 #endif
@@ -6751,6 +6795,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
+              MPI_Barrier(MPI_COMM_WORLD);
               MPI_Abort(MPI_COMM_WORLD,1);
               MPI_Finalize();
 #endif
@@ -6930,6 +6975,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -6965,6 +7011,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -6998,6 +7045,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
@@ -7075,6 +7123,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
+        MPI_Barrier(MPI_COMM_WORLD);
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
 #endif
@@ -7167,6 +7216,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
           exit(EXIT_FAILURE);
 #else
+          MPI_Barrier(MPI_COMM_WORLD);
           MPI_Abort(MPI_COMM_WORLD,1);
           MPI_Finalize();
 #endif
@@ -7385,6 +7435,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
+              MPI_Barrier(MPI_COMM_WORLD);
               MPI_Abort(MPI_COMM_WORLD,1);
               MPI_Finalize();
 #endif
@@ -7546,6 +7597,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);
 #else
+                MPI_Barrier(MPI_COMM_WORLD);
                 MPI_Abort(MPI_COMM_WORLD,1);
                 MPI_Finalize();
 #endif
@@ -7974,7 +8026,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case TRIANGLE:
               
-              for ( int j = 0; j < N_POINTS_TRIANGLE; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_TRIANGLE; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_TRIANGLE+1][i];
@@ -7994,7 +8046,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case QUADRILATERAL:
               
-              for ( int j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_QUADRILATERAL+1][i];
@@ -8017,7 +8069,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case TETRAHEDRON:
               
-              for ( int j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_TETRAHEDRON+1][i];
@@ -8037,7 +8089,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case HEXAHEDRON:
               
-              for ( int j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_HEXAHEDRON+1][i];
@@ -8066,7 +8118,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case PRISM:
               
-              for ( int j = 0; j < N_POINTS_PRISM; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_PRISM; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_PRISM+1][i];
@@ -8095,7 +8147,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case PYRAMID:
               
-              for ( int j = 0; j < N_POINTS_PYRAMID; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_PYRAMID; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_PYRAMID+1][i];
@@ -8130,6 +8182,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
+              MPI_Barrier(MPI_COMM_WORLD);
               MPI_Abort(MPI_COMM_WORLD,1);
               MPI_Finalize();
 #endif
@@ -8317,6 +8370,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
+                    MPI_Barrier(MPI_COMM_WORLD);
                     MPI_Abort(MPI_COMM_WORLD,1);
                     MPI_Finalize();
 #endif
@@ -8355,6 +8409,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
+                    MPI_Barrier(MPI_COMM_WORLD);
                     MPI_Abort(MPI_COMM_WORLD,1);
                     MPI_Finalize();
 #endif
@@ -8935,28 +8990,28 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
-  
+
   unsigned long nVertex_SolidWall = 0;
   for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       nVertex_SolidWall += GetnVertex(iMarker);
     }
   }
-  
+
   /*--- Allocate the vectors to hold boundary node coordinates
-        and its local ID. ---*/
+   and its local ID. ---*/
 
   vector<su2double>     Coord_bound(nDim*nVertex_SolidWall);
   vector<unsigned long> PointIDs(nVertex_SolidWall);
 
   /*--- Retrieve and store the coordinates of the no-slip boundary nodes
-        and their local point IDs. ---*/
+   and their local point IDs. ---*/
 
   unsigned long ii = 0, jj = 0;
   for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       for(unsigned long iVertex=0; iVertex<GetnVertex(iMarker); ++iVertex) {
         unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -8969,100 +9024,120 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   /*--- Build the ADT of the boundary nodes. ---*/
 
   su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
-  
+
   /*--- Loop over all interior mesh nodes and compute the distances to each
-        of the no-slip boundary nodes. Store the minimum distance to the wall
-        for each interior mesh node. ---*/
+   of the no-slip boundary nodes. Store the minimum distance to the wall
+   for each interior mesh node. ---*/
 
   if( WallADT.IsEmpty() ) {
-
+  
     /*--- No solid wall boundary nodes in the entire mesh.
-          Set the wall distance to zero for all nodes. ---*/
-
+     Set the wall distance to zero for all nodes. ---*/
+    
     for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint)
       node[iPoint]->SetWall_Distance(0.0);
   }
   else {
 
     /*--- Solid wall boundary nodes are present. Compute the wall
-          distance for all nodes. ---*/
-
+     distance for all nodes. ---*/
+    
     for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
-
+      
       su2double dist;
       unsigned long pointID;
       int rankID;
-
+      
       WallADT.DetermineNearestNode(node[iPoint]->GetCoord(), dist,
                                    pointID, rankID);
       node[iPoint]->SetWall_Distance(dist);
     }
   }
+  
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   unsigned short iMarker, Boundary, Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, PositiveZArea;
+  su2double *Normal, PositiveXArea, PositiveYArea, PositiveZArea, WettedArea;
+  su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
+
+  bool axisymmetric = config->GetAxisymmetric();
+
   int rank = MASTER_NODE;
-  
-#ifndef HAVE_MPI
-  
-  PositiveZArea = 0.0;
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    
-    if (((Boundary == EULER_WALL)              ||
-         (Boundary == HEAT_FLUX)               ||
-         (Boundary == ISOTHERMAL)              ||
-         (Boundary == LOAD_BOUNDARY)           ||
-         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
-          Normal = vertex[iMarker][iVertex]->GetNormal();
-          if (Normal[nDim-1] < 0) PositiveZArea -= Normal[nDim-1];
-        }
-      }
-  }
-  
-#else
-  
-  su2double TotalPositiveZArea;
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
-  PositiveZArea = 0.0;
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    
-    if (((Boundary == EULER_WALL)              ||
-         (Boundary == HEAT_FLUX)               ||
-         (Boundary == ISOTHERMAL)              ||
-         (Boundary == LOAD_BOUNDARY)           ||
-         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
-          Normal = vertex[iMarker][iVertex]->GetNormal();
-          if (Normal[nDim-1] < 0) PositiveZArea -= Normal[nDim-1];
-        }
-      }
-  }
-  SU2_MPI::Reduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  if (rank == MASTER_NODE) PositiveZArea = TotalPositiveZArea;
-  SU2_MPI::Bcast(&PositiveZArea, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  
 #endif
   
-  if (config->GetRefAreaCoeff() == 0.0)
-    config->SetRefAreaCoeff(PositiveZArea);
+  PositiveXArea = 0.0;
+  PositiveYArea = 0.0;
+  PositiveZArea = 0.0;
+  WettedArea = 0.0;
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Boundary = config->GetMarker_All_KindBC(iMarker);
+    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    
+    if (((Boundary == EULER_WALL)              ||
+         (Boundary == HEAT_FLUX)               ||
+         (Boundary == ISOTHERMAL)              ||
+         (Boundary == LOAD_BOUNDARY)           ||
+         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
+
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+
+        if (node[iPoint]->GetDomain()) {
+          Normal = vertex[iMarker][iVertex]->GetNormal();
+
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*node[iPoint]->GetCoord(1);
+          else AxiFactor = 1.0;
+
+          if (nDim == 2) WettedArea += AxiFactor * sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1]);
+          if (nDim == 3) WettedArea += sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
+
+          if (Normal[0] < 0) PositiveXArea -= Normal[0];
+          if (Normal[1] < 0) PositiveYArea -= Normal[1];
+          if ((nDim == 3) && (Normal[2] < 0)) PositiveZArea -= Normal[2];
+
+        }
+      }
+  }
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&PositiveYArea, &TotalPositiveYArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&WettedArea, &TotalWettedArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  TotalPositiveXArea = PositiveXArea;
+  TotalPositiveYArea = PositiveYArea;
+  TotalPositiveZArea = PositiveZArea;
+  TotalWettedArea    = WettedArea;
+#endif
+    
+  if (config->GetRefAreaCoeff() == 0.0) {
+  	if (nDim == 3) config->SetRefAreaCoeff(TotalPositiveZArea);
+  	else config->SetRefAreaCoeff(TotalPositiveYArea);
+  }
   
   if (rank == MASTER_NODE) {
-    if (nDim == 2) cout << "Area projection in the y-plane = "<< PositiveZArea << "." << endl;
-    else cout << "Area projection in the z-plane = "<< PositiveZArea << "." << endl;
+
+  	cout << "Wetted area = "<< TotalWettedArea;
+    if ((nDim == 3) || (axisymmetric)) { if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl; }
+    else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
+
+    cout << "Area projection in the x-plane = "<< TotalPositiveXArea;
+    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
+    else { if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,"; }
+
+    cout << " y-plane = "<< TotalPositiveYArea;
+    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
+    else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
+
+    if (nDim == 3) { cout << " z-plane = "<< TotalPositiveZArea;
+    if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
+
   }
   
 }
@@ -12725,7 +12800,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   su2double delta_T, total_T;
   if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     nExtIter = config->GetUnst_AdjointIter();
-    delta_T  = config->GetDelta_UnstTimeND();
+    delta_T  = config->GetDelta_UnstTime();
     total_T  = (su2double)nExtIter*delta_T;
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     
@@ -12824,16 +12899,16 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   string filename = config->GetSolution_AdjFileName();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool sst = config->GetKind_Turb_Model() == SST;
-  bool sa = config->GetKind_Turb_Model() == SA;
+  bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
   bool wrt_residuals = config->GetWrt_Residuals();
   su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
   string::size_type position;
-
+  int counter = 0;
+  
   Sensitivity = new su2double[nPoint*nDim];
 
   if (config->GetUnsteady_Simulation()) {
@@ -12845,12 +12920,14 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+ 
+  if (rank == MASTER_NODE)
+    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
   
   unsigned short skipVar = nDim, skipMult = 1;
 
   if (wrt_residuals) { skipMult = 2; }
   if (incompressible) { skipVar += skipMult*(nDim+1); }
-  if (freesurface)    { skipVar += skipMult*(nDim+2); }
   if (compressible)   { skipVar += skipMult*(nDim+2); }
   if (sst)            { skipVar += skipMult*2;}
   if (sa)             { skipVar += skipMult*1;}
@@ -12859,18 +12936,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   /*--- Sensitivity in normal direction ---*/
   
   skipVar += 1;
-  
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-  long *Global2Local = new long[Global_nPointDomain];
-  
-  /*--- First, set all indices to a negative value by default ---*/
-  for(iPoint = 0; iPoint < Global_nPointDomain; iPoint++)
-    Global2Local[iPoint] = -1;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  for(iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[node[iPoint]->GetGlobalIndex()] = iPoint;
   
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
@@ -12881,7 +12946,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
       Sensitivity[iPoint*nDim+iDim] = 0.0;
     }
   }
-  
 
   iPoint_Global = 0;
 
@@ -12893,14 +12957,259 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     filename = config->GetUnsteady_FileName(filename, nExtIter-1);
   }
 
+  if (config->GetRead_Binary_Restart()) {
+
+    char str_buf[CGNS_STRING_SIZE], fname[100];
+    unsigned short iVar;
+    strcpy(fname, filename.c_str());
+    int nRestart_Vars = 4;
+    int *Restart_Vars = new int[4];
+    passivedouble *Restart_Data = NULL;
+    int Restart_Iter = 0;
+    passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+
+#ifndef HAVE_MPI
+
+    /*--- Serial binary input. ---*/
+
+    FILE *fhw;
+    fhw = fopen(fname,"rb");
+
+    /*--- Error check for opening the file. ---*/
+
+    if (!fhw) {
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    /*--- First, read the number of variables and points. ---*/
+
+    fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+
+    /*--- Read the variable names from the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. We pad the beginning of the
+     variable string vector with the Point_ID tag that wasn't written. ---*/
+
+    config->fields.push_back("Point_ID");
+    for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+      fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+      config->fields.push_back(str_buf);
+    }
+
+    /*--- For now, create a temp 1D buffer to read the data from file. ---*/
+
+    Restart_Data = new passivedouble[Restart_Vars[0]*GetnPointDomain()];
+
+    /*--- Read in the data for the restart at all local points. ---*/
+
+    fread(Restart_Data, sizeof(passivedouble), Restart_Vars[0]*GetnPointDomain(), fhw);
+
+    /*--- Compute (negative) displacements and grab the metadata. ---*/
+
+    fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
+
+    /*--- Read the external iteration. ---*/
+
+    fread(&Restart_Iter, 1, sizeof(int), fhw);
+
+    /*--- Read the metadata. ---*/
+
+    fread(Restart_Meta, 5, sizeof(passivedouble), fhw);
+    
+    /*--- Close the file. ---*/
+
+    fclose(fhw);
+
+#else
+
+    /*--- Parallel binary input using MPI I/O. ---*/
+
+    MPI_File fhw;
+    MPI_Status status;
+    MPI_Datatype etype, filetype;
+    MPI_Offset disp;
+    unsigned long iPoint_Global, iChar;
+    string field_buf;
+
+    int rank = MASTER_NODE, ierr;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- All ranks open the file using MPI. ---*/
+
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- Error check opening the file. ---*/
+
+    if (ierr) {
+      if (rank == MASTER_NODE)
+        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+
+    /*--- First, read the number of variables and points (i.e., cols and rows),
+     which we will need in order to read the file later. Also, read the
+     variable string names here. Only the master rank reads the header. ---*/
+    
+    if (rank == MASTER_NODE)
+      MPI_File_read(fhw, Restart_Vars, nRestart_Vars, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Broadcast the number of variables to all procs and store clearly. ---*/
+
+    SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Read the variable names from the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. ---*/
+
+    char *mpi_str_buf = new char[Restart_Vars[0]*CGNS_STRING_SIZE];
+    if (rank == MASTER_NODE) {
+      disp = nRestart_Vars*sizeof(int);
+      MPI_File_read_at(fhw, disp, mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE,
+                       MPI_CHAR, MPI_STATUS_IGNORE);
+    }
+
+    /*--- Broadcast the string names of the variables. ---*/
+
+    SU2_MPI::Bcast(mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR,
+                   MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Now parse the string names and load into the config class in case
+     we need them for writing visualization files (SU2_SOL). ---*/
+
+    config->fields.push_back("Point_ID");
+    for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+      index = iVar*CGNS_STRING_SIZE;
+      field_buf.append("\"");
+      for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
+        str_buf[iChar] = mpi_str_buf[index + iChar];
+      }
+      field_buf.append(str_buf);
+      field_buf.append("\"");
+      config->fields.push_back(field_buf.c_str());
+      field_buf.clear();
+    }
+
+    /*--- Free string buffer memory. ---*/
+
+    delete [] mpi_str_buf;
+
+    /*--- We're writing only su2doubles in the data portion of the file. ---*/
+
+    etype = MPI_DOUBLE;
+
+    /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
+     along with the string names of the variables. ---*/
+
+    disp = nRestart_Vars*sizeof(int) + CGNS_STRING_SIZE*Restart_Vars[0]*sizeof(char);
+
+    /*--- Define a derived datatype for this rank's set of non-contiguous data
+     that will be placed in the restart. Here, we are collecting each one of the
+     points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
+
+    int *blocklen = new int[GetnPointDomain()];
+    int *displace = new int[GetnPointDomain()];
+
+    counter = 0;
+    for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      if (GetGlobal_to_Local_Point(iPoint_Global) > -1) {
+        blocklen[counter] = Restart_Vars[0];
+        displace[counter] = iPoint_Global*Restart_Vars[0];
+        counter++;
+      }
+    }
+    MPI_Type_indexed(GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+    MPI_Type_commit(&filetype);
+
+    /*--- Set the view for the MPI file write, i.e., describe the location in
+     the file that this rank "sees" for writing its piece of the restart file. ---*/
+
+    MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+
+    /*--- For now, create a temp 1D buffer to read the data from file. ---*/
+
+    Restart_Data = new passivedouble[Restart_Vars[0]*GetnPointDomain()];
+
+    /*--- Collective call for all ranks to read from their view simultaneously. ---*/
+    
+    MPI_File_read_all(fhw, Restart_Data, Restart_Vars[0]*GetnPointDomain(), MPI_DOUBLE, &status);
+
+    /*--- Free the derived datatype. ---*/
+
+    MPI_Type_free(&filetype);
+
+    /*--- Reset the file view before writing the metadata. ---*/
+
+    MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+
+    /*--- Access the metadata. ---*/
+
+    if (rank == MASTER_NODE) {
+
+      /*--- External iteration. ---*/
+      disp = (nRestart_Vars*sizeof(int) + Restart_Vars[0]*CGNS_STRING_SIZE*sizeof(char) +
+              Restart_Vars[0]*Restart_Vars[1]*sizeof(passivedouble));
+      MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+      /*--- Additional doubles for AoA, AoS, etc. ---*/
+
+      disp = (nRestart_Vars*sizeof(int) + Restart_Vars[0]*CGNS_STRING_SIZE*sizeof(char) +
+              Restart_Vars[0]*Restart_Vars[1]*sizeof(passivedouble) + 1*sizeof(int));
+      MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+
+    }
+
+    /*--- Communicate metadata. ---*/
+
+    SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- All ranks close the file after writing. ---*/
+    
+    MPI_File_close(&fhw);
+    
+    delete [] blocklen;
+    delete [] displace;
+    
+#endif
+
+    /*--- Load the data from the binary restart. ---*/
+
+    counter = 0;
+    for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
+
+      iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
+
+      if (iPoint_Local > -1) {
+
+        /*--- We need to store this point's data, so jump to the correct
+         offset in the buffer of data from the restart file and load it. ---*/
+
+        index = counter*Restart_Vars[0] + skipVar;
+        for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
+
+        /*--- Increment the overall counter for how many points have been loaded. ---*/
+        counter++;
+      }
+    }
+
+    /*--- Lastly, load the AoA sensitivity from the binary metadata. ---*/
+
+    config->SetAoA_Sens(Restart_Meta[4]);
+
+  } else {
+
   restart_file.open(filename.data(), ios::in);
   if (restart_file.fail()) {
     cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
     exit(EXIT_FAILURE);
   }
   
-  if (rank == MASTER_NODE)
-    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
   /*--- The first line is the header ---*/
   getline (restart_file, text_line);
   
@@ -12911,12 +13220,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   	istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
-             on a different processor, the value of iPoint_Local will be -1.
-             Otherwise, the local index for this node on the current processor
-             will be returned and used to instantiate the vars. ---*/
-    iPoint_Local = Global2Local[iPoint_Global];
+     on the current processor, we will load and instantiate the vars. ---*/
 
-    if (iPoint_Local >= 0) {
+    iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
       point_line >> index;
       for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -12939,8 +13248,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   restart_file.close();
 
-
-  delete [] Global2Local;
+  }
+  
 }
 
 void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
@@ -12979,7 +13288,8 @@ void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
   
 }
 
-su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
+su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
   unsigned long iVertex, jVertex, n, Trailing_Point, Leading_Point;
   su2double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, MaxDistance, Distance, AoA;
   vector<su2double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
@@ -13045,7 +13355,7 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
     unsigned short index = 2;
-    if ((config->GetAxis_Orientation() == Z_AXIS) && (nDim == 3)) index = 0;
+    if ((config->GetAxis_Stations() == Z_AXIS) && (nDim == 3)) index = 0;
     
     if (Normal[index] >= 0.0) {
       Xcoord.push_back(Xcoord_Airfoil_[iVertex]);
@@ -13088,11 +13398,68 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
   
 }
 
-su2double CPhysicalGeometry::Compute_AoA(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
+su2double CPhysicalGeometry::Compute_Dihedral(su2double *LeadingEdge_im1, su2double *TrailingEdge_im1,
+                                              su2double *LeadingEdge_i, su2double *TrailingEdge_i) {
+
+  su2double Dihedral = 0.0, Dihedral_Leading = 0.0, Dihedral_Trailing = 0.0;
+
+  Dihedral_Leading = atan((LeadingEdge_i[2] - LeadingEdge_im1[2]) / (LeadingEdge_i[1] - LeadingEdge_im1[1]))*180/PI_NUMBER;
+  Dihedral_Trailing = atan((TrailingEdge_i[2] - TrailingEdge_im1[2]) / (TrailingEdge_i[1] - TrailingEdge_im1[1]))*180/PI_NUMBER;
+
+  Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
+
+  return Dihedral;
+
+}
+
+su2double CPhysicalGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2double *TrailingEdge_im1,
+                                               su2double *LeadingEdge_i, su2double *TrailingEdge_i,
+                                               su2double *LeadingEdge_ip1, su2double *TrailingEdge_ip1) {
+
+  su2double Curvature = 0.0, Curvature_Leading = 0.0, Curvature_Trailing = 0.0;
+
+  su2double A[2], B[2], C[2], BC[2], AB[2], AC[2], BC_MOD, AB_MOD,  AC_MOD, AB_CROSS_AC;
+
+  A[0] = LeadingEdge_im1[1];     A[1] = LeadingEdge_im1[2];
+  B[0] = LeadingEdge_i[1];           B[1] = LeadingEdge_i[2];
+  C[0] = LeadingEdge_ip1[1];      C[1] = LeadingEdge_ip1[2];
+
+  BC[0] = C[0] - B[0]; BC[1] = C[1] - B[1];
+  AB[0] = B[0] - A[0]; AB[1] = B[1] - A[1];
+  AC[0] = C[0] - A[0]; AC[1] = C[1] - A[1];
+  BC_MOD = sqrt(BC[0]*BC[0] + BC[1]*BC[1] );
+  AB_MOD = sqrt(AB[0]*AB[0] + AB[1]*AB[1] );
+  AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
+  AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
+
+  Curvature_Leading = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
+
+  A[0] = TrailingEdge_im1[1];      A[1] = TrailingEdge_im1[2];
+  B[0] = TrailingEdge_i[1];                B[1] = TrailingEdge_i[2];
+  C[0] = TrailingEdge_ip1[1];      C[1] = TrailingEdge_ip1[2];
+
+  BC[0] = C[0] - B[0]; BC[1] = C[1] - B[1];
+  AB[0] = B[0] - A[0]; AB[1] = B[1] - A[1];
+  AC[0] = C[0] - A[0]; AC[1] = C[1] - A[1];
+  BC_MOD = sqrt(BC[0]*BC[0] + BC[1]*BC[1] );
+  AB_MOD = sqrt(AB[0]*AB[0] + AB[1]*AB[1] );
+  AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
+  AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
+
+  Curvature_Trailing = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
+
+  Curvature = 0.5*(Curvature_Leading + Curvature_Trailing);
+
+  return Curvature;
+
+}
+
+su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex, Trailing_Point, Leading_Point;
-  su2double MaxDistance, Distance, AoA = 0.0;
+  su2double MaxDistance, Distance, Twist = 0.0;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
@@ -13102,13 +13469,43 @@ su2double CPhysicalGeometry::Compute_AoA(su2double *Plane_P0, su2double *Plane_N
     if (MaxDistance < Distance) { MaxDistance = Distance; Leading_Point = iVertex; }
   }
   
-  AoA = atan((Zcoord_Airfoil[Leading_Point] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[Leading_Point]))*180/PI_NUMBER;
+  Twist = atan((Zcoord_Airfoil[Leading_Point] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[Leading_Point]))*180/PI_NUMBER;
+
+  if (fabs(Twist) < 0.01) Twist = 0.0;
+
+  return Twist;
+
+}
+
+void CPhysicalGeometry::Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection,
+                                                vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point, Leading_Point;
+  su2double MaxDistance, Distance;
+
+  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+
+  MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+
+    if (MaxDistance < Distance) { MaxDistance = Distance; Leading_Point = iVertex; }
+  }
+
+  LeadingEdge[0] = Xcoord_Airfoil[Leading_Point];
+  LeadingEdge[1] = Ycoord_Airfoil[Leading_Point];
+  LeadingEdge[2] = Zcoord_Airfoil[Leading_Point];
   
-  return AoA;
+  TrailingEdge[0] = Xcoord_Airfoil[Trailing_Point];
+  TrailingEdge[1] = Ycoord_Airfoil[Trailing_Point];
+  TrailingEdge[2] = Zcoord_Airfoil[Trailing_Point];
   
 }
 
-su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
+su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex, Trailing_Point;
   su2double MaxDistance, Distance, Chord = 0.0;
   
@@ -13129,7 +13526,8 @@ su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane
   
 }
 
-su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
+su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
   unsigned long iVertex, jVertex, n_Upper, n_Lower, Trailing_Point, Leading_Point;
   su2double Thickness_Location, Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Thickness_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, zp1, zpn, Chord, MaxDistance, Distance, AoA;
   vector<su2double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Z2coord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
@@ -13195,7 +13593,7 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
     unsigned short index = 2;
-    if ((config->GetAxis_Orientation() == Z_AXIS) && (nDim == 3)) index = 0;
+    if ((config->GetAxis_Stations() == Z_AXIS) && (nDim == 3)) index = 0;
     
     if (Normal[index] >= 0.0) {
       Xcoord_Upper.push_back(Xcoord_Airfoil_[iVertex]);
@@ -13257,168 +13655,96 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
   
 }
 
-su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
-  unsigned long iVertex, jVertex;
-  su2double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Area_Value = 0.0, Area_Value_Upper = 0.0, Area_Value_Lower = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue;
+su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config,
+                                          vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+  unsigned long iVertex;
+  su2double Area_Value = 0.0;
   vector<su2double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
-  unsigned long Trailing_Point, Leading_Point;
-  su2double MaxDistance, Distance, AoA;
+  su2double DeltaZ, DeltaX, X, Z;
   
-  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  /*--- Use the Green theorem to evaluate the area (the points have been sortered),
+   we assume that the airfoil is in the X-Z plane  ---*/
   
-  MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
-  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
-                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
-                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
-    
-    if (MaxDistance < Distance) { MaxDistance = Distance; Leading_Point = iVertex; }
+  Area_Value = 0.0;
+  
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size()-1; iVertex++) {
+    X = 0.5*(Xcoord_Airfoil[iVertex]+Xcoord_Airfoil[iVertex+1]);
+    Z = 0.5*(Zcoord_Airfoil[iVertex]+Zcoord_Airfoil[iVertex+1]);
+    DeltaX = Xcoord_Airfoil[iVertex+1] - Xcoord_Airfoil[iVertex];
+    DeltaZ = Zcoord_Airfoil[iVertex+1] - Zcoord_Airfoil[iVertex];
+    Area_Value += 0.5*( X*DeltaZ-Z*DeltaX);
   }
   
-  AoA = atan((Zcoord_Airfoil[Leading_Point] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[Leading_Point]))*180/PI_NUMBER;
+  X = 0.5*(Xcoord_Airfoil[Xcoord_Airfoil.size()-1]+Xcoord_Airfoil[0]);
+  Z = 0.5*(Zcoord_Airfoil[Xcoord_Airfoil.size()-1]+Zcoord_Airfoil[0]);
+  DeltaX = Xcoord_Airfoil[0] - Xcoord_Airfoil[Xcoord_Airfoil.size()-1];
+  DeltaZ = Zcoord_Airfoil[0] - Zcoord_Airfoil[Xcoord_Airfoil.size()-1];
+  Area_Value += 0.5 * (X*DeltaZ-Z*DeltaX);
   
-  /*--- Translate to the origin ---*/
+  Area_Value = fabs(Area_Value);
   
-  Xcoord_Trailing = Xcoord_Airfoil[0];
-  Ycoord_Trailing = Ycoord_Airfoil[0];
-  Zcoord_Trailing = Zcoord_Airfoil[0];
-  
-  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    Xcoord_Airfoil_.push_back(Xcoord_Airfoil[iVertex] - Xcoord_Trailing);
-    Ycoord_Airfoil_.push_back(Ycoord_Airfoil[iVertex] - Ycoord_Trailing);
-    Zcoord_Airfoil_.push_back(Zcoord_Airfoil[iVertex] - Zcoord_Trailing);
-  }
-  
-  /*--- Rotate the airfoil ---*/
-  
-  ValCos = cos(AoA*PI_NUMBER/180.0);
-  ValSin = sin(AoA*PI_NUMBER/180.0);
-  
-  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    XValue = Xcoord_Airfoil_[iVertex];
-    ZValue = Zcoord_Airfoil_[iVertex];
-    
-    Xcoord_Airfoil_[iVertex] = XValue*ValCos - ZValue*ValSin;
-    Zcoord_Airfoil_[iVertex] = ZValue*ValCos + XValue*ValSin;
-    
-  }
-  
-  /*--- Identify upper and lower side, and store the value of the normal --*/
-  
-  for (iVertex = 1; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
-    Tangent[0] = Xcoord_Airfoil_[iVertex] - Xcoord_Airfoil_[iVertex-1];
-    Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
-    Tangent[2] = Zcoord_Airfoil_[iVertex] - Zcoord_Airfoil_[iVertex-1];
-    Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
-    Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
-    
-    BiNormal[0] = Plane_Normal[0];
-    BiNormal[1] = Plane_Normal[1];
-    BiNormal[2] = Plane_Normal[2];
-    Length = sqrt(pow(BiNormal[0], 2.0) + pow(BiNormal[1], 2.0) + pow(BiNormal[2], 2.0));
-    BiNormal[0] /= Length; BiNormal[1] /= Length; BiNormal[2] /= Length;
-    
-    Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
-    Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
-    Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
-    
-    Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
-    
-    unsigned short index = 2;
-    if ((config->GetAxis_Orientation() == Z_AXIS) && (nDim == 3)) index = 0;
-    
-    if (Normal[index] >= 0.0) {
-      Xcoord_Upper.push_back(Xcoord_Airfoil_[iVertex]);
-      Ycoord_Upper.push_back(Ycoord_Airfoil_[iVertex]);
-      Zcoord_Upper.push_back(Zcoord_Airfoil_[iVertex]);
-    }
-    else {
-      Xcoord_Lower.push_back(Xcoord_Airfoil_[iVertex]);
-      Ycoord_Lower.push_back(Ycoord_Airfoil_[iVertex]);
-      Zcoord_Lower.push_back(Zcoord_Airfoil_[iVertex]);
-    }
-    
-  }
-  
-  /*--- Order the arrays using the X component ---*/
-  
-  for (iVertex = 0; iVertex < Xcoord_Upper.size(); iVertex++) {
-    for (jVertex = 0; jVertex < Xcoord_Upper.size() - 1 - iVertex; jVertex++) {
-      if (Xcoord_Upper[jVertex] > Xcoord_Upper[jVertex+1]) {
-        auxXCoord = Xcoord_Upper[jVertex]; Xcoord_Upper[jVertex] = Xcoord_Upper[jVertex+1]; Xcoord_Upper[jVertex+1] = auxXCoord;
-        auxYCoord = Ycoord_Upper[jVertex]; Ycoord_Upper[jVertex] = Ycoord_Upper[jVertex+1]; Ycoord_Upper[jVertex+1] = auxYCoord;
-        auxZCoord = Zcoord_Upper[jVertex]; Zcoord_Upper[jVertex] = Zcoord_Upper[jVertex+1]; Zcoord_Upper[jVertex+1] = auxZCoord;
-      }
-    }
-  }
-  
-  /*--- Order the arrays using the X component ---*/
-  
-  for (iVertex = 0; iVertex < Xcoord_Lower.size(); iVertex++) {
-    for (jVertex = 0; jVertex < Xcoord_Lower.size() - 1 - iVertex; jVertex++) {
-      if (Xcoord_Lower[jVertex] > Xcoord_Lower[jVertex+1]) {
-        auxXCoord = Xcoord_Lower[jVertex]; Xcoord_Lower[jVertex] = Xcoord_Lower[jVertex+1]; Xcoord_Lower[jVertex+1] = auxXCoord;
-        auxYCoord = Ycoord_Lower[jVertex]; Ycoord_Lower[jVertex] = Ycoord_Lower[jVertex+1]; Ycoord_Lower[jVertex+1] = auxYCoord;
-        auxZCoord = Zcoord_Lower[jVertex]; Zcoord_Lower[jVertex] = Zcoord_Lower[jVertex+1]; Zcoord_Lower[jVertex+1] = auxZCoord;
-      }
-    }
-  }
-  
-  /*--- Compute total area ---*/
-  
-  Area_Value_Upper = 0.0;
-  Area_Value_Lower = 0.0;
-  
-  for (iVertex = 0; iVertex < Xcoord_Upper.size()-1; iVertex++)
-    Area_Value_Upper += (Xcoord_Upper[iVertex+1] - Xcoord_Upper[iVertex]) * 0.5*(Zcoord_Upper[iVertex+1] + Zcoord_Upper[iVertex]);
-  for (iVertex = 0; iVertex < Xcoord_Lower.size()-1; iVertex++)
-    Area_Value_Lower += (Xcoord_Lower[iVertex+1] - Xcoord_Lower[iVertex]) * 0.5*(Zcoord_Lower[iVertex+1] + Zcoord_Lower[iVertex]);
-  
-  Area_Value = fabs(Area_Value_Upper - Area_Value_Lower);
   return Area_Value;
   
 }
 
-su2double CPhysicalGeometry::Compute_Volume(CConfig *config, bool original_surface) {
+void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
+                                     su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord,
+                                     su2double &Wing_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                                     su2double &Wing_MaxDihedral) {
+
+  unsigned short iPlane, iDim, nPlane = 0;
+  unsigned long iVertex;
+  su2double MinPlane, MaxPlane, MinXCoord, MaxXCoord, dPlane, *Area, *MaxThickness, *ToC, *Chord, *Twist, *Curvature, *Dihedral, SemiSpan;
+  vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
+  ofstream Wing_File, Section_File;
   
   int rank = MASTER_NODE;
-  
-  /*--- MPI initialization ---*/
-  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  unsigned short iPlane, nPlane = 0;
-  su2double Volume = 0.0, MinPlane, MaxPlane, MinXCoord, MaxXCoord, dPlane, *Area;
-  vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   
   /*--- Make a large number of section cuts for approximating volume ---*/
   
-  nPlane = config->GetnVolSections();
+  nPlane = config->GetnWingStations();
+  SemiSpan = config->GetSemiSpan();
   
   /*--- Allocate memory for the section cutting ---*/
   
   Area = new su2double [nPlane];
+  MaxThickness = new su2double [nPlane];
+  Chord = new su2double [nPlane];
+  ToC = new su2double [nPlane];
+  Twist = new su2double [nPlane];
+  Curvature = new su2double [nPlane];
+  Dihedral = new su2double [nPlane];
+
+  su2double **LeadingEdge = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    LeadingEdge[iPlane] = new su2double[nDim];
   
-  su2double **Plane_P0     = new su2double*[nPlane];
+  su2double **TrailingEdge = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    TrailingEdge[iPlane] = new su2double[nDim];
+
+  su2double **Plane_P0 = new su2double*[nPlane];
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     Plane_P0[iPlane] = new su2double[nDim];
   
   su2double **Plane_Normal = new su2double*[nPlane];
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     Plane_Normal[iPlane] = new su2double[nDim];
-
   
-  MinPlane = config->GetSection_Location(0); MaxPlane = config->GetSection_Location(1);
+  MinPlane = config->GetSection_WingBounds(0); MaxPlane = config->GetSection_WingBounds(1);
   MinXCoord = -1E6; MaxXCoord = 1E6;
   dPlane = fabs((MaxPlane - MinPlane)/su2double(nPlane-1));
+
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
     Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
-    Plane_Normal[iPlane][config->GetAxis_Orientation()] = 1.0;
-    Plane_P0[iPlane][config->GetAxis_Orientation()] = MinPlane + iPlane*dPlane;
+    Plane_Normal[iPlane][config->GetAxis_Stations()] = 1.0;
+    Plane_P0[iPlane][config->GetAxis_Stations()] = MinPlane + iPlane*dPlane;
   }
   
   /*--- Allocate some vectors for storing airfoil coordinates ---*/
@@ -13429,46 +13755,210 @@ su2double CPhysicalGeometry::Compute_Volume(CConfig *config, bool original_surfa
   Variable_Airfoil = new vector<su2double>[nPlane];
   
   /*--- Create the section slices through the geometry ---*/
-  
+
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
                            MinXCoord, MaxXCoord, NULL, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
   }
-  
+
   /*--- Compute the area at each section ---*/
   
   if (rank == MASTER_NODE) {
     
+    /*--- Write an output file---*/
+
+    if (config->GetOutput_FileFormat() == PARAVIEW) {
+      Wing_File.open("Wing_Distribution.csv", ios::out);
+      if (config->GetSystemMeasurements() == US)
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
+      else
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
+    }
+    else {
+      Wing_File.open("wing_description.dat", ios::out);
+      Wing_File << "TITLE = \"Wing description\"" << endl;
+      if (config->GetSystemMeasurements() == US)
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
+      else
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
+      Wing_File << "ZONE T= \"Baseline wing\"" << endl;
+    }
+
+
+    /*--- Evaluate  geometrical quatities that do not require any kind of filter, local to each point ---*/
+
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        LeadingEdge[iPlane][iDim] = 0.0;
+        TrailingEdge[iPlane][iDim] = 0.0;
+      }
+
       Area[iPlane] = 0.0;
+      MaxThickness[iPlane] = 0.0;
+      Chord[iPlane] = 0.0;
+      ToC[iPlane] = 0.0;
+      Twist[iPlane] = 0.0;
+
       if (Xcoord_Airfoil[iPlane].size() != 0) {
-        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane],
-                                    iPlane, config, Xcoord_Airfoil[iPlane],
-                                    Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
-                                    original_surface);
+
+        Compute_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        MaxThickness[iPlane]= Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        ToC[iPlane] = MaxThickness[iPlane] / Chord[iPlane];
+
+        Twist[iPlane] = Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+      }
+
+    }
+
+    /*--- Evaluate  geometrical quatities that have been computed using a filtered value (they depend on more than one point) ---*/
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+      Curvature[iPlane] = 0.0;
+      Dihedral[iPlane] = 0.0;
+
+      if (Xcoord_Airfoil[iPlane].size() != 0) {
+
+        if ((iPlane == 0) || (iPlane == nPlane-1)) Curvature[iPlane] = 0.0;
+        else Curvature[iPlane] = Compute_Curvature(LeadingEdge[iPlane-1], TrailingEdge[iPlane-1],
+                                                   LeadingEdge[iPlane], TrailingEdge[iPlane],
+                                                   LeadingEdge[iPlane+1], TrailingEdge[iPlane+1]);
+
+        if (iPlane == 0) Dihedral[iPlane] = 0.0;
+        else Dihedral[iPlane] = Compute_Dihedral(LeadingEdge[iPlane-1], TrailingEdge[iPlane-1],
+                                                 LeadingEdge[iPlane], TrailingEdge[iPlane]);
+
+      }
+
+    }
+
+    /*--- Set the curvature and dihedral angles at the extremes ---*/
+
+    if (nPlane > 1) {
+      if ((Xcoord_Airfoil[0].size() != 0) && (Xcoord_Airfoil[1].size() != 0)) {
+        Curvature[0] = Curvature[1]; Dihedral[0] = Dihedral[1];
+      }
+      if ((Xcoord_Airfoil[nPlane-1].size() != 0) && (Xcoord_Airfoil[nPlane-2].size() != 0)) {
+        Curvature[nPlane-1] = Curvature[nPlane-2];
       }
     }
-    
-    /*--- Compute the volume using a composite Simpson's rule ---*/
-    
-    Volume = 0.0;
+
+    /*--- Plot the geometrical quatities ---*/
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    	if (Xcoord_Airfoil[iPlane].size() != 0) {
+    		if (config->GetOutput_FileFormat() == PARAVIEW) {
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane]  <<", "<< MaxThickness[iPlane]  <<", "<< Chord[iPlane]  <<", "<< ToC[iPlane]
+    			                                                                                                                                            <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
+    			                                                                                                                                                                                                                <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][1]  <<", "<< LeadingEdge[iPlane][2]
+    			                                                                                                                                                                                                                                                                                                              <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][1]  <<", "<< TrailingEdge[iPlane][2]  << endl;
+    		}
+    		else  {
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane]  <<" "<< MaxThickness[iPlane]  <<" "<< Chord[iPlane]  <<" "<< ToC[iPlane]
+    			                                                                                                                                        <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
+    			                                                                                                                                                                                                          <<" "<< LeadingEdge[iPlane][0] <<" "<< LeadingEdge[iPlane][1]  <<" "<< LeadingEdge[iPlane][2]
+    			                                                                                                                                                                                                                                                                                                     <<" "<< TrailingEdge[iPlane][0] <<" "<< TrailingEdge[iPlane][1]  <<" "<< TrailingEdge[iPlane][2] << endl;
+    		}
+    	}
+    }
+
+    Wing_File.close();
+
+
+    Section_File.open("wing_slices.dat", ios::out);
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+      if (iPlane == 0) {
+        Section_File << "TITLE = \"Aircraft Slices\"" << endl;
+        if (config->GetSystemMeasurements() == US)
+          Section_File << "VARIABLES = \"x (in)\", \"y (in)\", \"z (in)\", \"x<sub>2D</sub>/c\", \"y<sub>2D</sub>/c\"" << endl;
+        else Section_File << "VARIABLES = \"x (m)\", \"y (m)\", \"z (m)\", \"x<sub>2D</sub>/c\", \"y<sub>2D</sub>/c\"" << endl;
+      }
+
+      if (Xcoord_Airfoil[iPlane].size() !=0) {
+
+        Section_File << "ZONE T=\"<greek>h</greek> = " << Ycoord_Airfoil[iPlane][0]/SemiSpan << " \", I= " << Xcoord_Airfoil[iPlane].size() << ", F=POINT" << endl;
+
+        for (iVertex = 0; iVertex < Xcoord_Airfoil[iPlane].size(); iVertex++) {
+
+          /*--- Move to the origin  ---*/
+
+          su2double XValue_ = Xcoord_Airfoil[iPlane][iVertex] - LeadingEdge[iPlane][0];
+          su2double ZValue_ = Zcoord_Airfoil[iPlane][iVertex] - LeadingEdge[iPlane][2];
+
+          /*--- Rotate the airfoil and divide by the chord ---*/
+
+          su2double ValCos = cos(Twist[iPlane]*PI_NUMBER/180.0);
+          su2double ValSin = sin(Twist[iPlane]*PI_NUMBER/180.0);
+
+          su2double XValue = (XValue_*ValCos - ZValue_*ValSin) / Chord[iPlane];
+          su2double ZValue = (ZValue_*ValCos + XValue_*ValSin) / Chord[iPlane];
+
+          /*--- Write the file ---*/
+
+          Section_File  << Xcoord_Airfoil[iPlane][iVertex] << " " << Ycoord_Airfoil[iPlane][iVertex] << " " << Zcoord_Airfoil[iPlane][iVertex] << " " << XValue  << " " << ZValue << endl;
+        }
+      }
+
+    }
+
+    Section_File.close();
+
+
+    /*--- Compute the wing volume using a composite Simpson's rule ---*/
+
+    Wing_Volume = 0.0;
     for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
       if (Xcoord_Airfoil[iPlane].size() != 0) {
-        Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
+        Wing_Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
       }
     }
-    
+    if (Xcoord_Airfoil[nPlane-1].size() != 0) {
+      Wing_Volume /= (Ycoord_Airfoil[nPlane-1][0] - Ycoord_Airfoil[0][0]);
+    }
+
+    /*--- Evaluate Max and Min quantities ---*/
+
+    Wing_MinMaxThickness = 1E6; Wing_MaxChord = -1E6; Wing_MinToC = 1E6;
+    Wing_MaxTwist = -1E6; Wing_MaxCurvature = -1E6; Wing_MaxDihedral = -1E6;
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      Wing_MinMaxThickness = min(Wing_MinMaxThickness, MaxThickness[iPlane]);
+      Wing_MaxChord = max(Wing_MaxChord, Chord[iPlane]);
+      Wing_MinToC = min(Wing_MinToC, ToC[iPlane]);
+      Wing_MaxTwist = max(Wing_MaxTwist, fabs(Twist[iPlane]));
+      Wing_MaxCurvature = max(Wing_MaxCurvature, Curvature[iPlane]);
+      Wing_MaxDihedral = max(Wing_MaxDihedral, fabs(Dihedral[iPlane]));
+    }
+
   }
-  
+
   /*--- Free memory for the section cuts ---*/
-  
+
   delete [] Xcoord_Airfoil;
   delete [] Ycoord_Airfoil;
   delete [] Zcoord_Airfoil;
   delete [] Variable_Airfoil;
-  
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] LeadingEdge[iPlane];
+  delete [] LeadingEdge;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] TrailingEdge[iPlane];
+  delete [] TrailingEdge;
+
   for (iPlane = 0; iPlane < nPlane; iPlane++)
     delete [] Plane_P0[iPlane];
   delete [] Plane_P0;
@@ -13478,10 +13968,13 @@ su2double CPhysicalGeometry::Compute_Volume(CConfig *config, bool original_surfa
   delete [] Plane_Normal;
   
   delete [] Area;
-  
-  /*--- Return the volume and exit ---*/
-  
-  return Volume;
+  delete [] MaxThickness;
+  delete [] Chord;
+  delete [] ToC;
+  delete [] Twist;
+  delete [] Curvature;
+  delete [] Dihedral;
+
 }
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone) : CGeometry() {

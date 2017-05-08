@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -324,12 +324,12 @@ def read_config(filename):
         for case in switch(this_param):
             
             # comma delimited lists of strings with or without paren's
-            if case("MARKER_EULER")      : pass
-            if case("MARKER_FAR")        : pass
-            if case("MARKER_PLOTTING")   : pass
-            if case("MARKER_MONITORING") : pass
-            if case("MARKER_SYM")        : pass
-            if case("DV_KIND")           : 
+            if case("MARKER_EULER")      or\
+               case("MARKER_FAR")        or\
+               case("MARKER_PLOTTING")   or\
+               case("MARKER_MONITORING") or\
+               case("MARKER_SYM")        or\
+               case("DV_KIND")           : 
                 # remove white space
                 this_value = ''.join(this_value.split())   
                 # remove parens
@@ -337,7 +337,7 @@ def read_config(filename):
                 # split by comma
                 data_dict[this_param] = this_value.split(",")
                 break
-            
+
             # semicolon delimited lists of comma delimited lists of floats
             if case("DV_PARAM"):
                 # remove white space
@@ -355,7 +355,7 @@ def read_config(filename):
                     this_dvSize  = 1
 
                     # if FFD change the first element to work with numbers and float(x)
-                    if data_dict["DV_KIND"][0] in ['FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D','FFD_PLANE']:
+                    if data_dict["DV_KIND"][0] in ['FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_NACELLE','FFD_GULL','FFD_TWIST_2D','FFD_TWIST','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                         this_dvFFDTag = this_dvParam[0]
                         this_dvParam[0] = '0'
                     else:
@@ -385,9 +385,9 @@ def read_config(filename):
                 break
             
             # comma delimited lists of floats
-            if case("DV_VALUE_OLD")    : pass
-            if case("DV_VALUE_NEW")    : pass
-            if case("DV_VALUE")        :           
+            if case("DV_VALUE_OLD")    or\
+               case("DV_VALUE_NEW")    or\
+               case("DV_VALUE")        :           
                 # remove white space
                 this_value = ''.join(this_value.split())                
                 # split by comma, map to float, store in dictionary
@@ -395,23 +395,23 @@ def read_config(filename):
                 break              
 
             # float parameters
-            if case("MACH_NUMBER")            : pass
-            if case("AoA")                    : pass
-            if case("FIN_DIFF_STEP")          : pass
-            if case("CFL_NUMBER")             : pass
-            if case("HB_PERIOD")    : pass
-            if case("WRT_SOL_FREQ")           :
+            if case("MACH_NUMBER")            or\
+               case("AoA")                    or\
+               case("FIN_DIFF_STEP")          or\
+               case("CFL_NUMBER")             or\
+               case("HB_PERIOD")              or\
+               case("WRT_SOL_FREQ")           :
                 data_dict[this_param] = float(this_value)
                 break   
             
             # int parameters
-            if case("NUMBER_PART")            : pass
-            if case("AVAILABLE_PROC")         : pass
-            if case("EXT_ITER")               : pass
-            if case("TIME_INSTANCES")         : pass
-            if case("UNST_ADJOINT_ITER")      : pass
-            if case("ITER_AVERAGE_OBJ")       : pass
-            if case("ADAPT_CYCLES")           :
+            if case("NUMBER_PART")            or\
+               case("AVAILABLE_PROC")         or\
+               case("EXT_ITER")               or\
+               case("TIME_INSTANCES")         or\
+               case("UNST_ADJOINT_ITER")      or\
+               case("ITER_AVERAGE_OBJ")       or\
+               case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
                 break                
             
@@ -447,7 +447,7 @@ def read_config(filename):
                     else:
                         this_dvParameters = info_General[2].split(",")
                         # if FFD change the first element to work with numbers and float(x), save also the tag
-                        if this_dvKind in ['FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                        if this_dvKind in ['FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_NACELLE','FFD_GULL','FFD_TWIST','FFD_TWIST_2D','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                           this_dvFFDTag = this_dvParameters[0]
                           this_dvParameters[0] = '0'
                         else:
@@ -486,7 +486,7 @@ def read_config(filename):
             if case('OPT_OBJECTIVE'):
                 # remove white space
                 this_value = ''.join(this_value.split())
-                #split by + 
+                #split by ; 
                 this_def={}
                 this_value = this_value.split(";")
                 
@@ -505,12 +505,17 @@ def read_config(filename):
                         this_type = this_sgn
                         this_val = this_obj[1]
                     else:
-                        this_type = 'NONE'
-                        this_val  = 0.0
+                        this_type = 'DEFAULT'
+                        this_val  = 0.0 
                     this_name = this_obj[0]
                        
- 
-                    this_def.update({ this_name : {'SCALE':this_scale, 'CTYPE':this_type, 'CVAL':this_val} })
+                    # Set up dict for objective, including scale, whether it is a penalty, and constraint value 
+                    this_def.update({ this_name : {'SCALE':this_scale, 'OBJTYPE':this_type, 'VALUE':this_val} })
+                    if (len(data_dict['MARKER_MONITORING'])>1):
+                        this_def[this_name]['MARKER'] = data_dict['MARKER_MONITORING'][len(this_def)-1]
+                    else:
+                        this_def[this_name]['MARKER'] = data_dict['MARKER_MONITORING'][0]
+
                 # save to output dictionary
                 data_dict[this_param] = this_def
                 break
@@ -591,11 +596,31 @@ def read_config(filename):
         data_dict['OPT_BOUND_LOWER'] = -1e10
     if not data_dict.has_key('OPT_COMBINE_OBJECTIVE'):
         data_dict['OPT_COMBINE_OBJECTIVE'] = "NO"
+    if not data_dict.has_key('OPT_CONSTRAINT'):
+        data_dict['OPT_CONSTRAINT'] =  {'INEQUALITY': OrderedDict(), 'EQUALITY': OrderedDict()}
     if not data_dict.has_key('VALUE_OBJFUNC_FILENAME'):
       data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
     if not data_dict.has_key('GRAD_OBJFUNC_FILENAME'):
       data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
  
+    #
+    # Default values for optimization parameters (needed for some eval functions
+    # that can be called outside of an opt. context.
+    #
+    if not data_dict.has_key('OBJECTIVE_FUNCTION'):
+        data_dict['OBJECTIVE_FUNCTION']='DRAG'
+    if not data_dict.has_key('DV_KIND'):
+        data_dict['DV_KIND']=['FFD_SETTING']
+    if not data_dict.has_key('DV_PARAM'):
+        data_dict['DV_PARAM']={'FFDTAG': ['1'], 'PARAM': [[0.0, 0.5]], 'SIZE': [1]}
+    if not data_dict.has_key('DEFINITION_DV'):
+        data_dict['DEFINITION_DV']={'FFDTAG': [[]],
+            'KIND': ['HICKS_HENNE'],
+            'MARKER': [['WING']],
+            'PARAM': [[0.0, 0.05]],
+            'SCALE': [1.0],
+            'SIZE': [1]}
+
     return data_dict
     
 #: def read_config()
@@ -744,7 +769,7 @@ def write_config(filename,param_dict):
                     if not this_kind in ['AOA','MACH_NUMBER']:
                         output_file.write(" | ")
                         # params
-                        if this_kind in ['FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                        if this_kind in ['FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_NACELLE','FFD_GULL','FFD_TWIST_ANGLE','FFD_TWIST','FFD_TWIST_2D','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                             n_param = len(new_value['PARAM'][i_dv])
                             output_file.write("%s , " % new_value['FFDTAG'][i_dv])
                             for i_param in range(1,n_param):
@@ -766,15 +791,15 @@ def write_config(filename,param_dict):
                 break
             
             if case("OPT_OBJECTIVE"):
-                i_name = 0
+                n_obj = 0
                 for name,value in new_value.iteritems():
-                    if i_name>0: output_file.write("; ")
-                    if value['CTYPE']=='NONE':
+                    if n_obj>0: output_file.write("; ")
+                    if value['OBJTYPE']=='DEFAULT':
                         output_file.write( "%s * %s " % (name,value['SCALE']) )
                     else:
                         output_file.write( "( %s %s %s ) * %s" 
-                                           % (name, value['CTYPE'], value['CVAL'], value['SCALE']) )
-                    i_name += 1
+                                           % (name, value['OBJTYPE'], value['VALUE'], value['SCALE']) )
+                    n_obj += 1
                 break
             
             if case("OPT_CONSTRAINT"):

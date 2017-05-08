@@ -1,16 +1,39 @@
 #!/usr/bin/env python
-# -*-coding:utf-8 -* 
 
-# \file fsi_computation.py
-#  \brief Python wrapper code for FSI computation using C++ fluid and solid solvers.
-#  \author D. THOMAS, University of Liege, Belgium. Department of Mechanical and Aerospace Engineering.
-#  \version BETA
+## \file fsi_computation.py
+#  \brief Python wrapper code for FSI computation by coupling a third-party structural solver to SU2.
+#  \author David Thomas
+#  \version 5.0.0 "Raven"
+#
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
+#
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
+#
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
 # ----------------------------------------------------------------------
-
-from mpi4py import MPI  # MPI is initialized from now by python and can be continued in C++ !
 
 import os, sys, shutil, copy
 import time as timer
@@ -22,7 +45,7 @@ import FSI	# imports FSI python tools
 
 
 # imports the CFD (SU2) module for FSI computation
-import SU2Solver
+import pysu2
 
 # -------------------------------------------------------------------
 #  Main 
@@ -30,10 +53,27 @@ import SU2Solver
 
 def main():
 
-  comm = MPI.COMM_WORLD
-  myid = comm.Get_rank()
-  numberPart = comm.Get_size()
- 
+  # --- Get the FSI conig file name form the command line options --- #
+  parser=OptionParser()
+  parser.add_option("-f", "--file",       dest="filename",
+                      help="read config from FILE", metavar="FILE")
+  parser.add_option("--parallel", action="store_true",
+                      help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
+
+  (options, args)=parser.parse_args()
+
+  if options.with_MPI == True:
+    from mpi4py import MPI  # MPI is initialized from now by python and can be continued in C++ !
+    comm = MPI.COMM_WORLD
+    myid = comm.Get_rank()
+    numberPart = comm.Get_size()
+    have_MPI = True
+  else:
+    comm = 0
+    myid = 0
+    numberPart = 1
+    have_MPI = False
+
   rootProcess = 0
 
   # --- Set the working directory --- #
@@ -47,13 +87,6 @@ def main():
   # starts timer
   start = timer.time()
 
-  # --- Get the FSI conig file name form the command line options --- #
-  parser=OptionParser()
-  parser.add_option("-f", "--file",       dest="filename",
-                      help="read config from FILE", metavar="FILE")
-
-  (options, args)=parser.parse_args()
-
   confFile = str(options.filename)
 
   FSI_config = FSI.io.FSIConfig(confFile) 		# FSI configuration file
@@ -62,28 +95,24 @@ def main():
 
   CSD_Solver = FSI_config['CSD_SOLVER']			# CSD solver
 
-  # Redefine the fluid solver configuration file if we are running in parallel
-  config = SU2.io.Config(CFD_ConFile)
-  config.NUMBER_PART = numberPart
-  config.DECOMPOSED = False
-  if numberPart > 1:
-    config.DECOMPOSED  = True
-    config.NUMBER_PART = numberPart
-  else:
-    config.DECOMPOSED  = False
-  CFD_ConFile = 'config_CFD.cfg'
-  if myid == rootProcess:
-    konfig = copy.deepcopy(config)
-    konfig.dump(CFD_ConFile)
-
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
 
   # --- Initialize the fluid solver --- #
   if myid == rootProcess:
     print('\n***************************** Initializing fluid solver *****************************')
-  FluidSolver = SU2Solver.CFluidDriver(CFD_ConFile, 1, FSI_config['NDIM'])
+  try:
+    FluidSolver = pysu2.CFluidDriver(CFD_ConFile, 1, FSI_config['NDIM'], comm)
+  except TypeError as exception:
+    print('A TypeError occured in pysu2.CSingleZoneDriver : ',exception)
+    if have_MPI == True:
+      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
+    else:
+      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
+    return
 
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
   
   # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
   if myid == rootProcess:
@@ -102,25 +131,30 @@ def main():
   else:
     SolidSolver = None
 
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
 
   # --- Initialize and set the FSI interface (coupling environement) --- #
   if myid == rootProcess:
     print('\n***************************** Initializing FSI interface *****************************')
-  comm.barrier()
-  FSIInterface = FSI.Interface(FSI_config, FluidSolver, SolidSolver)
+  if have_MPI == True:
+    comm.barrier()
+  FSIInterface = FSI.Interface(FSI_config, FluidSolver, SolidSolver, have_MPI)
   
   if myid == rootProcess:
     print('\n***************************** Connect fluid and solid solvers *****************************')
-  comm.barrier()
-  FSIInterface.connect(FluidSolver, SolidSolver)
+  if have_MPI == True:
+    comm.barrier()
+  FSIInterface.connect(FSI_config, FluidSolver, SolidSolver)
 
   if myid == rootProcess:
     print('\n***************************** Mapping fluid-solid interfaces *****************************')
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
   FSIInterface.interfaceMapping(FluidSolver, SolidSolver, FSI_config)
-  
-  comm.barrier()
+ 
+  if have_MPI == True: 
+    comm.barrier()
 
   # --- Launch a steady or unsteady FSI computation --- #
   if FSI_config['UNSTEADY_SIMULATION'] == "YES":
@@ -149,14 +183,16 @@ def main():
       if myid == rootProcess:
         print('A KeyboardInterrupt occured in FSIInterface.SteadyFSI : ',exception)
   
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
 
   # --- Exit cleanly the fluid and solid solvers --- #
   FluidSolver.Postprocessing()
   if myid == rootProcess:
       SolidSolver.exit()
 
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
 
   # stops timer
   stop = timer.time()

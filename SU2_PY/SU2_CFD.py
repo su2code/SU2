@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-## \file test_pyWrapper.py
-#  \brief Python script to launch SU2_CFD through the Python Wrapper
+## \file SU2_CFD.py
+#  \brief Python script to launch SU2_CFD through the Python Wrapper.
 #  \author David Thomas
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -35,11 +35,10 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-from mpi4py import MPI			# use mpi4py for parallel run (also valid for serial) 
 from optparse import OptionParser	# use a parser for configuration
 import SU2				# imports SU2 python tools
 
-import SU2Solver			# imports the SU2 wrapped module
+import pysu2			# imports the SU2 wrapped module
 
 # -------------------------------------------------------------------
 #  Main 
@@ -54,6 +53,8 @@ def main():
                     metavar="DIMENSIONS")
   parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
                     metavar="ZONES")
+  parser.add_option("--parallel", action="store_true",
+                    help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
 
   parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
 
@@ -84,15 +85,29 @@ def main():
   if options.filename == None:
     raise Exception("No config file provided. Use -f flag")
 
-  # Initialize the corresponding driver of SU2, this includes solver preprocessing
-  if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
-    SU2Driver = SU2Solver.CGeneralDriver(options.filename, options.nZone, options.nDim);
-  elif options.harmonic_balance:
-    SU2Driver = SU2Solver.CHBDriver(options.filename, options.nZone, options.nDim);
-  elif (options.nZone == 2) and (options.fsi):
-    SU2Driver = SU2Solver.CFSIDriver(options.filename, options.nZone, options.nDim);
+  if options.with_MPI == True:
+    from mpi4py import MPI			# use mpi4py for parallel run (also valid for serial)
+    comm = MPI.COMM_WORLD
   else:
-    SU2Driver = SU2Solver.CFluidDriver(options.filename, options.nZone, options.nDim);
+    comm = 0 
+
+  # Initialize the corresponding driver of SU2, this includes solver preprocessing
+  try:
+    if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
+      SU2Driver = pysu2.CGeneralDriver(options.filename, options.nZone, options.nDim, comm);
+    elif options.harmonic_balance:
+      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, options.nDim, comm);
+    elif (options.nZone == 2) and (options.fsi):
+      SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, options.nDim, comm);
+    else:
+      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, options.nDim, comm);
+  except TypeError as exception:
+    print('A TypeError occured in pysu2.CDriver : ',exception)
+    if options.with_MPI == True:
+      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
+    else:
+      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
+    return
 
   # Launch the solver for the entire computation
   SU2Driver.StartSolver()

@@ -1,9 +1,9 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -175,13 +175,7 @@ def read_history( History_filename ):
 # -------------------------------------------------------------------
 #  Define Dictionary Map for Header Names
 # -------------------------------------------------------------------
-
-def get_headerMap():
-    """ returns a dictionary that maps history file header names
-        to optimization problem function names
-    """
-    # header name to config file name map
-    map_dict = { "Iteration"       : "ITERATION"               ,
+history_header_map = { "Iteration"       : "ITERATION"               ,
                  "CLift"           : "LIFT"                    ,
                  "CDrag"           : "DRAG"                    ,
                  "CSideForce"      : "SIDEFORCE"               ,
@@ -197,7 +191,6 @@ def get_headerMap():
                  "CFz"             : "FORCE_Z"                 ,
                  "CL/CD"           : "EFFICIENCY"              ,
                  "CEff"            : "EFFICIENCY"              ,
-                 "CFreeSurface"    : "FREE_SURFACE"            ,
                  "CMerit"          : "FIGURE_OF_MERIT"         ,
                  "CQ"              : "TORQUE"                  ,
                  "CT"              : "THRUST"                  ,
@@ -210,6 +203,9 @@ def get_headerMap():
                  "Avg_Mach"        : "AVG_OUTLET_MACH"         ,
                  "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
+                 "AeroCDrag"       : "AERO_DRAG"               ,
+                 "Radial_Distortion"      : "RADIAL_DISTORTION"              ,
+                 "Circumferential_Distortion"      : "CIRCUMFERENTIAL_DISTORTION"              ,
                  "Time(min)"       : "TIME"                    ,
                  "D(CLift)"        : "D_LIFT"                  ,
                  "D(CDrag)"        : "D_DRAG"                  ,
@@ -222,7 +218,14 @@ def get_headerMap():
                  "D(CFz)"          : "D_FORCE_Z"               ,
                  "D(CL/CD)"        : "D_EFFICIENCY"            ,
                  "ComboObj"        : "COMBO"}
-    
+     
+
+def get_headerMap():
+    """ returns a dictionary that maps history file header names
+        to optimization problem function names
+    """
+    # header name to config file name map
+    map_dict = history_header_map
     return map_dict
 
 #: def get_headerMap()
@@ -259,6 +262,9 @@ optnames_aero = [ "LIFT"                    ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ,
+                  "AERO_DRAG"               ,
+                  "RADIAL_DISTORTION"              ,
+                  "CIRCUMFERENTIAL_DISTORTION"              ,
                   "COMBO"]
 #: optnames_aero
 
@@ -280,6 +286,13 @@ optnames_geo = [ "MAX_THICKNESS"      ,
                  "AREA"               ,
                  "AOA"                ,
                  "CHORD"              ,
+                 "WING_VOLUME"           ,
+                 "WING_MIN_MAXTHICKNESS" ,
+                 "WING_MAX_CHORD"        ,
+                 "WING_MIN_TOC"          ,
+                 "WING_MAX_TWIST"        ,
+                 "WING_MAX_CURVATURE"    ,
+                 "WING_MAX_DIHEDRAL"     ,
                  "MAX_THICKNESS_SEC1" ,
                  "MAX_THICKNESS_SEC2" ,
                  "MAX_THICKNESS_SEC3" ,
@@ -349,6 +362,38 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "FORCE_Y"   : "D_FORCE_Y"     ,
                    "FORCE_Z"   : "D_FORCE_Z"     ,
                    "EFFICIENCY" : "D_EFFICIENCY"}
+
+# per-surface functions
+per_surface_map = {"LIFT"       :   "CLift" ,
+                  "DRAG"        :   "CDrag" ,
+                  "SIDEFORCE"   :   "CSideForce"  ,
+                  "MOMENT_X"    :   "CMx"   ,
+                  "MOMENT_Y"    :   "CMy"   ,
+                  "MOMENT_Z"    :   "CMz"   ,
+                  "FORCE_X"     :   "CFx"   ,
+                  "FORCE_Y"     :   "CFy"   ,
+                  "FORCE_Z"     :   "CFz"   ,
+                  "EFFICIENCY"  :   "CL/CD" }
+
+# -------------------------------------------------------------------
+#  Include per-surface output from History File
+# ------------------------------------------------------------------- 
+def update_persurface(config, state):
+    # Update the header map (checking to make sure entries are not duplicated)
+    header_map = get_headerMap()
+    for base in per_surface_map:
+        base2 = per_surface_map[base]
+        for marker in config['MARKER_MONITORING']:
+            if not header_map.has_key(base2+'_'+marker):
+                header_map[base2+'_'+marker] = base2+'_'+marker
+    # Update the function values in state to include the per-surface quantities
+    if state['HISTORY'].has_key('DIRECT'):
+        for base in per_surface_map:
+            base2 = per_surface_map[base]
+            for marker in config['MARKER_MONITORING']:
+                if state['HISTORY']['DIRECT'].has_key(base2+'_'+marker):
+                    state['FUNCTIONS'][base2+'_'+marker] = state['HISTORY']['DIRECT'][base2+'_'+marker][-1]
+                    
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
@@ -477,6 +522,9 @@ def get_adjointSuffix(objective_function=None):
                  "MASS_FLOW_RATE"          : "mfr"       ,
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "FREE_SURFACE"            : "fs"        ,
+                 "AERO_DRAG"               : "acd"       ,
+                 "RADIAL_DISTORTION"              : "rdis"       ,
+                 "CIRCUMFERENTIAL_DISTORTION"              : "cdis"       ,
                  "COMBO"                   : "combo"}
     
     # if none or false, return map
@@ -528,10 +576,9 @@ def get_dvMap():
     """ get dictionary that maps design variable 
         kind id number to name """
     dv_map = { 1   : "HICKS_HENNE"           ,
-               2   : "COSINE_BUMP"           ,
-               3   : "SPHERICAL"             ,
+               2   : "SURFACE_BUMP"          ,
                4   : "NACA_4DIGITS"          ,
-               5   : "DISPLACEMENT"          ,
+               5   : "TRANSLATION"          ,
                6   : "ROTATION"              ,
                7   : "FFD_CONTROL_POINT"     ,
                8   : "FFD_DIHEDRAL_ANGLE"    ,
@@ -539,7 +586,6 @@ def get_dvMap():
                10  : "FFD_ROTATION"          ,
                11  : "FFD_CAMBER"            ,
                12  : "FFD_THICKNESS"         ,
-               14  : "FOURIER"               ,
                15  : "FFD_CONTROL_POINT_2D"  ,
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
@@ -608,14 +654,14 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
         for key in special_cases: 
-            if key == "FREE_SURFACE"   : 
-                header.append(r',"Grad_CFreeSurface"')
-                write_format.append(", %.10f ")
             if key == "ROTATING_FRAME" : 
                 header.append(r',"Grad_CMerit","Grad_CT","Grad_CQ"')
                 write_format.append(", %.10f, %.10f, %.10f")
             if key == "EQUIV_AREA"     : 
                 header.append(r',"Grad_CEquivArea","Grad_CNearFieldOF"') 
+                write_format.append(", %.10f, %.10f")
+            if key == "ENGINE"     :
+                header.append(r',"Grad_AeroCDrag","Grad_Distortion"')
                 write_format.append(", %.10f, %.10f")
             if key == "1D_OUTPUT"     :
                 header.append(r',"Grad_Avg_TotalPress","Grad_Avg_Mach","Grad_Avg_Temperature","Grad_MassFlowRate","Grad_Avg_Pressure","Grad_Avg_Density","Grad_Avg_Velocity","Grad_Avg_Enthalpy"')
@@ -646,19 +692,19 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     elif kindID == "HICKS_HENNE"        :
         header.append(r',"Up/Down","Loc_Max"')
         write_format.append(r', %s, %s')
+    elif kindID == "SURFACE_BUMP"        :
+        header.append(r',"Loc_Start","Loc_End","Loc_Max"')
+        write_format.append(r', %s, %s, %s')
     elif kindID == "CST"        :
         header.append(r',"Up/Down","Kulfan number", "Total Kulfan numbers"')
         write_format.append(r', %s, %s', '%s')
-    elif kindID == "GAUSS_BUMP"       :
-        header.append(r',"Up/Down","Loc_Max","Size_Bump"')
-        write_format.append(r', %s, %s, %s')
     elif kindID == "FAIRING"       :
         header.append(r',"ControlPoint_Index","Theta_Disp","R_Disp"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "NACA_4DIGITS"       :
         header.append(r',"1st_digit","2nd_digit","3rd&4th_digits"')
         write_format.append(r', %s, %s, %s')
-    elif kindID == "DISPLACEMENT"       : 
+    elif kindID == "TRANSLATION"       : 
         header.append(r',"x_Disp","y_Disp","z_Disp"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "ROTATION"           : 
@@ -736,14 +782,14 @@ def get_optFileFormat(plot_format,special_cases=None):
         
     # special cases
     for key in special_cases: 
-        if key == "FREE_SURFACE" :
-            header_list.extend(["CFreeSurface"])
-            write_format.append(r', %.10f ')
         if key == "ROTATING_FRAME" : 
             header_list.extend(["CMerit","CT","CQ"])
             write_format.append(r', %.10f, %.10f, %.10f')
         if key == "EQUIV_AREA"     : 
             header_list.extend(["CEquivArea","CNearFieldOF"]) 
+            write_format.append(r', %.10f, %.10f')
+        if key == "ENGINE"     :
+            header_list.extend(["AeroCDrag","Distortion"])
             write_format.append(r', %.10f, %.10f')
         if key == "1D_OUTPUT":
             header_list.extend(["Avg_TotalPress","Avg_Mach","Avg_Temperature","MassFlowRate","Avg_Pressure","Avg_Density","Avg_Velocity","Avg_Enthalpy"])
@@ -782,7 +828,7 @@ def get_optFileFormat(plot_format,special_cases=None):
 
 def get_extension(output_format):
   
-    if (output_format == "PARAVIEW")        : return ".csv"
+    if (output_format == "PARAVIEW")        : return ".vtk"
     if (output_format == "TECPLOT")         : return ".dat"
     if (output_format == "TECPLOT_BINARY")  : return ".plt"
     if (output_format == "SOLUTION")        : return ".dat"  
