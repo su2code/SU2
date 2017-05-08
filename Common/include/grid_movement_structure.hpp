@@ -1594,7 +1594,6 @@ public:
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-
   bool SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
   
   /*!

@@ -5103,53 +5103,6 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Requires translation between gradients w.r.t. averaged quantities and w.r.t local quantities --*/
         if (config->GetKind_ObjFunc(iMarker_Monitoring) == OUTFLOW_GENERALIZED){
           switch(config->GetKind_OneD()){
-          case ONED_LANGLEY:
-            avg_enthalpy  = solver_container[FLOW_SOL]->GetOneD_AvgEnthalpy();
-            avg_pressure  = solver_container[FLOW_SOL]->GetOneD_AvgPress();
-            avg_vel       = solver_container[FLOW_SOL]->GetOneD_AvgVelocity();
-            avg_vel2      = pow(avg_vel,2.0);
-            one_over_mdot = 1.0/solver_container[FLOW_SOL]->GetOneD_MassFlowRate();
-            /* Some repeated terms */
-            dvdr = 0.5/avg_vel*one_over_mdot*Vn*(pow(Vn,2.0) - avg_vel2);
-            a1   = Gamma/Gamma_Minus_One/(avg_enthalpy);
-            a2   = 0.5/avg_vel*(3.0*pow(Vn,2.0) - avg_vel2)*Density*one_over_mdot;
-            /*--- TODO: finish this part ---*/
-            break;
-          case ONED_LANGLEY_V1:
-            avg_enthalpy  = solver_container[FLOW_SOL]->GetOneD_AvgEnthalpy();
-            avg_pressure  = solver_container[FLOW_SOL]->GetOneD_AvgPress();
-            avg_vel       = solver_container[FLOW_SOL]->GetOneD_AvgVelocity();
-            avg_vel2      = pow(avg_vel,2.0);
-            one_over_mdot = 1.0/solver_container[FLOW_SOL]->GetOneD_MassFlowRate();
-            /* Some repeated terms */
-            dvdr = 0.5/avg_vel*one_over_mdot*Vn*(pow(Vn,2.0) - avg_vel2);
-            a1   = Gamma/Gamma_Minus_One/(pow(avg_enthalpy-0.5*avg_vel2,2.0));
-            a2   = 0.5/avg_vel*(3.0*pow(Vn,2.0) - avg_vel2)*Density*one_over_mdot;
-            /* dj / drho */
-            dobj_dV[0] =   config->GetCoeff_ObjChainRule(0)*
-                Gamma/Gamma_Minus_One/(avg_enthalpy-0.5*avg_vel2)*(Density/Area_Monitored/Pressure); // drho avg/ d P avg * dPavg dr
-            dobj_dV[0] +=   config->GetCoeff_ObjChainRule(0)*
-                (-avg_pressure*a1*one_over_mdot*Vn)*
-                (0.5*Velocity2 - avg_enthalpy+Gamma/(Gamma_Minus_One)*Density/Pressure );//drho avg/ dh avg * dhavg /dr
-            dobj_dV[0] +=  config->GetCoeff_ObjChainRule(0)*
-                ( avg_pressure*a1*avg_vel * dvdr); // drho avg/ dV avg * dV avg/dr
-            dobj_dV[0] +=  config->GetCoeff_ObjChainRule(1)*dvdr;
-            /* dj / d\vec{v} */
-            for (iDim = 0; iDim<nDim; iDim++){
-              dobj_dV[iDim+1] = config->GetCoeff_ObjChainRule(0)*
-                  UnitNormal[iDim]*( avg_vel*avg_pressure*a1)* a2;
-              dobj_dV[iDim+1] +=config->GetCoeff_ObjChainRule(0)*
-                  (-avg_pressure*a1*one_over_mdot)*(
-                      (Pressure*Gamma/Gamma_Minus_One + 0.5*avg_vel2*Density- avg_enthalpy*Density)*UnitNormal[iDim]+
-                      Velocity[iDim]*Vn*Density);
-              dobj_dV[iDim+1] += config->GetCoeff_ObjChainRule(1)*
-                  UnitNormal[iDim]*a2;
-            }
-            /* dj / d P */
-            dobj_dV[4] =  config->GetCoeff_ObjChainRule(0)*(Gamma/Gamma_Minus_One/(avg_enthalpy-0.5*avg_vel2) * (1.0/Area_Monitored));
-            dobj_dV[4] += config->GetCoeff_ObjChainRule(0)*(-avg_pressure*a1*Vn*one_over_mdot*Gamma/Gamma_Minus_One);
-            dobj_dV[4] += config->GetCoeff_ObjChainRule(4)/Area_Monitored;
-            break;
           case ONED_MFLUX:
             avg_density   = solver_container[FLOW_SOL]->GetOneD_AvgDensity();
             avg_pressure  = solver_container[FLOW_SOL]->GetOneD_AvgPress();

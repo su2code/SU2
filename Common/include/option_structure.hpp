@@ -181,16 +181,12 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
 enum ONED_TYPE {
   ONED_NONE = 0, /*!< \brief no one-dimensionalization. */
   ONED_AREA = 1, /*!< \brief Area-weighted average. */
-  ONED_MFLUX = 2, /*!< \brief Mass-flux weighted average. */
-  ONED_LANGLEY = 3, /*!< \brief Langley Distortion method */
-  ONED_LANGLEY_V1 = 4 /*!< \brief A variation on the Langley Distortion method (uses velocity magnitude rather than momentum)*/
+  ONED_MFLUX = 2 /*!< \brief Mass-flux weighted average. */
 };
 static const map<string, ONED_TYPE> OneD_Map = CCreateMap<string, ONED_TYPE>
 ("NONE", ONED_NONE)
 ("AREA", ONED_AREA)
-("MASSFLUX", ONED_MFLUX)
-("LANGLEY", ONED_LANGLEY)
-("LANGLEY1", ONED_LANGLEY_V1);
+("MASSFLUX", ONED_MFLUX);
 
 
 /*!
@@ -1184,8 +1180,7 @@ enum ENUM_PARAM {
   CST = 21,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
   SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
   SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
-  CUSTOM = 24,               /*!< 'CUSTOM' for use in external python analysis. */
-  NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
+  NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
@@ -1215,7 +1210,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("PARABOLIC", PARABOLIC)
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
-("CUSTOM", CUSTOM)
 ("NO_DEFORMATION", NO_DEFORMATION)
 ("CST", CST);
 
@@ -2179,7 +2173,6 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
-        case CUSTOM:               nParamDV = 1; break;
         default : {
           string newstring;
           newstring.append(this->name);
