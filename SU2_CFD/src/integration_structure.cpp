@@ -165,11 +165,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case LOAD_DIR_BOUNDARY:
-        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-          break;
+    solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+    break;
       case LOAD_SINE_BOUNDARY:
-        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
+    solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+    break;
     }
   }
 
@@ -278,6 +278,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
           break;
       }
     }
+
 }
 
 void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
@@ -314,7 +315,6 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
                                     unsigned short RunTime_EqSystem, unsigned long Iteration) {
-
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   unsigned short KindSolver = config->GetKind_Solver();
   
@@ -571,7 +571,6 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
-
   unsigned long iPoint;
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -602,9 +601,8 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     unsigned long iProcessor, owner, *owner_all = NULL;
     
     string Marker_Tag, Monitoring_Tag;
-
-    int rank, nProcessor;
-
+  int rank, nProcessor;
+    
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 
