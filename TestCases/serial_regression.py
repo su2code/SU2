@@ -628,16 +628,16 @@ def main():
     ######################################
 
     # Uniform flow
-#    uniform_flow         = TestCase('uniform_flow')
-#    uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
-#    uniform_flow.cfg_file  = "uniform_NN.cfg"
-#    uniform_flow.test_iter = 50
-#    uniform_flow.test_vals = [-0.368836, 5.156090, 0.000000, 0.000000] #last 4 columns
-#    uniform_flow.su2_exec  = "SU2_CFD"
-#    uniform_flow.timeout   = 1600
-#    uniform_flow.tol       = 0.000001
-#    uniform_flow.unsteady  = True
-#    test_list.append(uniform_flow) 
+    uniform_flow         = TestCase('uniform_flow')
+    uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
+    uniform_flow.cfg_file  = "uniform_NN.cfg"
+    uniform_flow.test_iter = 50
+    uniform_flow.test_vals = [-0.368836, 5.156090, 0.000000, 0.000000] #last 4 columns
+    uniform_flow.su2_exec  = "SU2_CFD"
+    uniform_flow.timeout   = 1600
+    uniform_flow.tol       = 0.000001
+    uniform_flow.unsteady  = True
+    test_list.append(uniform_flow) 
 
     # Channel_2D
     channel_2D           = TestCase('channel_2D')
