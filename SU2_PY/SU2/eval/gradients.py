@@ -467,7 +467,10 @@ def findiff( config, state=None ):
         log_findiff = None
 
     # evaluate step
-    step = 0.001 * float(config.REF_LENGTH_MOMENT)
+    step = 0.001 * float(config.REF_CHORD)
+
+    config.ITER_DCL_DALPHA = 0
+    config.OPT_RELAX_FACTOR= 1.0
 
     # ----------------------------------------------------
     #  Redundancy Check
@@ -666,7 +669,8 @@ def geometry( func_name, config, state=None ):
         log_geom = None
 
     # ----------------------------------------------------    
-    #  Update Mesh (check with Trent)
+    #  Update Mesh (uncomment for geometrical objective functions                                                               
+    #  otherwise we are deforming the grid twice... not good)                                                                   
     # ----------------------------------------------------
 
     # does decomposition and deformation

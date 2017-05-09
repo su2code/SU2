@@ -421,7 +421,7 @@ void CDriver::Postprocessing() {
   }
   delete [] numerics_container;
   if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
-  
+
   for (iZone = 0; iZone < nZone; iZone++) {
     Integration_Postprocessing(integration_container[iZone],
                                geometry_container[iZone],
@@ -430,7 +430,7 @@ void CDriver::Postprocessing() {
   }
   delete [] integration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIntegration container." << endl;
-  
+
   for (iZone = 0; iZone < nZone; iZone++) {
     Solver_Postprocessing(solver_container[iZone],
                           geometry_container[iZone],
@@ -439,13 +439,13 @@ void CDriver::Postprocessing() {
   }
   delete [] solver_container;
   if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
-  
+
   for (iZone = 0; iZone < nZone; iZone++) {
     delete iteration_container[iZone];
   }
   delete [] iteration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIteration container." << endl;
-  
+
   if (interpolator_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
     if (interpolator_container[iZone] != NULL){
@@ -455,7 +455,7 @@ void CDriver::Postprocessing() {
     delete [] interpolator_container;
     if (rank == MASTER_NODE) cout << "Deleted CInterpolator container." << endl;
   }
-  
+
   if (transfer_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
         if (transfer_container[iZone] != NULL)
@@ -1308,15 +1308,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
             default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           
-          if (!config->GetLowFidelitySim()) {
-            for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-              numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
-          }
-          else {
-            numerics_container[MESH_1][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim, nVar_Flow, config);
-            for (iMGlevel = 2; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-              numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
-          }
+          for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
           
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -2748,18 +2741,7 @@ void CDriver::Output(unsigned long ExtIter) {
       
       (((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
-    
-    /*--- Low-fidelity simulations (using a coarser multigrid level
-     approximation to the solution) require an interpolation back to the
-     finest grid. ---*/
-    
-    if (config_container[ZONE_0]->GetLowFidelitySim()) {
-      integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
-      integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
-      solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-      solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, true);
-    }
-    
+
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
     
     /*--- For specific applications, evaluate and plot the surface. ---*/
@@ -2808,11 +2790,11 @@ su2double CDriver::Get_Drag() {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CDrag, RefDensity, RefAreaCoeff, RefVel2, factor;
+  su2double CDrag, RefDensity, RefArea, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
+  RefArea = config_container[val_iZone]->GetRefArea();
 
   /*--- Calculate free-stream velocity (squared) ---*/
   RefVel2 = 0.0;
@@ -2820,7 +2802,7 @@ su2double CDriver::Get_Drag() {
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
   /*--- Calculate drag force based on drag coefficient ---*/
-  factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
+  factor = 0.5*RefDensity*RefArea*RefVel2;
   CDrag = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
 
   return CDrag*factor;
@@ -2830,11 +2812,11 @@ su2double CDriver::Get_Lift() {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CLift, RefDensity, RefAreaCoeff, RefVel2, factor;
+  su2double CLift, RefDensity, RefArea, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
+  RefArea = config_container[val_iZone]->GetRefArea();
 
   /*--- Calculate free-stream velocity (squared) ---*/
   RefVel2 = 0.0;
@@ -2842,7 +2824,7 @@ su2double CDriver::Get_Lift() {
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
   /*--- Calculate drag force based on drag coefficient ---*/
-  factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
+  factor = 0.5*RefDensity*RefArea*RefVel2;
   CLift = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
 
   return CLift*factor;
@@ -2852,12 +2834,12 @@ su2double CDriver::Get_Mx(){
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMx, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2, factor;
+  su2double CMx, RefDensity, RefArea, RefLengthCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
-  RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
+  RefArea = config_container[val_iZone]->GetRefArea();
+  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
 
   /*--- Calculate free-stream velocity (squared) ---*/
   RefVel2 = 0.0;
@@ -2865,7 +2847,7 @@ su2double CDriver::Get_Mx(){
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
   /*--- Calculate moment around x-axis based on coefficients ---*/
-  factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
+  factor = 0.5*RefDensity*RefArea*RefVel2;
   CMx = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
 
   return CMx*factor*RefLengthCoeff;
@@ -2876,12 +2858,12 @@ su2double CDriver::Get_My(){
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMy, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2, factor;
+  su2double CMy, RefDensity, RefArea, RefLengthCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
-  RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
+  RefArea = config_container[val_iZone]->GetRefArea();
+  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
 
   /*--- Calculate free-stream velocity (squared) ---*/
   RefVel2 = 0.0;
@@ -2889,7 +2871,7 @@ su2double CDriver::Get_My(){
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
   /*--- Calculate moment around x-axis based on coefficients ---*/
-  factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
+  factor = 0.5*RefDensity*RefArea*RefVel2;
   CMy = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
 
   return CMy*factor*RefLengthCoeff;
@@ -2900,12 +2882,12 @@ su2double CDriver::Get_Mz() {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMz, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2, factor;
+  su2double CMz, RefDensity, RefArea, RefLengthCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
-  RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
+  RefArea = config_container[val_iZone]->GetRefArea();
+  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
 
   /*--- Calculate free-stream velocity (squared) ---*/
   RefVel2 = 0.0;
@@ -2913,7 +2895,7 @@ su2double CDriver::Get_Mz() {
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
   /*--- Calculate moment around z-axis based on coefficients ---*/
-  factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
+  factor = 0.5*RefDensity*RefArea*RefVel2;
   CMz = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
 
   return CMz*factor*RefLengthCoeff;

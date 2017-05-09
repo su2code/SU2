@@ -104,9 +104,9 @@ private:
   unsigned short FFD_Blending; /*!< \brief Kind of FFD Blending function. */
   su2double* FFD_BSpline_Order; /*!< \brief BSpline order in i,j,k direction. */
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
-  su2double FFD_Scale;  	/*!< \brief Scale factor between the design variable value and the control point movement. */
-  su2double Opt_Scale;  	/*!< \brief Scale factor for the line search. */
-  su2double Opt_Bound;  	/*!< \brief Bounds for the line search. */
+  su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
+  su2double Opt_GradFactor;  	/*!< \brief Scale factor for the line search. */
+  su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
@@ -136,8 +136,8 @@ private:
   Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
   su2double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
   su2double WeightCd; /*!< \brief Weight of the drag coefficient. */
-  su2double dCD_dCL; /*!< \brief Weight of the drag coefficient. */
-  su2double dCD_dCM; /*!< \brief Weight of the drag coefficient. */
+  su2double dOF_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dOF_dCM; /*!< \brief Weight of the drag coefficient. */
   su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
   su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
   su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
@@ -280,7 +280,8 @@ private:
   su2double *EngineExhaust_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *EngineExhaust_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Engine_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Engine_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Engine_InMassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Engine_OutMassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Engine_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Engine_NetThrust;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Engine_GrossThrust;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -316,14 +317,15 @@ private:
   su2double *ActDiskOutlet_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDiskOutlet_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double **ActDisk_PressJump, **ActDisk_TempJump,  **ActDisk_Omega;
-  su2double *ActDisk_DeltaPress;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *ActDisk_DeltaTemp;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *ActDisk_StaticPressDelta;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *ActDisk_StaticTempDelta;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_TotalPressRatio;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_TotalTempRatio;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_StaticPressRatio;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_StaticTempRatio;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *ActDisk_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *ActDisk_InMassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *ActDisk_OutMassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Surface_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -478,7 +480,7 @@ private:
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
   unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-  su2double *Section_WingBounds;                  /*!< \brief Airfoil section limit. */
+  su2double *Stations_Bounds;                  /*!< \brief Airfoil section limit. */
   unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
@@ -490,6 +492,7 @@ private:
   Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -512,7 +515,7 @@ private:
   iH, AoS, AoA_Offset, AoS_Offset, AoA_Sens;		/*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
   bool Fixed_CM_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
-  bool Eval_dCD_dCX;			/*!< \brief Activate fixed CL mode (external flow only). */
+  bool Eval_dOF_dCX;			/*!< \brief Activate fixed CL mode (external flow only). */
   bool Discard_InFiles; /*!< \brief Discard angle of attack in solution and geometry files. */
   su2double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
   su2double Target_CM;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
@@ -523,6 +526,7 @@ private:
   unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_CM;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Iter_dCL_dAlpha;   /*!< \brief Number of iterations to evaluate dCL_dAlpha. */
   unsigned long Update_Alpha;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_iH;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_BCThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
@@ -543,7 +547,6 @@ private:
   Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
   bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
-  bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Update_Restart_Params,
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
@@ -587,15 +590,15 @@ private:
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
   su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
   unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
-  unsigned short Axis_Stations;	/*!< \brief Axis orientation. */
+  unsigned short Geo_Description;	/*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
-  su2double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
+  su2double RefArea,		/*!< \brief Reference area for coefficient computation. */
   RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
-  RefLengthMoment,			/*!< \brief Reference length for moment computation. */
+  RefLength,			/*!< \brief Reference length for moment computation. */
   *RefOriginMoment,           /*!< \brief Origin for moment computation. */
   *RefOriginMoment_X,      /*!< \brief X Origin for moment computation. */
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
@@ -1309,15 +1312,12 @@ public:
    *         and it will use and interpolation.
    */
   unsigned short GetAnalytical_Surface(void);
-  
+
   /*!
-   * \brief Get Information about if there is an analytical definition of the surface for doing the
-   *        grid adaptation.
-   * \return Definition of the surfaces. NONE implies that there isn't any analytical definition
-   *         and it will use and interpolation.
+   * \brief Get Description of the geometry to be analyzed
    */
-  unsigned short GetAxis_Stations(void);
-  
+  unsigned short GetGeo_Description(void);
+
   /*!
    * \brief Creates a tecplot file to visualize the partition made by the DDC software.
    * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
@@ -1358,7 +1358,7 @@ public:
    * \brief Get the value of the limits for the sections.
    * \return Value of the limits for the sections.
    */
-  su2double GetSection_WingBounds(unsigned short val_var);
+  su2double GetStations_Bounds(unsigned short val_var);
   
   /*!
    * \brief Get the value of the vector that connects the cartesian axis with a sherical or cylindrical one.
@@ -1693,7 +1693,7 @@ public:
    *        the z plane (3D) or the x plane (2D).
    * \return Value of the reference area for coefficient computation.
    */
-  su2double GetRefAreaCoeff(void);
+  su2double GetRefArea(void);
   
   /*!
    * \brief Get the wave speed.
@@ -1772,7 +1772,7 @@ public:
    * \brief Get the reference length for computing moment (the default value is 1).
    * \return Reference length for moment computation.
    */
-  su2double GetRefLengthMoment(void);
+  su2double GetRefLength(void);
   
   /*!
    * \brief Get the reference element length for computing the slope limiting epsilon.
@@ -1794,11 +1794,11 @@ public:
   su2double GetDomainVolume(void);
   
   /*!
-   * \brief In case the <i>RefAreaCoeff</i> is equal to 0 then, it is necessary to compute a reference area,
+   * \brief In case the <i>RefArea</i> is equal to 0 then, it is necessary to compute a reference area,
    *        with this function we set the value of the reference area.
    * \param[in] val_area - Value of the reference area for non dimensional coefficient computation.
    */
-  void SetRefAreaCoeff(su2double val_area);
+  void SetRefArea(su2double val_area);
   
   /*!
    * \brief Set the value of the domain volume computed on the finest grid.
@@ -2521,12 +2521,6 @@ public:
    * \return 	<code>TRUE</code> means that unsteady solution files will be written.
    */
   bool GetWrt_Unsteady(void);
-  
-  /*!
-   * \brief Get information about performing a low fidelity simulation.
-   * \return 	<code>TRUE</code> means that a low fidelity simulation will be performed.
-   */
-  bool GetLowFidelitySim(void);
   
   /*!
    * \brief Get information about writing a volume solution file.
@@ -3788,6 +3782,12 @@ public:
   unsigned short GetnWingStations(void);
   
   /*!
+   * \brief Get the location of the waterline.
+   * \return Z location of the waterline.
+   */
+  su2double GetGeo_Waterline_Location(void);
+
+  /*!
    * \brief Provides information about the the nodes that are going to be moved on a deformation
    *        volumetric grid deformation.
    * \return <code>TRUE</code> means that only the points on the FFD box will be moved.
@@ -4939,7 +4939,7 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  su2double GetdCD_dCM(void);
+  su2double GetdOF_dCM(void);
   
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -4951,13 +4951,13 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  su2double GetdCD_dCL(void);
-  
+  su2double GetdOF_dCL(void);
+
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  void SetdCD_dCL(su2double val_dcd_dcl);
+  void SetdOF_dCL(su2double val_dcd_dcl);
   
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -4975,7 +4975,7 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  void SetdCD_dCM(su2double val_dcd_dcm);
+  void SetdOF_dCM(su2double val_dcd_dcm);
   
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -5024,7 +5024,13 @@ public:
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_MassFlow(string val_marker);
+  su2double GetActDisk_InMassFlow(string val_marker);
+
+  /*!
+   * \brief Get the origin of the actuator disk.
+   */
+  su2double GetActDisk_OutMassFlow(string val_marker);
+
   /*!
    * \brief Get the origin of the actuator disk.
    */
@@ -5500,14 +5506,7 @@ public:
    * \param[in] val_fanface_massflow - Massflow.
    */
   void SetEngineInflow_MassFlow(unsigned short val_imarker, su2double val_fanface_massflow);
-  
-  /*!
-   * \brief Set the reverse flow at an engine inflow boundary.
-   * \param[in] val_index - Index corresponding to the engine inflow boundary.
-   * \param[in] val_fanface_reversemassflow - reverse flow.
-   */
-  void SetEngineInflow_ReverseMassFlow(unsigned short val_imarker, su2double val_fanface_reversemassflow);
-  
+
   /*!
    * \brief Set the fan face total pressure at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
@@ -5605,14 +5604,21 @@ public:
    * \param[in] val_exhaust_power - Exhaust power.
    */
   void SetEngineExhaust_Power(unsigned short val_imarker, su2double val_exhaust_power);
-  
+
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \param[in] val_engine_mach - Exhaust power.
    */
-  void SetEngine_Mach(unsigned short val_iengine, su2double val_engine_mach);
-  
+  void SetEngine_InMassFlow(unsigned short val_iengine, su2double val_engine_inmassflow);
+
+  /*!
+   * \brief Set the back pressure (static) at an outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
+   * \param[in] val_engine_mach - Exhaust power.
+   */
+  void SetEngine_OutMassFlow(unsigned short val_iengine, su2double val_engine_outmassflow);
+
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
@@ -5653,8 +5659,15 @@ public:
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
-  su2double GetEngine_Mach(unsigned short val_iengine);
-  
+  su2double GetEngine_InMassFlow(unsigned short val_iengine);
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetEngine_OutMassFlow(unsigned short val_iengine);
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
@@ -5822,14 +5835,14 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDisk_DeltaPress(unsigned short val_marker);
+  su2double GetActDisk_StaticPressDelta(unsigned short val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDisk_DeltaTemp(unsigned short val_marker);
+  su2double GetActDisk_StaticTempDelta(unsigned short val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -5941,7 +5954,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_DeltaPress(unsigned short val_imarker, su2double val_actdisk_deltapress);
+  void SetActDisk_StaticPressDelta(unsigned short val_imarker, su2double val_actdisk_deltapress);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -5955,8 +5968,15 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_MassFlow(unsigned short val_imarker, su2double val_actdisk_massflow);
+  void SetActDisk_InMassFlow(unsigned short val_imarker, su2double val_actdisk_inmassflow);
   
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetActDisk_OutMassFlow(unsigned short val_imarker, su2double val_actdisk_outmassflow);
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -6011,7 +6031,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_DeltaTemp(unsigned short val_imarker, su2double val_actdisk_deltatemp);
+  void SetActDisk_StaticTempDelta(unsigned short val_imarker, su2double val_actdisk_deltatemp);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -6130,8 +6150,16 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDisk_MassFlow(unsigned short val_imarker);
+  su2double GetActDisk_InMassFlow(unsigned short val_imarker);
+
   
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetActDisk_OutMassFlow(unsigned short val_imarker);
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -6522,28 +6550,34 @@ public:
   su2double GetFFD_Tol(void);
   
   /*!
-   * \brief Get the scale factor between the input design variable and the final movement of the control point.
-   * \return Scale factor between the input design variable and the final movement of the control point.
+   * \brief Get the scale factor for the line search.
+   * \return Scale factor for the line search.
    */
-  su2double GetFFD_Scale(void);
+  su2double GetOpt_RelaxFactor(void);
   
   /*!
    * \brief Get the scale factor for the line search.
    * \return Scale factor for the line search.
    */
-  su2double GetOpt_Scale(void);
+  su2double GetOpt_GradFactor(void);
 
   /*!
    * \brief Get the bound for the line search.
    * \return Bound for the line search.
    */
-  su2double GetOpt_Bound(void);
+  su2double GetOpt_LineSearch_Bound(void);
 
   /*!
    * \brief Set the scale factor for the line search.
    * \return Scale factor for the line search.
    */
-  void SetOpt_Scale(su2double val_scale);
+  void SetOpt_RelaxFactor(su2double val_scale);
+
+  /*!
+   * \brief Set the scale factor for the line search.
+   * \return Scale factor for the line search.
+   */
+  void SetOpt_GradFactor(su2double val_scale);
 
   /*!
    * \brief Get the node number of the CV to visualize.
@@ -6567,7 +6601,7 @@ public:
    * \brief Get information about whether to use fixed CL mode.
    * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
    */
-  bool GetEval_dCD_dCX(void);
+  bool GetEval_dOF_dCX(void);
   
   /*!
    * \brief Get information about whether to use fixed CL mode.
@@ -6593,6 +6627,12 @@ public:
    */
   unsigned long GetUpdate_Alpha(void);
   
+  /*!
+   * \brief Number of iterations to evaluate dCL_dAlpha.
+   * \return Number of iterations.
+   */
+  unsigned long GetIter_dCL_dAlpha(void);
+
   /*!
    * \brief Get the value of the damping coefficient for fixed CL mode.
    * \return Damping coefficient for fixed CL mode.

@@ -1043,7 +1043,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
         Coords[iDim][iGlobal_Index] = geometry->node[iPoint]->GetCoord(iDim);
         
         /*--- If US system, the output should be in inches ---*/
-        
+
         if ((config->GetSystemMeasurements() == US) && (config->GetKind_SU2() != SU2_DEF)) {
           Coords[iDim][iGlobal_Index] *= 12.0;
         }
@@ -2038,7 +2038,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
-  su2double RefAreaCoeff = config->GetRefAreaCoeff();
+  su2double RefArea = config->GetRefArea();
   su2double Gamma = config->GetGamma();
   su2double RefVel2, *Normal, Area;
   
@@ -2057,7 +2057,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
     RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
-    factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
+    factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
   }
   
   /*--- Prepare send buffers for the conservative variables. Need to
@@ -2507,7 +2507,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           } else{
             Buffer_Send_Res[jPoint] =  0.0;
           }
-          Buffer_Send_Vol[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
+          Buffer_Send_Vol[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea;
 
           jPoint++;
         }
@@ -3876,7 +3876,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
   restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
   restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-  restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+  restart_file <<"DOF_DCL_VALUE= " << config->GetdOF_dCL() << endl;
   if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
 
   /*--- Close the data portion of the restart file. ---*/
@@ -4020,7 +4020,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char sec_coeff[] = ",\"Diff_Elliptic\",\"Max_SecCLift\"";
   char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
-  char engine_coeff[]= ",\"AeroCDrag\",\"Radial_Distortion\",\"Radial_Distortion(average)\",\"Circumferential_Distortion\",\"Circumferential_Distortion(average)\"";
+  char engine_coeff[]= ",\"AeroCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   char wave_coeff[]= ",\"CWave\"";
   char fem_coeff[]= ",\"VM_Stress\"";
@@ -4266,7 +4266,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0;
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0,
-    Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_RadialDistortion = 0.0, Total_CircumferentialDistortion = 0.0,
+    Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
     Total_EllipticDiff = 0.0, Total_MaxSecCL = 0.0, Total_AoA = 0.0;
 
     /*--- Initialize variables to store information from all zone for turboperformance (direct solution) ---*/
@@ -4296,7 +4296,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
     su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0,
-        D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_AeroCD = 0.0, D_Total_RadialDistortion = 0.0, D_Total_CircumferentialDistortion = 0.0;
+        D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_AeroCD = 0.0, D_Total_IDR = 0.0, D_Total_IDC = 0.0;
     
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
@@ -4439,8 +4439,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           if (engine || actuator_disk) {
             D_Total_AeroCD  = SU2_TYPE::GetDerivative(Total_AeroCD);
-            D_Total_RadialDistortion    = SU2_TYPE::GetDerivative(Total_RadialDistortion);
-            D_Total_CircumferentialDistortion    = SU2_TYPE::GetDerivative(Total_CircumferentialDistortion);
+            D_Total_IDR    = SU2_TYPE::GetDerivative(Total_IDR);
+            D_Total_IDC    = SU2_TYPE::GetDerivative(Total_IDC);
           }
           
         }
@@ -4461,14 +4461,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (engine || actuator_disk) {
           Total_AeroCD  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AeroCD();
-
-          Total_RadialDistortion          = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_RadialDistortion();
-          Total_CircumferentialDistortion = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CircumferentialDistortion();
+          Total_IDR     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDR();
+          Total_IDC     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDC();
 
           /*--- Average IDC and IDR computation (last 100 elements) ---*/
 
-          Serie_Total_IDR[iCounter_Total_IDR] = Total_RadialDistortion;
-          Serie_Total_IDC[iCounter_Total_IDC] = Total_CircumferentialDistortion;
+          Serie_Total_IDR[iCounter_Total_IDR] = Total_IDR;
+          Serie_Total_IDC[iCounter_Total_IDC] = Total_IDC;
           iCounter_Total_IDR++; if (iCounter_Total_IDR == nCounter_Total_IDR) iCounter_Total_IDR = 0;
           iCounter_Total_IDC++; if (iCounter_Total_IDC == nCounter_Total_IDC) iCounter_Total_IDC = 0;
 
@@ -4478,7 +4477,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           		Ave_Total_IDR += Serie_Total_IDR[iCounter];
           	Ave_Total_IDR /= su2double(nCounter_Total_IDR);
           }
-          else { Ave_Total_IDR = Total_RadialDistortion; }
+          else { Ave_Total_IDR = Total_IDR; }
 
           if (iExtIter  >= nCounter_Total_IDC) {
           	Ave_Total_IDC = 0.0;
@@ -4486,7 +4485,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           		Ave_Total_IDC += Serie_Total_IDC[iCounter];
           	Ave_Total_IDC /= su2double(nCounter_Total_IDC);
           }
-          else { Ave_Total_IDC = Total_CircumferentialDistortion; }
+          else { Ave_Total_IDC = Total_IDC; }
 
 
         }
@@ -4759,8 +4758,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                      Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff, Total_AoA);
             if (engine || actuator_disk)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx,
-                  Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_AeroCD, Total_RadialDistortion, Ave_Total_IDR, Total_CircumferentialDistortion, Ave_Total_IDC);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx,
+                  Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_AeroCD, Total_IDR, Total_IDC);
             if (equiv_area)
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_CEquivArea, Total_CNearFieldOF);
             if (rotating_frame)
@@ -4778,9 +4777,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Heat, Total_MaxHeat);
               if (engine || actuator_disk)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
-                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Heat, Total_MaxHeat, Total_AeroCD, Total_RadialDistortion, Ave_Total_IDR, Total_CircumferentialDistortion,
-                        Ave_Total_IDC);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
+                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Heat, Total_MaxHeat, Total_AeroCD, Total_IDR, Total_IDC);
               if (equiv_area)
                 SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Heat, Total_MaxHeat, Total_CEquivArea, Total_CNearFieldOF);
               if (rotating_frame)
@@ -4802,7 +4800,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (engine || actuator_disk)
               SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                        D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
-                       D_Total_CFz, D_Total_CEff, D_Total_AeroCD, D_Total_RadialDistortion, D_Total_CircumferentialDistortion);
+                       D_Total_CFz, D_Total_CEff, D_Total_AeroCD, D_Total_IDR, D_Total_IDC);
             }
             
             if (aeroelastic) {
@@ -5195,10 +5193,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 default:
                   break;
               }
-            else cout << "     Res[Rho]" << "     Res[RhoE]" << "      CL(Total)" << "      CD(Total)" << endl;
-            //            }
-            //            else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
             
+
+            else if (actuator_disk) cout << "     Res[Rho]" << "     Res[RhoE]" << "      CL(Total)" << "   CD-CT(Total)" << endl;
+            else if (engine) cout << "     Res[Rho]" << "     Res[RhoE]" << "      CL(Total)" << "   CD-CT(Total)" << endl;
+            else cout << "     Res[Rho]" << "     Res[RhoE]" << "      CL(Total)" << "      CD(Total)" << endl;
+
             break;
             
           case RANS :
@@ -5806,7 +5806,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
   bool grid_movement      = config[val_iZone]->GetGrid_Movement();
   bool gravity            = config[val_iZone]->GetGravityForce();
   bool turbulent          = config[val_iZone]->GetKind_Solver() == RANS;
-  
+	unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
+	unsigned short Kind_Regime = config[val_iZone]->GetKind_Regime();
+	unsigned short Kind_Turb_Model = config[val_iZone]->GetKind_Turb_Model();
+	unsigned short Ref_NonDim = config[val_iZone]->GetRef_NonDim();
+
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -6168,9 +6172,55 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
     
     Breakdown_file.precision(6);
-    
+	  Breakdown_file << fixed;
+
+		Breakdown_file << "\n" << "\n" << "Problem definition:" << "\n" << "\n";
+
+    switch (Kind_Solver) {
+      case EULER:
+        if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible Euler equations." << "\n";
+        if (Kind_Regime == INCOMPRESSIBLE) Breakdown_file << "Incompressible Euler equations." << "\n";
+        break;
+      case NAVIER_STOKES:
+        if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible Laminar Navier-Stokes' equations." << "\n";
+        if (Kind_Regime == INCOMPRESSIBLE) Breakdown_file << "Incompressible Laminar Navier-Stokes' equations." << "\n";
+        break;
+      case RANS:
+        if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible RANS equations." << "\n";
+        if (Kind_Regime == INCOMPRESSIBLE) Breakdown_file << "Incompressible RANS equations." << "\n";
+        Breakdown_file << "Turbulence model: ";
+        switch (Kind_Turb_Model) {
+          case SA:        Breakdown_file << "Spalart Allmaras" << "\n"; break;
+          case SA_NEG:    Breakdown_file << "Negative Spalart Allmaras" << "\n"; break;
+          case SST:       Breakdown_file << "Menter's SST"     << "\n"; break;
+        }
+        break;
+    }
+
+    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY) &&
+        (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    	Breakdown_file << "Mach number: " << config[val_iZone]->GetMach() <<"."<< "\n";
+    	Breakdown_file << "Angle of attack (AoA): " << config[val_iZone]->GetAoA() <<" deg, and angle of sideslip (AoS): " << config[val_iZone]->GetAoS() <<" deg."<< "\n";
+      if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
+          (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS))
+      	Breakdown_file << "Reynolds number: " << config[val_iZone]->GetReynolds() <<"."<< "\n";
+    }
+
+    if (Ref_NonDim == DIMENSIONAL) { Breakdown_file << "Dimensional simulation." << "\n"; }
+    else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
+    else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { Breakdown_file << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
+    else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
+
+    if (config[val_iZone]->GetSystemMeasurements() == SI) {
+    Breakdown_file << "The reference area is " << config[val_iZone]->GetRefArea() << " m^2." << "\n";
+    Breakdown_file << "The reference length is " << config[val_iZone]->GetRefLength() << " m." << "\n";
+    }
+
+    if (config[val_iZone]->GetSystemMeasurements() == US) {
+    Breakdown_file << "The reference area is " << config[val_iZone]->GetRefArea()*12.0*12.0 << " in^2." << "\n";
+    Breakdown_file << "The reference length is " << config[val_iZone]->GetRefLength()*12.0 << " in." << "\n";
+    }
     Breakdown_file << "\n" << "\n" <<"Problem definition:" << "\n" << "\n";
-    
     if (compressible) {
       if (viscous) {
         Breakdown_file << "Viscous flow: Computing pressure using the ideal gas law" << "\n";
@@ -6459,9 +6509,9 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "\n" << "\n" <<"Forces breakdown:" << "\n" << "\n";
 
     su2double RefDensity  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-    su2double RefAreaCoeff     = config[val_iZone]->GetRefAreaCoeff();
+    su2double RefArea     = config[val_iZone]->GetRefArea();
     su2double RefVel = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetModVelocity_Inf();
-    su2double Factor = (0.5*RefDensity*RefAreaCoeff*RefVel*RefVel);
+    su2double Factor = (0.5*RefDensity*RefArea*RefVel*RefVel);
     su2double Ref = config[val_iZone]->GetDensity_Ref() * config[val_iZone]->GetVelocity_Ref() * config[val_iZone]->GetVelocity_Ref() * 1.0 * 1.0;
 
     Breakdown_file << "NOTE: Multiply forces by the non-dimensional factor: " << Factor << ", and the reference factor: " << Ref  << "\n";
@@ -7796,9 +7846,9 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
 	su2double *Plane_P0, *Plane_Normal, *CPressure,
 			Force[3], ForceInviscid[3], MomentInviscid[3] =
 					{ 0.0, 0.0, 0.0 }, MomentDist[3] = { 0.0, 0.0, 0.0 }, RefDensity,
-			RefPressure, RefAreaCoeff, *Velocity_Inf, Gas_Constant, Mach2Vel,
+			RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
 			Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin,
-			RefLengthMoment, Alpha, Beta, CD_Inv, CL_Inv, CMy_Inv, Xcoord_LeadingEdge = 0.0,
+			RefLength, Alpha, Beta, CD_Inv, CL_Inv, CMy_Inv, Xcoord_LeadingEdge = 0.0,
 			Ycoord_LeadingEdge = 0.0, Zcoord_LeadingEdge = 0.0,
 			TrailingEdge, MaxDistance, Distance, Chord, Aux;
 
@@ -7820,11 +7870,11 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
 
 	RefDensity = solver_container->GetDensity_Inf();
 	RefPressure = solver_container->GetPressure_Inf();
-	RefAreaCoeff = config->GetRefAreaCoeff();
+	RefArea = config->GetRefArea();
 	Velocity_Inf = solver_container->GetVelocity_Inf();
 	Gamma = config->GetGamma();
 	Origin = config->GetRefOriginMoment(0);
-	RefLengthMoment = config->GetRefLengthMoment();
+	RefLength = config->GetRefLength();
 	Alpha = config->GetAoA() * PI_NUMBER / 180.0;
 	Beta = config->GetAoS() * PI_NUMBER / 180.0;
 
@@ -7839,7 +7889,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
 		for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
 			RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
 	}
-	factor = 1.0 / (0.5 * RefDensity * RefAreaCoeff * RefVel2);
+	factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
 
 	int rank = MASTER_NODE;
 
@@ -7853,7 +7903,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
 
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 				CPressure[iPoint] = (solver_container->node[iPoint]->GetPressure()
-						- RefPressure) * factor * RefAreaCoeff;
+						- RefPressure) * factor * RefArea;
 		}
 
 		nSection = config->GetnLocationStations();
@@ -7866,9 +7916,15 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
 			Plane_Normal[1] = 0.0; Plane_P0[1] = 0.0;
 			Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
 
-				Plane_Normal[config->GetAxis_Stations()] = 1.0;
-				Plane_P0[config->GetAxis_Stations()] = config->GetLocationStations(iSection);
+		   if (config->GetGeo_Description() == FUSELAGE) {
+		      Plane_Normal[0] = 1.0;
+		      Plane_P0[0] = config->GetLocationStations(iSection);
+		   }
 
+		   if (config->GetGeo_Description() == WING) {
+		     Plane_Normal[1] = 1.0;
+		     Plane_P0[1] = config->GetLocationStations(iSection);
+		   }
 
 			/*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
 
@@ -7877,8 +7933,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
 					CPressure_Airfoil, true, config);
 
 			if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
-				cout << "Please check the config file, the section " << Plane_P0[config->GetAxis_Stations()]
-						<< " has not been detected." << endl;
+				cout << "Please check the config file, the section (" << Plane_P0[0] <<", " << Plane_P0[1] <<", " << Plane_P0[2] << ") has not been detected." << endl;
 			}
 
 			/*--- Output the pressure on each section (tecplot format) ---*/
@@ -7909,11 +7964,22 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
 				} else
 					Cp_File.open("cp_sections.dat", ios::app);
 
-				if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[config->GetAxis_Stations()] << " m\", I= "
-						<< Xcoord_Airfoil.size() << ", F=POINT" << "\n";;
 
-				if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[config->GetAxis_Stations()]*12.0 << " in\", I= "
-						<< Xcoord_Airfoil.size() << ", F=POINT" << "\n";;
+				if (config->GetGeo_Description() == FUSELAGE) {
+					if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[0] << " m\", I= "
+							<< Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+
+					if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[0]*12.0 << " in\", I= "
+							<< Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+				}
+
+				if (config->GetGeo_Description() == WING) {
+					if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
+							<< Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+
+					if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[1]*12.0 << " in\", I= "
+							<< Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+				}
 
         /*--- Coordinates and pressure value ---*/
 
@@ -7994,7 +8060,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
 					MomentDist[1] = 0.5 * (Ycoord_Airfoil[iVertex] + Ycoord_Airfoil[iVertex + 1]) - Origin[1];
 					MomentDist[2] = 0.5 	* (Zcoord_Airfoil[iVertex] + Zcoord_Airfoil[iVertex + 1]) - Origin[3];
 
-					MomentInviscid[1] += (Force[0] * MomentDist[2] - Force[2] * MomentDist[0]) / RefLengthMoment;
+					MomentInviscid[1] += (Force[0] * MomentDist[2] - Force[2] * MomentDist[0]) / RefLength;
 
 				}
 
@@ -8020,13 +8086,13 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
 
 				/*--- Compute sectional lift at the root ---*/
 
-				B                 = 2.0*config->GetSemiSpan();
-			  RefAreaCoeff      = config->GetRefAreaCoeff();
-				C_L               = solver_container->GetTotal_CL();
-				C_L0              = 8.0*C_L*RefAreaCoeff/(B*PI_NUMBER);
-				Y                 = Ycoord_Airfoil[0];
-				Aux               = Y/(0.5*B);
-				Elliptic_Spanload  = (C_L0 / RefLengthMoment) * sqrt(fabs(1.0-Aux*Aux));
+				B                  = 2.0*config->GetSemiSpan();
+			  RefArea            = config->GetRefArea();
+				C_L                = solver_container->GetTotal_CL();
+				C_L0               = 8.0*C_L*RefArea/(B*PI_NUMBER);
+				Y                  = Ycoord_Airfoil[0];
+				Aux                = Y/(0.5*B);
+				Elliptic_Spanload  = (C_L0 / RefLength) * sqrt(fabs(1.0-Aux*Aux));
         
 
 				/*--- Write load distribution ---*/
@@ -8053,9 +8119,9 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
         /*--- CL and spanload ---*/
 
         if (config->GetOutput_FileFormat() == PARAVIEW)
-          Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLengthMoment <<", " << Elliptic_Spanload   << endl;
+          Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLength <<", " << Elliptic_Spanload   << endl;
         else
-          Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << " " << CL_Inv  << " " << Chord*CL_Inv / RefLengthMoment <<" " << Elliptic_Spanload   << endl;
+          Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << " " << CL_Inv  << " " << Chord*CL_Inv / RefLength <<" " << Elliptic_Spanload   << endl;
 
 				Load_File.close();
 
@@ -10452,7 +10518,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE, iMarker, iVertex;
   unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
   
-  su2double RefAreaCoeff = config->GetRefAreaCoeff();
+  su2double RefArea = config->GetRefArea();
   su2double Gamma = config->GetGamma();
   su2double RefVel2;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
@@ -10483,7 +10549,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   }
   RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
   RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
-  factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
+  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
   
   /*--- Use a switch statement to decide how many solver containers we have
    in this zone for output. ---*/
@@ -10781,6 +10847,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        if (config->GetSystemMeasurements() == US)
+        	Local_Data[jPoint][iVar] *= 12.0;
         iVar++;
       }
       
@@ -10851,13 +10919,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (compressible) {
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); iVar++;
-          Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; iVar++;
+          Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
           Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
           solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
         }
         if (incompressible) {
           Local_Data[jPoint][iVar] = 0.0; iVar++;
-          Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; iVar++;
+          Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
           Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
           sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity()*config->GetDensity_Ref())); iVar++;
         }
@@ -11197,6 +11265,8 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        if (config->GetSystemMeasurements() == US)
+        	Local_Data[jPoint][iVar] *= 12.0;
         iVar++;
       }
       
@@ -11509,6 +11579,8 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
       
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        if (config->GetSystemMeasurements() == US)
+        	Local_Data[jPoint][iVar] *= 12.0;
         iVar++;
       }
       
@@ -11739,6 +11811,8 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
       
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        if (config->GetSystemMeasurements() == US)
+        	Local_Data[jPoint][iVar] *= 12.0;
         iVar++;
       }
       
@@ -14959,7 +15033,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
     restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
     restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-    restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+    restart_file <<"DOF_DCL_VALUE= " << config->GetdOF_dCL() << endl;
     if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
   }
 
@@ -15119,9 +15193,10 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     SU2_TYPE::GetValue(config->GetAoA() - config->GetAoA_Offset()),
     SU2_TYPE::GetValue(config->GetAoS() - config->GetAoS_Offset()),
     SU2_TYPE::GetValue(config->GetInitial_BCThrust()),
-    SU2_TYPE::GetValue(config->GetdCD_dCL()),
+    SU2_TYPE::GetValue(config->GetdOF_dCL()),
     0.0
   };
+
   if (adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
 
 #ifndef HAVE_MPI

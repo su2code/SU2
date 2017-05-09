@@ -1066,8 +1066,15 @@ void COutput::SetCSV_MeshASCII(CConfig *config, CGeometry *geometry) {
 				Plane_Normal[1] = 0.0; Plane_P0[1] = 0.0;
 				Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
 
-				Plane_Normal[config->GetAxis_Stations()] = 1.0;
-				Plane_P0[config->GetAxis_Stations()] = config->GetLocationStations(iStation);
+				if (config->GetGeo_Description() == FUSELAGE) {
+					Plane_Normal[0] = 1.0;
+					Plane_P0[0] = config->GetLocationStations(iStation);
+				}
+
+				if (config->GetGeo_Description() == WING) {
+					Plane_Normal[1] = 1.0;
+					Plane_P0[1] = config->GetLocationStations(iStation);
+				}
 
 				/*--- Compute the airfoil Stations (note that we feed in the Cp) ---*/
 
@@ -1076,8 +1083,7 @@ void COutput::SetCSV_MeshASCII(CConfig *config, CGeometry *geometry) {
 						Variable_Airfoil, true, config);
 
 				if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
-					cout << "Please check the config file, the station " << Plane_P0[config->GetAxis_Stations()]
-					                                                                 << " has not been detected." << endl;
+					cout << "Please check the config file, the station (" << Plane_P0[0] << ", " << Plane_P0[1] << ", " << Plane_P0[2] << ") has not been detected." << endl;
 				}
 
 				/*--- Write Cp at each Station (csv format) ---*/

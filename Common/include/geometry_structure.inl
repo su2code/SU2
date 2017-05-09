@@ -203,13 +203,25 @@ inline su2double CGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_
   
 inline su2double CGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
+inline su2double CGeometry::Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+
+inline su2double CGeometry::Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+
+inline su2double CGeometry::Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+
 inline su2double CGeometry::Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
 inline su2double CGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
 inline su2double CGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
-inline void CGeometry::Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
+inline su2double CGeometry::Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+
+inline void CGeometry::Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
+                                               unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
+                                               vector<su2double> &Zcoord_Airfoil) { }
+
+inline void CGeometry::Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
                                                unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
                                                vector<su2double> &Zcoord_Airfoil) { }
 
@@ -225,6 +237,14 @@ inline void CGeometry::Compute_Wing(CConfig *config, bool original_surface,
                                     su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
                                     su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                                     su2double &Wing_MaxDihedral) { }
+
+
+inline void CGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
+  		                                su2double &Fuselage_Volume, su2double &Fuselage_WettedArea, 
+  		                                su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+  		                                su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+  		                                su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+  		                                su2double &Fuselage_MaxCurvature) { }
 
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 

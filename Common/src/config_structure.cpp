@@ -344,7 +344,7 @@ void CConfig::SetPointersNull(void) {
   EngineExhaust_Power           = NULL;   EngineExhaust_Temperature_Target = NULL;    EngineExhaust_EngineID = NULL;
   EngineExhaust_Pressure_Target = NULL;
   
-  Engine_Mach  = NULL;    Engine_Force        = NULL;
+  Engine_Force        = NULL;     Engine_InMassFlow        = NULL;   Engine_OutMassFlow        = NULL;
   Engine_Power = NULL;    Engine_NetThrust    = NULL;     Engine_GrossThrust = NULL;
   Engine_Area  = NULL;    EngineInflow_MassFlow_Target = NULL;  EngineInflow_EngineID = NULL;
   
@@ -376,10 +376,11 @@ void CConfig::SetPointersNull(void) {
   ActDiskOutlet_Power         = NULL;   ActDiskOutlet_Temperature = NULL;  ActDiskOutlet_TotalTemperature = NULL;
   ActDiskOutlet_MassFlow      = NULL;
   
-  ActDisk_DeltaPress      = NULL;    ActDisk_DeltaTemp      = NULL;
+  ActDisk_StaticPressDelta      = NULL;    ActDisk_StaticTempDelta      = NULL;
   ActDisk_TotalPressRatio = NULL;    ActDisk_TotalTempRatio = NULL;    ActDisk_StaticPressRatio = NULL;
   ActDisk_StaticTempRatio = NULL;    ActDisk_NetThrust      = NULL;    ActDisk_GrossThrust      = NULL;
-  ActDisk_Power           = NULL;    ActDisk_MassFlow       = NULL;    ActDisk_Area             = NULL;
+  ActDisk_Power           = NULL;    ActDisk_InMassFlow       = NULL;  ActDisk_OutMassFlow       = NULL;
+  ActDisk_Area             = NULL;
   ActDisk_ReverseMassFlow = NULL;    ActDisk_Mach             = NULL;
   ActDisk_Force           = NULL;    ActDisk_BCThrust       = NULL;    ActDisk_BCThrust_Old     = NULL;
   
@@ -403,7 +404,7 @@ void CConfig::SetPointersNull(void) {
   PlaneTag            = NULL;
   Kappa_Flow	      = NULL;    
   Kappa_AdjFlow       = NULL;
-  Section_WingBounds    = NULL;
+  Stations_Bounds    = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
   Design_Variable     = NULL;
@@ -559,8 +560,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_body_force[0] = 0.0; default_body_force[1] = 0.0; default_body_force[2] = 0.0;
   /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
   addDoubleArrayOption("BODY_FORCE_VECTOR", 3, Body_Force_Vector, default_body_force);
-  /* DESCRIPTION: Perform a low fidelity simulation */
-  addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief UPDATE_RESTART_PARAMS \n DESCRIPTION: Update some parameters from a metadata file when restarting \n Options: NO, YES \ingroup Config */
@@ -679,8 +678,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
   /* DESCRIPTION: Activate fixed CM mode (specify a CM instead of iH). */
   addBoolOption("FIXED_CM_MODE", Fixed_CM_Mode, false);
-  /* DESCRIPTION: Evaluate the dCD_dCL or dCD_dCMy during run time. */
-  addBoolOption("EVAL_DCD_DCX", Eval_dCD_dCX, true);
+  /* DESCRIPTION: Evaluate the dOF_dCL or dOF_dCMy during run time. */
+  addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, true);
   /* DESCRIPTION: DIscard the angle of attack in the solution and the increment in the geometry files. */
   addBoolOption("DISCARD_INFILES", Discard_InFiles, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
@@ -695,6 +694,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedLongOption("UPDATE_ALPHA", Update_Alpha, 5);
   /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
   addUnsignedLongOption("UPDATE_IH", Update_iH, 5);
+  /* DESCRIPTION: Number of iterations to evaluate dCL_dAlpha . */
+  addUnsignedLongOption("ITER_DCL_DALPHA", Iter_dCL_dAlpha, 2500);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
   addDoubleOption("DNETTHRUST_DBCTHRUST", dNetThrust_dBCThrust, 2.0);
   /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
@@ -713,11 +714,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief REF_ORIGIN_MOMENT_Z\n DESCRIPTION: Z Reference origin for moment computation \ingroup Config*/
   addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
   /*!\brief REF_AREA\n DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) \ingroup Config*/
-  addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
+  addDoubleOption("REF_AREA", RefArea, 1.0);
   /*!\brief SEMI_SPAN\n DESCRIPTION: Wing semi-span (1 by deafult) \ingroup Config*/
   addDoubleOption("SEMI_SPAN", SemiSpan, 1.0);
-  /*!\brief REF_LENGTH_MOMENT\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
-  addDoubleOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
+  /*!\brief REF_LENGTH\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
+  addDoubleOption("REF_LENGTH", RefLength, 1.0);
   /*!\brief REF_ELEM_LENGTH\n DESCRIPTION: Reference element length for computing the slope limiter epsilon \ingroup Config*/
   addDoubleOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
   /*!\brief REF_SHARP_EDGES\n DESCRIPTION: Reference coefficient for detecting sharp edges \ingroup Config*/
@@ -1004,7 +1005,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n DEFAULT: RESIDUAL \ingroup Config*/
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
   /*!\brief RESIDUAL_REDUCTION \n DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value)\n DEFAULT: 3.0 \ingroup Config*/
-  addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
+  addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 5.0);
   /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -8.0 \ingroup Config*/
   addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
@@ -1135,9 +1136,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */
-  addDoubleOption("DCD_DCL_VALUE", dCD_dCL, 0.0);
+  addDoubleOption("DOF_DCL_VALUE", dOF_dCL, 0.0);
   /* DESCRIPTION: parameter for the definition of a complex objective function */
-  addDoubleOption("DCD_DCM_VALUE", dCD_dCM, 0.0);
+  addDoubleOption("DOF_DCM_VALUE", dOF_dCM, 0.0);
 
   default_obj_coeff[0]=0.0; default_obj_coeff[1]=0.0; default_obj_coeff[2]=0.0;
   default_obj_coeff[3]=0.0;  default_obj_coeff[4]=0.0;
@@ -1149,11 +1150,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   default_geo_loc[0] = 0.0; default_geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
-  addDoubleArrayOption("GEO_WING_BOUNDS", 2, Section_WingBounds, default_geo_loc);
-  /* DESCRIPTION: Identify the axis of the section */
-  addEnumOption("GEO_AXIS_STATIONS", Axis_Stations, Axis_Stations_Map, Y_AXIS);
+  addDoubleArrayOption("GEO_BOUNDS", 2, Stations_Bounds, default_geo_loc);
+  /* DESCRIPTION: Identify the body to slice */
+  addEnumOption("GEO_DESCRIPTION", Geo_Description, Geo_Description_Map, WING);
+  /* DESCRIPTION: Z location of the waterline */
+  addDoubleOption("GEO_WATERLINE_LOCATION", Geo_Waterline_Location, 0.0);
   /* DESCRIPTION: Number of section cuts to make when calculating internal volume */
-  addUnsignedShortOption("GEO_WING_STATIONS", nWingStations, 101);
+  addUnsignedShortOption("GEO_NUMBER_STATIONS", nWingStations, 101);
   /* DESCRIPTION: Definition of the airfoil sections */
   addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
   /* DESCRIPTION: Output sectional forces for specified markers. */
@@ -1396,10 +1399,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONFIG_CATEGORY: Optimization Problem*/
   
   /* DESCRIPTION: Scale the line search in the optimizer */
-  addDoubleOption("OPT_SCALE", Opt_Scale, 1.0);
+  addDoubleOption("OPT_RELAX_FACTOR", Opt_RelaxFactor, 1.0);
+
+  /* DESCRIPTION: Scale the line search in the optimizer */
+  addDoubleOption("OPT_GRADIENT_FACTOR", Opt_GradFactor, 1.0);
 
   /* DESCRIPTION: Bound the line search in the optimizer */
-  addDoubleOption("OPT_BOUND", Opt_Bound, 1E6);
+  addDoubleOption("OPT_LINE_SEARCH_BOUND", Opt_LineSearch_Bound, 1E6);
 
   /*!\par CONFIG_CATEGORY: Wind Gust \ingroup Config*/
   /*--- Options related to wind gust simulations ---*/
@@ -1693,9 +1699,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Free surface damping coefficient */
 	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
-  
-  /* DESCRIPTION: Free surface damping coefficient */
-  addDoubleOption("FFD_SCALE", FFD_Scale, 1.0);
 
   /* DESCRIPTION: Definition of the FFD boxes */
   addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);
@@ -1997,6 +2000,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	 Kind_GridMovement[0] = MOVING_HTP;
   }
 
+  /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
+
+  if (val_nDim == 2) Geo_Description = TWOD_AIRFOIL;
+
   /*--- Store the SU2 module that we are executing. ---*/
   
   Kind_SU2 = val_software;
@@ -2231,8 +2238,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- The Line Search should be applied only in the deformation stage. ---*/
 
-  if (Kind_SU2 != SU2_DEF)
-  	Opt_Scale = 1.0;
+  if (Kind_SU2 != SU2_DEF) {
+  	Opt_RelaxFactor = 1.0;
+  	Opt_GradFactor = 1.0;
+  }
 
   /*--- If it is not specified, set the mesh motion mach number
    equal to the freestream value. ---*/
@@ -2922,11 +2931,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Evaluate when the Cl should be evaluated ---*/
   
-  Iter_Fixed_CL        = SU2_TYPE::Int(nExtIter / (su2double(Update_Alpha)+5.0));
-  Iter_Fixed_CM        = SU2_TYPE::Int(nExtIter / (su2double(Update_iH)+5.0));
-  Iter_Fixed_NetThrust = SU2_TYPE::Int(nExtIter / (su2double(Update_BCThrust)+5.0));
+  Iter_Fixed_CL        = SU2_TYPE::Int(nExtIter / (su2double(Update_Alpha)+1));
+  Iter_Fixed_CM        = SU2_TYPE::Int(nExtIter / (su2double(Update_iH)+1));
+  Iter_Fixed_NetThrust = SU2_TYPE::Int(nExtIter / (su2double(Update_BCThrust)+1));
 
-  if (ContinuousAdjoint) {
+  if (ContinuousAdjoint || DiscreteAdjoint) {
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[2] *= CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[3] *= CFLRedCoeff_AdjFlow;
@@ -2935,6 +2944,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
   
+  if (DiscreteAdjoint) {
+	  Kind_ConvNumScheme_Flow = Kind_ConvNumScheme_AdjFlow;
+	  Kind_Centered_Flow = Kind_Centered_AdjFlow;
+	  Kind_Upwind_Flow = Kind_Upwind_AdjFlow;
+	  Kappa_Flow[0] = Kappa_AdjFlow[0];
+	  Kappa_Flow[1] = Kappa_AdjFlow[1];
+	  Kappa_Flow[2] = Kappa_AdjFlow[2];
+  }
+
   if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nExtIter+1; Update_Alpha = 0; }
   if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nExtIter+1; Update_iH = 0; }
   if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nExtIter+1; Update_BCThrust = 0; }
@@ -2948,8 +2966,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (nIntCoeffs == 0) {
-	nIntCoeffs = 2;
-	Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
+  	nIntCoeffs = 2;
+  	Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
   }
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
@@ -2966,8 +2984,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
 
-  Section_WingBounds[0] += EPS;
-  Section_WingBounds[1] += EPS;
+  Stations_Bounds[0] += EPS;
+  Stations_Bounds[1] += EPS;
 
   for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
     LocationStations[iSections] += EPS;
@@ -2990,9 +3008,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
     }
     
-    RefLengthMoment = RefLengthMoment/12.0;
-    if ((val_nDim == 2) && (!Axisymmetric)) RefAreaCoeff = RefAreaCoeff/12.0;
-    else RefAreaCoeff = RefAreaCoeff/144.0;
+    RefLength = RefLength/12.0;
+
+    if ((val_nDim == 2) && (!Axisymmetric)) RefArea = RefArea/12.0;
+    else RefArea = RefArea/144.0;
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
     Highlite_Area = Highlite_Area/144.0;
@@ -3006,8 +3025,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       LocationStations[iSections] = LocationStations[iSections]/12.0;
     }
 
-    Section_WingBounds[0] = Section_WingBounds[0]/12.0;
-    Section_WingBounds[1] = Section_WingBounds[1]/12.0;
+    Stations_Bounds[0] = Stations_Bounds[0]/12.0;
+    Stations_Bounds[1] = Stations_Bounds[1]/12.0;
     
     SubsonicEngine_Cyl[0] = SubsonicEngine_Cyl[0]/12.0;
     SubsonicEngine_Cyl[1] = SubsonicEngine_Cyl[1]/12.0;
@@ -3091,6 +3110,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       if (Iter_Avg_Objective == 0.0) {
         Iter_Avg_Objective = nExtIter;
       }
+
     }
 
     switch(Kind_Solver) {
@@ -3119,6 +3139,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   delete [] tmp_smooth;
   
+  /*--- If it is a fixed mode problem, then we will add 100 iterations to
+    evaluate the derivatives with respect to a change in the AoA and CL ---*/
+
+  if (!ContinuousAdjoint & !DiscreteAdjoint) {
+  	if ((Fixed_CL_Mode)|| (Fixed_CM_Mode)) {
+  		nExtIter += Iter_dCL_dAlpha;
+  		OrderMagResidual = 24;
+  		MinLogResidual = -24;
+  	}
+  }
+
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -3272,14 +3303,15 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  ActDisk_DeltaPress = new su2double[nMarker_ActDiskInlet];
-  ActDisk_DeltaTemp = new su2double[nMarker_ActDiskInlet];
+  ActDisk_StaticPressDelta = new su2double[nMarker_ActDiskInlet];
+  ActDisk_StaticTempDelta = new su2double[nMarker_ActDiskInlet];
   ActDisk_TotalPressRatio = new su2double[nMarker_ActDiskInlet];
   ActDisk_TotalTempRatio = new su2double[nMarker_ActDiskInlet];
   ActDisk_StaticPressRatio = new su2double[nMarker_ActDiskInlet];
   ActDisk_StaticTempRatio = new su2double[nMarker_ActDiskInlet];
   ActDisk_Power = new su2double[nMarker_ActDiskInlet];
-  ActDisk_MassFlow = new su2double[nMarker_ActDiskInlet];
+  ActDisk_InMassFlow = new su2double[nMarker_ActDiskInlet];
+  ActDisk_OutMassFlow = new su2double[nMarker_ActDiskInlet];
   ActDisk_Mach = new su2double[nMarker_ActDiskInlet];
   ActDisk_Force = new su2double[nMarker_ActDiskInlet];
   ActDisk_NetThrust = new su2double[nMarker_ActDiskInlet];
@@ -3290,14 +3322,15 @@ void CConfig::SetMarkers(unsigned short val_software) {
   ActDisk_ReverseMassFlow = new su2double[nMarker_ActDiskInlet];
   
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
-    ActDisk_DeltaPress[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_DeltaTemp[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_StaticPressDelta[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_StaticTempDelta[iMarker_ActDiskInlet] = 0.0;
     ActDisk_TotalPressRatio[iMarker_ActDiskInlet] = 0.0;
     ActDisk_TotalTempRatio[iMarker_ActDiskInlet] = 0.0;
     ActDisk_StaticPressRatio[iMarker_ActDiskInlet] = 0.0;
     ActDisk_StaticTempRatio[iMarker_ActDiskInlet] = 0.0;
     ActDisk_Power[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_MassFlow[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_InMassFlow[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_OutMassFlow[iMarker_ActDiskInlet] = 0.0;
     ActDisk_Mach[iMarker_ActDiskInlet] = 0.0;
     ActDisk_Force[iMarker_ActDiskInlet] = 0.0;
     ActDisk_NetThrust[iMarker_ActDiskInlet] = 0.0;
@@ -3402,7 +3435,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   }
 
   Engine_Power       = new su2double[nEngine];
-  Engine_Mach        = new su2double[nEngine];
+  Engine_InMassFlow        = new su2double[nEngine];
+  Engine_OutMassFlow        = new su2double[nEngine];
   Engine_Force       = new su2double[nEngine];
   Engine_NetThrust   = new su2double[nEngine];
   Engine_GrossThrust = new su2double[nEngine];
@@ -3410,7 +3444,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   
   for (iEngine = 0; iEngine < nEngine; iEngine++) {
     Engine_Power[iEngine] = 0.0;
-    Engine_Mach[iEngine] = 0.0;
+    Engine_InMassFlow[iEngine] = 0.0;
+    Engine_OutMassFlow[iEngine] = 0.0;
     Engine_Force[iEngine] = 0.0;
     Engine_NetThrust[iEngine] = 0.0;
     Engine_GrossThrust[iEngine] = 0.0;
@@ -3802,12 +3837,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
     
-    if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." << endl;
-    else { cout << "The reference length/area (force coefficient) is " << RefAreaCoeff;
+    if (RefArea == 0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
+    else { cout << "The reference area (force coefficient) is " << RefArea;
     	if (SystemMeasurements == US) cout << " in^2." << endl;
     	else cout << " m^2." << endl;
     }
-    cout << "The reference length (moment computation) is " << RefLengthMoment;
+    cout << "The reference length is " << RefLength;
   	if (SystemMeasurements == US) cout << " in." << endl;
   	else cout << " m." << endl;
 
@@ -4092,8 +4127,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
         case DRAG_COEFFICIENT: cout << "CD objective function";
-          if (Fixed_CL_Mode) { cout << " using fixed CL mode, dCD/dCL = " << dCD_dCL << "." << endl; }
-          else if (Fixed_CM_Mode) { cout << " using fixed CM mode, dCD/dCM = " << dCD_dCM << "." << endl; }
+          if (Fixed_CL_Mode) { cout << " using fixed CL mode, dCD/dCL = " << dOF_dCL << "." << endl; }
+          else if (Fixed_CM_Mode) { cout << " using fixed CM mode, dCD/dCM = " << dOF_dCM << "." << endl; }
           else { cout << "." << endl; }
           break;
         case LIFT_COEFFICIENT:           cout << "CL objective function." << endl; break;
@@ -4121,7 +4156,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AERO_DRAG_COEFFICIENT:      cout << "Aero CD objective function." << endl; break;
         case RADIAL_DISTORTION:          cout << "Radial distortion objective function." << endl; break;
         case CIRCUMFERENTIAL_DISTORTION: cout << "Circumferential distortion objective function." << endl; break;
-        case ELLIPTIC_SPANLOAD:          cout << "Elliptic spanload objective function." << endl; break;
+        case ELLIPTIC_SPANLOAD:          cout << "Elliptic spanload objective function";
+        	if (Fixed_CL_Mode) { cout << " using fixed CL mode, dSpanLoad/dCL = " << dOF_dCL << "." << endl; }
+        else { cout << "." << endl; }
+        break;
         case MAX_SECTIONAL_CL:           cout << "Maximum sectional CL objective function." << endl; break;
       }
 		}
@@ -4141,21 +4179,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
         if (Kind_Centered_Flow == JST) {
-          cout << "Jameson-Schmidt-Turkel scheme for the flow inviscid terms."<< endl;
+          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
           cout << "JST viscous coefficients (1st, 2nd & 4th): " << Kappa_1st_Flow
           << ", " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"."<< endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-          cout << "Second order integration." << endl;
         }
         if (Kind_Centered_Flow == JST_KE) {
-          cout << "Jameson-Schmidt-Turkel scheme for the flow inviscid terms."<< endl;
+          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
           cout << "JST viscous coefficients (1st, 2nd): " << Kappa_1st_Flow
           << ", " << Kappa_2nd_Flow << "."<< endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-          cout << "Second order integration." << endl;
         }
         if (Kind_Centered_Flow == LAX) {
-          cout << "Lax-Friedrich scheme for the flow inviscid terms."<< endl;
+          cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms."<< endl;
           cout << "First order integration." << endl;
         }
       }
@@ -4169,9 +4205,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (Kind_Upwind_Flow == MSW)	cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == CUSP)	cout << "CUSP solver for the flow inviscid terms."<< endl;
         switch (SpatialOrder_Flow) {
-          case FIRST_ORDER: cout << "First order integration." << endl; break;
-          case SECOND_ORDER: cout << "Second order integration." << endl; break;
-          case SECOND_ORDER_LIMITER: cout << "Second order integration with slope limiter." << endl;
+          case FIRST_ORDER: cout << "First order integration in space." << endl; break;
+          case SECOND_ORDER: cout << "Second order integration in space, without slope limiter." << endl; break;
+          case SECOND_ORDER_LIMITER: cout << "Second order integration in space, with slope limiter." << endl;
             switch (Kind_SlopeLimit_Flow) {
               case VENKATAKRISHNAN:
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
@@ -4189,11 +4225,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
-        if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver (first order) for the turbulence model."<< endl;
+        if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model."<< endl;
         switch (SpatialOrder_Turb) {
-          case FIRST_ORDER: cout << "First order integration." << endl; break;
-          case SECOND_ORDER: cout << "Second order integration." << endl; break;
-          case SECOND_ORDER_LIMITER: cout << "Second order integration with slope limiter." << endl;
+          case FIRST_ORDER: cout << "First order integration in space." << endl; break;
+          case SECOND_ORDER: cout << "Second order integration in space without slope limiter." << endl; break;
+          case SECOND_ORDER_LIMITER: cout << "Second order integration in space with slope limiter." << endl;
             switch (Kind_SlopeLimit_Turb) {
               case VENKATAKRISHNAN:
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
@@ -5365,6 +5401,7 @@ CConfig::~CConfig(void) {
   if (Design_Variable != NULL)    delete[] Design_Variable;
   if (Dirichlet_Value != NULL)    delete[] Dirichlet_Value;
   
+
   if (EngineExhaust_Temperature_Target != NULL)    delete[]  EngineExhaust_Temperature_Target;
   if (EngineExhaust_Pressure_Target != NULL)    delete[]  EngineExhaust_Pressure_Target;
   if (EngineExhaust_Pressure != NULL)    delete[] EngineExhaust_Pressure;
@@ -5388,19 +5425,21 @@ CConfig::~CConfig(void) {
   if (EngineInflow_RamDrag != NULL)    delete[] EngineInflow_RamDrag;
   if (EngineInflow_Force != NULL)    delete[]  EngineInflow_Force;
   if (EngineInflow_Power != NULL)    delete[] EngineInflow_Power;
+  if (EngineInflow_MassFlow_Target != NULL)    delete[] EngineInflow_MassFlow_Target;
+  if (EngineInflow_EngineID != NULL)    delete[] EngineInflow_EngineID;
+
 
   if (Engine_Power != NULL)    delete[]  Engine_Power;
-  if (Engine_Mach != NULL)    delete[]  Engine_Mach;
+  if (Engine_InMassFlow != NULL)    delete[]  Engine_InMassFlow;
+  if (Engine_OutMassFlow != NULL)    delete[]  Engine_OutMassFlow;
   if (Engine_Force != NULL)    delete[]  Engine_Force;
   if (Engine_NetThrust != NULL)    delete[]  Engine_NetThrust;
   if (Engine_GrossThrust != NULL)    delete[]  Engine_GrossThrust;
   if (Engine_Area != NULL)    delete[]  Engine_Area;
-  if (EngineInflow_MassFlow_Target != NULL)    delete[] EngineInflow_MassFlow_Target;
-  if (EngineInflow_EngineID != NULL)    delete[] EngineInflow_EngineID;
 
   if (ActDiskInlet_MassFlow != NULL)    delete[]  ActDiskInlet_MassFlow;
-  if (ActDiskInlet_Mach != NULL)    delete[]  ActDiskInlet_MassFlow;
-  if (ActDiskInlet_Area != NULL)    delete[]  ActDiskInlet_MassFlow;
+  if (ActDiskInlet_Mach != NULL)    delete[]  ActDiskInlet_Mach;
+  if (ActDiskInlet_Area != NULL)    delete[]  ActDiskInlet_Area;
   if (ActDiskInlet_Temperature != NULL)    delete[]  ActDiskInlet_Temperature;
   if (ActDiskInlet_TotalTemperature != NULL)    delete[]  ActDiskInlet_TotalTemperature;
   if (ActDiskInlet_Pressure != NULL)    delete[]  ActDiskInlet_Pressure;
@@ -5418,14 +5457,15 @@ CConfig::~CConfig(void) {
   if (ActDiskOutlet_Force != NULL)    delete[]  ActDiskOutlet_Force;
   if (ActDiskOutlet_Power != NULL)    delete[]  ActDiskOutlet_Power;
 
-  if (ActDisk_DeltaPress != NULL)    delete[]  ActDisk_DeltaPress;
-  if (ActDisk_DeltaTemp != NULL)    delete[]  ActDisk_DeltaTemp;
+  if (ActDisk_StaticPressDelta != NULL)    delete[]  ActDisk_StaticPressDelta;
+  if (ActDisk_StaticTempDelta != NULL)    delete[]  ActDisk_StaticTempDelta;
   if (ActDisk_TotalPressRatio != NULL)    delete[]  ActDisk_TotalPressRatio;
   if (ActDisk_TotalTempRatio != NULL)    delete[]  ActDisk_TotalTempRatio;
   if (ActDisk_StaticPressRatio != NULL)    delete[]  ActDisk_StaticPressRatio;
   if (ActDisk_StaticTempRatio != NULL)    delete[]  ActDisk_StaticTempRatio;
   if (ActDisk_Power != NULL)    delete[]  ActDisk_Power;
-  if (ActDisk_MassFlow != NULL)    delete[]  ActDisk_MassFlow;
+  if (ActDisk_InMassFlow != NULL)    delete[]  ActDisk_InMassFlow;
+  if (ActDisk_OutMassFlow != NULL)    delete[]  ActDisk_OutMassFlow;
   if (ActDisk_Mach != NULL)    delete[]  ActDisk_Mach;
   if (ActDisk_Force != NULL)    delete[]  ActDisk_Force;
   if (ActDisk_NetThrust != NULL)    delete[]  ActDisk_NetThrust;
@@ -5434,7 +5474,7 @@ CConfig::~CConfig(void) {
   if (ActDisk_GrossThrust != NULL)    delete[]  ActDisk_GrossThrust;
   if (ActDisk_Area != NULL)    delete[]  ActDisk_Area;
   if (ActDisk_ReverseMassFlow != NULL)    delete[]  ActDisk_ReverseMassFlow;
-  
+
   if (Surface_MassFlow != NULL)    delete[]  Surface_MassFlow;
   if (Surface_DC60 != NULL)    delete[]  Surface_DC60;
   if (Surface_IDC != NULL)    delete[]  Surface_IDC;
@@ -5897,12 +5937,20 @@ su2double CConfig::GetActDisk_Power(string val_marker) {
   return ActDisk_Power[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_MassFlow(string val_marker) {
+su2double CConfig::GetActDisk_InMassFlow(string val_marker) {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
         (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_MassFlow[iMarker_ActDisk];
+  return ActDisk_InMassFlow[iMarker_ActDisk];
+}
+
+su2double CConfig::GetActDisk_OutMassFlow(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_OutMassFlow[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_Mach(string val_marker) {

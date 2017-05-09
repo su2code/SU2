@@ -2086,7 +2086,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  virtual void GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  virtual void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
 
   /*!
    * \brief A virtual member.
@@ -2259,18 +2259,6 @@ public:
    * \return Value of the Aero drag (inviscid + viscous contribution).
    */
   virtual su2double GetTotal_AeroCD(void);
-  
-  /*!
-   * \brief A virtual member.
-   * \return Value of the fan face distortion.
-   */
-  virtual su2double GetTotal_RadialDistortion(void);
-  
-  /*!
-   * \brief A virtual member.
-   * \return Value of the fan face distortion.
-   */
-  virtual su2double GetTotal_CircumferentialDistortion(void);
 
   /*!
    * \brief A virtual member.
@@ -2314,18 +2302,6 @@ public:
    * \param[in] val_aerocd - Value of the aero drag.
    */
   virtual void SetTotal_AeroCD(su2double val_aerocd);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_distortion - Value of the fan face distortion.
-   */
-  virtual void SetTotal_RadialDistortion(su2double val_distortion);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_distortion - Value of the fan face distortion.
-   */
-  virtual void SetTotal_CircumferentialDistortion(su2double val_distortion);
 
   /*!
    * \brief A virtual member.
@@ -3342,9 +3318,10 @@ public:
    * \brief Read the metadata from a native SU2 restart file (ASCII or binary).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] adjoint - Boolean to identify the restart file of an adjoint run.
    * \param[in] val_filename - String name of the restart file.
    */
-  void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, string val_filename);
+  void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint_run, string val_filename);
 
   /*!
    * \brief A virtual member.
@@ -3869,8 +3846,6 @@ protected:
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
   Total_AeroCD,      /*!< \brief Total aero drag coefficient for all the boundaries. */
-  Total_RadialDistortion,      /*!< \brief Total fan face radial distortion for all the boundaries. */
-  Total_CircumferentialDistortion,      /*!< \brief Total fan face circumferential distortion for all the boundaries. */
   Total_CEquivArea,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_CNearFieldOF,      /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   Total_CpDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
@@ -3919,7 +3894,6 @@ protected:
   New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
-  unsigned long BCThrust_Counter;
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   
@@ -4876,11 +4850,11 @@ public:
                                    CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output);
 
   /*!
-   * \brief Compute the Fan face Mach number.
+   * \brief Compute the properties of the engine.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  void GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief Compute the Fan face Mach number.
@@ -5270,18 +5244,6 @@ public:
   su2double GetTotal_AeroCD(void);
 
   /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional fan face distortion.
-   * \return Value of the fan face distortion (inviscid + viscous contribution).
-   */
-  su2double GetTotal_RadialDistortion(void);
-
-  /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional fan face distortion.
-   * \return Value of the fan face distortion (inviscid + viscous contribution).
-   */
-  su2double GetTotal_CircumferentialDistortion(void);
-
-  /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
@@ -5317,18 +5279,6 @@ public:
    * \param[in] val_cequivarea - Value of the aero drag.
    */
   void SetTotal_AeroCD(su2double val_aerocd);
-  
-  /*!
-   * \brief Set the value of the fan face distortion.
-   * \param[in] val_cequivarea - Value of the fan face distortion.
-   */
-  void SetTotal_RadialDistortion(su2double val_distortion);
-
-  /*!
-   * \brief Set the value of the fan face distortion.
-   * \param[in] val_cequivarea - Value of the fan face distortion.
-   */
-  void SetTotal_CircumferentialDistortion(su2double val_distortion);
   
   /*!
    * \brief Set the value of the Equivalent Area coefficient.

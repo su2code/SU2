@@ -60,7 +60,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool windgust = config->GetWind_Gust();
@@ -101,7 +100,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
     nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-  if ((nMGSmooth > 0) || low_fidelity) {
+  if (nMGSmooth > 0) {
     Residual_Sum = new su2double [nVar];
     Residual_Old = new su2double [nVar];
   }
@@ -177,7 +176,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
 CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool windgust = config->GetWind_Gust();
@@ -215,7 +213,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
     nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-  if ((nMGSmooth > 0) || low_fidelity) {
+  if (nMGSmooth > 0) {
     Residual_Sum = new su2double [nVar];
     Residual_Old = new su2double [nVar];
   }

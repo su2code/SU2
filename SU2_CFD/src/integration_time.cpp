@@ -66,11 +66,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
     FullMG = true;
   }
   
-  /*--- If low fidelity simulation ---*/
-  
-  if (config[iZone]->GetLowFidelitySim())
-    config[iZone]->SetFinestMesh(MESH_1);
-  
   /*--- If restart, update multigrid levels at the first multigrid iteration ---*/
 	/*-- Since the restart takes care of this I dont think is required, but we should check after the new restart routines are added ---*/
   

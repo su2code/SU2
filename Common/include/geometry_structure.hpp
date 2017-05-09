@@ -641,6 +641,21 @@ public:
   virtual su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
+	 * \brief A virtual member.
+	 */
+  virtual su2double Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual su2double Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual su2double Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
    * \brief A virtual member.
    */
   virtual su2double Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
@@ -655,10 +670,21 @@ public:
 	 */
 	virtual su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
   
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
   /*!
    * \brief A virtual member.
    */
-  virtual void Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double>
+  virtual void Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double>
+	                                       &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double>
 	                                       &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
@@ -683,6 +709,16 @@ public:
                             su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                             su2double &Wing_MaxDihedral);
   
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Fuselage(CConfig *config, bool original_surface,
+  		su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+  		su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+  		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+  		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+  		su2double &Fuselage_MaxCurvature);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -1432,14 +1468,38 @@ public:
   /*!
    * \brief Compute the leading/trailing edge location of an airfoil.
    */
-  void Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil,
+  void Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil,
                                vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+    * \brief Compute the leading/trailing edge location of a fuselage.
+    */
+   void Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil,
+                                vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the chord of an airfoil.
    * \returns Chord of an airfoil.
    */
   su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the chord of an airfoil.
@@ -1457,6 +1517,12 @@ public:
    * \returns Area of an airfoil.
    */
   su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the length of an airfoil.
+   * \returns Area of an airfoil.
+   */
+  su2double Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the dihedral of a wing.
@@ -1480,6 +1546,16 @@ public:
                     su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
                     su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                     su2double &Wing_MaxDihedral);
+
+  /*!
+   * \brief Evaluate geometrical parameters of a wing.
+   */
+  void Compute_Fuselage(CConfig *config, bool original_surface,
+  		su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+  		su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+  		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+  		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+  		su2double &Fuselage_MaxCurvature);
 
   /*!
    * \brief Read the sensitivity from adjoint solution file and store it.

@@ -227,19 +227,22 @@ def obj_f(dvs,config,state=None):
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
     
-#    if objectives: print('Evaluate Objectives')
     # evaluate each objective
     vals_out = []
-    func = 0.0
+    total_func = 0.0
     for i_obj,this_obj in enumerate(objectives):
         scale = def_objs[this_obj]['SCALE']
+        relax = float(config['OPT_GRADIENT_FACTOR'])
         sign  = su2io.get_objectiveSign(this_obj)
         
+        # Evaluate Objective Function Function
+        func = su2func(this_obj,config,state)
+                        
         # Evaluate Objective Function
         # scaling and sign
-        func += su2func(this_obj,config,state) * sign * scale
-        
-    vals_out.append(func)
+        total_func += func * sign * scale * relax
+                
+    vals_out.append(total_func)
     #: for each objective
     
     return vals_out
@@ -279,7 +282,8 @@ def obj_df(dvs,config,state=None):
         scale = [1.0]*n_obj
         for i_obj,this_obj in enumerate(objectives):
             sign = su2io.get_objectiveSign(this_obj)
-            scale[i_obj] = def_objs[this_obj]['SCALE']*sign
+            relax = float(config['OPT_GRADIENT_FACTOR'])
+            scale[i_obj] = def_objs[this_obj]['SCALE']*relax*sign
             
         config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
         
@@ -296,6 +300,7 @@ def obj_df(dvs,config,state=None):
         marker_monitored = config['MARKER_MONITORING']
         for i_obj,this_obj in enumerate(objectives):
             scale = def_objs[this_obj]['SCALE']
+            relax = float(config['OPT_GRADIENT_FACTOR'])
             sign  = su2io.get_objectiveSign(this_obj)
             # Correct marker monitoring for case where multiple objectives are evaluated separately
             if n_obj>1 and len(marker_monitored)>1:
@@ -303,15 +308,13 @@ def obj_df(dvs,config,state=None):
 
             
             # Evaluate Objective Gradient
-    #        sys.stdout.write('  %s... ' % this_obj.title())
             grad = su2grad(this_obj,grad_method,config,state)
-    #        sys.stdout.write('done\n')
             
             # scaling and sign
             k = 0
             for i_dv,dv_scl in enumerate(dv_scales):
                 for i_grd in range(dv_size[i_dv]):
-                    grad[k] = grad[k] * sign * scale / dv_scl
+                    grad[k] = grad[k] * sign * scale * relax / dv_scl
                     k = k + 1
             
             vals_out.append(grad)
@@ -342,22 +345,19 @@ def con_ceq(dvs,config,state=None):
     
     def_cons = config['OPT_CONSTRAINT']['EQUALITY']
     constraints = def_cons.keys()
-    
- #   if constraints: sys.stdout.write('Evalaute Equality Constraints')
-    
+        
     # evaluate each constraint
     vals_out = []
     for i_obj,this_con in enumerate(constraints):
         scale = def_cons[this_con]['SCALE']
+        relax = float(config['OPT_GRADIENT_FACTOR'])
         value = def_cons[this_con]['VALUE']
         
         # Evaluate Constraint Function
-#        sys.stdout.write('  %s... ' % this_con.title())
         func = su2func(this_con,config,state)
-#        sys.stdout.write('done: %.6f\n' % func)
         
         # scaling and centering
-        func = (func - value) * scale
+        func = (func - value) * scale * relax
         
         vals_out.append(func)
         
@@ -391,25 +391,22 @@ def con_dceq(dvs,config,state=None):
     
     dv_scales = config['DEFINITION_DV']['SCALE']
     dv_size   = config['DEFINITION_DV']['SIZE']
-
-#    if constraints: sys.stdout.write('Evaluate Equality Constraint Gradients ...')
-    
+  
     # evaluate each constraint
     vals_out = []
     for i_obj,this_con in enumerate(constraints):
         scale = def_cons[this_con]['SCALE']
+        relax = float(config['OPT_GRADIENT_FACTOR'])
         value = def_cons[this_con]['VALUE']
         
         # Evaluate Constraint Gradient
-#        sys.stdout.write('  %s... ' % this_con.title())
         grad = su2grad(this_con,grad_method,config,state)
-#        sys.stdout.write('done\n')
         
         # scaling
         k = 0
         for i_dv,dv_scl in enumerate(dv_scales):
             for i_grd in range(dv_size[i_dv]):
-                grad[k] = grad[k] * scale / dv_scl
+                grad[k] = grad[k] * scale * relax / dv_scl
                 k = k + 1
 
         vals_out.append(grad)
@@ -441,24 +438,21 @@ def con_cieq(dvs,config,state=None):
     
     def_cons = config['OPT_CONSTRAINT']['INEQUALITY']
     constraints = def_cons.keys()
-    
-#    if constraints: sys.stdout.write('Evaluate Inequality Constraints')
-    
+      
     # evaluate each constraint
     vals_out = []
     for i_obj,this_con in enumerate(constraints):
         scale = def_cons[this_con]['SCALE']
+        relax = float(config['OPT_GRADIENT_FACTOR'])
         value = def_cons[this_con]['VALUE']
         sign  = def_cons[this_con]['SIGN']
         sign  = su2io.get_constraintSign(sign)
         
         # Evaluate Constraint Function
-#        sys.stdout.write('  %s... ' % this_con.title())
         func = su2func(this_con,config,state)
-#        sys.stdout.write('done: %s\n' % func)
         
         # scaling and centering
-        func = (func - value) * scale * sign
+        func = (func - value) * scale * sign * relax
         
         vals_out.append(func)
     
@@ -493,27 +487,24 @@ def con_dcieq(dvs,config,state=None):
     
     dv_scales = config['DEFINITION_DV']['SCALE']
     dv_size   = config['DEFINITION_DV']['SIZE']
-
-#    if constraints: sys.stdout.write('Evaluate Inequality Constraint Gradients')
-    
+  
     # evaluate each constraint
     vals_out = []
     for i_obj,this_con in enumerate(constraints):
         scale = def_cons[this_con]['SCALE']
+        relax = float(config['OPT_GRADIENT_FACTOR'])
         value = def_cons[this_con]['VALUE']
         sign  = def_cons[this_con]['SIGN']
         sign  = su2io.get_constraintSign(sign)        
         
         # Evaluate Constraint Gradient
-#        sys.stdout.write('  %s... ' % this_con.title())
         grad = su2grad(this_con,grad_method,config,state)
-#        sys.stdout.write('done\n')
         
         # scaling and sign
         k = 0
         for i_dv,dv_scl in enumerate(dv_scales):
             for i_grd in range(dv_size[i_dv]):
-                grad[k] = grad[k] * sign * scale / dv_scl
+                grad[k] = grad[k] * sign * scale * relax / dv_scl
                 k = k + 1
 
         vals_out.append(grad)

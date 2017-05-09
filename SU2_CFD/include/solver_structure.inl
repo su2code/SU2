@@ -328,11 +328,7 @@ inline su2double CSolver::GetTotal_Adiab_Eff() { return 0; }
 
 inline su2double CSolver::GetTotal_Poly_Eff() { return 0; }
 
-inline su2double CSolver::GetTotal_IDC() { return 0; }
-
 inline su2double CSolver::GetTotal_IDC_Mach() { return 0; }
-
-inline su2double CSolver::GetTotal_IDR() { return 0; }
 
 inline su2double CSolver::GetTotal_DC60() { return 0; }
 
@@ -384,9 +380,9 @@ inline su2double CSolver::GetTotal_CEquivArea() { return 0; }
 
 inline su2double CSolver::GetTotal_AeroCD() { return 0; }
 
-inline su2double CSolver::GetTotal_RadialDistortion() { return 0; }
+inline su2double CSolver::GetTotal_IDR() { return 0; }
 
-inline su2double CSolver::GetTotal_CircumferentialDistortion() { return 0; }
+inline su2double CSolver::GetTotal_IDC() { return 0; }
 
 inline su2double CSolver::GetTotal_CpDiff() { return 0; }
 
@@ -401,10 +397,6 @@ inline void CSolver::AddTotal_ComboObj(su2double val_obj) {}
 inline void CSolver::SetTotal_CEquivArea(su2double val_cequivarea) { }
 
 inline void CSolver::SetTotal_AeroCD(su2double val_aerocd) { }
-
-inline void CSolver::SetTotal_RadialDistortion(su2double val_distortion) { }
-
-inline void CSolver::SetTotal_CircumferentialDistortion(su2double val_distortion) { }
 
 inline void CSolver::SetTotal_CpDiff(su2double val_pressure) { }
 
@@ -791,7 +783,7 @@ inline void CSolver::SetExtAveragedValue(CSolver *solver_container, unsigned sho
 inline void CSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_numerics,
                                                  CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output) { }
 
-inline void CSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
@@ -1164,11 +1156,7 @@ inline su2double CEulerSolver::GetTotal_Adiab_Eff() { return Total_Adiab_Eff; }
 
 inline su2double CEulerSolver::GetTotal_Poly_Eff() { return Total_Poly_Eff; }
 
-inline su2double CEulerSolver::GetTotal_IDC() { return Total_IDC; }
-
 inline su2double CEulerSolver::GetTotal_IDC_Mach() { return Total_IDC_Mach; }
-
-inline su2double CEulerSolver::GetTotal_IDR() { return Total_IDR; }
 
 inline su2double CEulerSolver::GetTotal_DC60() { return Total_DC60; }
 
@@ -1216,9 +1204,9 @@ inline su2double CEulerSolver::GetTotal_CEquivArea() { return Total_CEquivArea; 
 
 inline su2double CEulerSolver::GetTotal_AeroCD() { return Total_AeroCD; }
 
-inline su2double CEulerSolver::GetTotal_RadialDistortion() { return Total_RadialDistortion; }
+inline su2double CEulerSolver::GetTotal_IDR() { return Total_IDR; }
 
-inline su2double CEulerSolver::GetTotal_CircumferentialDistortion() { return Total_CircumferentialDistortion; }
+inline su2double CEulerSolver::GetTotal_IDC() { return Total_IDC; }
 
 inline su2double CEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 
@@ -1231,10 +1219,6 @@ inline void CEulerSolver::AddTotal_ComboObj(su2double val_obj) {Total_ComboObj +
 inline void CEulerSolver::SetTotal_CEquivArea(su2double val_cequivarea) { Total_CEquivArea = val_cequivarea; }
 
 inline void CEulerSolver::SetTotal_AeroCD(su2double val_aerocd) { Total_AeroCD = val_aerocd; }
-
-inline void CEulerSolver::SetTotal_RadialDistortion(su2double val_distortion) { Total_RadialDistortion = val_distortion; }
-
-inline void CEulerSolver::SetTotal_CircumferentialDistortion(su2double val_distortion) { Total_CircumferentialDistortion = val_distortion; }
 
 inline void CEulerSolver::SetTotal_CpDiff(su2double pressure) { Total_CpDiff = pressure; }
 

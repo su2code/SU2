@@ -291,8 +291,8 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     switch (config->GetKind_ObjFunc()) {
     case DRAG_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CD();
-      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
-      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdOF_dCL() * direct_solver->GetTotal_CL();
+      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdOF_dCM() * direct_solver->GetTotal_CMy();
       break;
     case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CL();
@@ -301,13 +301,14 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       ObjFunc_Value = direct_solver->GetTotal_AeroCD();
       break;
     case RADIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_RadialDistortion();
+      ObjFunc_Value = direct_solver->GetTotal_IDR();
       break;
     case CIRCUMFERENTIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_CircumferentialDistortion();
+      ObjFunc_Value = direct_solver->GetTotal_IDC();
       break;
     case ELLIPTIC_SPANLOAD:
       ObjFunc_Value = direct_solver->GetTotal_EllipticDiff();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdOF_dCL() * direct_solver->GetTotal_CL();
       break;
     case MAX_SECTIONAL_CL:
       ObjFunc_Value = direct_solver->GetTotal_MaxSecCL();
@@ -642,6 +643,10 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+  /*--- Read and store the restart metadata. ---*/
+
+  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 

@@ -998,7 +998,7 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
   
   su2double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
-  su2double RefLengthMoment  = config->GetRefLengthMoment();
+  su2double RefLength  = config->GetRefLength();
   su2double *RefOriginMoment = config->GetRefOriginMoment(0);
 
   ForceProj_Vector = new su2double[nDim];
@@ -1010,7 +1010,7 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
   CT = solver_container[FLOW_SOL]->GetTotal_CT();
   CQ = solver_container[FLOW_SOL]->GetTotal_CQ();
   invCD  = 1.0/CD; CLCD2  = CL/(CD*CD);
-  invCQ  = 1.0/CQ; CTRCQ2 = CT/(RefLengthMoment*CQ*CQ);
+  invCQ  = 1.0/CQ; CTRCQ2 = CT/(RefLength*CQ*CQ);
   
   x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
@@ -1055,15 +1055,15 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = (y - y_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -(z - z_origin)/RefLength; ForceProj_Vector[2] = (y - y_origin)/RefLength; }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = (z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = (z - z_origin)/RefLength; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -(x - x_origin)/RefLength; }
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] = -(y - y_origin)/RefLength; ForceProj_Vector[1] = (x - x_origin)/RefLength; }
+            if (nDim == 3) { ForceProj_Vector[0] = -(y - y_origin)/RefLength; ForceProj_Vector[1] = (x - x_origin)/RefLength; ForceProj_Vector[2] = 0; }
             break;
           case EFFICIENCY :
             if (nDim == 2) { ForceProj_Vector[0] = -(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = (invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
@@ -1100,8 +1100,8 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] = (y - y_origin)/RefLength; ForceProj_Vector[1] = -(x - x_origin)/RefLength; }
+            if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLength; ForceProj_Vector[1] = -(x - x_origin)/RefLength; ForceProj_Vector[2] = 0; }
             break;
           case FIGURE_OF_MERIT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
@@ -2194,7 +2194,7 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
 
   su2double Gas_Constant    = config->GetGas_ConstantND();
   bool grid_movement     = config->GetGrid_Movement();
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double Mach_Motion     = config->GetMach_Motion();
   unsigned short ObjFunc = config->GetKind_ObjFunc();
 
@@ -2219,7 +2219,7 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
   
   RefDensity  = config->GetDensity_FreeStreamND();
 
-  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
@@ -4358,7 +4358,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   
   bool rotating_frame    = config->GetRotating_Frame();
   bool grid_movement     = config->GetGrid_Movement();
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double Mach_Motion     = config->GetMach_Motion();
   unsigned short ObjFunc = config->GetKind_ObjFunc();
   su2double Gas_Constant    = config->GetGas_ConstantND();
@@ -4384,7 +4384,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   
   RefDensity  = config->GetDensity_FreeStreamND();
   
-  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||

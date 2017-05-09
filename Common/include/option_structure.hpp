@@ -1267,12 +1267,14 @@ static const map<string, ENUM_FFD_CONTINUITY> Continuity_Map = CCreateMap<string
 enum ENUM_FFD_COORD_SYSTEM {
   CARTESIAN = 0,
   CYLINDRICAL = 1,
-  SPHERICAL = 2
+  SPHERICAL = 2,
+  POLAR = 3
 };
 static const map<string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = CCreateMap<string, ENUM_FFD_COORD_SYSTEM>
 ("CARTESIAN", CARTESIAN)
 ("CYLINDRICAL", CYLINDRICAL)
-("SPHERICAL", SPHERICAL);
+("SPHERICAL", SPHERICAL)
+("POLAR", POLAR);
 
 /*!
  * \brief types of sensitivity smoothing
@@ -1322,15 +1324,15 @@ static const map<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = CCreateMap<string
 /*!
  * \brief types of axis orientation
  */
-enum ENUM_AXIS_ORIENTATION {
-  X_AXIS = 0,   /*!< \brief X axis orientation. */
-  Y_AXIS = 1, 	/*!< \brief Y axis orientation. */
-  Z_AXIS = 2    /*!< \brief Z axis orientation. */
+enum ENUM_GEO_DESCRIPTION {
+	TWOD_AIRFOIL = 0,   /*!< \brief Airfoil analysis. */
+  WING = 1, 	/*!< \brief Wing analysis. */
+  FUSELAGE = 2    /*!< \brief Fuselage analysis. */
 };
-static const map<string, ENUM_AXIS_ORIENTATION> Axis_Stations_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
-("X_AXIS", X_AXIS)
-("Y_AXIS", Y_AXIS)
-("Z_AXIS", Z_AXIS);
+static const map<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = CCreateMap<string, ENUM_GEO_DESCRIPTION>
+("AIRFOIL", TWOD_AIRFOIL)
+("WING", WING)
+("FUSELAGE", FUSELAGE);
 
 /*!
  * \brief types of schemes for unsteady computations
