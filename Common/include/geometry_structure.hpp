@@ -509,6 +509,20 @@ public:
 	 */	
 	virtual void SetCoord(CGeometry *geometry);
 
+        /*! 
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+         * \param[in] val_marker - Index of the boundary marker.
+	 */
+        virtual void SetWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
+
+        /*! 
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+         * \param[in] val_marker - Index of the boundary marker.
+	 */
+        virtual void SetWallTemperature(CGeometry *geometry, unsigned short val_marker);
+
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] val_nSmooth - Number of smoothing iterations.
@@ -1626,6 +1640,20 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */	
 	void SetCoord(CGeometry *geometry);
+
+        /*! 
+	 * \brief Set a representative wall normal heat flux of the agglomerated control volume on a particular boundary marker.
+	 * \param[in] geometry - Geometrical definition of the problem.
+         * \param[in] val_marker - Index of the boundary marker.
+	 */
+        void SetWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
+
+        /*! 
+	 * \brief Set a representative wall temperature of the agglomerated control volume on a particular boundary marker.
+	 * \param[in] geometry - Geometrical definition of the problem.
+         * \param[in] val_marker - Index of the boundary marker.
+	 */
+        void SetWallTemperature(CGeometry *geometry, unsigned short val_marker);
 
 	/*!
 	 * \brief Set the rotational velocity at each grid point on a coarse mesh.

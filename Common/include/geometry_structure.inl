@@ -119,6 +119,10 @@ inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double
 
 inline void CGeometry::SetCoord(CGeometry *geometry) { }
 
+inline void CGeometry::SetWallHeatFlux(CGeometry *geometry, unsigned short val_marker){ }
+
+inline void CGeometry::SetWallTemperature(CGeometry *geometry, unsigned short val_marker){ }
+
 inline void CGeometry::SetPoint_Connectivity(CGeometry *fine_grid) { }
 
 inline void CGeometry::SetElement_Connectivity(void) { }

@@ -241,6 +241,14 @@ inline void CPoint::SetZeroValues(void) { }
 
 inline void CPoint::AddNormal(su2double *val_face_normal) { }
 
+inline su2double CPoint::GetImposedTemperature(void) { return ImposedTemperature; }
+
+inline void CPoint::SetImposedTemperature(su2double val_Temp) { ImposedTemperature = val_Temp; }
+
+inline su2double CPoint::GetImposedHeatFlux(void){ return ImposedHeatFlux; }
+
+inline void CPoint::SetImposedHeatFlux(su2double val_HeatFlux){ ImposedHeatFlux = val_HeatFlux; }
+
 inline unsigned short CEdge::GetnNodes() { return 2; }
 
 inline unsigned long CEdge::GetNode(unsigned short val_node) { return Nodes[val_node]; }

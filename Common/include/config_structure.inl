@@ -997,6 +997,8 @@ inline string CConfig::GetMarker_Monitoring_TagBound(unsigned short val_marker) 
 
 inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
+inline string CConfig::GetMarker_CHT_TagBound(unsigned short val_marker){ return Marker_CHT[val_marker]; }
+
 inline string CConfig::GetMarker_Analyze_TagBound(unsigned short val_marker) { return Marker_Analyze[val_marker]; }
 
 inline short CConfig::GetMarker_All_TagBound(string val_tag) {
@@ -1030,6 +1032,8 @@ inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned sh
 
 inline void CConfig::SetMarker_All_BCCustom(unsigned short val_marker, unsigned short val_custom) { Marker_All_BCCustom[val_marker] = val_custom; }
 
+inline void CConfig::SetMarker_All_CHT(unsigned short val_marker, unsigned short val_CHT) { Marker_All_CHT[val_marker] = val_CHT; }
+
 inline void CConfig::SetMarker_All_PerBound(unsigned short val_marker, short val_perbound) { Marker_All_PerBound[val_marker] = val_perbound; }
 
 inline short CConfig::GetMarker_All_PerBound(unsigned short val_marker) { return Marker_All_PerBound[val_marker]; }
@@ -1062,6 +1066,8 @@ inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) {
 
 inline unsigned short CConfig::GetMarker_All_BCCustom(unsigned short val_marker) { return Marker_All_BCCustom[val_marker]; }
 
+inline unsigned short CConfig::GetMarker_All_CHT(unsigned short val_marker) { return Marker_All_CHT[val_marker];}
+
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
 
 inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
@@ -1079,6 +1085,8 @@ inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Moni
 inline unsigned short CConfig::GetnMarker_Out_1D(void) { return nMarker_Out_1D; }
 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
+
+inline unsigned short CConfig::GetnMarker_CHT(void) { return nMarker_CHT; }
 
 inline unsigned short CConfig::GetnMarker_Analyze(void) { return nMarker_Analyze; }
 
