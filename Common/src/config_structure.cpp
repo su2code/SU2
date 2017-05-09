@@ -284,15 +284,15 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
 void CConfig::SetPointersNull(void) {
   
-  Marker_CfgFile_Out_1D        = NULL;   Marker_All_Out_1D        = NULL;
-  Marker_CfgFile_GeoEval       = NULL;   Marker_All_GeoEval       = NULL;
-  Marker_CfgFile_Monitoring    = NULL;   Marker_All_Monitoring    = NULL;
-  Marker_CfgFile_Designing     = NULL;   Marker_All_Designing     = NULL;
-  Marker_CfgFile_Plotting      = NULL;   Marker_All_Plotting      = NULL;
-  Marker_CfgFile_Analyze       = NULL;   Marker_All_Analyze       = NULL;
-  Marker_CfgFile_DV            = NULL;   Marker_All_DV            = NULL;
-  Marker_CfgFile_Moving        = NULL;   Marker_All_Moving        = NULL;
-  Marker_CfgFile_PerBound      = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
+  Marker_CfgFile_Out_1D       = NULL;   Marker_All_Out_1D        = NULL;
+  Marker_CfgFile_GeoEval      = NULL;   Marker_All_GeoEval       = NULL;
+  Marker_CfgFile_Monitoring   = NULL;   Marker_All_Monitoring    = NULL;
+  Marker_CfgFile_Designing    = NULL;   Marker_All_Designing     = NULL;
+  Marker_CfgFile_Plotting     = NULL;   Marker_All_Plotting      = NULL;
+  Marker_CfgFile_Analyze      = NULL;   Marker_All_Analyze       = NULL;
+  Marker_CfgFile_DV           = NULL;   Marker_All_DV            = NULL;
+  Marker_CfgFile_Moving       = NULL;   Marker_All_Moving        = NULL;
+  Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
   Marker_CfgFile_ZoneInterface = NULL;
   
   Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
@@ -302,23 +302,23 @@ void CConfig::SetPointersNull(void) {
   
   /*--- Marker Pointers ---*/
 
-  Marker_Euler                = NULL;    Marker_FarField          = NULL;    Marker_Custom         = NULL;
-  Marker_SymWall              = NULL;    Marker_Pressure          = NULL;    Marker_PerBound       = NULL;
-  Marker_PerDonor             = NULL;    Marker_NearFieldBound    = NULL;    Marker_InterfaceBound = NULL;
-  Marker_Dirichlet            = NULL;    Marker_Inlet             = NULL;    
-  Marker_Supersonic_Inlet     = NULL;    Marker_Outlet            = NULL;    Marker_Out_1D         = NULL;
-  Marker_Isothermal           = NULL;    Marker_HeatFlux          = NULL;    Marker_EngineInflow   = NULL;
-  Marker_Supersonic_Outlet    = NULL;    Marker_Load              = NULL;
-  Marker_EngineExhaust        = NULL;    Marker_Displacement      = NULL;    Marker_Load           = NULL;
-  Marker_Load_Dir             = NULL;    Marker_Load_Sine         = NULL;    Marker_Clamped        = NULL;
-  Marker_FlowLoad             = NULL;    Marker_Neumann           = NULL;    Marker_Internal       = NULL;
-  Marker_All_TagBound         = NULL;    Marker_CfgFile_TagBound  = NULL;    Marker_All_KindBC     = NULL;
-  Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv      = NULL;    Marker_All_PerBound   = NULL;
-  Marker_ZoneInterface        = NULL;    Marker_All_ZoneInterface = NULL;    Marker_Riemann        = NULL;
+  Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
+  Marker_SymWall              = NULL;    Marker_Pressure         = NULL;    Marker_PerBound       = NULL;
+  Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    Marker_InterfaceBound = NULL;
+  Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
+  Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;    Marker_Out_1D         = NULL;
+  Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
+  Marker_Supersonic_Outlet    = NULL;    Marker_Load             = NULL;
+  Marker_EngineExhaust        = NULL;    Marker_Displacement     = NULL;    Marker_Load           = NULL;
+  Marker_Load_Dir             = NULL;    Marker_Load_Sine        = NULL;    Marker_Clamped        = NULL;
+  Marker_FlowLoad             = NULL;    Marker_Neumann          = NULL;    Marker_Internal       = NULL;
+  Marker_All_TagBound         = NULL;    Marker_CfgFile_TagBound = NULL;    Marker_All_KindBC     = NULL;
+  Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv     = NULL;    Marker_All_PerBound   = NULL;
+  Marker_ZoneInterface        = NULL;    Marker_All_ZoneInterface= NULL;    Marker_Riemann        = NULL;
   Marker_Fluid_InterfaceBound = NULL;
 
   
-  /*--- Boundary Condition settings ---*/
+    /*--- Boundary Condition settings ---*/
 
   Dirichlet_Value = NULL;    Isothermal_Temperature = NULL;
   Heat_Flux       = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
@@ -3144,19 +3144,20 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Allocate the memory (markers in each domain) ---*/
   
-  Marker_All_TagBound       = new string[nMarker_All];              // Store the tag that correspond with each marker.
-  Marker_All_SendRecv       = new short[nMarker_All];                       // +#domain (send), -#domain (receive).
-  Marker_All_KindBC         = new unsigned short[nMarker_All];  // Store the kind of boundary condition.
-  Marker_All_Monitoring     = new unsigned short[nMarker_All];  // Store whether the boundary should be monitored.
+  Marker_All_TagBound       = new string[nMarker_All];			    // Store the tag that correspond with each marker.
+  Marker_All_SendRecv       = new short[nMarker_All];						// +#domain (send), -#domain (receive).
+  Marker_All_KindBC         = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
+  Marker_All_Monitoring     = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
   Marker_All_Designing      = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
-  Marker_All_Plotting       = new unsigned short[nMarker_All];  // Store whether the boundary should be plotted.
-  Marker_All_Analyze        = new unsigned short[nMarker_All];  // Store whether the boundary should be plotted.
-  Marker_All_ZoneInterface  = new unsigned short[nMarker_All];  // Store whether the boundary is in a zone interface.
-  Marker_All_GeoEval        = new unsigned short[nMarker_All];  // Store whether the boundary should be geometry evaluation.
-  Marker_All_DV             = new unsigned short[nMarker_All];  // Store whether the boundary should be affected by design variables.
-  Marker_All_Moving         = new unsigned short[nMarker_All];  // Store whether the boundary should be in motion.
-  Marker_All_PerBound       = new short[nMarker_All];                       // Store whether the boundary belongs to a periodic boundary.
+  Marker_All_Plotting       = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_Analyze  = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_ZoneInterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
+  Marker_All_GeoEval        = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
+  Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
+  Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
+  Marker_All_PerBound       = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Out_1D         = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
+
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All]      = "SEND_RECEIVE";
