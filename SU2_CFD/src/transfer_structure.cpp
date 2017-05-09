@@ -1078,15 +1078,16 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
           Point_Target_Check = -1;
           
           if(!fsi){
-                target_solution->SetnSlidingStates(Marker_Target, iVertex, nDonorPoints);
+                target_solution->SetnSlidingStates(Marker_Target, iVertex, nDonorPoints); // This is to allocate
                 target_solution->SetSlidingStateStructure(Marker_Target, iVertex);
-                target_solution->SetnSlidingStates(Marker_Target, iVertex, 0);
+                target_solution->SetnSlidingStates(Marker_Target, iVertex, 0); // Reset counter to 0
           }
           else{
                 /*--- As we will be adding data, we need to set the variable to 0 ---*/
                 for (iVar = 0; iVar < nVar; iVar++) 
                     Target_Variable[iVar] = 0.0;
           }
+          
           
           /*--- For the number of donor points ---*/
           for (iDonorPoint = 0; iDonorPoint < nDonorPoints; iDonorPoint++) {
@@ -1104,8 +1105,6 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
 
             if (Point_Target_Check < 0 && fsi) {
-                for (iVar = 0; iVar < nVar; iVar++)
-                    Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
                 cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
                 exit(EXIT_FAILURE);
             }
@@ -1115,6 +1114,8 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
                     
                 Target_Variable[nVar] = donorCoeff;
                 
+                //for (iVar = 0; iVar < nVar+1; iVar++) cout << Target_Variable[iVar] << "  "; cout << endl; getchar();
+                 
                 SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);  
             }
           }
