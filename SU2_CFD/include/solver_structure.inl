@@ -796,10 +796,14 @@ inline void CSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_c
 inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 							        unsigned short iMesh, unsigned long Iteration) { }	
 
-inline void CSolver:: CheckTimeSynchronization(CConfig         *config,
-                                               const su2double TimeSync,
-                                               su2double       &timeEvolved,
-                                               bool            &syncTimeReached) {}
+inline void CSolver::CheckTimeSynchronization(CConfig         *config,
+                                              const su2double TimeSync,
+                                              su2double       &timeEvolved,
+                                              bool            &syncTimeReached) {}
+
+inline void CSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
+                                        CNumerics **numerics, CConfig *config,
+                                        unsigned short iMesh) {}
 
 inline void CSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                CNumerics **numerics, CConfig *config,
@@ -1657,6 +1661,22 @@ inline void CFEM_DG_EulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf =
 
 inline void CFEM_DG_EulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
 
+inline void CFEM_DG_EulerSolver::BC_HeatFlux_Wall(CConfig                  *config,
+                                                  const unsigned long      surfElemBeg,
+                                                  const unsigned long      surfElemEnd,
+                                                  const CSurfaceElementFEM *surfElem,
+                                                  su2double                *resFaces,
+                                                  CNumerics                *conv_numerics,
+                                                  unsigned short           val_marker) {}
+
+inline void CFEM_DG_EulerSolver::BC_Isothermal_Wall(CConfig                  *config,
+                                                    const unsigned long      surfElemBeg,
+                                                    const unsigned long      surfElemEnd,
+                                                    const CSurfaceElementFEM *surfElem,
+                                                    su2double                *resFaces,
+                                                    CNumerics                *conv_numerics,
+                                                    unsigned short           val_marker) {}
+
 inline su2double CFEM_DG_NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline su2double CFEM_DG_NSSolver::GetTke_Inf(void) { return Tke_Inf; }
@@ -2076,17 +2096,6 @@ inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long va
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
 
-inline void CSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver:: MultiplyResidualByInverseMassMatrix(CConfig    *config,
-                                                          const bool useADER) {}
 inline void CTurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component){ SlidingState[val_marker][val_vertex][val_state] = component; }
 
 inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return SlidingState[val_marker][val_vertex][val_state]; }
