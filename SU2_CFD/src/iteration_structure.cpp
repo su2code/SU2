@@ -548,7 +548,7 @@ void CFluidIteration::Iterate(COutput *output,
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
   
   if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
-
+      
     SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, val_iZone, IntIter, ExtIter);
     
     /*--- Apply a Wind Gust ---*/
@@ -1586,14 +1586,15 @@ void CAdjFluidIteration::Iterate(COutput *output,
     
     
   switch( config_container[val_iZone]->GetKind_Solver() ) {
-    case ADJ_EULER:
-      config_container[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_ADJFLOW_SYS, ExtIter); break;
 
-    case ADJ_NAVIER_STOKES:
-      config_container[val_iZone]->SetGlobalParam(ADJ_NAVIER_STOKES, RUNTIME_ADJFLOW_SYS, ExtIter); break;
+  case ADJ_EULER:
+    config_container[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_ADJFLOW_SYS, ExtIter); break;
 
-    case ADJ_RANS:
-      config_container[val_iZone]->SetGlobalParam(ADJ_RANS, RUNTIME_ADJFLOW_SYS, ExtIter); break;          
+  case ADJ_NAVIER_STOKES:
+    config_container[val_iZone]->SetGlobalParam(ADJ_NAVIER_STOKES, RUNTIME_ADJFLOW_SYS, ExtIter); break;
+
+  case ADJ_RANS:
+    config_container[val_iZone]->SetGlobalParam(ADJ_RANS, RUNTIME_ADJFLOW_SYS, ExtIter); break;          
   }
     
   /*--- Iteration of the flow adjoint problem ---*/
@@ -2185,10 +2186,10 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
   unsigned short iZone;
   unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+    unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-  unsigned long iIncrement;
-  unsigned long nIncrements = config_container[ZONE_0]->GetNumberIncrements();
+    unsigned long iIncrement;
+    unsigned long nIncrements = config_container[ZONE_0]->GetNumberIncrements();
 
   bool dynamic = (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC);          // Dynamic problems
   bool nonlinear = (config_container[ZONE_0]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
@@ -2446,5 +2447,6 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
     if (Physical_t >=  config_container[ZONE_0]->GetTotal_DynTime())
       integration_container[ZONE_0][FEA_SOL]->SetConvergence(true);
   }
+
 
 }

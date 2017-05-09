@@ -556,23 +556,23 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] config - Definition of the particular problem.
+    */
   virtual void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] config - Definition of the particular problem.
+    */
   virtual void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] config - Definition of the particular problem.
+    */
   virtual void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
 
   /*!
@@ -1194,7 +1194,7 @@ public:
    * \return Value of the Outlet Mass FlowS for turbomachinery performance.
    */
   virtual su2double GetMassFlowOut(unsigned short inMarkerTP);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - bound marker.
@@ -3720,7 +3720,6 @@ protected:
   *Surface_CMx_Inv,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMy_Inv,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMz_Inv,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
-
   *CEff_Inv,        /*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
   *CMerit_Inv,        /*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
   *CT_Inv,      /*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
@@ -3801,18 +3800,18 @@ protected:
   
   su2double
   AllBound_CD_Mnt,  /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CL_Mnt,      /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CSF_Mnt,      /*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMx_Mnt,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMy_Mnt,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMz_Mnt,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFx_Mnt,      /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFy_Mnt,      /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFz_Mnt,      /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEff_Mnt,      /*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMerit_Mnt,      /*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
-  AllBound_CT_Mnt,      /*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CL_Mnt,      /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CSF_Mnt,      /*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CMx_Mnt,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CMy_Mnt,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CMz_Mnt,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CFx_Mnt,      /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CFy_Mnt,      /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CFz_Mnt,      /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CEff_Mnt,      /*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CMerit_Mnt,      /*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
+   AllBound_CT_Mnt,      /*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
   
   su2double
   OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
@@ -4367,13 +4366,13 @@ public:
     
   /*!
    * \brief Impose the engine inflow boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] solver_container - Container vector with all the solutions.
+    * \param[in] conv_numerics - Description of the numerical method.
+    * \param[in] visc_numerics - Description of the numerical method.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+    */
   void BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker);
   
@@ -4391,14 +4390,13 @@ public:
   
   /*!
    * \brief Impose the engine inflow boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] solver_container - Container vector with all the solutions.
+    * \param[in] conv_numerics - Description of the numerical method.
+    * \param[in] visc_numerics - Description of the numerical method.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                   CConfig *config, unsigned short val_marker, bool inlet_surface);
   

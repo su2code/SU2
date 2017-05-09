@@ -1,7 +1,7 @@
 /*!
  * \file interpolation_structure.cpp
  * \brief Main subroutines used by SU2_FSI
- * \author H. Kline, G. Gori
+ * \author H. Kline
  * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -96,7 +96,6 @@ CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, 
 inline void CInterpolator::Set_TransferCoeff(CConfig **config) { }
 
 void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim) {
-
   unsigned long nLocalVertex_Donor = 0, nLocalFaceNodes_Donor=0, nLocalFace_Donor=0;
   unsigned long iVertex, iPointDonor = 0;
   /* Only needed if face data is also collected */

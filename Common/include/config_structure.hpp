@@ -546,10 +546,10 @@ private:
   unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
   nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
+  nMarker_ZoneInterface, /*!< \brief Number of markers in the zone interface. */
   nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
-  nMarker_ZoneInterface,					/*!< \brief Number of markers in the FSI interface. */
-  nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+    nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
   *Marker_Designing,         /*!< \brief Markers to plot. */
