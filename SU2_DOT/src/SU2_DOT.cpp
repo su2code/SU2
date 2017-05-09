@@ -441,13 +441,6 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       surface_movement->SetParabolic(geometry, config);
     }
     
-    /*--- Custom design variable ---*/
-
-    else if (config->GetDesign_Variable(iDV) == CUSTOM){
-      if (rank == MASTER_NODE)
-        cout <<"Custom design variable will be used in external script" << endl;
-    }
-    
     /*--- Design variable not implement ---*/
     
     else {
