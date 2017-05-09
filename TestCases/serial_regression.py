@@ -345,7 +345,7 @@ def main():
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [2.780403, -3.223266, -1448300.000000, -0.000000] #last 4 columns
+    contadj_wedge.test_vals = [2.856008, -2.767216, 1.0029e+06, 1.3024e-13] #last 4 columns
     contadj_wedge.su2_exec  = "SU2_CFD"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
