@@ -37,13 +37,14 @@ CSGSModel::CSGSModel(void) {
 
 }
 
-CSGSModel::~CSGSModel(void){
+CSGSModel::~CSGSModel(void) {
 
   /*--- Array deallocation ---*/
 
 }
 
-CSmagorinskyModel::CSmagorinskyModel(void) : CSGSModel() {
+CSmagorinskyModel::CSmagorinskyModel(void) :
+        CSGSModel() {
 
   const_smag = 0.1;
   filter_mult = 2.0;
@@ -55,10 +56,8 @@ CSmagorinskyModel::~CSmagorinskyModel(void) {
 }
 
 su2double CSmagorinskyModel::ComputeEddyViscosity(const unsigned short nDim,
-			                          const su2double      rho,
-			                          const su2double      velGrad[3][3],
-			                          const su2double      lenScale,
-			                          const su2double      distToWall) {
+    const su2double rho, const su2double velGrad[3][3],
+    const su2double lenScale, const su2double distToWall) {
 
   /* Constant coefficient Smagorinsky SGS is calculated:
    * ( C_s * L_c )^2 * |S(x,t)|
@@ -73,35 +72,35 @@ su2double CSmagorinskyModel::ComputeEddyViscosity(const unsigned short nDim,
 
   su2double strain_rate_squared = 0.0;
 
-  for(unsigned short int i=0; i<nDim; ++i) {
+  for (unsigned short int i = 0; i < nDim; ++i) {
     strain_rate_squared += 2 * velGrad[i][i] * velGrad[i][i];
-    for(unsigned short int j=0; j<nDim; ++j) {
-      if(i != j) {
-	strain_rate_squared += (velGrad[i][j] + velGrad[j][i]) * (velGrad[i][j] + velGrad[j][i]);
+    for (unsigned short int j = 0; j < nDim; ++j) {
+      if (i != j) {
+        strain_rate_squared += (velGrad[i][j] + velGrad[j][i])
+                * (velGrad[i][j] + velGrad[j][i]);
       }
     }
   }
 
   su2double strain_rate = sqrt(strain_rate_squared);
 
-  su2double sgs_viscosity = const_smag*const_smag * filter_width*filter_width * strain_rate;
+  su2double sgs_viscosity = const_smag * const_smag * filter_width
+      * filter_width * strain_rate;
 
-  return(sgs_viscosity);
+  return (sgs_viscosity);
 
 }
 
 void CSmagorinskyModel::ComputeGradEddyViscosity(const unsigned short nDim,
-	                                         const su2double      rho,
-	                                         const su2double      rhoGrad[3],
-						 const su2double      velGrad[3][3],
-						 const su2double      velHess[3][3][3],
-						 const su2double      lenScale,
-						 const su2double      distToWall,
-						       su2double      ViscosityTurbGrad[3]) {
+    const su2double rho, const su2double rhoGrad[3],
+    const su2double velGrad[3][3], const su2double velHess[3][3][3],
+    const su2double lenScale, const su2double distToWall,
+    su2double ViscosityTurbGrad[3]) {
   /* Not implemented yet. */
 }
 
-CWALEModel::CWALEModel(void) : CSGSModel() {
+CWALEModel::CWALEModel(void) :
+        CSGSModel() {
 
 }
 
@@ -110,20 +109,15 @@ CWALEModel::~CWALEModel(void) {
 }
 
 su2double CWALEModel::ComputeEddyViscosity(const unsigned short nDim,
-					   const su2double      rho,
-					   const su2double      velGrad[3][3],
-					   const su2double      lenScale,
-					   const su2double      distToWall) {
+    const su2double rho, const su2double velGrad[3][3],
+    const su2double lenScale, const su2double distToWall) {
   /* Not implemented yet. */
 }
 
 void CWALEModel::ComputeGradEddyViscosity(const unsigned short nDim,
-					  const su2double      rho,
-					  const su2double      rhoGrad[3],
-					  const su2double      velGrad[3][3],
-					  const su2double      velHess[3][3][3],
-					  const su2double      lenScale,
-					  const su2double      distToWall,
-						su2double      ViscosityTurbGrad[3]) {
+    const su2double rho, const su2double rhoGrad[3],
+    const su2double velGrad[3][3], const su2double velHess[3][3][3],
+    const su2double lenScale, const su2double distToWall,
+    su2double ViscosityTurbGrad[3]) {
   /* Not implemented yet. */
 }
