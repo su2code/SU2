@@ -281,7 +281,8 @@ void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
   
   /*--- Loop interior edges ---*/
    
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) { 
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
     const unsigned long iPoint = geometry->edge[iEdge]->GetNode(0);
     const unsigned long jPoint = geometry->edge[iEdge]->GetNode(1);
     
@@ -358,7 +359,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
     node[iPoint]->SetAuxVarGradientZero();    // Set Gradient to Zero
   
   /*--- Loop interior edges ---*/
-
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
@@ -1607,7 +1608,6 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
 
 void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
-
   /*--- This function is intended for dual time simulations ---*/
 
   unsigned long index;
@@ -2403,7 +2403,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Solution = new su2double[nVar];
 
-  for (iVar = 0; iVar < nVar; iVar++){
+  for (iVar = 0; iVar < nVar; iVar++) {
     Solution[iVar] = 0.0;
   }
 
@@ -2415,7 +2415,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   node = new CVariable*[geometry->GetnPoint()];
 
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
 

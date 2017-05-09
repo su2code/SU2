@@ -176,7 +176,7 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
   /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
 
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
-    nZone = config->GetnTimeInstances();
+  	nZone = config->GetnTimeInstances();
   }
 
   return (unsigned short) nZone;
@@ -717,9 +717,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
   /*!\brief REF_SHARP_EDGES\n DESCRIPTION: Reference coefficient for detecting sharp edges \ingroup Config*/
   addDoubleOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
-    /*!\brief REF_VELOCITY\n DESCRIPTION: Reference velocity (incompressible only)  \ingroup Config*/
+	/*!\brief REF_VELOCITY\n DESCRIPTION: Reference velocity (incompressible only)  \ingroup Config*/
   addDoubleOption("REF_VELOCITY", Velocity_Ref, -1.0);
-    /* !\brief REF_VISCOSITY  \n DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
+	/* !\brief REF_VISCOSITY  \n DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
   addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
   /* DESCRIPTION: Type of mesh motion */
   addEnumOption("REF_DIMENSIONALIZATION", Ref_NonDim, NonDim_Map, DIMENSIONAL);
@@ -757,7 +757,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_FLUID_INTERFACE", nMarker_Fluid_InterfaceBound, Marker_Fluid_InterfaceBound);
   /*!\brief MARKER_INTERFACE\n DESCRIPTION: Zone interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
-  /*!\brief MARKER_ZONE_INTERFACE \n DESCRIPTION: ZONE interface boundary marker(s) \ingroup Config*/
+  /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: ZONE interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_ZONE_INTERFACE", nMarker_ZoneInterface, Marker_ZoneInterface);
   /*!\brief MARKER_DIRICHLET  \n DESCRIPTION: Dirichlet boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
@@ -1428,15 +1428,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Equivalent area scaling factor */
   addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
 
-  // these options share nDV as their size in the option references; not a good idea
-  /*!\par CONFIG_CATEGORY: Grid deformation \ingroup Config*/
+	// these options share nDV as their size in the option references; not a good idea
+	/*!\par CONFIG_CATEGORY: Grid deformation \ingroup Config*/
   /*--- Options related to the grid deformation ---*/
 
-    /* DESCRIPTION: Kind of deformation */
-    addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
-    /* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
+	/* DESCRIPTION: Kind of deformation */
+	addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
+	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
   addStringListOption("DV_MARKER", nMarker_DV, Marker_DV);
-    /* DESCRIPTION: Parameters of the shape deformation
+	/* DESCRIPTION: Parameters of the shape deformation
    - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
    - FFD_RADIUS_2D ( FFDBox ID )
    - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
@@ -1456,16 +1456,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
    - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
-    addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
+	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
   /* DESCRIPTION: New value of the shape deformation */
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
-    /* DESCRIPTION: Hold the grid fixed in a region */
+	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
-    default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
-    default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
-    /* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-    addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
-    /* DESCRIPTION: Visualize the deformation */
+	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
+	default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
+	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
+	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
+	/* DESCRIPTION: Visualize the deformation */
   addBoolOption("VISUALIZE_DEFORMATION", Visualize_Deformation, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
   addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
@@ -1684,7 +1684,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 500);
 
   /* DESCRIPTION: Free surface damping coefficient */
-  addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
+	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
   
   /* DESCRIPTION: Free surface damping coefficient */
   addDoubleOption("FFD_SCALE", FFD_Scale, 1.0);
@@ -1978,9 +1978,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Fixed_CM_Mode) {
     Grid_Movement= true;
-     nGridMovement = 1;
-     Kind_GridMovement = new unsigned short[nGridMovement];
-     Kind_GridMovement[0] = MOVING_HTP;
+  	 nGridMovement = 1;
+  	 Kind_GridMovement = new unsigned short[nGridMovement];
+  	 Kind_GridMovement[0] = MOVING_HTP;
   }
 
   /*--- Store the SU2 module that we are executing. ---*/
@@ -2058,13 +2058,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    *--- This will allow us to define multiple physics structural problems */
 
   if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
-      if (val_izone == 0) { Kind_Solver = Kind_Solver_Fluid_FSI;        FSI_Problem = true;}
+	  if (val_izone == 0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
 
-      else {                Kind_Solver = Kind_Solver_Struc_FSI;        FSI_Problem = true;
-                            Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
-                            Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
-                            Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-                            Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
+	  else {			 	Kind_Solver = Kind_Solver_Struc_FSI;	  	FSI_Problem = true;
+	  	  	  	  	  	  	Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
+	  	  	  	  	  	  	Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
+	  	  	  	  	  	  	Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
+	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
   }
   else { FSI_Problem = false; }
 
@@ -2102,7 +2102,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
     if (Dynamic_Analysis == STATIC)
-    nExtIter = 1;
+	nExtIter = 1;
   }
 
   /*--- Decide whether we should be writing unsteady solution files. ---*/
@@ -2114,8 +2114,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Kind_Solver == FEM_ELASTICITY) {
 
-      if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
-      else { Wrt_Dynamic = true; }
+	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
+	  else { Wrt_Dynamic = true; }
 
   } else {
     Wrt_Dynamic = false;
@@ -2131,9 +2131,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Fluid model consistency ---*/
 
   if (standard_air) {
-    if (Gamma != 1.4 || Gas_Constant != 287.058) {
-        Gamma = 1.4;
-        Gas_Constant = 287.058;
+	if (Gamma != 1.4 || Gas_Constant != 287.058) {
+		Gamma = 1.4;
+		Gas_Constant = 287.058;
         }
   }
   /*--- Check for Measurement System ---*/
@@ -2253,7 +2253,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     exit(EXIT_FAILURE);
   }
   
-
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each option, a value has been declared for each moving marker. ---*/
@@ -2556,22 +2555,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*-- Setting Harmonic Balance period from the config file */
 
   if (Unsteady_Simulation == HARMONIC_BALANCE) {
-    HarmonicBalance_Period = GetHarmonicBalance_Period();
-    if (HarmonicBalance_Period < 0)  {
-        cout << "Not a valid value for time period!!" << endl;
-        exit(EXIT_FAILURE);
-    }
-    /* Initialize the Harmonic balance Frequency pointer */
-    if (Omega_HB == NULL) {
-        Omega_HB = new su2double[nOmega_HB];
-        for (iZone = 0; iZone < nOmega_HB; iZone++ )
-            Omega_HB[iZone] = 0.0;
-    }else {
-        if (nOmega_HB != nTimeInstances) {
-            cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
-            exit(EXIT_FAILURE);
-        }
-    }
+  	HarmonicBalance_Period = GetHarmonicBalance_Period();
+  	if (HarmonicBalance_Period < 0)  {
+  		cout << "Not a valid value for time period!!" << endl;
+  		exit(EXIT_FAILURE);
+  	}
+  	/* Initialize the Harmonic balance Frequency pointer */
+  	if (Omega_HB == NULL) {
+  		Omega_HB = new su2double[nOmega_HB];
+  		for (iZone = 0; iZone < nOmega_HB; iZone++ )
+  			Omega_HB[iZone] = 0.0;
+  	}else {
+  		if (nOmega_HB != nTimeInstances) {
+  			cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
+  			exit(EXIT_FAILURE);
+  		}
+  	}
   }
 
     /*--- Use the various rigid-motion input frequencies to determine the period to be used with harmonic balance cases.
@@ -2754,8 +2753,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Fluid-Structure Interaction problems ---*/
 
   if (FSI_Problem) {
-      Kind_GridMovement[val_izone] = FLUID_STRUCTURE;
-      Grid_Movement = true;
+	  Kind_GridMovement[val_izone] = FLUID_STRUCTURE;
+	  Grid_Movement = true;
   }
   
   if (MGCycle == FULLMG_CYCLE) FinestMesh = nMGLevels;
@@ -2930,8 +2929,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (nIntCoeffs == 0) {
-    nIntCoeffs = 2;
-    Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
+	nIntCoeffs = 2;
+	Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
   }
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
@@ -3664,9 +3663,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"------------------------ Physical Case Definition -----------------------" << endl;
   if (val_software == SU2_CFD) {
-    if (FSI_Problem) {
-       cout << "Fluid-Structure Interaction." << endl;
-    }
+	if (FSI_Problem) {
+	   cout << "Fluid-Structure Interaction." << endl;
+	}
 
   if (DiscreteAdjoint) {
      cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
@@ -3695,14 +3694,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
       case HEAT_EQUATION: cout << "Heat equation." << endl; break;
       case FEM_ELASTICITY:
-          if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
-          if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
-          if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
-          if (Kind_Material == NEO_HOOKEAN) {
-              if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
-              if (Kind_Material_Compress == INCOMPRESSIBLE_MAT) cout << "Incompressible Neo-Hookean material model (mean dilatation method)." << endl;
-          }
-          break;
+    	  if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
+    	  if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
+    	  if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
+    	  if (Kind_Material == NEO_HOOKEAN) {
+    		  if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
+    		  if (Kind_Material_Compress == INCOMPRESSIBLE_MAT) cout << "Incompressible Neo-Hookean material model (mean dilatation method)." << endl;
+    	  }
+    	  break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
       case ADJ_NAVIER_STOKES:
         if (Frozen_Visc)
@@ -3729,7 +3728,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
       if (Fixed_CM_Mode) {
-            cout << "Fixed CM mode, target value:  " << Target_CM << "." << endl;
+      		cout << "Fixed CM mode, target value:  " << Target_CM << "." << endl;
         cout << "HTP rotation axis (X,Z): ("<< HTP_Axis[0] <<", "<< HTP_Axis[1] <<")."<< endl;
       }
     }
@@ -3876,34 +3875,34 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << "Input mesh file name: " << Mesh_FileName << endl;
 
-    if (val_software == SU2_DOT) {
+	if (val_software == SU2_DOT) {
     if (DiscreteAdjoint) {
       cout << "Input sensitivity file name: " << GetObjFunc_Extension(Solution_AdjFileName) << "." << endl;
     }else {
-        cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
-    }
+		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
+	}
   }
 
-    if (val_software == SU2_MSH) {
-        switch (Kind_Adaptation) {
-        case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case SMOOTHING: case SUPERSONIC_SHOCK:
-            break;
-        case GRAD_FLOW:
-            cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
-            break;
-        case GRAD_ADJOINT:
-            cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
-            break;
-        case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
-            cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
-            cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
-            break;
-        }
-    }
+	if (val_software == SU2_MSH) {
+		switch (Kind_Adaptation) {
+		case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case SMOOTHING: case SUPERSONIC_SHOCK:
+			break;
+		case GRAD_FLOW:
+			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+			break;
+		case GRAD_ADJOINT:
+			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
+			break;
+		case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
+			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
+			break;
+		}
+	}
 
-    if (val_software == SU2_DEF) {
-        cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
-        cout << "Grid deformation using a linear elasticity method." << endl;
+	if (val_software == SU2_DEF) {
+		cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
+		cout << "Grid deformation using a linear elasticity method." << endl;
 
     if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." << endl;
   }
@@ -3932,7 +3931,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
           case SURFACE_BUMP:          cout << "Surface bump <-> " ; break;
           case ANGLE_OF_ATTACK:       cout << "Angle of attack <-> " ; break;
-            case CST:                     cout << "Kulfan parameter number (CST) <-> " ; break;
+	        case CST:           	      cout << "Kulfan parameter number (CST) <-> " ; break;
           case TRANSLATION:           cout << "Translation design variable."; break;
           case SCALE:                 cout << "Scale design variable."; break;
           case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
@@ -4049,13 +4048,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       
       else cout << endl;
 
-        }
-    }
+		}
+	}
 
-  if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
+	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
 
-        cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
-        if (nObj==1) {
+		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
+		if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
         case DRAG_COEFFICIENT:
           cout << "CD objective function." << endl;
@@ -4089,17 +4088,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case CIRCUMFERENTIAL_DISTORTION:   cout << "Circumferential distortion objective function." << endl; break;
 
       }
-        }
-        else {
-          cout << "Weighted sum objective function." << endl;
-        }
+		}
+		else {
+		  cout << "Weighted sum objective function." << endl;
+		}
 
-    }
+	}
 
-    if (val_software == SU2_CFD) {
-        cout << endl <<"---------------------- Space Numerical Integration ----------------------" << endl;
+	if (val_software == SU2_CFD) {
+		cout << endl <<"---------------------- Space Numerical Integration ----------------------" << endl;
 
-        if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
+		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
          (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
@@ -4125,14 +4124,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
       }
 
-            if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
-                if (Kind_Upwind_Flow == ROE) cout << "Roe (with entropy fix) solver for the flow inviscid terms."<< endl;
-                if (Kind_Upwind_Flow == TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
-                if (Kind_Upwind_Flow == AUSM)   cout << "AUSM solver for the flow inviscid terms."<< endl;
-                if (Kind_Upwind_Flow == HLLC)   cout << "HLLC solver for the flow inviscid terms."<< endl;
-                if (Kind_Upwind_Flow == SW) cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
-                if (Kind_Upwind_Flow == MSW)    cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == CUSP)   cout << "CUSP solver for the flow inviscid terms."<< endl;
+			if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
+				if (Kind_Upwind_Flow == ROE) cout << "Roe (with entropy fix) solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == AUSM)	cout << "AUSM solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == HLLC)	cout << "HLLC solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == SW)	cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == MSW)	cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == CUSP)	cout << "CUSP solver for the flow inviscid terms."<< endl;
         switch (SpatialOrder_Flow) {
           case FIRST_ORDER: cout << "First order integration." << endl; break;
           case SECOND_ORDER: cout << "Second order integration." << endl; break;
@@ -4148,9 +4147,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             }
             break;
         }
-            }
+			}
 
-        }
+		}
 
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
@@ -4287,33 +4286,33 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
 
     if (Kind_Solver != FEM_ELASTICITY) {
-        switch (Unsteady_Simulation) {
-          case NO:
-            cout << "Local time stepping (steady state simulation)." << endl; break;
-          case TIME_STEPPING:
-            cout << "Unsteady simulation using a time stepping strategy."<< endl;
-            if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-            else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-            break;
-          case DT_STEPPING_1ST: case DT_STEPPING_2ND:
-            if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
-            if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
-            if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-            else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-            cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
-            break;
-        }
+		switch (Unsteady_Simulation) {
+		  case NO:
+			cout << "Local time stepping (steady state simulation)." << endl; break;
+		  case TIME_STEPPING:
+			cout << "Unsteady simulation using a time stepping strategy."<< endl;
+			if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
+			break;
+		  case DT_STEPPING_1ST: case DT_STEPPING_2ND:
+			if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
+			if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
+			if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
+			cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
+			break;
+		}
     }
-    else {
-        switch (Dynamic_Analysis) {
-          case NO:
-            cout << "Static structural analysis." << endl; break;
-          case YES:
-            cout << "Dynamic structural analysis."<< endl;
-            cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
-            break;
-        }
-    }
+	else {
+		switch (Dynamic_Analysis) {
+		  case NO:
+			cout << "Static structural analysis." << endl; break;
+		  case YES:
+			cout << "Dynamic structural analysis."<< endl;
+			cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+			break;
+		}
+	}
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
@@ -4405,13 +4404,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-            if (Unsteady_Simulation != TIME_STEPPING) {
-                cout << "Courant-Friedrichs-Lewy number:   ";
-                cout.precision(3);
-                cout.width(6); cout << CFL[0];
-                cout << endl;
-            }
-            
+			if (Unsteady_Simulation != TIME_STEPPING) {
+				cout << "Courant-Friedrichs-Lewy number:   ";
+				cout.precision(3);
+				cout.width(6); cout << CFL[0];
+				cout << endl;
+			}
+			
 
       if (nMGLevels !=0) {
         cout.precision(3);
@@ -4887,22 +4886,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (nMarker_ActDiskInlet != 0) {
-        cout << "Actuator disk (inlet) boundary marker(s): ";
-        for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
-            cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
-            if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
-            else cout <<"."<< endl;
-        }
-    }
+		cout << "Actuator disk (inlet) boundary marker(s): ";
+		for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+			cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
+			if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
+			else cout <<"."<< endl;
+		}
+	}
 
   if (nMarker_ActDiskOutlet != 0) {
-        cout << "Actuator disk (outlet) boundary marker(s): ";
-        for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
-            cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
-            if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
-            else cout <<"."<< endl;
-        }
-    }
+		cout << "Actuator disk (outlet) boundary marker(s): ";
+		for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+			cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
+			if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
+			else cout <<"."<< endl;
+		}
+	}
 
 }
 
@@ -5154,18 +5153,18 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   return Marker_CfgFile_PerBound[iMarker_CfgFile];
 }
 
-int CConfig::GetMarker_ZoneInterface(string val_marker) {    
-      unsigned short iMarker_CfgFile;
-      for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+int CConfig::GetMarker_ZoneInterface(string val_marker) {	
+	  unsigned short iMarker_CfgFile;
+	  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     
-          if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
-                return  Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
+		  if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
+				return  Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
     return 0;
 }
 
 
 CConfig::~CConfig(void) {
-    
+	
   unsigned long iDV, iMarker, iPeriodic, iFFD;
 
   /*--- Delete all of the option objects in the global option map ---*/
@@ -5187,7 +5186,7 @@ CConfig::~CConfig(void) {
 
   /*--- Free memory for unspecified grid motion parameters ---*/
 
-  if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
+ if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
 
  /*--- Free memory for airfoil sections ---*/
 
@@ -6485,30 +6484,30 @@ void CConfig::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned lon
 
   u = new su2double [n];
 
-  if (yp1 > 0.99e30)            // The lower boundary condition is set either to be "nat
-    y2[0]=u[0]=0.0;           // -ural"
-  else {                                    // or else to have a specified first derivative.
+  if (yp1 > 0.99e30)			// The lower boundary condition is set either to be "nat
+    y2[0]=u[0]=0.0;			  // -ural"
+  else {									// or else to have a specified first derivative.
     y2[0] = -0.5;
     u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
   }
 
-  for (i=2; i<=n-1; i++) {                                  //  This is the decomposition loop of the tridiagonal al-
-    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);      //  gorithm. y2 and u are used for tem-
-    p=sig*y2[i-2]+2.0;                                      //  porary storage of the decomposed
-    y2[i-1]=(sig-1.0)/p;                                        //  factors.
+  for (i=2; i<=n-1; i++) {									//  This is the decomposition loop of the tridiagonal al-
+    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);		//	gorithm. y2 and u are used for tem-
+    p=sig*y2[i-2]+2.0;										//	porary storage of the decomposed
+    y2[i-1]=(sig-1.0)/p;										//	factors.
     u[i-1]=(y[i]-y[i-1])/(x[i]-x[i-1]) - (y[i-1]-y[i-2])/(x[i-1]-x[i-2]);
     u[i-1]=(6.0*u[i-1]/(x[i]-x[i-2])-sig*u[i-2])/p;
   }
 
-  if (ypn > 0.99e30)                        // The upper boundary condition is set either to be
-    qn=un=0.0;                                  // "natural"
-  else {                                                // or else to have a specified first derivative.
+  if (ypn > 0.99e30)						// The upper boundary condition is set either to be
+    qn=un=0.0;									// "natural"
+  else {												// or else to have a specified first derivative.
     qn=0.5;
     un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
   }
   y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-1; k>=1; k--)                    // This is the backsubstitution loop of the tridiagonal
-    y2[k-1]=y2[k-1]*y2[k]+u[k-1];     // algorithm.
+  for (k=n-1; k>=1; k--)					// This is the backsubstitution loop of the tridiagonal
+    y2[k-1]=y2[k-1]*y2[k]+u[k-1];	  // algorithm.
 
   delete[] u;
 
@@ -6518,17 +6517,17 @@ su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<
   unsigned long klo, khi, k;
   su2double h, b, a, y;
 
-  klo=1;                                        // We will find the right place in the table by means of
-  khi=n;                                        // bisection. This is optimal if sequential calls to this
-  while (khi-klo > 1) {         // routine are at random values of x. If sequential calls
-    k=(khi+klo) >> 1;               // are in order, and closely spaced, one would do better
-    if (xa[k-1] > x) khi=k;     // to store previous values of klo and khi and test if
-    else klo=k;                         // they remain appropriate on the next call.
-  }                             // klo and khi now bracket the input value of x
+  klo=1;										// We will find the right place in the table by means of
+  khi=n;										// bisection. This is optimal if sequential calls to this
+  while (khi-klo > 1) {			// routine are at random values of x. If sequential calls
+    k=(khi+klo) >> 1;				// are in order, and closely spaced, one would do better
+    if (xa[k-1] > x) khi=k;		// to store previous values of klo and khi and test if
+    else klo=k;							// they remain appropriate on the next call.
+  }								// klo and khi now bracket the input value of x
   h=xa[khi-1]-xa[klo-1];
-  if (h == 0.0) cout << "Bad xa input to routine splint" << endl;   // The xa’s must be dis-
-  a=(xa[khi-1]-x)/h;                                                                                          // tinct.
-  b=(x-xa[klo-1])/h;                // Cubic spline polynomial is now evaluated.
+  if (h == 0.0) cout << "Bad xa input to routine splint" << endl;	// The xa’s must be dis-
+  a=(xa[khi-1]-x)/h;																					      // tinct.
+  b=(x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
   y=a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
 
   return y;
