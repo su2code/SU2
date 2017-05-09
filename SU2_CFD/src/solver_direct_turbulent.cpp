@@ -1294,41 +1294,58 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   unsigned long iMarker,  nMarker = config->GetnMarker_All();
 
-  SlidingState = NULL;
-  SlidingState = new su2double** [nMarker];
+  SlidingState       = new su2double*** [nMarker];
+  SlidingStateNodes  = new int*         [nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    SlidingState[iMarker] = NULL;
+    SlidingState[iMarker]      = NULL;
+    SlidingStateNodes[iMarker] = NULL;
+    
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-      SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
-      for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++) {
-        SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
-        for (iVar = 0; iVar < nVar; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = -1;
+
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
       }
+
     }
-    else
-      SlidingState[iMarker] = NULL;
   }
 
 }
 
 CTurbSASolver::~CTurbSASolver(void) {
   
-  unsigned long iMarker, iVertex;
-
+  unsigned long iMarker, iVertex, iVar;
+  
   if ( SlidingState != NULL ) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if ( SlidingState[iMarker] != NULL ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          delete [] SlidingState[iMarker][iVertex];
-
+          if ( SlidingState[iMarker][iVertex] != NULL ){
+            for (iVar = 0; iVar < nPrimVar+1; iVar++)
+              delete [] SlidingState[iMarker][iVertex][iVar];
+            delete [] SlidingState[iMarker][iVertex];
+          }
         delete [] SlidingState[iMarker];
       }
     }
     delete [] SlidingState;
   }
-
+  
+  if ( SlidingStateNodes != NULL ){
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+        if (SlidingStateNodes[iMarker] != NULL)
+            delete [] SlidingStateNodes[iMarker];  
+    }
+    delete [] SlidingStateNodes;
+  }
 }
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -2343,7 +2360,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
 
           /*--- Set the turbulent variable states ---*/
           Solution_i[0] = node[iPoint]->GetSolution(0);
-          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
+          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0, 0);
 
           conv_numerics->SetTurbVar(Solution_i, Solution_j);
           /*--- Set the normal vector ---*/
@@ -2731,21 +2748,28 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   unsigned long iMarker,  nMarker = config->GetnMarker_All();
 
-  SlidingState = NULL;
-  SlidingState = new su2double** [nMarker];
+  SlidingState       = new su2double*** [nMarker];
+  SlidingStateNodes  = new int*         [nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    SlidingState[iMarker] = NULL;
+    SlidingState[iMarker]      = NULL;
+    SlidingStateNodes[iMarker] = NULL;
+    
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-      SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
-      for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++) {
-        SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
-        for (iVar = 0; iVar < nVar; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = -1;
+
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
       }
+
     }
-    else
-      SlidingState[iMarker] = NULL;
   }
   
 }
@@ -2754,20 +2778,30 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
   
   if (constants != NULL) delete [] constants;
   
-  unsigned long iMarker, iVertex;
+  unsigned long iMarker, iVertex, iVar;
 
   if ( SlidingState != NULL ) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if ( SlidingState[iMarker] != NULL ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          delete [] SlidingState[iMarker][iVertex];
-
+          if ( SlidingState[iMarker][iVertex] != NULL ){
+            for (iVar = 0; iVar < nPrimVar+1; iVar++)
+              delete [] SlidingState[iMarker][iVertex][iVar];
+            delete [] SlidingState[iMarker][iVertex];
+          }
         delete [] SlidingState[iMarker];
       }
     }
     delete [] SlidingState;
   }
-
+  
+  if ( SlidingStateNodes != NULL ){
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+        if (SlidingStateNodes[iMarker] != NULL)
+            delete [] SlidingStateNodes[iMarker];  
+    }
+    delete [] SlidingStateNodes;
+  }
 }
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -3282,7 +3316,6 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
 
-
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
@@ -3310,8 +3343,8 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
           Solution_i[0] = node[iPoint]->GetSolution(0);
           Solution_i[1] = node[iPoint]->GetSolution(1);
 
-          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
-          Solution_j[1] = GetSlidingState(iMarker, iVertex, 1);
+          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0, 0);
+          Solution_j[1] = GetSlidingState(iMarker, iVertex, 1, 0);
 
           conv_numerics->SetTurbVar(Solution_i, Solution_j);
           /*--- Set the normal vector ---*/
@@ -3321,10 +3354,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
           if (grid_movement)
             conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
-          /*--- Compute the convective residual using an upwind scheme ---*/
-
           conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
 
           /*--- Add Residuals and Jacobians ---*/
 
