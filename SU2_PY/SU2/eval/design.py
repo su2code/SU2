@@ -226,11 +226,7 @@ def obj_f(dvs,config,state=None):
     
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> develop
     # evaluate each objective
     vals_out = []
     total_func = 0.0
@@ -238,26 +234,16 @@ def obj_f(dvs,config,state=None):
         scale = def_objs[this_obj]['SCALE']
         relax = float(config['OPT_GRADIENT_FACTOR'])
         sign  = su2io.get_objectiveSign(this_obj)
-<<<<<<< HEAD
-        
-        # Evaluate Objective Function Function
-        func = su2func(this_obj,config,state)
-                        
-        # Evaluate Objective Function
-        # scaling and sign
-        total_func += func * sign * scale * relax
-                
-    vals_out.append(total_func)
-=======
+
         # Evaluate Objective Function scaling and sign
         # If default evaluate as normal, 
         if def_objs[this_obj]['OBJTYPE']=='DEFAULT':
-            func += su2func(this_obj,config,state) * sign * scale
+            func += su2func(this_obj,config,state) * sign * scale * relax
         # otherwise evaluate the penalty function (OBJTYPE = '>','<', or '=')
         else:
             func += obj_p(config,state,this_obj,def_objs) * scale
     vals_out.append(func)
->>>>>>> develop
+
     #: for each objective
     # If evaluating the combined function is desired, update it here.
     # This is only used when OPT_COMBINE_OBJECTIVE = YES
@@ -346,21 +332,16 @@ def obj_df(dvs,config,state=None):
         # single, combined objective.
         scale = [1.0]*n_obj
         for i_obj,this_obj in enumerate(objectives):
-<<<<<<< HEAD
-            sign = su2io.get_objectiveSign(this_obj)
-            relax = float(config['OPT_GRADIENT_FACTOR'])
-            scale[i_obj] = def_objs[this_obj]['SCALE']*relax*sign
-=======
             scale[i_obj] = def_objs[this_obj]['SCALE']
             if def_objs[this_obj]['OBJTYPE']== 'DEFAULT':
                 # Standard case
                 sign = su2io.get_objectiveSign(this_obj)
-                scale[i_obj]*=sign
+                relax = float(config['OPT_GRADIENT_FACTOR'])
+                scale[i_obj] *= sign * relax
             else:
                 # For a penalty function, the term is scaled by the partial derivative
                 # d p(j) / dx = (dj / dx) * ( dp / dj)  
-                scale[i_obj]*=obj_dp(config, state, this_obj, def_objs)
->>>>>>> develop
+                scale[i_obj] *= obj_dp(config, state, this_obj, def_objs)
             
         config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
         
