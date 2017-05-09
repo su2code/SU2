@@ -586,16 +586,6 @@ void CDriver::Postprocessing() {
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
-  if (config_container!= NULL) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone] != NULL) {
-        delete config_container[iZone];
-      }
-    }
-    delete [] config_container;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
-
   /*--- Deallocate output container ---*/
   if (output!= NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
@@ -626,6 +616,18 @@ void CDriver::Postprocessing() {
   // necessary variables have been made thread private for safety (tick/tock)!!
   config_container[ZONE_0]->SetProfilingCSV();
   config_container[ZONE_0]->GEMMProfilingCSV();
+
+  /*--- Deallocate config container ---*/
+  if (config_container!= NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone] != NULL) {
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+
   
   /*--- Exit the solver cleanly ---*/
 

@@ -215,6 +215,12 @@ public:
   unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
   unsigned long offsetDOFsSolLocal;  /*!< \brief Local offset of the solution DOFs of this element. */
 
+  unsigned long offsetDOFsSolThisTimeLevel; /*!< \brief Local offset of the solution DOFs of this element
+                                                        in the working vector of the time level of the element.
+                                                        Needed for time accurate local time stepping. */
+  unsigned long offsetDOFsSolPrevTimeLevel; /*!< \brief Local offset of the solution DOFs of this element
+                                                        in the working vector of the previous time level. */
+
   vector<bool> JacFacesIsConsideredConstant; /*!< \brief Vector with the booleans whether the Jacobian of the
                                                   transformation to the standard element is constant for the faces. */
   vector<bool> ElementOwnsFaces;             /*!< \brief Vector with the booleans whether the element is the
@@ -503,6 +509,13 @@ protected:
   vector<unsigned long> nVolElemInternalPerTimeLevel; /*!< \brief Number of internal local volume elements per
                                                                   time level. Internal means that the solution
                                                                   data does not need to be communicated. */
+  vector<unsigned long> nVolElemHaloPerTimeLevel;    /*!< \brief Number of local halo volume elements
+                                                                 per time level. Cumulative storage. */
+
+  vector<vector<unsigned long> > ownedElemAdjLowTimeLevel; /*!< \brief List of owned elements per time level that are
+                                                                       adjacent to elements of the lower time level. */
+  vector<vector<unsigned long> > haloElemAdjLowTimeLevel; /*!< \brief List of halo elements per time level that are
+                                                                      adjacent to elements of the lower time level. */
 
   vector<CVolumeElementFEM> volElem; /*!< \brief Vector of the local volume elements, including halos. */
 
@@ -590,7 +603,7 @@ public:
   CVolumeElementFEM *GetVolElem(void);
 
   /*!
-  * \brief Function, which makes available the number of volume elements per time level.
+  * \brief Function, which makes available the number of owned volume elements per time level.
   * \return  The pointer to the data of nVolElemOwnedPerTimeLevel.
   */
   unsigned long *GetNVolElemOwnedPerTimeLevel(void);
@@ -600,6 +613,26 @@ public:
   * \return  The pointer to the data of nVolElemInternalPerTimeLevel.
   */
   unsigned long *GetNVolElemInternalPerTimeLevel(void);
+
+  /*!
+  * \brief Function, which makes available the number of halo volume elements per time level.
+  * \return  The pointer to the data of nVolElemHaloPerTimeLevel.
+  */
+  unsigned long *GetNVolElemHaloPerTimeLevel(void);
+
+  /*!
+  * \brief Function, which makes available the vector of vectors containing the owned element
+           IDs adjacent to elements of a lower time level. Note that a copy is made.
+  * \return  Copy of ownedElemAdjLowTimeLevel.
+  */
+  vector<vector<unsigned long> > GetOwnedElemAdjLowTimeLevel(void);
+
+  /*!
+  * \brief Function, which makes available the vector of vectors containing the halo element
+           IDs adjacent to elements of a lower time level. Note that a copy is made.
+  * \return  Copy of haloElemAdjLowTimeLevel.
+  */
+  vector<vector<unsigned long> > GetHaloElemAdjLowTimeLevel(void);
 
   /*!
   * \brief Function, which makes available the number of standard boundary faces of the solution.
@@ -642,18 +675,18 @@ public:
   const vector<vector<unsigned long> > &GetEntitiesSend(void) const;
 
   /*!
-  * \brief Function, which makes available the vector of rotational periodic markers.
-           Note that a copy of this vector is made.
-  * \return  Copy of the vector with rotational periodic markers.
+  * \brief Function, which makes available the vector of rotational periodic markers
+           as a const reference.
+  * \return  Const reference to the vector with rotational periodic markers.
   */
-  vector<unsigned short> GetRotPerMarkers(void) const;
+  const vector<unsigned short> &GetRotPerMarkers(void) const;
 
   /*!
   * \brief Function, which makes available the vector of vectors containing the rotational
-           periodic halos. Note that a copy is made.
-  * \return  Copy of the vector of vectors with rotational periodic halos.
+           periodic halos as a const reference.
+  * \return  Const reference to the vector of vectors with rotational periodic halos.
   */
-  vector<vector<unsigned long> > GetRotPerHalos(void) const;
+  const vector<vector<unsigned long> > &GetRotPerHalos(void) const;
 
   /*!
   * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
@@ -771,8 +804,11 @@ private:
                                                                     the time DOFs at the beginning of the time interval,
                                                                     i.e. r == -1. */
 
-  vector<su2double> timeInterpolDOFToIntegrationADER_DG; /*!< \brief The interpolation matrix between the time DOFs and
-                                                                     the time integration points for ADER-DG. */
+  vector<su2double> timeInterpolDOFToIntegrationADER_DG;    /*!< \brief The interpolation matrix between the time DOFs and
+                                                                        the time integration points for ADER-DG. */
+  vector<su2double> timeInterpolAdjDOFToIntegrationADER_DG; /*!< \brief The interpolation matrix between the time DOFs of adjacent
+                                                                        elements of a higher time level and the time integration
+                                                                        points for ADER-DG. */
 
   vector<unsigned long> nMatchingFacesInternal;          /*!< \brief Number of matching faces between between two owned elements
                                                                      per time level. Cumulative storage format. */
@@ -838,6 +874,14 @@ public:
   * \return  The time interpolation matrix for ADER-DG.
   */
   su2double *GetTimeInterpolDOFToIntegrationADER_DG(void);
+
+ /*!
+  * \brief Function, which makes available the time interpolation matrix between
+           the adjacent time DOFs of the next time level and the time
+           integration points for ADER-DG.
+  * \return  The time interpolation matrix of adjacent time DOFs for ADER-DG.
+  */
+  su2double *GetTimeInterpolAdjDOFToIntegrationADER_DG(void);
 
  /*!
   * \brief Function, which makes available the number of matching internal faces
