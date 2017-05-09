@@ -969,6 +969,10 @@ inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Si
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
 
+inline bool CConfig::GetWrt_Binary_Restart(void) {	return Wrt_Binary_Restart; }
+
+inline bool CConfig::GetRead_Binary_Restart(void) {	return Read_Binary_Restart; }
+
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
@@ -1231,6 +1235,10 @@ inline bool CConfig::Low_Mach_Preconditioning(void) { return Low_Mach_Precon; }
 inline bool CConfig::Low_Mach_Correction(void) { return Low_Mach_Corr; } 
 
 inline bool CConfig::GetGravityForce(void) { return GravityForce; }
+
+inline bool CConfig::GetBody_Force(void) { return Body_Force; }
+
+inline su2double* CConfig::GetBody_Force_Vector(void) { return Body_Force_Vector; }
 
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 

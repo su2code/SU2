@@ -90,7 +90,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
-  solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+  solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config);
 
   /*--- Weak boundary conditions ---*/
   
@@ -325,15 +325,18 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
   if (KindSolver != FEM_ELASTICITY) {
 
     switch (config->GetKind_TimeIntScheme()) {
-    case (RUNGE_KUTTA_EXPLICIT):
-      solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
-      break;
-    case (EULER_EXPLICIT):
-      solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
-      break;
-    case (EULER_IMPLICIT):
-      solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
-      break;
+      case (RUNGE_KUTTA_EXPLICIT):
+        solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+        break;
+      case (CLASSICAL_RK4_EXPLICIT):
+        solver_container[MainSolver]->ClassicalRK4_Iteration(geometry, solver_container, config, iRKStep);
+        break;
+      case (EULER_EXPLICIT):
+        solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
+        break;
+      case (EULER_IMPLICIT):
+        solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+        break;
     }
 
    /*--- Structural time integration schemes ---*/
