@@ -379,16 +379,18 @@ void CVanDerWaalsGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
   StaticEnergy = e;
   Cv    = Gas_Constant/(Gamma-1);
 
-  Temperature = (StaticEnergy + a*Density)/ Cv;
+  Temperature = abs((StaticEnergy + a*Density)/ Cv);
 
   do{
 	Temperature_new = Temperature;
+
 	HeatCapacity->Set_Cv0 (Temperature_new);
 	Cv = HeatCapacity->Get_Cv0 ();
-	Temperature = (StaticEnergy + a*Density)/ Cv;
+	Temperature = abs((StaticEnergy + a*Density)/ Cv);
 
 	error = abs(Temperature_new-Temperature)/Temperature_new;
 	count_T++;
+
 	}
 
   while(error > toll && count_T<ITMAX);
@@ -432,7 +434,6 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
     su2double cons_s, cons_h;
 
 
-//    cout << Gamma << " " << h << " " <<s << endl;
     Cp = Gamma*Gas_Constant /(Gamma - 1);
     T_new = abs(h)/Cp;
 //getchar();
@@ -585,7 +586,9 @@ void CVanDerWaalsGas_Generic::SetTDState_Prho (su2double P, su2double rho ) {
 void CVanDerWaalsGas_Generic::SetEnergy_Prho (su2double P, su2double rho ) {
 
   su2double T = (P+rho*rho*a)*(1-rho*b)/(rho*Gas_Constant);
+
   HeatCapacity->Set_Cv0 (T);
+
   Cv = HeatCapacity->Get_Cv0 ();
   StaticEnergy = T*Cv - rho*a;
 

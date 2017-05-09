@@ -103,7 +103,6 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
   val_residual[2] = a0*Two_phaseVar_i[2]+a1*Two_phaseVar_j[2];
   val_residual[3] = a0*Two_phaseVar_i[3]+a1*Two_phaseVar_j[3];
 
-
   if (implicit) {
 
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -158,6 +157,7 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 	mu    = V_i[nDim+5];
 	k     = V_i[nDim+7];
 	CpoCv = V_i[nDim+9];
+
 
 	// compute the nucleation rate and the growth rate
 

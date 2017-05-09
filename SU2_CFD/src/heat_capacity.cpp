@@ -46,6 +46,7 @@ CHeatCapacity::CHeatCapacity(CConfig *config) {
 
 	coeff_Cp0      = config->GetCoeff_HeatCapacity();
 
+	T_Total  = config->GetRiemann_Var2(config->GetMarker_All_TagBound(1));
 }
 
 CHeatCapacity::~CHeatCapacity(void) {
@@ -68,7 +69,7 @@ CHeatCapacity_Dimensional::~CHeatCapacity_Dimensional(void) {
 void CHeatCapacity_Dimensional::Set_Cv0(su2double T) {
 
 	unsigned short i;
-    su2double Cp0;
+    su2double Cp0, T_limited;
 
     if (coeff_Cp0[0] == 0.0) {
     	cout << "Warning: no value set for HEAT_CAPACITY_MODEL" << endl;
@@ -81,8 +82,13 @@ void CHeatCapacity_Dimensional::Set_Cv0(su2double T) {
     } else {
 
     	Cp0 = 0;
+
+    	T_limited = min(T, T_Total);
+
         for (i=0;i<5;i++)
-           Cp0 += coeff_Cp0[i] * pow(T, i);
+           Cp0 += coeff_Cp0[i] * pow(T_limited, i);
+
+        cout << coeff_Cp0[0] << coeff_Cp0[1] << coeff_Cp0[2] << coeff_Cp0[3] << coeff_Cp0[4] << endl;
     }
 
     Cv0 = Cp0 - Gas_Constant;
@@ -105,7 +111,7 @@ CHeatCapacity_Dimensionless::~CHeatCapacity_Dimensionless(void) {
 void CHeatCapacity_Dimensionless::Set_Cv0(su2double T) {
 
 	unsigned short i;
-    su2double Cp0;
+    su2double Cp0, T_limited;
 
     if (coeff_Cp0[0] == 0.0) {
     	cout << "Warning: no value set for HEAT_CAPACITY_MODEL" << endl;
@@ -118,8 +124,11 @@ void CHeatCapacity_Dimensionless::Set_Cv0(su2double T) {
 
     } else {
         Cp0 = 0;
+
+    	T_limited = min(T*Tref, T_Total);
+
         for (i=0;i<5;i++) {
-           Cp0 += coeff_Cp0[i] * pow(T*Tref, i);
+           Cp0 += coeff_Cp0[i] * pow(T_limited, i);
         }
     }
 

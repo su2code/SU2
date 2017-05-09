@@ -99,7 +99,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   Solution_New = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+4;
   if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
   else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
 
@@ -264,7 +264,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Solution_New = NULL;
  
     /*--- Allocate and initialize the primitive variables and gradients ---*/
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+4;
   if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
   else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
 
@@ -470,8 +470,6 @@ bool CEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
     SetPressure(FluidModel->GetPressure());
     SetSoundSpeed(FluidModel->GetSoundSpeed2());
     SetTemperature(FluidModel->GetTemperature());
-    
-    SetGamma (FluidModel->GetGamma());
 
     RightVol = false;
     
@@ -481,6 +479,9 @@ bool CEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
   
   SetEnthalpy();                                // Requires pressure computation.
   
+  SetGamma (FluidModel->GetGamma());
+
+
   return RightVol;
   
 }
@@ -671,8 +672,6 @@ bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel
     SetPressure(FluidModel->GetPressure());
     SetSoundSpeed(FluidModel->GetSoundSpeed2());
     SetTemperature(FluidModel->GetTemperature());
-    
-    SetGamma (FluidModel->GetGamma());
 
     RightVol = false;
     
@@ -698,6 +697,10 @@ bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel
 
   SetSpecificHeatCp(FluidModel->GetCp());
   
+
+  SetGamma (FluidModel->GetGamma());
+
+
   return RightVol;
   
 }
