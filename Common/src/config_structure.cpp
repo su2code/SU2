@@ -294,10 +294,11 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_Moving       = NULL;   Marker_All_Moving        = NULL;
   Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
   Marker_CfgFile_FSIinterface = NULL;
+  Marker_CfgFile_CHT          = NULL;   Marker_All_CHT           = NULL;
   
   Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
   Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
-  Marker_Analyze              = NULL;   Marker_All_BCCustom      = NULL;
+  Marker_Analyze              = NULL;   Marker_All_BCCustom      = NULL;    Marker_CHT        = NULL;
   Marker_CfgFile_KindBC       = NULL;   Marker_All_KindBC        = NULL;
   
   /*--- Marker Pointers ---*/
@@ -773,6 +774,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
   addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
+
+  /*!\brief MARKER_CHT\n DESCRIPTION: Conjugate heat transfer boundary marker(s) \ingroup Config*/
+  addStringListOption("MARKER_CHT", nMarker_CHT, Marker_CHT);
 
   /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: VARIABLES_JUMP \ingroup Config*/
   addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, VARIABLES_JUMP);
@@ -3120,7 +3124,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
-  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
+  iMarker_DV, iMarker_Moving, iMarker_CHT, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D;
 
@@ -3164,6 +3168,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_GeoEval        = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
   Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
+  Marker_All_CHT            = new unsigned short[nMarker_All];
   Marker_All_PerBound       = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Out_1D         = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
   Marker_All_BCCustom       = new unsigned short[nMarker_All];
@@ -3183,6 +3188,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_PerBound[iMarker_All]      = 0;
     Marker_All_Out_1D[iMarker_All]        = 0;
     Marker_All_BCCustom[iMarker_All]      = 0;
+    Marker_All_CHT[iMarker_All]           = 0;
   }
 
   /*--- Allocate the memory (markers in the config file) ---*/
@@ -3199,6 +3205,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Moving        = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound      = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Out_1D        = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_CHT           = new unsigned short[nMarker_CfgFile];
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile]      = "SEND_RECEIVE";
@@ -3213,6 +3220,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_Moving[iMarker_CfgFile]        = 0;
     Marker_CfgFile_PerBound[iMarker_CfgFile]      = 0;
     Marker_CfgFile_Out_1D[iMarker_CfgFile]        = 0;
+    Marker_CfgFile_CHT[iMarker_CfgFile]           = 0;
   }
 
   /*--- Allocate memory to store surface information (Analyze BC) ---*/
@@ -3600,6 +3608,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
         Marker_CfgFile_Moving[iMarker_CfgFile] = YES;
   }
 
+  for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_CHT[iMarker_CfgFile] = NO;
+    for(iMarker_CHT=0; iMarker_CHT < nMarker_CHT; iMarker_CHT++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_CHT[iMarker_CHT])
+        Marker_CfgFile_CHT[iMarker_CfgFile] = YES;
+  }
+
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Out_1D[iMarker_CfgFile] = NO;
     for (iMarker_Out_1D = 0; iMarker_Out_1D < nMarker_Out_1D; iMarker_Out_1D++)
@@ -3618,7 +3633,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
-  iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
+  iMarker_FSIinterface, iMarker_CHT, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_ActDiskOutlet;
   
@@ -3849,6 +3864,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
       cout<<endl;
     }
+
+    if(nMarker_CHT != 0) {
+      cout << "Surface(s) exchanging thermal quantities: ";
+      for(iMarker_CHT=0; iMarker_CHT < nMarker_CHT; iMarker_CHT++){
+        cout << Marker_CHT[iMarker_CHT];
+        if (iMarker_CHT < nMarker_CHT-1) cout << ", ";
+        else cout << ".";
+      }
+      cout << endl;
+    }
     
     if (nMarker_DV != 0) {
       cout << "Surface(s) affected by the design variables: ";
@@ -3860,7 +3885,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout<< endl;
     }
 
-    if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL)) {
+    if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL) || (Kind_GridMovement[ZONE_0] == FLUID_STRUCTURE)) {
       cout << "Surface(s) in motion: ";
       for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
         cout << Marker_Moving[iMarker_Moving];
@@ -5157,6 +5182,13 @@ unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
   return Marker_CfgFile_Moving[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_CHT(string val_marker){
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_CHT[iMarker_CfgFile];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -5297,7 +5329,11 @@ CConfig::~CConfig(void) {
   
   if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
+
+  if (Marker_CfgFile_CHT    != NULL) delete[] Marker_CfgFile_CHT;
   if (Marker_All_BCCustom   != NULL) delete[] Marker_All_BCCustom;
+
+  if (Marker_All_CHT != NULL) delete[] Marker_All_CHT;
   
   if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
@@ -5310,6 +5346,7 @@ CConfig::~CConfig(void) {
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
   if (Marker_Analyze != NULL)        delete[] Marker_Analyze;
   if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
+  if (Marker_CHT != NULL)             delete [] Marker_CHT;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
 
   if (Kind_ObjFunc != NULL)      delete[] Kind_ObjFunc;

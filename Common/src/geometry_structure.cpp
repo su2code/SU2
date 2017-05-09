@@ -4769,6 +4769,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+      config->SetMarker_All_CHT(iMarker, config->GetMarker_CfgFile_CHT(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
       config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
 
@@ -4787,6 +4788,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   	  config->SetMarker_All_FSIinterface(iMarker, NO);
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
+      config->SetMarker_All_CHT(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
       config->SetMarker_All_Out_1D(iMarker, NO);
       
@@ -6710,6 +6712,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+            config->SetMarker_All_CHT(iMarker, config->GetMarker_CfgFile_CHT(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
             config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
@@ -6726,6 +6729,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               config->SetMarker_All_FSIinterface(iMarker+1, config->GetMarker_CfgFile_FSIinterface(Marker_Tag_Duplicate));
               config->SetMarker_All_DV(iMarker+1, config->GetMarker_CfgFile_DV(Marker_Tag_Duplicate));
               config->SetMarker_All_Moving(iMarker+1, config->GetMarker_CfgFile_Moving(Marker_Tag_Duplicate));
+              config->SetMarker_All_CHT(iMarker+1, config->GetMarker_CfgFile_CHT(Marker_Tag_Duplicate));
               config->SetMarker_All_PerBound(iMarker+1, config->GetMarker_CfgFile_PerBound(Marker_Tag_Duplicate));
               config->SetMarker_All_SendRecv(iMarker+1, NONE);
               config->SetMarker_All_Out_1D(iMarker+1, config->GetMarker_CfgFile_Out_1D(Marker_Tag_Duplicate));
@@ -8447,6 +8451,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+            config->SetMarker_All_CHT(iMarker, config->GetMarker_CfgFile_CHT(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
@@ -15176,6 +15181,88 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
       node[Point_Coarse]->SetCoord(iDim, Coordinates[iDim]);
   }
   delete[] Coordinates;
+}
+
+void CMultiGridGeometry::SetWallHeatFlux(CGeometry *geometry, unsigned short val_marker){
+
+  unsigned long Point_Fine, Point_Coarse, iVertex;
+  unsigned short iChildren;
+  su2double Area_Parent, Area_Children;
+  su2double WallHeatFlux_Fine, WallHeatFlux_Coarse;
+  bool isVertex;
+  int numberVertexChildren;
+
+  for(iVertex=0; iVertex < nVertex[val_marker]; iVertex++){
+    Point_Coarse = vertex[val_marker][iVertex]->GetNode();
+    if (node[Point_Coarse]->GetDomain()){
+      Area_Parent = 0.0;
+      WallHeatFlux_Coarse = 0.0;
+      numberVertexChildren = 0;
+      /*--- Compute area parent by taking into account only volumes that are on the marker ---*/
+      for(iChildren=0; iChildren < node[Point_Coarse]->GetnChildren_CV(); iChildren++){
+        Point_Fine = node[Point_Coarse]->GetChildren_CV(iChildren);
+        isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
+        if (isVertex){
+          numberVertexChildren += 1;
+          Area_Parent += geometry->node[Point_Fine]->GetVolume();
+        }
+      }
+
+      for(iChildren=0; iChildren < node[Point_Coarse]->GetnChildren_CV(); iChildren++){
+        Point_Fine = node[Point_Coarse]->GetChildren_CV(iChildren);
+        isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
+        if(isVertex){
+          Area_Children = geometry->node[Point_Fine]->GetVolume();
+          WallHeatFlux_Fine = geometry->node[Point_Fine]->GetImposedHeatFlux();
+          WallHeatFlux_Coarse += WallHeatFlux_Fine*Area_Children/Area_Parent;
+        }
+
+      }
+      node[Point_Coarse]->SetImposedHeatFlux(WallHeatFlux_Coarse);
+    }
+  }
+
+}
+
+void CMultiGridGeometry::SetWallTemperature(CGeometry *geometry, unsigned short val_marker){
+
+  unsigned long Point_Fine, Point_Coarse, iVertex;
+  unsigned short iChildren;
+  su2double Area_Parent, Area_Children;
+  su2double WallTemperature_Fine, WallTemperature_Coarse;
+  bool isVertex;
+  int numberVertexChildren;
+
+  for(iVertex=0; iVertex < nVertex[val_marker]; iVertex++){
+    Point_Coarse = vertex[val_marker][iVertex]->GetNode();
+    if (node[Point_Coarse]->GetDomain()){
+      Area_Parent = 0.0;
+      WallTemperature_Coarse = 0.0;
+      numberVertexChildren = 0;
+      /*--- Compute area parent by taking into account only volumes that are on the marker ---*/
+      for(iChildren=0; iChildren < node[Point_Coarse]->GetnChildren_CV(); iChildren++){
+        Point_Fine = node[Point_Coarse]->GetChildren_CV(iChildren);
+        isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
+        if (isVertex){
+          numberVertexChildren += 1;
+          Area_Parent += geometry->node[Point_Fine]->GetVolume();
+        }
+      }
+
+      for(iChildren=0; iChildren < node[Point_Coarse]->GetnChildren_CV(); iChildren++){
+        Point_Fine = node[Point_Coarse]->GetChildren_CV(iChildren);
+        isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
+        if(isVertex){
+          Area_Children = geometry->node[Point_Fine]->GetVolume();
+          WallTemperature_Fine = geometry->node[Point_Fine]->GetImposedTemperature();
+          WallTemperature_Coarse += WallTemperature_Fine*Area_Children/Area_Parent;
+        }
+
+      }
+      node[Point_Coarse]->SetImposedTemperature(WallTemperature_Coarse);
+    }
+  }
+
 }
 
 void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) {
