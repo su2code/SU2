@@ -12286,16 +12286,6 @@ public:
                                const unsigned long elemEnd);
 
   /*!
-   * \brief Source term integration.
-   * \param[in] config  - Definition of the particular problem.
-   * \param[in] elemBeg - Begin index of the element range to be computed.
-   * \param[in] elemEnd - End index (not included) of the element range to be computed.
-   */
-  void Source_Residual(CConfig             *config,
-                       const unsigned long elemBeg,
-                       const unsigned long elemEnd);
-
-  /*!
    * \brief Function, which computes the spatial residual for the DG discretization.
    * \param[in] timeLevel - Time level of the time accurate local time stepping,
                             if relevant.
