@@ -1326,7 +1326,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   unsigned short iVar;
   unsigned long iPoint, total_index;
-  su2double Min_Delta, Delta, Delta_Flow, Vol;
+  su2double Min_Delta, Delta, Delta_Flow, Vol, *local_Res_TruncError;
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
 
 
@@ -1341,30 +1341,45 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
+    /*--- Read the residual ---*/
+
+    local_Res_TruncError = node[iPoint]->GetResTruncError();
+
     /*--- Read the volume ---*/
 
     Vol = geometry->node[iPoint]->GetVolume();
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    if(flow) {
-      Delta = Vol / node[iPoint]->GetDelta_Time();
-      Delta_Flow = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
-      Min_Delta = min(Delta, Delta_Flow);
-      Jacobian.AddVal2Diag(iPoint, Min_Delta);
+    if (node[iPoint]->GetDelta_Time() != 0.0) {
+
+      if(flow) {
+        Delta = Vol / node[iPoint]->GetDelta_Time();
+        //Delta_Flow = Vol / (solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+        //Min_Delta = min(Delta, Delta_Flow);
+        Jacobian.AddVal2Diag(iPoint, Delta);
+      }
+      else {
+        Delta = Vol / node[iPoint]->GetDelta_Time();
+        Jacobian.AddVal2Diag(iPoint, Delta);
+        local_Res_TruncError[iVar] = 0.0;
+      }
+
+    } else {
+
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = 0.0;
+      local_Res_TruncError[iVar] = 0.0;
     }
-    else {
-      Delta = Vol / node[iPoint]->GetDelta_Time();
-      Jacobian.AddVal2Diag(iPoint, Delta);
-    }
+
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - LinSysRes[total_index];
+      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      //AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
   }
 
