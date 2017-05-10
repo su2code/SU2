@@ -861,6 +861,8 @@ inline unsigned short CConfig::GetSpatialOrder_Flow(void) { return SpatialOrder_
 
 inline unsigned short CConfig::GetSpatialOrder_Turb(void) { return SpatialOrder_Turb; }
 
+inline unsigned short CConfig::GetSpatialOrder_Heat(void) { return SpatialOrder_Heat; }
+
 inline unsigned short CConfig::GetSpatialOrder_AdjFlow(void) { return SpatialOrder_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }

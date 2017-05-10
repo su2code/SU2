@@ -1110,6 +1110,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONV_NUM_METHOD_ADJTURB\n DESCRIPTION: Convective numerical method for the adjoint/turbulent problem \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
 
+  /*!\brief SPATIAL_ORDER_HEAT
+   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
+  addEnumOption("SPATIAL_ORDER_HEAT", SpatialOrder_Heat, SpatialOrder_Map, FIRST_ORDER);
+
   /* DESCRIPTION: Viscous limiter mean flow equations */
   addBoolOption("VISCOUS_LIMITER_FLOW", Viscous_Limiter_Flow, false);
   /* DESCRIPTION: Viscous limiter turbulent equations */

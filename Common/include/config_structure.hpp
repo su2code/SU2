@@ -3396,6 +3396,15 @@ public:
    * \return Kind of upwind scheme for the convective terms.
    */
   unsigned short GetSpatialOrder_Turb(void);
+
+  /*!
+   * \brief Get the order of the spatial integration.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return Kind of upwind scheme for the convective terms.
+   */
+  unsigned short GetSpatialOrder_Heat(void);
   
   /*!
    * \brief Get the order of the spatial integration.

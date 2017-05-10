@@ -51,6 +51,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool second_order     = (config->GetSpatialOrder_Heat() == SECOND_ORDER);
 
   int rank = MASTER_NODE;
 
@@ -337,6 +338,7 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   unsigned short iDim, iVar;
   unsigned long iEdge, iPoint, jPoint;
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
+  bool second_order     = (config->GetSpatialOrder_Heat() == SECOND_ORDER);
 
   if(flow) {
 
@@ -357,7 +359,7 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         Temp_j = node[jPoint]->GetSolution(0); 
 
         /* Second order reconstruction */
-        if(true) {
+        if(second_order) {
 
             for (iDim = 0; iDim < nDim; iDim++) {
               Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
