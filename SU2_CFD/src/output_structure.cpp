@@ -5531,7 +5531,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             cout.unsetf(ios_base::floatfield);
           }
-          else if (heat) { cout.width(15); cout << Total_Heat; }
+          else if (heat) { cout.width(15); cout << std::scientific << Total_Heat; }
           else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
           
           if (aeroelastic) {
