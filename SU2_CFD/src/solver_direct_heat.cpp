@@ -1244,6 +1244,50 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   }
 }
 
+void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  bool adjoint = config->GetContinuous_Adjoint();
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+
+  /*--- Update the solution ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    Vol = geometry->node[iPoint]->GetVolume();
+    Delta = node[iPoint]->GetDelta_Time() / Vol;
+
+    local_Res_TruncError = node[iPoint]->GetResTruncError();
+    local_Residual = LinSysRes.GetBlock(iPoint);
+
+    if (!adjoint) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res = local_Residual[iVar] + local_Res_TruncError[iVar];
+        node[iPoint]->AddSolution(iVar, -Res*Delta);
+        AddRes_RMS(iVar, Res*Res);
+        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      }
+    }
+
+  }
+
+  /*--- MPI solution ---*/
+
+  Set_MPI_Solution(geometry, config);
+
+  /*--- Compute the root mean square residual ---*/
+
+  SetResidual_RMS(geometry, config);
+
+}
+
+
 void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned short iVar;
