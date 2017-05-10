@@ -745,8 +745,8 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
 		count_v = 0;
 
 		T = T_v_h(v, h);
-   	    atanh = (log(1.0+( b*sqrt2 / (x1 + b))) - log(1.0-( b*sqrt2 / (x1 + b))))/2.0;
-		T_new = exp((s - Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)))/Cv);
+   	    atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
+		T_new = exp((s - Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)))/Cv);
 
 		error = abs(T - T_new)/T;
 		count_T++;
@@ -808,89 +808,43 @@ void CPengRobinson_Generic::SetTDState_rhoT (su2double rho, su2double T) {
 
 void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
 
-  su2double T, rho, v, cons_P, cons_s, fv, A, atanh;
+  su2double T, rho, v, cons_P, cons_s, fv, A, atanh, T_new, v_new;
+  su2double error = 0, error_v = 0;
   su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
   su2double toll = 1e-5, FACTOR=0.2;
-  unsigned short count=0, NTRY=10, ITMAX=100;
+  unsigned short count=0, NTRY=10, ITMAX=100, count_T = 0, count_v = 0;
 
-  A = Gas_Constant / Gamma_Minus_One;
-  T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
-  v = (T*Gas_Constant)/P;
+  T_new   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+//getchar();
+	  do{
+		T = T_new;
+		HeatCapacity->Set_Cv0 (T);
+		Cv0 = HeatCapacity->Get_Cv0 ();
+		v_new = exp((s - Cv0*log(T)) / Gas_Constant)+ b ;
 
-  if(Zed<0.9999) {
-    x1 = Zed*v;
-    x2 = v;
+		do {
+			v = v_new;
+			Set_Cv(T,v);
+			atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
+			v_new = (s - Cv*log(T) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)))/Gas_Constant;
+			v_new = exp(v_new) + b;
+			error_v = abs(v - v_new)/v;
+			count_v++;
 
-  }else {
-    x1 = 0.2*v;
-    x2 = v;
-  }
-  T = T_P_rho(P,1.0/x1);
+		}while(error_v >toll && count_v < ITMAX);
 
-  atanh = (log(1.0 + ( b*sqrt2 / (x1 + b) )) - log(1.0-( b*sqrt2 / (x1 + b) )))/2.0;
-  fv = atanh;
+		error_v = 1;
+		count_v = 0;
 
-  fx1 = Cv*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-  T = T_P_rho(P,1.0/x2);
+		T_new = T_P_rho(P, 1/v);
+   	    atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
+		T_new = exp((s - Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)))/Cv);
 
-  atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
-  fv = atanh;
+		error = abs(T - T_new)/T;
+		count_T++;
+	  }while(error >toll && count_T < ITMAX);
 
-  fx2 = Cv*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-
-  // zbrac algorithm NR
-
-  for (int j=1;j<=NTRY;j++) {
-    if (fx1*fx2 > 0.0) {
-      if (fabs(fx1) < fabs(fx2)) {
-        x1 += FACTOR*(x1-x2);
-        T = T_P_rho(P,1.0/x1);
-
-        atanh = (log(1.0 + ( b*sqrt2 / (x1 + b) )) - log(1.0-( b*sqrt2 / (x1 + b) )))/2.0;
-        fv = atanh;
-
-        fx1 = Cv*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-      }else {
-        T = T_P_rho(P,1.0/x2);
-
-        atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
-        fv = atanh;
-
-        fx2 = Cv*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-        }
-    }
-  }
-
-
-  // rtbis algorithm NR
-
-  f=fx1;
-  fmid=fx2;
-  if (f*fmid >= 0.0) {
-    cout<< "Root must be bracketed for bisection in rtbis"<< endl;
-    SetTDState_rhoT(Density, Temperature);
-  }
-  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
-  do{
-    xmid=rtb+(dx *= 0.5);
-    T = T_P_rho(P,1.0/xmid);
-
-    atanh = (log(1.0 + ( b*sqrt2 / (xmid + b) )) - log(1.0-( b*sqrt2 / (xmid + b) )))/2.0;
-    fv = atanh;
-
-    fmid = Cv*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-    if (fmid <= 0.0) rtb=xmid;
-    count++;
-    }while(abs(fmid) > toll && count<ITMAX);
-
-    if(count==ITMAX) {
-      cout <<"Too many bisections in rtbis" << endl;
-    }
-
-  rho = 1.0/xmid;
-  T = T_P_rho(P, rho);
-  SetTDState_rhoT(rho, T);
-//  cout << xmid << " "<< T<< " "<< Pressure<< " "<< P << " "<< Entropy << " "<< s <<endl;
+   SetTDState_rhoT(1/v, T);
 
   cons_P= abs((Pressure -P)/P);
   cons_s= abs((Entropy-s)/s);

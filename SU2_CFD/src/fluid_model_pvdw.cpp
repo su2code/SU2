@@ -503,92 +503,18 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
   T_new   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
 
   do{
-     	  T = T_new;
-		  HeatCapacity->Set_Cv0 (T);
-		  Cv = HeatCapacity->Get_Cv0 ();
+	  T = T_new;
+	  HeatCapacity->Set_Cv0 (T);
+	  Cv = HeatCapacity->Get_Cv0 ();
 
-		  v =  exp((s - Cv*log(T))/Gas_Constant) + b;
-		  T_new = (P + a/v/v) * (v - b)/ Gas_Constant;
+	  v =  exp((s - Cv*log(T))/Gas_Constant) + b;
+	  T_new = (P + a/v/v) * (v - b)/ Gas_Constant;
 
-		  error = abs(T - T_new)/T;
-		  count_T++;
+	  error = abs(T - T_new)/T;
+	  count_T++;
 	}while(error >toll && count < ITMAX);
-    count_T = 0;
-    error = 1;
 
-	rho = 1/v;
-
-	if(Zed<0.9999) {
-	  x1 = rho;
-	  x2 = rho/Zed;
-
-	}else {
-	  x1 = rho;
-	  x2 = rho/0.5;
-	}
-
-	T1 = (P+x1*x1*a)*((1-x1*b)/(x1*Gas_Constant));
-	HeatCapacity->Set_Cv0 (T1);
-	Cv = HeatCapacity->Get_Cv0 ();
-
-	fx1 = log(T1)*Cv + Gas_Constant *log(1/x1 - b) - s;
-
-	T2 = (P+x2*x2*a)*((1-x2*b)/(x2*Gas_Constant));
-	HeatCapacity->Set_Cv0 (T2);
-	Cv = HeatCapacity->Get_Cv0 ();
-	fx2 = log(T2)*Cv + Gas_Constant *log(1/x2 - b) - s;
-
-	// zbrac algorithm NR
-
-	for (int j=1;j<=NTRY;j++) {
-	  if (fx1*fx2 > 0.0) {
-		if (fabs(fx1) < fabs(fx2)) {
-		  x1 += FACTOR*(x1-x2);
-		  T1 = (P+x1*x1*a)*((1-x1*b)/(x1*Gas_Constant));
-		  HeatCapacity->Set_Cv0 (T1);
-		  Cv = HeatCapacity->Get_Cv0 ();
-
-		  fx1 = log(T1)*Cv + Gas_Constant *log(1/x1 - b) - s;
-		}else {
-		  x2 += FACTOR*(x2-x1);
-		  T2 = (P+x2*x2*a)*((1-x2*b)/(x2*Gas_Constant));
-		  HeatCapacity->Set_Cv0 (T2);
-		  Cv = HeatCapacity->Get_Cv0 ();
-		  fx2 = log(T2)*Cv + Gas_Constant *log(1/x2 - b) - s;
-		  }
-	  }
-	}
-
-
-	// rtbis algorithm NR
-
-  f=fx1;
-  fmid=fx2;
-  if (f*fmid >= 0.0) {
-	cout<< "Root must be bracketed for bisection in rtbis, P-s call"<< endl;
-	SetTDState_rhoT(Density, Temperature);
-  }
-  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
-
-  do{
-	xmid=rtb+(dx *= 0.5);
-	Tmid = (P+xmid*xmid*a)*((1-xmid*b)/(xmid*Gas_Constant));
-	HeatCapacity->Set_Cv0 (Tmid);
-	Cv = HeatCapacity->Get_Cv0 ();
-	fmid = log(Tmid)*Cv + Gas_Constant *log(1/xmid - b) - s;
-	if (fmid <= 0.0) rtb=xmid;
-	count++;
-	}while(abs(fmid) > toll && count<ITMAX);
-
-	if(count==ITMAX) {
-	  cout <<"Too many bisections in rtbis, P-s call" << endl;
-	}
-
-  rho = xmid;
-  T= (P+rho*rho*a)*((1-rho*b)/(rho*Gas_Constant));
-
-
-  SetTDState_rhoT(rho, T);
+  SetTDState_rhoT(1/v, T);
 
   cons_P= abs((Pressure -P)/P);
   cons_s= abs((Entropy-s)/s);
