@@ -939,7 +939,8 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
   unsigned short iDim, iVar, iMarker;
 
   su2double *Coord_i, *Coord_j;
-  su2double Area, dist_ij, thermal_conductivity, Prandtl_Lam, laminar_viscosity, Twall, dTdn, HeatFluxDensity, HeatFluxValue;
+  su2double Area, dist_ij, rho_cp, thermal_conductivity, Prandtl_Lam, Prandtl_Turb,
+      laminar_viscosity, eddy_viscosity, Twall, dTdn, HeatFluxDensity, HeatFluxValue;
   su2double maxTemperature, maxHeatFluxDensity, avTemperature, avHeatFlux, HeatFluxIntegral;
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -948,8 +949,10 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
 
   su2double *Normal = new su2double[nDim];
 
+  Prandtl_Turb = config->GetPrandtl_Turb();
   Prandtl_Lam = config->GetPrandtl_Lam();
-  laminar_viscosity = config->GetViscosity_FreeStreamND();  
+  laminar_viscosity = config->GetViscosity_FreeStreamND();
+  rho_cp = rho_cp = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
 
   if(flow) {
 
@@ -989,8 +992,10 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
               dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
             dist_ij = sqrt(dist_ij);
 
+            eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+
             dTdn = -(node[Point_Normal]->GetSolution(0) - Twall)/dist_ij;
-            thermal_conductivity = laminar_viscosity/Prandtl_Lam;
+            thermal_conductivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
 
             HeatFluxDensity = thermal_conductivity*dTdn;
             HeatFluxValue = HeatFluxDensity * Area;
@@ -1037,6 +1042,8 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
             /*--- Get the conjugate variable, 1 for heat flux density ---*/
             HeatFluxDensity = GetConjugateVariable(iMarker, iVertex, 1);
             if (HeatFluxDensity > maxHeatFluxDensity) maxHeatFluxDensity = HeatFluxDensity;
+
+            HeatFluxDensity = HeatFluxDensity/rho_cp;
 
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             Area = 0.0;
