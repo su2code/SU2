@@ -908,7 +908,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       no_restart = true;
     }
     if (heat) {
-      no_restart = true;
+      solver_container[MESH_0][HEAT_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
     if (adj_euler || adj_ns) {
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);

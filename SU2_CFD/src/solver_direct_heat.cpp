@@ -182,120 +182,14 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     cout << "Solid reference temperature: " << config->GetTemperature_Ref() << ", solid thermal diffusity (m^2/s): " << thermal_diffusivity_solid << endl;
   }
 
-  if (!restart || (iMesh != MESH_0)) {
+
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CHeatVariable(0.0, nDim, nVar, config);
-  }
-  else {
-
-    /*--- Restart the solution from file information ---*/
-    ifstream restart_file;
-    string filename = config->GetSolution_FlowFileName();
-    su2double Density, StaticEnergy, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
-    int Unst_RestartIter;
-
-    /*--- Modify file name for multizone problems ---*/
-    if (nZone >1)
-      filename= config->GetMultizone_FileName(filename, iZone);
-
-    /*--- Modify file name for an unsteady restart ---*/
-    if (dual_time) {
-      if (adjoint) {
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      if (flow)
+        node[iPoint] = new CHeatVariable(0.0, nDim, nVar, config);
       else
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-    }
+        node[iPoint] = new CHeatVariable(1.0, nDim, nVar, config);
 
-    /*--- Modify file name for a simple unsteady restart ---*/
 
-    if (time_stepping) {
-      if (adjoint) {
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-      } else {
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      }
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-    }
-
-    /*--- Open the restart file, throw an error if this fails. ---*/
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      cout << "There is no turbulent restart file!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    long *Global2Local;
-    Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    /*--- First, set all indices to a negative value by default ---*/
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-      Global2Local[iPoint] = -1;
-    }
-    /*--- Now fill array with the transform values only for local points ---*/
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    }
-
-    /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-
-    /*--- The first line is the header ---*/
-    getline (restart_file, text_line);
-
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
-
-      getline (restart_file, text_line);
-      istringstream point_line(text_line);
-
-      /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      iPoint_Local = Global2Local[iPoint_Global];
-      if (iPoint_Local >= 0) {
-
-        if (flow) {
-          if (nDim == 2) {
-            if(turbulent == SA)
-              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-            else if(turbulent = SST)
-              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-            else
-              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-          }
-          else
-            if(turbulent == SA)
-              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-            else if(turbulent = SST)
-              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-            else
-              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-        }
-        else
-          point_line >> index >> Solution[0];
-
-        /*--- Instantiate the solution at this node, note that the eddy viscosity should be recomputed ---*/
-        node[iPoint_Local] = new CHeatVariable(Solution[0], nDim, nVar, config);
-      }
-    }
-
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CHeatVariable(Solution[0], nDim, nVar, config);
-    }
-
-    /*--- Close the restart file ---*/
-    restart_file.close();
-
-    /*--- Free memory needed for the transformation ---*/
-    delete [] Global2Local;
-  }
 
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
@@ -328,6 +222,187 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
 
 
 void CHeatSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
+
+void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  /*--- Restart the solution from file information ---*/
+  unsigned short iDim, iVar, iMesh, iMeshFine;
+  unsigned long iPoint, index, iChildren, Point_Fine;
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine, dull_val;
+  bool grid_movement  = config->GetGrid_Movement();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool steady_restart = config->GetSteadyRestart();
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
+  unsigned short turbulent = config->GetKind_Turb_Model();
+  string UnstExt, text_line;
+  ifstream restart_file;
+
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = config->GetnZone();
+
+  string restart_filename = config->GetSolution_FlowFileName();
+
+  Coord = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Coord[iDim] = 0.0;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+  restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+
+  /*--- Modify file name for an unsteady restart ---*/
+
+  if (dual_time || time_stepping)
+    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
+
+  /*--- Open the restart file, and throw an error if this fails. ---*/
+
+  restart_file.open(restart_filename.data(), ios::in);
+  if (restart_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
+
+  /*--- Now fill array with the transform values only for local points ---*/
+
+  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+  /*--- Read all lines in the restart file ---*/
+
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- The first line is the header ---*/
+
+  getline (restart_file, text_line);
+
+   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+  getline (restart_file, text_line);
+
+    istringstream point_line(text_line);
+
+     /*--- Retrieve local index. If this node from the restart file lives
+      on the current processor, we will load and instantiate the vars. ---*/
+
+     MI = Global2Local.find(iPoint_Global);
+     if (MI != Global2Local.end()) {
+
+       iPoint_Local = Global2Local[iPoint_Global];
+
+       if (flow) {
+         if (nDim == 2) {
+           if(turbulent == SA || turbulent == SA_NEG)
+             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+           else if(turbulent = SST)
+             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+           else
+             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+         }
+         else
+           if(turbulent == SA || turbulent == SA_NEG)
+             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+           else if(turbulent = SST)
+             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+           else
+             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+       }
+       else {
+        if (nDim == 2)
+          point_line >> index >> dull_val >> dull_val >> Solution[0];
+        else
+          point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0];
+       }
+
+      //cout << "Read temperature solution from restart file: " << Solution[0] << endl;
+      node[iPoint_Local]->SetSolution(Solution);
+
+      iPoint_Global_Local++;
+
+    }
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Close the restart file ---*/
+
+  restart_file.close();
+
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We alo call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated,
+   especially if this is a turbulent simulation (eddy viscosity). ---*/
+
+  solver[MESH_0][HEAT_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][HEAT_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][HEAT_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+    solver[iMesh][HEAT_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][HEAT_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
+
+  }
+
+  delete [] Coord;
+
+}
+
+
+
 
 void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {  }
 
