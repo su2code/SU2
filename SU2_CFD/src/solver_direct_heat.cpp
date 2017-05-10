@@ -167,6 +167,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
       for (iVar = 0; iVar < nConjVariables ; iVar++) {
         ConjugateVar[iMarker][iVertex][iVar] = 0.0;
       }
+      ConjugateVar[iMarker][iVertex][0] = 1.0;
     }
   }
 

@@ -397,15 +397,19 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
   unsigned long PointNormal;
   unsigned short nDim, iDim;
-  su2double *Coord, *Coord_Normal, *Normal, dist, Twall, dTdn, thermal_diffusivity, heat_flux_density;
+  su2double *Coord, *Coord_Normal, *Normal, dist, Twall, dTdn, rho_cp_fluid, rho_cp_solid, thermal_diffusivity, heat_flux_density;
 
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
   bool flow = (donor_config->GetKind_Solver() != HEAT_EQUATION);
 
   nDim = donor_geometry->GetnDim();
 
+  rho_cp_fluid = donor_config->GetSpecificHeat_Fluid()*donor_config->GetDensity_FreeStream();
+  rho_cp_solid = donor_config->GetSpecificHeat_Solid()*donor_config->GetDensity_Solid();
+
   /*--- Retrieve temperature solution and set is as the first donor variable ---*/
   Twall = donor_solution->node[Point_Donor]->GetSolution(0);
+  if(!flow) cout << "Transferring temperature data to fluid solver: " << Twall << endl;
   Donor_Variable[0] = Twall;
 
   /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) and set it as second donor variable ---*/
@@ -418,13 +422,16 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
   dist = sqrt(dist);
 
-  if (flow)
-    thermal_diffusivity = (donor_config->GetViscosity_FreeStream()/donor_config->GetPrandtl_Lam())*donor_config->GetSpecificHeat_Fluid();
-  else
-    thermal_diffusivity = donor_config->GetThermalDiffusivity_Solid();
-
   dTdn = (Twall - donor_solution->node[PointNormal]->GetSolution(0))/dist;
-  heat_flux_density = thermal_diffusivity * dTdn;
+
+  if (flow) {
+    thermal_diffusivity = (donor_config->GetViscosity_FreeStream()/donor_config->GetPrandtl_Lam());
+    heat_flux_density = (thermal_diffusivity*dTdn)*rho_cp_fluid;
+  }
+  else {
+    thermal_diffusivity = donor_config->GetThermalDiffusivity_Solid();
+    heat_flux_density = (thermal_diffusivity*dTdn)*rho_cp_solid;
+  }
 
   Donor_Variable[1] = heat_flux_density;
 }
