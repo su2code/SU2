@@ -14446,6 +14446,8 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
   
+  SlidingState      = NULL;
+  SlidingStateNodes = NULL;
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
@@ -15280,6 +15282,7 @@ CNSSolver::~CNSSolver(void) {
       }
     }
     delete [] SlidingState;
+    SlidingState = NULL;
   }
   
   if ( SlidingStateNodes != NULL ){
@@ -15288,6 +15291,7 @@ CNSSolver::~CNSSolver(void) {
             delete [] SlidingStateNodes[iMarker];  
     }
     delete [] SlidingStateNodes;
+    SlidingStateNodes = NULL;
   }
 }
 
