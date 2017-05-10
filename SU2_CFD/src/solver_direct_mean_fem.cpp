@@ -2517,12 +2517,15 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
     for(unsigned long j=0; j<reverseElementsRecv[timeLevel][i].size(); ++j) {
       const unsigned long jj = reverseElementsRecv[timeLevel][i][j];
 
-      /* Easier storage of the starting residual of this element, loop over the
-         DOFs of this element and update the residuals of the DOFs. */
-      su2double *res = resComm + nVar*volElem[jj].offsetDOFsSolLocal;
+      /* Easier storage of the starting residual of this element and the
+         data in the buffer and update the residuals of the DOFs. */
       const unsigned short nRes = nVar*volElem[jj].nDOFsSol;
-      for(unsigned short k=0; k<nRes; ++k, ++nn)
-        res[k] += reverseCommRecvBuf[timeLevel][i][nn];
+      su2double            *res = resComm + nVar*volElem[jj].offsetDOFsSolLocal;
+      const su2double      *buf = reverseCommRecvBuf[timeLevel][i].data() + nn;
+
+      nn += nRes;
+      for(unsigned short k=0; k<nRes; ++k)
+        res[k] += buf[k];
     }
   }
 
