@@ -742,6 +742,9 @@ public:
  * \version 5.0.0 "Raven"
  */
 class CCHTDriver : public CDriver {
+protected:
+  unsigned long NextTransferIteration;
+
 public:
 
   /*!

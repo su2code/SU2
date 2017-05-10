@@ -4427,7 +4427,9 @@ CCHTDriver::CCHTDriver(char* confFile,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
                                                           val_nDim,
-                                                          MPICommunicator) { }
+                                                          MPICommunicator) {
+  NextTransferIteration = 0;
+}
 
 CCHTDriver::~CCHTDriver(void) { }
 
@@ -4440,12 +4442,27 @@ void CCHTDriver::Run() {
   unsigned long nCHTIter = 1;
   unsigned long IntIter, nIntIter = 1;
 
+
   while (CHTIter < nCHTIter) {
 
     for (iZone = 0; iZone < nZone; iZone++)
       iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
 
     for (IntIter = 0; IntIter < nIntIter; IntIter++){
+
+      if( ExtIter == NextTransferIteration ) {
+
+        // Aus Solver müssen Heat Flux und Temperatur gelesen werden,
+        // danach Kommunikation mit Target Solver
+        for (iZone = 0; iZone < nZone; iZone++)
+          for (jZone = 0; jZone < nZone; jZone++)
+            if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+              Transfer_Data(iZone, jZone);
+
+        cout << "     ---> Transferred temperature and heat flux data between fluid and solid zone successfully <---" << endl;
+        NextTransferIteration+=1000;
+
+      }
 
       iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
                                               solver_container, numerics_container, config_container,
@@ -4464,14 +4481,6 @@ void CCHTDriver::Run() {
 
     }
 
-    // Aus Solver müssen Heat Flux und Temperatur gelesen werden,
-    // danach Kommunikation mit Target Solver
-    /*--- At each pseudo time-step updates transfer data ---*/
-    //cout << "                         TRANSFERRING SOLVER DATA" << endl;
-    for (iZone = 0; iZone < nZone; iZone++)
-      for (jZone = 0; jZone < nZone; jZone++)
-        if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
-          Transfer_Data(iZone, jZone);
   CHTIter++;
   }  
 }
