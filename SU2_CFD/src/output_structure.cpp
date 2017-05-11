@@ -10657,7 +10657,7 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
   unsigned short nTimeIntances = config[ZONE_0]->GetnTimeInstances();
   unsigned short nGeomZones = nTotTimeIntances/nTimeIntances;
   unsigned short nStages = int(nGeomZones/2);
-  unsigned short nVar_output = 5;
+  unsigned short nVar_output = 5; //TODO generalize using vectors
   unsigned long current_iter = config[ZONE_0]->GetExtIter();
   unsigned short iMarker_PerformanceRow, iMarker_PerformanceStage;
   unsigned short iGeomZone;
@@ -10672,7 +10672,7 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
   if (rank == MASTER_NODE) {
     rbuf_var = new su2double[nVar_output];
 
-    HB_output_file.precision(15);
+    HB_output_file.precision(8);
     HB_output_file.open("HB_output.csv", ios::out);
     HB_output_file <<  "\"Time_instance\",\"Geom_Zone\",\"EntropyGen\",\"KineticEnergyLoss\",\"TotalPressureLoss\",\"TS_Efficiency\",\"TT_Efficiency\"" << endl;
   }
@@ -10686,24 +10686,25 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
       for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++){
         iMarker_PerformanceRow = iTimeInstance * nMarkerTurboPerf + iGeomZone;
 
-        /*--- Performance calculation ---*/
+        int var_tag = -1;
+        /*--- Performance calculation single rows for all time instances---*/
+        sbuf_var[++var_tag] = EntropyGen       [iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
+        sbuf_var[++var_tag] = KineticEnergyLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
+        sbuf_var[++var_tag] = TotalPressureLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
 
-        sbuf_var[0] = EntropyGen       [iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
-        sbuf_var[1] = KineticEnergyLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
-        sbuf_var[2] = TotalPressureLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
-
+        /*--- Performance calculation stage for all time instances---*/
         iMarker_PerformanceStage = iTimeInstance * nMarkerTurboPerf;
-        sbuf_var[3] = TotalStaticEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections]*100.0;
-        sbuf_var[4] = TotalStaticEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections]*100.0;
+        sbuf_var[++var_tag] = TotalStaticEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections]*100.0;
+        sbuf_var[++var_tag] = TotalTotalEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections]*100.0;
 
         /*--- Performance copy between send and receiver buffers (not useful at the moment) ---*/
         for (iVar = 0; iVar < nVar_output; iVar++)
           rbuf_var[iVar] = sbuf_var[iVar];
 
-        HB_output_file << iTimeInstance << ", ";
-        HB_output_file << iGeomZone << ", ";
+        HB_output_file << setw(3) << iTimeInstance << ", ";
+        HB_output_file << setw(3) << iGeomZone << ", ";
         for (iVar = 0; iVar < nVar_output; iVar++)
-          HB_output_file << rbuf_var[iVar] << ", ";
+          HB_output_file << setw(15) << rbuf_var[iVar] << ", ";
         HB_output_file << endl;
 
       }
