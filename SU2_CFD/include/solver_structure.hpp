@@ -2089,7 +2089,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  virtual void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  virtual void GetEngine_Properties(CGeometry *geometry, CConfig *config);
 
     
   /*!
@@ -2097,7 +2097,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  virtual void SetEngine_Output(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  virtual void SetEngine_Output(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -4866,14 +4866,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  void GetEngine_Properties(CGeometry *geometry, CConfig *config);
  
   /*!
    * \brief Compute the properties of the engine.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  void SetEngine_Output(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  void SetEngine_Output(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the Fan face Mach number.

@@ -4220,7 +4220,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Compute the engine properties ---*/
 
-  if (engine) { GetEngine_Properties(geometry, config, iMesh, Output); }
+  if (engine) { GetEngine_Properties(geometry, config); }
 
   /*--- Compute the control volume properties ---*/
 
@@ -4233,7 +4233,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if (actuator_disk) {
     Set_MPI_ActDisk(solver_container, geometry, config);
-    GetEngine_Properties(geometry, config, iMesh, Output);
+    GetEngine_Properties(geometry, config);
     SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
 
@@ -8402,7 +8402,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   
 }
 
-void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config) {
     
     unsigned short iDim, iMarker, jMarker;
     unsigned long iVertex, iPoint;
@@ -9174,12 +9174,10 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
     delete [] Outlet_Power;
     
   }
-  
-  SetEngine_Output(geometry, config, iMesh, Output);
-  
+    
 }
 
-void CEulerSolver::SetEngine_Output(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+void CEulerSolver::SetEngine_Output(CGeometry *geometry, CConfig *config) {
   
   unsigned short iDim, jMarker;
   su2double  MFR, InfVel2;
@@ -9213,12 +9211,12 @@ void CEulerSolver::SetEngine_Output(CGeometry *geometry, CConfig *config, unsign
     
     /*--- Screen output using the values already stored in the config container ---*/
     
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
+    if (rank == MASTER_NODE) {
       
       cout.precision(5);
       cout.setf(ios::fixed, ios::floatfield);
       
-      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+      if (write_heads && !config->GetDiscrete_Adjoint()) {
         if (Engine) cout << endl   << "---------------------------- Engine properties --------------------------" << endl;
         else cout << endl   << "------------------------ Actuator Disk properties -----------------------" << endl;
       }
@@ -9310,7 +9308,7 @@ void CEulerSolver::SetEngine_Output(CGeometry *geometry, CConfig *config, unsign
         su2double mu_bypass_prop = NetThrust*sqrt(RefVel2)/Power;
         SetTotal_ByPassProp_Eff(mu_bypass_prop);
         
-        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+        if (write_heads && !config->GetDiscrete_Adjoint()) {
           
           if (iEngine > 0) cout << endl;
           
@@ -9492,7 +9490,7 @@ void CEulerSolver::SetEngine_Output(CGeometry *geometry, CConfig *config, unsign
         
       }
       
-      if (write_heads && Output && !config->GetDiscrete_Adjoint()) cout << "-------------------------------------------------------------------------" << endl << endl;
+      if (write_heads && !config->GetDiscrete_Adjoint()) cout << "-------------------------------------------------------------------------" << endl << endl;
       
     }
     
@@ -15656,7 +15654,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Compute the engine properties ---*/
 
-  if (engine) { GetEngine_Properties(geometry, config, iMesh, Output); }
+  if (engine) { GetEngine_Properties(geometry, config); }
 
   /*--- Compute the control volume properties ---*/
 

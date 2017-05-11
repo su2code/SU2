@@ -701,7 +701,9 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                       su2double *monitor) {
   
   const unsigned short nDim = geometry[FinestMesh]->GetnDim();
-  
+  bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
+  bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
+
   switch (RunTime_EqSystem) {
       
     case RUNTIME_FLOW_SYS:
@@ -711,6 +713,12 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
+      
+      /*--- Evaluate the engine output (after drag evaluation) ---*/
+
+      if (engine || actuator_disk) {
+        solver_container[FinestMesh][FLOW_SOL]->SetEngine_Output(geometry[FinestMesh], config);
+      }
       
       /*--- Evaluate the differente between the given spanload and the elliptic one ---*/
       

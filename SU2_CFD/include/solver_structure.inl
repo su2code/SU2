@@ -783,9 +783,9 @@ inline void CSolver::SetExtAveragedValue(CSolver *solver_container, unsigned sho
 inline void CSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_numerics,
                                                  CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output) { }
 
-inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetEngine_Output(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+inline void CSolver::SetEngine_Output(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
