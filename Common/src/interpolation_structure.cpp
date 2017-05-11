@@ -1591,8 +1591,8 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
           }
 
-          //        cout << " ========== " << node_count++  << " ==========="  << endl;
-          //        cout << " ========== " << donor_count   << " ==========="  << endl;
+//          cout << " ========== " << node_count++  << " ==========="  << endl;
+//          cout << " ========== " << donor_count   << " ==========="  << endl;
 //          cout << " ========== ==========="  << endl;
 
           /*--- Store the value of the pair ---*/
@@ -1751,7 +1751,7 @@ void CTurboInterpolation::Collect_TurboVertexInfo(bool faces, int markDonor, int
     iPointDonor = donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetNode();
     if (donor_geometry->node[iPointDonor]->GetDomain()) {
       Buffer_Send_GlobalPoint[nLocalVertex_Donor] = donor_geometry->node[iPointDonor]->GetGlobalIndex();
-        Buffer_Send_Coord[nLocalVertex_Donor] = donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetAngularCoord();
+      Buffer_Send_Coord[nLocalVertex_Donor] = donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetAngularCoord();
 
       if (faces) {
         Normal =  donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetNormal();
@@ -1782,6 +1782,11 @@ void CTurboInterpolation::Collect_TurboVertexInfo(bool faces, int markDonor, int
       Buffer_Receive_Normal[iVertex] = Buffer_Send_Normal[iVertex];
   }
 #endif
+
+//  cout << " ===== Receive_Coord ===== " << endl;
+//for (iVertex = 0; iVertex < nBuffer_Point; iVertex++)
+//  cout << Buffer_Receive_Coord[iVertex] << endl;
+
 }
 
 void CTurboInterpolation::Preprocessing_InterpolationInterface(CGeometry *donor_geometry, CGeometry *target_geometry,
@@ -1897,7 +1902,7 @@ void CTurboInterpolation::Preprocessing_InterpolationInterface(CGeometry *donor_
         }
 
       }
-      SpanLevelDonor[iSpan]        = tSpan;
+      SpanLevelDonor[iSpan]        = iSpan;
       SpanValueCoeffTarget[iSpan]  = 0.0;
 
     }

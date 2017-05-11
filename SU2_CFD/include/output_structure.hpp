@@ -678,7 +678,16 @@ public:
    * \param[in] val_nZone - Number of Zones.
    * \param[in] val_iZone - Zone index.
    */
-  void HarmonicBalanceOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short val_iZone);
+  void WriteHBOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short val_iZone);
+
+  /*!
+   * \brief Write the output file for harmonic balance for each time-instance.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Number of Zones.
+   * \param[in] val_iZone - Zone index.
+   */
+  void WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short val_iZone);
 
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for parallel computations.

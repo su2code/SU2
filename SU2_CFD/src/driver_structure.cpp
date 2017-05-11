@@ -189,9 +189,9 @@ CDriver::CDriver(char* confFile,
   }
 
   /*--- If activated by the compile directive, perform a partition analysis. ---*/
-#if PARTITION
+//#if PARTITION
   Partition_Analysis(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-#endif
+//#endif
 
   /*--- Output some information about the driver that has been instantiated for the problem. ---*/
 
@@ -4830,7 +4830,7 @@ void CHBDriver::Update() {
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone);
 
-    output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
+    output->WriteHBOutput(solver_container, config_container, nZone, iZone);
 
   }
 
@@ -5346,7 +5346,7 @@ void CHBMultiZoneDriver::Update() {
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
 
-    //      output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
+    output->WriteHBTurbomachineryOutput(solver_container, config_container, nTotTimeInstances, iTimeInstance);
 
   }
 

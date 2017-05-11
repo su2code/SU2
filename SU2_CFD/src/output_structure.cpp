@@ -10539,7 +10539,7 @@ void COutput::SpanwiseFile(CGeometry ***geometry,
   }
 }
 
-void COutput::HarmonicBalanceOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short iZone) {
+void COutput::WriteHBOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short iZone) {
 
   int rank = MASTER_NODE;
 
@@ -10634,6 +10634,89 @@ void COutput::HarmonicBalanceOutput(CSolver ****solver_container, CConfig **conf
 
   delete [] sbuf_var;
   delete [] averages;
+}
+
+
+void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig **config, unsigned short nTotTimeIntances, unsigned short iZone) {
+
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Write output file for turbomachinery HB ---*/
+  ofstream HB_output_file;
+  ofstream mean_HB_file;
+
+  /*--- MPI Send/Recv buffers ---*/
+  su2double *sbuf_var = NULL,  *rbuf_var = NULL;
+
+  /*--- Other variables ---*/
+  unsigned short iVar, kZone;
+  unsigned short nTimeIntances = config[ZONE_0]->GetnTimeInstances();
+  unsigned short nGeomZones = nTotTimeIntances/nTimeIntances;
+  unsigned short nStages = int(nGeomZones/2);
+  unsigned short nVar_output = 5;
+  unsigned long current_iter = config[ZONE_0]->GetExtIter();
+  unsigned short iMarker_PerformanceRow, iMarker_PerformanceStage;
+  unsigned short iGeomZone;
+
+  /*--- Allocate memory for send buffer ---*/
+  sbuf_var = new su2double[nVar_output];
+
+  for (iVar = 0; iVar < nVar_output; iVar++)
+    sbuf_var[iVar] = 0;
+
+  /*--- Allocate memory for receive buffer ---*/
+  if (rank == MASTER_NODE) {
+    rbuf_var = new su2double[nVar_output];
+
+    HB_output_file.precision(15);
+    HB_output_file.open("HB_output.csv", ios::out);
+    HB_output_file <<  "\"Time_instance\",\"Geom_Zone\",\"EntropyGen\",\"KineticEnergyLoss\",\"TotalPressureLoss\",\"TS_Efficiency\",\"TT_Efficiency\"" << endl;
+  }
+
+  if (rank == MASTER_NODE) {
+
+    /*--- Run through the zones, collecting the output variables
+       N.B. Summing across processors within a given zone is being done
+       elsewhere. ---*/
+    for (unsigned short iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++){
+      for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++){
+        iMarker_PerformanceRow = iTimeInstance * nMarkerTurboPerf + iGeomZone;
+
+        /*--- Performance calculation ---*/
+
+        sbuf_var[0] = EntropyGen       [iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
+        sbuf_var[1] = KineticEnergyLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
+        sbuf_var[2] = TotalPressureLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
+
+        iMarker_PerformanceStage = iTimeInstance * nMarkerTurboPerf;
+        sbuf_var[3] = TotalStaticEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections]*100.0;
+        sbuf_var[4] = TotalStaticEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections]*100.0;
+
+        /*--- Performance copy between send and receiver buffers (not useful at the moment) ---*/
+        for (iVar = 0; iVar < nVar_output; iVar++)
+          rbuf_var[iVar] = sbuf_var[iVar];
+
+        HB_output_file << iTimeInstance << ", ";
+        HB_output_file << iGeomZone << ", ";
+        for (iVar = 0; iVar < nVar_output; iVar++)
+          HB_output_file << rbuf_var[iVar] << ", ";
+        HB_output_file << endl;
+
+      }
+    }
+  }
+
+
+  if (rank == MASTER_NODE) {
+    HB_output_file.close();
+    delete [] rbuf_var;
+  }
+
+  delete [] sbuf_var;
 }
 
 void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
