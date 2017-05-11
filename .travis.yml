@@ -60,7 +60,7 @@ before_script:
     # Get the test cases
     - git clone https://github.com/su2code/TestCases.git ./TestData
     - cd TestData/
-    - git checkout develop
+    - git checkout deprecate_OutflowGeneralized
     # Go back to SU2 root and copy the test data into the folder structure
     - cd $TRAVIS_BUILD_DIR
     - cp -R ./TestData/* ./TestCases/
