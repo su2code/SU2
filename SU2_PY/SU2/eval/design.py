@@ -229,7 +229,7 @@ def obj_f(dvs,config,state=None):
 
     # evaluate each objective
     vals_out = []
-    total_func = 0.0
+    func = 0.0
     for i_obj,this_obj in enumerate(objectives):
         scale = def_objs[this_obj]['SCALE']
         relax = float(config['OPT_GRADIENT_FACTOR'])

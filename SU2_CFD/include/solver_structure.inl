@@ -785,6 +785,8 @@ inline void CSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_
 
 inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
+inline void CSolver::SetEngine_Output(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+
 inline void CSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config) { }
