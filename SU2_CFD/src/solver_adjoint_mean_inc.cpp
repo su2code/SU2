@@ -3414,9 +3414,6 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
   su2double Pressure=0.0, Velocity2 = 0.0, Area=0.0, Density=0.0, Vn_Exit=0.0;
   su2double Velocity[3], UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
-  su2double a2=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
-  /*Gradient terms for the generalized boundary */
-  su2double density_gradient, velocity_gradient;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
@@ -3480,37 +3477,6 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       su2double coeff = (2.0*V_domain[1])/ solver_container[FLOW_SOL]->node[Point_Normal]->GetBetaInc2();
       Psi_outlet[1] = node[Point_Normal]->GetSolution(1);
       Psi_outlet[0] = -coeff*Psi_outlet[1];
-
-
-
-      /*--- Add terms for objective functions where additions are needed outside the energy term
-       *     Terms which are added to the energy term are taken care of in the supersonic section above ---*/
-      switch (config->GetKind_ObjFunc()){
-      case MASS_FLOW_RATE:
-        Psi_outlet[0]+=1;
-        break;
-      case AVG_TOTAL_PRESSURE:
-        /*--- For total pressure objective function. NOTE: this is AREA averaged term---*/
-        Velocity2  = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-        if (Vn_Exit !=0.0){
-          a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/(Gamma_Minus_One));
-          density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
-          velocity_gradient=a2*Gamma_Minus_One*Density/(Gamma*Pressure); // re-using variable as the constant multiplying V[i] for dj/dvi
-          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit;
-          for (iDim=0; iDim<nDim; iDim++){
-            Psi_outlet[0]-=velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit);
-            Psi_outlet[iDim+1] += velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Vn_Exit*Vn_Exit);
-          }
-        }
-        break;
-      case AVG_OUTLET_PRESSURE:
-        /*Pressure-fixed and subsonic -> all 0s*/
-        break;
-      default:
-        break;
-      }
 
       /*--- Set the flow and adjoint states in the solver ---*/
 
