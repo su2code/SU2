@@ -340,12 +340,12 @@ def main():
     contadj_oneram6.tol       = 0.00001
     test_list.append(contadj_oneram6)
 
-    # Inviscid WEDGE: tests generalized adjoint
+    # Inviscid WEDGE: tests averaged outflow total pressure adjoint
     contadj_wedge             = TestCase('contadj_wedge')
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [2.780403, -3.223266, -1448300.000000, -0.000000] #last 4 columns
+    contadj_wedge.test_vals = [2.856008, -2.767216, 1.0029e+06, 1.3024e-13] #last 4 columns
     contadj_wedge.su2_exec  = "SU2_CFD"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
@@ -947,16 +947,16 @@ def main():
     test_list.append(shape_opt_euler_py)
 
     # test continuous_adjoint.py, with multiple objectives
-    #contadj_multi_py            = TestCase('contadj_multi_py')
-    #contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
-    #contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
-    #contadj_multi_py.test_iter  = 10
-    #contadj_multi_py.su2_exec   = "continuous_adjoint.py"
-    #contadj_multi_py.timeout    = 1600
-    #contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
-    #contadj_multi_py.test_file  = "of_grad_combo.dat"
-    #pass_list.append(contadj_multi_py.run_filediff())
-    #test_list.append(contadj_multi_py)
+    contadj_multi_py            = TestCase('contadj_multi_py')
+    contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
+    contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+    contadj_multi_py.test_iter  = 10
+    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    contadj_multi_py.timeout    = 1600
+    contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
+    contadj_multi_py.test_file  = "of_grad_combo.dat"
+    pass_list.append(contadj_multi_py.run_filediff())
+    test_list.append(contadj_multi_py)
 
 
     ##########################
