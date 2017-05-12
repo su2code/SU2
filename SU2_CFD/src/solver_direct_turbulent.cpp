@@ -3888,8 +3888,8 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     for (iDim = 0; iDim < nDim; iDim++)
     VelMag += VelInf[iDim]*VelInf[iDim];
     VelMag = sqrt(VelMag);
-    zeta = max(v2/kine,scale);
     kine = max(kine,scale*VelMag*VelMag);
+    zeta = max(v2/kine,scale);
 
     //    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, zeta, strMag, VelMag, L_Inf, scale);
     node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, v2, strMag, VelMag, L_Inf, scale);
