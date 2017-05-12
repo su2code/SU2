@@ -285,6 +285,9 @@ def obj_df(dvs,problem,state=None):
     for i_obj, this_obj in enumerate(objectives):
         config.GRADIENT_METHOD = grad_method
         grad = su2grad(this_obj, grad_method, problem, state)
+        sign = su2io.get_objectiveSign(this_obj)
+        for k in range(0, len(grad)):
+            grad[k] = grad[k] * sign
         # # scaling : obj scale and sign are accounted for in combo gradient, dv scale now applied
         # k = 0
         # for i_dv, dv_scl in enumerate(dv_scales):
