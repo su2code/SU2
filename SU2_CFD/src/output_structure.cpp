@@ -10657,10 +10657,12 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
   unsigned short nTimeIntances = config[ZONE_0]->GetnTimeInstances();
   unsigned short nGeomZones = nTotTimeIntances/nTimeIntances;
   unsigned short nStages = int(nGeomZones/2);
-  unsigned short nVar_output = 5; //TODO generalize using vectors
   unsigned long current_iter = config[ZONE_0]->GetExtIter();
   unsigned short iMarker_PerformanceRow, iMarker_PerformanceStage;
   unsigned short iGeomZone;
+
+  unsigned short nVar_output = 5;      // Number of performance output variables TODO generalize using vectors
+  unsigned short output_precision = 8; //Output precision
 
   /*--- Allocate memory for send buffer ---*/
   sbuf_var = new su2double[nVar_output];
@@ -10672,7 +10674,7 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
   if (rank == MASTER_NODE) {
     rbuf_var = new su2double[nVar_output];
 
-    HB_output_file.precision(8);
+    HB_output_file.precision(output_precision);
     HB_output_file.open("HB_output.csv", ios::out);
     HB_output_file <<  "\"Time_instance\",\"Geom_Zone\",\"EntropyGen\",\"KineticEnergyLoss\",\"TotalPressureLoss\",\"TS_Efficiency\",\"TT_Efficiency\"" << endl;
   }

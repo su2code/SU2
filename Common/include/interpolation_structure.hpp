@@ -115,7 +115,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker_interface - Interface tag.
    */
-   int Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface);
+   int Find_InterfaceMarker(CConfig *config, int val_marker_interface);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes

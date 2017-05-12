@@ -259,7 +259,7 @@ void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget
 #endif
 }
 
-int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface) {
+int CInterpolator::Find_InterfaceMarker(CConfig *config, int val_marker_interface) {
     
   unsigned short nMarker = config->GetnMarker_All();
   unsigned short iMarker;
@@ -1400,8 +1400,11 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   su2double PitchTarget, AngularCoord_Target,  MinAngularCoord_Target, MaxAngularCoord_Target;
   su2double PitchDonor, AngularCoord_Donor, MinAngularCoord_Donor, MaxAngularCoord_Donor;
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
+
 // TEST VARIABLES
   su2double x_don, x_tar, y_don, y_tar, R;
+  unsigned short count;
+
 #ifdef HAVE_MPI
 
   int rank = MASTER_NODE;
@@ -1476,26 +1479,24 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
         continue;
 
       if(markDonor != -1){
-//        nVertexDonor        = donor_geometry->GetnVertex( markDonor );
-        nVertexSpanDonor   =  donor_geometry->GetnVertexSpan( markDonor,  SpanLevelDonor[iSpan] );
+        nVertexSpanDonor   =  donor_geometry->GetnVertexSpan( markDonor,  iSpan );
+//        cout << "DONOR NODES:  " <<donor_geometry->GetnTotVertexSpan( markDonor,  SpanLevelDonor[iSpan] ) << endl;
       }
       else{
-//        nVertexDonor  = 0;
+        nVertexDonor  = 0;
         nVertexSpanDonor  = 0;
       }
 
       if(markTarget != -1){
-//        nVertexTarget       = target_geometry->GetnVertex( markTarget );
         nVertexSpanTarget   = target_geometry->GetnVertexSpan( markTarget, iSpan );
       }
       else{
-//        nVertexTarget  = 0;
         nVertexSpanTarget  = 0;
       }
       Buffer_Send_nVertex_Donor  = new unsigned long [ 1 ];
 
       /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
-      Determine_ArraySize(false, markDonor, markTarget, nVertexSpanDonor, SpanLevelDonor[iSpan], nDim);
+      Determine_ArraySize(false, markDonor, markTarget, nVertexSpanDonor, iSpan, nDim);
 
       Buffer_Send_Coord          = new su2double     [ MaxLocalVertex_Donor ];
       Buffer_Send_GlobalPoint    = new unsigned long [ MaxLocalVertex_Donor ];
@@ -1503,7 +1504,7 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
       Buffer_Receive_GlobalPoint = new unsigned long [ nProcessor * MaxLocalVertex_Donor ];
 
       /*-- Collect coordinates, global points, and normal vectors ---*/
-      Collect_TurboVertexInfo( false, markDonor, markTarget, nVertexSpanDonor, SpanLevelDonor[iSpan] ,nDim );
+      Collect_TurboVertexInfo( false, markDonor, markTarget, nVertexSpanDonor, iSpan ,nDim );
 
       if (nVertexSpanTarget != 0 ){
         MinAngularCoord_Target = target_geometry->GetMinAngularCoord(markTarget, iSpan);
@@ -1511,15 +1512,9 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
         PitchTarget = abs(MaxAngularCoord_Target - MinAngularCoord_Target);
       }
 
-//      if (nVertexSpanDonor != 0 ){
-//        MinAngularCoord_Donor = donor_geometry->GetMinAngularCoord(markDonor, iSpan);
-//        MaxAngularCoord_Donor = donor_geometry->GetMaxAngularCoord(markDonor, iSpan);
-//        PitchDonor = abs(MaxAngularCoord_Donor - MinAngularCoord_Donor);
-//      }
-
       /*--- Compute the closest point to a Near-Field boundary point ---*/
       maxdist = 0.0;
-      su2double node_count = 0;
+      count = 0;
 
       for (iVertexTarget = 0; iVertexTarget < nVertexSpanTarget; iVertexTarget++) {
 
@@ -1553,6 +1548,12 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
               dist  = 0.0;
 
               AngularCoord_Donor = Buffer_Receive_Coord[ Global_Point_Donor];
+
+//              if (AngularCoord_Donor < 1000.){
+//                if (iVertexTarget == 0){
+//              cout << "AngularCoord_Donor : " <<  AngularCoord_Donor  << " RANK:  " << rank << " Count:  "<< count << endl;
+//                count++;
+//              }
 
               if ( AngularCoord_Donor > MaxAngularCoord_Target ){
                 dist = abs(AngularCoord_Donor - (AngularCoord_Target + PitchTarget));
@@ -1595,6 +1596,13 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 //          cout << " ========== " << donor_count   << " ==========="  << endl;
 //          cout << " ========== ==========="  << endl;
 
+//          if ( iVertexTarget ==  0){
+//            cout << " ===================================="  << endl;
+//            cout << " TOT_COUNT: "<< count <<  "  SPAN: " << iSpan << " RANK: " <<  rank << " MARKER_TARG: " <<  config[targetZone]->GetMarker_All_TagBound(markTarget)<<endl;
+////            cout << " TOT_COUNT: "<< count <<  "  SPAN: " << iSpan << " RANK: " <<  rank << " MARKER_DON: " << config[donorZone]->GetMarker_All_TagBound(markDonor)<< " MARKER_TARG: " <<  config[targetZone]->GetMarker_All_TagBound(markTarget)<<endl;
+//            cout << " ===================================="  << endl;
+//          }
+//          count = 0;
           /*--- Store the value of the pair ---*/
           maxdist = max(maxdist, mindist);
           target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorPoint(iDonor, pGlobalPoint);
@@ -1638,83 +1646,17 @@ void CTurboInterpolation::Determine_ArraySize(bool faces, int markDonor, int mar
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
 
-  for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
-    iPointDonor = donor_geometry->turbovertex[markDonor][iSpan][iVertex]->GetNode();
-    if (donor_geometry->node[iPointDonor]->GetDomain()) {
-      nLocalVertex_Donor++;
-      if (faces) {
-        /*--- On Donor geometry also communicate face info ---*/
-        if (nDim==3) {
-          for (jElem=0; jElem<donor_geometry->node[iPointDonor]->GetnElem(); jElem++) {
-            donor_elem = donor_geometry->node[iPointDonor]->GetElem(jElem);
-            nFaces = donor_geometry->elem[donor_elem]->GetnFaces();
-            for (iFace=0; iFace<nFaces; iFace++) {
-              face_on_marker=true;
-              nNodes = donor_geometry->elem[donor_elem]->GetnNodesFace(iFace);
-              for (iDonor=0; iDonor<nNodes; iDonor++) {
-                /*--- Local index of the node on face --*/
-                inode = donor_geometry->elem[donor_elem]->GetFaces(iFace, iDonor);
-                jPoint = donor_geometry->elem[donor_elem]->GetNode(inode);
-                face_on_marker = (face_on_marker && (donor_geometry->node[jPoint]->GetVertex(markDonor) !=-1));
-              }
-              if (face_on_marker ) {
-                nLocalFace_Donor++;
-                nLocalFaceNodes_Donor+=nNodes;
-              }
-            }
-          }
-        }
-        else {
-          /*--- in 2D we use the edges ---*/
-          nNodes=2;
-          nFaces = donor_geometry->node[iPointDonor]->GetnPoint();
-          for (iFace=0; iFace<nFaces; iFace++) {
-            face_on_marker=true;
-            for (iDonor=0; iDonor<nNodes; iDonor++) {
-              inode = donor_geometry->node[iPointDonor]->GetEdge(iFace);
-              jPoint = donor_geometry->edge[inode]->GetNode(iDonor);
-              face_on_marker = (face_on_marker && (donor_geometry->node[jPoint]->GetVertex(markDonor) !=-1));
-            }
-            if (face_on_marker ) {
-              nLocalFace_Donor++;
-              nLocalFaceNodes_Donor+=nNodes;
-            }
-          }
-        }
-      }
-    }
-  }
+  nLocalVertex_Donor = nVertexDonor;
 
   Buffer_Send_nVertex_Donor[0] = nLocalVertex_Donor;
-  if (faces) {
-    Buffer_Send_nFace_Donor[0] = nLocalFace_Donor;
-    Buffer_Send_nFaceNodes_Donor[0] = nLocalFaceNodes_Donor;
-  }
-
+cout <<"iSpan: " << iSpan << " N_VERTEX: " << nLocalVertex_Donor << endl;
   /*--- Send Interface vertex information --*/
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalVertex_Donor, &MaxLocalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_nVertex_Donor, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  if (faces) {
-    SU2_MPI::Allreduce(&nLocalFace_Donor, &nGlobalFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nLocalFace_Donor, &MaxFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nLocalFaceNodes_Donor, &nGlobalFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nLocalFaceNodes_Donor, &MaxFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_nFace_Donor, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_nFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    MaxFace_Donor++;
-  }
 #else
   MaxLocalVertex_Donor    = nLocalVertex_Donor;
   Buffer_Receive_nVertex_Donor[0] = Buffer_Send_nVertex_Donor[0];
-  if (faces) {
-    nGlobalFace_Donor       = nLocalFace_Donor;
-    nGlobalFaceNodes_Donor  = nLocalFaceNodes_Donor;
-    MaxFaceNodes_Donor      = nLocalFaceNodes_Donor;
-    MaxFace_Donor           = nLocalFace_Donor+1;
-    Buffer_Receive_nFace_Donor[0] = Buffer_Send_nFace_Donor[0];
-    Buffer_Receive_nFaceNodes_Donor[0] = Buffer_Send_nFaceNodes_Donor[0];
-  }
 #endif
 
 }
