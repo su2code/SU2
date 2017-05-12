@@ -1075,8 +1075,6 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-
 
   /*--- Dimension of the problem --> dependent on the 2phase model. ---*/
   nVar = 4;
@@ -1246,7 +1244,6 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
   bool limiter       = (config->GetSpatialOrder_2phase() == SECOND_ORDER_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
 
-
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge and normal vectors ---*/
@@ -1368,7 +1365,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
                Delta = Project_Grad_j*Delta_Left*(-2*Project_Grad_j + Delta_Left);
                Delta = Delta/(4*Project_Grad_j*Project_Grad_j+Delta_Left*Delta_Left+1e-11);
 
-               Solution_j[iVar] = Two_phase_j[iVar] + Delta;
+               Solution_j[iVar] = Two_phase_j[iVar] + config->GetLimiterCoeff_2phase() * Delta;
 
         	} else if (config->GetKind_SlopeLimit_2phase() == PUT) {
 

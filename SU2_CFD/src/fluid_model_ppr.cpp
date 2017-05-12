@@ -468,8 +468,9 @@ CPengRobinson_Generic::~CPengRobinson_Generic(void) { }
 su2double CPengRobinson_Generic::alpha2(su2double T) {
 
 	// alpha call corrected
+  su2double alpha_2 = pow(1 + k - k*sqrt(T/TstarCrit), 2);
 
-  return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
+  return  ( alpha_2 );
 }
 
 su2double CPengRobinson_Generic::dalphadT(su2double T) {
@@ -605,8 +606,7 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
     } while (count_T < ITMAX && error > toll);
 
-    if (count_T == ITMAX)
-//    	cout << "Too many iterations in rho_e call" << endl;
+    if (count_T == ITMAX) cout << "Too many iterations in rho_e call" << endl;
 
     Temperature = Temperature_new;
 	HeatCapacity->Set_Cv0(Temperature);
@@ -622,8 +622,17 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
     SetGamma_Trho();
 
-    if 	(Gamma > 4 || Gamma < 1) {
-    	cout << "Warning: Gamma value greater than 3, switch to CONSTANT_GAMMA" << endl;
+    if 	(Gamma > 4 ) {
+    	cout << "Warning: Gamma value greater than 4, switch to CONSTANT_GAMMA" << endl;
+    	cout << "Ideal gas correction implemented, Cp = Cv + R" << endl;
+    	Cp = Cv + Gas_Constant;
+    	Gamma = Cp/Cv;
+    	Gamma_Minus_One = Gamma - 1;
+		getchar();
+    }
+
+    if 	( Gamma < 1) {
+    	cout << "Warning: Gamma value lower than 1, switch to CONSTANT_GAMMA" << endl;
     	cout << "Ideal gas correction implemented, Cp = Cv + R" << endl;
     	Cp = Cv + Gas_Constant;
     	Gamma = Cp/Cv;
@@ -866,15 +875,20 @@ void CPengRobinson_Generic::SetGamma_Trho () {
 
   dPodT = 2 * a*sqrt(a2T) * daT;
   dPodT = dPodT / (1/Density/Density + 2*b/Density - b*b);
-
   dPodT = Gas_Constant/ (1/Density - b) - dPodT;
-  dPodv = -b *b + 2 * b / Density + pow(Density, -2);
-  dPodv = -Gas_Constant * Temperature / pow(1/Density - b, 2) + 2* a * alpha2(Temperature) * (1/ Density - b) / pow(dPodv, 2);
+
+  dPodv = -b*b + 2* b / Density + 1/Density/Density;
+  dPodv = + 2* a * a2T * (1/ Density + b) / pow(dPodv, 2);
+  dPodv = dPodv -Gas_Constant * Temperature / (1/Density - b)/ (1/Density - b);
 
   CpmCv = -Temperature * pow(dPodT, 2)/dPodv;
 
   Cp = Cv + CpmCv;
   Gamma = Cp/Cv;
+
+  if  (Gamma > 4) {
+  cout << a << " " << b << " " << dPodT << " " << dPodv << " " << CpmCv << " " << k << endl;
+  }
 
 }
 

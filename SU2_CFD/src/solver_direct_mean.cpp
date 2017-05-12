@@ -4368,6 +4368,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
   bool RightSol  = true;
   unsigned short two_phase = config->GetKind_2phase_Model();
   
+
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
     /*--- Initialize the non-physical points vector ---*/
