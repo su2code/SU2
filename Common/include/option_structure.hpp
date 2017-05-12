@@ -634,6 +634,7 @@ enum ENUM_LIMITER {
   MINMOD = 4,       /*!< \brief Slope limiter using mimmod. */
   VAN_ALBADA = 5,       /*!< \brief Slope limiter using van_albada. */
   SUPERBEE = 6,       /*!< \brief Slope limiter using van_leer. */
+  PUT = 7,       /*!< \brief Slope limiter using van_leer. */
 };
 
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
@@ -643,7 +644,8 @@ static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIM
 ("WALL_DISTANCE", SOLID_WALL_DISTANCE)
 ("MINMOD", MINMOD)
 ("VAN_ALBADA", VAN_ALBADA)
-("SUPERBEE", SUPERBEE);
+("SUPERBEE", SUPERBEE)
+("PUT", PUT);
 
 /*!
  * \brief types of turbulent models

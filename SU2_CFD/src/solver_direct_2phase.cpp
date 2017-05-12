@@ -562,7 +562,7 @@ void C2phaseSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_containe
 }
 
 void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
+  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res, *Sol;
   unsigned short iVar;
   unsigned long iPoint;
 
@@ -587,7 +587,15 @@ void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
       AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 
     }
+/*
+    Sol = node[iPoint]->GetSolution();
 
+    for (iVar = 0; iVar < nVar; iVar++) {
+       Sol[iVar] = max(0.0, Sol[iVar]);
+    }
+
+    node[iPoint]->SetSolution(Sol);
+*/
   }
 
   /*--- MPI solution ---*/
@@ -1348,17 +1356,32 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
 
         	} else if (config->GetKind_SlopeLimit_2phase() == VAN_ALBADA) {
+                // VAN_ALBADA LIMITER
 
-        		// test on Put limiter
+        	   Delta_Left = Two_phase_j[iVar]-Two_phase_i[iVar];
+
+               Delta = Project_Grad_i*Delta_Left* (2*Project_Grad_i + Delta_Left);
+               Delta = Delta/(4*Project_Grad_i*Project_Grad_i+ Delta_Left*Delta_Left+1e-11);
+
+               Solution_i[iVar] = Two_phase_i[iVar] + config->GetLimiterCoeff_2phase() * Delta;
+
+               Delta = Project_Grad_j*Delta_Left*(-2*Project_Grad_j + Delta_Left);
+               Delta = Delta/(4*Project_Grad_j*Project_Grad_j+Delta_Left*Delta_Left+1e-11);
+
+               Solution_j[iVar] = Two_phase_j[iVar] + Delta;
+
+        	} else if (config->GetKind_SlopeLimit_2phase() == PUT) {
+
            		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
-           		Delta =  Delta_Left* Delta_Right*(Delta_Left + Delta_Right)/(pow(Delta_Left, 2) + pow(Delta_Right, 2)+1e-30);
+           		Delta =  (2* Delta_Left* Delta_Right +1e-15)/(pow(Delta_Left,2) + pow(Delta_Right, 2)+1e-15);
         		Solution_i[iVar] = Two_phase_i[iVar] + config->GetLimiterCoeff_2phase() * Delta;
 
         		Delta_Left = Sol_Right-Two_phase_j[iVar]; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
-        		Delta =  Delta_Left* Delta_Right*(Delta_Left + Delta_Right)/(pow(Delta_Left, 2) + pow(Delta_Right, 2)+1e-30);
+        		Delta =  (2* Delta_Left* Delta_Right +1e-15)/(pow(Delta_Left,2) + pow(Delta_Right, 2)+1e-15);
         		Solution_j[iVar] = Two_phase_j[iVar] - config->GetLimiterCoeff_2phase() * Delta;
+
 
         	} else if (config->GetKind_SlopeLimit_2phase() ==SUPERBEE) {
 

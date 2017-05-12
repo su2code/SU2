@@ -103,6 +103,7 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
   val_residual[2] = a0*Two_phaseVar_i[2]+a1*Two_phaseVar_j[2];
   val_residual[3] = a0*Two_phaseVar_i[3]+a1*Two_phaseVar_j[3];
 
+
   if (implicit) {
 
 	for (iVar = 0; iVar < nVar; iVar++) {

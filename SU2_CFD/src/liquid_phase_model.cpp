@@ -65,16 +65,30 @@ void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2do
 	SetTsat(P);
 	SetPsat(T);
 
-	SetSurfaceTension(T);
+	if (Tsat > T) {
 
-    SetTLiquid(T, Rcritical, Rdroplet);
-    SetLiquidDensity();
+		SetSurfaceTension(T);
 
-    SetLiquidEnthalpy(h_v);
+		SetTLiquid(T, Rcritical, Rdroplet);
+		SetLiquidDensity();
 
-    SetRCritical(P, T);
+		SetLiquidEnthalpy(h_v);
 
-    SetDensity_Mixture(rho, mom3);
+		SetRCritical(P, T);
+
+		//Rc = min(Rc, Rdroplet);
+
+		SetDensity_Mixture(rho, mom3);
+	} else {
+
+		sigma = 0;
+		T_l = T;
+		rho_l = rho;
+		Rc = 0;
+		h_l = h_v;
+		rho_m = rho;
+
+	}
 
 }
 
@@ -153,7 +167,6 @@ CWater::~CWater(void) {
 
 void CWater::SetTsat(su2double P) {
 
-
     Hsat = pow((P/1E6),0.25);
     Esat =  Hsat*Hsat + coeff_saturation[2] * Hsat + coeff_saturation[5];
     Fsat =  coeff_saturation[0]*Hsat*Hsat + coeff_saturation[3]*Hsat + coeff_saturation[6];
@@ -169,7 +182,10 @@ void CWater::SetTsat(su2double P) {
 
 void CWater::SetPsat(su2double T) {
 
-	Hsat = T + coeff_saturation[8] / (T - coeff_saturation[9] ) ;
+
+	su2double  T_limited = min(T, Tstar);
+
+	Hsat = T_limited + coeff_saturation[8] / (T_limited - coeff_saturation[9] ) ;
 	Asat = Hsat*Hsat + coeff_saturation[0]*Hsat + coeff_saturation[1];
 	Bsat = coeff_saturation[2]*Hsat*Hsat + coeff_saturation[3]*Hsat + coeff_saturation[4];
 	Csat = coeff_saturation[5]*Hsat*Hsat + coeff_saturation[6]*Hsat + coeff_saturation[7];
@@ -183,6 +199,7 @@ void CWater::SetPsat(su2double T) {
 
 void CWater::SetSurfaceTension(su2double T) {
 
+    su2double  T_limited = min(T, Tstar);
 
 	sigma =  1.0 - T/Tstar;
 	sigma =  235.8e-3 * (0.375 + 0.625*(1.0-sigma)) * pow(sigma,1.256);
@@ -191,15 +208,20 @@ void CWater::SetSurfaceTension(su2double T) {
 
 void CWater::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
 
-		if (Rdroplet!=0.0) T_l   = Tsat  - (Tsat - T)*Rcritical/Rdroplet;
+		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
 		else      T_l = T;
 
+		rho_l = 928.08 + 464.63*T_l/Tstar - 568.46*(T_l/Tstar)*(T_l/Tstar)
+				- 255.17*(T_l/Tstar)*(T_l/Tstar)*(T_l/Tstar);
 }
 
 void CWater::SetLiquidDensity() {
 
-		rho_l = 928.08 + 464.63*T_l/Tstar - 568.46*(T_l/Tstar)*(T_l/Tstar)
-				- 255.17*(T_l/Tstar)*(T_l/Tstar)*(T_l/Tstar);
+	    su2double  T_limited = T_l;
+
+		rho_l = 928.08 + 464.63*T_limited/Tstar - 568.46*(T_limited/Tstar)*(T_limited/Tstar)
+				- 255.17*(T_limited/Tstar)*(T_limited/Tstar)*(T_limited/Tstar);
+
 }
 
 void CWater::SetLiquidEnthalpy(su2double h_v) {
