@@ -1281,8 +1281,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
   /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
   addBoolOption("WRT_HALO", Wrt_Halo, false);
-  /*!\brief ONE_D_OUTPUT
+  /*!\brief KIND_ONE_DIMENSIONALIZATION
    *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker.
+   *  Options: AREA, MASSFLUX, NONE
    *  \n Use with MARKER_OUT_1D. \ingroup Config*/
   addEnumOption("KIND_ONE_DIMENSIONALIZATION", Kind_OneD, OneD_Map, ONED_NONE);
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
