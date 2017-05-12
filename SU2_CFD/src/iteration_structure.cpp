@@ -1497,10 +1497,6 @@ void CAdjFluidIteration::Preprocess(COutput *output,
     integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                     config_container, RUNTIME_FLOW_SYS, 0, val_iZone);
     
-    /*--- Compute one-dimensionalized values for certain objectives ---*/
-    if (config_container[val_iZone]->GetKind_ObjFunc() == OUTFLOW_GENERALIZED)
-      output->OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry_container[val_iZone][FinestMesh], config_container[val_iZone]);
-
     if (config_container[val_iZone]->GetKind_Solver() == ADJ_RANS) {
       
       /*--- Solve the turbulence model ---*/

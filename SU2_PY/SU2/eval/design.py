@@ -240,7 +240,6 @@ def obj_f(dvs,config,state=None):
         # otherwise evaluate the penalty function (OBJTYPE = '>','<', or '=')
         else:
             func += obj_p(config,state,this_obj,def_objs) * scale
-
     vals_out.append(func)
     #: for each objective
     # If evaluating the combined function is desired, update it here.
