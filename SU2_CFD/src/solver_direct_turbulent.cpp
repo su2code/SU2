@@ -1599,7 +1599,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       r_d= (nut+nu)/(uijuij*k2*pow(dist_wall, 2.0));
       f_d= 1.0-tanh(pow(8.0*r_d,3.0));
       
-      if (f_d < 0.8){
+      if (f_d < 0.99){
         Delta = delta_ddes;
       }
       
@@ -1636,6 +1636,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       su2double **PrimVar_Grad_j, f_kh, f_kh_lim;
       su2double Strain_i[3][3], Strain_j[3][3],StrainDotVort[3]={0.0,0.0,0.0},numVecVort[3]={0.0,0.0,0.0};
       su2double numerator, denominator, trace0, trace1, VTM_i, ln_max, aux_ln, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
+      su2double aux_delta_ddes, delta_ddes;
       unsigned short nNeigh, iNeigh, i,j;
       
       unsigned long NumNeigh;
@@ -1698,6 +1699,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       VTM_i = (numerator/denominator) * max(1.0,0.2*nu/nut);
       
       ln_max=0.0;
+      delta_ddes=0.0;
       for (iNeigh=0;iNeigh<nNeigh;++iNeigh){
         NumNeigh = geometry->node[iPoint]->GetPoint(iNeigh);
         Coord_j = geometry->node[NumNeigh]->GetCoord();
@@ -1710,6 +1712,12 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
         ln[2] = delta_i[0]*ratio_Omega[1] - delta_i[1]*ratio_Omega[0];
         aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
         ln_max = max(ln_max,aux_ln);
+        
+        aux_delta_ddes = 0.0;
+        for (iDim=0;iDim<nDim;++iDim)
+          aux_delta_ddes += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+        delta_ddes=max(delta_ddes,sqrt(aux_delta_ddes));
+        
         
         PrimVar_Grad_j=solver_container[FLOW_SOL]->node[NumNeigh]->GetGradient_Primitive();
         
@@ -1764,14 +1772,19 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       r_d= (nut+nu)/(uijuij*k2*pow(dist_wall, 2.0));
       f_d= 1.0-tanh(pow(8.0*r_d,3.0));
       
-      if (f_d < (1.0-0.01)) {
+/*      if (f_d < (1.0-0.01)) {
         f_kh_lim = 1.0;
       }
       else {
         f_kh_lim = f_kh;
       }
+      Delta = (ln_max/sqrt(3.0)) * f_kh_lim;*/
       
-      Delta = (ln_max/sqrt(3.0)) * f_kh_lim;
+      Delta = (ln_max/sqrt(3.0)) * f_kh;
+      if (f_d < 0.99){
+        Delta = delta_ddes;
+      }
+      
       distDES = Const_DES * Delta;
       
       distDES_tilde=dist_wall-f_d*max(0.0,(dist_wall-distDES));
@@ -1779,6 +1792,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Set distance to the surface with DDES distance ---*/
       numerics->SetDistance(distDES_tilde, 0.0);
       solver_container[FLOW_SOL]->node[iPoint]->SetDES_LengthScale(distDES_tilde);
+      
     }
     else if (config->GetKind_HybridRANSLES()==SA_IDDES){
       
