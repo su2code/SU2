@@ -866,10 +866,11 @@ void CPengRobinson_Generic::SetGamma_Trho () {
 
   dPodT = 2 * a*sqrt(a2T) * daT;
   dPodT = dPodT / (1/Density/Density + 2*b/Density - b*b);
-
   dPodT = Gas_Constant/ (1/Density - b) - dPodT;
+
   dPodv = -b *b + 2 * b / Density + pow(Density, -2);
-  dPodv = -Gas_Constant * Temperature / pow(1/Density - b, 2) + 2* a * alpha2(Temperature) * (1/ Density - b) / pow(dPodv, 2);
+  dPodv = 2* a * a2T * (1/ Density + b) / pow(dPodv, 2);
+  dPodv = dPodv - Gas_Constant * Temperature / pow(1/Density - b, 2);
 
   CpmCv = -Temperature * pow(dPodT, 2)/dPodv;
 
