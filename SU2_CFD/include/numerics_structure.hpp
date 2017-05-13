@@ -1922,6 +1922,7 @@ private:
   ProjVelocity, ProjVelocity_i, ProjVelocity_j;
   unsigned short iDim, iVar, jVar, kVar;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
+  su2double U_if, U_dis;
   
 public:
   

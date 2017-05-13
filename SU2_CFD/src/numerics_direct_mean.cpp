@@ -869,29 +869,52 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   mL  = ProjVelocity_i/SoundSpeed_i;
   mR  = ProjVelocity_j/SoundSpeed_j;
   
-  if (fabs(mL) <= 1.0) mLP = 0.25*(mL+1.0)*(mL+1.0);
-  else mLP = 0.5*(mL+fabs(mL));
+//  if (fabs(mL) <= 1.0) mLP = 0.25*(mL+1.0)*(mL+1.0);
+//  else mLP = 0.5*(mL+fabs(mL));
+//  
+//  if (fabs(mR) <= 1.0) mRM = -0.25*(mR-1.0)*(mR-1.0);
+//  else mRM = 0.5*(mR-fabs(mR));
+//  
+//  mF = mLP + mRM;
+//  
+//  if (fabs(mL) <= 1.0) pLP = 0.25*Pressure_i*(mL+1.0)*(mL+1.0)*(2.0-mL);
+//  else pLP = 0.5*Pressure_i*(mL+fabs(mL))/mL;
+//  
+//  if (fabs(mR) <= 1.0) pRM = 0.25*Pressure_j*(mR-1.0)*(mR-1.0)*(2.0+mR);
+//  else pRM = 0.5*Pressure_j*(mR-fabs(mR))/mR;
+//  
+//  pF = pLP + pRM;
+//  Phi = fabs(mF);
+//  
+//  val_residual[0] = 0.5*(mF*((Density_i*SoundSpeed_i)+(Density_j*SoundSpeed_j))-Phi*((Density_j*SoundSpeed_j)-(Density_i*SoundSpeed_i)));
+//  for (iDim = 0; iDim < nDim; iDim++)
+//    val_residual[iDim+1] = 0.5*(mF*((Density_i*SoundSpeed_i*Velocity_i[iDim])+(Density_j*SoundSpeed_j*Velocity_j[iDim]))
+//                                -Phi*((Density_j*SoundSpeed_j*Velocity_j[iDim])-(Density_i*SoundSpeed_i*Velocity_i[iDim])))+UnitNormal[iDim]*pF;
+//  val_residual[nVar-1] = 0.5*(mF*((Density_i*SoundSpeed_i*Enthalpy_i)+(Density_j*SoundSpeed_j*Enthalpy_j))-Phi*((Density_j*SoundSpeed_j*Enthalpy_j)-(Density_i*SoundSpeed_i*Enthalpy_i)));
+//  
   
-  if (fabs(mR) <= 1.0) mRM = -0.25*(mR-1.0)*(mR-1.0);
-  else mRM = 0.5*(mR-fabs(mR));
+  // AUSM + (P)
+  /*--- Interface fluid velocity ---*/
+//  U_if = (ProjVelocity_i + ProjVelocity_j)*0.5 - 0.04 * (Pressure_i - Pressure_j);
+  U_if = (Velocity_i[0] + Velocity_j[0])*0.5 - 0.04 * (Pressure_i - Pressure_j);
   
-  mF = mLP + mRM;
+  /*--- Numerial Dissipation---*/
+//  U_dis = max(abs((ProjVelocity_i + ProjVelocity_j)*0.5),0.04);
+  U_dis = max(abs((Velocity_i[0] + Velocity_j[0])*0.5),0.04);
   
-  if (fabs(mL) <= 1.0) pLP = 0.25*Pressure_i*(mL+1.0)*(mL+1.0)*(2.0-mL);
-  else pLP = 0.5*Pressure_i*(mL+fabs(mL))/mL;
   
-  if (fabs(mR) <= 1.0) pRM = 0.25*Pressure_j*(mR-1.0)*(mR-1.0)*(2.0+mR);
-  else pRM = 0.5*Pressure_j*(mR-fabs(mR))/mR;
-  
-  pF = pLP + pRM;
-  Phi = fabs(mF);
-  
-  val_residual[0] = 0.5*(mF*((Density_i*SoundSpeed_i)+(Density_j*SoundSpeed_j))-Phi*((Density_j*SoundSpeed_j)-(Density_i*SoundSpeed_i)));
-  for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = 0.5*(mF*((Density_i*SoundSpeed_i*Velocity_i[iDim])+(Density_j*SoundSpeed_j*Velocity_j[iDim]))
-                                -Phi*((Density_j*SoundSpeed_j*Velocity_j[iDim])-(Density_i*SoundSpeed_i*Velocity_i[iDim])))+UnitNormal[iDim]*pF;
-  val_residual[nVar-1] = 0.5*(mF*((Density_i*SoundSpeed_i*Enthalpy_i)+(Density_j*SoundSpeed_j*Enthalpy_j))-Phi*((Density_j*SoundSpeed_j*Enthalpy_j)-(Density_i*SoundSpeed_i*Enthalpy_i)));
-  
+  val_residual[0] = U_if * 0.5*(Density_i + Density_j) -  U_dis*0.5*(Density_j - Density_i);
+  for (iDim = 0; iDim < nDim; iDim++){
+    if (iDim==0){
+      val_residual[iDim+1] = U_if * 0.5*(Density_i*Velocity_i[iDim] + Density_j*Velocity_j[iDim]) - U_dis*0.5*( Density_j*Velocity_j[iDim] - Density_i*Velocity_i[iDim] ) + 0.5*(Pressure_i + Pressure_j);
+    }
+    else{
+      val_residual[iDim+1] = U_if * 0.5*(Density_i*Velocity_i[iDim] + Density_j*Velocity_j[iDim]) - U_dis*0.5*(Density_j*Velocity_j[iDim] - Density_i*Velocity_i[iDim]);
+    }
+  }
+  val_residual[nVar-1] = U_if * 0.5*(Density_i*Enthalpy_i + Density_j*Enthalpy_j) - U_dis*0.5*( Density_j*Enthalpy_j - Density_i*Enthalpy_i );
+  // End AUSM + (P)
+
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] *= Area;
   
