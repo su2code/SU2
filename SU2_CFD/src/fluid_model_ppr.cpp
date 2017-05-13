@@ -892,7 +892,7 @@ void CPengRobinson_Generic::Set_Cv (su2double T, su2double v) {
   CvmCv0 = CvmCv0 + pow( daT, 2);
   CvmCv0 = -2 * a * CvmCv0 * T;
 
-  CvmCv0 = CvmCv0 * 0.5 * (log( v + b - sqrt(2)*b) - log( v + b + sqrt(2)*b));
+  CvmCv0 = CvmCv0 * 0.5 * (log( v + b - sqrt(2)*b) - log( v + b + sqrt(2)*b)) / sqrt(2) / b;
 
   Cv = Cv0 + CvmCv0;
 
