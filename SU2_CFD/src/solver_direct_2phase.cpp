@@ -1380,7 +1380,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
         		Solution_j[iVar] = Two_phase_j[iVar] - config->GetLimiterCoeff_2phase() * Delta;
 
 
-        	} else if (config->GetKind_SlopeLimit_2phase() ==SUPERBEE) {
+        	} else if (config->GetKind_SlopeLimit_2phase() == SUPERBEE) {
 
         		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
