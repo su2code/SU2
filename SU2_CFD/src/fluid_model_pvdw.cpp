@@ -499,15 +499,15 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
   T_new   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
 
   do{
-     	  T = T_new;
-		  HeatCapacity->Set_Cv0 (T);
-		  Cv = HeatCapacity->Get_Cv0 ();
+	  T = T_new;
+	  HeatCapacity->Set_Cv0 (T);
+	  Cv = HeatCapacity->Get_Cv0 ();
 
-		  v =  exp((s - Cv*log(T))/Gas_Constant) + b;
-		  T_new = (P + a/v/v) * (v - b)/ Gas_Constant;
+	  v =  exp((s - Cv*log(T))/Gas_Constant) + b;
+	  T_new = (P + a/v/v) * (v - b)/ Gas_Constant;
 
-		  error = abs(T - T_new)/T;
-		  count_T++;
+	  error = abs(T - T_new)/T;
+	  count_T++;
 	}while(error >toll && count < ITMAX);
     count_T = 0;
     error = 1;
@@ -598,18 +598,15 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
 
 void CVanDerWaalsGas_Generic::SetGamma_Trho () {
 
-  Cp = -Gas_Constant*Temperature/pow((1/Density-b), 2);
+  su2double CpoCv;
 
-  Cp = Cp + 2*a*pow(Density, 3);
-  Cp = Cp * pow(Gas_Constant,2) / pow((1/Density - b), 2);
-  Cp = - Cp * Temperature;
+  CpoCv = -Gas_Constant*Temperature/pow((1/Density-b), 2);
 
-//  if (Cp < 0.0) {
-//		  cout << "Warning: Heat Capacity Ratio less than one, ideal gas correction adopted"<< endl;
-	  Cp = Gas_Constant;
-//  }
+  CpoCv = CpoCv + 2*a*pow(Density, 3);
+  CpoCv = CpoCv * pow(Gas_Constant,2) / pow((1/Density - b), 2);
+  CpoCv = - CpoCv * Temperature;
 
-  Cp = Cv + Cp;
+  Cp = Cv + CpoCv;
   Gamma = Cp/Cv;
 
 }
