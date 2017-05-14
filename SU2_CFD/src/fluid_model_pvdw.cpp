@@ -528,18 +528,15 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
 
 void CVanDerWaalsGas_Generic::SetGamma_Trho () {
 
-  Cp = -Gas_Constant*Temperature/pow((1/Density-b), 2);
+  su2double CpoCv;
 
-  Cp = Cp + 2*a*pow(Density, 3);
-  Cp = Cp * pow(Gas_Constant,2) / pow((1/Density - b), 2);
-  Cp = - Cp * Temperature;
+  CpoCv = -Gas_Constant*Temperature/pow((1/Density-b), 2);
 
-//  if (Cp < 0.0) {
-//		  cout << "Warning: Heat Capacity Ratio less than one, ideal gas correction adopted"<< endl;
-	  Cp = Gas_Constant;
-//  }
+  CpoCv = CpoCv + 2*a*pow(Density, 3);
+  CpoCv = CpoCv * pow(Gas_Constant,2) / pow((1/Density - b), 2);
+  CpoCv = - CpoCv * Temperature;
 
-  Cp = Cv + Cp;
+  Cp = Cv + CpoCv;
   Gamma = Cp/Cv;
 
 }

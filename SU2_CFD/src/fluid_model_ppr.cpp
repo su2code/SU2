@@ -866,7 +866,7 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
 
 void CPengRobinson_Generic::SetGamma_Trho () {
 
-	// Gamma call corrected
+// Gamma call corrected
 
   su2double dPodT, dPodv, CpmCv, daT, a2T;
 
@@ -885,10 +885,6 @@ void CPengRobinson_Generic::SetGamma_Trho () {
 
   Cp = Cv + CpmCv;
   Gamma = Cp/Cv;
-
-  if  (Gamma > 4) {
-  cout << a << " " << b << " " << dPodT << " " << dPodv << " " << CpmCv << " " << k << endl;
-  }
 
 }
 
