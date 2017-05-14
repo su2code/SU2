@@ -533,7 +533,7 @@ void CVanDerWaalsGas_Generic::SetGamma_Trho () {
   CpoCv = -Gas_Constant*Temperature/pow((1/Density-b), 2);
 
   CpoCv = CpoCv + 2*a*pow(Density, 3);
-  CpoCv = CpoCv * pow(Gas_Constant,2) / pow((1/Density - b), 2);
+  CpoCv = pow(Gas_Constant,2) / pow((1/Density - b), 2) / CpoCv;
   CpoCv = - CpoCv * Temperature;
 
   Cp = Cv + CpoCv;
