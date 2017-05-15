@@ -300,7 +300,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         Boundary = config->GetMarker_All_KindBC(iMarker);
         if ((Boundary == HEAT_FLUX             ) ||
-            (Boundary == ISOTHERMAL            )) {
+            (Boundary == ISOTHERMAL            ) ||
+            (Boundary == CHT_WALL_INTERFACE    )) {
 
           for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
 
@@ -535,7 +536,8 @@ void CMultiGridIntegration::SetForcing_Term(unsigned short RunTime_EqSystem, CSo
   if ( SolContainer_Position == FLOW_SOL ) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+          (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
         for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
           Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
           sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
@@ -585,7 +587,8 @@ void CMultiGridIntegration::SetRestricted_Residual(unsigned short RunTime_EqSyst
   if ( SolContainer_Position == FLOW_SOL ) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+          (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
         for (iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
           Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
           sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
@@ -634,7 +637,8 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   if ( SolContainer_Position == FLOW_SOL ) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+          (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
 
         for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
           Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
