@@ -40,8 +40,8 @@ C2phaseVariable::C2phaseVariable(void) : CVariable() {
 	Source = 0; Enthalpy_Liquid = 0;
 	Radius = 0; Liquid_Fraction = 0;
 
-	Primitive_Liquid = new su2double [10];
-	for (iVar = 0; iVar < 10; iVar++)
+	Primitive_Liquid = new su2double [11];
+	for (iVar = 0; iVar < 11; iVar++)
 		  Primitive_Liquid[iVar] = 0.0;
 
 }
@@ -176,6 +176,7 @@ su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *
 	Primitive_Liquid[7] = Rdroplet;
 	Primitive_Liquid[8] = rho_m;
 	Primitive_Liquid[9] = 0.0;
+	Primitive_Liquid[10] = 0.0;
 
 	return Primitive_Liquid;
 

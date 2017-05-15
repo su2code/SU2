@@ -168,7 +168,8 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 		Growth_rate = GetGrowth_Rate(P, T, rho, h, k, mu, CpoCv, val_liquid_i);
 
 		// store G for source term euler
-		val_liquid_i[9] = Growth_rate;
+		val_liquid_i[9]  = Growth_rate;
+		val_liquid_i[10] = Nucleation_rate;
 
 		// compute the source terms
 		val_Residual[0] = Density_mixture * Nucleation_rate;

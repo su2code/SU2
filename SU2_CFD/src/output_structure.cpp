@@ -11255,12 +11255,14 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   }
 
 
-  // add rho_liquid for 2-phase simulations
+  // add rho_liquid and nucleation rate for 2-phase simulations
 
   if (SecondIndex == TWO_PHASE_SOL || ThirdIndex == TWO_PHASE_SOL) {
-  	nVar_Par += 1;
-  	Variable_Names.push_back("Rho_liq");
+  	nVar_Par += 2;
+  	Variable_Names.push_back("Rho_liquid");
+  	Variable_Names.push_back("J (1/kg/s)");
   }
+
 
   /*--- Allocate the local data structure now that we know how many
    variables are in the output. ---*/
@@ -11453,6 +11455,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
 
         if (SecondIndex == TWO_PHASE_SOL || ThirdIndex == TWO_PHASE_SOL) {
           Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1)); iVar++;
+          Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(10)); iVar++;
         }
 
 

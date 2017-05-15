@@ -125,7 +125,8 @@ void CHeatCapacity_Dimensionless::Set_Cv0(su2double T) {
     } else {
         Cp0 = 0;
 
-    	T_limited = min(T*Tref, T_Total);
+    	//T_limited = min(T*Tref, T_Total);
+        T_limited = T*Tref;
 
         for (i=0;i<5;i++) {
            Cp0 += coeff_Cp0[i] * pow(T_limited, i);
