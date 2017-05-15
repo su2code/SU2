@@ -1238,6 +1238,10 @@ inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = 
 
 inline bool CConfig::isHybrid_Turb_Model(void) { return Hybrid_Turb_Model; }
 
+inline unsigned short CConfig::GetKind_Hybrid_Blending(void) { return Kind_Hybrid_Blending; }
+
+inline unsigned short CConfig::GetKind_Hybrid_Anisotropy_Model(void) { return Kind_Hybrid_Aniso_Model; }
+
 inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model; }
 
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
