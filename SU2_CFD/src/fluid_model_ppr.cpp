@@ -523,13 +523,12 @@ su2double CPengRobinson_Generic::T_v_h(su2double v, su2double h) {
   if (count_T == ITMAX)
   	cout << "Too many iterations in T_v_h function" << endl;
 
-  return T*T;
+  return T_new;
 }
 
+
 su2double CPengRobinson_Generic::T_P_rho(su2double P, su2double rho) {
-  su2double A, B, C, T, vb1, vb2, T_new;
-  su2double error = 1, toll = 1e-5;
-  unsigned int count_T = 0, ITMAX = 1000;
+  su2double A, B, C, T, vb1, vb2;
 
   vb1 = (1/rho -b);
   vb2 = (1/rho/rho + 2*b/rho - b*b);
@@ -540,27 +539,8 @@ su2double CPengRobinson_Generic::T_P_rho(su2double P, su2double rho) {
 
   C = - P - a*(1+k)*(1+k)/vb2;
 
-  T_new = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
-  T_new *= T_new;
-
-  do {
-	  T = T_new;
-	  HeatCapacity->Set_Cv0(T);
-	  Cv0 = HeatCapacity->Get_Cv0();
-	  Set_Cv(T, 1/rho);
-
-	  A =   Gas_Constant/vb1 - a*k*k/TstarCrit/vb2;
-	  B =   2*a*k*(k+1)/sqrt(TstarCrit)/vb2;
-	  C = - P - a*(1+k)*(1+k)/vb2;
-	  T_new = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
-	  T_new *= T_new;
-	  error = abs(T-T_new)/T_new;
-	  count_T++;
-
-  } while (count_T < ITMAX && error > toll);
-
-  if (count_T == ITMAX)
-  	cout << "Too many iterations in T_P_rho function" << endl;
+  T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
+  T *= T;
 
   return T;
 }
@@ -605,8 +585,7 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
     } while (count_T < ITMAX && error > toll);
 
-    if (count_T == ITMAX)
-//    	cout << "Too many iterations in rho_e call" << endl;
+    if (count_T == ITMAX) cout << "Too many iterations in rho_e call" << endl;
 
     Temperature = Temperature_new;
 	HeatCapacity->Set_Cv0(Temperature);
@@ -622,13 +601,22 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
     SetGamma_Trho();
 
-    if 	(Gamma > 4 || Gamma < 1) {
-    	cout << "Warning: Gamma value greater than 3, switch to CONSTANT_GAMMA" << endl;
-    	cout << "Ideal gas correction implemented, Cp = Cv + R" << endl;
+    if 	(Gamma > 4 ) {
+//    	cout << "Warning: Gamma value greater than 4, switch to CONSTANT_GAMMA" << endl;
+ //   	cout << "Ideal gas correction implemented, Cp = Cv + R" << endl;
     	Cp = Cv + Gas_Constant;
     	Gamma = Cp/Cv;
     	Gamma_Minus_One = Gamma - 1;
-		getchar();
+//		getchar();
+    }
+
+    if 	( Gamma < 1) {
+//   	cout << "Warning: Gamma value lower than 1, switch to CONSTANT_GAMMA" << endl;
+//    	cout << "Ideal gas correction implemented, Cp = Cv + R" << endl;
+    	Cp = Cv + Gas_Constant;
+    	Gamma = Cp/Cv;
+    	Gamma_Minus_One = Gamma - 1;
+//		getchar();
     }
 
     Entropy = Cv*log(Temperature) + Gas_Constant*log(B) - a*sqrt(a2T) *k*fv/(b*sqrt2*sqrt(Temperature*TstarCrit));
@@ -714,12 +702,12 @@ void CPengRobinson_Generic::SetTDState_Prho (su2double P, su2double rho ) {
 void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
 
   su2double T, fv, sqrt2=sqrt(2.0), A;
-  su2double f, v, atanh;
+  su2double f, v, atanh, P;
   su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
-  su2double toll = 1e-5, FACTOR=0.2;
+  su2double toll = 1e-9, FACTOR=0.2;
   su2double cons_s, cons_h;
-  su2double error=0, error_v = 0, T_new, v_new;
-  unsigned short countrtb=0, NTRY=10, ITMAX=100, count_T=0, count_v = 0;
+  su2double error=1, error_v = 1, T_new, v_new;
+  unsigned short countrtb=0, NTRY=20, ITMAX=100, count_T=0, count_v = 0;
 
   Cp = Gamma*Gas_Constant /(Gamma - 1);
   T_new = abs(h)/Cp;
@@ -733,28 +721,33 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
 		do {
 			v = v_new;
 			Set_Cv(T,v);
-			atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
-			v_new = (s - Cv*log(T) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)))/Gas_Constant;
-			v_new = exp(v_new) + b;
+			fv = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
+			v_new = s - Cv*log(T) + a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit));
+			v_new = exp(v_new/Gas_Constant) + b;
 			error_v = abs(v - v_new)/v;
 			count_v++;
-
 		}while(error_v >toll && count_v < ITMAX);
 
 		error_v = 1;
 		count_v = 0;
 
-		T = T_v_h(v, h);
-   	    atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
-		T_new = exp((s - Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)))/Cv);
+		T_new = T_v_h(v_new, h);
 
 		error = abs(T - T_new)/T;
 		count_T++;
 	  }while(error >toll && count_T < ITMAX);
 
-   SetTDState_rhoT(1/v, T);
+   SetTDState_rhoT(1/v_new, T_new);
+
+   cons_h= abs((StaticEnergy + Pressure/Density -h)/h);
+   cons_s= abs((Entropy-s)/s);
+
+   if(cons_h >1e-3 || cons_s >1e-3) {
+     cout<< "TD consistency not verified in hs call"<< endl;
+   }
 
 }
+
 
 
 void CPengRobinson_Generic::SetEnergy_Prho (su2double P, su2double rho) {
@@ -804,6 +797,8 @@ void CPengRobinson_Generic::SetTDState_rhoT (su2double rho, su2double T) {
   e = T * Cv - a*(k+1)*sqrt( a2T ) / ( b*sqrt(2.0) ) * fv;
 
   SetTDState_rhoe(rho, e);
+
+
 }
 
 void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
@@ -837,8 +832,6 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
 		count_v = 0;
 
 		T_new = T_P_rho(P, 1/v);
-   	    atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
-		T_new = exp((s - Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)))/Cv);
 
 		error = abs(T - T_new)/T;
 		count_T++;
@@ -857,7 +850,7 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
 
 void CPengRobinson_Generic::SetGamma_Trho () {
 
-	// Gamma call corrected
+// Gamma call corrected
 
   su2double dPodT, dPodv, CpmCv, daT, a2T;
 
@@ -868,9 +861,9 @@ void CPengRobinson_Generic::SetGamma_Trho () {
   dPodT = dPodT / (1/Density/Density + 2*b/Density - b*b);
   dPodT = Gas_Constant/ (1/Density - b) - dPodT;
 
-  dPodv = -b *b + 2 * b / Density + pow(Density, -2);
-  dPodv = 2* a * a2T * (1/ Density + b) / pow(dPodv, 2);
-  dPodv = dPodv - Gas_Constant * Temperature / pow(1/Density - b, 2);
+  dPodv = -b*b + 2* b / Density + 1/Density/Density;
+  dPodv = + 2* a * a2T * (1/ Density + b) / pow(dPodv, 2);
+  dPodv = dPodv -Gas_Constant * Temperature / (1/Density - b)/ (1/Density - b);
 
   CpmCv = -Temperature * pow(dPodT, 2)/dPodv;
 
