@@ -1401,8 +1401,6 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   su2double PitchDonor, AngularCoord_Donor, MinAngularCoord_Donor, MaxAngularCoord_Donor;
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
 
-// TEST VARIABLES
-  su2double x_don, x_tar, y_don, y_tar, R;
   unsigned short count;
 
 #ifdef HAVE_MPI
@@ -1438,7 +1436,6 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
     for (unsigned short iSpan= 0; iSpan < nSpanSectionsTarget ; iSpan++){
-      //    unsigned short iSpan = 0;
       /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
       markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
 
@@ -1480,7 +1477,6 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
       if(markDonor != -1){
         nVertexSpanDonor   =  donor_geometry->GetnVertexSpan( markDonor,  iSpan );
-//        cout << "DONOR NODES:  " <<donor_geometry->GetnTotVertexSpan( markDonor,  SpanLevelDonor[iSpan] ) << endl;
       }
       else{
         nVertexDonor  = 0;
@@ -1514,12 +1510,10 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
       /*--- Compute the closest point to a Near-Field boundary point ---*/
       maxdist = 0.0;
-      count = 0;
 
       for (iVertexTarget = 0; iVertexTarget < nVertexSpanTarget; iVertexTarget++) {
 
         iPrimalVertex_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetOldVertex();
-        Point_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetNode();
 
         if ( target_geometry->node[Point_Target]->GetDomain() ) {
 
@@ -1527,10 +1521,7 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
           target_geometry->vertex[markTarget][iPrimalVertex_Target]->Allocate_DonorInfo(); // Possible meme leak?
 
           /*--- Coordinates of the boundary point ---*/
-          Coord_i = target_geometry->node[Point_Target]->GetCoord();
           AngularCoord_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetAngularCoord();
-//          RADIUS FOR TEST ONLY
-          R = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetRadiusCoord();
 
           mindist    = HUGE;
           pProcessor = 0;
@@ -1549,60 +1540,27 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 
               AngularCoord_Donor = Buffer_Receive_Coord[ Global_Point_Donor];
 
-//              if (AngularCoord_Donor < 1000.){
-//                if (iVertexTarget == 0){
-//              cout << "AngularCoord_Donor : " <<  AngularCoord_Donor  << " RANK:  " << rank << " Count:  "<< count << endl;
-//                count++;
-//              }
 
               if ( AngularCoord_Donor > MaxAngularCoord_Target ){
                 dist = abs(AngularCoord_Donor - (AngularCoord_Target + PitchTarget));
               }
               else if ( AngularCoord_Donor <=  MinAngularCoord_Target  ){
-                //              dist = abs( AngularCoord_Donor - (AngularCoord_Target - PitchDonor));
                 dist = abs(AngularCoord_Donor - (AngularCoord_Target - PitchTarget));
               }
               else
                 dist = abs(AngularCoord_Donor - AngularCoord_Target);
 
-//              cout << endl;
-//              cout << "SpanTarget-->Donor : " << iSpan << " --> " << SpanLevelDonor[iSpan] << endl;
-//              cout << "Pitch Target       : " << PitchTarget << endl;
-//              cout << "Radius             : " << R << endl;
-//              cout << "MaxAngular_Target  : " <<  MaxAngularCoord_Target << endl;
-//              cout << "MinAngular_Target  : " <<  MinAngularCoord_Target << endl;
-//              cout << "AngularCoord_Donor : " <<  AngularCoord_Donor << endl;
-//              cout << "AngularCoord_Target: " <<  AngularCoord_Target << endl;
-//              cout << "Linear Pitch       : " << PitchTarget*R << endl;
-//              cout << "xy_Max_Target      : " << R*cos(MaxAngularCoord_Target) << "   " << R*sin(MaxAngularCoord_Target) << endl;
-//              cout << "xy_Min_Target      : " << R*cos(MinAngularCoord_Target) << "   " << R*sin(MinAngularCoord_Target) << endl;
-//              cout << "xy Coord_Donor     : " << R*cos(AngularCoord_Donor)     << "   " << R*sin(AngularCoord_Donor) << endl;
-//              cout << "xy Coord_Target    : " << R*cos(AngularCoord_Target)    << "   " << R*sin(AngularCoord_Target) << endl;
-//              cout << "Distance           : " <<  dist                << endl;
-//              cout << endl;
 
               if (dist < mindist) {
                 mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
                 donor_count = jVertex;
               }
 
-//              cout << "Min Distance       : " <<  mindist             << endl;
               if (dist == 0.0) break;
             }
 
           }
 
-//          cout << " ========== " << node_count++  << " ==========="  << endl;
-//          cout << " ========== " << donor_count   << " ==========="  << endl;
-//          cout << " ========== ==========="  << endl;
-
-//          if ( iVertexTarget ==  0){
-//            cout << " ===================================="  << endl;
-//            cout << " TOT_COUNT: "<< count <<  "  SPAN: " << iSpan << " RANK: " <<  rank << " MARKER_TARG: " <<  config[targetZone]->GetMarker_All_TagBound(markTarget)<<endl;
-////            cout << " TOT_COUNT: "<< count <<  "  SPAN: " << iSpan << " RANK: " <<  rank << " MARKER_DON: " << config[donorZone]->GetMarker_All_TagBound(markDonor)<< " MARKER_TARG: " <<  config[targetZone]->GetMarker_All_TagBound(markTarget)<<endl;
-//            cout << " ===================================="  << endl;
-//          }
-//          count = 0;
           /*--- Store the value of the pair ---*/
           maxdist = max(maxdist, mindist);
           target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorPoint(iDonor, pGlobalPoint);
@@ -1632,12 +1590,6 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
 void CTurboInterpolation::Determine_ArraySize(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short iSpan , unsigned short nDim) {
   unsigned long nLocalVertex_Donor = 0, nLocalFaceNodes_Donor=0, nLocalFace_Donor=0;
   unsigned long iVertex, iPointDonor = 0;
-  /* Only needed if face data is also collected */
-  unsigned long inode;
-  unsigned long donor_elem, jElem, jPoint;
-  unsigned short iDonor;
-  unsigned int nFaces=0, iFace, nNodes=0;
-  bool face_on_marker = true;
 
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
@@ -1649,7 +1601,7 @@ void CTurboInterpolation::Determine_ArraySize(bool faces, int markDonor, int mar
   nLocalVertex_Donor = nVertexDonor;
 
   Buffer_Send_nVertex_Donor[0] = nLocalVertex_Donor;
-cout <<"iSpan: " << iSpan << " N_VERTEX: " << nLocalVertex_Donor << endl;
+
   /*--- Send Interface vertex information --*/
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalVertex_Donor, &MaxLocalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);

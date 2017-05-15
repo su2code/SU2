@@ -33,6 +33,8 @@
 
 #include "../include/driver_structure.hpp"
 
+//TODO REMOVE FOR DEBUG
+#include <fenv.h>
 
 #include "../include/definition_structure.hpp"
 
@@ -5205,7 +5207,9 @@ void CHBMultiZoneDriver::Run() {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
+if (ExtIter > 1)
+//TODO REMOVE FOR DEBUG
+feenableexcept(FE_INVALID | FE_OVERFLOW);
   /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
 
