@@ -103,29 +103,7 @@ def projection( config, state={}, step = 1e-3 ):
     os.remove(grad_filename)
     
     info = su2io.State()
-     
-    if ('CUSTOM' in konfig.DV_KIND):
-        if ('OUTFLOW_GENERALIZED' in objective):
-            weight = 1.0
-            if (len(objective.split(','))>1):
-                obj = objective.split(',').index('OUTFLOW_GENERALIZED')
-                weight = float(konfig['OBJECTIVE_WEIGHT'].split(',')[obj])
-            import downstream_function # Must be defined in run folder
-            chaingrad = downstream_function.downstream_gradient(konfig,state,step)
-            n_dv = len(raw_gradients)
-            custom_dv=1
-            for idv in range(n_dv):
-                if (konfig.DV_KIND[idv] == 'CUSTOM'):
-                    raw_gradients[idv] = chaingrad[4+custom_dv]*weight
-                    custom_dv = custom_dv+1
-        else:
-            n_dv = len(raw_gradients)
-            custom_dv=1
-            for idv in range(n_dv):
-                if (konfig.DV_KIND[idv] == 'CUSTOM'):
-                    raw_gradients[idv] = 0.0
-                    custom_dv = custom_dv+1
-    
+       
     # Write Gradients
     data_plot = su2util.ordered_bunch()
     data_plot['VARIABLE']     = range(len(raw_gradients)) 
