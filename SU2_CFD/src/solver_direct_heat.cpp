@@ -186,7 +186,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       if (flow)
-        node[iPoint] = new CHeatVariable(0.0, nDim, nVar, config);
+        node[iPoint] = new CHeatVariable(1.0, nDim, nVar, config);
       else
         node[iPoint] = new CHeatVariable(1.0, nDim, nVar, config);
 
@@ -1268,10 +1268,10 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       if(flow)
         Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
       else
-        Local_Delta_Time = 1.E6;
+        Local_Delta_Time = config->GetCFL(iMesh)*Vol/ node[iPoint]->GetMax_Lambda_Visc();
 
-      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
-      Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
+      //Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+      //Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
       Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
