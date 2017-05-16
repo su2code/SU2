@@ -3693,64 +3693,68 @@ public:
 
 
 
-/*! swh 
+/*! swh
  * \class CTurbKEVariable
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author S. Haering
  * \version 4.3.x "Cardinal"
  */
-
 class CTurbKEVariable : public CTurbVariable {
+
 protected:
-        su2double sigma_e, sigma_k, sigma_z, C_e1o, C_e2, C1, C_2p, C_T, C_L, C_eta;
-	su2double Tm,		/*!< \brief T_m k-eps. */
-	Lm,		        /*!< \brief L_m k-eps */
-        Re_T;
+  su2double sigma_e, sigma_k, sigma_z, C_e1o, C_e2, C1, C_2p, C_T, C_L, C_eta;
+  su2double Tm,		/*!< \brief T_m k-eps. */
+    Lm,		        /*!< \brief L_m k-eps */
+    Re_T;
 
-  
 public:
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CTurbKEVariable(void);
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTurbKEVariable(void);
 
-	/*!
-	 * \overload
-	 * \param[in] val_rho_kine - Turbulent variable value (initialization value).
-	 * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+  /*!
+   * \overload
+   * \param[in] val_rho_kine - Turbulent variable value (initialization value).
+   * \param[in] val_rho_omega - Turbulent variable value (initialization value).
    * \param[in] val_muT - Turbulent variable value (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] constants -
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi, su2double val_zeta, su2double val_f, su2double val_muT, su2double val_Tm, su2double val_Lm, unsigned short val_nDim, unsigned short val_nvar, su2double *constants, CConfig *config);
-  //  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi, su2double val_zeta, su2double val_muT, su2double val_Tm, su2double val_Lm, unsigned short val_nDim, unsigned short val_nvar, su2double *constants, CConfig *config);
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi,
+                  su2double val_zeta, su2double val_f,
+                  su2double val_muT, su2double val_Tm, su2double val_Lm,
+                  unsigned short val_nDim, unsigned short val_nvar,
+                  su2double *constants, CConfig *config);
 
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CTurbKEVariable(void);
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurbKEVariable(void);
 
-	/*!
-	 * \brief Set the turbulence scales of the zeta-f KE model.
-	 * \param[in] val_viscosity - Value of the vicosity.
-	 * \param[in] val_dist - Value of the distance to the wall.
-	 * \param[in] val_density - Value of the density.
-	 */
-  //  void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
-  void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double StrainMag, su2double VelMag, su2double L_Inf, su2double solve_tol);
+  /*!
+   * \brief Set the turbulence scales of the zeta-f KE model.
+   * \param[in] val_viscosity - Value of the vicosity.
+   * \param[in] val_dist - Value of the distance to the wall.
+   * \param[in] val_density - Value of the density.
+   */
+  void SetTLFunc(su2double val_viscosity, su2double val_dist,
+                 su2double val_density, su2double val_kine, su2double val_epsi,
+                 su2double val_zeta, su2double StrainMag, su2double VelMag,
+                 su2double L_Inf, su2double solve_tol);
 
-	/*!
-	 * \brief Get the first blending function.
-	 */
-	su2double GetTm(void);
+  /*!
+   * \brief Get the first blending function.
+   */
+  su2double GetTm(void);
 
-	/*!
-	 * \brief Get the second blending function.
-	 */
-	su2double GetLm(void);
+  /*!
+   * \brief Get the second blending function.
+   */
+  su2double GetLm(void);
 
 };
 
