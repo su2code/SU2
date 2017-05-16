@@ -551,7 +551,12 @@ void CBlendingConvSolver::Source_Residual(CGeometry *geometry,
     /*--- Hybrid method ---*/
 
     // A mediator switch/case will be necessary once more than one mediator exists
-    // hybrid_mediator->SetupBlending(geometry, solver_container, iPoint);
+    // FIXME: Properly integrate mediator
+    // hybrid_mediator->SetupBlendingNumerics(geometry, solver_container, numerics, iPoint);
+
+    /*--- Pass the gradient of the resolution tensor to the numerics ---*/
+
+    numerics->SetGradResolutionTensor(geometry->node[iPoint]->GetResolutionGradient());
 
     /*--- Compute the source term ---*/
 
@@ -1281,6 +1286,11 @@ void CBlendingConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
     LinSysRes.SetBlock_Zero(iPoint);
 
   }
+
+  // FIXME: Implement mediator integration
+  /*--- Use the hybrid mediator to set up the solver ---*/
+
+  // mediator->SetupBlendingSolver(geometry, solver_container, iPoint);
 
   /*--- Initialize the Jacobian matrices ---*/
 

@@ -242,6 +242,10 @@ inline void CNumerics::SetResolutionTensor(su2double** val_resolution_tensor_i,
   Resolution_Tensor_j = val_resolution_tensor_j;
 }
 
+inline void CNumerics::SetGradResolutionTensor(su2double*** val_grad_tensor) {
+    Resolution_Tensor_Gradient = val_grad_tensor;
+}
+
 inline void CNumerics::SetIntermittency(su2double intermittency_in) { }
 
 inline void CNumerics::SetProduction(su2double val_production) { }

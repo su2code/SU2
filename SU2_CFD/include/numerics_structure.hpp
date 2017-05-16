@@ -92,10 +92,13 @@ public:
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
   su2double Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
   Eddy_Viscosity_j;      /*!< \brief Eddy viscosity at point j. */
+  // FIXME: Could these be moved to derived classes?
   su2double** Aniso_Eddy_Viscosity_i;  /*!< \brief Anisotropic eddy viscosity at point i. */
   su2double** Aniso_Eddy_Viscosity_j;  /*!< \brief Anisotropic eddy viscosity at point j. */
   su2double** Resolution_Tensor_i;  /*!< \brief Resolution tensor at point i. */
   su2double** Resolution_Tensor_j;  /*!< \brief Resolution tensor at point j. */
+  su2double*** Resolution_Tensor_Gradient; /*!< \brief Gradient of the resolution tensor at point i. */
+  su2double Resolution_Adequacy; /*!< \brief Resolution adequacy parameter for a hybrid RANS/LES at point i. */
   su2double TurbT, /*!< \brief Turbulent timescale */
             TurbL; /*!< \brief Turbulent lengthscale */
   su2double *HybridBlendingCoef_i, /*!< \brief Vector of variables for hybrid RANS/LES blending at point i. */
@@ -542,6 +545,18 @@ public:
    */
   void SetResolutionTensor(su2double** val_resolution_tensor_i,
                            su2double** val_resolution_tensor_j);
+
+  /*!
+   * \brief Set the gradient of the resolution tensors
+   * \param[in] val_grad_tensor - Value of the gradient of the resolution tensor at point i
+   \*/
+  void SetGradResolutionTensor(su2double*** val_grad_tensor);
+
+  /*!
+   * \brief Sets the resolution adequacy parameter for a hybrid RANS/LES model
+   * \param val_resolution_adequacy - The resolution adequacy parameter
+   */
+  void SetResolutionAdequacy(su2double val_resolution_adequacy);
 
   /*!
      * \brief Set the anisotropic eddy viscosity.

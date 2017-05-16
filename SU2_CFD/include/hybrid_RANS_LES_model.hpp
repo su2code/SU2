@@ -44,7 +44,8 @@
 #include "stdio.h"
 #include "math.h"
 
-#include "../SU2_CFD/include/numerics_structure.hpp"
+#include "../include/numerics_structure.hpp"
+#include "../include/solver_structure.hpp"
 
 using namespace std;
 
@@ -60,6 +61,14 @@ class CHybrid_SGS_Anisotropy{
   su2double** stress_anisotropy_tensor;
   const unsigned short nDim;
  public:
+
+  /**
+   * \brief Default constructor for base class
+   * \param[in] nDim - Number of dimensions of the problem (e.g. 2D or 3D)
+   */
+  CHybrid_SGS_Anisotropy(unsigned short nDim) : nDim(nDim) {
+  };
+
   /**
    * \brief a virtual destructor
    */
@@ -99,20 +108,6 @@ class CHybrid_Isotropic_Stress : public CHybrid_SGS_Anisotropy {
   void CalculateStressAnisotropy();
 };
 
-CHybrid_Isotropic_Stress::CHybrid_Isotropic_Stress(unsigned short nDim)
-: nDim(nDim) {
-  stress_anisotropy_tensor = new su2double*[nDim];
-  for (unsigned short iDim=0; iDim < nDim; iDim++) {
-    stress_anisotropy_tensor[iDim] = new su2double[nDim];
-    for (unsigned short jDim=0; jDim < nDim; jDim++) {
-      stress_anisotropy_tensor[iDim][jDim] = (su2double)(iDim == jDim);
-    }
-  }
-}
-
-void CHybrid_Isotropic_Stress::CalculateStressAnisotropy() {
-};
-
 /*!
  * \class CHybrid_Aniso_Q
  * \brief Subgrid anisotropy model based on the approximate 2nd order
@@ -140,33 +135,6 @@ class CHybrid_Aniso_Q : public CHybrid_SGS_Anisotropy {
    */
   su2double** GetStressAnisotropyTensor();
 };
-
-void CHybrid_Aniso_Q::CalculateStressAnisotropy() {
-  unsigned short iDim, jDim;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0; jDim < nDim; jDim++) {
-      stress_anisotropy_tensor[iDim][jDim] = w*double(iDim == jDim);
-      stress_anisotropy_tensor[iDim][jDim] += (1.0-w)*sqrt(3)*
-          Qstar[iDim][jDim]/Qstar_norm;
-    }
-  }
-}
-
-inline void CHybrid_Aniso_Q::SetApproxStructFunc(su2double** val_approx_struct_func) {
-  Qstar = val_approx_struct_func;
-}
-
-inline void CHybrid_Aniso_Q::SetAnisotropyWeight(su2double val_aniso_weight) {
-  w = val_aniso_weight;
-}
-
-su2double** CHybrid_Aniso_Q::GetStressAnisotropyTensor() {
-  return stress_anisotropy_tensor;
-}
-
-
-
-
 
 
 
@@ -259,7 +227,7 @@ class CHybrid_Mediator {
   CHybrid_Aniso_Q* hybrid_anisotropy;
 
   unsigned short nDim;
-  const su2double C_sf = 0.17; /*!> \brief Smagorinksy constant */
+  const su2double C_sf; /*!> \brief Smagorinksy constant */
   su2double **Q_,
   **Qstar_,
   **ResolutionTensor,
@@ -320,12 +288,22 @@ class CHybrid_Mediator {
                          unsigned short iPoint, unsigned short jPoint);
 
   /**
-   * \brief
+   * \brief The blending solver needs the resolution adequacy parameter, which
+   *        is dependent on RANS results.
+   * @param geometry - A pointer to the geometry
+   * @param solver_container - An array of solvers
+   * @param iPoint - The node being evaluated
    */
   void SetupBlendingSolver(CGeometry* geometry, CSolver **solver_container,
                            unsigned short iPoint);
 
-
+  /**
+   * \brief The blending numerics need the turbulence length and timescales as
+   *        well as the resolution adequacy parameter.
+   * @param geometry - A pointer to the geometry
+   * @param solver_container - An array of solvers
+   * @param iPoint - The node being evaluated
+   */
   void SetupBlendingNumerics(CGeometry* geometry, CSolver **solver_container,
                              CNumerics *blending_numerics,
                              unsigned short iPoint, unsigned short jPoint);
@@ -333,6 +311,9 @@ class CHybrid_Mediator {
   /**
    * \brief The turbulent stress anisotropy needs the weighting factor and the
    *        second order structure function.
+   * @param geometry - A pointer to the geometry
+   * @param solver_container - An array of solvers
+   * @param iPoint - The node being evaluated
    */
   void SetupStressAnisotropy(CGeometry* geometry,
                              CSolver **solver_container,
@@ -341,121 +322,12 @@ class CHybrid_Mediator {
   /**
    * \brief The resolved flow needs the blending coefficient (the energy flow
    *        parameter) and the turbulent stress anisotropy tensor.
+   * @param geometry - A pointer to the geometry
+   * @param solver_container - An array of solvers
+   * @param iPoint - The node being evaluated
    */
   void SetupResolvedFlow(CGeometry* geometry,
                          CSolver **solver_container,
                          CNumerics* visc_numerics,
                          unsigned short iPoint);
 };
-
-
-CHybrid_Mediator::CHybrid_Mediator(int nDim,
-                                   CHybrid_Aniso_Q* hybrid_anisotropy)
-: nDim(nDim), hybrid_anisotropy(hybrid_anisotropy) {
-
-  //TODO: Get the Smagorinksy constant from the config file.
-}
-
-CHybrid_Mediator::~CHybrid_Mediator() {
-
-}
-
-void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
-                                         CSolver **solver_container,
-                                         CNumerics* rans_numerics,
-                                         unsigned short iPoint,
-                                         unsigned short jPoint) {
-  su2double alpha =
-      solver_container[BLENDING_SOL]->node[iPoint]->GetPrimitive(0);
-  rans_numerics->SetBlendingCoef(alpha);
-}
-
-void CHybrid_Mediator::SetupBlendingSolver(CGeometry* geometry,
-                                           CSolver **solver_container,
-                                           unsigned short iPoint) {
-
-  /*--- Calculate and store the resolution adequacy parameter ---*/
-
-  su2double** ResolutionTensor = geometry->node[iPoint]->GetResolutionTensor();
-  su2double** PrimVar_Grad =
-      solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-  su2double v2_ = solver_container[TURB_SOL]->node[iPoint]->GetPrimitive(2);
-
-  CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Q_);
-  su2double r_k = CalculateRk(Q_, v2_);
-  solver_container[BLENDING_SOL]->node[iPoint]->SetResolutionAdequacy(r_k);
-}
-
-void CHybrid_Mediator::SetupBlendingNumerics(CGeometry* geometry,
-                                             CSolver **solver_container,
-                                             CNumerics *blending_numerics,
-                                             unsigned short iPoint,
-                                             unsigned short jPoint) {
-
-  /*--- Find and store turbulent length and timescales ---*/
-
-  su2double turb_T =
-      solver_container[TURB_SOL]->node[iPoint]->GetTurbTimescale();
-  su2double turb_L =
-      solver_container[TURB_SOL]->node[iPoint]->GetTurbLengthscale();
-
-  if (turb_T <= 0) {
-    cout << "Error: Turbulent timescale was " << turb_T << std::endl;
-    exit(EXIT_FAILURE);
-  }
-  if (turb_L <= 0) {
-    cout << "Error: Turbulent timescale was " << turb_L << std::endl;
-    exit(EXIT_FAILURE);
-  }
-
-  blending_numerics->SetTurbTimescale(turb_T);
-  blending_numerics->SetTurbLengthscale(turb_L);
-
-  // FIXME: Do I need to pass in the resolution adequacy?
-}
-
-void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
-                                             CSolver **solver_container,
-                                             unsigned short iPoint) {
-
-}
-
-void CHybrid_Mediator::SetupResolvedFlow(CGeometry* geometry,
-                                         CSolver **solver_container,
-                                         CNumerics* visc_numerics,
-                                         unsigned short iPoint) {
-}
-
-su2double CHybrid_Mediator::CalculateRk(su2double** Q, su2double v2) {
-  // TODO: Update this with new model.
-  return 1.0;
-}
-
-void CHybrid_Mediator::CalculateApproxStructFunc(su2double** ResolutionTensor,
-                                                 su2double** PrimVar_Grad,
-                                                 su2double** Q) {
-  unsigned int iDim, jDim, kDim, lDim, mDim;
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    for (jDim = 0; jDim < nDim; jDim++)
-      Q[iDim][jDim] = 0.0;
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    for (jDim = 0; jDim < nDim; jDim++)
-      for (kDim = 0; kDim < nDim; kDim++)
-        for (lDim = 0; lDim < nDim; lDim++)
-          for (mDim = 0; mDim < nDim; mDim++)
-            Q[iDim][jDim] += ResolutionTensor[iDim][mDim]*
-            PrimVar_Grad[mDim+1][kDim]*
-            PrimVar_Grad[lDim+1][kDim]*
-            ResolutionTensor[lDim][jDim];
-}
-
-su2double CHybrid_Mediator::CalculateAnisotropyWeight(su2double r_k) {
-  return 1.0 - fmin(1.0/r_k, 1.0);
-}
-
-
-
-
-

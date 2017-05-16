@@ -785,9 +785,18 @@ public:
    *
    * \param[in] iDim - The direction in which to take the gradient
    * \return A rank 2 tensor representing the gradient of the separation
+   *         distances across the cell in the global coordinates, with
+   *         the gradient taken in direction iDim
+   */
+  su2double** GetResolutionGradient(unsigned short iDim);
+
+  /*!
+   * \brief Gets the gradient of the resolution tensor for the given CV
+   *
+   * \return A rank 3 tensor representing the gradient of the separation
    *         distances across the cell in the global coordinates.
    */
-  vector<vector<su2double> > GetResolutionGradient(unsigned short iDim);
+  su2double*** GetResolutionGradient();
 };
 
 /*! 

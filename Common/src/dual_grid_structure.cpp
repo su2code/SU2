@@ -465,14 +465,12 @@ void CPoint::SetResolutionGradient(unsigned short iDim, unsigned short jDim,
   // TODO: Add exception for out-of-bounds assignment.
 };
 
-vector<vector<su2double> > CPoint::GetResolutionGradient(unsigned short iDim) {
-  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
-  for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
-    for (unsigned short kDim = 0; kDim < nDim; ++kDim) {
-      output[jDim][kDim] = ResolutionTensorGradient[iDim][jDim][kDim];
-    }
-  }
-  return output;
+su2double** CPoint::GetResolutionGradient(unsigned short iDim) {
+  return ResolutionTensorGradient[iDim];
+}
+
+su2double*** CPoint::GetResolutionGradient() {
+  return ResolutionTensorGradient;
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {

@@ -114,16 +114,10 @@ void CSourcePieceWise_BlendingConv::ComputeResidual(su2double *val_residual,
             S_c, // Source for removing turbulent scales
             T_c; // Timescale for removal of turbulent scales
 
-
-  // FIXME: Pass in values through mediator
-  su2double resolution_adequacy_i = 1.0;
-  su2double TurbL_i = 1.0, TurbT_i = 1.0;
-  su2double*** grad_resolution_tensor_i;
-
-  if (resolution_adequacy_i >=1.0)
-    S_r = tanh(resolution_adequacy_i - 1.0);
+  if (Resolution_Adequacy >=1.0)
+    S_r = tanh(Resolution_Adequacy - 1.0);
   else
-    S_r = tanh(1.0 - 1.0/resolution_adequacy_i);
+    S_r = tanh(1.0 - 1.0/Resolution_Adequacy);
 
 
   for (unsigned int iDim = 0; iDim < nDim; iDim++) {
@@ -131,21 +125,21 @@ void CSourcePieceWise_BlendingConv::ComputeResidual(su2double *val_residual,
       udMdx = 0.0;
       for (unsigned int kDim = 0; kDim < nDim; nDim++) {
         //XXX: This is NOT upwinded.  It could be improved to upwind the product.
-        udMdx += V_i[kDim+1] * grad_resolution_tensor_i[kDim][iDim][jDim];
+        udMdx += V_i[kDim+1] * Resolution_Tensor_Gradient[kDim][iDim][jDim];
       }
       if (iDim == 0 and jDim == 0) max_udMdx = udMdx;
       else if (udMdx > max_udMdx) max_udMdx = udMdx;
     }
   }
 
-  T_c = TurbL_i/max_udMdx;
+  T_c = TurbL/max_udMdx;
 
   if (S_r >= 0.0 && T_c >= 0.0)
     S_c = 1.0;
   else
     S_c = 0.0;
 
-  val_residual[0] = (S_r/TurbT_i + S_c/T_c) * Volume;
+  val_residual[0] = (S_r/TurbT + S_c/T_c) * Volume;
 
   // Jacobian of \alpha with respect to \alpha
   val_Jacobian_i[0][0] = 0.0; val_Jacobian_j[0][0] = 0.0;

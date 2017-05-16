@@ -9099,6 +9099,8 @@ public:
 
   void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                        CConfig *config, unsigned short iMesh);
+
+  su2double CalculateResolutionAdequacy();
 };
 
 /*!
