@@ -4985,7 +4985,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
         /*--- Retrieve solution at this node in current zone ---*/
         for (iVar = 0; iVar < nVar_Turb; iVar++) {
           U_Turb[iVar] = solver_container[jTimeInstance+iGeomZone*nTimeInstances][MESH_0][TURB_SOL]->node[iPoint]->GetSolution(iVar);
-//          Source_Turb[iVar] += U_Turb[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
+          Source_Turb[iVar] += U_Turb[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
         }
       }
 
@@ -5209,7 +5209,7 @@ void CHBMultiZoneDriver::Run() {
 #endif
 if (ExtIter > 1)
 //TODO REMOVE FOR DEBUG
-feenableexcept(FE_INVALID | FE_OVERFLOW);
+//feenableexcept(FE_INVALID | FE_OVERFLOW);
   /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
 
