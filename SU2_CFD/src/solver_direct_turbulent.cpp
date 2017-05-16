@@ -3417,19 +3417,23 @@ su2double* CTurbSSTSolver::GetConstants() {
 
 
 CTurbKESolver::CTurbKESolver(void) : CTurbSolver() {
-  
+
   /*--- Array initialization ---*/
   constants = NULL;
-  
+
 }
 
-CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
+CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config,
+                             unsigned short iMesh)
+  :
+  CTurbSolver() {
+
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
   su2double dull_val;
   ifstream restart_file;
   string text_line;
-  
+
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
@@ -3439,60 +3443,67 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-	bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Array initialization ---*/
   constants = NULL;
-  
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  
+
   /*--- Dimension of the problem --> dependent of the turbulent model ---*/
-  //nVar = 2;
-  //nVar = 3;
   nVar = 4;
-  //  nVar = 3;
+
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
-  
+
   /*--- Define geometry constants in the solver structure ---*/
   nDim = geometry->GetnDim();
   node = new CVariable*[nPoint];
-  
+
   /*--- Single grid simulation ---*/
   if (iMesh == MESH_0) {
-    
-    /*--- Define some auxiliary vector related with the residual ---*/    
-    Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
-    Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-    Residual_i = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
-    Residual_j = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
-    Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-    
-    /*--- Define some structures for locating max residuals ---*/    
+
+    /*--- Define some auxiliary vector related with the residual ---*/
+    Residual     = new su2double[nVar];
+    Residual_RMS = new su2double[nVar];
+    Residual_i   = new su2double[nVar];
+    Residual_j   = new su2double[nVar];
+    Residual_Max = new su2double[nVar];
+
+    for (iVar=0; iVar<nVar; iVar++) {
+       Residual[iVar]     = 0.0;
+       Residual_RMS[iVar] = 0.0;
+       Residual_i[iVar]   = 0.0;
+       Residual_j[iVar]   = 0.0;
+       Residual_Max[iVar] = 0.0;
+    }
+
+    /*--- Define some structures for locating max residuals ---*/
     Point_Max = new unsigned long[nVar];
     for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+
     Point_Max_Coord = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
       Point_Max_Coord[iVar] = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
     }
-    
+
     /*--- Define some auxiliary vector related with the solution ---*/
     Solution = new su2double[nVar];
     Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
-    
+
     /*--- Define some auxiliary vector related with the geometry ---*/
     Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
-    
+
     /*--- Define some auxiliary vector related with the flow solution ---*/
     FlowPrimVar_i = new su2double [nDim+7]; FlowPrimVar_j = new su2double [nDim+7];
-    
+
     /*--- Jacobians and vector structures for implicit computations ---*/
     Jacobian_i = new su2double* [nVar];
     Jacobian_j = new su2double* [nVar];
@@ -3500,22 +3511,30 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
       Jacobian_i[iVar] = new su2double [nVar];
       Jacobian_j[iVar] = new su2double [nVar];
     }
-    
+
     /*--- Initialization of the structure of the whole Jacobian ---*/
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (KE model)." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    if (rank == MASTER_NODE) {
+      cout << "Initialize Jacobian structure (KE model)." << endl;
+    }
+
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar,
+                        true, geometry, config);
+
     if (rank == MASTER_NODE) cout << "Finished." << endl;
-    
+
     if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
         (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+      if (rank == MASTER_NODE) {
+        cout << "Compute linelet structure. " << nLineLets
+             << " elements in each line (average)." << endl;
+      }
     }
-    
+
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   }
-  
+
   /*--- Computation of gradients by least squares ---*/
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
 
@@ -3529,7 +3548,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
     for (iVar = 0; iVar < nVar; iVar++)
     cvector[iVar] = new su2double [nDim];
   }
-  
+
   /*--- Initialize value for model constants ---*/
   constants = new su2double[11];
   /* chien ke
@@ -3582,105 +3601,104 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Initialize lower and upper limits---*/
   lowerlimit = new su2double[nVar];
   upperlimit = new su2double[nVar];
-  
+
+
+  // oliver: Are these used?
   // k
-  //  lowerlimit[0] = 1.0e-14;
-  //  lowerlimit[0] = 0.0;
-  //  lowerlimit[0] = -1.0e-1;
   lowerlimit[0] = -1.0e10;
-  upperlimit[0] = 1.0e10;
+  upperlimit[0] =  1.0e10;
 
-  // epsi  
-  //  lowerlimit[1] = 1.0e-14;
-  lowerlimit[1] = -1.0e10; //-1.0e2;
-  //  lowerlimit[1] = -1.0e2;
-  upperlimit[1] = 1.0e10;
-
-  // zeta
-  /*
-  lowerlimit[2] = 1.0e-6;
-  upperlimit[2] = 1000.0; //2.0/3.0*rho;
-  */
+  // epsi
+  lowerlimit[1] = -1.0e10;
+  upperlimit[1] =  1.0e10;
 
   // v2
-  //  lowerlimit[2] = 1.0e-14;
-  //  lowerlimit[2] = 0.0;
-  //  lowerlimit[2] = -1.0e-1;
   lowerlimit[2] = -1.0e10;
-  upperlimit[2] = 1.0e10; 
-  
-  // f
-  //  lowerlimit[3] = 1.0e-14;
-  //  lowerlimit[3] = 0.0;
-  lowerlimit[3] = -1.0e10; //-1.0e2;
-  upperlimit[3] = 1.0e10;
+  upperlimit[2] =  1.0e10;
 
-//jump
+  // f
+  lowerlimit[3] = -1.0e10;
+  upperlimit[3] =  1.0e10;
+
+  //jump (?)
   /*--- Flow infinity initialization stuff ---*/
-  su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf, Tm_Inf, Lm_Inf;  
+  su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf, Tm_Inf, Lm_Inf;
   rhoInf    = config->GetDensity_FreeStreamND();
   VelInf    = config->GetVelocity_FreeStreamND();
   muLamInf  = config->GetViscosity_FreeStreamND();
   Intensity = config->GetTurbulenceIntensity_FreeStream();
   viscRatio = config->GetTurb2LamViscRatio_FreeStream();
 
-  // jump  
+  // jump
   //unsigned short iDim;
   su2double VelMag = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-  VelMag += VelInf[iDim]*VelInf[iDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    VelMag += VelInf[iDim]*VelInf[iDim];
+  }
+
   VelMag = sqrt(VelMag);
 
   su2double L_Inf = config->GetLength_Reynolds();
-  su2double scalar_min;
   su2double solve_tol = config->GetLinear_Solver_Error();
   su2double Re = config->GetReynolds();
   su2double iRe = 1.0/Re;
-  su2double scale;
-  scale = 1.0e-8;
-  scalar_min = scale/(VelMag*VelMag);
+  su2double scale = 1.0e-8;
+  su2double scalar_min = scale/(VelMag*VelMag);
   su2double tke_min = scalar_min*VelMag*VelMag;
   su2double tdr_min = scalar_min*pow(VelMag,3.0)/L_Inf;
   su2double v2_min = 2.0/3.0*scalar_min*VelMag*VelMag;
-  //  su2double S_min = 1.0E-14;
-  //  su2double S_min = max(S,scalar_min*VelMag/L_Inf);
 
-  //  cout<<"Intensity: "<<Intensity<<"\n";
-  kine_Inf = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
-  epsi_Inf = 2.0/3.0*constants[0]*rhoInf*(kine_Inf*kine_Inf)/(muLamInf*viscRatio);
-  epsi_Inf = min( epsi_Inf, pow(2.0/3.0*constants[0]*constants[8]*kine_Inf/viscRatio,2.0)*rhoInf/muLamInf);
-  //  zeta_Inf = 2.0/3.0;
-  zeta_Inf = 2.0/3.0*kine_Inf; // v2 here
-  Tm_Inf = kine_Inf/max(epsi_Inf,tdr_min);
-  Tm_Inf = max( Tm_Inf, constants[8]*sqrt(muLamInf/(rhoInf*max(epsi_Inf,tdr_min))) );
-  Lm_Inf = constants[9] * max( pow(kine_Inf,1.5)/max(epsi_Inf,tdr_min), constants[10]*pow(muLamInf/rhoInf,0.75)/pow(max(epsi_Inf,tdr_min),0.25) ); 
-  f_Inf = (10.0/3.0+0.3)*epsi_Inf/max(kine_Inf,tke_min);
- 
-  //  cout<<"Intensity: "<<Intensity<<"\n";
-  //  cout<<"Cmu: "<<constants[0]<<"\n";
-  //  cout<<"visc ratio: "<<viscRatio<<"\n";
-  //  cout<<"k inf: "<<kine_Inf<<"\n";
-  //  cout<<"e inf: "<<epsi_Inf<<"\n";
-  //  cout<<"z inf: "<<zeta_Inf<<"\n";
 
-  /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
-  //  muT_Inf = constants[0] * rhoInf*zeta_Inf*(kine_Inf*kine_Inf)/epsi_Inf;
-  //  muT_Inf = constants[0] * rhoInf*zeta_Inf*Tm_Inf; //v2
+  // Freestream eddy visc
   muT_Inf = muLamInf*viscRatio;
 
-  
+  // Convenience: freestream kinematic viscosities
+  const su2double nuInf  = muLamInf/rhoInf;
+  const su2double nutInf = muT_Inf /rhoInf;
+
+  // Freestream TKE
+  kine_Inf = 1.5*(VelMag*VelMag*Intensity*Intensity);
+
+  // Freestream dissipation
+  epsi_Inf = (2.0/3.0)*constants[0]*(kine_Inf*kine_Inf)/nutInf;
+  const su2double ktmp = 2.0/3.0*constants[0]*constants[8]*kine_Inf/viscRatio;
+  const su2double epsi_Inf_alt = ktmp*ktmp/nuInf;
+  epsi_Inf = min( epsi_Inf, epsi_Inf_alt );
+
+  // Fresstream v2
+  zeta_Inf = 2.0/3.0*kine_Inf;
+
+
+  // Freestream time scale
+  Tm_Inf = kine_Inf/max(epsi_Inf,tdr_min);
+  su2double Tkol_inf = constants[8]*sqrt(nuInf/max(epsi_Inf,tdr_min));
+  Tm_Inf = max( Tm_Inf, Tkol_inf );
+
+  // Freestream length scale
+  Lm_Inf = pow(kine_Inf,1.5)/max(epsi_Inf,tdr_min);
+  const su2double nu3 = nuInf*nuInf*nuInf;
+  const su2double Lkol_Inf = constants[10]*pow(nu3/max(epsi_Inf,tdr_min),0.25);
+  Lm_Inf = constants[9] * max( Lm_Inf, Lkol_Inf);
+
+  // Freestream f
+  f_Inf = (10.0/3.0+0.3)*epsi_Inf/max(kine_Inf,tke_min);
+
+
   /*--- Restart the solution from file information ---*/
   if (!restart || (iMesh != MESH_0)) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CTurbKEVariable(kine_Inf, epsi_Inf, zeta_Inf, f_Inf, muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
-      //      node[iPoint] = new CTurbKEVariable(kine_Inf, epsi_Inf, zeta_Inf, muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
-  }
-  else {
-    
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      node[iPoint] = new CTurbKEVariable(kine_Inf, epsi_Inf, zeta_Inf, f_Inf,
+                                         muT_Inf, Tm_Inf, Lm_Inf,
+                                         nDim, nVar, constants, config);
+
+    }
+
+  } else {
+
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
-    
+
     /*--- Modify file name for multizone problems ---*/
     if (nZone >1)
       filename= config->GetMultizone_FileName(filename, iZone);
@@ -3688,23 +3706,27 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Modify file name for an unsteady restart ---*/
     if (dual_time || time_stepping) {
       int Unst_RestartIter;
+
       if (adjoint) {
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || time_stepping)
-      Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      else
-      Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
+                 time_stepping) {
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      } else {
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      }
+
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
 
-    
     /*--- Open the restart file, throw an error if this fails. ---*/
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
-      cout << "There is no turbulent restart file named " << filename << " !!" << endl;
+      cout << "There is no turbulent restart file named "
+           << filename << " !!" << endl;
       exit(EXIT_FAILURE);
     }
-    
+
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
     long *Global2Local;
@@ -3717,17 +3739,16 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
-    
+
     /*--- Read all lines in the restart file ---*/
     long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-    
+
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
-    
-    
+
     while (getline (restart_file, text_line)) {
       istringstream point_line(text_line);
-      
+
       /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
        Otherwise, the local index for this node on the current processor
@@ -3737,65 +3758,104 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
 
 	/* wtf is this dull_val bs?*/
         if (compressible) {
-          // if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          // if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
 
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+          if (nDim == 2) {
+            point_line >> index
+                       >> dull_val >> dull_val >> dull_val
+                       >> dull_val >> dull_val >> dull_val
+                       >> Solution[0] >> Solution[1]
+                       >> Solution[2] >> Solution[3];
+          }
 
-
+          if (nDim == 3) {
+            point_line >> index
+                       >> dull_val >> dull_val >> dull_val >> dull_val
+                       >> dull_val >> dull_val >> dull_val >> dull_val
+                       >> Solution[0] >> Solution[1]
+                       >> Solution[2] >> Solution[3];
+          }
 
         }
+
         if (incompressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-	  /*
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-	  */
-        }
-        if (freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-	  /*
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-	  */
+          cout << "WARNING: Have not tested v2-f with incompressible!!" << endl;
+          cout << "         Proceed at your own risk!!                " << endl;
 
+          if (nDim == 2) {
+            point_line >> index
+                       >> dull_val >> dull_val >> dull_val >> dull_val
+                       >> dull_val >> dull_val >> dull_val
+                       >> Solution[0] >> Solution[1]
+                       >> Solution[2] >> Solution[3];
+          }
+
+          if (nDim == 3) {
+            point_line >> index
+                       >> dull_val >> dull_val >> dull_val >> dull_val
+                       >> dull_val >> dull_val >> dull_val >> dull_val
+                       >> dull_val
+                       >> Solution[0] >> Solution[1]
+                       >> Solution[2] >> Solution[3];
+          }
         }
-        
+
+        if (freesurface) {
+          cout << "WARNING: Have not tested v2-f with freesurface!!   " << endl;
+          cout << "         Proceed at your own risk!!                " << endl;
+
+          if (nDim == 2) {
+            point_line >> index
+                       >> dull_val >> dull_val >> dull_val >> dull_val
+                       >> dull_val >> dull_val >> dull_val >> dull_val
+                       >> Solution[0] >> Solution[1]
+                       >> Solution[2] >> Solution[3];
+          }
+
+          if (nDim == 3) {
+            point_line >> index
+                       >> dull_val >> dull_val >> dull_val >> dull_val
+                       >> dull_val >> dull_val >> dull_val >> dull_val
+                       >> dull_val >> dull_val
+                       >> Solution[0] >> Solution[1]
+                       >> Solution[2] >> Solution[3];
+          }
+        }
+
         /*--- Instantiate the solution at this node, note that the muT_Inf should recomputed ---*/
-        node[iPoint_Local] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], Solution[3], muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
-	//        node[iPoint_Local] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
+        node[iPoint_Local] = new CTurbKEVariable(Solution[0], Solution[1],
+                                                 Solution[2], Solution[3],
+                                                 muT_Inf, Tm_Inf, Lm_Inf,
+                                                 nDim, nVar, constants, config);
       }
       iPoint_Global++;
     }
-    
+
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      //      node[iPoint] = new CTurbKEVariable(Solution[0], Solution[1], muT_Inf, nDim, nVar, constants, config);
-      node[iPoint] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], Solution[3], muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
-      //      node[iPoint] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
+      node[iPoint] = new CTurbKEVariable(Solution[0], Solution[1],
+                                         Solution[2], Solution[3],
+                                         muT_Inf, Tm_Inf, Lm_Inf,
+                                         nDim, nVar, constants, config);
     }
-    
+
     /*--- Close the restart file ---*/
     restart_file.close();
-    
+
     /*--- Free memory needed for the transformation ---*/
     delete [] Global2Local;
   }
-  
+
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
-  
+
 }
 
 CTurbKESolver::~CTurbKESolver(void) {
-  
+
   if (constants != NULL) delete [] constants;
-  
+
 }
 
 void CTurbKESolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
