@@ -365,8 +365,6 @@ void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
                                          CNumerics* rans_numerics,
                                          unsigned short iPoint,
                                          unsigned short jPoint) {
-
-  // TODO: Check that this matches the muT implementation
   su2double alpha =
       solver_container[BLENDING_SOL]->node[iPoint]->GetPrimitive(0);
   rans_numerics->SetBlendingCoef(alpha);
