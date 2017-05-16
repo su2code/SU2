@@ -2482,8 +2482,14 @@ void CDriver::Interface_Preprocessing() {
 
           case SLIDING_MESH:
             interpolator_container[donorZone][targetZone] = new CSlidingmesh(geometry_container, config_container, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
+            if (rank == MASTER_NODE) cout << "using a sliding mesh approach." << endl;
 
+            break;
+            
+          case SLIDING_ADAPTIVE:
+            interpolator_container[donorZone][targetZone] = new CSlidingAdaptive(geometry_container, config_container, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using an adaptive sliding mesh approach." << endl;
+            
             break;
 
           case CONSISTCONSERVE:

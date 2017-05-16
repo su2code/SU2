@@ -283,17 +283,19 @@ static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENU
  * \brief types of interpolators
  */
 enum ENUM_INTERPOLATOR {
-  NEAREST_NEIGHBOR 	= 0,   	/*!< \brief Nearest Neigbhor interpolation */
-  ISOPARAMETRIC 	= 1,	/*!< \brief Isoparametric interpolation */
-  CONSISTCONSERVE 	= 2,	/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
-  SLIDING_MESH		= 3, 	/*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
+  NEAREST_NEIGHBOR = 0, /*!< \brief Nearest Neigbhor interpolation */
+  ISOPARAMETRIC    = 1,	/*!< \brief Isoparametric interpolation */
+  CONSISTCONSERVE  = 2,	/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+  SLIDING_MESH		 = 3, /*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
+  SLIDING_ADAPTIVE = 4, /*!< \brief Adaptive sliding Mesh Approach G. Gori 2017 */
 };
 
 static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
 ("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
 ("ISOPARAMETRIC",    ISOPARAMETRIC)
 ("CONSISTCONSERVE",  CONSISTCONSERVE)
-("SLIDING_MESH",     SLIDING_MESH);
+("SLIDING_MESH",     SLIDING_MESH)
+("SLIDING_ADAPTIVE", SLIDING_ADAPTIVE);
 
 /*!
  * \brief different regime modes

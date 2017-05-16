@@ -3128,3 +3128,20 @@ bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 
   return (check == 3);     
 }
+
+CSlidingAdaptive::CSlidingAdaptive(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone)  :  CInterpolator(geometry_container, config, iZone, jZone){
+
+  /*--- Initialize transfer coefficients between the zones ---*/
+  Set_TransferCoeff(config);
+
+  /*--- For fluid-structure interaction data interpolated with have nDim dimensions ---*/
+ // InitializeData(Zones,nDim);
+}
+
+CSlidingAdaptive::~CSlidingAdaptive(){}
+
+void CSlidingAdaptive::Set_TransferCoeff(CConfig **config){
+
+  cout << "Fin qua tutto bene..." << endl;
+  
+}

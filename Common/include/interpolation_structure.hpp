@@ -354,4 +354,30 @@ public:
   bool CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3);
 };
 
+/*!
+ * \brief Sliding mesh approach
+  */
+class CSlidingAdaptive : public CInterpolator {
+public:
 
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - index of the donor zone
+   * \param[in] jZone - index of the target zone
+   */
+  CSlidingAdaptive(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSlidingAdaptive(void);
+  
+    /*!
+   * \brief Set up transfer matrix defining relation between two meshes
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_TransferCoeff(CConfig **config);
+  
+};
