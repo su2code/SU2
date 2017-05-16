@@ -409,7 +409,7 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
   /*--- Retrieve temperature solution and set is as the first donor variable ---*/
   Twall = donor_solution->node[Point_Donor]->GetSolution(0);
-  if(!flow) cout << "Transferring temperature data to fluid solver: " << Twall << endl;
+  if(!flow) cout << "Following temperature data will be transferred to fluid solver: " << Twall << endl;
   Donor_Variable[0] = Twall;
 
   /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) and set it as second donor variable ---*/
@@ -425,8 +425,9 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   dTdn = (Twall - donor_solution->node[PointNormal]->GetSolution(0))/dist;
 
   if (flow) {
-    thermal_diffusivity = (donor_config->GetViscosity_FreeStream()/donor_config->GetPrandtl_Lam());
+    thermal_diffusivity = (donor_config->GetViscosity_FreeStreamND()/donor_config->GetPrandtl_Lam());
     heat_flux_density = (thermal_diffusivity*dTdn)*rho_cp_fluid;
+    cout << "Following heat flux density data will be transferred to solid solver: " << heat_flux_density << endl;
   }
   else {
     thermal_diffusivity = donor_config->GetThermalDiffusivity_Solid();
