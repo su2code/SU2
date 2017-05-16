@@ -96,6 +96,10 @@ public:
   su2double** Aniso_Eddy_Viscosity_j;  /*!< \brief Anisotropic eddy viscosity at point j. */
   su2double** Resolution_Tensor_i;  /*!< \brief Resolution tensor at point i. */
   su2double** Resolution_Tensor_j;  /*!< \brief Resolution tensor at point j. */
+  su2double TurbT, /*!< \brief Turbulent timescale */
+            TurbL; /*!< \brief Turbulent lengthscale */
+  su2double *HybridBlendingCoef_i, /*!< \brief Vector of variables for hybrid RANS/LES blending at point i. */
+            *HybridBlendingCoef_j; /*!< \brief Vector of variables for hybrid RANS/LES blending at point j. */
   su2double turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;      /*!< \brief Turbulent kinetic energy at point j. */
   su2double Pressure_i,  /*!< \brief Pressure at point i. */
@@ -513,9 +517,28 @@ public:
                         su2double val_eddy_viscosity_j);
 
   /*!
+   * \brief Set the turbulent timescale
+   * \param[in] val_turb_T - Turbulent timescale at point i
+   */
+  void SetTurbTimescale(su2double val_turb_T);
+
+  /*!
+   * \brief Set the turbulent timescale
+   * \param[in] val_turb_T - Turbulent lengthscale at point i
+   */
+  void SetTurbLengthscale(su2double val_turb_L);
+
+  /*!
+   * \brief Set the value of the hybrid RANS/LES blending variable.
+   * \param[in] val_blending_coef_i - Value of the blending coefficient(s) at point i.
+   * \param[in] val_blending_coef_j - Value of the blending coefficient(s) at point j.
+   */
+  void SetBlendingCoef(su2double* val_blending_coef_i, su2double* val_blending_coef_j);
+
+  /*!
    * \brief Set the resolution tensors
-   * @param val_resolution_tensor_i - Value of the resolution tensor at point i
-   * @param val_resolution_tensor_j - Value of the resolution tensor at point j
+   * \param[in] val_resolution_tensor_i - Value of the resolution tensor at point i
+   * \param[in] val_resolution_tensor_j - Value of the resolution tensor at point j
    */
   void SetResolutionTensor(su2double** val_resolution_tensor_i,
                            su2double** val_resolution_tensor_j);
@@ -2302,6 +2325,47 @@ public:
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
 
+/*!
+ * \class CUpwSca_BlendingConv
+ * \brief Class for doing a scalar upwind solver for the hybrid RANS/LES
+ *        blending equation.
+ * \ingroup ConvDiscr
+ * \author C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CUpwSca_BlendingConv : public CNumerics {
+private:
+  su2double *Velocity_i, *Velocity_j;
+  bool implicit, grid_movement, incompressible;
+  su2double q_ij, a0, a1;
+  unsigned short iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSca_BlendingConv(unsigned short val_nDim,
+                       unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwSca_BlendingConv(void);
+
+  /*!
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                       su2double **val_Jacobian_j, CConfig *config);
+};
 
 /*!
  * \class CCentJST_Flow
@@ -4411,6 +4475,43 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
   
+};
+
+/*!
+ * \class CSourcePieceWise_BlendingConv
+ * \brief Class for integrating the source terms of the hybrid RANS/LES blending.
+ * \ingroup SourceDiscr
+ * \author C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CSourcePieceWise_BlendingConv : public CNumerics {
+private:
+  bool incompressible;
+  bool rotating_frame;
+  bool transition;
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_BlendingConv(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourcePieceWise_BlendingConv(void);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!

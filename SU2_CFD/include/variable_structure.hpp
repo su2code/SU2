@@ -834,6 +834,18 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of turbulent timescale
+   */
+  virtual su2double GetTurbTimescale(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the turbulent lengthscale
+   */
+  virtual su2double GetTurbLengthscale(void);
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the flow enthalpy.
    */
   virtual su2double GetEnthalpy(void);
@@ -1005,6 +1017,19 @@ public:
    */
   virtual void SetEddyViscosity(su2double eddy_visc);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_turb_T - The turbulent timescale
+   * \param[in] val_turb_L - The turbulent lengthscale
+   */
+  virtual void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_r_k - The resolution adequacy parameter for hybrid RANS/LES
+   */
+  virtual void SetResolutionAdequacy(su2double val_r_k);
+
   /*!
    * \brief A virtual member.
    */
@@ -1666,6 +1691,18 @@ public:
    */
   virtual void SetmuT(su2double val_muT);
   
+  /*!
+   * \brief Get the value of the eddy viscosity.
+   * \return Blending coefficient
+   */
+  virtual su2double GetBlendingCoef(void) {return 1;}
+
+  /*!
+   * \brief Set the value of the hybrid RANS/LES blending.
+   * \param[in] Blending coefficient
+   */
+  virtual void SetBlendingCoef(su2double val_blending_coef) {}
+
   /*!
    * \brief Add a value to the maximum eigenvalue for the inviscid terms of the PDE.
    * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.
@@ -3797,6 +3834,77 @@ public:
   su2double GetCrossDiff(void);
 };
 
+/*!
+ * \class CBlendingVariable
+ * \brief Base class for the variables pertaining to a hybrid RANS/LES blending.
+ * \ingroup Hybrid_Blending_Model
+ * \author C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CBlendingVariable : public CVariable {
+protected:
+  su2double alpha; /*! < \brief The blending coefficient. */
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CBlendingVariable(void);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CBlendingVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBlendingVariable(unsigned short val_nDim, unsigned short val_nvar,
+                    CConfig *config);
+
+  /*!
+   * \brief Get the value of the blending coefficient.
+   * \return the value of the eddy viscosity.
+   */
+  su2double GetBlendingCoef();
+
+  /*!
+   * \brief Set the value of the blending coefficient.
+   * \param[in] val_muT - Value of the eddy viscosity.
+   */
+  void SetBlendingCoef(su2double val_blending_coef);
+};
+
+/*!
+ * \class CBlendingVariable
+ * \brief Base class for the variables pertaining to a hybrid RANS/LES blending.
+ * \ingroup Hybrid_Blending_Model
+ * \author C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CBlendingConvVariable : public CBlendingVariable {
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CBlendingConvVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBlendingConvVariable(su2double blending_coef, unsigned short val_nDim,
+                        unsigned short val_nvar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CBlendingConvVariable(void);
+};
 
 /*!
  * \class CAdjEulerVariable

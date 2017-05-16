@@ -251,6 +251,10 @@ inline su2double *CVariable::GetIntBoundary_Jump(void) { return NULL; }
 
 inline su2double CVariable::GetEddyViscosity(void) { return 0; }
 
+inline su2double CVariable::GetTurbTimescale(void) { return 0; }
+
+inline su2double CVariable::GetTurbLengthscale(void) { return 0; }
+
 inline void CVariable::SetGammaEff(void) { }
 
 inline void CVariable::SetGammaSep(su2double gamma_sep) { }
@@ -426,6 +430,10 @@ inline void CVariable::SetLaminarViscosity(su2double laminarViscosity) { }
 inline void CVariable::SetLaminarViscosity(CConfig *config) { }
 
 inline void CVariable::SetEddyViscosity(su2double eddy_visc) { }
+
+inline void CVariable::SetTurbScales(su2double val_turb_T, su2double val_turb_L) { }
+
+inline void CVariable::SetResolutionAdequacy(su2double val_r_k) { }
 
 inline void CVariable::SetThermalConductivity(su2double thermalConductivity) { }
 
@@ -1172,3 +1180,7 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
     Solution_Direct[iVar] = val_solution_direct[iVar];
   }
 }
+
+inline su2double CBlendingVariable::GetBlendingCoef() { return alpha; }
+
+inline void CBlendingVariable::SetBlendingCoef(su2double val_blending_coef) { alpha = val_blending_coef; }

@@ -222,6 +222,20 @@ inline void CNumerics::SetAnisoEddyViscosity(su2double** val_eddy_viscosity_i,
     Aniso_Eddy_Viscosity_j = val_eddy_viscosity_j;
 }
 
+inline void CNumerics::SetTurbLengthscale(su2double val_turb_L) {
+  TurbL = val_turb_L;
+}
+
+inline void CNumerics::SetTurbTimescale(su2double val_turb_T) {
+  TurbT = val_turb_T;
+}
+
+inline void CNumerics::SetBlendingCoef(su2double* val_blending_coef_i,
+                                       su2double* val_blending_coef_j) {
+  HybridBlendingCoef_i = val_blending_coef_i;
+  HybridBlendingCoef_j = val_blending_coef_j;
+}
+
 inline void CNumerics::SetResolutionTensor(su2double** val_resolution_tensor_i,
                                            su2double** val_resolution_tensor_j){
   Resolution_Tensor_i = val_resolution_tensor_i;
