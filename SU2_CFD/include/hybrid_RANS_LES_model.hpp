@@ -199,9 +199,11 @@ class CAbstract_Hybrid_Mediator {
   /**
    * \brief Retrieve and pass along all necessary info for the resolved flow.
    */
-  virtual void SetupResolvedFlow(CGeometry* geometry,
-                                 CSolver **solver_container,
-                                 unsigned short iPoint) = 0;
+  virtual void SetupMeanFlow(CGeometry* geometry,
+                             CSolver **solver_container,
+                             CNumerics* visc_numerics,
+                             unsigned short iPoint,
+                             unsigned short jPoint) = 0;
 };
 
 
@@ -326,8 +328,9 @@ class CHybrid_Mediator {
    * @param solver_container - An array of solvers
    * @param iPoint - The node being evaluated
    */
-  void SetupResolvedFlow(CGeometry* geometry,
-                         CSolver **solver_container,
-                         CNumerics* visc_numerics,
-                         unsigned short iPoint);
+  void SetupMeanFlow(CGeometry* geometry,
+                     CSolver **solver_container,
+                     CNumerics* visc_numerics,
+                     unsigned short iPoint,
+                     unsigned short jPoint);
 };

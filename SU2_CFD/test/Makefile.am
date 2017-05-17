@@ -37,7 +37,6 @@ check_PROGRAMS  =
 check_PROGRAMS += aniso_viscous_flux_inc
 check_PROGRAMS += aniso_viscous_flux
 check_PROGRAMS += aniso_viscous_jacobian
-check_PROGRAMS += aniso_viscosity_calc_test
 check_PROGRAMS += aniso_viscous_residual_test
 
 # Eventually these will likely be required
@@ -58,7 +57,6 @@ LDADD += @su2_externals_LIBS@
 aniso_viscous_flux_inc_SOURCES        = aniso_viscous_flux_inc.cpp
 aniso_viscous_flux_SOURCES            = aniso_viscous_flux.cpp
 aniso_viscous_jacobian_SOURCES        = aniso_viscous_jacobian.cpp
-aniso_viscosity_calc_test_SOURCES     = aniso_viscosity_calc_test.cpp
 aniso_viscous_residual_test_SOURCES   = aniso_viscous_residual_test.cpp
 
 # Tests to be run
@@ -66,7 +64,6 @@ TESTS  =
 TESTS += aniso_viscous_flux_inc
 TESTS += aniso_viscous_flux
 TESTS += aniso_viscous_jacobian
-TESTS += aniso_viscosity_calc_test
 TESTS += aniso_viscous_residual_test
 
 # Any of above we expect to fail?

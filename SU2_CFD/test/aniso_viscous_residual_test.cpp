@@ -114,6 +114,20 @@ int main() {
     resolution_j[iDim][iDim] = 1.0;
   }
 
+  su2double* blending_coef_i = new su2double[1];
+  su2double* blending_coef_j = new su2double[1];
+  blending_coef_i[0] = 1.0;
+  blending_coef_j[0] = 1.0;
+
+  su2double** anisotropy_i = new su2double*[nDim];
+  su2double** anisotropy_j = new su2double*[nDim];
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    anisotropy_i[iDim] = new su2double[nDim];
+    anisotropy_j[iDim] = new su2double[nDim];
+    anisotropy_i[iDim][iDim] = 1.0;
+    anisotropy_j[iDim][iDim] = 1.0;
+  }
+
   su2double normal[nDim] = {0.577350269, 0.577350269, 0.577350269};
 
   /*--- Outputs ---*/
@@ -140,10 +154,12 @@ int main() {
    isotropic_numerics.SetPrimVarGradient(primvar_grad_i, primvar_grad_j);
    isotropic_numerics.ComputeResidual(residual_a, Jacobian_i, Jacobian_j, test_config);
 
+   anisotropic_numerics.SetBlendingCoef(blending_coef_i, blending_coef_j);
    anisotropic_numerics.SetNormal(normal);
    anisotropic_numerics.SetResolutionTensor(resolution_i, resolution_j);
    anisotropic_numerics.SetPrimitive(primvar_i, primvar_j);
    anisotropic_numerics.SetPrimVarGradient(primvar_grad_i, primvar_grad_j);
+   anisotropic_numerics.SetEddyViscAnisotropy(anisotropy_i, anisotropy_j);
    anisotropic_numerics.ComputeResidual(residual_b, Jacobian_i, Jacobian_j, test_config);
 
    for (int iVar = 0; iVar < nVar; iVar++) {

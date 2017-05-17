@@ -87,7 +87,7 @@ void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
                                          unsigned short iPoint,
                                          unsigned short jPoint) {
   su2double* alpha =
-      solver_container[BLENDING_SOL]->node[iPoint]->GetPrimitive();
+      solver_container[BLEND_SOL]->node[iPoint]->GetPrimitive();
   // TODO: Check what other source term functions do for Set/Get
   rans_numerics->SetBlendingCoef(alpha, alpha);
 }
@@ -105,7 +105,7 @@ void CHybrid_Mediator::SetupBlendingSolver(CGeometry* geometry,
 
   CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Q_);
   su2double r_k = CalculateRk(Q_, v2_);
-  solver_container[BLENDING_SOL]->node[iPoint]->SetResolutionAdequacy(r_k);
+  solver_container[BLEND_SOL]->node[iPoint]->SetResolutionAdequacy(r_k);
 }
 
 void CHybrid_Mediator::SetupBlendingNumerics(CGeometry* geometry,
@@ -135,7 +135,7 @@ void CHybrid_Mediator::SetupBlendingNumerics(CGeometry* geometry,
 
   /*--- Pass resolution adequacy into the numerics object ---*/
 
-  su2double r_k = solver_container[BLENDING_SOL]->node[iPoint]->GetSolution(0);
+  su2double r_k = solver_container[BLEND_SOL]->node[iPoint]->GetSolution(0);
   blending_numerics->SetResolutionAdequacy(r_k);
 }
 
@@ -145,10 +145,24 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
 
 }
 
-void CHybrid_Mediator::SetupResolvedFlow(CGeometry* geometry,
-                                         CSolver **solver_container,
-                                         CNumerics* visc_numerics,
-                                         unsigned short iPoint) {
+void CHybrid_Mediator::SetupMeanFlow(CGeometry* geometry,
+                                     CSolver **solver_container,
+                                     CNumerics* visc_numerics,
+                                     unsigned short iPoint,
+                                     unsigned short jPoint) {
+
+  /*--- Pass alpha to the mean flow ---*/
+
+  su2double* alpha_i = solver_container[BLEND_SOL]->node[iPoint]->GetSolution();
+  su2double* alpha_j = solver_container[BLEND_SOL]->node[jPoint]->GetSolution();
+  visc_numerics->SetBlendingCoef(alpha_i, alpha_j);
+
+  /*--- Pass the stress anisotropy tensor to the mean flow ---*/
+
+  // FIXME: Get anisotropy from anisotropy model
+  su2double** aniso_i;
+  su2double** aniso_j;
+  visc_numerics->SetEddyViscAnisotropy(aniso_i, aniso_j);
 }
 
 su2double CHybrid_Mediator::CalculateRk(su2double** Q, su2double v2) {

@@ -93,8 +93,8 @@ public:
   su2double Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
   Eddy_Viscosity_j;      /*!< \brief Eddy viscosity at point j. */
   // FIXME: Could these be moved to derived classes?
-  su2double** Aniso_Eddy_Viscosity_i;  /*!< \brief Anisotropic eddy viscosity at point i. */
-  su2double** Aniso_Eddy_Viscosity_j;  /*!< \brief Anisotropic eddy viscosity at point j. */
+  su2double** Eddy_Viscosity_Anisotropy_i;  /*!< \brief Normalized anisotropy tensor for the eddy viscosity at point i. */
+  su2double** Eddy_Viscosity_Anisotropy_j;  /*!< \brief Normalized anisotropy tensor for the eddy viscosity at point j. */
   su2double** Resolution_Tensor_i;  /*!< \brief Resolution tensor at point i. */
   su2double** Resolution_Tensor_j;  /*!< \brief Resolution tensor at point j. */
   su2double*** Resolution_Tensor_Gradient; /*!< \brief Gradient of the resolution tensor at point i. */
@@ -559,12 +559,13 @@ public:
   void SetResolutionAdequacy(su2double val_resolution_adequacy);
 
   /*!
-     * \brief Set the anisotropic eddy viscosity.
-     * \param[in] val_eddy_viscosity_i - Value of the eddy viscosity at point i.
-     * \param[in] val_eddy_viscosity_j - Value of the eddy viscosity at point j.
+     * \brief Set the normalized eddy viscosity anisotropy tensor.
+     * \param[in] val_anisotropy_i - Normalized anisotropy tensor for the eddy viscosity
+     * \param[in] val_anisotropy_j - Normalized anisotropy tensor for the eddy viscosity
      */
-  void SetAnisoEddyViscosity(su2double** val_eddy_viscosity_i,
-                             su2double** val_eddy_viscosity_j);
+  void SetEddyViscAnisotropy(su2double** val_anisotropy_i,
+                             su2double** val_anisotropy_j);
+
   /*!
    * \brief Set the turbulent kinetic energy.
    * \param[in] val_turb_ke_i - Value of the turbulent kinetic energy at point i.
@@ -2891,18 +2892,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-
-  /*!
-   * \brief Compute the anisotropic eddy viscosity, given the gradients
-   * @param[in] primvar_grad - Gradients of the primitive variables
-   * @param[in] resolution - The resolution tensor
-   * @param[in] scalar_eddy_viscosity - The scalar eddy viscosity
-   * @param[out] eddy_viscosity - A 2D tensor representing the eddy viscosity
-   */
-  void ComputeAnisoEddyViscosity(su2double** primvar_grad,
-                                 su2double** resolution,
-                                 su2double scalar_eddy_viscosity,
-                                 su2double** eddy_viscosity);
 };
 
 /*!

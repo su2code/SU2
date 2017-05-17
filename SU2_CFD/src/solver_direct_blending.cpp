@@ -982,8 +982,8 @@ void CBlendingSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
-  solver[MESH_0][BLENDING_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  solver[MESH_0][BLENDING_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+  solver[MESH_0][BLEND_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][BLEND_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -994,15 +994,15 @@ void CBlendingSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
         Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
         Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-        Solution_Fine = solver[iMesh-1][BLENDING_SOL]->node[Point_Fine]->GetSolution();
+        Solution_Fine = solver[iMesh-1][BLEND_SOL]->node[Point_Fine]->GetSolution();
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
         }
       }
-      solver[iMesh][BLENDING_SOL]->node[iPoint]->SetSolution(Solution);
+      solver[iMesh][BLEND_SOL]->node[iPoint]->SetSolution(Solution);
     }
-    solver[iMesh][BLENDING_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-    solver[iMesh][BLENDING_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+    solver[iMesh][BLEND_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][BLEND_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
 
 }

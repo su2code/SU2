@@ -798,7 +798,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if (hybrid) {
         switch (config->GetKind_Hybrid_Blending()) {
           case CONVECTIVE:
-            solver_container[iMGlevel][BLENDING_SOL] = new CBlendingConvSolver(geometry[iMGlevel], config, iMGlevel);
+            solver_container[iMGlevel][BLEND_SOL] = new CBlendingConvSolver(geometry[iMGlevel], config, iMGlevel);
             break;
         }
       }
@@ -1153,7 +1153,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (ns)           nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   if (turbulent)    nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
   // TODO: Check that solver returns the correct number of variables
-  if (hybrid)       nVar_Blending = solver_container[MESH_0][BLENDING_SOL]->GetnVar();
+  if (hybrid)       nVar_Blending = solver_container[MESH_0][BLEND_SOL]->GetnVar();
   if (transition)   nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
   if (poisson)      nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
   
@@ -1486,7 +1486,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
         case CONVECTIVE:
-          numerics_container[iMGlevel][BLENDING_SOL][CONV_TERM] = new CUpwSca_BlendingConv(nDim, nVar_Turb, config);
+          numerics_container[iMGlevel][BLEND_SOL][CONV_TERM] = new CUpwSca_BlendingConv(nDim, nVar_Turb, config);
           break;
         default:
           cout << "Convective numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
@@ -1499,7 +1499,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
         case CONVECTIVE:
-          numerics_container[iMGlevel][BLENDING_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_BlendingConv(nDim, nVar_Turb, config);
+          numerics_container[iMGlevel][BLEND_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_BlendingConv(nDim, nVar_Turb, config);
           break;
         default:
           cout << "Source numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
@@ -1510,7 +1510,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
         case CONVECTIVE:
-          numerics_container[iMGlevel][BLENDING_SOL][CONV_BOUND_TERM] = new CUpwSca_BlendingConv(nDim, nVar_Turb, config);
+          numerics_container[iMGlevel][BLEND_SOL][CONV_BOUND_TERM] = new CUpwSca_BlendingConv(nDim, nVar_Turb, config);
           break;
         default:
           cout << "Boundary numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
@@ -2036,12 +2036,12 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
 
   if (hybrid) {
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      delete numerics_container[iMGlevel][BLENDING_SOL][CONV_TERM];
+      delete numerics_container[iMGlevel][BLEND_SOL][CONV_TERM];
 //      delete numerics_container[iMGlevel][BLENDING_SOL][VISC_TERM];
-      delete numerics_container[iMGlevel][BLENDING_SOL][SOURCE_FIRST_TERM];
-      delete numerics_container[iMGlevel][BLENDING_SOL][SOURCE_SECOND_TERM];
+      delete numerics_container[iMGlevel][BLEND_SOL][SOURCE_FIRST_TERM];
+      delete numerics_container[iMGlevel][BLEND_SOL][SOURCE_SECOND_TERM];
       /*--- Definition of the boundary condition method ---*/
-      delete numerics_container[iMGlevel][BLENDING_SOL][CONV_BOUND_TERM];
+      delete numerics_container[iMGlevel][BLEND_SOL][CONV_BOUND_TERM];
 //      delete numerics_container[iMGlevel][BLENDING_SOL][VISC_BOUND_TERM];
     }
   }
