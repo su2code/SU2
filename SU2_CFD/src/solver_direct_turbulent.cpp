@@ -1639,8 +1639,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Allocate the value at the inlet ---*/
       
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-      
-      cout << V_inlet[nDim+2] << endl;
 
       /*--- Retrieve solution at the farfield boundary node ---*/
       
