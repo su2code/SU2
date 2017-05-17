@@ -1640,6 +1640,9 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
+      cout << "In turb" << V_inlet[0] << endl;
+      getchar();
+
       /*--- Retrieve solution at the farfield boundary node ---*/
       
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
@@ -1666,6 +1669,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
@@ -1689,15 +1693,15 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Compute residual, and Jacobians ---*/
       
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
+
       /*--- Subtract residual, and update Jacobians ---*/
       
       LinSysRes.SubtractBlock(iPoint, Residual);
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      
+
     }
   }
-  
+
   /*--- Free locally allocated memory ---*/
   delete[] Normal;
   
@@ -1764,6 +1768,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
@@ -1786,7 +1791,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Compute residual, and Jacobians ---*/
       
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
+
       /*--- Subtract residual, and update Jacobians ---*/
       
       LinSysRes.SubtractBlock(iPoint, Residual);
@@ -1794,7 +1799,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 
     }
   }
-  
+
   /*--- Free locally allocated memory ---*/
   
   delete[] Normal;

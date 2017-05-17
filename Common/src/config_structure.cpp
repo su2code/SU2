@@ -2996,8 +2996,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
              ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+			 ( Kind_Solver == TWO_PHASE_NAVIER_STOKES) ||
              ( Kind_Solver == RANS                   ) ||
-             ( Kind_Solver == ADJ_RANS               ) );
+             ( Kind_Solver == ADJ_RANS               ) ||
+			 ( Kind_Solver == TWO_PHASE_RANS         ));
   
   /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
 

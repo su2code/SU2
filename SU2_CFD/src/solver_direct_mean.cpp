@@ -10735,7 +10735,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Retrieve the staic pressure for this boundary. ---*/
           Pressure_e = Pressure_i;
-          Pressure_e /= config->GetPressure_Ref();
+          Pressure_e /= config->GetPressure_Ref();    /// is this ok?
           Density_e = Density_i;
 
           /*--- Compute the boundary state u_e ---*/
@@ -10946,6 +10946,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         V_boundary[nDim+7] = FluidModel->GetThermalConductivity();
         V_boundary[nDim+8] = FluidModel->GetCp();
         
+        cout << "In rieman BC" << V_boundary[0] << endl;
+        getchar();
+
         /*--- Set the normal vector and the coordinates ---*/
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());

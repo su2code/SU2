@@ -365,7 +365,6 @@ const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow s
 
 const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
 
-// check what value to use here
 const int TWO_PHASE_SOL = 5;/*!< \brief Position of the phase model solution in the solver container array. */
 
 
