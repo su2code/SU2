@@ -143,7 +143,7 @@ class CHybrid_Aniso_Q : public CHybrid_Visc_Anisotropy {
 
 /*!
  * \class CAbstract_Hybrid_Mediator
- * \brief Base (abstract) class for a hybrid model mediator object.
+ * \brief Base abstract class for a hybrid model mediator object.
  *
  * In order to decouple the RANS model, the subgrid model, the blending,
  * and the mean flow, a mediator object is necessary.  This allows the
@@ -166,6 +166,12 @@ class CAbstract_Hybrid_Mediator {
 
   /**
    * \brief Retrieve and pass along all necessary info for the RANS model.
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] rans_numerics - The source numerics for the turb. solver
+   * \param[in] iPoint - The number of the node being evaluated
+   * \param[in] jPoint - The number of the opposite node
    */
   virtual void SetupRANSNumerics(CGeometry* geometry,
                                  CSolver **solver_container,
@@ -174,19 +180,24 @@ class CAbstract_Hybrid_Mediator {
                                  unsigned short jPoint) = 0;
 
   /**
-   * \brief Retrieve and pass along all necessary info for the blending.
+   * \brief Retrieve and pass along all necessary info for the blending solver   *
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] iPoint - The node being evaluated
    */
   virtual void SetupBlendingSolver(CGeometry* geometry,
                                    CSolver **solver_container,
                                    unsigned short iPoint) = 0;
 
   /**
+   * \brief Retrieve and pass along all necessary info for the blending numerics
    *
-   * \param geometry
-   * \param solver_container
-   * \param blending_numerics
-   * \param iPoint
-   * \param jPoint
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] blending_numerics - The source numerics for the blending solver
+   * \param[in] iPoint - The number of the node being evaluated
+   * \param[in] jPoint - The number of the opposite node
    */
   void SetupBlendingNumerics(CGeometry* geometry, CSolver **solver_container,
                              CNumerics *blending_numerics,
@@ -195,6 +206,11 @@ class CAbstract_Hybrid_Mediator {
   /**
    * \brief Retrieve and pass along all necessary info for the stress
    *        anisotropy model.
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] hybrid_anisotropy - The hybrid anisotropy model
+   * \param[in] iPoint - The node being evaluated
    */
   virtual void SetupStressAnisotropy(CGeometry* geometry,
                                      CSolver **solver_container,
@@ -203,6 +219,12 @@ class CAbstract_Hybrid_Mediator {
 
   /**
    * \brief Retrieve and pass along all necessary info for the mean numerics.
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] visc_numerics - The viscous numerics for the mean flow solver
+   * \param[in] iPoint - The number of the node being evaluated
+   * \param[in] jPoint - The number of the opposite node
    */
   virtual void SetupMeanFlowNumerics(CGeometry* geometry,
                                      CSolver **solver_container,
@@ -241,8 +263,8 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
 
   /*!
    * \brief Calculates the resolution inadequacy parameter
-   * \param Q - The approximate 2nd order structure function
-   * \param v2 - The v2 value from Durbin's k-eps-v2-f model
+   * \param[in] Q - The approximate 2nd order structure function
+   * \param[in] v2 - The v2 value from Durbin's k-eps-v2-f model
    * @return The resolution inadequacy parameter
    */
   su2double CalculateRk(su2double** Q, su2double v2);
@@ -271,16 +293,15 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   ~CHybrid_Mediator();
 
   /**
-   * Retrieve and calculate all terms which do not depend on any specific model.
-   */
-  void SetupSelf();
-
-  /**
    * \brief RANS needs the blending coefficient (the energy flow parameter).
    *
    * This function sets the blending coefficient from the previous timestep.
-   * \param iPoint - The number of the node being evaluated
-   * \param jPoint - The number of the opposite node
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] rans_numerics - The source numerics for the turb. solver
+   * \param[in] iPoint - The number of the node being evaluated
+   * \param[in] jPoint - The number of the opposite node
    */
   void SetupRANSNumerics(CGeometry* geometry, CSolver **solver_container,
                          CNumerics* rans_numerics,
@@ -289,9 +310,10 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   /**
    * \brief The blending solver needs the resolution adequacy parameter, which
    *        is dependent on RANS results.
-   * \param geometry - A pointer to the geometry
-   * \param solver_container - An array of solvers
-   * \param iPoint - The node being evaluated
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] iPoint - The node being evaluated
    */
   void SetupBlendingSolver(CGeometry* geometry, CSolver **solver_container,
                            unsigned short iPoint);
@@ -299,10 +321,12 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   /**
    * \brief The blending numerics need the turbulence length and timescales as
    *        well as the resolution adequacy parameter.
-   * \param geometry - A pointer to the geometry
-   * \param solver_container - An array of solvers
-   * \param iPoint - The number of the node being evaluated
-   * \param jPoint - The number of the opposite node
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] blending_numerics - The source numerics for the blending solver
+   * \param[in] iPoint - The number of the node being evaluated
+   * \param[in] jPoint - The number of the opposite node
    */
   void SetupBlendingNumerics(CGeometry* geometry, CSolver **solver_container,
                              CNumerics *blending_numerics,
@@ -311,9 +335,11 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   /**
    * \brief The turbulent stress anisotropy needs the weighting factor and the
    *        second order structure function.
-   * \param geometry - A pointer to the geometry
-   * \param solver_container - An array of solvers
-   * \param iPoint - The node being evaluated
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] hybrid_anisotropy - The hybrid anisotropy model
+   * \param[in] iPoint - The node being evaluated
    */
   void SetupStressAnisotropy(CGeometry* geometry,
                              CSolver **solver_container,
@@ -323,10 +349,12 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   /**
    * \brief The resolved flow needs the blending coefficient (the energy flow
    *        parameter) and the turbulent stress anisotropy tensor.
-   * \param geometry - A pointer to the geometry
-   * \param solver_container - An array of solvers
-   * \param iPoint - The number of the node being evaluated
-   * \param jPoint - The number of the opposite node
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] visc_numerics - The viscous numerics for the mean flow solver
+   * \param[in] iPoint - The number of the node being evaluated
+   * \param[in] jPoint - The number of the opposite node
    */
   void SetupMeanFlowNumerics(CGeometry* geometry,
                              CSolver **solver_container,
