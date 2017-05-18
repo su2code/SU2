@@ -15388,7 +15388,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   if (config->isHybrid_Turb_Model()) {
     switch (config->GetKind_Hybrid_Anisotropy_Model()) {
       case ISOTROPIC:
-        hybrid_anisotropy = new CHybrid_Isotropic_Stress(nDim);
+        hybrid_anisotropy = new CHybrid_Isotropic_Visc(nDim);
         break;
       case Q_BASED:
         hybrid_anisotropy = new CHybrid_Aniso_Q(nDim);
@@ -15774,7 +15774,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Solve for the stress anisotropy ---*/
   
   // hybrid_mediator->SetupStressAnisotropy();
-  // hybrid_aniso->CalculateStressAnisotropy();
+  // hybrid_aniso->CalculateViscAnisotropy();
   // node[iPoint]->SetEddyViscAnisotropy(hybrid_aniso->GetStressAnisotropy());
 
   /*--- Error message ---*/

@@ -52,15 +52,15 @@ class CSolver;
 using namespace std;
 
 /*!
- * \class CHybrid_SGS_Anisotropy
+ * \class CHybrid_Visc_Anisotropy
  * \brief Base (abstract) class for the subgrid anisotropy model for the
  *        turbulent stress.
  * \author: C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CHybrid_SGS_Anisotropy{
+class CHybrid_Visc_Anisotropy{
  protected:
-  su2double** stress_anisotropy_tensor;
+  su2double** eddy_visc_anisotropy;
   const unsigned short nDim;
  public:
 
@@ -68,46 +68,47 @@ class CHybrid_SGS_Anisotropy{
    * \brief Default constructor for base class
    * \param[in] nDim - Number of dimensions of the problem (e.g. 2D or 3D)
    */
-  CHybrid_SGS_Anisotropy(unsigned short nDim);
+  CHybrid_Visc_Anisotropy(unsigned short nDim);
 
   /**
    * \brief Base class destructor
    */
-  ~CHybrid_SGS_Anisotropy();
+  virtual ~CHybrid_Visc_Anisotropy();
 
   /**
    * \brief Tells the hybrid model to calculate the turbulent stress anisotropy.
    */
-  virtual void CalculateStressAnisotropy() = 0;
+  virtual void CalculateViscAnisotropy() = 0;
 
   /**
    * \brief Retrieves the turbulent stress anisotropy tensor.
    * \return The turbulent stress anisotropy.
    */
-  su2double** GetStressAnisotropy();
+  su2double** GetViscAnisotropy();
 
-  // FIXME: These defy the Liskov substitution principle
+  // TODO: These defy the Liskov substitution principle.  They should be removed
+  // from the abstract class somehow
 
   virtual void SetApproxStructFunc(su2double** val_approx_struct_func) = 0;
   virtual void SetResolutionAdequacy(su2double val_r_k) = 0;
 };
 
 /*!
- * \class CHybrid_Isotropic_Stress
+ * \class CHybrid_Isotropic_Visc
  * \brief Subgrid anisotropy model based on the approximate 2nd order
  *        structure function.
  * \author: C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CHybrid_Isotropic_Stress : public CHybrid_SGS_Anisotropy {
+class CHybrid_Isotropic_Visc : public CHybrid_Visc_Anisotropy {
  public:
 
-  CHybrid_Isotropic_Stress(unsigned short nDim);
+  CHybrid_Isotropic_Visc(unsigned short nDim);
 
   /**
    * \brief Tells the hybrid model to calculate the turbulent stress anisotropy.
    */
-  void CalculateStressAnisotropy();
+  void CalculateViscAnisotropy();
   
   void SetApproxStructFunc(su2double** val_approx_struct_func) {}
   void SetResolutionAdequacy(su2double val_r_k) {}
@@ -120,7 +121,7 @@ class CHybrid_Isotropic_Stress : public CHybrid_SGS_Anisotropy {
  * \author: C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CHybrid_Aniso_Q : public CHybrid_SGS_Anisotropy {
+class CHybrid_Aniso_Q : public CHybrid_Visc_Anisotropy {
  protected:
   su2double** Qstar;
   su2double   Qstar_norm;
@@ -135,7 +136,7 @@ class CHybrid_Aniso_Q : public CHybrid_SGS_Anisotropy {
   /**
    * \brief Tells the hybrid model to calculate the turbulent stress anisotropy.
    */
-  void CalculateStressAnisotropy();
+  void CalculateViscAnisotropy();
 };
 
 
@@ -197,7 +198,7 @@ class CAbstract_Hybrid_Mediator {
    */
   virtual void SetupStressAnisotropy(CGeometry* geometry,
                                      CSolver **solver_container,
-                                     CHybrid_SGS_Anisotropy* hybrid_anisotropy,
+                                     CHybrid_Visc_Anisotropy* hybrid_anisotropy,
                                      unsigned short iPoint) = 0;
 
   /**
@@ -229,8 +230,6 @@ class CAbstract_Hybrid_Mediator {
  */
 class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
  protected:
-  /*--- Pointers to the connected numerical objects ---*/
-  CHybrid_Aniso_Q* hybrid_anisotropy;
 
   unsigned short nDim;
   const su2double C_sf; /*!> \brief Smagorinksy constant */
@@ -318,7 +317,7 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
    */
   void SetupStressAnisotropy(CGeometry* geometry,
                              CSolver **solver_container,
-                             CHybrid_SGS_Anisotropy* hybrid_anisotropy,
+                             CHybrid_Visc_Anisotropy* hybrid_anisotropy,
                              unsigned short iPoint);
 
   /**

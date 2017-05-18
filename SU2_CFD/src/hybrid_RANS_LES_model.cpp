@@ -35,45 +35,45 @@
 #include "../include/numerics_structure.hpp"
 #include "../include/solver_structure.hpp"
 
-CHybrid_SGS_Anisotropy::CHybrid_SGS_Anisotropy(unsigned short nDim)
+CHybrid_Visc_Anisotropy::CHybrid_Visc_Anisotropy(unsigned short nDim)
     : nDim(nDim) {
-  stress_anisotropy_tensor = new su2double*[nDim];
+  eddy_visc_anisotropy = new su2double*[nDim];
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    stress_anisotropy_tensor[iDim] = new su2double[nDim];
+    eddy_visc_anisotropy[iDim] = new su2double[nDim];
     for (unsigned short jDim = 0; jDim < nDim; jDim++)
-      stress_anisotropy_tensor[iDim][jDim] = 0.0;
+      eddy_visc_anisotropy[iDim][jDim] = 0.0;
   }
 }
 
-CHybrid_SGS_Anisotropy::~CHybrid_SGS_Anisotropy() {
+CHybrid_Visc_Anisotropy::~CHybrid_Visc_Anisotropy() {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    delete [] stress_anisotropy_tensor[iDim];
-  delete [] stress_anisotropy_tensor;
+    delete [] eddy_visc_anisotropy[iDim];
+  delete [] eddy_visc_anisotropy;
 }
 
-su2double** CHybrid_SGS_Anisotropy::GetStressAnisotropy() {
-  return stress_anisotropy_tensor;
+su2double** CHybrid_Visc_Anisotropy::GetViscAnisotropy() {
+  return eddy_visc_anisotropy;
 }
 
-CHybrid_Isotropic_Stress::CHybrid_Isotropic_Stress(unsigned short nDim)
-: CHybrid_SGS_Anisotropy(nDim) {
-  stress_anisotropy_tensor = new su2double*[nDim];
+CHybrid_Isotropic_Visc::CHybrid_Isotropic_Visc(unsigned short nDim)
+: CHybrid_Visc_Anisotropy(nDim) {
+  eddy_visc_anisotropy = new su2double*[nDim];
   for (unsigned short iDim=0; iDim < nDim; iDim++) {
-    stress_anisotropy_tensor[iDim] = new su2double[nDim];
+    eddy_visc_anisotropy[iDim] = new su2double[nDim];
     for (unsigned short jDim=0; jDim < nDim; jDim++) {
-      stress_anisotropy_tensor[iDim][jDim] = (su2double)(iDim == jDim);
+      eddy_visc_anisotropy[iDim][jDim] = (su2double)(iDim == jDim);
     }
   }
 }
 
-void CHybrid_Isotropic_Stress::CalculateStressAnisotropy() {
+void CHybrid_Isotropic_Visc::CalculateViscAnisotropy() {
 };
 
 CHybrid_Aniso_Q::CHybrid_Aniso_Q(unsigned short nDim)
-  : CHybrid_SGS_Anisotropy(nDim) {
+  : CHybrid_Visc_Anisotropy(nDim) {
 }
 
-void CHybrid_Aniso_Q::CalculateStressAnisotropy() {
+void CHybrid_Aniso_Q::CalculateViscAnisotropy() {
   su2double w_RANS = CalculateIsotropyWeight(resolution_adequacy);
 
   // FIXME: How to get Qstar_norm?
@@ -82,8 +82,8 @@ void CHybrid_Aniso_Q::CalculateStressAnisotropy() {
   unsigned short iDim, jDim;
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
-      stress_anisotropy_tensor[iDim][jDim] = w_RANS*double(iDim == jDim);
-      stress_anisotropy_tensor[iDim][jDim] += (1.0-w_RANS)*sqrt(3)*
+      eddy_visc_anisotropy[iDim][jDim] = w_RANS*double(iDim == jDim);
+      eddy_visc_anisotropy[iDim][jDim] += (1.0-w_RANS)*sqrt(3)*
           Qstar[iDim][jDim]/Qstar_norm;
     }
   }
@@ -178,7 +178,7 @@ void CHybrid_Mediator::SetupBlendingNumerics(CGeometry* geometry,
 
 void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
                                              CSolver **solver_container,
-                                             CHybrid_SGS_Anisotropy* hybrid_anisotropy,
+                                             CHybrid_Visc_Anisotropy* hybrid_anisotropy,
                                              unsigned short iPoint) {
 
   /*--- Find Approximate Structure Function ---*/

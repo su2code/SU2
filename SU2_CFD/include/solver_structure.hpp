@@ -7369,7 +7369,7 @@ private:
   AllBound_HF_Visc,    /*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHF_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
-  CHybrid_SGS_Anisotropy* hybrid_anisotropy; /*!< \brief A model for the eddy viscosity anisotropy */
+  CHybrid_Visc_Anisotropy* hybrid_anisotropy; /*!< \brief A model for the eddy viscosity anisotropy */
   CAbstract_Hybrid_Mediator *HybridMediator; /*!< \brief A mediator object for a hybrid RANS/LES model. */
 
 public:
