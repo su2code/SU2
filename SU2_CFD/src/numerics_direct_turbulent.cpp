@@ -1389,7 +1389,8 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual,
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
-  AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
+  AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
+  AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
   AD::SetPreaccIn(Lm_i); AD::SetPreaccIn(Lm_j);
   AD::SetPreaccIn(Volume);
 
@@ -1421,36 +1422,32 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual,
   diff_i_zeta = Laminar_Viscosity_i + sigma_zeta_i*Eddy_Viscosity_i;
   diff_j_zeta = Laminar_Viscosity_j + sigma_zeta_j*Eddy_Viscosity_j;
 
-  diff_kine = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
+  // Could instead use weighted average!
+  diff_kine = 0.5*(diff_i_kine + diff_j_kine);
   diff_epsi = 0.5*(diff_i_epsi + diff_j_epsi);
   diff_zeta = 0.5*(diff_i_zeta + diff_j_zeta);
-  //  diff_f = Lm_i*Lm_i; //here
-  diff_f = 1.0; //Density_i;
-  //  cout << "lm_i:" << Lm_i << "\n";
+  diff_f = 1.0;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
-  su2double n_mag=0.0;
-  su2double s_mag=0.0;
   dist_ij_2 = 0; proj_vector_ij = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-    n_mag += Normal[iDim]*Normal[iDim];
   }
   if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
 
-  s_mag = sqrt(dist_ij_2);
-  n_mag = sqrt(n_mag);
-
-  /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
+  /*--- Mean gradient approximation.
+    Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
     Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] + TurbVar_Grad_j[iVar][iDim]);
-      Proj_Mean_GradTurbVar_Normal[iVar] += Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
+      Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] +
+                                          TurbVar_Grad_j[iVar][iDim]);
+      Proj_Mean_GradTurbVar_Normal[iVar] +=
+        Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
     }
     Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Normal[iVar];
   }
@@ -1460,7 +1457,8 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual,
   val_residual[2] = diff_zeta*Proj_Mean_GradTurbVar_Corrected[2];
   val_residual[3] = diff_f*Proj_Mean_GradTurbVar_Corrected[3];
 
-  /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/ //here
+  /*--- For Jacobians ->
+    Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
     Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i;
     Jacobian_i[0][1] = 0.0;
@@ -1554,7 +1552,8 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual,
                                                su2double **Jacobian_j,
                                                CConfig *config) {
 
-  su2double sigma_kine_i, sigma_kine_j, sigma_epsi_i, sigma_epsi_j, sigma_zeta_i, sigma_zeta_j;
+  su2double sigma_kine_i, sigma_kine_j, sigma_epsi_i, sigma_epsi_j;
+  su2double sigma_zeta_i, sigma_zeta_j;
   su2double diff_i_kine, diff_i_epsi, diff_j_kine, diff_j_epsi;
   su2double diff_i_zeta, diff_j_zeta, diff_i_f, diff_j_f;
 
@@ -1562,7 +1561,8 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual,
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
-  AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
+  AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
+  AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
   AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j ,nVar);
   AD::SetPreaccIn(Lm_i); AD::SetPreaccIn(Lm_j);
   AD::SetPreaccIn(Volume);
@@ -1594,12 +1594,11 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual,
   diff_i_zeta = Laminar_Viscosity_i + sigma_zeta_i*Eddy_Viscosity_i;
   diff_j_zeta = Laminar_Viscosity_j + sigma_zeta_j*Eddy_Viscosity_j;
 
-  diff_kine = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
+  // Could instead use weighted average!
+  diff_kine = 0.5*(diff_i_kine + diff_j_kine);
   diff_epsi = 0.5*(diff_i_epsi + diff_j_epsi);
   diff_zeta = 0.5*(diff_i_zeta + diff_j_zeta);
-  //  diff_f = Lm_i*Lm_i; //here
-  diff_f = 1.0; //Density_i;
-  //  cout << "lm_i:" << Lm_i << "\n";
+  diff_f = 1.0;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
   su2double n_mag=0.0;
@@ -1617,30 +1616,36 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual,
   s_mag = sqrt(dist_ij_2);
   n_mag = sqrt(n_mag);
 
-  /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
+  /*--- Mean gradient approximation.
+    Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
     Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] + TurbVar_Grad_j[iVar][iDim]);
-      Proj_Mean_GradTurbVar_Normal[iVar] += Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
-      Proj_Mean_GradTurbVar_Edge[iVar] += Mean_GradTurbVar[iVar][iDim]*Edge_Vector[iDim];
-    }
-    Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Normal[iVar];
-    Proj_Mean_GradTurbVar_Corrected[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
-      (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+      Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] +
+                                          TurbVar_Grad_j[iVar][iDim]);
 
-    // NB: Jacobian corresponds to just this part
-    //Proj_Mean_GradTurbVar_Corrected[iVar] = (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+      Proj_Mean_GradTurbVar_Normal[iVar] +=
+        Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
+
+      Proj_Mean_GradTurbVar_Edge[iVar] +=
+        Mean_GradTurbVar[iVar][iDim]*Edge_Vector[iDim];
+    }
+
+    Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Normal[iVar];
+    Proj_Mean_GradTurbVar_Corrected[iVar] -=
+      Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
+      (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
 
   }
 
   val_residual[0] = diff_kine*Proj_Mean_GradTurbVar_Corrected[0];
   val_residual[1] = diff_epsi*Proj_Mean_GradTurbVar_Corrected[1];
   val_residual[2] = diff_zeta*Proj_Mean_GradTurbVar_Corrected[2];
-  val_residual[3] = diff_f*Proj_Mean_GradTurbVar_Corrected[3];
+  val_residual[3] = diff_f   *Proj_Mean_GradTurbVar_Corrected[3];
 
-  /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+  /*--- For Jacobians ->
+    Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
 
     Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i;
@@ -1768,8 +1773,13 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   const su2double v20 = TurbVar_i[2];
   const su2double f   = TurbVar_i[3];
 
-  const su2double tke_lim = max(tke, 1e-8); // 1e-8 arbitrary
-  const su2double tdr_lim = max(tdr, 36.0*Laminar_Viscosity_i/Density_i); // 36*lam visc ensures T3 <= 1
+  // clip values to avoid non-physical quantities...
+
+  // NB: 1e-8 is arbitrary
+  const su2double tke_lim = max(tke, 1e-8);
+
+  // 36*nu ensures T3 <= 1 (which is arbitrary)
+  const su2double tdr_lim = max(tdr, 36.0*Laminar_Viscosity_i/Density_i);
 
   // if (tke < 0.0) {
   //   std::cout << "tke = " << tke
@@ -1797,12 +1807,11 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   // make sure v2 is well-behaved
   const su2double scale = 1.0e-8;
-  //su2double zeta = max(v20/tke, scale);
   su2double zeta = max(v20/tke_lim, scale);
   zeta = min(zeta,2.0/3.0);
-
   const su2double v2 = max(v20, zeta*tke);
 
+  // Grab other quantities for convenience/readability
   const su2double rho = Density_i;
 
   const su2double mu  = Laminar_Viscosity_i;
@@ -1818,70 +1827,23 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   for (unsigned int iDim = 0; iDim < nDim; iDim++)
     diverg += PrimVar_Grad_i[iDim+1][iDim];
 
-  //----------------------------------------------------------------------------
-  // Scream if tke, tdr, etc are out of bounds?
-  //
-  // if(tke < 0.0) std::cout << "WTF!?! k is negative!!!" << std::endl;
-  // if(tdr < 0.0) std::cout << "WTF!?! epsilon is negative!!!" << std::endl;
-  //  if (tke>=20.0) {cout << "TKE: " << tke << "\n";}
-  //----------------------------------------------------------------------------
-
-  //----------------------------------------------------------------------------
-  // Impose some bounds on turb variables?
-  //
-  // // denominator floors
-  // su2double VelMag, *VelInf, L_Inf, scalar_min;
-  // su2double tke_raw, tdr_raw, v2_raw;
-  // tke_raw = tke;
-  // tdr_raw = tdr;
-  // v2_raw = v2;
-  // VelInf = config->GetVelocity_FreeStreamND();
-  // L_Inf = config->GetLength_Reynolds();
-  // for (iDim = 0; iDim < nDim; iDim++)
-  // VelMag += VelInf[iDim]*VelInf[iDim];
-  // VelMag = sqrt(VelMag);
-
-  // su2double solve_tol = config->GetLinear_Solver_Error();
-  // su2double Re = config->GetReynolds();
-  // su2double iRe = 1.0/Re;
-  // su2double scale;
-  // scale = 1.0e-8;
-  // zeta = max(v2_raw/tke_raw, scale);
-  // zeta = min(zeta,2.0/3.0);
-  // scalar_min = scale/(VelMag*VelMag); // setting based on tke min being 1e-8
-  // tke = max(tke, scalar_min*VelMag*VelMag);
-  // tdr = max(tdr, scalar_min*VelMag*VelMag*VelMag/L_Inf);
-  // //v2 = max(v2, 2.0/3.0*scalar_min*VelMag*VelMag);
-  // f = max(f, scalar_min*VelMag/L_Inf);
-
-  // v2 = max(v2, zeta*tke);
-  // //  S = max(S,scalar_min*VelMag/L_Inf); // no checked...
-  // S = max(S,1.0E-14);
-  //----------------------------------------------------------------------------
-
   // NB: We determine time and length scales here due to Jacobian branching
   // TODO: Could replace max and min with differentiable approximations
   // TODO: Write a function that evaluates T and L along with derivatives
 
-  //--- Model time scale ---//
-  // const su2double T1     = tke/tdr;
-  // const su2double T1_rk  =  1.0/(rho*tdr);
-  // const su2double T1_re  = - T1/(rho*tdr);
-  // const su2double T1_rv2 = 0.0;
+  // NB: In current Jacobian approx, derivatives of T and L aren't used anyway
 
-  //const su2double T1     = tke_lim/tdr;
+  //--- Model time scale ---//
   const su2double T1     = tke_lim/tdr_lim;
   const su2double T1_rk  =  1.0/(rho*tdr);
   const su2double T1_re  = - T1/(rho*tdr);
   const su2double T1_rv2 = 0.0;
-
 
   const su2double T2     = 1.0E14; //0.6/(sqrt(6.0)*C_mu*S*zeta);
   const su2double T2_rk  = 0.0;
   const su2double T2_re  = 0.0;
   const su2double T2_rv2 = 0.0;
 
-  //const su2double T3     = C_T*sqrt(nu/tdr);
   const su2double T3     = C_T*sqrt(nu/tdr_lim);
   const su2double T3_rk  = 0.0;
   const su2double T3_re  = -0.5*T3/(rho*tdr);
@@ -1919,7 +1881,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
 
   //--- Model length scale ---//
-  //const su2double L1     = pow(tke,1.5)/tdr;
   const su2double L1     = pow(tke_lim,1.5)/tdr_lim;
   const su2double L1_rk  =    -L1/(rho*tke);
   const su2double L1_re  = 1.5*L1/(rho*tdr);
@@ -1930,7 +1891,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   const su2double L2_re  = 0.0;
   const su2double L2_rv2 = 0.0;
 
-  //const su2double L3     = C_eta*pow(pow(nu,3.0)/tdr,0.25);
   const su2double L3     = C_eta*pow(pow(nu,3.0)/tdr_lim,0.25);
   const su2double L3_rk  = 0.0;
   const su2double L3_re  = -0.25*L3/(rho*tdr);
@@ -1972,16 +1932,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   //... production
   // NB: we ignore the jacobian of production here
 
-  const su2double xx = Coord_i[0];
-  const su2double xfac = 0.5*(1.0 + tanh(20.0*(xx-0.3)));
-  //Pk     = (muT*S*S - 2.0/3.0*rho*tke*diverg)*xfac;
   Pk     = muT*S*S - 2.0/3.0*rho*tke*diverg;
-  //Pk     = muT*S*S;
-  //Pk     = 0.0; // Should be very robust with production off
 
   Pk_rk  = 0.0;
-  //Pk_rk  = min(C_mu*zeta*T*S*S, 0.9/(Vol*TimeStep));
-  //Pk_rk  = C_mu*zeta*T*S*S;
   Pk_re  = 0.0;
   Pk_rv2 = 0.0;
 
@@ -2007,29 +1960,16 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   // NB: C_e1 depends on tke and v2 in v2-f
   //const su2double C_e1 = C_e1o*(1.0+0.045*sqrt(tke/v2));
   const su2double C_e1 = C_e1o*(1.0+0.045*sqrt(1.0/zeta));
-  //const su2double C_e1 = C_e1o;
 
   // ... production
   //Pe = C_e1*Pk/T;
-  Pe = C_e1*C_mu*rho*v2*S*S;
+  Pe = C_e1*C_mu*rho*v2*S*S;  // TODO: include divergence part
 
   Pe_rk  = 0.0;
   Pe_re  = 0.0;
   Pe_rv2 = 0.0;
 
   // ... dissipation
-  // De = C_e2*rho*tdr/T;
-
-  // De_rk  =        - C_e2*rho*tdr*T_rk /Tsq;
-  // De_re  = C_e2/T - C_e2*rho*tdr*T_re /Tsq;
-  // De_rv2 =        - C_e2*rho*tdr*T_rv2/Tsq;
-
-  // De = C_e2*rho*tdr/T1;
-
-  // De_rk  =         - C_e2*rho*tdr*T1_rk /Tsq;
-  // De_re  = C_e2/T1 - C_e2*rho*tdr*T1_re /Tsq;
-  // De_rv2 =         - C_e2*rho*tdr*T1_rv2/Tsq;
-
   De = C_e2*rho*tdr/T;
 
   De_rk  = 0.0;
@@ -2044,11 +1984,10 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   // ... production
   Pv2 = rho*tke*f;
 
-  Pv2_rk  = 0.0; //f;
   Pv2_rk  = 0.0;
   Pv2_re  = 0.0;
-  Pv2_rv2 = 0.0; //min(f/zeta, 1.0/(Vol*TimeStep)); //0.0;
-  Pv2_f   = 0.0; //rho*tke; // keep this?
+  Pv2_rv2 = 0.0;
+  Pv2_f   = 0.0;
 
   // // ... dissipation
   // Dv2     =  6.0*(v2/tke)*rho*tdr;
@@ -2074,18 +2013,10 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   //... production
   const su2double C1m6 = C_1 - 6.0;
   const su2double ttC1m1 = (2.0/3.0)*(C_1 - 1.0);
-  //const su2double C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(v2/tke-0.55)));
   const su2double C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(zeta-0.55)));
 
   //Pf = (C_2f*Pk/tke - (C1m6*v2/tke - ttC1m1)*rho/T) / Lsq;
-  //Pf = (C_2f*Pk/(rho*tke) - (C1m6*v2/tke - ttC1m1)/T) / Lsq;
-  //Pf = (C_2f*Pk/(rho*tke) - (C1m6*(2.0/3.0) - ttC1m1)/T) / Lsq;
-  //Pf = ( - (C1m6*(2.0/3.0) - ttC1m1)/T) / Lsq;
-  //Pf = (C_2f*Pk/(rho*tke_lim) - (C1m6*(2.0/3.0) - ttC1m1)/T) / Lsq;
-  //Pf = (C_2f*Pk/(rho*tke_lim) - (C1m6*zeta - ttC1m1)/T) / Lsq;
-  //Pf = (C_2f*Pk/(rho*tke_lim) - (C1m6*(2.0/3.0) - ttC1m1)/T) / Lsq;
   Pf = (C_2f*C_mu*zeta*T*S*S - (C1m6*zeta - ttC1m1)/T) / Lsq;
-  //Pf = 0.0;
 
   // not keeping any derivatives of Pf
 
@@ -2094,6 +2025,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   Df_f = 1.0/Lsq;
 
+
+  // FIXME: Do we always want to do this?  Is there a debug mode this
+  // could go into?
 
   // check for nans
   bool found_nan = (std::isnan(Pk)  || std::isnan(Dk)  ||
@@ -2107,7 +2041,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
                     std::isnan(De_rk)  || std::isnan(De_re)  || std::isnan(De_rv2)  ||
                     std::isnan(Dv2_rk) || std::isnan(Dv2_re) || std::isnan(Dv2_rv2) );
 
-  if (found_nan && Coord_i[1] > 1e-14) {
+  if (found_nan) {
     std::cout << "WTF!?! Found a nan at x = " << Coord_i[0] << ", " << Coord_i[1] << std::endl;
     std::cout << "turb state = " << tke << ", " << tdr << ", " << v2 << ", " << f << std::endl;
     std::cout << "T1         = " << T1 << ", T3 " << T3 << std::endl;
