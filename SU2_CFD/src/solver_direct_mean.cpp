@@ -15772,10 +15772,12 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
 
   /*--- Solve for the stress anisotropy ---*/
-  
-  // hybrid_mediator->SetupStressAnisotropy();
-  // hybrid_aniso->CalculateViscAnisotropy();
-  // node[iPoint]->SetEddyViscAnisotropy(hybrid_aniso->GetStressAnisotropy());
+  if (config->isHybrid_Turb_Model()) {
+    HybridMediator->SetupStressAnisotropy(geometry, solver_container, hybrid_anisotropy, iPoint);
+    hybrid_anisotropy->CalculateViscAnisotropy();
+    node[iPoint]->SetEddyViscAnisotropy(hybrid_anisotropy->GetViscAnisotropy());
+    // The mediator doesn't need to set up the mean flow solver
+  }
 
   /*--- Error message ---*/
   

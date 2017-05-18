@@ -462,7 +462,6 @@ void CPoint::SetResolutionGradient(unsigned short iDim, unsigned short jDim,
                                    unsigned short kDim, su2double grad_value) {
   if (iDim < nDim && jDim < nDim && kDim < nDim)
     ResolutionTensorGradient[iDim][jDim][kDim] = grad_value;
-  // TODO: Add exception for out-of-bounds assignment.
 };
 
 su2double** CPoint::GetResolutionGradient(unsigned short iDim) {

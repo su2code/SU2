@@ -1242,6 +1242,8 @@ inline unsigned short CConfig::GetKind_Hybrid_Blending(void) { return Kind_Hybri
 
 inline unsigned short CConfig::GetKind_Hybrid_Anisotropy_Model(void) { return Kind_Hybrid_Aniso_Model; }
 
+inline su2double CConfig::Get_Hybrid_Model_Const(void) { return Hybrid_Model_Constant; }
+
 inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model; }
 
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }

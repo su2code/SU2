@@ -458,8 +458,9 @@ private:
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   bool Hybrid_Turb_Model;  /*!< \brief A k-based blending hybrid model will be used. */
-  unsigned short Kind_Hybrid_Blending; /*!< Hybrid RANS/LES blending definition */
-  unsigned short Kind_Hybrid_Aniso_Model; /*!< Hybrid RANS/LES subgrid anisotropy model definition */
+  unsigned short Kind_Hybrid_Blending; /*!< \brief Hybrid RANS/LES blending definition */
+  unsigned short Kind_Hybrid_Aniso_Model; /*!< \brief Hybrid RANS/LES subgrid anisotropy model definition */
+  su2double Hybrid_Model_Constant; /*!< \brief Model constant relating the approximate second order structure function to the unresolved turbulent kinetic energy */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
   Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
@@ -3286,6 +3287,12 @@ public:
    * \return Kind of subgrid anisotropy model.
    */
   unsigned short GetKind_Hybrid_Anisotropy_Model(void);
+
+  /*!
+   * \brief Get the hybrid RANS/LES model constant.
+   * \return The hybrid RANS/LES model constant.
+   */
+  su2double Get_Hybrid_Model_Const(void);
 
   /*!
    * \brief Get the kind of the turbulence model.

@@ -101,9 +101,8 @@ inline void CHybrid_Aniso_Q::SetResolutionAdequacy(su2double val_r_k) {
   resolution_adequacy = val_r_k;
 }
 
-CHybrid_Mediator::CHybrid_Mediator(int nDim) : nDim(nDim), C_sf(0.17) {
-  
-  //TODO: Get the Smagorinksy constant from the config file.
+CHybrid_Mediator::CHybrid_Mediator(int nDim, CConfig* config)
+ : nDim(nDim), C_F(config->Get_Hybrid_Model_Const()) {
 
   /*--- Allocate the approximate structure function (used in calcs) ---*/
 

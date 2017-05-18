@@ -752,7 +752,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   if (hybrid) {
     // Once more than one mediator exists, this will need to be changed to a
     // switch/case.
-    hybrid_mediator = new CHybrid_Mediator(nDim);
+    hybrid_mediator = new CHybrid_Mediator(nDim, config);
     // Hybrid anisotropy is created in the CNSSolver constructor
   }
 
@@ -912,7 +912,6 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
     if (config->isHybrid_Turb_Model()) hybrid = true;
-    // TODO: Incorporate hybrid solver here...
   }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
@@ -1122,7 +1121,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   wave             = false;   heat             = false;   fem        = false;
   spalart_allmaras = false; neg_spalart_allmaras = false;  menter_sst       = false;
-  hybrid           = false;  // FIXME: Hybrid not fully implemented
+  hybrid           = false;
   transition       = false;
   template_solver  = false;
   
@@ -1503,7 +1502,11 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       }
     }
 
-    // TODO: Check if visc_term is necessary
+    /* VISC_TERM is not necessary; it will be passed as a NULL pointer to a
+     * virtual function from CSolver that does nothing.  As long as
+     * Viscous_Residual is not implemented for the BlendingSolver, we do not
+     * need to set up a dummy viscous numerics class.
+     */
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -1898,7 +1901,6 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
     if (config->isHybrid_Turb_Model()) hybrid = true;
-    // TODO: Incorporate hybrid solver here...
   }
   
   /*--- Solver definition for the template problem ---*/

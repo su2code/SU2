@@ -254,7 +254,7 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
  protected:
 
   unsigned short nDim;
-  const su2double C_sf; /*!> \brief Smagorinksy constant */
+  const su2double C_F; /*!> \brief Model constant relating the structure function to the unresolved turbulent kinetic energy  */
   su2double **Q,
   **ResolutionTensor,
   **PrimVar_Grad_i,
@@ -284,8 +284,9 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   /**
    * \brief Constructor for the hybrid mediator object.
    * \param[in] nDim - The number of dimensions of the problem
+   * \param[in] CConfig - The configuration for the current zone
    */
-  CHybrid_Mediator(int nDim);
+  CHybrid_Mediator(int nDim, CConfig* config);
 
   /**
    * \brief Destructor for the hybrid mediator object.

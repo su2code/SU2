@@ -550,9 +550,7 @@ void CBlendingConvSolver::Source_Residual(CGeometry *geometry,
 
     /*--- Hybrid method ---*/
 
-    // A mediator switch/case will be necessary once more than one mediator exists
-    // FIXME: Properly integrate mediator
-    // hybrid_mediator->SetupBlendingNumerics(geometry, solver_container, numerics, iPoint);
+    HybridMediator->SetupBlendingNumerics(geometry, solver_container, numerics, iPoint, iPoint);
 
     /*--- Pass the gradient of the resolution tensor to the numerics ---*/
 
@@ -653,7 +651,7 @@ void CBlendingSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     /*--- Update and clip blending solution ---*/
 
     switch (config->GetKind_Hybrid_Blending()) {
-    // FIXME: Add switch
+    // FIXME: Update with Jacobian information
 
     }
   }
@@ -938,7 +936,6 @@ void CBlendingSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
 
   /*--- Skip turbulence variables ---*/
-  // XXX: This is clunky.  It should be CTurbSolver's job to give the nVar
   switch (config->GetKind_Turb_Model()) {
     case SST:
       skipVars += 2;
@@ -946,7 +943,6 @@ void CBlendingSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     case SA:
       skipVars += 1;
       break;
-    //TODO: Add in KE here...
   }
 
   /*--- The first line is the header ---*/
@@ -1287,10 +1283,9 @@ void CBlendingConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
 
   }
 
-  // FIXME: Implement mediator integration
   /*--- Use the hybrid mediator to set up the solver ---*/
 
-  // mediator->SetupBlendingSolver(geometry, solver_container, iPoint);
+  HybridMediator->SetupBlendingSolver(geometry, solver_container, iPoint);
 
   /*--- Initialize the Jacobian matrices ---*/
 
