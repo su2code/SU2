@@ -199,9 +199,11 @@ class CAbstract_Hybrid_Mediator {
    * \param[in] iPoint - The number of the node being evaluated
    * \param[in] jPoint - The number of the opposite node
    */
-  void SetupBlendingNumerics(CGeometry* geometry, CSolver **solver_container,
-                             CNumerics *blending_numerics,
-                             unsigned short iPoint, unsigned short jPoint);
+  virtual void SetupBlendingNumerics(CGeometry* geometry,
+                                     CSolver **solver_container,
+                                     CNumerics *blending_numerics,
+                                     unsigned short iPoint,
+                                     unsigned short jPoint) = 0;
 
   /**
    * \brief Retrieve and pass along all necessary info for the stress
