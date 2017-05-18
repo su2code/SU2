@@ -246,6 +246,8 @@ inline void CNumerics::SetGradResolutionTensor(su2double*** val_grad_tensor) {
     Resolution_Tensor_Gradient = val_grad_tensor;
 }
 
+inline void CNumerics::SetResolutionAdequacy(su2double val_r_k) { Resolution_Adequacy = val_r_k; }
+
 inline void CNumerics::SetIntermittency(su2double intermittency_in) { }
 
 inline void CNumerics::SetProduction(su2double val_production) { }

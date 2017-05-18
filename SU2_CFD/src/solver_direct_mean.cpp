@@ -15383,6 +15383,22 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     VelocityOutIs[iMarker]= 0.0;
   }
   
+  /*--- Setup hybridization ---*/
+
+  if (config->isHybrid_Turb_Model()) {
+    switch (config->GetKind_Hybrid_Anisotropy_Model()) {
+      case ISOTROPIC:
+        hybrid_anisotropy = new CHybrid_Isotropic_Stress(nDim);
+        break;
+      case Q_BASED:
+        hybrid_anisotropy = new CHybrid_Aniso_Q(nDim);
+        break;
+      default:
+        cout << "Error: Selected anisotropy model not initialized." << std::endl;
+        cout << "       At line " << __LINE__ << " of file " __FILE__ << std::endl;
+        exit(EXIT_FAILURE);
+    }
+  }
   
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
   
@@ -15754,6 +15770,11 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+
+  /*--- Solve for the stress anisotropy ---*/
+  // hybrid_mediator->SetupStressAnisotropy();
+  hybrid_anisotropy->CalculateStressAnisotropy();
+  node[iPoint]->SetEddyViscAnisotropy(hybrid_anisotropy->GetStressAnisotropyTensor());
 
   /*--- Error message ---*/
   

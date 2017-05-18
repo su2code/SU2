@@ -72,9 +72,6 @@ CBlendingConvVariable::CBlendingConvVariable(su2double val_blending_coef,
     /*--- Initialization of blending coefficient ---*/
     Solution[0] = val_blending_coef;    Solution_Old[0] = val_blending_coef;
 
-    /*--- Initialization of the eddy viscosity ---*/
-    alpha = val_blending_coef;
-
     /*--- Allocate and initialize solution for the dual time strategy ---*/
     if (dual_time) {
       Solution_time_n[0]  = val_blending_coef;

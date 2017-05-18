@@ -33,6 +33,8 @@
 
 #pragma once
 
+#include "../include/numerics_structure.hpp"
+#include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/mpi_structure.hpp"
 
 #include <stdio.h>
@@ -44,8 +46,8 @@
 #include "stdio.h"
 #include "math.h"
 
-#include "../include/numerics_structure.hpp"
-#include "../include/solver_structure.hpp"
+// Forward declarations to resolve circular dependencies
+class CSolver;
 
 using namespace std;
 
@@ -66,13 +68,12 @@ class CHybrid_SGS_Anisotropy{
    * \brief Default constructor for base class
    * \param[in] nDim - Number of dimensions of the problem (e.g. 2D or 3D)
    */
-  CHybrid_SGS_Anisotropy(unsigned short nDim) : nDim(nDim) {
-  };
+  CHybrid_SGS_Anisotropy(unsigned short nDim);
 
   /**
-   * \brief a virtual destructor
+   * \brief Base class destructor
    */
-  virtual ~CHybrid_SGS_Anisotropy();
+  ~CHybrid_SGS_Anisotropy();
 
   /**
    * \brief Tells the hybrid model to calculate the turbulent stress anisotropy.
@@ -81,14 +82,15 @@ class CHybrid_SGS_Anisotropy{
 
   /**
    * \brief Retrieves the turbulent stress anisotropy tensor.
-   * @return The turbulent stress anisotropy.
+   * \return The turbulent stress anisotropy.
    */
-  virtual su2double** GetStressAnisotropyTensor();
-};
+  su2double** GetStressAnisotropyTensor();
 
-su2double** CHybrid_SGS_Anisotropy::GetStressAnisotropyTensor() {
-  return stress_anisotropy_tensor;
-}
+  // FIXME: These defy the Liskov substitution principle
+
+  virtual void SetApproxStructFunc(su2double** val_approx_struct_func) = 0;
+  virtual void SetResolutionAdequacy(su2double val_r_k) = 0;
+};
 
 /*!
  * \class CHybrid_Isotropic_Stress
@@ -106,6 +108,9 @@ class CHybrid_Isotropic_Stress : public CHybrid_SGS_Anisotropy {
    * \brief Tells the hybrid model to calculate the turbulent stress anisotropy.
    */
   void CalculateStressAnisotropy();
+  
+  void SetApproxStructFunc(su2double** val_approx_struct_func) {}
+  void SetResolutionAdequacy(su2double val_r_k) {}
 };
 
 /*!
@@ -119,10 +124,13 @@ class CHybrid_Aniso_Q : public CHybrid_SGS_Anisotropy {
  protected:
   su2double** Qstar;
   su2double   Qstar_norm;
-  su2double   w, r_k;
+  su2double   resolution_adequacy;
+  su2double CalculateIsotropyWeight(su2double r_k);
  public:
+  CHybrid_Aniso_Q(unsigned short nDim);
+  
   void SetApproxStructFunc(su2double** val_approx_struct_func);
-  void SetAnisotropyWeight(su2double val_aniso_weight);
+  void SetResolutionAdequacy(su2double val_r_k);
 
   /**
    * \brief Tells the hybrid model to calculate the turbulent stress anisotropy.
@@ -230,8 +238,7 @@ class CHybrid_Mediator {
 
   unsigned short nDim;
   const su2double C_sf; /*!> \brief Smagorinksy constant */
-  su2double **Q_,
-  **Qstar_,
+  su2double **Q,
   **ResolutionTensor,
   **PrimVar_Grad_i,
   **PrimVar_Grad_j;
@@ -239,28 +246,21 @@ class CHybrid_Mediator {
 
   /*!
    * \brief Calculates the resolution inadequacy parameter
-   * @param Q - The approximate 2nd order structure function
-   * @param v2 - The v2 value from Durbin's k-eps-v2-f model
+   * \param Q - The approximate 2nd order structure function
+   * \param v2 - The v2 value from Durbin's k-eps-v2-f model
    * @return The resolution inadequacy parameter
    */
   su2double CalculateRk(su2double** Q, su2double v2);
 
   /*!
    * \brief Calculates the approximate 2nd order structure function tensor, Qij
-   * @param[in] ResolutionTensor - The resolution (metric) tensor
-   * @param[in] PrimVar_Grad - Gradients of the primitive flow variables
-   * @param[out] Q - The approximate 2nd order structure function tensor
+   * \param[in] ResolutionTensor - The resolution (metric) tensor
+   * \param[in] PrimVar_Grad - Gradients of the primitive flow variables
+   * \param[out] Q - The approximate 2nd order structure function tensor
    */
   void CalculateApproxStructFunc(su2double** ResolutionTensor,
                                  su2double** PrimVar_Grad,
                                  su2double** Q);
-
-  /*!
-   * \brief Calculates the anisotropy weight for the eddy viscosity tensor
-   * @param[in] r_k - The resolution inadequacy parameter
-   * @return The anisotropy weight for the eddy viscosity tensor
-   */
-  su2double CalculateAnisotropyWeight(su2double r_k);
 
  public:
 
@@ -292,9 +292,9 @@ class CHybrid_Mediator {
   /**
    * \brief The blending solver needs the resolution adequacy parameter, which
    *        is dependent on RANS results.
-   * @param geometry - A pointer to the geometry
-   * @param solver_container - An array of solvers
-   * @param iPoint - The node being evaluated
+   * \param geometry - A pointer to the geometry
+   * \param solver_container - An array of solvers
+   * \param iPoint - The node being evaluated
    */
   void SetupBlendingSolver(CGeometry* geometry, CSolver **solver_container,
                            unsigned short iPoint);
@@ -302,9 +302,9 @@ class CHybrid_Mediator {
   /**
    * \brief The blending numerics need the turbulence length and timescales as
    *        well as the resolution adequacy parameter.
-   * @param geometry - A pointer to the geometry
-   * @param solver_container - An array of solvers
-   * @param iPoint - The node being evaluated
+   * \param geometry - A pointer to the geometry
+   * \param solver_container - An array of solvers
+   * \param iPoint - The node being evaluated
    */
   void SetupBlendingNumerics(CGeometry* geometry, CSolver **solver_container,
                              CNumerics *blending_numerics,
@@ -313,20 +313,21 @@ class CHybrid_Mediator {
   /**
    * \brief The turbulent stress anisotropy needs the weighting factor and the
    *        second order structure function.
-   * @param geometry - A pointer to the geometry
-   * @param solver_container - An array of solvers
-   * @param iPoint - The node being evaluated
+   * \param geometry - A pointer to the geometry
+   * \param solver_container - An array of solvers
+   * \param iPoint - The node being evaluated
    */
   void SetupStressAnisotropy(CGeometry* geometry,
                              CSolver **solver_container,
+                             CHybrid_SGS_Anisotropy* hybrid_anisotropy,
                              unsigned short iPoint);
 
   /**
    * \brief The resolved flow needs the blending coefficient (the energy flow
    *        parameter) and the turbulent stress anisotropy tensor.
-   * @param geometry - A pointer to the geometry
-   * @param solver_container - An array of solvers
-   * @param iPoint - The node being evaluated
+   * \param geometry - A pointer to the geometry
+   * \param solver_container - An array of solvers
+   * \param iPoint - The node being evaluated
    */
   void SetupMeanFlow(CGeometry* geometry,
                      CSolver **solver_container,

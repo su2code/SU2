@@ -832,6 +832,12 @@ public:
    */
   virtual su2double GetEddyViscosity(void);
   
+  /**
+   * \brief A virtual member
+   * \return The normalized anisotropy tensor for the eddy viscosity.
+   */
+  virtual su2double** GetEddyViscAnisotropy(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of turbulent timescale
@@ -843,6 +849,12 @@ public:
    * \return Value of the turbulent lengthscale
    */
   virtual su2double GetTurbLengthscale(void);
+
+  /**
+   * \brief Get the resolution adequacy parameter for a hybrid RANS/LES model
+   * \return The resolution adequacy parameter
+   */
+  virtual su2double GetResolutionAdequacy(void);
 
   /*!
    * \brief A virtual member.
@@ -1017,6 +1029,12 @@ public:
    */
   virtual void SetEddyViscosity(su2double eddy_visc);
   
+  /**
+   * \brief A virtual member
+   * \param eddy_visc_anisotropy - The normalized anisotropy tensor for the eddy viscosity
+   */
+  virtual void SetEddyViscAnisotropy(su2double** eddy_visc_anisotropy);
+
   /*!
    * \brief A virtual member.
    * \param[in] val_turb_T - The turbulent timescale
@@ -1691,18 +1709,6 @@ public:
    */
   virtual void SetmuT(su2double val_muT);
   
-  /*!
-   * \brief Get the value of the eddy viscosity.
-   * \return Blending coefficient
-   */
-  virtual su2double GetBlendingCoef(void) {return 1;}
-
-  /*!
-   * \brief Set the value of the hybrid RANS/LES blending.
-   * \param[in] Blending coefficient
-   */
-  virtual void SetBlendingCoef(su2double val_blending_coef) {}
-
   /*!
    * \brief Add a value to the maximum eigenvalue for the inviscid terms of the PDE.
    * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.
@@ -3331,6 +3337,7 @@ private:
   su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  su2double** Eddy_Visc_Anisotropy; /*!< \brief Anisotropy of the eddy viscosity */
 public:
   
   /*!
@@ -3396,6 +3403,11 @@ public:
   void SetEddyViscosity(su2double eddy_visc);
   
   /*!
+   * \brief Sets the normalized anisotropy of the eddy viscosity
+   */
+  void SetEddyViscAnisotropy(su2double** val_anisotropy);
+  
+  /*!
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
@@ -3413,6 +3425,11 @@ public:
    */
   su2double GetEddyViscosity(void);
   
+  /*!
+   * \brief Get the normalized anisotropy of the eddy viscosity
+   */
+  su2double** GetEddyViscAnisotropy();
+
   /*!
    * \brief Get the specific heat at constant P of the flow.
    * \return Value of the specific heat at constant P  of the flow.
@@ -3843,7 +3860,7 @@ public:
  */
 class CBlendingVariable : public CVariable {
 protected:
-  su2double alpha; /*! < \brief The blending coefficient. */
+  su2double resolution_adequacy; /*!< \brief A measure of the ability of the grid to resolve the turbulence */
 public:
   /*!
    * \brief Constructor of the class.
@@ -3868,13 +3885,13 @@ public:
    * \brief Get the value of the blending coefficient.
    * \return the value of the eddy viscosity.
    */
-  su2double GetBlendingCoef();
+  su2double GetResolutionAdequacy();
 
   /*!
    * \brief Set the value of the blending coefficient.
    * \param[in] val_muT - Value of the eddy viscosity.
    */
-  void SetBlendingCoef(su2double val_blending_coef);
+  void SetResolutionAdequacy(su2double val_r_k);
 };
 
 /*!

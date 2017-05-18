@@ -48,6 +48,7 @@
 #include <stdio.h>
 
 #include "fluid_model.hpp"
+#include "hybrid_RANS_LES_model.hpp"
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
 #include "../../Common/include/gauss_structure.hpp"
@@ -7362,6 +7363,7 @@ private:
   AllBound_HF_Visc,    /*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHF_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
+  CHybrid_SGS_Anisotropy* hybrid_anisotropy; /*!< \brief A model for the eddy viscosity anisotropy */
   
 public:
   

@@ -1308,21 +1308,7 @@ void CBlendingConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
 }
 
 void CBlendingConvSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  unsigned long iPoint;
-  su2double alpha;
-
-  /*--- Compute eddy viscosity ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    //FIXME: Get alpha
-
-    node[iPoint]->SetBlendingCoef(alpha);
-
-  }
-
 }
-
 
 void CBlendingConvSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex;

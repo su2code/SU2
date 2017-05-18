@@ -32,6 +32,28 @@
  */
 
 #include "../include/hybrid_RANS_LES_model.hpp"
+#include "../include/numerics_structure.hpp"
+#include "../include/solver_structure.hpp"
+
+CHybrid_SGS_Anisotropy::CHybrid_SGS_Anisotropy(unsigned short nDim)
+    : nDim(nDim) {
+  stress_anisotropy_tensor = new su2double*[nDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    stress_anisotropy_tensor[iDim] = new su2double[nDim];
+    for (unsigned short jDim = 0; jDim < nDim; jDim++)
+      stress_anisotropy_tensor[iDim][jDim] = 0.0;
+  }
+}
+
+CHybrid_SGS_Anisotropy::~CHybrid_SGS_Anisotropy() {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    delete [] stress_anisotropy_tensor[iDim];
+  delete [] stress_anisotropy_tensor;
+}
+
+su2double** CHybrid_SGS_Anisotropy::GetStressAnisotropyTensor() {
+  return stress_anisotropy_tensor;
+}
 
 CHybrid_Isotropic_Stress::CHybrid_Isotropic_Stress(unsigned short nDim)
 : CHybrid_SGS_Anisotropy(nDim) {
@@ -47,23 +69,36 @@ CHybrid_Isotropic_Stress::CHybrid_Isotropic_Stress(unsigned short nDim)
 void CHybrid_Isotropic_Stress::CalculateStressAnisotropy() {
 };
 
+CHybrid_Aniso_Q::CHybrid_Aniso_Q(unsigned short nDim)
+  : CHybrid_SGS_Anisotropy(nDim) {
+}
+
 void CHybrid_Aniso_Q::CalculateStressAnisotropy() {
+  su2double w_RANS = CalculateIsotropyWeight(resolution_adequacy);
+
+  // FIXME: How to get Qstar_norm?
+  Qstar_norm = Qstar[0][0] + Qstar[1][1] + Qstar[2][2];
+
   unsigned short iDim, jDim;
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
-      stress_anisotropy_tensor[iDim][jDim] = w*double(iDim == jDim);
-      stress_anisotropy_tensor[iDim][jDim] += (1.0-w)*sqrt(3)*
+      stress_anisotropy_tensor[iDim][jDim] = w_RANS*double(iDim == jDim);
+      stress_anisotropy_tensor[iDim][jDim] += (1.0-w_RANS)*sqrt(3)*
           Qstar[iDim][jDim]/Qstar_norm;
     }
   }
+}
+
+inline su2double CHybrid_Aniso_Q::CalculateIsotropyWeight(su2double r_k) {
+  return 1.0 - fmin(1.0/r_k, 1.0);
 }
 
 inline void CHybrid_Aniso_Q::SetApproxStructFunc(su2double** val_approx_struct_func) {
   Qstar = val_approx_struct_func;
 }
 
-inline void CHybrid_Aniso_Q::SetAnisotropyWeight(su2double val_aniso_weight) {
-  w = val_aniso_weight;
+inline void CHybrid_Aniso_Q::SetResolutionAdequacy(su2double val_r_k) {
+  resolution_adequacy = val_r_k;
 }
 
 su2double** CHybrid_Aniso_Q::GetStressAnisotropyTensor() {
@@ -73,12 +108,19 @@ su2double** CHybrid_Aniso_Q::GetStressAnisotropyTensor() {
 CHybrid_Mediator::CHybrid_Mediator(int nDim,
                                    CHybrid_Aniso_Q* hybrid_anisotropy)
 : nDim(nDim), hybrid_anisotropy(hybrid_anisotropy), C_sf(0.17) {
-
+  
   //TODO: Get the Smagorinksy constant from the config file.
+
+  /*--- Allocate the approximate structure function (used in calcs) ---*/
+  Q = new su2double*[nDim];
+  for (unsigned int iDim = 0; iDim < nDim; iDim++)
+    Q[iDim] = new su2double[nDim];
 }
 
 CHybrid_Mediator::~CHybrid_Mediator() {
-
+  for (unsigned int iDim = 0; iDim < nDim; iDim++)
+    delete [] Q[iDim];
+  delete [] Q;
 }
 
 void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
@@ -103,8 +145,8 @@ void CHybrid_Mediator::SetupBlendingSolver(CGeometry* geometry,
       solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
   su2double v2_ = solver_container[TURB_SOL]->node[iPoint]->GetPrimitive(2);
 
-  CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Q_);
-  su2double r_k = CalculateRk(Q_, v2_);
+  CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Q);
+  su2double r_k = CalculateRk(Q, v2_);
   solver_container[BLEND_SOL]->node[iPoint]->SetResolutionAdequacy(r_k);
 }
 
@@ -141,8 +183,22 @@ void CHybrid_Mediator::SetupBlendingNumerics(CGeometry* geometry,
 
 void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
                                              CSolver **solver_container,
+                                             CHybrid_SGS_Anisotropy* hybrid_anisotropy,
                                              unsigned short iPoint) {
 
+  /*--- Find Approximate Structure Function ---*/
+
+  // FIXME: Difference between Q* and Q?
+  su2double** ResolutionTensor = geometry->node[iPoint]->GetResolutionTensor();
+  su2double** PrimVar_Grad =
+        solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+  CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Q);
+  hybrid_anisotropy->SetApproxStructFunc(Q);
+
+  /*--- Retrieve and pass along the resolution adequacy parameter ---*/
+
+  su2double r_k = solver_container[BLEND_SOL]->node[iPoint]->GetResolutionAdequacy();
+  hybrid_anisotropy->SetResolutionAdequacy(r_k);
 }
 
 void CHybrid_Mediator::SetupMeanFlow(CGeometry* geometry,
@@ -189,10 +245,3 @@ void CHybrid_Mediator::CalculateApproxStructFunc(su2double** ResolutionTensor,
             PrimVar_Grad[lDim+1][kDim]*
             ResolutionTensor[lDim][jDim];
 }
-
-su2double CHybrid_Mediator::CalculateAnisotropyWeight(su2double r_k) {
-  return 1.0 - fmin(1.0/r_k, 1.0);
-}
-
-
-
