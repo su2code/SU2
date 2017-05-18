@@ -51,7 +51,7 @@ CHybrid_SGS_Anisotropy::~CHybrid_SGS_Anisotropy() {
   delete [] stress_anisotropy_tensor;
 }
 
-su2double** CHybrid_SGS_Anisotropy::GetStressAnisotropyTensor() {
+su2double** CHybrid_SGS_Anisotropy::GetStressAnisotropy() {
   return stress_anisotropy_tensor;
 }
 
@@ -99,10 +99,6 @@ inline void CHybrid_Aniso_Q::SetApproxStructFunc(su2double** val_approx_struct_f
 
 inline void CHybrid_Aniso_Q::SetResolutionAdequacy(su2double val_r_k) {
   resolution_adequacy = val_r_k;
-}
-
-su2double** CHybrid_Aniso_Q::GetStressAnisotropyTensor() {
-  return stress_anisotropy_tensor;
 }
 
 CHybrid_Mediator::CHybrid_Mediator(int nDim,
@@ -201,11 +197,11 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
   hybrid_anisotropy->SetResolutionAdequacy(r_k);
 }
 
-void CHybrid_Mediator::SetupMeanFlow(CGeometry* geometry,
-                                     CSolver **solver_container,
-                                     CNumerics* visc_numerics,
-                                     unsigned short iPoint,
-                                     unsigned short jPoint) {
+void CHybrid_Mediator::SetupMeanFlowNumerics(CGeometry* geometry,
+                                             CSolver **solver_container,
+                                             CNumerics* visc_numerics,
+                                             unsigned short iPoint,
+                                             unsigned short jPoint) {
 
   /*--- Pass alpha to the mean flow ---*/
 
@@ -215,9 +211,8 @@ void CHybrid_Mediator::SetupMeanFlow(CGeometry* geometry,
 
   /*--- Pass the stress anisotropy tensor to the mean flow ---*/
 
-  // FIXME: Get anisotropy from anisotropy model
-  su2double** aniso_i;
-  su2double** aniso_j;
+  su2double** aniso_i = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscAnisotropy();
+  su2double** aniso_j = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscAnisotropy();
   visc_numerics->SetEddyViscAnisotropy(aniso_i, aniso_j);
 }
 

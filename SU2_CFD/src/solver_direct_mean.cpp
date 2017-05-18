@@ -15772,9 +15772,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
 
   /*--- Solve for the stress anisotropy ---*/
+  
   // hybrid_mediator->SetupStressAnisotropy();
-  hybrid_anisotropy->CalculateStressAnisotropy();
-  node[iPoint]->SetEddyViscAnisotropy(hybrid_anisotropy->GetStressAnisotropyTensor());
+  // hybrid_aniso->CalculateStressAnisotropy();
+  // node[iPoint]->SetEddyViscAnisotropy(hybrid_aniso->GetStressAnisotropy());
 
   /*--- Error message ---*/
   

@@ -84,7 +84,7 @@ class CHybrid_SGS_Anisotropy{
    * \brief Retrieves the turbulent stress anisotropy tensor.
    * \return The turbulent stress anisotropy.
    */
-  su2double** GetStressAnisotropyTensor();
+  su2double** GetStressAnisotropy();
 
   // FIXME: These defy the Liskov substitution principle
 
@@ -136,12 +136,6 @@ class CHybrid_Aniso_Q : public CHybrid_SGS_Anisotropy {
    * \brief Tells the hybrid model to calculate the turbulent stress anisotropy.
    */
   void CalculateStressAnisotropy();
-
-  /**
-   * \brief Retrieves the turbulent stress anisotropy tensor.
-   * \return The turbulent stress anisotropy.
-   */
-  su2double** GetStressAnisotropyTensor();
 };
 
 
@@ -205,13 +199,13 @@ class CAbstract_Hybrid_Mediator {
                                      unsigned short iPoint) = 0;
 
   /**
-   * \brief Retrieve and pass along all necessary info for the resolved flow.
+   * \brief Retrieve and pass along all necessary info for the mean numerics.
    */
-  virtual void SetupMeanFlow(CGeometry* geometry,
-                             CSolver **solver_container,
-                             CNumerics* visc_numerics,
-                             unsigned short iPoint,
-                             unsigned short jPoint) = 0;
+  virtual void SetupMeanFlowNumerics(CGeometry* geometry,
+                                     CSolver **solver_container,
+                                     CNumerics* visc_numerics,
+                                     unsigned short iPoint,
+                                     unsigned short jPoint) = 0;
 };
 
 
@@ -284,6 +278,8 @@ class CHybrid_Mediator {
    * \brief RANS needs the blending coefficient (the energy flow parameter).
    *
    * This function sets the blending coefficient from the previous timestep.
+   * \param iPoint - The number of the node being evaluated
+   * \param jPoint - The number of the opposite node
    */
   void SetupRANSNumerics(CGeometry* geometry, CSolver **solver_container,
                          CNumerics* rans_numerics,
@@ -304,7 +300,8 @@ class CHybrid_Mediator {
    *        well as the resolution adequacy parameter.
    * \param geometry - A pointer to the geometry
    * \param solver_container - An array of solvers
-   * \param iPoint - The node being evaluated
+   * \param iPoint - The number of the node being evaluated
+   * \param jPoint - The number of the opposite node
    */
   void SetupBlendingNumerics(CGeometry* geometry, CSolver **solver_container,
                              CNumerics *blending_numerics,
@@ -327,11 +324,12 @@ class CHybrid_Mediator {
    *        parameter) and the turbulent stress anisotropy tensor.
    * \param geometry - A pointer to the geometry
    * \param solver_container - An array of solvers
-   * \param iPoint - The node being evaluated
+   * \param iPoint - The number of the node being evaluated
+   * \param jPoint - The number of the opposite node
    */
-  void SetupMeanFlow(CGeometry* geometry,
-                     CSolver **solver_container,
-                     CNumerics* visc_numerics,
-                     unsigned short iPoint,
-                     unsigned short jPoint);
+  void SetupMeanFlowNumerics(CGeometry* geometry,
+                             CSolver **solver_container,
+                             CNumerics* visc_numerics,
+                             unsigned short iPoint,
+                             unsigned short jPoint);
 };
