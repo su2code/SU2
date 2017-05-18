@@ -101,13 +101,12 @@ inline void CHybrid_Aniso_Q::SetResolutionAdequacy(su2double val_r_k) {
   resolution_adequacy = val_r_k;
 }
 
-CHybrid_Mediator::CHybrid_Mediator(int nDim,
-                                   CHybrid_Aniso_Q* hybrid_anisotropy)
-: nDim(nDim), hybrid_anisotropy(hybrid_anisotropy), C_sf(0.17) {
+CHybrid_Mediator::CHybrid_Mediator(int nDim) : nDim(nDim), C_sf(0.17) {
   
   //TODO: Get the Smagorinksy constant from the config file.
 
   /*--- Allocate the approximate structure function (used in calcs) ---*/
+
   Q = new su2double*[nDim];
   for (unsigned int iDim = 0; iDim < nDim; iDim++)
     Q[iDim] = new su2double[nDim];
@@ -125,7 +124,7 @@ void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
                                          unsigned short iPoint,
                                          unsigned short jPoint) {
   su2double* alpha =
-      solver_container[BLEND_SOL]->node[iPoint]->GetPrimitive();
+      solver_container[BLEND_SOL]->node[iPoint]->GetSolution();
   // TODO: Check what other source term functions do for Set/Get
   rans_numerics->SetBlendingCoef(alpha, alpha);
 }

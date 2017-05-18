@@ -745,9 +745,17 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
     if (config->isHybrid_Turb_Model()) hybrid = true;
-    // TODO: Incorporate hybrid solver here...
   }
+ 
+  /*--- Creation of the hybrid mediator class ---*/
   
+  if (hybrid) {
+    // Once more than one mediator exists, this will need to be changed to a
+    // switch/case.
+    hybrid_mediator = new CHybrid_Mediator(nDim);
+    // Hybrid anisotropy is created in the CNSSolver constructor
+  }
+
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
   
@@ -774,6 +782,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (ns) {
       if (compressible) {
         solver_container[iMGlevel][FLOW_SOL] = new CNSSolver(geometry[iMGlevel], config, iMGlevel);
+        if (hybrid) solver_container[iMGlevel][FLOW_SOL]->AddHybridMediator(hybrid_mediator);
       }
       if (incompressible) {
         solver_container[iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[iMGlevel], config, iMGlevel);
@@ -782,23 +791,24 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (turbulent) {
       if (spalart_allmaras) {
         solver_container[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
       }
       else if (neg_spalart_allmaras) {
         solver_container[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
       }
       else if (menter_sst) {
         solver_container[iMGlevel][TURB_SOL] = new CTurbSSTSolver(geometry[iMGlevel], config, iMGlevel);
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
       }
+
+      if (hybrid) solver_container[iMGlevel][TURB_SOL]->AddHybridMediator(hybrid_mediator);
+      solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
+
       if (hybrid) {
         switch (config->GetKind_Hybrid_Blending()) {
           case CONVECTIVE:
             solver_container[iMGlevel][BLEND_SOL] = new CBlendingConvSolver(geometry[iMGlevel], config, iMGlevel);
+            solver_container[iMGlevel][BLEND_SOL]->AddHybridMediator(hybrid_mediator);
+            solver_container[iMGlevel][BLEND_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
             break;
         }
       }

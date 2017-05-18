@@ -161,7 +161,7 @@ class CAbstract_Hybrid_Mediator {
   /*!
    * \brief A virtual destructor.
    */
-  virtual ~CAbstract_Hybrid_Mediator();
+  virtual ~CAbstract_Hybrid_Mediator() {};
 
   /**
    * \brief Retrieve and pass along all necessary info for the RANS model.
@@ -169,7 +169,8 @@ class CAbstract_Hybrid_Mediator {
   virtual void SetupRANSNumerics(CGeometry* geometry,
                                  CSolver **solver_container,
                                  CNumerics* rans_numerics,
-                                 unsigned short iPoint, unsigned short jPoint);
+                                 unsigned short iPoint,
+                                 unsigned short jPoint) = 0;
 
   /**
    * \brief Retrieve and pass along all necessary info for the blending.
@@ -196,6 +197,7 @@ class CAbstract_Hybrid_Mediator {
    */
   virtual void SetupStressAnisotropy(CGeometry* geometry,
                                      CSolver **solver_container,
+                                     CHybrid_SGS_Anisotropy* hybrid_anisotropy,
                                      unsigned short iPoint) = 0;
 
   /**
@@ -225,7 +227,7 @@ class CAbstract_Hybrid_Mediator {
  * \author: C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CHybrid_Mediator {
+class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
  protected:
   /*--- Pointers to the connected numerical objects ---*/
   CHybrid_Aniso_Q* hybrid_anisotropy;
@@ -262,7 +264,7 @@ class CHybrid_Mediator {
    * \brief Constructor for the hybrid mediator object.
    * \param[in] nDim - The number of dimensions of the problem
    */
-  CHybrid_Mediator(int nDim, CHybrid_Aniso_Q* hybrid_anisotropy);
+  CHybrid_Mediator(int nDim);
 
   /**
    * \brief Destructor for the hybrid mediator object.

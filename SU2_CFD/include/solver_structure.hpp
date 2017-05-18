@@ -3547,6 +3547,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief A virtual member
+   * \param[in] hybrid_mediator - The mediator object for the hybrid model.
+   */
+  virtual void AddHybridMediator(CAbstract_Hybrid_Mediator* hybrid_mediator);
 };
 
 /*!
@@ -7364,7 +7370,8 @@ private:
   AllBound_MaxHF_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
   CHybrid_SGS_Anisotropy* hybrid_anisotropy; /*!< \brief A model for the eddy viscosity anisotropy */
-  
+  CAbstract_Hybrid_Mediator *HybridMediator; /*!< \brief A mediator object for a hybrid RANS/LES model. */
+
 public:
   
   /*!
@@ -7705,6 +7712,12 @@ public:
    */
   void SetOmega_Max(su2double val_omega_max);
   
+
+  /*!
+   * \brief Add a hybrid mediator object to manage the RANS/LES hybrid model
+   * \param[in] hybrid_mediator - The mediator object
+   */
+  void AddHybridMediator(CAbstract_Hybrid_Mediator *hybrid_mediator);
 };
 
 /*!
@@ -8096,7 +8109,8 @@ protected:
   *upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
-  
+  CAbstract_Hybrid_Mediator *HybridMediator; /*!< \brief A mediator object for a hybrid RANS/LES model. */
+
 public:
   
   /*!
@@ -8216,7 +8230,12 @@ public:
    * \param[in] val_iter - Current external iteration number.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
-  
+
+  /*!
+   * \brief Add a hybrid mediator object to manage the RANS/LES hybrid model
+   * \param[in] hybrid_mediator - The mediator object
+   */
+  void AddHybridMediator(CAbstract_Hybrid_Mediator *hybrid_mediator);
 };
 
 /*!
@@ -8787,6 +8806,7 @@ class CBlendingSolver: public CSolver {
  protected:
    su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
    *FlowPrimVar_j;         /*!< \brief Store the flow solution at point j. */
+  CAbstract_Hybrid_Mediator *HybridMediator; /*!< \brief A mediator object for a hybrid RANS/LES model. */
 
  public:
 
@@ -8895,6 +8915,12 @@ class CBlendingSolver: public CSolver {
     * \param[in] val_iter - Current external iteration number.
     */
    void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+
+   /*!
+   * \brief Add a hybrid mediator object to manage the RANS/LES hybrid model
+   * \param[in] hybrid_mediator - The mediator object
+   */
+  void AddHybridMediator(CAbstract_Hybrid_Mediator *hybrid_mediator);
 };
 
 
