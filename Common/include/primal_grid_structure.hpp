@@ -65,6 +65,7 @@ protected:
                                  correspond with a boundary element is stored. */
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
                                  in the adaptation proccess. */
+  unsigned short nDivide;        /*!< \brief If we divide this element, this tells how many times it has to be divided */
   su2double Volume;    /*!< \brief Volume of the element. */
 
 public:
@@ -146,6 +147,18 @@ public:
 	 * \param[in] val_divide - <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
 	 */
 	void SetDivide(bool val_divide);
+  
+	/*!
+	 * \brief Set how many times an element must be divided in the adaptation stage.
+	 * \param[in] val_ndivide - number of times the element must be divided
+	 */
+	void SetnDivide(int val_ndivide);
+  
+	/*!
+	 * \brief Get the numer of times an element must be divided in the adaptation stage.
+	 * \return Number of times an element must be divided in the adaptation stage.
+	 */
+	unsigned short GetnDivide(void);
   
 	/*!
 	 * \brief Get if an element must be divided in the adaptation stage.

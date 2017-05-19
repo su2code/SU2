@@ -328,6 +328,567 @@ void CGridAdaptation::SetNo_Refinement(CGeometry *geometry, unsigned short stren
 	}
 }
 
+void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **config, CPhysicalGeometry **geo_adapt) {
+	
+  // Limited to triangle and tetrahedra
+  
+  unsigned long iElem, jElem, iBoundElem, iMarker, iPoint, iZone, nZone, iDim, iVertex, ElementIndex;
+  unsigned long nVertexDonor, nVertexTarget, iDonor, iTarget;
+  unsigned long DonorClosestNode, target_iPoint, donor_iPoint, dPoint, pPoint;
+  unsigned long iEdge, jEdge, nEdges, EdgeIndex, ip_0, ip_1, ip_2, ip_3, iBound;
+  
+  unsigned long *gridPoints2Add;
+  
+  su2double *Coord_i, *Coord_j, *P1, *P2, *P3;
+  su2double mindist, dist, m;
+
+  int rank = MASTER_NODE;
+  unsigned short donorZone, targetZone;
+
+  unsigned short nMarkerTarget, iMarkerTarget, nMarkerDonor, iMarkerDonor;
+
+  int markDonor, markTarget, Donor_check, Target_check, iMarkerInt, nMarkerInt, iTmp;
+
+#ifdef HAVE_MPI
+  int *Buffer_Recv_mark = NULL, iRank, nProcessor = 1;;
+
+  MPI_Comm_rank(config[ZONE_0]->GetMPICommunicator(), &rank);
+  MPI_Comm_size(config[ZONE_0]->GetMPICommunicator(), &nProcessor);
+
+  if (rank == MASTER_NODE)
+  Buffer_Recv_mark = new int[nProcessor];
+#endif
+
+  nDim = geometry[ZONE_0]->GetnDim();
+  nZone = config[ZONE_0]->GetnZone();
+  
+  gridPoints2Add = new unsigned long[nZone];
+  
+  for(iZone = 0; iZone < nZone; iZone++){
+    for (iElem = 0; iElem < geometry[iZone]->GetnElem(); iElem ++){
+      geometry[iZone]->elem[iElem]->SetDivide (false);
+      geometry[iZone]->elem[iElem]->SetnDivide(0);
+    }
+    gridPoints2Add[iZone] = 0;
+  }
+  
+  for (targetZone = 0; targetZone < nZone; targetZone++) {
+
+    for (donorZone = 0; donorZone < nZone; donorZone++) {
+
+      if ( donorZone == targetZone ) // We're processing the same zone, so skip the following
+        continue;
+
+      nMarkerInt = (int) ( config[donorZone]->GetMarker_n_ZoneInterface() / 2 );
+
+      /*--- Loops on Interface markers to find if the 2 zones are sharing the boundary and to determine donor and target marker tag ---*/
+      for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+
+        markDonor  = -1;
+        markTarget = -1;
+
+        /*--- On the donor side ---*/
+        nMarkerDonor = config[donorZone]->GetnMarker_All();
+
+        for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
+
+          /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
+          if ( config[donorZone]->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
+            /*--- We have identified the identifier for the interface marker ---*/
+            markDonor = iMarkerDonor;
+
+            break;
+          }
+        }
+
+        /*--- On the target side ---*/
+        nMarkerTarget = config[targetZone]->GetnMarker_All();
+
+        for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
+
+          /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
+          if ( config[targetZone]->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
+            /*--- We have identified the identifier for the interface marker ---*/
+            markTarget = iMarkerTarget;
+
+            break;
+          } 
+        }
+
+        Donor_check  = markDonor;
+        Target_check = markTarget;
+        
+        //cout << Donor_check << "  " << Target_check << endl; getchar();
+
+        /* --- Check if zones are actually sharing the interface boundary, if not skip ---*/        
+        if(Target_check == -1 || Donor_check == -1)
+          continue;
+
+        gridPoints2Add[donorZone] += geometry[targetZone]->GetnVertex( markTarget );
+      }
+    }
+  }
+  
+  for(iZone = 0; iZone < nZone; iZone++){
+    
+
+
+	  geo_adapt[iZone]->SetnPointDomain(geometry[iZone]->GetnPoint() ); // This is going to be used as a counter later
+    geo_adapt[iZone]->SetnPoint(      geometry[iZone]->GetnPoint() ); // This is going to be used as a counter later
+	  geo_adapt[iZone]->SetnDim(nDim);
+    geo_adapt[iZone]->node = new CPoint*[ geometry[iZone]->GetnPoint() + gridPoints2Add[iZone] ];
+	
+    if(nDim == 2){ // 2D
+      
+	    for (iPoint = 0; iPoint < geometry[iZone]->GetnPoint(); iPoint++)
+        geo_adapt[iZone]->node[iPoint] = geometry[iZone]->node[iPoint];
+      
+      
+      geo_adapt[iZone]->SetnElem( geometry[iZone]->GetnElem() ); // Will be used as counter
+      geo_adapt[iZone]->elem = new CPrimalGrid*[ geometry[iZone]->GetnElem() + gridPoints2Add[iZone] ]; // In 2D new elements equal new points
+
+	    for (iElem = 0; iElem < geometry[iZone]->GetnElem(); iElem++) 
+        geo_adapt[iZone]->elem[iElem] = new CTriangle(geometry[iZone]->elem[iElem]->GetNode(0), geometry[iZone]->elem[iElem]->GetNode(1), geometry[iZone]->elem[iElem]->GetNode(2), 2);
+     
+     
+      /*--- Create boundary structure ---*/
+
+	    geo_adapt[iZone]->SetnMarker(geometry[iZone]->GetnMarker());
+	    geo_adapt[iZone]->nElem_Bound   = new unsigned long  [ geometry[iZone]->GetnMarker()     ];
+	    geo_adapt[iZone]->Tag_to_Marker = new        string  [ config[  iZone]->GetnMarker_Max() ]; 
+	    geo_adapt[iZone]->bound         = new   CPrimalGrid**[ geometry[iZone]->GetnMarker()     ];
+    	geo_adapt[iZone]->nVertex       = new unsigned long  [ geometry[iZone]->GetnMarker()     ];
+      geo_adapt[iZone]->vertex        = new CVertex**      [ geometry[iZone]->GetnMarker()     ];
+      
+      for (iMarker = 0; iMarker < geometry[iZone]->GetnMarker(); iMarker++) {
+        geo_adapt[iZone]->nVertex[iMarker] = geometry[iZone]->GetnVertex( iMarker );
+        
+        geo_adapt[iZone]->vertex[iMarker] = new CVertex*     [ geometry[iZone]->GetnVertex( iMarker )   + gridPoints2Add[iZone] ];
+		    geo_adapt[iZone]->bound[iMarker]  = new CPrimalGrid* [ geometry[iZone]->GetnElem_Bound(iMarker) + gridPoints2Add[iZone] ];
+		    geo_adapt[iZone]->SetnElem_Bound(iMarker, geometry[iZone]->GetnElem_Bound(iMarker) ); // Again counter
+		    geo_adapt[iZone]->SetMarker_Tag(iMarker, geometry[iZone]->GetMarker_Tag(iMarker));
+	    }
+     
+      for (iMarker = 0; iMarker < geometry[iZone]->GetnMarker(); iMarker++) {
+		    for (iBound = 0; iBound < geometry[iZone]->GetnElem_Bound(iMarker); iBound++) {			
+			
+			    ip_0 = geometry[iZone]->bound[iMarker][iBound]->GetNode(0); 
+          
+          geo_adapt[iZone]->node[ip_0]->SetBoundary(geometry[iZone]->GetnMarker());
+          
+		  	  ip_1 = geometry[iZone]->bound[iMarker][iBound]->GetNode(1); 
+          
+          geo_adapt[iZone]->node[ip_1]->SetBoundary(geometry[iZone]->GetnMarker());
+          
+          geo_adapt[iZone]->bound[iMarker][iBound] = new CLine(ip_0, ip_1, 2);
+		    }
+        
+        for (iVertex = 0; iVertex < geometry[iZone]->GetnVertex( iMarker ); iVertex++)
+          geo_adapt[iZone]->vertex[iMarker][iVertex] = new CVertex(geometry[iZone]->vertex[iMarker][iVertex]->GetNode(), 2);
+        
+      } 
+      
+      geo_adapt[iZone]->edge = new CEdge*[ geometry[iZone]->GetnEdge() + 2*gridPoints2Add[iZone] ];
+      geo_adapt[iZone]->SetnEdge( geometry[iZone]->GetnEdge() ); // counter
+      
+      for (iEdge = 0; iEdge < geometry[iZone]->GetnEdge(); iEdge++)
+        geo_adapt[iZone]->edge[iEdge] = new CEdge(geometry[iZone]->edge[iEdge]->GetNode(0), geometry[iZone]->edge[iEdge]->GetNode(1), 2); ;
+      
+    }
+    else{ // 3D
+      for (iPoint = 0; iPoint < geometry[iZone]->GetnPoint(); iPoint++)
+        geo_adapt[iZone]->node[iPoint] = new CPoint(geometry[iZone]->node[iPoint]->GetCoord(0), geometry[iZone]->node[iPoint]->GetCoord(1), geometry[iZone]->node[iPoint]->GetCoord(2), iPoint, config[iZone]);
+  
+    }
+  }
+
+  
+  
+  
+  
+  
+  /* 2 - Find boundary tag between touching grids */
+
+  /*--- Coupling between zones ---*/
+  // There's a limit here, the interface boundary must connect only 2 zones
+
+  /*--- Loops over all target and donor zones to find which ones are connected through an interface boundary (fsi or sliding mesh) ---*/
+  for (targetZone = 0; targetZone < nZone; targetZone++) {
+
+    for (donorZone = 0; donorZone < nZone; donorZone++) {
+
+      if ( donorZone == targetZone ) // We're processing the same zone, so skip the following
+        continue;
+
+      nMarkerInt = (int) ( config[donorZone]->GetMarker_n_ZoneInterface() / 2 );
+
+      /*--- Loops on Interface markers to find if the 2 zones are sharing the boundary and to determine donor and target marker tag ---*/
+      for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+
+        markDonor  = -1;
+        markTarget = -1;
+
+        /*--- On the donor side ---*/
+        nMarkerDonor = config[donorZone]->GetnMarker_All();
+
+        for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
+
+          /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
+          if ( config[donorZone]->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
+            /*--- We have identified the identifier for the interface marker ---*/
+            markDonor = iMarkerDonor;
+
+            break;
+          }
+        }
+
+        /*--- On the target side ---*/
+        nMarkerTarget = config[targetZone]->GetnMarker_All();
+
+        for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
+
+          /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
+          if ( config[targetZone]->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
+            /*--- We have identified the identifier for the interface marker ---*/
+            markTarget = iMarkerTarget;
+
+            break;
+          } 
+        }
+
+        Donor_check  = markDonor;
+        Target_check = markTarget;
+        
+        //cout << Donor_check << "  " << Target_check << endl; getchar();
+
+        /* --- Check if zones are actually sharing the interface boundary, if not skip ---*/        
+        if(Target_check == -1 || Donor_check == -1)
+          continue;
+
+        nVertexDonor  = geo_adapt[donorZone]->GetnVertex( markDonor  );
+        nVertexTarget = geometry[targetZone]->GetnVertex( markTarget );
+      
+        if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
+
+        /*--- Match Zones ---*/
+        if (rank == MASTER_NODE) cout << "Setting coupling "<< endl;
+      
+      
+        for (iTarget = 0; iTarget < nVertexTarget; iTarget++) {
+          
+          /*--- Stores coordinates of the target node ---*/
+
+          target_iPoint = geometry[targetZone]->vertex[markTarget][iTarget]->GetNode();
+      
+    
+          Coord_i = geometry[targetZone]->node[target_iPoint]->GetCoord();
+
+          mindist = 1E6;
+            
+          for (iDonor = 0; iDonor < nVertexDonor; iDonor++) {
+        
+            donor_iPoint = geo_adapt[donorZone]->vertex[markDonor][iDonor]->GetNode();
+            Coord_j = geo_adapt[donorZone]->node[donor_iPoint]->GetCoord();
+
+            dist = 0;
+            for(iDim = 0; iDim < nDim; iDim++)
+              dist += (Coord_j[iDim] - Coord_i[iDim])*(Coord_j[iDim] - Coord_i[iDim]);
+
+            if (dist < mindist) {
+              mindist = dist;  
+              DonorClosestNode = donor_iPoint;
+            }
+
+            if (dist == 0.0){
+              DonorClosestNode = donor_iPoint;
+              break;
+            }    
+          }
+          
+          // Here we have the closest node on the donor boundary, now we have to retrieve the primal donor element to which the target node belongs
+          // The primal element will be divided adding the donor node.
+          
+          if(nDim = 2){
+            
+            Coord_j = geo_adapt[donorZone]->node[DonorClosestNode]->GetCoord();
+            
+            for (iBound = 0; iBound < geo_adapt[donorZone]->GetnElem_Bound(markDonor); iBound++){
+              if( DonorClosestNode == geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(0) ) {
+                dPoint = geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(1);
+              }
+              else if( DonorClosestNode == geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(1) ){
+                dPoint = geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(0);
+              }
+              else
+                continue;
+              
+              P1 = geo_adapt[donorZone]->node[dPoint]->GetCoord();
+              
+              // Makes the dot product to understand on which boundary edge (2D) the target point belongs
+              m = 0;
+              for(iDim = 0; iDim < nDim; iDim++)
+                m += (Coord_i[iDim]-Coord_j[iDim]) * (P1[iDim]-Coord_j[iDim]);
+                
+              if(m >= 0){
+                EdgeIndex = geo_adapt[donorZone]->FindEdge(dPoint, DonorClosestNode);
+                break;
+              }
+            }
+            
+            for (iElem = 0; iElem < geo_adapt[donorZone]->GetnElem(); iElem++){
+              for( unsigned short ii = 0; ii < 3; ii++){
+                if( geo_adapt[donorZone]->elem[iElem]->GetNode(ii) == DonorClosestNode ){
+                  for( unsigned short jj = 0; jj < 3; jj++){
+                    if( geo_adapt[donorZone]->elem[iElem]->GetNode(jj) == dPoint ){
+                      jj = 4;
+                      ii = 4;
+                      ElementIndex = iElem;
+                      iElem = geo_adapt[donorZone]->GetnElem();
+                    }
+                  }
+                }
+              }
+            }
+
+            //cout << "M  " << m << "  " << geo_adapt[donorZone]->GetnElem() << "  " << ElementIndex << endl;
+            
+            geo_adapt[donorZone]->vertex[markDonor][geo_adapt[donorZone]->GetnVertex( markDonor  )] = new CVertex(iPoint, nDim);
+                  
+            // Find the third node in the boundary triangle
+    
+            for (iEdge = 0; iEdge < geo_adapt[donorZone]->node[DonorClosestNode]->GetnPoint(); iEdge++){
+              if( DonorClosestNode == geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[DonorClosestNode]->GetEdge(iEdge)]->GetNode(0) )
+                iPoint = geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[DonorClosestNode]->GetEdge(iEdge)]->GetNode(1);
+              else
+                iPoint = geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[DonorClosestNode]->GetEdge(iEdge)]->GetNode(0);                 
+
+              for (jEdge = 0; jEdge < geo_adapt[donorZone]->node[dPoint]->GetnPoint(); jEdge++){
+                if( dPoint == geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge)]->GetNode(0) ){
+                  if( iPoint == geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge)]->GetNode(1))
+                    pPoint = iPoint;
+                }
+                else{
+                  if( iPoint == geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge)]->GetNode(0))
+                    pPoint = iPoint;                    
+                }
+              }
+            }
+
+            iPoint = geo_adapt[donorZone]->GetnPoint();
+		        geo_adapt[donorZone]->node[iPoint] = new CPoint(Coord_i[0], Coord_i[1], iPoint, config[donorZone]);               
+                  
+            delete geo_adapt[donorZone]->edge[EdgeIndex];
+                  
+            iEdge = geo_adapt[donorZone]->GetnEdge();
+            geo_adapt[donorZone]->edge[EdgeIndex] = new CEdge(iPoint, DonorClosestNode, 2);
+            geo_adapt[donorZone]->edge[iEdge]     = new CEdge(iPoint, dPoint,           2);
+            geo_adapt[donorZone]->edge[iEdge+1]   = new CEdge(iPoint, pPoint,           2);
+                  
+            geo_adapt[donorZone]->node[iPoint]->SetBoundary(geo_adapt[donorZone]->GetnMarker());
+                  
+            geo_adapt[donorZone]->node[iPoint]->SetPoint(DonorClosestNode);
+            geo_adapt[donorZone]->node[iPoint]->SetPoint(dPoint);
+            geo_adapt[donorZone]->node[iPoint]->SetPoint(pPoint);
+                  
+            geo_adapt[donorZone]->node[iPoint]->SetEdge(EdgeIndex, 0);
+            geo_adapt[donorZone]->node[iPoint]->SetEdge(iEdge,     1);
+            geo_adapt[donorZone]->node[iPoint]->SetEdge(iEdge + 1, 2);
+                   
+            for (iBound = 0; iBound < geo_adapt[donorZone]->GetnElem_Bound(markDonor); iBound++){
+              if( geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(0) == DonorClosestNode || geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(1) == DonorClosestNode ){
+                if( geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(0) == dPoint || geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(1) == dPoint ){
+                  delete geo_adapt[donorZone]->bound[markDonor][iBound];
+                  geo_adapt[donorZone]->bound[markDonor][iBound] = new CLine(iPoint, DonorClosestNode, 2);
+                  iBound = geo_adapt[donorZone]->GetnElem_Bound(markDonor);
+                  geo_adapt[donorZone]->bound[markDonor][iBound] = new CLine(iPoint, dPoint,           2);
+                }
+              }
+            }
+                  
+            delete geo_adapt[donorZone]->elem[ ElementIndex ];
+            geo_adapt[donorZone]->elem[ ElementIndex ] = new CTriangle(DonorClosestNode, iPoint, pPoint, 2);
+            geo_adapt[donorZone]->elem[ geo_adapt[donorZone]->GetnElem() ] = new CTriangle(iPoint, pPoint, dPoint, 2);
+                  
+                  
+            // Update counters
+/*                  
+            cout << geo_adapt[donorZone]->GetnElem() << endl;
+            cout << geo_adapt[donorZone]->GetnPoint() << endl;
+            cout << geo_adapt[donorZone]->GetnPointDomain() << endl;
+            cout << geo_adapt[donorZone]->GetnElem_Bound(markDonor) << endl;
+            cout << geo_adapt[donorZone]->GetnVertex(markDonor) << endl;
+            cout << geo_adapt[donorZone]->GetnEdge() << endl;
+              
+            cout << "Marker  " << iMarker << geo_adapt[donorZone]->nVertex[markDonor] << "  " << geometry[donorZone]->GetnVertex( markDonor ) << endl;
+*/                  
+            geo_adapt[donorZone]->SetnElem( geo_adapt[donorZone]->GetnElem() + 1);
+                  
+            geo_adapt[donorZone]->SetnPoint(       geo_adapt[donorZone]->GetnPoint() + 1 );                  
+            geo_adapt[donorZone]->SetnPointDomain( geo_adapt[donorZone]->GetnPointDomain() + 1 );
+                  
+            geo_adapt[donorZone]->SetnElem_Bound(markDonor, geo_adapt[donorZone]->GetnElem_Bound(markDonor) + 1);
+            
+            geo_adapt[donorZone]->nVertex[markDonor]++;
+                  
+            geo_adapt[donorZone]->SetnEdge( geo_adapt[donorZone]->GetnEdge() + 2 );  
+              
+          }
+          else{
+            // trianglular and quadrilateral elements
+          }
+/*          
+          cout << "Target:  ";
+          for(iDim = 0; iDim < nDim; iDim++)
+            cout << geometry[targetZone]->node[target_iPoint]->GetCoord(iDim) << "  ";
+          cout << endl;
+          cout << "Closes:  ";
+          for(iDim = 0; iDim < nDim; iDim++)
+            cout << geo_adapt[donorZone]->node[DonorClosestNode]->GetCoord(iDim) << "  ";
+          cout << endl;
+          cout << "Second:  ";
+          for(iDim = 0; iDim < nDim; iDim++)
+            cout << geo_adapt[donorZone]->node[dPoint]->GetCoord(iDim) << "  ";
+          cout << endl;
+          
+          getchar();    
+*/
+        }
+      }    
+    }
+  }
+  
+  
+  
+  /*
+  for(iZone = 0; iZone < nZone; iZone++){
+    for (iMarker = 0; iMarker < geometry[iZone]->GetnMarker(); iMarker++){
+		  if (config[iZone]->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+			  for (unsigned long iBoundElem = 0; iBoundElem < geometry[iZone]->GetnElem_Bound(iMarker); iBoundElem++) {			
+          cout << geometry[iZone]->bound[iMarker][iBoundElem]->GetnNodes() << endl; 
+          for(int i = 0; i < geometry[iZone]->bound[iMarker][iBoundElem]->GetnNodes(); i++){
+            iPoint = geometry[iZone]->bound[iMarker][iBoundElem]->GetNode(i);
+            for(int iDim = 0; iDim < geometry[iZone]->GetnDim(); iDim++)
+              cout << geometry[iZone]->node[iPoint]->GetCoord(iDim)  << "  ";
+            cout << endl;
+          }  
+        }
+      }
+    }
+    getchar();
+  }
+  */
+  
+  delete [] gridPoints2Add;
+}
+
+bool CGridAdaptation::CheckPointInsideLine(su2double* Point, su2double* T1, su2double* T2){
+}
+  
+bool CGridAdaptation::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3){
+
+  /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
+
+  unsigned short iDim, nDim, check;
+
+  su2double vect1[2], vect2[2], r[2];
+  su2double dot;
+
+  check = 0;
+  nDim  = 2;
+
+  /* --- Check first edge --- */
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++){
+    vect1[iDim] = T3[iDim] - T1[iDim];
+    vect2[iDim] = T2[iDim] - T1[iDim];
+
+    r[iDim] = Point[iDim] - T1[iDim];
+
+    dot += vect2[iDim] * vect2[iDim];
+  }
+  dot = sqrt(dot);
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect2[iDim] /= dot;
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * vect2[iDim];
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect1[iDim] = T3[iDim] - (T1[iDim] + dot * vect2[iDim]);
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * r[iDim];
+
+  if (dot >= 0)
+    check++;
+
+  /* --- Check second edge --- */
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++){
+    vect1[iDim] = T1[iDim] - T2[iDim];
+    vect2[iDim] = T3[iDim] - T2[iDim];
+
+    r[iDim] = Point[iDim] - T2[iDim];
+
+    dot += vect2[iDim] * vect2[iDim];
+  }
+  dot = sqrt(dot);
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect2[iDim] /= dot;
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * vect2[iDim];
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect1[iDim] = T1[iDim] - (T2[iDim] + dot * vect2[iDim]);
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * r[iDim];
+
+  if (dot >= 0)
+    check++;
+
+  /* --- Check third edge --- */
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++){
+    vect1[iDim] = T2[iDim] - T3[iDim];
+    vect2[iDim] = T1[iDim] - T3[iDim];
+
+    r[iDim] = Point[iDim] - T3[iDim];
+
+    dot += vect2[iDim] * vect2[iDim];
+  }
+  dot = sqrt(dot);
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect2[iDim] /= dot;
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * vect2[iDim];
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect1[iDim] = T2[iDim] - (T3[iDim] + dot * vect2[iDim]);
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * r[iDim];
+
+  if (dot >= 0)
+    check++;
+
+  return (check == 3);     
+}
+
 void CGridAdaptation::SetWake_Refinement(CGeometry *geometry, unsigned short strength) {
 	unsigned long iElem, iPoint;
 	unsigned short iNode;

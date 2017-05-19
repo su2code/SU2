@@ -10844,6 +10844,128 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   output_file.close();
 }
 
+void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filename, unsigned short val_zone) {
+  unsigned long iElem, iPoint, iElem_Bound;
+  unsigned short iMarker, iNodes, iDim;
+  unsigned short iPeriodic, nPeriodic = 0;
+  ofstream output_file;
+  string Grid_Marker;
+  char *cstr;
+  su2double *center, *angles, *transl;
+  
+  cstr = new char [val_mesh_out_filename.size()+1];
+  strcpy (cstr, val_mesh_out_filename.c_str());
+  
+  /*--- Open .su2 grid file ---*/
+  
+  output_file.precision(15);
+  if(val_zone == 0){
+    output_file.open(cstr, ios::out);
+    output_file << "NZONE= " << config->GetnZone() << endl;
+  }
+  else
+    output_file.open(cstr, ios::app);
+  cout << "SIAMO DENTRO" << endl;
+  /*--- Write dimension, number of elements and number of points ---*/
+  
+  
+  output_file << "IZONE= " << val_zone+1 << endl;
+  output_file << "NDIME= " << nDim << endl;
+  output_file << "NELEM= " << nElem << endl;
+  for (iElem = 0; iElem < nElem; iElem++) {
+    output_file << elem[iElem]->GetVTK_Type();
+    for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
+      output_file << "\t" << elem[iElem]->GetNode(iNodes);
+    output_file << "\t"<<iElem<< endl;
+  }
+  
+  /*--- Write the node coordinates ---*/
+  
+  output_file << "NPOIN= " << nPoint << "\t" << nPointDomain << endl;
+  output_file.precision(15);
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim) ;
+#ifndef HAVE_MPI
+    output_file << "\t" << iPoint << endl;
+#else
+    output_file << "\t" << iPoint << "\t" << node[iPoint]->GetGlobalIndex() << endl;
+#endif
+    
+  }
+  
+  /*--- Loop through and write the boundary info ---*/
+  
+  output_file << "NMARK= " << nMarker << endl;
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    /*--- Ignore SEND_RECEIVE for the moment ---*/
+    if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
+      
+      Grid_Marker = config->GetMarker_All_TagBound(iMarker);
+      output_file << "MARKER_TAG= " << Grid_Marker << endl;
+      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+      
+      if (nDim == 2) {
+        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+          output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+          for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
+            output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
+          output_file	<< iElem_Bound << endl;
+        }
+      }
+      
+      if (nDim == 3) {
+        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+          output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+          for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
+            output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
+          output_file	<< iElem_Bound << endl;
+        }
+      }
+      
+    } else if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+      output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+      if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
+      if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
+      
+      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" <<
+        bound[iMarker][iElem_Bound]->GetNode(0) << "\t" <<
+        bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
+      }
+      
+    }
+  }
+  
+  /*--- Get the total number of periodic transformations ---*/
+  
+  if(config->GetKind_Adaptation() == PERIODIC){
+  nPeriodic = config->GetnPeriodicIndex();
+  output_file << "NPERIODIC= " << nPeriodic << endl;
+  
+  /*--- From iPeriodic obtain the iMarker ---*/
+  
+  for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
+    
+    /*--- Retrieve the supplied periodic information. ---*/
+    
+    center = config->GetPeriodicCenter(iPeriodic);
+    angles = config->GetPeriodicRotation(iPeriodic);
+    transl = config->GetPeriodicTranslate(iPeriodic);
+    
+    output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
+    output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
+    output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
+    output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
+    
+  }
+}
+  
+  output_file.close();
+}
+
 void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {
   unsigned short iSmooth, nneigh, iMarker;
   su2double *Coord_Old, *Coord_Sum, *Coord, *Coord_i, *Coord_j, Position_Plane = 0.0;

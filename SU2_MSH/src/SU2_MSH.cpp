@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 	
 	/*--- Variable definitions ---*/
   
-  unsigned short iZone, nZone = SINGLE_ZONE;
+  unsigned short iZone, nZone, iDim, nDim;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
   char file_name[MAX_STRING_SIZE];
@@ -67,6 +67,11 @@ int main(int argc, char *argv[]) {
   if (argc == 2) { strcpy(config_file_name,argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
   
+  CConfig *config = NULL;
+  config = new CConfig(config_file_name, SU2_CFD);
+  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  
   /*--- Definition of the containers per zones ---*/
   
   config_container = new CConfig*[nZone];
@@ -87,7 +92,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, iZone, nZone, nDim, VERB_HIGH);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
@@ -134,23 +139,30 @@ int main(int argc, char *argv[]) {
 	/*--- Compute elements surrounding points, points surrounding points, and elements surronding elements ---*/
   
 	cout << "Setting local point and element connectivity." <<endl;
-	geometry_container[ZONE_0]->SetPoint_Connectivity(); geometry_container[ZONE_0]->SetElement_Connectivity();
-	
+  for (iZone = 0; iZone < nZone; iZone++){
+	  geometry_container[iZone]->SetPoint_Connectivity(); geometry_container[iZone]->SetElement_Connectivity();
+	}
+  
 	/*--- Check the orientation before computing geometrical quantities ---*/
   
 	cout << "Check numerical grid orientation." <<endl;
-	geometry_container[ZONE_0]->SetBoundVolume(); geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]); geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
-	
+  for (iZone = 0; iZone < nZone; iZone++){
+	  geometry_container[iZone]->SetBoundVolume(); geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]); geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
+	}
+  
 	/*--- Create the edge structure ---*/
   
 	cout << "Identify faces, edges and vertices." <<endl;
-	geometry_container[ZONE_0]->SetFaces(); geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]); geometry_container[ZONE_0]->SetCoord_CG();
-	
+  for (iZone = 0; iZone < nZone; iZone++){
+	  geometry_container[iZone]->SetFaces(); geometry_container[iZone]->SetEdges(); geometry_container[iZone]->SetVertex(config_container[iZone]); geometry_container[iZone]->SetCoord_CG();
+	}
+  
 	/*--- Create the control volume structures ---*/
   
 	cout << "Set control volume structure." << endl;
-	geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE); geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
-
+  for (iZone = 0; iZone < nZone; iZone++){
+	  geometry_container[iZone]->SetControlVolume(config_container[iZone], ALLOCATE); geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+  }
 	
 	if ((config_container[ZONE_0]->GetKind_Adaptation() != NONE) && (config_container[ZONE_0]->GetKind_Adaptation() != PERIODIC)) {
 		
@@ -160,14 +172,19 @@ int main(int argc, char *argv[]) {
     
 		CGridAdaptation *grid_adaptation;
 		grid_adaptation = new CGridAdaptation(geometry_container[ZONE_0], config_container[ZONE_0]);
+    
+    CPhysicalGeometry **geo_adapt; 
+    geo_adapt = new CPhysicalGeometry*[nZone];
+    for (iZone = 0; iZone < nZone; iZone++)
+      geo_adapt[iZone] = new CPhysicalGeometry;
 		
 		/*--- Read the flow solution and/or the adjoint solution
 		 and choose the elements to adapt ---*/
     
-		if ((config_container[ZONE_0]->GetKind_Adaptation() != FULL)
-				&& (config_container[ZONE_0]->GetKind_Adaptation() != WAKE) && (config_container[ZONE_0]->GetKind_Adaptation() != SMOOTHING) && (config_container[ZONE_0]->GetKind_Adaptation() != SUPERSONIC_SHOCK))
-			grid_adaptation->GetFlowSolution(geometry_container[ZONE_0], config_container[ZONE_0]);
-		
+		if ((config_container[ZONE_0]->GetKind_Adaptation() != FULL) && (config_container[ZONE_0]->GetKind_Adaptation() != SLIDING_ADAPT)
+     && (config_container[ZONE_0]->GetKind_Adaptation() != WAKE) && (config_container[ZONE_0]->GetKind_Adaptation() != SMOOTHING) && (config_container[ZONE_0]->GetKind_Adaptation() != SUPERSONIC_SHOCK))
+      grid_adaptation->GetFlowSolution(geometry_container[ZONE_0], config_container[ZONE_0]);
+      
 		switch (config_container[ZONE_0]->GetKind_Adaptation()) {
 			case NONE:
 				break;
@@ -207,6 +224,9 @@ int main(int argc, char *argv[]) {
 				grid_adaptation->GetFlowResidual(geometry_container[ZONE_0], config_container[ZONE_0]);
 				grid_adaptation->SetIndicator_Computable(geometry_container[ZONE_0], config_container[ZONE_0]);
 				break;
+      case SLIDING_ADAPT:
+				  grid_adaptation->SetSlidingMesh_Refinement(geometry_container, config_container, geo_adapt);
+				break;
 			case REMAINING:
 				cout << "Adaptation method not implemented."<< endl;
 				cout << "Press any key to exit..." << endl;
@@ -219,53 +239,62 @@ int main(int argc, char *argv[]) {
 		
 		/*--- Perform an homothetic adaptation of the grid ---*/
     
-		CPhysicalGeometry *geo_adapt; geo_adapt = new CPhysicalGeometry;
-		
-		cout << "Homothetic grid adaptation" << endl;
-		if (geometry_container[ZONE_0]->GetnDim() == 2) grid_adaptation->SetHomothetic_Adaptation2D(geometry_container[ZONE_0], geo_adapt, config_container[ZONE_0]);
-		if (geometry_container[ZONE_0]->GetnDim() == 3) grid_adaptation->SetHomothetic_Adaptation3D(geometry_container[ZONE_0], geo_adapt, config_container[ZONE_0]);
+    if(!SLIDING_ADAPT){  /////////////////////
+      
+		  cout << "Homothetic grid adaptation" << endl;
+		  if (geometry_container[ZONE_0]->GetnDim() == 2) grid_adaptation->SetHomothetic_Adaptation2D(geometry_container[ZONE_0], geo_adapt[ZONE_0], config_container[ZONE_0]);
+		  if (geometry_container[ZONE_0]->GetnDim() == 3) grid_adaptation->SetHomothetic_Adaptation3D(geometry_container[ZONE_0], geo_adapt[ZONE_0], config_container[ZONE_0]);
+    
+    }
     
 		/*--- Smooth the numerical grid coordinates ---*/
     
 		if (config_container[ZONE_0]->GetSmoothNumGrid()) {
 			cout << "Preprocessing for doing the implicit smoothing." << endl;
-			geo_adapt->SetPoint_Connectivity(); geo_adapt->SetElement_Connectivity();
-			geo_adapt->SetBoundVolume(); geo_adapt->Check_IntElem_Orientation(config_container[ZONE_0]); geo_adapt->Check_BoundElem_Orientation(config_container[ZONE_0]);
-			geo_adapt->SetEdges(); geo_adapt->SetVertex(config_container[ZONE_0]);
+			geo_adapt[ZONE_0]->SetPoint_Connectivity(); geo_adapt[ZONE_0]->SetElement_Connectivity();
+			geo_adapt[ZONE_0]->SetBoundVolume(); geo_adapt[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]); geo_adapt[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
+			geo_adapt[ZONE_0]->SetEdges(); geo_adapt[ZONE_0]->SetVertex(config_container[ZONE_0]);
 			cout << "Implicit smoothing of the numerical grid coordinates." << endl;
-			geo_adapt->SetCoord_Smoothing(5, 1.5, config_container[ZONE_0]);
+			geo_adapt[ZONE_0]->SetCoord_Smoothing(5, 1.5, config_container[ZONE_0]);
 		}
 		
-		/*--- Original and adapted grid ---*/
-    strcpy (file_name, "original_grid.dat");
-    geometry_container[ZONE_0]->SetTecPlot(file_name, true);
-    strcpy (file_name, "original_surface.dat");
-    geometry_container[ZONE_0]->SetBoundTecPlot(file_name, true, config_container[ZONE_0]);
+    for (iZone = 0; iZone < nZone; iZone++){
+		  /*--- Original and adapted grid ---*/
+      strcpy (file_name, "original_grid.dat");
+      geometry_container[iZone]->SetTecPlot(file_name, true);
+      strcpy (file_name, "original_surface.dat");
+      geometry_container[iZone]->SetBoundTecPlot(file_name, true, config_container[iZone]);
     
-		/*--- Write the adapted grid sensor ---*/
+		  /*--- Write the adapted grid sensor ---*/
     
-    strcpy (file_name, "adapted_grid.dat");
-    geo_adapt->SetTecPlot(file_name, true);
-    strcpy (file_name, "adapted_surface.dat");
-    geo_adapt->SetBoundTecPlot(file_name, true, config_container[ZONE_0]);
+      strcpy (file_name, "adapted_grid.dat");
+      geo_adapt[iZone]->SetTecPlot(file_name, true);
+      strcpy (file_name, "adapted_surface.dat");
+      geo_adapt[iZone]->SetBoundTecPlot(file_name, true, config_container[iZone]);
 		
-		/*--- Write the new adapted grid, including the modified boundaries surfaces ---*/
+		  /*--- Write the new adapted grid, including the modified boundaries surfaces ---*/
     
-		geo_adapt->SetMeshFile(config_container[ZONE_0], config_container[ZONE_0]->GetMesh_Out_FileName());
-    
+		  geo_adapt[iZone]->SetMeshFile(config_container[iZone], config_container[iZone]->GetMesh_Out_FileName(), iZone);
+      getchar();
+    }
     
 		/*--- Write the restart file ---*/
     
 		if ((config_container[ZONE_0]->GetKind_Adaptation() != SMOOTHING) && (config_container[ZONE_0]->GetKind_Adaptation() != FULL) &&
 				(config_container[ZONE_0]->GetKind_Adaptation() != WAKE) &&
-				(config_container[ZONE_0]->GetKind_Adaptation() != SUPERSONIC_SHOCK))
-			grid_adaptation->SetRestart_FlowSolution(config_container[ZONE_0], geo_adapt, config_container[ZONE_0]->GetRestart_FlowFileName());
+				(config_container[ZONE_0]->GetKind_Adaptation() != SUPERSONIC_SHOCK) &&
+        (config_container[ZONE_0]->GetKind_Adaptation() != SLIDING_ADAPT))
+			grid_adaptation->SetRestart_FlowSolution(config_container[ZONE_0], geo_adapt[ZONE_0], config_container[ZONE_0]->GetRestart_FlowFileName());
 		
 		if ((config_container[ZONE_0]->GetKind_Adaptation() == GRAD_FLOW_ADJ) || (config_container[ZONE_0]->GetKind_Adaptation() == GRAD_ADJOINT)
 				|| (config_container[ZONE_0]->GetKind_Adaptation() == FULL_ADJOINT) || (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE) ||
 				(config_container[ZONE_0]->GetKind_Adaptation() == REMAINING))
-			grid_adaptation->SetRestart_AdjSolution(config_container[ZONE_0], geo_adapt, config_container[ZONE_0]->GetRestart_AdjFileName());
+			grid_adaptation->SetRestart_AdjSolution(config_container[ZONE_0], geo_adapt[ZONE_0], config_container[ZONE_0]->GetRestart_AdjFileName());
 		
+    for (iZone = 0; iZone < nZone; iZone++)
+      delete geo_adapt[iZone];
+    delete [] geo_adapt;
+    
 	}
 	else {
     
@@ -309,6 +338,9 @@ int main(int argc, char *argv[]) {
 #else
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
+  
+  delete config;
+  config = NULL;
   
   /*--- Compute/print the total time for performance benchmarking. ---*/
   

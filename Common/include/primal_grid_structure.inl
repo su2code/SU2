@@ -59,6 +59,10 @@ inline void CPrimalGrid::SetDivide (bool val_divide) {	Divide = val_divide; }
 
 inline bool CPrimalGrid::GetDivide (void) { return Divide; }
 
+inline void CPrimalGrid::SetnDivide (int val_ndivide) { nDivide = val_ndivide; }
+
+inline unsigned short CPrimalGrid::GetnDivide (void) { return nDivide; }
+
 inline unsigned long CPrimalGrid::GetGlobalIndex(void) { return GlobalIndex; }
 
 inline void CPrimalGrid::SetGlobalIndex(unsigned long val_globalindex) { GlobalIndex = val_globalindex; }

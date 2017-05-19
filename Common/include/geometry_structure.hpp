@@ -256,6 +256,12 @@ public:
 	void SetnMarker(unsigned short val_nmarker);
 
 	/*! 
+	 * \brief A virtual member.
+	 * \param[in] val_nmarker - Number of markers.
+	 */
+	void SetnEdge(unsigned long val_nEdges);
+  
+	/*! 
 	 * \brief Set the number of dimensions of the problem.
 	 * \param[in] val_nDim - Number of dimensions.
 	 */
@@ -552,6 +558,13 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */	
 	virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename);
+  
+	/*! 
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_mesh_out_filename - Name of the output file.
+	 */	
+	//virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename, unsigned short val_zone);
   
     /*!
 	 * \brief A virtual member.
@@ -1266,6 +1279,13 @@ public:
 	 */	
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
 
+	/*! 
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_mesh_out_filename - Name of the output file.
+	 */	
+	void SetMeshFile(CConfig *config, string val_mesh_out_filename, unsigned short val_zone);
+  
 	/*! 
 	 * \brief Compute some parameters about the grid quality.
 	 * \param[out] statistics - Information about the grid quality, statistics[0] = (r/R)_min, statistics[1] = (r/R)_ave.		 

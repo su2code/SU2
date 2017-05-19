@@ -127,7 +127,31 @@ public:
 	 * \param[in] strength - Adaptation Strength.	 
 	 */		
 	void SetNo_Refinement(CGeometry *geometry, unsigned short strength);
-	
+
+	/*! 
+	 * \brief Do adaptation on the sliding interfaces.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] strength - Adaptation Strength.	 
+	 */		
+	void SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **config, CPhysicalGeometry **geo_adapt);	
+  
+	/*! 
+	 * \brief Check if a point is in between two parallel planes, normal to the line passing through T1 and T2
+	 * \param[in] point - query point
+	 * \param[in] T1    - line point 1
+   * \param[in] T2    - line point 2
+	 */		
+  bool CheckPointInsideLine(su2double* Point, su2double* T1, su2double* T2);
+  
+	/*! 
+	 * \brief Check if a point is inside a triangle
+	 * \param[in] point - query point
+	 * \param[in] T1    - triangle point 1
+   * \param[in] T2    - triangle point 2
+   * \param[in] T3    - triangle point 3
+	 */		
+  bool CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3);
+
 	/*! 
 	 * \brief Do an adaptation of the computational grid on the wake.
 	 * \param[in] geometry - Geometrical definition of the problem.

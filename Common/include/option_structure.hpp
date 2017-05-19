@@ -1039,7 +1039,8 @@ enum ENUM_ADAPT {
   WAKE = 12,			/*!< \brief Do a grid refinement on the wake. */
   SMOOTHING = 14,		/*!< \brief Do a grid smoothing of the geometry. */
   SUPERSONIC_SHOCK = 15,	/*!< \brief Do a grid smoothing. */
-  PERIODIC = 17			/*!< \brief Add the periodic halo cells. */
+  PERIODIC = 17,			/*!< \brief Add the periodic halo cells. */
+  SLIDING_ADAPT = 18			/*!< \brief Creade the sliding adaptive structure. */
 };
 static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("NONE", NO_ADAPT)
@@ -1054,7 +1055,8 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("WAKE", WAKE)
 ("SMOOTHING", SMOOTHING)
 ("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
-("PERIODIC", PERIODIC);
+("PERIODIC", PERIODIC)
+("SLIDING_ADAPTIVE", SLIDING_ADAPT);
 
 /*!
  * \brief types of input file formats
