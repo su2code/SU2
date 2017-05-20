@@ -10945,9 +10945,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         V_boundary[nDim+6] = node[iPoint]->GetEddyViscosity();
         V_boundary[nDim+7] = FluidModel->GetThermalConductivity();
         V_boundary[nDim+8] = FluidModel->GetCp();
-        
-        cout << "In rieman BC" << V_boundary[0] << endl;
-        getchar();
 
         /*--- Set the normal vector and the coordinates ---*/
         visc_numerics->SetNormal(Normal);

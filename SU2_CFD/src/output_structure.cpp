@@ -4619,8 +4619,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
         
         if (two_phase) {
-          for (iVar = 0; iVar < nVar_2phase; iVar++)
+          for (iVar = 0; iVar < nVar_2phase; iVar++) {
             residual_2phase[iVar] = solver_container[val_iZone][FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(iVar);
+          }
         }
 
         /*--- Transition residual ---*/
@@ -10953,6 +10954,8 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
 
+  bool liquid_props   = (config->GetWrt_LiquidProps());
+
   int *Local_Halo = NULL;
 
   stringstream varname;
@@ -11258,10 +11261,25 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   // add rho_liquid and nucleation rate for 2-phase simulations
 
   if (SecondIndex == TWO_PHASE_SOL || ThirdIndex == TWO_PHASE_SOL) {
-  	nVar_Par += 2;
-  	Variable_Names.push_back("Rho_liquid");
+  	nVar_Par += 1;
   	Variable_Names.push_back("J (1/kg/s)");
+
+  	if (liquid_props == true) {
+  		nVar_Par += 9;
+  		Variable_Names.push_back("Rho_liquid");
+  		Variable_Names.push_back("T_liquid");
+  		Variable_Names.push_back("h_liquid");
+  		Variable_Names.push_back("R_critical");
+  		Variable_Names.push_back("R");
+  		Variable_Names.push_back("sigma");
+  		Variable_Names.push_back("Tsat");
+  		Variable_Names.push_back("Psat");
+  		Variable_Names.push_back("G");
+
+  	}
   }
+
+
 
 
   /*--- Allocate the local data structure now that we know how many
@@ -11454,8 +11472,20 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
         }
 
         if (SecondIndex == TWO_PHASE_SOL || ThirdIndex == TWO_PHASE_SOL) {
-          Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1)); iVar++;
           Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(10)); iVar++;
+
+        	if (liquid_props == true) {
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1)); iVar++;
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0)); iVar++;
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(2)); iVar++;
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6)); iVar++;
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(7)); iVar++;
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(5)); iVar++;
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4)); iVar++;
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(3)); iVar++;
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(9)); iVar++;
+
+        	}
         }
 
 

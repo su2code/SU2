@@ -1640,9 +1640,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
-      cout << "In turb" << V_inlet[0] << endl;
-      getchar();
-
       /*--- Retrieve solution at the farfield boundary node ---*/
       
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();

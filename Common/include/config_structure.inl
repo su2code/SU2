@@ -1334,6 +1334,8 @@ inline bool CConfig::GetWrt_Csv_Sol(void) { return Wrt_Csv_Sol; }
 
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
+inline bool CConfig::GetWrt_LiquidProps(void) { return Wrt_LiquidProps; }
+
 inline bool CConfig::GetWrt_Limiters(void) { return Wrt_Limiters; }
 
 inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }

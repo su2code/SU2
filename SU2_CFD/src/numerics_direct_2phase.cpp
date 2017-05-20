@@ -120,7 +120,6 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
 
   }
 
-
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
 }
@@ -180,6 +179,8 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 		for (iVar=0; iVar<nVar; iVar++) {
 			val_Residual[iVar] = val_Residual[iVar]* Volume ;
 		}
+
+
 	}	else 	{
 
 		for (iVar=0; iVar<nVar; iVar++) {

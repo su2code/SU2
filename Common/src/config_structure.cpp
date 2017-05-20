@@ -1314,6 +1314,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief WRT_RESIDUALS
    *  \n DESCRIPTION: Output residual info to solution/restart file  \ingroup Config*/
   addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
+
+  /*!\brief WRT_LIQUID_PROPS
+   *  \n DESCRIPTION: Output residual info to solution/restart file  \ingroup Config*/
+  addBoolOption("WRT_LIQUID_PROPS", Wrt_LiquidProps, false);
+
   /*!\brief WRT_LIMITERS
    *  \n DESCRIPTION: Output limiter value information to solution/restart file  \ingroup Config*/
   addBoolOption("WRT_LIMITERS", Wrt_Limiters, false);
