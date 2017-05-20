@@ -35,6 +35,7 @@
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/adt_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
@@ -688,6 +689,24 @@ public:
    */
   void SortOutputData_Surface(CConfig *config, CGeometry *geometry);
   
+  /*!
+   * \brief Probing flow solution data at a point using ADT search
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] probe_loc - coordinates of probe point
+   */
+   void Probe_sol(CSolver *solver, CGeometry *geometry, CConfig *config,
+                   su2double *probe_loc);
+    
+  /*!
+   * \brief To determine if a given point is inside the given element in geometry
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] probe loc - coordinates of probe point
+   * \param[in] jElem - element in which presence of probe is checked
+   */
+   bool IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,unsigned long jElem);
+    
   /*!
    * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
    * \param[in] config - Definition of the particular problem.

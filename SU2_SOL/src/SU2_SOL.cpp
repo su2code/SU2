@@ -353,7 +353,7 @@ int main(int argc, char *argv[]) {
       /*--- Check for an dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
       if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY &&
           config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
-        iExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
+          iExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
 
       while (iExtIter < config_container[ZONE_0]->GetnExtIter()) {
 
@@ -412,6 +412,16 @@ int main(int argc, char *argv[]) {
 
 		  }
     
+      /* Probing */
+      su2double *probe_loc;
+      probe_loc = new su2double[2];
+      /* Examples below for steady euler - naca0012 testcase(mesh_NACA0012_inv.su2,inv_NACA0012.cfg) */
+      // Point 150 in naca0012-euler - point on mesh node
+      probe_loc[0] = 5.118399858470000e-01; probe_loc[1] = 5.209138375948307e-02;
+      // Answer element 1233 - probe inside the elemnt containing nearest edge
+      probe_loc[0] = 6.085e-01; probe_loc[1] = 6.359e-02;
+      // Answer element - 404 - probe not inside the elements containing nearest edge
+      probe_loc[0] = 6.90307918179839852; probe_loc[1] = 12.3417305259928352;        output->Probe_sol(solver_container[ZONE_0], geometry_container[ZONE_0], config_container[ZONE_0], probe_loc);
   }
   
   

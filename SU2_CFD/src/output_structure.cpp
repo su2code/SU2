@@ -15123,6 +15123,188 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
 }
 
+void COutput::Probe_sol(CSolver *solver, CGeometry *geometry, CConfig *config,
+                        su2double *probe_loc){
+    
+    /*--- Compute the total number of nodes on no-slip boundaries ---*/
+    unsigned short nDim = 2;
+    unsigned long jElem, iPoint, probe_elem;
+    /* Total number of points in given processor */
+    unsigned long nPoint_proc = geometry->GetnPoint();
+    cout << "nPoint = " << nPoint_proc << endl;
+    su2double dist_probe;
+    bool Inside=false;
+    unsigned long pointID = 0;
+    int rankID=0, rank, size;
+    
+    rank = MASTER_NODE;
+    size = SINGLE_NODE;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+    
+    /*--- Allocate the vectors to hold boundary node coordinates
+     and its local ID. ---*/
+    
+    vector<su2double>     Coord_bound(nDim*nPoint_proc);
+    vector<unsigned long> PointIDs(nPoint_proc);
+    
+    /*--- Retrieve and store the coordinates of the no-slip boundary nodes
+     and their local point IDs. ---*/
+    
+    unsigned long ii = 0, jj = 0;
+    for(iPoint=0; iPoint<nPoint_proc; ++iPoint) {
+        PointIDs[jj++] = iPoint;
+        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            Coord_bound[ii++] = geometry->node[iPoint]->GetCoord(iDim);
+    }
+    
+    /*--- Build the ADT of the all nodes. ---*/
+    
+    su2_adtPointsOnlyClass NodesADT(nDim, nPoint_proc, Coord_bound.data(), PointIDs.data());
+    
+    /*--- Loop over all interior mesh nodes and compute the distances to each
+     of the no-slip boundary nodes. Store the minimum distance to the wall
+     for each interior mesh node. ---*/
+    
+    if( NodesADT.IsEmpty() ) {
+        
+        /*--- No solid wall boundary nodes in the entire mesh.
+         Set the wall distance to zero for all nodes. ---*/
+        dist_probe = 0.0;
+    }
+    else {
+        
+        /*--- Solid wall boundary nodes are present. Compute the wall
+         distance for all nodes. ---*/
+        //su2double dist;
+        
+        NodesADT.DetermineNearestNode(probe_loc, dist_probe,
+                                      pointID, rankID);
+    }
+    if (rank == rankID)
+    {
+        cout << "Nearest node distance for probe located at (" << probe_loc[0] << ", " << probe_loc[1] << ") = " << dist_probe << endl;
+        cout << "The point is " << geometry->node[pointID]->GetGlobalIndex() << " and local index = " << pointID << " in rank " << rankID << endl;
+        cout << "Coords are x = " << geometry->node[pointID]->GetCoord(0) << ", y= " << geometry->node[pointID]->GetCoord(1) << endl;
+    }
+    geometry->SetPoint_Connectivity();
+    geometry->SetElement_Connectivity();
+    /*---- Get the elements of the nearest edge -----*/
+    if (rank == rankID) {
+        
+        unsigned short nElem_node = geometry->node[pointID]->GetnElem();
+        cout << "Number of elements containing Node " <<  geometry->node[pointID]->GetGlobalIndex()  << " are " << nElem_node << endl;
+        
+        for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
+            jElem = geometry->node[pointID]->GetElem(iElem);
+            cout << "The elements containing point " << geometry->node[pointID]->GetGlobalIndex() <<  " are " << jElem << endl;
+            /*--- Determine whether the probe point is inside the element ---*/
+            Inside = IsPointInsideElement(geometry, probe_loc,jElem);
+            if (Inside) {
+                cout << "Probe is inside element " << jElem << endl;
+                probe_elem = jElem;
+                break;
+            }
+        }
+        if (Inside)
+            cout << " ******* Done looking for point - LOCATED in ELEMENT " << probe_elem << endl;
+        else
+            cout << " ********** Done searching tier 1 neighbors - CELL NOT LOCATED, Searching tier 2 neighbors now!!" << endl;
+        
+        if(!Inside){
+            /* Point not found in the elements containing the nearest edge */
+            /* Search the next tier neighbours */
+            cout << "Probe point not found in the elements containing the nearest edge." << endl;
+            cout << "Checking the elements of the points connected to nearest edge " << endl;
+            unsigned short nPoint_node =geometry->node[pointID]->GetnPoint();
+            cout << " Number of neighbors to the nearest edge are " << nPoint_node << endl;
+            /* Neighbouring points of the nearest edge */
+            for ( unsigned short iPoint = 0; iPoint < nPoint_node; iPoint++) {
+                unsigned long jPoint = geometry->node[pointID]->GetPoint(iPoint);
+                unsigned short nElem_node = geometry->node[jPoint]->GetnElem();
+                for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
+                    jElem = geometry->node[jPoint]->GetElem(iElem);
+                    /*--- Determine whether the probe point is inside the element ---*/
+                    Inside = IsPointInsideElement(geometry, probe_loc,jElem);
+                    if (Inside) {
+                        cout << "CELL LOCATED!!!! Probe is inside tier 1 nieghbour element " << jElem << endl;
+                        probe_elem = jElem;
+                        break;
+                    }
+                }
+                if (Inside)
+                    break;
+            }
+        }
+        
+    }
+    
+}
+
+bool COutput::IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,unsigned long jElem){
+    bool Intersect, Inside = true;
+    unsigned long iPoint;
+    unsigned short nDim = geometry->GetnDim();
+    unsigned short iNode, nNodes_elem, count=0;
+    
+    geometry->SetPoint_Connectivity();
+    geometry->SetElement_Connectivity();
+    
+    nNodes_elem = geometry->elem[jElem]->GetnNodes();
+    //cout << "nNodes in element " << jElem << " are " << nNodes_elem << endl;
+    su2double **Coord_elem = new su2double*[nNodes_elem];
+    /* Coordinates of CG of the element */
+    su2double Elem_CG[nDim];
+    
+    //cout << "Probe loca xcoord = " << probe_loc[0] << ", yloc = " << probe_loc[1] << endl;
+    
+    for (iNode = 0; iNode < nNodes_elem; iNode++){
+        iPoint = geometry->elem[jElem]->GetNode(iNode);
+        cout << "iPoint for element " << jElem << " is " << geometry->node[iPoint]->GetGlobalIndex() << endl;
+        Coord_elem[iNode] = new su2double[nDim];
+        
+        for (unsigned short iDim =0; iDim < nDim; iDim++){
+            if(iNode == 0)
+                Elem_CG[iDim] = 0;
+            Coord_elem[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
+            Elem_CG[iDim] += Coord_elem[iNode][iDim]/nNodes_elem;
+        }
+        //cout << "coord[0] = " << Coord_elem[iNode][0] << ", coord[1] = " << Coord_elem[iNode][1] << endl;
+    }
+    
+    /* Determine if segment connecting the probe and element CG intersects any of the edges(2D)/plane(3D) containing the element */
+    if (nDim == 2) {
+        for (unsigned short iEdge = 0; iEdge < nNodes_elem; iEdge++) {
+            unsigned short iEdge_p1;
+            if (iEdge == nNodes_elem-1)
+                iEdge_p1 = 0;
+            else
+                iEdge_p1 = iEdge + 1;
+            Intersect = geometry->SegmentIntersectsSegment(probe_loc, Elem_CG, Coord_elem[iEdge], Coord_elem[iEdge_p1]);
+            if (Intersect)
+                count += 1;
+            
+        }
+    }
+    
+    if (count > 0)
+        Inside = false;
+    
+    if(nDim == 3 )
+    {
+        cout << "******Yet to be implemented for deciding if point is inside polyhedron" << endl;
+    }
+    
+    for (iNode = 0; iNode < nNodes_elem; iNode++) {
+        delete Coord_elem[iNode];
+    }
+    
+    return Inside;
+    
+}
+
 void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol) {
   
   /*--- Deallocate memory for connectivity data on each processor. ---*/
