@@ -9851,7 +9851,7 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
       Total_ComboObj+=Weight_ObjFunc*OneD_TotalPress;
       break;
     case AVG_OUTLET_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*OneD_PressureRef;
+      Total_ComboObj+=Weight_ObjFunc*OneD_Pressure1D;
       break;
     case MASS_FLOW_RATE:
       Total_ComboObj+=Weight_ObjFunc*OneD_MassFlowRate;
