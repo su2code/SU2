@@ -14962,11 +14962,14 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   }
   nPoint_Linear[size] = nTotalPoint;
 
-  /*--- Prepare the first four ints containing the counts. The last two values
-   are for metadata: one int for ExtIter and 5 su2doubles. ---*/
+  /*--- Prepare the first ints containing the counts. The first is a
+   magic number that we can use to check for binary files (it is the hex
+   representation for "SU2"). The second two values are number of variables
+   and number of points (DoFs). The last two values are for metadata: 
+   one int for ExtIter and 5 su2doubles. ---*/
 
-  int var_buf_size = 4;
-  int var_buf[4] = {nVar_Par, (int)nTotalPoint, 1, 5};
+  int var_buf_size = 5;
+  int var_buf[5] = {535532, nVar_Par, (int)nTotalPoint, 1, 5};
 
   /*--- Prepare the 1D data buffer on this rank. ---*/
 
