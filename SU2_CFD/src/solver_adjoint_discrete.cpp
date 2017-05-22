@@ -328,7 +328,7 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       ObjFunc_Value = direct_solver->GetOneD_TotalPress();
       break;
     case AVG_OUTLET_PRESSURE:
-      ObjFunc_Value = direct_solver->GetOneD_FluxAvgPress();
+      ObjFunc_Value = direct_solver->GetOneD_AvgPress();
       break;
     case MASS_FLOW_RATE:
       ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
