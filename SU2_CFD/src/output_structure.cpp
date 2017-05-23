@@ -15708,6 +15708,10 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
   delete [] nPoint_Send;
   delete [] nPoint_Flag;
 
+  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++)
+    delete [] Local_Data[iPoint];
+  delete [] Local_Data;
+
 }
 
 void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
