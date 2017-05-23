@@ -84,22 +84,11 @@ bool SortFacesClass::operator()(const FaceOfElementClass &f0,
     if(f0.faceIndicator != f1.faceIndicator) return f0.faceIndicator < f1.faceIndicator;
 
     /* Both faces belong to the same boundary marker. The second comparison is
-       based on the time level of the adjacent element. Note that the time
-       levels of the elements can only differ when time accurate local time
-       stepping is used. */
+       based on the on the local volume ID's of the adjacent elements. As the
+       volumes are sorted according to the time levels for time accurate
+       local stepping, there is no need to do this check seperately here. */
     unsigned long ind0 = f0.elemID0 < nVolElemTot ? f0.elemID0 : f0.elemID1;
     unsigned long ind1 = f1.elemID0 < nVolElemTot ? f1.elemID0 : f1.elemID1;
-
-    if(volElem[ind0].timeLevel != volElem[ind1].timeLevel)
-      return volElem[ind0].timeLevel < volElem[ind1].timeLevel;
-
-    /* Both faces belong to the same time level as well. Make sure that the
-       sequence of the faces is identical to the sequence stored in the
-       surface connectivity of the boundary. This information is stored in
-       either nPolyGrid0 or nPolyGrid1, depending on which side of the face
-       the corresponding element is located. */
-    ind0 = f0.elemID0 < nVolElemTot ? f0.nPolyGrid1 : f0.nPolyGrid0;
-    ind1 = f1.elemID0 < nVolElemTot ? f1.nPolyGrid1 : f1.nPolyGrid0;
 
     return ind0 < ind1;
   }
@@ -945,6 +934,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         for(unsigned short k=0; k<thisSurfElem.nDOFsGrid; ++k)
           thisSurfElem.nodeIDsGrid[k] = longRecvBuf[i][indL++];
 
+        /* Convert the global volume element ID to the local one.
+           It is essential to do this before the sorting. */
+        map<unsigned long, unsigned long>::iterator MMI;
+        MMI = mapGlobalElemIDToInd.find(thisSurfElem.volElemID);
+        thisSurfElem.volElemID = MMI->second;
+
+        /* Store the surface element in the data structure for this boundary. */
         boundaries[iMarker].surfElem.push_back(thisSurfElem);
       }
     }
@@ -1700,14 +1696,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     mapGlobalPointIDToInd[globIndAndPer] = i;
   }
 
-  /*--- Convert the global indices in the boundary connectivities to local ones. ---*/
+  /*--- Convert the global indices in the boundary connectivities to local ones.
+        Note that the volume ID's already contain the local number. ---*/
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
     for(unsigned long i=0; i<boundaries[iMarker].surfElem.size(); ++i) {
-
-      /* Convert the corresponding volume element from global to local. */
-      map<unsigned long, unsigned long>::const_iterator LMI;
-      LMI = mapGlobalElemIDToInd.find(boundaries[iMarker].surfElem[i].volElemID);
-      boundaries[iMarker].surfElem[i].volElemID = LMI->second;
 
       /* Convert the global node ID's to local values. Note that for these node
          ID's no periodic transformation can be present. */
@@ -2539,11 +2531,6 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
             MPI_Finalize();
 #endif
           }
-
-          /* Store the local index of the boundary face in the variable for the
-             polynomial degree, which is not used in localFaces. */
-          if( side0IsBoundary ) low->nPolyGrid1 = k;
-          else                  low->nPolyGrid0 = k;
         }
         else {
           cout << "Boundary face not found in localFaces. "
