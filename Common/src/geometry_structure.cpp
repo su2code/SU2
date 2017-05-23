@@ -360,6 +360,7 @@ CGeometry::CGeometry(void) {
   nPoint     = 0;
   nPointNode = 0;
   nElem      = 0;
+  nZone      = 1;
   
   nElem_Bound         = NULL;
   Tag_to_Marker       = NULL;
