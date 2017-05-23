@@ -4112,7 +4112,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 
 
 bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                         unsigned short iDV, bool ResetDef) {
+    unsigned short iDV, bool ResetDef) {
   
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j, iFFDBox, iPlane;
