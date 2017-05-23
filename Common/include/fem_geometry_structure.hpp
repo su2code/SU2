@@ -447,6 +447,7 @@ public:
 
   /*!
    * \brief Less than operator of the class. Needed for the sorting.
+            The criterion for comparison is the corresponding (local) volume ID.
    */
   bool operator<(const CSurfaceElementFEM &other) const;
 

@@ -61,7 +61,7 @@ void CIdealGas::SetTDState_rhoe (su2double rho, su2double e ) {
   Pressure = Gamma_Minus_One*Density*StaticEnergy;
   Temperature = Gamma_Minus_One*StaticEnergy/Gas_Constant;
   SoundSpeed2 = Gamma*Pressure/Density;
-  Entropy = (1.0/Gamma_Minus_One*log(Temperature) + log(1.0/Density))*Gas_Constant;
+  // Entropy = (1.0/Gamma_Minus_One*log(Temperature) + log(1.0/Density))*Gas_Constant;  Not used for the FEM solver.
   dPdrho_e = Gamma_Minus_One*StaticEnergy;
   dPde_rho = Gamma_Minus_One*Density;
   dTdrho_e = 0.0;

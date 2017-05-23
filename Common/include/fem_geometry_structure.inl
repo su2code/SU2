@@ -89,7 +89,7 @@ inline CSurfaceElementFEM::CSurfaceElementFEM(const CSurfaceElementFEM &other) {
 
 inline CSurfaceElementFEM& CSurfaceElementFEM::operator=(const CSurfaceElementFEM &other) { Copy(other); return (*this); }
 
-inline bool CSurfaceElementFEM::operator< (const CSurfaceElementFEM &other) const { return boundElemIDGlobal < other.boundElemIDGlobal; }
+inline bool CSurfaceElementFEM::operator< (const CSurfaceElementFEM &other) const { return volElemID < other.volElemID; }
 
 inline CBoundaryFEM::CBoundaryFEM(void) { }
 

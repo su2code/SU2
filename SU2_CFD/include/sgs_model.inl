@@ -36,67 +36,264 @@
 inline CSGSModel::CSGSModel(void){}
 inline CSGSModel::~CSGSModel(void){}
 
-inline su2double CSGSModel::ComputeEddyViscosity(const unsigned short nDim,
-                                                 const su2double      rho,
-                                                 const su2double      velGrad[3][3],
-                                                 const su2double      lenScale,
-                                                 const su2double      distToWall) {
+inline su2double CSGSModel::ComputeEddyViscosity_2D(const su2double rho,
+                                                   const su2double dudx,
+                                                   const su2double dudy,
+                                                   const su2double dvdx,
+                                                   const su2double dvdy,
+                                                   const su2double lenScale,
+                                                   const su2double distToWall) {
   return 0.0;
 }
 
-inline void CSGSModel::ComputeGradEddyViscosity(const unsigned short nDim,
-                                                const su2double      rho,
-                                                const su2double      rhoGrad[3],
-                                                const su2double      velGrad[3][3],
-                                                const su2double      velHess[3][3][3],
-                                                const su2double      lenScale,
-                                                const su2double      distToWall,
-                                                      su2double      ViscosityTurbGrad[3]) {}
+inline su2double CSGSModel::ComputeEddyViscosity_3D(const su2double rho,
+                                                    const su2double dudx,
+                                                    const su2double dudy,
+                                                    const su2double dudz,
+                                                    const su2double dvdx,
+                                                    const su2double dvdy,
+                                                    const su2double dvdz,
+                                                    const su2double dwdx,
+                                                    const su2double dwdy,
+                                                    const su2double dwdz,
+                                                    const su2double lenScale,
+                                                    const su2double distToWall) {
+  return 0.0;
+}
+
+inline void CSGSModel::ComputeGradEddyViscosity_2D(const su2double rho,
+                                                   const su2double drhodx,
+                                                   const su2double drhody,
+                                                   const su2double dudx,
+                                                   const su2double dudy,
+                                                   const su2double dvdx,
+                                                   const su2double dvdy,
+                                                   const su2double d2udx2,
+                                                   const su2double d2udy2,
+                                                   const su2double d2udxdy,
+                                                   const su2double d2vdx2,
+                                                   const su2double d2vdy2,
+                                                   const su2double d2vdxdy,
+                                                   const su2double lenScale,
+                                                   const su2double distToWall,
+                                                         su2double &dMuTdx,
+                                                         su2double &dMuTdy) {}
+
+inline void CSGSModel::ComputeGradEddyViscosity_3D(const su2double rho,
+                                                   const su2double drhodx,
+                                                   const su2double drhody,
+                                                   const su2double drhodz,
+                                                   const su2double dudx,
+                                                   const su2double dudy,
+                                                   const su2double dudz,
+                                                   const su2double dvdx,
+                                                   const su2double dvdy,
+                                                   const su2double dvdz,
+                                                   const su2double dwdx,
+                                                   const su2double dwdy,
+                                                   const su2double dwdz,
+                                                   const su2double d2udx2,
+                                                   const su2double d2udy2,
+                                                   const su2double d2udz2,
+                                                   const su2double d2udxdy,
+                                                   const su2double d2udxdz,
+                                                   const su2double d2udydz,
+                                                   const su2double d2vdx2,
+                                                   const su2double d2vdy2,
+                                                   const su2double d2vdz2,
+                                                   const su2double d2vdxdy,
+                                                   const su2double d2vdxdz,
+                                                   const su2double d2vdydz,
+                                                   const su2double d2wdx2,
+                                                   const su2double d2wdy2,
+                                                   const su2double d2wdz2,
+                                                   const su2double d2wdxdy,
+                                                   const su2double d2wdxdz,
+                                                   const su2double d2wdydz,
+                                                   const su2double lenScale,
+                                                   const su2double distToWall,
+                                                         su2double &dMuTdx,
+                                                         su2double &dMuTdy,
+                                                         su2double &dMuTdz) {}
 
 inline CSmagorinskyModel::CSmagorinskyModel(void) : CSGSModel() {}
 inline CSmagorinskyModel::~CSmagorinskyModel(void){}
 
-inline su2double CSmagorinskyModel::ComputeEddyViscosity(const unsigned short nDim,
-                                                         const su2double      rho,
-                                                         const su2double      velGrad[3][3],
-                                                         const su2double      lenScale,
-                                                         const su2double      distToWall) {
-  cout << "CSmagorinskyModel::ComputeEddyViscosity: Not implemented yet" << endl;
+inline su2double CSmagorinskyModel::ComputeEddyViscosity_2D(const su2double rho,
+                                                            const su2double dudx,
+                                                            const su2double dudy,
+                                                            const su2double dvdx,
+                                                            const su2double dvdy,
+                                                            const su2double lenScale,
+                                                            const su2double distToWall) {
+  cout << "CSmagorinskyModel::ComputeEddyViscosity_2D: Not implemented yet" << endl;
   exit(1);
 }
 
-inline void CSmagorinskyModel::ComputeGradEddyViscosity(const unsigned short nDim,
-                                                        const su2double      rho,
-                                                        const su2double      rhoGrad[3],
-                                                        const su2double      velGrad[3][3],
-                                                        const su2double      velHess[3][3][3],
-                                                        const su2double      lenScale,
-                                                        const su2double      distToWall,
-                                                              su2double      ViscosityTurbGrad[3]) {
-  cout << "CSmagorinskyModel::ComputeGradEddyViscosity: Not implemented yet" << endl;
+inline su2double CSmagorinskyModel::ComputeEddyViscosity_3D(const su2double rho,
+                                                            const su2double dudx,
+                                                            const su2double dudy,
+                                                            const su2double dudz,
+                                                            const su2double dvdx,
+                                                            const su2double dvdy,
+                                                            const su2double dvdz,
+                                                            const su2double dwdx,
+                                                            const su2double dwdy,
+                                                            const su2double dwdz,
+                                                            const su2double lenScale,
+                                                            const su2double distToWall) {
+  cout << "CSmagorinskyModel::ComputeEddyViscosity_3D: Not implemented yet" << endl;
+  exit(1);
+}
+
+inline void CSmagorinskyModel::ComputeGradEddyViscosity_2D(const su2double rho,
+                                                           const su2double drhodx,
+                                                           const su2double drhody,
+                                                           const su2double dudx,
+                                                           const su2double dudy,
+                                                           const su2double dvdx,
+                                                           const su2double dvdy,
+                                                           const su2double d2udx2,
+                                                           const su2double d2udy2,
+                                                           const su2double d2udxdy,
+                                                           const su2double d2vdx2,
+                                                           const su2double d2vdy2,
+                                                           const su2double d2vdxdy,
+                                                           const su2double lenScale,
+                                                           const su2double distToWall,
+                                                                 su2double &dMuTdx,
+                                                                 su2double &dMuTdy) {
+  cout << "CSmagorinskyModel::ComputeGradEddyViscosity_2D: Not implemented yet" << endl;
+  exit(1);
+}
+
+inline void CSmagorinskyModel::ComputeGradEddyViscosity_3D(const su2double rho,
+                                                           const su2double drhodx,
+                                                           const su2double drhody,
+                                                           const su2double drhodz,
+                                                           const su2double dudx,
+                                                           const su2double dudy,
+                                                           const su2double dudz,
+                                                           const su2double dvdx,
+                                                           const su2double dvdy,
+                                                           const su2double dvdz,
+                                                           const su2double dwdx,
+                                                           const su2double dwdy,
+                                                           const su2double dwdz,
+                                                           const su2double d2udx2,
+                                                           const su2double d2udy2,
+                                                           const su2double d2udz2,
+                                                           const su2double d2udxdy,
+                                                           const su2double d2udxdz,
+                                                           const su2double d2udydz,
+                                                           const su2double d2vdx2,
+                                                           const su2double d2vdy2,
+                                                           const su2double d2vdz2,
+                                                           const su2double d2vdxdy,
+                                                           const su2double d2vdxdz,
+                                                           const su2double d2vdydz,
+                                                           const su2double d2wdx2,
+                                                           const su2double d2wdy2,
+                                                           const su2double d2wdz2,
+                                                           const su2double d2wdxdy,
+                                                           const su2double d2wdxdz,
+                                                           const su2double d2wdydz,
+                                                           const su2double lenScale,
+                                                           const su2double distToWall,
+                                                                 su2double &dMuTdx,
+                                                                 su2double &dMuTdy,
+                                                                 su2double &dMuTdz) {
+  cout << "CSmagorinskyModel::ComputeGradEddyViscosity_3D: Not implemented yet" << endl;
   exit(1);
 }
 
 inline CWALEModel::CWALEModel(void) : CSGSModel() {}
 inline CWALEModel::~CWALEModel(void){}
 
-inline su2double CWALEModel::ComputeEddyViscosity(const unsigned short nDim,
-                                                  const su2double      rho,
-                                                  const su2double      velGrad[3][3],
-                                                  const su2double      lenScale,
-                                                  const su2double      distToWall) {
-  cout << "CWALEModel::ComputeEddyViscosity: Not implemented yet" << endl;
+inline su2double CWALEModel::ComputeEddyViscosity_2D(const su2double rho,
+                                                     const su2double dudx,
+                                                     const su2double dudy,
+                                                     const su2double dvdx,
+                                                     const su2double dvdy,
+                                                     const su2double lenScale,
+                                                     const su2double distToWall) {
+  cout << "CWALEModel::ComputeEddyViscosity_2D: Not implemented yet" << endl;
   exit(1);
 }
 
-inline void CWALEModel::ComputeGradEddyViscosity(const unsigned short nDim,
-                                                 const su2double      rho,
-                                                 const su2double      rhoGrad[3],
-                                                 const su2double      velGrad[3][3],
-                                                 const su2double      velHess[3][3][3],
-                                                 const su2double      lenScale,
-                                                 const su2double      distToWall,
-                                                       su2double      ViscosityTurbGrad[3]) {
-  cout << "CWALEModel::ComputeGradEddyViscosity: Not implemented yet" << endl;
+inline su2double CWALEModel::ComputeEddyViscosity_3D(const su2double rho,
+                                                     const su2double dudx,
+                                                     const su2double dudy,
+                                                     const su2double dudz,
+                                                     const su2double dvdx,
+                                                     const su2double dvdy,
+                                                     const su2double dvdz,
+                                                     const su2double dwdx,
+                                                     const su2double dwdy,
+                                                     const su2double dwdz,
+                                                     const su2double lenScale,
+                                                     const su2double distToWall) {
+  cout << "CWALEModel::ComputeEddyViscosity_3D: Not implemented yet" << endl;
+  exit(1);
+}
+
+inline void CWALEModel::ComputeGradEddyViscosity_2D(const su2double rho,
+                                                    const su2double drhodx,
+                                                    const su2double drhody,
+                                                    const su2double dudx,
+                                                    const su2double dudy,
+                                                    const su2double dvdx,
+                                                    const su2double dvdy,
+                                                    const su2double d2udx2,
+                                                    const su2double d2udy2,
+                                                    const su2double d2udxdy,
+                                                    const su2double d2vdx2,
+                                                    const su2double d2vdy2,
+                                                    const su2double d2vdxdy,
+                                                    const su2double lenScale,
+                                                    const su2double distToWall,
+                                                          su2double &dMuTdx,
+                                                          su2double &dMuTdy) {
+  cout << "CWALEModel::ComputeGradEddyViscosity_2D: Not implemented yet" << endl;
+  exit(1);
+}
+
+inline void CWALEModel::ComputeGradEddyViscosity_3D(const su2double rho,
+                                                    const su2double drhodx,
+                                                    const su2double drhody,
+                                                    const su2double drhodz,
+                                                    const su2double dudx,
+                                                    const su2double dudy,
+                                                    const su2double dudz,
+                                                    const su2double dvdx,
+                                                    const su2double dvdy,
+                                                    const su2double dvdz,
+                                                    const su2double dwdx,
+                                                    const su2double dwdy,
+                                                    const su2double dwdz,
+                                                    const su2double d2udx2,
+                                                    const su2double d2udy2,
+                                                    const su2double d2udz2,
+                                                    const su2double d2udxdy,
+                                                    const su2double d2udxdz,
+                                                    const su2double d2udydz,
+                                                    const su2double d2vdx2,
+                                                    const su2double d2vdy2,
+                                                    const su2double d2vdz2,
+                                                    const su2double d2vdxdy,
+                                                    const su2double d2vdxdz,
+                                                    const su2double d2vdydz,
+                                                    const su2double d2wdx2,
+                                                    const su2double d2wdy2,
+                                                    const su2double d2wdz2,
+                                                    const su2double d2wdxdy,
+                                                    const su2double d2wdxdz,
+                                                    const su2double d2wdydz,
+                                                    const su2double lenScale,
+                                                    const su2double distToWall,
+                                                          su2double &dMuTdx,
+                                                          su2double &dMuTdy,
+                                                          su2double &dMuTdz) {
+  cout << "CWALEModel::ComputeGradEddyViscosity_3D: Not implemented yet" << endl;
   exit(1);
 }
