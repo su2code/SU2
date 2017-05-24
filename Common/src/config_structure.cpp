@@ -1281,9 +1281,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
   /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
   addBoolOption("WRT_HALO", Wrt_Halo, false);
-  /*!\brief ONE_D_OUTPUT
-   *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker. \n Use with MARKER_OUT_1D. \ingroup Config*/
-  addBoolOption("ONE_D_OUTPUT", Wrt_1D_Output, false);
+  /*!\brief KIND_ONE_DIMENSIONALIZATION
+   *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker.
+   *  Options: AREA, MASSFLUX, NONE
+   *  \n Use with MARKER_OUT_1D. \ingroup Config*/
+  addEnumOption("KIND_ONE_DIMENSIONALIZATION", Kind_OneD, OneD_Map, ONED_NONE);
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
@@ -1962,9 +1964,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
   bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
   
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   int size = SINGLE_NODE;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
 #ifndef HAVE_TECIO
@@ -2068,8 +2072,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   else { FSI_Problem = false; }
 
-  if ((rank==MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
+  if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
+  }
+  if ((rank == MASTER_NODE) && ContinuousAdjoint && (Kind_OneD == ONED_MFLUX) && (Kind_SU2 == SU2_CFD)) {
+    cout << "WARNING: The continuous adjoint solver assumes area-averaging." << endl;
   }
   
   /*--- Initialize non-physical points/reconstructions to zero ---*/
