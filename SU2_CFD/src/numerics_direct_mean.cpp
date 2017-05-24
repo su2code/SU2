@@ -1039,10 +1039,7 @@ void CUpwSLAU_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   mL  = ProjVelocity_i/aF;
   mR  = ProjVelocity_j/aF;
-
-  /*--- Mean normal velocity with density weighting ---*/
-  Vn_Mag = (Density_i*fabs(ProjVelocity_i) + Density_j*fabs(ProjVelocity_j)) / (Density_i + Density_j);
-  
+ 
   /*--- Smooth function of the local Mach number---*/
   aux_slau = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -1051,26 +1048,25 @@ void CUpwSLAU_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   }
   Mach_tilde = min(1.0, (1.0/aF) * sqrt(aux_slau/2.0));  
   Chi = pow((1.0 - Mach_tilde),2.0);
-  
-  f_rho = 1.0 - (-max(min(mL,0.0),-1.0) * min(max(mR,0.0),1.0));
+  f_rho = -max(min(mL,0.0),-1.0) * min(max(mR,0.0),1.0);
+
+  /*--- Mean normal velocity with density weighting ---*/
+  Vn_Mag = (Density_i*fabs(ProjVelocity_i) + Density_j*fabs(ProjVelocity_j)) / (Density_i + Density_j);
+  Vn_MagL= (1.0 - f_rho)*Vn_Mag + f_rho*fabs(ProjVelocity_i);
+  Vn_MagR= (1.0 - f_rho)*Vn_Mag + f_rho*fabs(ProjVelocity_j);  
   
   /*--- Mass flux function ---*/
-  mF = 0.5 * ((Density_i*ProjVelocity_i) + (Density_j*ProjVelocity_j) - Vn_Mag*(Density_j-Density_i)) * f_rho - (Chi/(2.0*aF))*(Pressure_j-Pressure_i);
+  //mF = 0.5 * ((Density_i*ProjVelocity_i) + (Density_j*ProjVelocity_j) - Vn_Mag*(Density_j-Density_i)) * f_rho - (Chi/(2.0*aF))*(Pressure_j-Pressure_i);
+  mF = 0.5 * (Density_i * (ProjVelocity_i + Vn_MagL) + Density_j * (ProjVelocity_j - Vn_MagR) - (Chi/aF)*(Pressure_j-Pressure_i));
   
   /*--- Pressure function ---*/
-  if (fabs(mL) < 1.0) BetaL = 0.25*(2.0-mL)*pow((mL+1.0),2.0);
-  else{ 
-    if (mL >= 0) BetaL = 1.0;
-    else BetaL = 0.0;
-  }
+  if (fabs(mL) >= 1.0) BetaL = 1.0;
+  else  BetaL = 0.25*(2.0-mL)*pow((mL+1.0),2.0);
+
+  if (fabs(mR) >= 1.0) BetaR = 0.0;
+  else  BetaR = 0.25*(2.0+mR)*pow((mR-1.0),2.0);
   
-  if (fabs(mR) < 1.0) BetaR = 0.25*(2.0+mR)*pow((mR-1.0),2.0);
-  else{ 
-    if (mR >= 0) BetaR = 0.0;
-    else BetaR = 1.0;
-  }
-  
-  pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL + BetaR) * (Pressure_i - Pressure_j) + (1.0 - Chi) * (BetaL + BetaR - 1.0) *  0.5 * (Pressure_i + Pressure_j);
+  pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + (1.0 - Chi) * (BetaL + BetaR - 1.0) *  0.5 * (Pressure_i + Pressure_j);
   
   val_residual[0] = 0.5*(mF+fabs(mF)) + 0.5*(mF-fabs(mF));
   
