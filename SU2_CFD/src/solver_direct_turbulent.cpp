@@ -39,7 +39,10 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   FlowPrimVar_j = NULL;
   lowerlimit    = NULL;
   upperlimit    = NULL;
-  
+  nVertex       = NULL;
+  nMarker       = 0;
+  /*--- Initialize the Primitive Variables (two by default for turbulent)---*/
+  nPrimVar = 2;
 }
 
 CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
@@ -60,6 +63,7 @@ CTurbSolver::~CTurbSolver(void) {
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
   if (lowerlimit != NULL) delete [] lowerlimit;
   if (upperlimit != NULL) delete [] upperlimit;
+  if (nVertex != NULL) delete [] nVertex;
   
 }
 
@@ -1310,10 +1314,45 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
 
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+
+  unsigned long iMarker,  nMarker = config->GetnMarker_All();
+
+  SlidingState = NULL;
+  SlidingState = new su2double** [nMarker];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    SlidingState[iMarker] = NULL;
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+      SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
+      for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++) {
+        SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
+        for (iVar = 0; iVar < nVar; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = -1;
+      }
+    }
+    else
+      SlidingState[iMarker] = NULL;
+  }
+
 }
 
 CTurbSASolver::~CTurbSASolver(void) {
   
+  unsigned long iMarker, iVertex;
+
+  if ( SlidingState != NULL ) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if ( SlidingState[iMarker] != NULL ) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          delete [] SlidingState[iMarker][iVertex];
+
+        delete [] SlidingState[iMarker];
+      }
+    }
+    delete [] SlidingState;
+  }
+
 }
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -2807,6 +2846,101 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
   //
 }
 
+void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+    CNumerics *visc_numerics, CConfig *config){
+
+  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned short iDim, iVar, iMarker;
+
+  bool grid_movement = config->GetGrid_Movement();
+  unsigned short nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
+  su2double *Normal = new su2double[nDim];
+  su2double *PrimVar_i = new su2double[nPrimVar];
+  su2double *PrimVar_j = new su2double[nPrimVar];
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+          for (iVar = 0; iVar < nPrimVar; iVar++) {
+            PrimVar_i[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(iVar);
+            PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar);
+          }
+
+          /*--- Set primitive variables ---*/
+
+          conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+
+          /*--- Set the turbulent variable states ---*/
+          Solution_i[0] = node[iPoint]->GetSolution(0);
+          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
+
+          conv_numerics->SetTurbVar(Solution_i, Solution_j);
+          /*--- Set the normal vector ---*/
+
+          conv_numerics->SetNormal(Normal);
+
+          if (grid_movement)
+            conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+          /*--- Compute the convective residual using an upwind scheme ---*/
+
+          conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+          /*--- Add Residuals and Jacobians ---*/
+
+          LinSysRes.AddBlock(iPoint, Residual);
+
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+          /*--- Set the normal vector and the coordinates ---*/
+
+          visc_numerics->SetNormal(Normal);
+          visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+          /*--- Primitive variables, and gradient ---*/
+
+          visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+          //          visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+          /*--- Turbulent variables and its gradients  ---*/
+
+          visc_numerics->SetTurbVar(Solution_i, Solution_j);
+          visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+          /*--- Compute and update residual ---*/
+
+          visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+          LinSysRes.SubtractBlock(iPoint, Residual);
+
+          /*--- Jacobian contribution for implicit integration ---*/
+
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+        }
+      }
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+
+  delete [] Normal;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
+
+}
+
 void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                           CConfig *config, unsigned short val_marker) {
   
@@ -3132,6 +3266,27 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
+
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+
+  unsigned long iMarker,  nMarker = config->GetnMarker_All();
+
+  SlidingState = NULL;
+  SlidingState = new su2double** [nMarker];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    SlidingState[iMarker] = NULL;
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+      SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
+      for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++) {
+        SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
+        for (iVar = 0; iVar < nVar; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = -1;
+      }
+    }
+    else
+      SlidingState[iMarker] = NULL;
+  }
   
 }
 
@@ -3139,6 +3294,20 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
   
   if (constants != NULL) delete [] constants;
   
+  unsigned long iMarker, iVertex;
+
+  if ( SlidingState != NULL ) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if ( SlidingState[iMarker] != NULL ) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          delete [] SlidingState[iMarker][iVertex];
+
+        delete [] SlidingState[iMarker];
+      }
+    }
+    delete [] SlidingState;
+  }
+
 }
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -3637,6 +3806,106 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
   /*--- Free locally allocated memory ---*/
   delete[] Normal;
   
+}
+
+void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+    CNumerics *visc_numerics, CConfig *config){
+
+  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned short iDim, iVar, iMarker;
+
+  bool grid_movement = config->GetGrid_Movement();
+  unsigned short nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
+  su2double *Normal = new su2double[nDim];
+  su2double *PrimVar_i = new su2double[nPrimVar];
+  su2double *PrimVar_j = new su2double[nPrimVar];
+
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+          for (iVar = 0; iVar < nPrimVar; iVar++) {
+            PrimVar_i[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(iVar);
+            PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar);
+          }
+
+          /*--- Set primitive variables ---*/
+
+          conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+
+          /*--- Set the turbulent variable states ---*/
+          Solution_i[0] = node[iPoint]->GetSolution(0);
+          Solution_i[1] = node[iPoint]->GetSolution(1);
+
+          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
+          Solution_j[1] = GetSlidingState(iMarker, iVertex, 1);
+
+          conv_numerics->SetTurbVar(Solution_i, Solution_j);
+          /*--- Set the normal vector ---*/
+
+          conv_numerics->SetNormal(Normal);
+
+          if (grid_movement)
+            conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+          /*--- Compute the convective residual using an upwind scheme ---*/
+
+          conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+
+          /*--- Add Residuals and Jacobians ---*/
+
+          LinSysRes.AddBlock(iPoint, Residual);
+
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+          /*--- Set the normal vector and the coordinates ---*/
+
+          visc_numerics->SetNormal(Normal);
+          visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+          /*--- Primitive variables, and gradient ---*/
+
+          visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+          //          visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+          /*--- Turbulent variables and its gradients  ---*/
+
+          visc_numerics->SetTurbVar(Solution_i, Solution_j);
+          visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+          /*--- Compute and update residual ---*/
+
+          visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+          LinSysRes.SubtractBlock(iPoint, Residual);
+
+          /*--- Jacobian contribution for implicit integration ---*/
+
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+        }
+      }
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+
+  delete [] Normal;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
+
 }
 
 su2double* CTurbSSTSolver::GetConstants() {

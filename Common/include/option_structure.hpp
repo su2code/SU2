@@ -1223,7 +1223,9 @@ enum ENUM_PARAM {
   NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102,	 /*!< \brief Angle of attack for FFD problem. */
-  FFD_ROTATION_TRANS = 103	 /*!< \brief Free form deformation for 3D design (rotation + translation). */
+  FFD_ROTATION_TRANS = 103,	 /*!< \brief Free form deformation for 3D design (rotation + translation). */
+  FFD_DIRECT_MANIPULATION = 26,
+  FFD_DIRECT_MANIPULATION_2D = 27
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1254,7 +1256,9 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("SURFACE_FILE", SURFACE_FILE)
 ("CUSTOM", CUSTOM)
 ("NO_DEFORMATION", NO_DEFORMATION)
-("CST", CST);
+("CST", CST)
+("FFD_DIRECT_MANIPULATION", FFD_DIRECT_MANIPULATION)
+("FFD_DIRECT_MANIPULATION_2D", FFD_DIRECT_MANIPULATION_2D);
 
 
 /*!
@@ -1267,6 +1271,19 @@ enum ENUM_FFD_BLENDING{
 static const map<string, ENUM_FFD_BLENDING> Blending_Map = CCreateMap<string, ENUM_FFD_BLENDING>
 ("BSPLINE_UNIFORM", BSPLINE_UNIFORM)
 ("BEZIER", BEZIER);
+
+/*!
+ * \brief Energy definition for constrained based shape parameterization
+ */
+enum ENUM_CSP_ENERGY{
+  LEAST_SQUARES = 0,
+  LAPLACIAN_ENERGY = 1,
+  ELASTIC_ENERGY = 2
+};
+static const map<string, ENUM_CSP_ENERGY> CSP_Energy_Map = CCreateMap<string, ENUM_CSP_ENERGY>
+("LEAST_SQUARES", LEAST_SQUARES)
+("LAPLACIAN_ENERGY", LAPLACIAN_ENERGY)
+("ELASTIC_ENERGY", ELASTIC_ENERGY);
 
 /*!
  * \brief types of solvers for solving linear systems
@@ -2224,6 +2241,8 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
+        case FFD_DIRECT_MANIPULATION: nParamDV = 4; break;
+        case FFD_DIRECT_MANIPULATION_2D: nParamDV = 3; break;
         case CUSTOM:               nParamDV = 1; break;
         default : {
           string newstring;
@@ -2253,7 +2272,9 @@ public:
              (this->design_variable[iDV] == FFD_ROTATION_TRANS) ||
              (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
              (this->design_variable[iDV] == FFD_CAMBER) ||
-             (this->design_variable[iDV] == FFD_THICKNESS))) {
+             (this->design_variable[iDV] == FFD_THICKNESS) ||
+             (this->design_variable[iDV] == FFD_DIRECT_MANIPULATION) ||
+             (this->design_variable[iDV] == FFD_DIRECT_MANIPULATION_2D))) {
               ss >> this->FFDTag[iDV];
               this->paramDV[iDV][iParamDV] = 0;
             }
@@ -2354,6 +2375,23 @@ public:
           break;
         case FFD_ROTATION_TRANS:
             nValueDV = 6;
+            break;
+        case FFD_DIRECT_MANIPULATION:
+          if((this->paramDV[iDV][1] == 0) &&
+             (this->paramDV[iDV][2] == 0) &&
+             (this->paramDV[iDV][3] == 0)) {
+            nValueDV = 3;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        case FFD_DIRECT_MANIPULATION_2D:
+          if((this->paramDV[iDV][1] == 0) &&
+             (this->paramDV[iDV][2] == 0)) {
+            nValueDV = 2;
+          } else {
+            nValueDV = 1;
+          }
           break;
         default :
           nValueDV = 1;
