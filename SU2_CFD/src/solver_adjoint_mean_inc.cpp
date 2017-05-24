@@ -3411,8 +3411,6 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Pressure=0.0, Velocity2 = 0.0, Area=0.0, Density=0.0, Vn_Exit=0.0;
-  su2double Velocity[3], UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -3435,14 +3433,6 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Set the normal point ---*/
 
@@ -3688,7 +3678,7 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[0] + skipVars;
+      index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
