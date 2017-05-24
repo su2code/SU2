@@ -3838,7 +3838,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
     
     if (nMarker_ZoneInterface != 0) {
-      cout << "Surface(s) belonging to the Fluid-Structure Interaction problem: ";
+      cout << "Surface(s) acting as an interface among zones: ";
       for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++) {
         cout << Marker_ZoneInterface[iMarker_ZoneInterface];
         if (iMarker_ZoneInterface < nMarker_ZoneInterface-1) cout << ", ";
