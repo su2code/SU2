@@ -69,7 +69,6 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
     TimeDomain3D = config->GetTimeDomain3D();
     UseAnalytic = false;
     if (rank==MASTER_NODE){
-       cout<<endl<<"-------------- New Mem Reduced --------------"<<endl;
     if (TimeDomain3D){
         if(nDim==2){
         cout<<endl<<"***************  WARNING!!! Time domain FWH implementation NOT available in 2D!!! Use frequency domain!!!  ***************"<<endl;
@@ -84,6 +83,7 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
          cout<<endl<<"-------------- Initiating 3D FWH Solver in Frequency Domain --------------"<<endl;
           }
       }
+          cout<<endl<<"-----------------------------------------VARIABLE SAMPLING FREQUENCY TEST --------------------------------------"<<endl;
       }
 
 
@@ -92,7 +92,9 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
     SPL = 0.0;
     end_iter  = config->GetnExtIter();
     start_iter  =  config->GetUnst_RestartIter();
-    nSample  =  config->GetIter_Avg_Objective();
+    SamplingFreq = config->GetWrt_Sol_Freq_DualTime();    //Sampling Freq: defined as the number of dt's between each snapsho (restart file)
+    nSample  =  config->GetIter_Avg_Objective()/SamplingFreq;
+
 
     /* Setting Observer locations -- change to config option later! */
     string  text_line;
@@ -725,7 +727,7 @@ void FWHSolver::SetAeroacoustic_Analysis(CSolver *solver, CConfig *config,CGeome
     su2double  CFD_PressureFluctuation=0.0;
      unsigned long ExtIter = config->GetExtIter();
      unsigned long start_iter  =  config->GetUnst_RestartIter();
-     unsigned long iSample = ExtIter-start_iter;
+     unsigned long iSample = (ExtIter-start_iter)/SamplingFreq;
      Physical_dt = config->GetDelta_UnstTime();
      Physical_t  = ExtIter*Physical_dt;
      nMarker      = config->GetnMarker_All();
@@ -825,7 +827,7 @@ void FWHSolver::SetCFD_PressureFluctuation(CSolver *solver, CConfig *config, CGe
   CFD_PressureFluctuation= 0.0;
   Local_AvgPressureFluctuation= 0.0;
 
-  iSample = ExtIter - config->GetUnst_RestartIter();
+  iSample = (ExtIter - config->GetUnst_RestartIter())/SamplingFreq;
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
           if( geometry->node[iPoint]->GetDomain()){
@@ -904,7 +906,7 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
 
   nMarker      = config->GetnMarker_All();
   unsigned long ExtIter = config->GetExtIter();
-  iSample = ExtIter - config->GetUnst_RestartIter();
+  iSample = (ExtIter - config->GetUnst_RestartIter())/SamplingFreq;
 
 #ifdef HAVE_MPI
   int rank, nProcessor;
@@ -1042,7 +1044,7 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
                         }else{
                           //use analytic solution on the porous surface
                           r_panel = sqrt(x*x+y*y+z*z);
-                          theta = (iSample*config->GetDelta_UnstTime()+r_panel/a_inf)*Freq_a;
+                          theta = (iSample*SamplingFreq*config->GetDelta_UnstTime()+r_panel/a_inf)*Freq_a;
                           p=Amp_a/4/M_PI/r_panel*cos(theta);
                           u_mag = Amp_a/4/M_PI/r_panel/FreeStreamDensity*(sin(theta)/r_panel/Freq_a+cos(theta)/a_inf);
                           ux = u_mag*nx;
@@ -1151,7 +1153,7 @@ void FWHSolver::Compute_TimeDomainPanelSignal(CConfig *config){
 su2double Un_dot, Fr_dot, dt, dS;
 unsigned long iPanel, iSample, iObserver;
 
-  dt = config->GetDelta_UnstTime();
+  dt = config->GetDelta_UnstTime()*SamplingFreq;
   for (iObserver=0; iObserver<nObserver; iObserver++){
       for (iPanel=0; iPanel<nPanel; iPanel++){
           dS = surface_geo[iPanel][4];
@@ -1191,7 +1193,7 @@ unsigned long start_iter  =  config->GetUnst_RestartIter();
 su2double r_min=10.0e31;su2double r_max=0.0;
 
 
-  dt = config->GetDelta_UnstTime();
+  dt = config->GetDelta_UnstTime()*SamplingFreq;
   for (iObserver=0; iObserver<nObserver; iObserver++){
       r_min=10.0e31; r_max=0.0;
       for (iPanel=0; iPanel<nPanel; iPanel++){
@@ -1204,7 +1206,7 @@ su2double r_min=10.0e31;su2double r_max=0.0;
             }
 
           for (iSample=0; iSample<nSample; iSample++){
-              t_src = config->GetDelta_UnstTime()*(start_iter+iSample);
+              t_src = config->GetDelta_UnstTime()*(start_iter+iSample*SamplingFreq);
               if(UseAnalytic) t_src = t_src + sqrt(surface_geo[iPanel][0]*surface_geo[iPanel][0]+surface_geo[iPanel][1]*surface_geo[iPanel][1]+surface_geo[iPanel][5]*surface_geo[iPanel][5])/a_inf;
               t_Obs[iObserver][iPanel][iSample]=t_src + r/a_inf;
             }
@@ -1223,7 +1225,7 @@ su2double r_min=10.0e31;su2double r_max=0.0;
   //cout<<"Time Shift INFO: "<< r_max<<", "<< r_min<<", "<< ;
   for (iObserver=0; iObserver<nObserver; iObserver++){
   t_interp_start = config->GetDelta_UnstTime()*(start_iter)+r_minmax[iObserver][1]/a_inf;
-  t_interp_end = config->GetDelta_UnstTime()*(start_iter+nSample-1)+r_minmax[iObserver][0]/a_inf;
+  t_interp_end = config->GetDelta_UnstTime()*(start_iter+nSample*SamplingFreq-1)+r_minmax[iObserver][0]/a_inf;
   dt_interp = (t_interp_end - t_interp_start)/(nSample-1);
   //cout<<t_interp_start<<", "<<t_interp_end<<", "<< dt_interp;
   for (iSample=0; iSample<nSample; iSample++){
@@ -1486,7 +1488,7 @@ void FWHSolver::Compute_GreensFunction2D(CConfig *config){
   complex <su2double> I = complex<su2double> (0, 1);
 
 
-       dt = config->GetDelta_UnstTime();
+       dt = config->GetDelta_UnstTime()*SamplingFreq;
 
 
        for (iObserver=0; iObserver<nObserver; iObserver++){
@@ -1541,7 +1543,7 @@ void FWHSolver::Compute_GreensFunction3D(CConfig *config){
   su2double fac1_y1, fac2_y1, fac3_y1, fac1_y2, fac2_y2, fac3_y2, fac1_y3, fac2_y3, fac3_y3;
 
 
-       dt = config->GetDelta_UnstTime();
+       dt = config->GetDelta_UnstTime()*SamplingFreq;
 
 
        for (iObserver=0; iObserver<nObserver; iObserver++){
@@ -1717,7 +1719,7 @@ void FWHSolver::Integrate_Sources(CConfig *config){
 
        }else{
 
-       dt = config->GetDelta_UnstTime();
+       dt = config->GetDelta_UnstTime()*SamplingFreq;
        for (iObserver=0; iObserver<nObserver; iObserver++){
            for (iSample=0; iSample<nSample; iSample++){
 
@@ -1837,7 +1839,7 @@ void FWHSolver::Write_Sensitivities(CSolver *solver, CConfig *config, CGeometry 
 
       /* Loop through all time steps */
       for (iSample=0; iSample<nSample; iSample++){
-      iExtIter = start_iter + iSample;
+      iExtIter = start_iter + iSample*SamplingFreq;
 
       /* pack sensitivity values in each processor and send to root */
       su2double *Buffer_Send_dJdU = new su2double [Max_nPanel*nVar];

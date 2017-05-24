@@ -1843,8 +1843,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       }
     }
   }
-  /* read in dJ/dU here */
-  if (config_container[val_iZone]->GetExtIter()<config_container[val_iZone]->GetIter_Avg_Objective() && config_container[val_iZone]->GetKind_ObjFunc()==NOISE){
+  /* read in dJ/dU here */  // iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 
+  if (Direct_Iter % config_container[val_iZone]-> GetWrt_Sol_Freq_DualTime() == 0 && config_container[val_iZone]->GetExtIter()<config_container[val_iZone]->GetIter_Avg_Objective() && config_container[val_iZone]->GetKind_ObjFunc()==NOISE){
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]-> ExtractCAA_Sensitivity(geometry_container[val_iZone][MESH_0], config_container[val_iZone], Direct_Iter);
     }
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);

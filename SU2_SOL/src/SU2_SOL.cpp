@@ -352,7 +352,8 @@ for (iZone = 0; iZone < nZone; iZone++) {
 				if (Physical_t >=  config_container[ZONE_0]->GetTotal_UnstTime())
 					StopCalc = true;
 
-				if ((iExtIter+1 == config_container[ZONE_0]->GetnExtIter()) ||
+//				if ((iExtIter+1 == config_container[ZONE_0]->GetnExtIter()) ||
+				if (
 						((iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (iExtIter != 0) &&
 								!((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 										(config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
@@ -370,10 +371,14 @@ for (iZone = 0; iZone < nZone; iZone++) {
 						config_container[iZone]->SetExtIter(iExtIter);
 
 						/*--- Either instantiate the solution class or load a restart file. ---*/
+//                if (SolutionInstantiated[iZone] == false &&
+//                    (iExtIter == 0 || (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
+//										iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
+//										iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
                 if (SolutionInstantiated[iZone] == false &&
                     (iExtIter == 0 || (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
-										iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
-										iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
+										iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0
+										)))) {
                if(!FWH_container[ZONE_0]->UseAnalytic)  solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
 							SolutionInstantiated[iZone] = true;
 						}

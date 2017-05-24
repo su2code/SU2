@@ -447,6 +447,13 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   unsigned short iVar;
   unsigned long iPoint;
+  int Direct_Iter;
+
+    Direct_Iter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - SU2_TYPE::Int(config->GetExtIter()) - 2;
+
+    if (dual_time) {
+      Direct_Iter += 1;
+    }
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -460,7 +467,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
     // FWH
     if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
-    if (config->GetExtIter()<config->GetIter_Avg_Objective()){
+    if (Direct_Iter % config-> GetWrt_Sol_Freq_DualTime() == 0 && config->GetExtIter()<config->GetIter_Avg_Objective()){
     if (LocalPointIndex[iPoint] >= 0){
         for (iVar = 0; iVar < nVar; iVar++){
             Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
@@ -738,6 +745,10 @@ void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config
    char buffer [50];
 
    char cstr [64];
+  int rank ;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
    SPRINTF (cstr, "Adj_CAA");
    if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
@@ -746,12 +757,13 @@ void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config
    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    SU2_TYPE::Int(iExtIter));
    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
    string filename = strcat (cstr, buffer);
-   cout<<"Accessing CAA Adjoint file: "<<filename <<endl;
+   if (rank == MASTER_NODE)   cout<<" Accessing CAA Adjoint file: "<<filename <<endl;
    //CAA_AdjointFile.precision(15);
    CAA_AdjointFile.open(filename.data() , ios::in);
    if (CAA_AdjointFile.fail()) {
-//     if (rank == MASTER_NODE)
+     if (rank == MASTER_NODE){
        cout << "There is no flow restart file!! " <<  filename.data()  << "."<< endl;
+     }
      exit(EXIT_FAILURE);
    }
 
@@ -779,10 +791,6 @@ void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config
   iPanel=0;
 
 
-  int rank ;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 //   ofstream dJdU_file;
 //  if (iExtIter==1051){
 
@@ -792,7 +800,7 @@ void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config
 //    }
 
 
-  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
+//  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
 
   /*--- The first line is the header ---*/
 
@@ -828,7 +836,7 @@ void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config
   }
 
 
-  cout<<"Finished reading."<<"iPanel= "<<iPanel<<",  Rank= "<<rank<<endl;
+//  cout<<"Finished reading."<<"iPanel= "<<iPanel<<",  Rank= "<<rank<<endl;
 
   /*--- Close the restart file ---*/
 

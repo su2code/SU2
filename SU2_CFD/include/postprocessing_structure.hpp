@@ -74,7 +74,7 @@ class FWHSolver {
   complex <su2double>  ***fF;
   complex <su2double>  **pp;
   su2double  **fpp_r, **fpp_i, **fpp_r_root,**fpp_i_root, **pp_CFD, *pp_CFD_mean ;
-  unsigned long nObserver, nPanel, nSample, idx_window_l, idx_window_r, nDim;
+  unsigned long nObserver, nPanel, nSample, idx_window_l, idx_window_r, nDim, SamplingFreq;
   unsigned long totFWH;
   unsigned long *PointID;
   su2double **Observer_Locations, **closet_coord_AllObs;

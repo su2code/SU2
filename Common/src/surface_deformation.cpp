@@ -67,8 +67,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
     /*--- Read the FFD information from the config file ---*/
 
-    ReadFFDInfo(geometry, config, FFDBox);
-//    SetBoundingFFDBox(geometry, config, FFDBox);
+//    ReadFFDInfo(geometry, config, FFDBox);
+    SetBoundingFFDBox(geometry, config, FFDBox);
 
     /*--- If there is a FFDBox in the input file ---*/
 
@@ -5788,8 +5788,8 @@ void CSurfaceMovement::SetBoundingFFDBox(CGeometry *geometry, CConfig *config, C
       /*--- Increase the size of the box by 10% --- */
 
       for (iDim = 0; iDim < nDim; iDim++){
-        CartCoordMax[iDim] = CartCoordMax[iDim]+0.05*(CartCoordMax[iDim] - CartCoordMin[iDim]);
-        CartCoordMin[iDim] = CartCoordMin[iDim]-0.05*(CartCoordMax[iDim] - CartCoordMin[iDim]);
+        CartCoordMax[iDim] = CartCoordMax[iDim]+0.05*(CartCoordMax[iDim] - CartCoordMin[iDim])+0.005;
+        CartCoordMin[iDim] = CartCoordMin[iDim]-0.05*(CartCoordMax[iDim] - CartCoordMin[iDim])-0.005;
       }
 
       if (nDim == 2){

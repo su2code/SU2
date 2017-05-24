@@ -9771,7 +9771,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
 void CEulerSolver::Compute_ComboObj(CConfig *config) {
   unsigned short iMarker_Monitoring;
-  su2double Weight_ObjFunc;
+  su2double Weight_ObjFunc, MinCL;
 
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -9782,7 +9782,8 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
       Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
       break;
     case LIFT_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*((1.9758-Surface_CL[iMarker_Monitoring])/1.9758);
+      MinCL = config->GetTarget_CL(); 
+      Total_ComboObj+=Weight_ObjFunc*((MinCL-Surface_CL[iMarker_Monitoring])*(MinCL-Surface_CL[iMarker_Monitoring])/MinCL/MinCL);
       break;
     case SIDEFORCE_COEFFICIENT:
       Total_ComboObj+=Weight_ObjFunc*(Surface_CSF[iMarker_Monitoring]);
