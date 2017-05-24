@@ -565,7 +565,7 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
         if(Target_check == -1 || Donor_check == -1)
           continue;
 
-        nVertexDonor  = geo_adapt[donorZone]->GetnVertex( markDonor  );
+        //nVertexDonor  = geo_adapt[donorZone]->GetnVertex( markDonor  );
         nVertexTarget = geometry[targetZone]->GetnVertex( markTarget );
       
         if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
@@ -580,10 +580,11 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
 
           target_iPoint = geometry[targetZone]->vertex[markTarget][iTarget]->GetNode();
       
-    
           Coord_i = geometry[targetZone]->node[target_iPoint]->GetCoord();
 
           mindist = 1E6;
+          
+          nVertexDonor  = geo_adapt[donorZone]->GetnVertex( markDonor  );
             
           for (iDonor = 0; iDonor < nVertexDonor; iDonor++) {
         
@@ -600,7 +601,6 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
             }
 
             if (dist == 0.0){
-              DonorClosestNode = donor_iPoint;
               break;
             }    
           }
@@ -612,7 +612,7 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
             
             Coord_j = geo_adapt[donorZone]->node[DonorClosestNode]->GetCoord();
             
-            for (iBound = 0; iBound < geo_adapt[donorZone]->GetnElem_Bound(markDonor); iBound++){
+            for(iBound = 0; iBound < geo_adapt[donorZone]->GetnElem_Bound(markDonor); iBound++){
               if( DonorClosestNode == geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(0) ) {
                 dPoint = geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(1);
               }
@@ -657,6 +657,7 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
             // Find the third node in the boundary triangle
     
             for (iEdge = 0; iEdge < geo_adapt[donorZone]->node[DonorClosestNode]->GetnPoint(); iEdge++){
+              
               if( DonorClosestNode == geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[DonorClosestNode]->GetEdge(iEdge)]->GetNode(0) )
                 iPoint = geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[DonorClosestNode]->GetEdge(iEdge)]->GetNode(1);
               else
@@ -664,13 +665,20 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
 
               for (jEdge = 0; jEdge < geo_adapt[donorZone]->node[dPoint]->GetnPoint(); jEdge++){
                 if( dPoint == geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge)]->GetNode(0) ){
-                  if( iPoint == geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge)]->GetNode(1))
+                  if( iPoint == geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge)]->GetNode(1)){
                     pPoint = iPoint;
+                    jEdge = geo_adapt[donorZone]->node[dPoint]->GetnPoint();
+                    iEdge = geo_adapt[donorZone]->node[DonorClosestNode]->GetnPoint();
+                  }
                 }
                 else{
-                  if( iPoint == geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge)]->GetNode(0))
+                  if( iPoint == geo_adapt[donorZone]->edge[geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge)]->GetNode(0)){
                     pPoint = iPoint;                    
+                    jEdge = geo_adapt[donorZone]->node[dPoint]->GetnPoint();
+                    iEdge = geo_adapt[donorZone]->node[DonorClosestNode]->GetnPoint();
+                  }
                 }
+                
               }
             }
 
@@ -680,7 +688,7 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
             delete geo_adapt[donorZone]->edge[EdgeIndex];
                   
             iEdge = geo_adapt[donorZone]->GetnEdge();
-            geo_adapt[donorZone]->edge[EdgeIndex] = new CEdge(iPoint, DonorClosestNode, 2);
+            geo_adapt[donorZone]->edge[EdgeIndex] = new CEdge(DonorClosestNode, iPoint, 2);
             geo_adapt[donorZone]->edge[iEdge]     = new CEdge(iPoint, dPoint,           2);
             geo_adapt[donorZone]->edge[iEdge+1]   = new CEdge(iPoint, pPoint,           2);
                   
@@ -689,18 +697,46 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
             geo_adapt[donorZone]->node[iPoint]->SetPoint(DonorClosestNode);
             geo_adapt[donorZone]->node[iPoint]->SetPoint(dPoint);
             geo_adapt[donorZone]->node[iPoint]->SetPoint(pPoint);
-                  
+            
+            
+            //geo_adapt[donorZone]->edge[EdgeIndex]->GetNode(0);
+            
             geo_adapt[donorZone]->node[iPoint]->SetEdge(EdgeIndex, 0);
             geo_adapt[donorZone]->node[iPoint]->SetEdge(iEdge,     1);
             geo_adapt[donorZone]->node[iPoint]->SetEdge(iEdge + 1, 2);
-                   
+            
+            for(jEdge = 0; jEdge < geo_adapt[donorZone]->node[dPoint]->GetnPoint(); jEdge++){
+              if(geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge) == EdgeIndex){
+                geo_adapt[donorZone]->node[dPoint]->SetEdge(iEdge, jEdge);
+                break;
+              }
+            }
+            
+            geo_adapt[donorZone]->node[pPoint]->SetEdge(iEdge + 1, geo_adapt[donorZone]->node[pPoint]->GetnPoint()+1);
+            
+            /*
+            geo_adapt[donorZone]->node[pPoint]->SetPoint(iPoint);
+            geo_adapt[donorZone]->node[pPoint]->SetEdge(iEdge + 1, geo_adapt[donorZone]->node[pPoint]->GetnPoint()+1);
+            */
+            /*
+            for (iEdge = 0; iEdge < geo_adapt[donorZone]->node[DonorClosestNode]->GetnPoint(); iEdge++){
+              cout << geo_adapt[donorZone]->node[iPoint]->GetPoint(iEdge) << "  ";
+            }
+            getchar();
+            */
+            /*
+            geo_adapt[donorZone]->node[pPoint]->SetPoint(iPoint);
+            geo_adapt[donorZone]->node[dPoint]->SetPoint(iPoint);
+            geo_adapt[donorZone]->node[DonorClosestNode]->SetPoint(iPoint);
+            */
+            
             for (iBound = 0; iBound < geo_adapt[donorZone]->GetnElem_Bound(markDonor); iBound++){
               if( geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(0) == DonorClosestNode || geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(1) == DonorClosestNode ){
                 if( geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(0) == dPoint || geo_adapt[donorZone]->bound[markDonor][iBound]->GetNode(1) == dPoint ){
                   delete geo_adapt[donorZone]->bound[markDonor][iBound];
                   geo_adapt[donorZone]->bound[markDonor][iBound] = new CLine(iPoint, DonorClosestNode, 2);
                   iBound = geo_adapt[donorZone]->GetnElem_Bound(markDonor);
-                  geo_adapt[donorZone]->bound[markDonor][iBound] = new CLine(iPoint, dPoint,           2);
+                  geo_adapt[donorZone]->bound[markDonor][iBound] = new CLine(dPoint, iPoint,           2);
                 }
               }
             }
