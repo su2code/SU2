@@ -276,6 +276,62 @@ int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_mark
   return -1;
 }
 
+bool CInterpolator::CheckInterfaceBoundary(unsigned long markDonor, unsigned long markTarget){
+  
+  #ifdef HAVE_MPI
+    
+  int *Buffer_Recv_mark = NULL, rank, nProcessor;
+  int Donor_check, Target_check;
+  unsigned long iRank, nRank;
+  
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  
+  if (rank == MASTER_NODE) 
+    Buffer_Recv_mark = new int[nProcessor];
+
+  Donor_check  = -1;
+  Target_check = -1;
+
+  /*--- We gather a vector in MASTER_NODE to determine whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+
+  SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (rank == MASTER_NODE)
+    for (iRank = 0; iRank < nProcessor; iRank++)
+      if( Buffer_Recv_mark[iRank] != -1 ){
+        Donor_check = Buffer_Recv_mark[iRank];
+        break;
+      }
+
+  SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+
+  SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (rank == MASTER_NODE)
+    for (iRank = 0; iRank < nProcessor; iRank++)
+      if( Buffer_Recv_mark[iRank] != -1 ){
+        Target_check = Buffer_Recv_mark[iRank];
+        break;
+      }
+
+
+  SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  
+  if (rank == MASTER_NODE) 
+    delete [] Buffer_Recv_mark;
+
+  if(Target_check == -1 || Donor_check == -1)
+    return false;
+  else 
+    return true;
+    
+#else
+ return true;
+#endif
+}
+
 su2double CInterpolator::PointsDistance(su2double *point_i, su2double *point_j){
 
   /*--- Compute distance between 2 points ---*/
@@ -314,20 +370,9 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   su2double *Coord_i, *Coord_j, dist, mindist, maxdist;
 
 #ifdef HAVE_MPI
-
-  int rank = MASTER_NODE;
-  int *Buffer_Recv_mark = NULL, iRank;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  if (rank == MASTER_NODE) 
-    Buffer_Recv_mark = new int[nProcessor];
-
 #else
-
   nProcessor = SINGLE_NODE;
-
 #endif
 
   /*--- Initialize variables --- */
@@ -352,43 +397,8 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
     markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-    #ifdef HAVE_MPI
-    
-    Donor_check  = -1;
-    Target_check = -1;
-        
-    /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
-    
-    SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Donor_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-    
-    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    
-    SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Target_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-        
-    #else
-    Donor_check  = markDonor;
-    Target_check = markTarget;  
-    #endif
-    
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(Target_check == -1 || Donor_check == -1)
+    if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
 
     if(markDonor != -1)
@@ -470,11 +480,6 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   }
 
   delete[] Buffer_Receive_nVertex_Donor;
-
-  #ifdef HAVE_MPI
-  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL ) 
-    delete [] Buffer_Recv_mark;
-  #endif
 }
 
 
@@ -536,13 +541,10 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
 
 #ifdef HAVE_MPI
 
-  int *Buffer_Recv_mark=NULL, iRank;
+  int iRank;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  if (rank == MASTER_NODE) 
-    Buffer_Recv_mark = new int[nProcessor];
 
 #else
 
@@ -566,42 +568,8 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
     markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-    #ifdef HAVE_MPI
-    
-    Donor_check  = -1;
-    Target_check = -1;
-        
-    /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
-    
-    SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Donor_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-    
-    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Target_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-        
-    #else
-    Donor_check  = markDonor;
-    Target_check = markTarget;  
-    #endif
-    
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(Target_check == -1 || Donor_check == -1)
+    if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
 
     if(markDonor != -1)
@@ -881,11 +849,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   delete [] Normal;
   
   delete [] projected_point;
-
-  #ifdef HAVE_MPI
-  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL) 
-    delete [] Buffer_Recv_mark;
-  #endif
 }
 
 void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
@@ -1117,14 +1080,10 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   int nProcessor = SINGLE_NODE;
 
 #ifdef HAVE_MPI
-  int *Buffer_Recv_mark=NULL, iRank;
+  int iRank;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  if (rank == MASTER_NODE) 
-    Buffer_Recv_mark = new int[nProcessor];
-
 #else
 
   nProcessor = SINGLE_NODE;
@@ -1151,42 +1110,8 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
     markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-    #ifdef HAVE_MPI
-
-    Donor_check  = -1;
-    Target_check = -1;
-
-    /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
-
-    SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Donor_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Target_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    #else
-    Donor_check  = markDonor;
-    Target_check = markTarget;  
-    #endif
-
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(Target_check == -1 || Donor_check == -1)
+    if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
 
     if(markDonor != -1)
@@ -1359,11 +1284,6 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
     delete[] Buffer_Receive_Coeff;
 
   }
-
-  #ifdef HAVE_MPI
-  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL) 
-    delete [] Buffer_Recv_mark;
-  #endif
 }
 
 CSlidingMesh::CSlidingMesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone)  :  CInterpolator(geometry_container, config, iZone, jZone){
@@ -1454,13 +1374,10 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
 
 #ifdef HAVE_MPI
 
-  int *Buffer_Recv_mark = NULL, iRank;
+  int iRank;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  if (rank == MASTER_NODE) 
-    Buffer_Recv_mark = new int[nProcessor];
 
 #else
 
@@ -1510,43 +1427,8 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
     markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-#ifdef HAVE_MPI
-
-    Donor_check  = -1;
-    Target_check = -1;
-
-    /*--- We gather a vector in MASTER_NODE to determine whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
-
-    SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
-          Donor_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-
-    SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
-          Target_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-#else
-    Donor_check  = markDonor;
-    Target_check = markTarget;  
-#endif
-
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(Target_check == -1 || Donor_check == -1)
+    if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
 
     if(markDonor != -1)
@@ -2115,9 +1997,9 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   
             /*--- In case the element intersects the target cell, update the auxiliary communication data structure ---*/
 
-            tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
-            tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-            tmp_storeProc  = new unsigned long[ nDonorPoints ];
+            tmp_Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+            tmp_Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+            tmp_storeProc  = new unsigned long[ nDonorPoints + 1 ];
  
             for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
               tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
@@ -2125,40 +2007,20 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
               tmp_storeProc[iDonor]  = storeProc[iDonor];
             }
 
-            if (Donor_Vect != NULL)
-              delete [] Donor_Vect;
-  
-            if (Coeff_Vect != NULL)
-              delete [] Coeff_Vect;
+            tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
+            tmp_Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
+            tmp_storeProc[  nDonorPoints ] = Donor_proc[donor_iPoint];
             
-            if (storeProc  != NULL)
-              delete [] storeProc;
+            if (Donor_Vect != NULL) delete [] Donor_Vect;  
+            if (Coeff_Vect != NULL) delete [] Coeff_Vect;            
+            if (storeProc  != NULL) delete [] storeProc;
 
-            Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
-            Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-            storeProc  = new unsigned long[ nDonorPoints + 1 ];
-          
-            for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-              Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
-              Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
-              storeProc[iDonor]  = tmp_storeProc[iDonor];
-            }
-
-            Donor_Vect[ nDonorPoints ] = donor_iPoint;
-            Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
-            storeProc[  nDonorPoints ] = Donor_proc[donor_iPoint];
-
-            if (tmp_Donor_Vect != NULL)
-              delete [] tmp_Donor_Vect;
-
-            if (tmp_Coeff_Vect != NULL)
-              delete [] tmp_Coeff_Vect;
-          
-            if (tmp_storeProc  != NULL)
-              delete [] tmp_storeProc;
+            Donor_Vect = tmp_Donor_Vect;
+            Coeff_Vect = tmp_Coeff_Vect;
+            storeProc  = tmp_storeProc;
 
             donor_OldiPoint = donor_iPoint;
-            donor_iPoint = donor_forward_point;
+            donor_iPoint    = donor_forward_point;
 
             nDonorPoints++;
           }
@@ -2215,50 +2077,30 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
 
             /*--- In case the element intersects the target cell, update the auxiliary communication data structure ---*/
 
-            tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
-            tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-            tmp_storeProc  = new unsigned long[ nDonorPoints ];
+            tmp_Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+            tmp_Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+            tmp_storeProc  = new unsigned long[ nDonorPoints + 1 ];
  
             for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
               tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
               tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
               tmp_storeProc[iDonor]  = storeProc[iDonor];
             }
+                  
+            tmp_Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;                  
+            tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
+            tmp_storeProc[  nDonorPoints ] = Donor_proc[donor_iPoint];
 
-            if (Donor_Vect != NULL)
-              delete [] Donor_Vect;
-  
-            if (Coeff_Vect != NULL)
-              delete [] Coeff_Vect;
-            
-            if (storeProc  != NULL)
-              delete [] storeProc;
+            if (Donor_Vect != NULL) delete [] Donor_Vect;
+            if (Coeff_Vect != NULL) delete [] Coeff_Vect;
+            if (storeProc  != NULL) delete [] storeProc;
 
-            Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
-            Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-            storeProc  = new unsigned long[ nDonorPoints + 1 ];
-          
-            for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-              Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
-              Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
-              storeProc[iDonor]  = tmp_storeProc[iDonor];
-            }
-
-            Donor_Vect[ nDonorPoints ] = donor_iPoint;
-            Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
-            storeProc[  nDonorPoints ] = Donor_proc[donor_iPoint];
-
-            if (tmp_Donor_Vect != NULL)
-              delete [] tmp_Donor_Vect;
-  
-            if (tmp_Coeff_Vect != NULL)
-              delete [] tmp_Coeff_Vect;
-          
-            if (tmp_storeProc  != NULL)
-              delete [] tmp_storeProc;
+            Donor_Vect = tmp_Donor_Vect;
+            Coeff_Vect = tmp_Coeff_Vect;
+            storeProc  = tmp_storeProc;
 
             donor_OldiPoint = donor_iPoint;
-            donor_iPoint = donor_forward_point;
+            donor_iPoint    = donor_forward_point;
   
             nDonorPoints++;
           }
@@ -2441,22 +2283,17 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
                 if( check == 0 ){ 
                   /*--- If the node was not already visited, visit it and list it into data structure ---*/
   
-                  tmpVect = new unsigned long[ nToVisit ];
+                  tmpVect = new unsigned long[ nToVisit + 1 ];
 
                   for( jj = 0; jj < nToVisit; jj++ )
                     tmpVect[jj] = ToVisit[jj];
+                  tmpVect[nToVisit] = donor_iPoint;
 
                   if( ToVisit != NULL )
                     delete [] ToVisit;
-
-                  ToVisit = new unsigned long[nToVisit + 1];
-
-                  for( jj = 0; jj < nToVisit; jj++ )
-                    ToVisit[jj] = tmpVect[jj];
-
-                  delete [] tmpVect;              
-
-                  ToVisit[nToVisit] = donor_iPoint;
+                    
+                  ToVisit = tmpVect;
+                  tmpVect = NULL;
 
                   nToVisit++; 
 
@@ -2481,38 +2318,32 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
  
                   /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
 
-                  tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
-                  tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-                  tmp_storeProc  = new unsigned long[ nDonorPoints ];
+                  tmp_Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+                  tmp_Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+                  tmp_storeProc  = new unsigned long[ nDonorPoints + 1 ];
  
                   for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
                     tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
                     tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
                     tmp_storeProc[iDonor]  = storeProc[iDonor];
                   }
+                  
+                  tmp_Coeff_Vect[ nDonorPoints ] = tmp_Area;                  
+                  tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
+                  tmp_storeProc[  nDonorPoints ] = Donor_proc[donor_iPoint];
 
-                  if (Donor_Vect != NULL) {delete [] Donor_Vect; Donor_Vect = NULL;}
-                  if (Coeff_Vect != NULL) {delete [] Coeff_Vect; Coeff_Vect = NULL;}
-                  if (storeProc  != NULL) {delete [] storeProc;  storeProc  = NULL;}
+                  if (Donor_Vect != NULL) {delete [] Donor_Vect; }
+                  if (Coeff_Vect != NULL) {delete [] Coeff_Vect; }
+                  if (storeProc  != NULL) {delete [] storeProc;  }
 
-                  Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
-                  Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-                  storeProc  = new unsigned long[ nDonorPoints + 1 ];
-          
-                  for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-                    Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
-                    Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
-                    storeProc[iDonor]  = tmp_storeProc[iDonor];
-                  }
+                  Donor_Vect = tmp_Donor_Vect;
+                  Coeff_Vect = tmp_Coeff_Vect;
+                  storeProc  = tmp_storeProc;
 
-                  Coeff_Vect[ nDonorPoints ] = tmp_Area;                  
-                  Donor_Vect[ nDonorPoints ] = donor_iPoint;
-                  storeProc[  nDonorPoints ] = Donor_proc[donor_iPoint];
+                  tmp_Coeff_Vect = NULL;                  
+                  tmp_Donor_Vect = NULL;
+                  tmp_storeProc  = NULL;
 
-                  if (tmp_Donor_Vect != NULL) delete [] tmp_Donor_Vect;
-                  if (tmp_Coeff_Vect != NULL) delete [] tmp_Coeff_Vect;
-                  if (tmp_storeProc  != NULL) delete [] tmp_storeProc;
-  
                   nDonorPoints++;
    
                   Area += tmp_Area;
@@ -2524,23 +2355,18 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
  
             StartVisited = nAlreadyVisited;
 
-            tmpVect = new unsigned long[ nAlreadyVisited ];
+            tmpVect = new unsigned long[ nAlreadyVisited + nToVisit ];
 
             for( jj = 0; jj < nAlreadyVisited; jj++ )
               tmpVect[jj] = alreadyVisitedDonor[jj];
+              
+            for( jj = 0; jj < nToVisit; jj++ )
+              tmpVect[ nAlreadyVisited + jj ] = ToVisit[jj];
 
             if( alreadyVisitedDonor != NULL )
               delete [] alreadyVisitedDonor;
 
-            alreadyVisitedDonor = new unsigned long[ nAlreadyVisited + nToVisit ];
-
-            for( jj = 0; jj < nAlreadyVisited; jj++ )
-              alreadyVisitedDonor[jj] = tmpVect[jj];
-
-            for( jj = 0; jj < nToVisit; jj++ )
-             alreadyVisitedDonor[ nAlreadyVisited + jj ] = ToVisit[jj];
- 
-            delete [] tmpVect;              
+            alreadyVisitedDonor = tmpVect;            
 
             nAlreadyVisited += nToVisit;    
 
@@ -2596,12 +2422,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   if (Donor_Vect != NULL) delete [] Donor_Vect;
   if (Coeff_Vect != NULL) delete [] Coeff_Vect;
   if (storeProc  != NULL) delete [] storeProc;  
-
-#ifdef HAVE_MPI
-  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL ) 
-    delete [] Buffer_Recv_mark;
-#endif
-    
 }
 
 int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element){

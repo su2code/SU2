@@ -116,6 +116,13 @@ public:
    * \param[in] val_marker_interface - Interface tag.
    */
   int Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface);
+
+  /*!
+   * \brief Check whether the interface should be processed or not
+   * \param[in] val_markDonor  - Marker tag from donor zone.
+   * \param[in] val_markTarget - Marker tag from target zone.
+   */  
+  bool CheckInterfaceBoundary(unsigned long val_markDonor, unsigned long val_markTarget);
   
   /*!
    * \brief compute distance between 2 points
