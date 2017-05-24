@@ -2235,7 +2235,7 @@ public:
         case FFD_GULL:             nParamDV = 2; break;
         case FFD_TWIST:            nParamDV = 8; break;
         case FFD_ROTATION:         nParamDV = 7; break;
-        case FFD_ROTATION_TRANS:   nParamDV = 4; break;
+        case FFD_ROTATION_TRANS:   nParamDV = 7; break;
         case FFD_CONTROL_SURFACE:  nParamDV = 7; break;
         case FFD_CAMBER:           nParamDV = 3; break;
         case FFD_THICKNESS:        nParamDV = 3; break;

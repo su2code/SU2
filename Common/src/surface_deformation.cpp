@@ -2621,8 +2621,9 @@ void CSurfaceMovement::SetFFDRotationTrans(CGeometry *geometry,
   su2double movement[3] = {0.0,0.0,0.0};
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
-  su2double cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double cosPhi, sinPhi, cosPsi, sinPsi, radius, circ, alpha, arc;
   su2double Center[3] = {0.0,0.0,0.0};
+  su2double Tip[3]    = {0.0,0.0,0.0};
   su2double DeltaX[3] = {0.0,0.0,0.0};
   su2double Omega[3] = {0.0,0.0,0.0};
   su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0};
@@ -2647,21 +2648,46 @@ void CSurfaceMovement::SetFFDRotationTrans(CGeometry *geometry,
     Center[1] = config->GetParamDV(iDV, 2);
     Center[2] = config->GetParamDV(iDV, 3);
 
+    Tip[0]    = config->GetParamDV(iDV, 4);
+    Tip[1]    = config->GetParamDV(iDV, 5);
+    Tip[2]    = config->GetParamDV(iDV, 6);
+
+    /*--- Compute radius, circumference, and an initial angle (assumes 2D in x-z plane) ---*/
+
+    r[0] = (Tip[0]-Center[0]);
+    r[1] = (Tip[1]-Center[1]);
+    r[2] = 0.0;
+    if (nDim == 3) r[2] = (Tip[2]-Center[2]);
+
+    radius = sqrt(r[0]*r[0] + r[1]*r[1] + r[2]*r[2]);
+
+    circ = 2.0*PI_NUMBER*radius;
+
+    alpha = atan2(r[2],r[0]);
+
+
     /*--- The delta transformations and delta rotation angles (degrees). ---*/
 
     DeltaX[0] = config->GetDV_Value(iDV,0);
     DeltaX[1] = config->GetDV_Value(iDV,1);
     DeltaX[2] = config->GetDV_Value(iDV,2);
 
-    Omega[0]  = config->GetDV_Value(iDV,3)*PI_NUMBER/180.0;
-    Omega[1]  = config->GetDV_Value(iDV,4)*PI_NUMBER/180.0;
-    Omega[2]  = config->GetDV_Value(iDV,5)*PI_NUMBER/180.0;
+    //Omega[0]  = config->GetDV_Value(iDV,3)*PI_NUMBER/180.0;
+    //Omega[1]  = config->GetDV_Value(iDV,4)*PI_NUMBER/180.0;
+    //Omega[2]  = config->GetDV_Value(iDV,5)*PI_NUMBER/180.0;
 
     /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
 
-    dtheta = Omega[0];
-    dphi   = Omega[1];
-    dpsi   = Omega[2];
+    // HACK: we assume that the 5th parameter is the arc length (assumes 2D in x-z plane)
+    // for rotation about the y-axis (out of the page)
+
+    arc = config->GetDV_Value(iDV,4);
+
+    dtheta = 0.0;
+    dphi   = arc/radius;
+    dpsi   = 0.0;
+
+    //cout << "Radius: " << radius << " circumference: " << circ << " angle: " << alpha*180.0/PI_NUMBER << " alpa: " << dphi*180.0/PI_NUMBER << endl;
 
     /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
 

@@ -829,6 +829,7 @@ enable_GEO
 enable_PY_WRAPPER
 enable_complex
 enable_normal
+with_Eigen_include
 with_MPI
 enable_tecio
 enable_metis
@@ -1524,6 +1525,9 @@ Optional Packages:
   --with-LAPACK-lib=ARG   LAPACK library directory, ARG = path to liblapacke.a
   --with-LAPACK-include=ARG
                           LAPACK include directory, ARG = path to lapacke.h
+  --with-Eigen-include=ARG
+                          Eigen include directory, ARG = path to Eigen header
+                          file
 
   --with-metis-cppflags="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"
                           Specific METIS C Preprocessor flags to use
@@ -2577,7 +2581,7 @@ test -n "$target_alias" &&
   test "$program_prefix$program_suffix$program_transform_name" = \
     NONENONEs,x,x, &&
   program_prefix=${target_alias}-
-am__api_version='1.13'
+am__api_version='1.12'
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
@@ -2761,8 +2765,8 @@ if test x"${MISSING+set}" != xset; then
   esac
 fi
 # Use eval to expand $SHELL
-if eval "$MISSING --is-lightweight"; then
-  am_missing_run="$MISSING "
+if eval "$MISSING --run true"; then
+  am_missing_run="$MISSING --run "
 else
   am_missing_run=
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: 'missing' script is too old or missing" >&5
@@ -3002,45 +3006,6 @@ else
 fi
 rmdir .tst 2>/dev/null
 
-# Check whether --enable-silent-rules was given.
-if test "${enable_silent_rules+set}" = set; then :
-  enableval=$enable_silent_rules;
-fi
-
-case $enable_silent_rules in # (((
-  yes) AM_DEFAULT_VERBOSITY=0;;
-   no) AM_DEFAULT_VERBOSITY=1;;
-    *) AM_DEFAULT_VERBOSITY=1;;
-esac
-am_make=${MAKE-make}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $am_make supports nested variables" >&5
-$as_echo_n "checking whether $am_make supports nested variables... " >&6; }
-if ${am_cv_make_support_nested_variables+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if $as_echo 'TRUE=$(BAR$(V))
-BAR0=false
-BAR1=true
-V=1
-am__doit:
-	@$(TRUE)
-.PHONY: am__doit' | $am_make -f - >/dev/null 2>&1; then
-  am_cv_make_support_nested_variables=yes
-else
-  am_cv_make_support_nested_variables=no
-fi
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_make_support_nested_variables" >&5
-$as_echo "$am_cv_make_support_nested_variables" >&6; }
-if test $am_cv_make_support_nested_variables = yes; then
-    AM_V='$(V)'
-  AM_DEFAULT_V='$(AM_DEFAULT_VERBOSITY)'
-else
-  AM_V=$AM_DEFAULT_VERBOSITY
-  AM_DEFAULT_V=$AM_DEFAULT_VERBOSITY
-fi
-AM_BACKSLASH='\'
-
 if test "`cd $srcdir && pwd`" != "`pwd`"; then
   # Use -I$(srcdir) only when $(srcdir) != ., so that make's output
   # is not polluted with repeated "-I."
@@ -3103,12 +3068,7 @@ mkdir_p='$(MKDIR_P)'
 # in the wild :-(  We should find a proper way to deprecate it ...
 AMTAR='$${TAR-tar}'
 
-
-# We'll loop over all known methods to create a tar archive until one works.
-_am_tools='gnutar  pax cpio none'
-
 am__tar='$${TAR-tar} chof - "$$tardir"' am__untar='$${TAR-tar} xf -'
-
 
 
 
@@ -5799,6 +5759,13 @@ else
 fi
 
 
+# Check whether --with-Eigen-include was given.
+if test "${with_Eigen_include+set}" = set; then :
+  withval=$with_Eigen_include; with_eigen_include=$withval
+else
+  with_eigen_include="no"
+fi
+
 # Check for the old  MPI option so that we can throw an error
 
 # Check whether --with-MPI was given.
@@ -6768,6 +6735,53 @@ fi
 
 
 
+##########################
+
+# check for lib
+Eigenheader=Eigen
+have_Eigen="no"
+
+
+# check for header
+
+if test "$with_eigen_include" != "no"
+  then
+    as_ac_File=`$as_echo "ac_cv_file_$with_eigen_include/$Eigenheader" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_eigen_include/$Eigenheader" >&5
+$as_echo_n "checking for $with_eigen_include/$Eigenheader... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_eigen_include/$Eigenheader"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_Eigen='yes'
+else
+  have_Eigen='no'
+fi
+
+  if test "$have_Eigen" == "no"
+  then
+    as_fn_error $? "Eigen requested but header file not found." "$LINENO" 5
+  fi
+else
+  have_Eigen="no"
+fi
+
+
+if test "$have_Eigen" != "no"
+then
+  CXX=$CXX" -DHAVE_EIGEN -I"$with_eigen_include""
+fi
 ###########################
 # Determine what versions of the code to build
 
@@ -8337,7 +8351,7 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
 
   case $ac_file$ac_mode in
     "depfiles":C) test x"$AMDEP_TRUE" != x"" || {
-  # Older Autoconf quotes --file arguments for eval, but not when files
+  # Autoconf 2.62 quotes --file arguments for eval, but not when files
   # are listed without --file.  Let's play safe and only enable the eval
   # if we detect the quoting.
   case $CONFIG_FILES in
@@ -8388,7 +8402,7 @@ $as_echo X"$mf" |
     DEPDIR=`sed -n 's/^DEPDIR = //p' < "$mf"`
     test -z "$DEPDIR" && continue
     am__include=`sed -n 's/^am__include = //p' < "$mf"`
-    test -z "$am__include" && continue
+    test -z "am__include" && continue
     am__quote=`sed -n 's/^am__quote = //p' < "$mf"`
     # Find all dependency output files, they are included files with
     # $(DEPDIR) in their names.  We invoke sed twice because it is the
@@ -8528,8 +8542,9 @@ Build Configuration Summary:
     SZIP support:         $have_SZIP
     ZLIB support:         $have_ZLIB
     Mutation++ support:   $have_Mutationpp
-    Jsoncpp support: 	  $have_Jsoncpp
+    Jsoncpp support: 	    $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    Eigen support:        $have_Eigen
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
@@ -8614,8 +8629,9 @@ Build Configuration Summary:
     SZIP support:         $have_SZIP
     ZLIB support:         $have_ZLIB
     Mutation++ support:   $have_Mutationpp
-    Jsoncpp support: 	  $have_Jsoncpp
+    Jsoncpp support: 	    $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    Eigen support:        $have_Eigen
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
