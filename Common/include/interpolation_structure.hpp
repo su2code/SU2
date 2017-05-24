@@ -266,7 +266,7 @@ public:
 /*!
  * \brief Sliding mesh approach
   */
-class CSlidingmesh : public CInterpolator {
+class CSlidingMesh : public CInterpolator {
 public:
 
   /*!
@@ -276,12 +276,12 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CSlidingmesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CSlidingMesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSlidingmesh(void);
+  ~CSlidingMesh(void);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes

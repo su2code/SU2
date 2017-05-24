@@ -2481,7 +2481,7 @@ void CDriver::Interface_Preprocessing() {
             break;
 
           case SLIDING_MESH:
-            interpolator_container[donorZone][targetZone] = new CSlidingmesh(geometry_container, config_container, donorZone, targetZone);
+            interpolator_container[donorZone][targetZone] = new CSlidingMesh(geometry_container, config_container, donorZone, targetZone);
             if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
 
             break;
