@@ -2107,7 +2107,7 @@ void CSlidingMesh::ReconstructBoundary(unsigned long val_zone, unsigned long val
   SU2_MPI::Allreduce(     &nLocalVertex,      &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&nLocalLinkedNodes, &nGlobalLinkedNodes, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
-  nGlobalVertex      = nLocalVertex_;
+  nGlobalVertex      = nLocalVertex;
   nGlobalLinkedNodes = nLocalLinkedNodes;
 #endif 
 
@@ -2172,7 +2172,7 @@ void CSlidingMesh::ReconstructBoundary(unsigned long val_zone, unsigned long val
   }    
 #else
   for (iVertex = 0; iVertex < nDim * nGlobalVertex; iVertex++)
-    Point_Coord[iVertex] = Buffer_Send_Coord[iVertex];
+    Receive_Coord[iVertex] = Buffer_Send_Coord[iVertex];
      
   for (iVertex = 0; iVertex < nGlobalVertex; iVertex++){
     Receive_GlobalPoint[iVertex]      = Buffer_Send_GlobalPoint[iVertex];
