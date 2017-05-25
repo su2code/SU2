@@ -655,9 +655,9 @@ private:
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
-  Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
-  Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
-  unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
+  Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
+  unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
+  Kind_OneD;        /*!< \brief Write one-dimensionalized output on specified markers. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
   ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
@@ -6755,6 +6755,13 @@ public:
    */
   unsigned short GetConsole_Output_Verb(void);
   
+  /*!
+   * \brief Get the kind of one-dimensionalization
+   * (area-averaged, mass flux averaged,etc).
+   * \return Kind of one-dimensionalization.
+   */
+  unsigned short GetKind_OneD(void);
+
   /*!
    *
    * \brief Get the direct differentation method.
