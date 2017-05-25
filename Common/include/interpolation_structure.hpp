@@ -275,6 +275,25 @@ public:
   */
 class CSlidingMesh : public CInterpolator {
 public:
+/*
+    delete [] TargetPoint_Coord;
+    delete [] Target_GlobalPoint;
+    
+    delete [] DonorPoint_Coord;
+    delete [] Donor_GlobalPoint;
+    delete [] Donor_proc;
+    
+    delete [] Target_nLinkedNodes;
+    delete [] Target_LinkedNodes;
+    delete [] Target_StartLinkedNodes;  
+*/
+
+
+  su2double *Receive_Coord;
+  unsigned long *Receive_GlobalPoint, *Receive_nLinkedNodes, *Receive_LinkedNodes, *Receive_StartLinkedNodes, *Receive_Proc;
+  unsigned long  nGlobalVertex_Target, nLocalVertex_Target;
+  unsigned long  nGlobalVertex_Donor,  nLocalVertex_Donor;
+  unsigned long  nGlobalVertex, nLocalLinkedNodes;
 
   /*!
    * \brief Constructor of the class.
@@ -289,6 +308,8 @@ public:
    * \brief Destructor of the class.
    */
   ~CSlidingMesh(void);
+  
+  void ReconstructBoundary(unsigned long val_zone, unsigned long val_marker);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
