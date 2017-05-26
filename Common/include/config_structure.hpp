@@ -844,7 +844,8 @@ private:
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
   *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
-  *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
+  *default_inc_crit,          /*!< \brief Default incremental criteria array for the COption class. */
+  *default_extrarelfac;       /*!< \brief Default extra relaxation factor for NRBC in the COption class. */
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
@@ -861,6 +862,7 @@ private:
   su2double FinalOutletPressure; /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
   su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
+  su2double *ExtraRelFacNRBC; /*!< \brief coefficient for extra relaxation factor for NRBC */
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
@@ -3821,6 +3823,12 @@ public:
 	 * \return mixedout coefficient.
 	 */
 	su2double GetMixedout_Coeff(unsigned short iCoeff);
+
+/*!
+ * \brief Get extra relaxation factor coefficients.
+ * \return mixedout coefficient.
+ */
+su2double GetExtraRelFacNRBC(unsigned short iCoeff);
 
 	/*!
 	 * \brief Get mach limit for average massflow-based procedure .

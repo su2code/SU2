@@ -449,6 +449,7 @@ void CConfig::SetPointersNull(void) {
   default_cfl_adapt     = NULL;
   default_ad_coeff_flow = NULL;
   default_mixedout_coeff = NULL;
+  default_extrarelfac   = NULL;
   default_rampRotFrame_coeff = NULL;
   default_rampOutPres_coeff = NULL;
   default_ad_coeff_adj  = NULL;
@@ -521,7 +522,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_eng_val       = new su2double[5];
   default_cfl_adapt     = new su2double[4];
   default_ad_coeff_flow = new su2double[3];
-  default_mixedout_coeff = new su2double[4];
+  default_mixedout_coeff = new su2double[3];
+  default_extrarelfac   = new su2double[2];
   default_rampRotFrame_coeff = new su2double[3];
   default_rampOutPres_coeff = new su2double[3];
   default_ad_coeff_adj  = new su2double[3];
@@ -817,6 +819,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
   /*!\brief SPATIAL_FOURIER \n DESCRIPTION: Option to compute the spatial fourier trasformation for the NRBC. */
   addBoolOption("SPATIAL_FOURIER", SpatialFourier, false);
+  /*!\brief NRBC_EXTRA_RELAXFACTOR \n DESCRIPTION: the 1st coeff the value of the under relaxation factor to apply to the shroud and hub,
+   * the 2nd coefficient is the the percentage of span-wise height influenced by this extra under relaxation factor.*/
+  default_extrarelfac[0] = 0.1; default_extrarelfac[1] = 0.1;
+  addDoubleArrayOption("NRBC_EXTRA_RELAXFACTOR", 2, ExtraRelFacNRBC, default_extrarelfac);
   /*!\brief AVERAGE_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
     \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("MIXINGPLANE_INTERFACE_KIND", Kind_MixingPlaneInterface, MixingPlaneInterface_Map, NEAREST_SPAN);
@@ -826,7 +832,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief PERFORMANCE_AVERAGE_PROCESS_KIND \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries for performance computation.
       \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("PERFORMANCE_AVERAGE_PROCESS_KIND", Kind_PerformanceAverageProcess, AverageProcess_Map, AREA);
-  default_mixedout_coeff[1] = 1.0; default_mixedout_coeff[2] = 1.0E-05; default_mixedout_coeff[3] = 15.0;
+  default_mixedout_coeff[0] = 1.0; default_mixedout_coeff[1] = 1.0E-05; default_mixedout_coeff[2] = 15.0;
   /*!\brief MIXEDOUT_COEFF \n DESCRIPTION: the 1st coeff is an under relaxation factor for the Newton method,
    * the 2nd coefficient is the tolerance for the Newton method, 3rd coefficient is the maximum number of
    * iteration for the Newton Method.*/
@@ -2296,6 +2302,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
       }
     }
+  }
+
+  /*--- Check on extra Relaxation factor for NRBC---*/
+  if(ExtraRelFacNRBC[1] > 0.5){
+    ExtraRelFacNRBC[1] = 0.5;
   }
 
 
@@ -5694,6 +5705,7 @@ CConfig::~CConfig(void) {
   if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
   if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
   if (default_mixedout_coeff!= NULL) delete [] default_mixedout_coeff;
+  if (default_extrarelfac!= NULL) delete [] default_extrarelfac;
   if (default_rampRotFrame_coeff!= NULL) delete [] default_rampRotFrame_coeff;
   if (default_rampOutPres_coeff!= NULL) delete[] default_rampOutPres_coeff;
   if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;

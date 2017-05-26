@@ -11609,10 +11609,14 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
-  su2double relfacAvg       = config->GetNRBC_RelaxFactorAverage(Marker_Tag);
-  su2double relfacFou       = config->GetNRBC_RelaxFactorFourier(Marker_Tag);
+  su2double relfacAvgCfg       = config->GetNRBC_RelaxFactorAverage(Marker_Tag);
+  su2double relfacFouCfg       = config->GetNRBC_RelaxFactorFourier(Marker_Tag);
   su2double *Normal;
   su2double TwoPiThetaFreq_Pitch, pitch,theta;
+  su2double *SpanWiseValues;
+  su2double spanPercent, extrarelfacAvg, deltaSpan, relfacAvg, relfacFou, coeffrelfacAvg;
+  unsigned short Turbo_Flag;
+
   Normal 		 		= new su2double[nDim];
   turboNormal 	= new su2double[nDim];
   UnitNormal 		= new su2double[nDim];
@@ -11656,7 +11660,36 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   complex<su2double> I, c2ks, c2js, c3ks, c3js, c4ks, c4js, cOutks, cOutjs, Beta_inf;
   I = complex<su2double>(0.0,1.0);
 
+  /*--- Compute coeff for under relaxation of Avg and Fourier Coefficient---*/
+  extrarelfacAvg  = config->GetExtraRelFacNRBC(0);
+  spanPercent     = config->GetExtraRelFacNRBC(1);
+  Turbo_Flag      = config->GetMarker_All_TurbomachineryFlag(val_marker);
+  SpanWiseValues  = geometry->GetSpanWiseValue(Turbo_Flag);
+  deltaSpan       = SpanWiseValues[nSpanWiseSections-1]*spanPercent;
+  coeffrelfacAvg  = (relfacAvgCfg - extrarelfacAvg)/deltaSpan;
+
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
+    /*--- Compute under relaxation for the Hub and Shroud Avg and Fourier Coefficient---*/
+    if(nDim == 3){
+      if(SpanWiseValues[iSpan] <= SpanWiseValues[0] + deltaSpan){
+        relfacAvg = extrarelfacAvg + coeffrelfacAvg*(SpanWiseValues[iSpan] - SpanWiseValues[0]);
+        relfacFou = 0.0;
+      }
+      else if(SpanWiseValues[iSpan] >= SpanWiseValues[nSpanWiseSections -1] - deltaSpan){
+        relfacAvg = extrarelfacAvg - coeffrelfacAvg*(SpanWiseValues[iSpan] - SpanWiseValues[nSpanWiseSections -1]);
+        relfacFou = 0.0;
+      }
+      else{
+        relfacAvg = relfacAvgCfg;
+        relfacFou = relfacFouCfg;
+      }
+    }
+    else{
+      {
+        relfacAvg = relfacAvgCfg;
+        relfacFou = relfacFouCfg;
+      }
+    }
 
     FluidModel->SetTDState_Prho(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan]);
     AverageSoundSpeed = FluidModel->GetSoundSpeed();

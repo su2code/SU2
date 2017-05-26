@@ -957,6 +957,8 @@ inline bool CConfig::GetRampOutletPressure(void) { return RampOutletPressure;}
 
 inline su2double CConfig::GetMixedout_Coeff(unsigned short iCoeff) { return Mixedout_Coeff[iCoeff];}
 
+inline su2double CConfig::GetExtraRelFacNRBC(unsigned short iCoeff) { return ExtraRelFacNRBC[iCoeff];}
+
 inline su2double CConfig::GetAverageMachLimit(void) { return AverageMachLimit;}
 
 inline su2double CConfig::GetUpwindMachLimit(void) { return UpwindMachLimit;}
