@@ -122,7 +122,7 @@ public:
    * \param[in] val_markDonor  - Marker tag from donor zone.
    * \param[in] val_markTarget - Marker tag from target zone.
    */  
-  bool CheckInterfaceBoundary(unsigned long val_markDonor, unsigned long val_markTarget);
+  bool CheckInterfaceBoundary(int val_markDonor, int val_markTarget);
   
   /*!
    * \brief compute distance between 2 points
@@ -275,19 +275,6 @@ public:
   */
 class CSlidingMesh : public CInterpolator {
 public:
-/*
-    delete [] TargetPoint_Coord;
-    delete [] Target_GlobalPoint;
-    
-    delete [] DonorPoint_Coord;
-    delete [] Donor_GlobalPoint;
-    delete [] Donor_proc;
-    
-    delete [] Target_nLinkedNodes;
-    delete [] Target_LinkedNodes;
-    delete [] Target_StartLinkedNodes;  
-*/
-
 
   su2double *Receive_Coord;
   unsigned long *Receive_GlobalPoint, *Receive_nLinkedNodes, *Receive_LinkedNodes, *Receive_StartLinkedNodes, *Receive_Proc;
@@ -309,7 +296,12 @@ public:
    */
   ~CSlidingMesh(void);
   
-  void ReconstructBoundary(unsigned long val_zone, unsigned long val_marker);
+  /*!
+   * \brief Recontstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads
+   * \param[in] val_zone   - index of the zone
+   * \param[in] val_marker - index of the marker
+   */
+  void ReconstructBoundary(unsigned long val_zone, int val_marker);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes

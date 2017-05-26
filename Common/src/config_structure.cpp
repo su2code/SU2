@@ -3805,6 +3805,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
         else cout <<"."<< endl;
       }
+      cout<< endl;
     }
     
     if (nMarker_Designing != 0) {
