@@ -677,7 +677,7 @@ def main():
 
     # Rotating cylinders
     rotating_cylinders           = TestCase('rotating_cylinders')
-    rotating_cylinders.cfg_dir   = "rotating_cylinders"
+    rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_SM.cfg"
     rotating_cylinders.test_iter = 3
     rotating_cylinders.test_vals = [-1.253451, 4.531335, 0.000000, 0.000000] #last 4 columns
@@ -689,7 +689,7 @@ def main():
 
     # Supersonic vortex shedding
     supersonic_vortex_shedding           = TestCase('supersonic_vortex_shedding')
-    supersonic_vortex_shedding.cfg_dir   = "supersonic_vortex_shedding"
+    supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_SM.cfg"
     supersonic_vortex_shedding.test_iter = 5
     supersonic_vortex_shedding.test_vals = [-1.122916, 4.606248, 0.000000, 0.000000] #last 4 columns
