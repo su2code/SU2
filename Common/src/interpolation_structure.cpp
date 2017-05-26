@@ -276,12 +276,13 @@ int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_mark
   return -1;
 }
 
-bool CInterpolator::CheckInterfaceBoundary(unsigned long markDonor, unsigned long markTarget){
+bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget){
+  
+  int Donor_check, Target_check;
   
   #ifdef HAVE_MPI
     
   int *Buffer_Recv_mark = NULL;
-  int Donor_check, Target_check;
   int iRank,  rank, nProcessor;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -322,14 +323,15 @@ bool CInterpolator::CheckInterfaceBoundary(unsigned long markDonor, unsigned lon
   if (rank == MASTER_NODE) 
     delete [] Buffer_Recv_mark;
 
+#else
+  Donor_check  = markDonor;
+  Target_check = markTarget;
+#endif
+
   if(Target_check == -1 || Donor_check == -1)
     return false;
   else 
     return true;
-    
-#else
- return true;
-#endif
 }
 
 su2double CInterpolator::PointsDistance(su2double *point_i, su2double *point_j){
@@ -1434,7 +1436,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
     Donor_LinkedNodes      = Receive_LinkedNodes;
     Donor_Proc             = Receive_Proc;
 
-
     /*--- Starts building the supermesh layer (2D or 3D) ---*/
     /* - For each target node, it first finds the closest donor point
      * - Then it creates the supermesh in the close proximity of the target point:
@@ -1991,7 +1992,7 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   if (storeProc  != NULL) delete [] storeProc;  
 }
 
-void CSlidingMesh::ReconstructBoundary(unsigned long val_zone, unsigned long val_marker){
+void CSlidingMesh::ReconstructBoundary(unsigned long val_zone, int val_marker){
     
   CGeometry *geom = Geometry[val_zone][MESH_0];
     
@@ -2003,8 +2004,13 @@ void CSlidingMesh::ReconstructBoundary(unsigned long val_zone, unsigned long val
   unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
     
     
-  nDim    = geom->GetnDim();
-  nVertex = geom->GetnVertex( val_marker );
+  nDim = geom->GetnDim();
+  
+  if( val_marker != -1 )
+    nVertex  = geom->GetnVertex(  val_marker  );
+  else
+    nVertex  = 0;
+      
     
   su2double *Buffer_Send_Coord           = new su2double     [ nVertex * nDim ];
   unsigned long *Buffer_Send_GlobalPoint = new unsigned long [ nVertex ];

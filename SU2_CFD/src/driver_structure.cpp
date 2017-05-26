@@ -2369,7 +2369,7 @@ void CDriver::Interface_Preprocessing() {
 #ifdef HAVE_MPI
 
       Donor_check  = -1;
-        Target_check = -1;
+      Target_check = -1;
 
         /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it ---*/
 
@@ -2412,7 +2412,7 @@ void CDriver::Interface_Preprocessing() {
 
         /*--- Set some boolean to properly allocate data structure later ---*/
       fluid_target      = false; 
-        structural_target = false;
+      structural_target = false;
 
       fluid_donor       = false; 
       structural_donor  = false;
