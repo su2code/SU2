@@ -1320,9 +1320,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
   /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
   addBoolOption("WRT_HALO", Wrt_Halo, false);
-  /*!\brief ONE_D_OUTPUT
-   *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker. \n Use with MARKER_OUT_1D. \ingroup Config*/
-  addBoolOption("ONE_D_OUTPUT", Wrt_1D_Output, false);
+  /*!\brief KIND_ONE_DIMENSIONALIZATION
+   *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker.
+   *  Options: AREA, MASSFLUX, NONE
+   *  \n Use with MARKER_OUT_1D. \ingroup Config*/
+  addEnumOption("KIND_ONE_DIMENSIONALIZATION", Kind_OneD, OneD_Map, ONED_NONE);
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
@@ -2122,8 +2124,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   else { FSI_Problem = false; }
 
-  if ((rank==MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
+  if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
+  }
+  if ((rank == MASTER_NODE) && ContinuousAdjoint && (Kind_OneD == ONED_MFLUX) && (Kind_SU2 == SU2_CFD)) {
+    cout << "WARNING: The continuous adjoint solver assumes area-averaging." << endl;
   }
   
   /*--- Initialize non-physical points/reconstructions to zero ---*/
@@ -4107,9 +4112,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
           case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
-          case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
+          case FFD_THICKNESS:         cout << "FFD (thickness) -> "; break;
           case FFD_ANGLE_OF_ATTACK:   cout << "FFD (angle of attack) <-> "; break;
-          case CUSTOM:                cout << "Custom DV <-> "; break;
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -4147,7 +4151,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
-        if (Design_Variable[iDV] ==  CUSTOM) nParamDV = 1;
         if (Design_Variable[iDV] == FFD_TWIST) nParamDV = 8;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
@@ -4244,7 +4247,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
         case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
         case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
-        case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
         case AERO_DRAG_COEFFICIENT:   cout << "Aero CD objective function." << endl; break;
         case RADIAL_DISTORTION:       cout << "Radial distortion objective function." << endl; break;
         case CIRCUMFERENTIAL_DISTORTION:   cout << "Circumferential distortion objective function." << endl; break;
@@ -5868,7 +5870,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";      break;
-      case OUTFLOW_GENERALIZED:     AdjExt = "_chn";      break;
       case AERO_DRAG_COEFFICIENT:   AdjExt = "_acd";       break;
       case RADIAL_DISTORTION:           AdjExt = "_rdis";      break;
       case CIRCUMFERENTIAL_DISTORTION:  AdjExt = "_cdis";      break;
