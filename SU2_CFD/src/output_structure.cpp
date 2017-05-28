@@ -17268,11 +17268,9 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   string filename;
   char str_buf[CGNS_STRING_SIZE], fname[100];
 
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
   /*--- Retrieve filename from config ---*/
@@ -17301,79 +17299,6 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   strcpy(fname, filename.c_str());
 
-  /*--- These point offsets should be computed once and stored so that we don't
-  repeat this code throughout. ---*/
-
-  /*--- Search all send/recv boundaries on this partition for any periodic
-   nodes that were part of the original domain. We want to recover these
-   for visualization purposes. ---*/
-
-  unsigned long iVertex;
-  bool isPeriodic;
-
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-
-      /*--- Checking for less than or equal to the rank, because there may
-       be some periodic halo nodes that send info to the same rank. ---*/
-
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                      (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-        if (isPeriodic) Local_Halo[iPoint] = false;
-      }
-    }
-  }
-
-  /*--- Sum total number of nodes that belong to the domain ---*/
-
-  unsigned long nTotalPoint;
-  unsigned long nLocalPoint = 0;
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    if (Local_Halo[iPoint] == false)
-      nLocalPoint++;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nTotalPoint = nLocalPoint;
-#endif
-
-  /*--- Now that we know the actual number of points we need to output,
-   compute the number of points that will be on each processor.
-   This is a linear partitioning with the addition of a simple load
-   balancing for any remainder points. ---*/
-
-  unsigned long *npoint_procs  = new unsigned long[size];
-  unsigned long *nPoint_Linear = new unsigned long[size+1];
-
-  unsigned long total_pt_accounted = 0;
-  for (int ii = 0; ii < size; ii++) {
-    npoint_procs[ii] = nTotalPoint/size;
-    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
-  }
-
-  /*--- Get the number of remainder points after the even division. ---*/
-
-  unsigned long rem_points = nTotalPoint-total_pt_accounted;
-  for (unsigned long ii = 0; ii < rem_points; ii++) {
-    npoint_procs[ii]++;
-  }
-
-  /*--- Store the point offsets for each rank. ---*/
-
-  nPoint_Linear[0] = 0;
-  for (int ii = 1; ii < size; ii++) {
-    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
-  }
-  nPoint_Linear[size] = nTotalPoint;
-
   /*--- Prepare the first ints containing the counts. The first is a
    magic number that we can use to check for binary files (it is the hex
    representation for "SU2"). The second two values are number of variables
@@ -17381,7 +17306,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    one int for ExtIter and 5 su2doubles. ---*/
 
   int var_buf_size = 5;
-  int var_buf[5] = {535532, nVar_Par, (int)nTotalPoint, 1, 5};
+  int var_buf[5] = {535532, nVar_Par, (int)nGlobalPoint_Sort, 1, 5};
 
   /*--- Prepare the 1D data buffer on this rank. ---*/
 
