@@ -196,12 +196,12 @@ history_header_map = { "Iteration"       : "ITERATION"               ,
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
-                 "Avg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
-                 "FluxAvg_Pressure": "AVG_OUTLET_PRESSURE"     ,
-                 "FluxAvg_Density" : "FLUXAVG_OUTLET_DENSITY"  ,
-                 "FluxAvg_Velocity": "FLUXAVG_OUTLET_VELOCITY" ,
-                 "Avg_Mach"        : "AVG_OUTLET_MACH"         ,
-                 "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
+                 "AreaAvg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
+                 "Avg_Pressure"    : "AVG_OUTLET_PRESSURE"     ,
+                 "Avg_Density"     : "AVG_OUTLET_DENSITY"      ,
+                 "Avg_Velocity"    : "AVG_OUTLET_VELOCITY"     ,
+                 "AreaAvg_Mach"        : "AVG_OUTLET_MACH"         ,
+                 "AreaAvg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
                  "AeroCDrag"       : "AERO_DRAG"               ,
                  "Radial_Distortion"      : "RADIAL_DISTORTION"              ,
@@ -255,7 +255,6 @@ optnames_aero = [ "LIFT"                    ,
                   "AVG_OUTLET_DENSITY"      ,
                   "AVG_OUTLET_VELOCITY"     ,
                   "MASS_FLOW_RATE"          ,
-                  "OUTFLOW_GENERALIZED"     ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
                   "INVERSE_DESIGN_PRESSURE" ,
@@ -520,7 +519,6 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
-                 "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "FREE_SURFACE"            : "fs"        ,
                  "AERO_DRAG"               : "acd"       ,
                  "RADIAL_DISTORTION"              : "rdis"       ,
@@ -589,7 +587,6 @@ def get_dvMap():
                15  : "FFD_CONTROL_POINT_2D"  ,
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
-               19  : "CUSTOM"                ,
                20  : "CST"                   ,
                101 : "ANGLE_OF_ATTACK"       ,
                102 : "FFD_ANGLE_OF_ATTACK"                    }
@@ -663,16 +660,13 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
                 header.append(r',"Grad_AeroCDrag","Grad_Distortion"')
                 write_format.append(", %.10f, %.10f")
             if key == "1D_OUTPUT"     :
-                header.append(r',"Grad_Avg_TotalPress","Grad_Avg_Mach","Grad_Avg_Temperature","Grad_MassFlowRate","Grad_FluxAvg_Pressure","Grad_FluxAvg_Density","Grad_FluxAvg_Velocity","Grad_FluxAvg_Enthalpy"')
+                header.append(r',"Grad_Avg_TotalPress","Grad_Avg_Mach","Grad_Avg_Temperature","Grad_MassFlowRate","Grad_Avg_Pressure","Grad_Avg_Density","Grad_Avg_Velocity","Grad_Avg_Enthalpy"')
                 write_format.append(", %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f")
             if key == "INV_DESIGN_CP"     :
                 header.append(r',"Grad_Cp_Diff"')
                 write_format.append(", %.10f")
             if key == "INV_DESIGN_HEATFLUX"     :
                 header.append(r',"Grad_HeatFlux_Diff"')
-                write_format.append(", %.10f")
-            if key =="OUTFLOW_GENERALIZED"    :
-                header.append(r',"Grad_Chain_Rule"')
                 write_format.append(", %.10f")
 
     # otherwise...
@@ -729,7 +723,6 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         write_format.append(r', %s, %s, %s')
     elif kindID == "ANGLE_OF_ATTACK"      : pass
     elif kindID == "FFD_ANGLE_OF_ATTACK"  : pass
-    elif kindID == "CUSTOM"               : pass
     
     # otherwise...
     else: raise Exception('Unrecognized Design Variable Kind') 
@@ -788,7 +781,7 @@ def get_optFileFormat(plot_format,special_cases=None):
             header_list.extend(["AeroCDrag","Distortion"])
             write_format.append(r', %.10f, %.10f')
         if key == "1D_OUTPUT":
-            header_list.extend(["Avg_TotalPress","Avg_Mach","Avg_Temperature","MassFlowRate","FluxAvg_Pressure","FluxAvg_Density","FluxAvg_Velocity","FluxAvg_Enthalpy"])
+            header_list.extend(["AreaAvg_TotalPress","AreaAvg_Mach","AreaAvg_Temperature","MassFlowRate","Avg_Pressure","Avg_Density","Avg_Velocity","Avg_Enthalpy"])
             write_format.append(r', %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         if key == "INV_DESIGN_CP"     :
             header_list.extend(["Cp_Diff"])
@@ -796,9 +789,6 @@ def get_optFileFormat(plot_format,special_cases=None):
         if key == "INV_DESIGN_HEATFLUX"     :
             header_list.extend(["HeatFlux_Diff"])
             write_format.append(r', %.10f')
-        if key =="OUTFLOW_GENERALIZED"    :
-            header_list.exted(["Chain_Rule"])
-            write_format.append([r", %.10f"])
 
     # finish formats
     header_format = (header_format) + ('"') + ('","').join(header_list) + ('"') + (' \n')
@@ -851,8 +841,7 @@ def get_specialCases(config):
                           'EQUIV_AREA'                       ,
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
-                          'INV_DESIGN_HEATFLUX'              ,
-                          'OUTFLOW_GENERALIZED'                ]
+                          'INV_DESIGN_HEATFLUX'              ]
     
     special_cases = []
     for key in all_special_cases:
