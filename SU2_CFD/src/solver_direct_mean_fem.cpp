@@ -3185,8 +3185,6 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               config->Tick(&tick);
               Volume_Residual(config, nVolElemOwnedPerTimeLevel[level],
                               nVolElemOwnedPerTimeLevel[level+1]);
-              Source_Residual(config, nVolElemOwnedPerTimeLevel[level],
-                              nVolElemOwnedPerTimeLevel[level+1]);
               config->Tock(tick,"Volume_Residual",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -3903,6 +3901,15 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
                                           const unsigned long elemBeg,
                                           const unsigned long elemEnd) {
 
+  /*--- Determine whether body force term is present in configuration. ---*/
+  bool body_force = config->GetBody_Force();
+  su2double *body_force_vector = NULL;
+
+  if (body_force == true) {
+    /* Get body force from config structure */
+    body_force_vector = config->GetBody_Force_Vector();
+  }
+
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solInt = VecTmpMemory.data();
   su2double *fluxes = solInt + nIntegrationMax*nVar;
@@ -3921,8 +3928,14 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
     const unsigned short nDOFs           = volElem[l].nDOFsSol;
     const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+    const su2double *matBasisIntTrans    = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
     const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
     const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
+
+    std::vector<double> *sources = NULL;
+    if(body_force == true){
+      sources = new std::vector<double>(nInt * nVar,0.0);
+    }
 
     /*------------------------------------------------------------------------*/
     /*--- Step 1: Interpolate the solution to the integration points of    ---*/
@@ -3966,12 +3979,25 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
       /* Easier storage of the metric terms in this integration point. The +1
          is present, because the first element of the metric terms is the
          Jacobian in the integration point. */
+      const su2double jacobian = *(volElem[l].metricTerms.data() + i*nMetricPerPoint);
       const su2double *metricTerms = volElem[l].metricTerms.data()
                                    + i*nMetricPerPoint + 1;
+
+      /*--- Set mass source term ---*/
+      if(body_force == true){
+        sources->at(i*(nVar)) = 0.0;
+      }
 
       /*--- Loop over the number of dimensions to compute the fluxes in the
             direction of the parametric coordinates. ---*/
       for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+
+        if(body_force == true){
+          /*--- Set the momentum source terms ---*/
+          sources->at(i*(nVar)+iDim+1) = -weights[i] * jacobian * body_force_vector[iDim];
+          /*--- Set the energy source term ---*/
+          sources->at(i*(nVar)+nDim+1) += -weights[i] * jacobian * body_force_vector[iDim] * vel[iDim];
+        }
 
         /* Pointer to the metric terms for this direction. */
         const su2double *metric = metricTerms + iDim*nDim;
@@ -3999,34 +4025,34 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     /* Easier storage of the residuals for this volume element. */
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
+    /* Storage of residuals due to source terms */
+    std::vector<double> *resTemp = NULL;
+    if(body_force == true){
+      resTemp = new std::vector<double>(nDOFs * nVar, 0.0);
+    }
+
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
-  }
-}
 
-void CFEM_DG_EulerSolver::Source_Residual(CConfig             *config,
-                                          const unsigned long elemBeg,
-                                          const unsigned long elemEnd) {
+    if(body_force == true){
+      /* Call the general function to carry out the matrix product. */
+      config->GEMM_Tick(&tick);
+      DenseMatrixProduct(nDOFs, nVar, nInt, matBasisIntTrans, sources->data(), resTemp->data());
+      config->GEMM_Tock(tick, "Volume_Residual3", nDOFs, nVar, nInt*nDim);
 
-  /*--- Stub for source term integration. ---*/
-
-  bool body_force = config->GetBody_Force();
-
-  if (body_force) {
-
-    su2double *body_force_vector = config->GetBody_Force_Vector();
-
-    /*--- Source term integration goes here... dummy output for now. ---*/
-
-    cout << " Applying a body force of (";
-    for( unsigned short iDim = 0; iDim < nDim; iDim++) {
-      cout << body_force_vector[iDim];
-      if (iDim < nDim-1) cout << ", ";
+      /* Add the residuals due to source terms to the volume residuals */
+      for(unsigned short i=0; i<nDOFs; i++){
+        for(unsigned short j=0; j<nVar; j++){
+          res[i*nVar+j] += resTemp->at(i*nVar+j);
+        }
+      }
     }
-    cout << ")." << endl;
 
+    /* Delete the dynamically allocated arrays */
+    delete sources;
+    delete resTemp;
   }
 }
 
@@ -5863,7 +5889,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[0] + skipVars;
+      index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) {
         VecSolDOFs[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
       }
@@ -7464,6 +7490,15 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
                                        const unsigned long elemBeg,
                                        const unsigned long elemEnd) {
 
+  /*--- Determine whether body force term is present in configuration. ---*/
+  bool body_force = config->GetBody_Force();
+  su2double *body_force_vector = NULL;
+
+  if (body_force == true) {
+    /* Get body force from config structure */
+    body_force_vector = config->GetBody_Force_Vector();
+  }
+
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
@@ -7488,7 +7523,13 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
     const unsigned short nDOFs           = volElem[l].nDOFsSol;
     const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
     const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
+    const su2double *matBasisIntTrans    = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
     const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
+
+    std::vector<double> *sources = NULL;
+    if(body_force == true){
+      sources = new std::vector<double>(nInt * nVar,0.0);
+    }
 
     unsigned short nPoly = standardElementsSol[ind].GetNPoly();
     if(nPoly == 0) nPoly = 1;
@@ -7639,12 +7680,24 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
           fluxCart[nDim+1][k] -= tauVis[j][k]*vel[j];    // Work of the viscous forces part
       }
 
+      /*--- Set mass source term ---*/
+      if(body_force == true){
+        sources->at(i*(nVar)) = 0.0;
+      }
+
       /*--- Loop over the number of dimensions to compute the fluxes in the
             direction of the parametric coordinates. ---*/
       for(unsigned short k=0; k<nDim; ++k) {
 
         /* Pointer to the metric terms for this direction. */
         const su2double *metric = metricTerms + k*nDim;
+
+        if(body_force == true){
+          /*--- Set the momentum source terms ---*/
+          sources->at(i*(nVar)+k+1) = -weights[i] * Jac * body_force_vector[k];
+          /*--- Set the energy source term ---*/
+          sources->at(i*(nVar)+nDim+1) += -weights[i] * Jac * body_force_vector[k] * vel[k];
+        }
 
         /*--- Loop over the number of variables in the flux vector.
               Note that also the counter ll must be updated here. ---*/
@@ -7673,10 +7726,35 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
     /* Easier storage of the residuals for this volume element. */
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
+    /* Storage of residuals due to source terms */
+    std::vector<double> *resTemp = NULL;
+    if(body_force == true){
+      resTemp = new std::vector<double>(nDOFs * nVar, 0.0);
+    }
+
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
+
+    /* Calculate residuals due to source terms */
+    if(body_force == true){
+      /* Call the general function to carry out the matrix product. */
+      config->GEMM_Tick(&tick);
+      DenseMatrixProduct(nDOFs, nVar, nInt, matBasisIntTrans, sources->data(), resTemp->data());
+      config->GEMM_Tock(tick, "Volume_Residual3", nDOFs, nVar, nInt*nDim);
+
+      /* Add residuals from source terms to total residuals */
+      for(unsigned short i=0; i<nDOFs; i++){
+        for(unsigned short j=0; j<nVar; j++){
+          res[i*nVar+j] += resTemp->at(i*nVar+j);
+        }
+      }
+    }
+
+    /* Delete dynamically allocated arrays */
+    delete sources;
+    delete resTemp;
   }
 }
 
