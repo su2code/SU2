@@ -1543,8 +1543,7 @@ void CAdjFluidIteration::Preprocess(COutput *output,
   bool dynamic_mesh = config_container[ZONE_0]->GetGrid_Movement();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);

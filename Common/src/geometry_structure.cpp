@@ -16036,10 +16036,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
-    MPI_Status status;
-    MPI_Datatype etype, filetype;
-    MPI_Offset disp;
-
     int ierr;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
