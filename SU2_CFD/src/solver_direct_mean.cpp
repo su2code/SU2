@@ -12977,35 +12977,46 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
           if (viscous) {
+            
+            for (iVar = 0; iVar < nVar; iVar++)
+              Residual[iVar] = 0.0;
+            
+            for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+              PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5, jVertex); 
+              PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6, jVertex); 
 
-            PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5, 0); // This has to be modified for Rinaldi
-            PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6, 0); // This has to be modified for Rinaldi
+              coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+              
+              /*--- Set the normal vector and the coordinates ---*/
 
-            /*--- Set the normal vector and the coordinates ---*/
+              visc_numerics->SetNormal(Normal);
+              visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
 
-            visc_numerics->SetNormal(Normal);
-            visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+              /*--- Primitive variables, and gradient ---*/
 
-            /*--- Primitive variables, and gradient ---*/
+              visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+              visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
 
-            visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-            visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+              /*--- Turbulent kinetic energy ---*/
 
-            /*--- Turbulent kinetic energy ---*/
+              if (config->GetKind_Turb_Model() == SST)
+                visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
 
-            if (config->GetKind_Turb_Model() == SST)
-              visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+              /*--- Compute and update residual ---*/
 
-            /*--- Compute and update residual ---*/
-
-            visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
+              visc_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+              
+              for (iVar = 0; iVar < nVar; iVar++)
+                Residual[iVar] += coeff*tmp_residual[iVar];
+            }
+          
             LinSysRes.SubtractBlock(iPoint, Residual);
  
             /*--- Jacobian contribution for implicit integration ---*/
 
             if (implicit)
               Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+            
           }
         }
       }
