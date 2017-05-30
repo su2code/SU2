@@ -2326,7 +2326,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
 void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
     CNumerics *visc_numerics, CConfig *config){
 
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, jVertex, iPoint, Point_Normal;
   unsigned short iDim, iVar, iMarker;
 
   bool grid_movement = config->GetGrid_Movement();
@@ -2334,6 +2334,10 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
+  su2double *tmp_residual = new su2double[nVar];
+  
+  unsigned long nDonorVertex;
+  su2double coeff;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -2343,36 +2347,49 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         if (geometry->node[iPoint]->GetDomain()) {
+          
+          nDonorVertex = GetnSlidingStates(iMarker, iVertex);
 
-          Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          for (iVar = 0; iVar < nVar; iVar++)
+            Residual[iVar] = 0.0;
 
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+          for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
 
-          for (iVar = 0; iVar < nPrimVar; iVar++) {
-            PrimVar_i[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(iVar);
-            PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, 0);
+            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
+            }
+
+            coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+
+            /*--- Set primitive variables ---*/
+
+            conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+
+            /*--- Set the turbulent variable states ---*/
+            Solution_i[0] = node[iPoint]->GetSolution(0);
+            Solution_j[0] = GetSlidingState(iMarker, iVertex, 0, jVertex);
+
+            conv_numerics->SetTurbVar(Solution_i, Solution_j);
+            /*--- Set the normal vector ---*/
+
+            conv_numerics->SetNormal(Normal);
+
+            if (grid_movement)
+              conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+            /*--- Compute the convective residual using an upwind scheme ---*/
+
+            conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+
+            for (iVar = 0; iVar < nVar; iVar++)
+              Residual[iVar] += coeff*tmp_residual[iVar];
           }
-
-          /*--- Set primitive variables ---*/
-
-          conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
-
-          /*--- Set the turbulent variable states ---*/
-          Solution_i[0] = node[iPoint]->GetSolution(0);
-          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0, 0);
-
-          conv_numerics->SetTurbVar(Solution_i, Solution_j);
-          /*--- Set the normal vector ---*/
-
-          conv_numerics->SetNormal(Normal);
-
-          if (grid_movement)
-            conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-
-          /*--- Compute the convective residual using an upwind scheme ---*/
-
-          conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
           /*--- Add Residuals and Jacobians ---*/
 
@@ -2412,6 +2429,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
 
   /*--- Free locally allocated memory ---*/
 
+  delete [] tmp_residual;
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
@@ -3305,9 +3323,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
     CNumerics *visc_numerics, CConfig *config){
 
-///////////// This has to be changed for Rinaldi approach
-
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, jVertex, iPoint, Point_Normal;
   unsigned short iDim, iVar, iMarker;
 
   bool grid_movement = config->GetGrid_Movement();
@@ -3315,7 +3331,11 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
-
+  su2double *tmp_residual = new su2double[nVar];
+  
+  unsigned long nDonorVertex;
+  su2double coeff;
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
@@ -3325,37 +3345,51 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
         if (geometry->node[iPoint]->GetDomain()) {
 
-          Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          nDonorVertex = GetnSlidingStates(iMarker, iVertex);
 
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+          for (iVar = 0; iVar < nVar; iVar++)
+            Residual[iVar] = 0.0;
 
-          for (iVar = 0; iVar < nPrimVar; iVar++) {
-            PrimVar_i[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(iVar);
-            PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, 0);
+          for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+            
+            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
+            }
+
+            coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+
+            /*--- Set primitive variables ---*/
+
+            conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+
+            /*--- Set the turbulent variable states ---*/
+            Solution_i[0] = node[iPoint]->GetSolution(0);
+            Solution_i[1] = node[iPoint]->GetSolution(1);
+
+            Solution_j[0] = GetSlidingState(iMarker, iVertex, 0, jVertex);
+            Solution_j[1] = GetSlidingState(iMarker, iVertex, 1, jVertex);
+
+            conv_numerics->SetTurbVar(Solution_i, Solution_j);
+    
+            /*--- Set the normal vector ---*/
+
+            conv_numerics->SetNormal(Normal);
+
+            if (grid_movement)
+              conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+            conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+
+            for (iVar = 0; iVar < nVar; iVar++)
+              Residual[iVar] += coeff*tmp_residual[iVar];
           }
-
-          /*--- Set primitive variables ---*/
-
-          conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
-
-          /*--- Set the turbulent variable states ---*/
-          Solution_i[0] = node[iPoint]->GetSolution(0);
-          Solution_i[1] = node[iPoint]->GetSolution(1);
-
-          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0, 0);
-          Solution_j[1] = GetSlidingState(iMarker, iVertex, 1, 0);
-
-          conv_numerics->SetTurbVar(Solution_i, Solution_j);
-          /*--- Set the normal vector ---*/
-
-          conv_numerics->SetNormal(Normal);
-
-          if (grid_movement)
-            conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-
-          conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
+          
           /*--- Add Residuals and Jacobians ---*/
 
           LinSysRes.AddBlock(iPoint, Residual);
