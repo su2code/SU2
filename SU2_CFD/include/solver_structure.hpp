@@ -780,7 +780,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   virtual void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                          CConfig *config, unsigned short val_marker, bool inlet_surface);
+                          CConfig *config, unsigned short val_marker, bool val_inlet_surface);
   
   /*!
    * \brief A virtual member.
@@ -4392,7 +4392,7 @@ public:
     * \param[in] val_marker - Surface marker where the boundary condition is applied.
     */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
   
   /*!
    * \brief Impose the interface boundary condition using the residual.
@@ -8565,7 +8565,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
 
   /*!
    * \brief Set the solution using the Freestream values.
@@ -9266,7 +9266,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
 
   /*!
    * \brief Impose via the residual the adjoint symmetry boundary condition.

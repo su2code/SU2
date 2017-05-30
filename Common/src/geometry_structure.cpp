@@ -794,9 +794,48 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
 	if ((rank == MASTER_NODE) && (Xcoord_Index0.size() != 0)) {
 
-		/*--- Remove repeated edges computing distance ---*/
+    /*--- Remove edges with zero length ---*/
 
-		bool Remove;
+    bool Remove;
+
+    do {
+
+      Remove = false;
+
+      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+
+        Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[iVertex]);
+        Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[iVertex]);
+        Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[iVertex]);
+
+        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+
+        if (Dist_Value <= Tolerance) {
+
+          /*--- Remove edge with repeated points ---*/
+
+          Xcoord_Index0.erase (Xcoord_Index0.begin() + iVertex);
+          Ycoord_Index0.erase (Ycoord_Index0.begin() + iVertex);
+          Zcoord_Index0.erase (Zcoord_Index0.begin() + iVertex);
+          Variable_Index0.erase (Variable_Index0.begin() + iVertex);
+
+          Xcoord_Index1.erase (Xcoord_Index1.begin() + iVertex);
+          Ycoord_Index1.erase (Ycoord_Index1.begin() + iVertex);
+          Zcoord_Index1.erase (Zcoord_Index1.begin() + iVertex);
+          Variable_Index1.erase (Variable_Index1.begin() + iVertex);
+
+          Remove = true; break;
+
+        }
+
+        if (Remove) break;
+
+      }
+
+    } while (Remove == true);
+
+
+		/*--- Remove repeated edges computing distance ---*/
 
 		do {
 
@@ -13536,7 +13575,7 @@ void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
   
 }
 
-su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, jVertex, n, Trailing_Point, Leading_Point;
   su2double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, MaxDistance, Distance, AoA;
@@ -13586,14 +13625,15 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
     Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
     Tangent[2] = Zcoord_Airfoil_[iVertex] - Zcoord_Airfoil_[iVertex-1];
     Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
+
     Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
-    
+
     BiNormal[0] = Plane_Normal[0];
     BiNormal[1] = Plane_Normal[1];
     BiNormal[2] = Plane_Normal[2];
     Length = sqrt(pow(BiNormal[0], 2.0) + pow(BiNormal[1], 2.0) + pow(BiNormal[2], 2.0));
     BiNormal[0] /= Length; BiNormal[1] /= Length; BiNormal[2] /= Length;
-    
+
     Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
     Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
     Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
@@ -13604,7 +13644,6 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
     
     /*--- Removing the trailing edge from list of points that we are going to use in the interpolation,
 			to be sure that a blunt trailing edge do not affect the interpolation ---*/
-
 
     if ((Normal[index] >= 0.0) && (fabs(Xcoord_Airfoil_[iVertex]) > MaxDistance*0.01)) {
       Xcoord.push_back(Xcoord_Airfoil_[iVertex]);
@@ -13703,7 +13742,7 @@ su2double CPhysicalGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2do
 
 }
 
-su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex, Trailing_Point, Leading_Point;
   su2double MaxDistance, Distance, Twist = 0.0;
   
@@ -13724,7 +13763,7 @@ su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane
 
 }
 
-void CPhysicalGeometry::Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection,
+void CPhysicalGeometry::Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
                                                 vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, Trailing_Point, Leading_Point;
@@ -13752,7 +13791,7 @@ void CPhysicalGeometry::Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2
   
 }
 
-void CPhysicalGeometry::Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection,
+void CPhysicalGeometry::Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
                                                 vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, Trailing_Point, Leading_Point;
@@ -13780,7 +13819,7 @@ void CPhysicalGeometry::Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge,
 
 }
 
-su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex, Trailing_Point;
   su2double MaxDistance, Distance, Chord = 0.0;
   
@@ -13801,7 +13840,7 @@ su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane
   
 }
 
-su2double CPhysicalGeometry::Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, Trailing_Point;
   su2double MaxDistance, Distance, Width = 0.0;
@@ -13817,7 +13856,7 @@ su2double CPhysicalGeometry::Compute_Width(su2double *Plane_P0, su2double *Plane
 
 }
 
-su2double CPhysicalGeometry::Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, Trailing_Point;
   su2double MinDistance, Distance, WaterLineWidth = 0.0;
@@ -13836,7 +13875,7 @@ su2double CPhysicalGeometry::Compute_WaterLineWidth(su2double *Plane_P0, su2doub
 
 }
 
-su2double CPhysicalGeometry::Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, Trailing_Point;
   su2double MaxDistance, Distance, Height = 0.0;
@@ -13853,10 +13892,10 @@ su2double CPhysicalGeometry::Compute_Height(su2double *Plane_P0, su2double *Plan
 
 }
 
-su2double CPhysicalGeometry::Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, Trailing_Point, Leading_Point;
-  su2double MaxDistance, Distance, LERadius = 0.0, X1, X2, X3, Y1, Y2, Y3, Ma, Mb, Xc, Yc;
+  su2double MaxDistance, Distance, LERadius = 0.0, X1, X2, X3, Y1, Y2, Y3, Ma, Mb, Xc, Yc, Radius;
   
   /*--- Find the leading and trailing edges and compute the radius of curvature ---*/
   
@@ -13879,23 +13918,25 @@ su2double CPhysicalGeometry::Compute_LERadius(su2double *Plane_P0, su2double *Pl
   X3 = Xcoord_Airfoil[Leading_Point+3];
   Y3 = Zcoord_Airfoil[Leading_Point+3];
   
-  Ma = (Y2-Y1) / (X2-X1);
-  Mb = (Y3-Y2) / (X3-X2);
+  if (X2 != X1) Ma = (Y2-Y1) / (X2-X1); else Ma = 0.0;
+  if (X3 != X2) Mb = (Y3-Y2) / (X3-X2); else Mb = 0.0;
 
-  Xc = (Ma*Mb*(Y1-Y3)+Mb*(X1+X2)-Ma*(X2+X3))/(2.0*(Mb-Ma));
-  Yc = -(1.0/Ma)*(Xc-0.5*(X1+X2))+0.5*(Y1+Y2);
+  if (Mb != Ma) Xc = (Ma*Mb*(Y1-Y3)+Mb*(X1+X2)-Ma*(X2+X3))/(2.0*(Mb-Ma)); else Xc = 0.0;
+  if (Ma != 0.0) Yc = -(1.0/Ma)*(Xc-0.5*(X1+X2))+0.5*(Y1+Y2); else Yc = 0.0;
   
-  LERadius = 1.0/sqrt((Xc-X1)*(Xc-X1)+(Yc-Y1)*(Yc-Y1));
+  Radius = sqrt((Xc-X1)*(Xc-X1)+(Yc-Y1)*(Yc-Y1));
+  if (Radius != 0.0) LERadius = 1.0/Radius; else LERadius = 0.0;
 
   return LERadius;
   
 }
 
-su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, su2double &ZLoc) {
 
   unsigned long iVertex, jVertex, n_Upper, n_Lower, Trailing_Point, Leading_Point;
   su2double Thickness_Location, Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Thickness_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, zp1, zpn, Chord, MaxDistance, Distance, AoA;
   vector<su2double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Z2coord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
+  su2double Zcoord_Up, Zcoord_Down;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
   
@@ -14008,18 +14049,23 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
   Z2coord_Lower.resize(n_Lower+1);
   SetSpline(Xcoord_Lower, Zcoord_Lower, n_Lower, zp1, zpn, Z2coord_Lower);
   
-  /*--- Compute the thickness (we add a fabs because we can not guarantee the
-   right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
   
   Thickness_Location = - Chord*(1.0-Location);
   
-  Thickness_Value = fabs(GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location) - GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location));
+  Zcoord_Up = GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location);
+  Zcoord_Down = GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location);
+  ZLoc = 0.5*(Zcoord_Up + Zcoord_Down) + Zcoord_Trailing + Thickness_Location * sin (AoA*PI_NUMBER/180.0);
   
+  /*--- Compute the thickness (we add a fabs because we can not guarantee the
+   right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
+
+  Thickness_Value = fabs(Zcoord_Up - Zcoord_Down);
+
   return Thickness_Value;
   
 }
 
-su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config,
+su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config,
                                           vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex;
   su2double Area_Value = 0.0;
@@ -14051,7 +14097,7 @@ su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_
   
 }
 
-su2double CPhysicalGeometry::Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config,
+su2double CPhysicalGeometry::Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config,
                                           vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex;
   su2double Length_Value = 0.0, Length_Value_ = 0.0;
@@ -14089,9 +14135,11 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
-  su2double MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, *Curvature, *Dihedral, SemiSpan;
+  vector<su2double> Xcoord_Airfoil_Spar, Ycoord_Airfoil_Spar, Zcoord_Airfoil_Spar, Variable_Airfoil_Spar;
+  su2double XLoc, XLoc_Local, YLoc, MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *FrontSpar_Thickness, *RearSpar_Thickness, *MeanSpar_Thickness, *ToC, *Chord, *LERadius, *Twist, *Curvature, *Dihedral, SemiSpan;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Wing_File, Section_File;
+  su2double Thickness_ZLoc;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -14108,6 +14156,9 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   
   Area = new su2double [nPlane];
   MaxThickness = new su2double [nPlane];
+  FrontSpar_Thickness = new su2double [nPlane];
+  RearSpar_Thickness = new su2double [nPlane];
+  MeanSpar_Thickness = new su2double [nPlane];
   Chord = new su2double [nPlane];
   LERadius = new su2double [nPlane];
   ToC = new su2double [nPlane];
@@ -14122,6 +14173,14 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   su2double **TrailingEdge = new su2double*[nPlane];
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     TrailingEdge[iPlane] = new su2double[nDim];
+
+  su2double **FrontSpar = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    FrontSpar[iPlane] = new su2double[2];
+
+  su2double **RearSpar = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    RearSpar[iPlane] = new su2double[2];
 
   su2double **Plane_P0 = new su2double*[nPlane];
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
@@ -14171,9 +14230,87 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
                            -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
+
+   }
+
+  /*--- If there is a spar definition the absolute location should be computed a priori ---*/
+
+  su2double *Plane_P0_Spar     = new su2double[nDim];
+  su2double *Plane_Normal_Spar = new su2double[nDim];
+  su2double *LeadingEdge_Spar  = new su2double[nDim];
+  su2double *TrailingEdge_Spar = new su2double[nDim];
+  su2double Chord_Spar, Twist_Spar;
+
+  for (unsigned short iVar = 0; iVar < config->GetnFront_Spar_YLoc(); iVar++) {
+
+    Plane_Normal_Spar[0] = 0.0;    Plane_P0_Spar[0] = 0.0;
+    Plane_Normal_Spar[1] = 1.0;    Plane_P0_Spar[1] = config->GetFront_Spar_YLoc(iVar)*SemiSpan;
+    Plane_Normal_Spar[2] = 0.0;    Plane_P0_Spar[2] = 0.0;
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+      LeadingEdge_Spar[iDim]  = 0.0;
+      TrailingEdge_Spar[iDim] = 0.0;
+    }
+    Chord_Spar               = 0.0;
+    Twist_Spar               = 0.0;
+
+    ComputeAirfoil_Section(Plane_P0_Spar, Plane_Normal_Spar, -1E6, 1E6, NULL,
+                           Xcoord_Airfoil_Spar, Ycoord_Airfoil_Spar, Zcoord_Airfoil_Spar, Variable_Airfoil_Spar,
+                           original_surface, config);
+
+    if (rank == MASTER_NODE) {
+
+    Compute_Wing_LeadingTrailing(LeadingEdge_Spar, TrailingEdge_Spar, Plane_P0_Spar, Plane_Normal_Spar, Xcoord_Airfoil_Spar, Ycoord_Airfoil_Spar, Zcoord_Airfoil_Spar);
+    Chord_Spar = Compute_Chord(Plane_P0_Spar, Plane_Normal_Spar, Xcoord_Airfoil_Spar, Ycoord_Airfoil_Spar, Zcoord_Airfoil_Spar);
+    Twist_Spar = Compute_Twist(Plane_P0_Spar, Plane_Normal_Spar, Xcoord_Airfoil_Spar, Ycoord_Airfoil_Spar, Zcoord_Airfoil_Spar);
+
+    XLoc = TrailingEdge_Spar[0] - (1.0-config->GetFront_Spar_XLoc(iVar))*Chord_Spar*cos(Twist_Spar*PI_NUMBER/180);
+    YLoc = config->GetFront_Spar_YLoc(iVar)*SemiSpan;
+
+    config->SetFront_Spar_AbsLoc(iVar, XLoc, YLoc);
+
+    }
+
   }
 
-  /*--- Compute the area at each section ---*/
+  for (unsigned short iVar = 0; iVar < config->GetnRear_Spar_YLoc(); iVar++) {
+
+    Plane_Normal_Spar[0] = 0.0;    Plane_P0_Spar[0] = 0.0;
+    Plane_Normal_Spar[1] = 1.0;    Plane_P0_Spar[1] = config->GetRear_Spar_YLoc(iVar)*SemiSpan;
+    Plane_Normal_Spar[2] = 0.0;    Plane_P0_Spar[2] = 0.0;
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+      LeadingEdge_Spar[iDim]  = 0.0;
+      TrailingEdge_Spar[iDim] = 0.0;
+    }
+    Chord_Spar               = 0.0;
+    Twist_Spar               = 0.0;
+
+    ComputeAirfoil_Section(Plane_P0_Spar, Plane_Normal_Spar, -1E6, 1E6, NULL,
+        Xcoord_Airfoil_Spar, Ycoord_Airfoil_Spar, Zcoord_Airfoil_Spar, Variable_Airfoil_Spar,
+        original_surface, config);
+
+    if (rank == MASTER_NODE) {
+
+      Compute_Wing_LeadingTrailing(LeadingEdge_Spar, TrailingEdge_Spar, Plane_P0_Spar, Plane_Normal_Spar, Xcoord_Airfoil_Spar, Ycoord_Airfoil_Spar, Zcoord_Airfoil_Spar);
+      Chord_Spar = Compute_Chord(Plane_P0_Spar, Plane_Normal_Spar, Xcoord_Airfoil_Spar, Ycoord_Airfoil_Spar, Zcoord_Airfoil_Spar);
+      Twist_Spar = Compute_Twist(Plane_P0_Spar, Plane_Normal_Spar, Xcoord_Airfoil_Spar, Ycoord_Airfoil_Spar, Zcoord_Airfoil_Spar);
+
+      XLoc = TrailingEdge_Spar[0] - (1.0-config->GetRear_Spar_XLoc(iVar))*Chord_Spar*cos(Twist_Spar*PI_NUMBER/180);
+      YLoc = config->GetRear_Spar_YLoc(iVar)*SemiSpan;
+
+      config->SetRear_Spar_AbsLoc(iVar, XLoc, YLoc);
+
+    }
+
+  }
+
+  delete [] Plane_P0_Spar;
+  delete [] Plane_Normal_Spar;
+  delete [] LeadingEdge_Spar;
+  delete [] TrailingEdge_Spar;
+
+  /*--- Compute airfoil characteristic only in the master node ---*/
   
   if (rank == MASTER_NODE) {
     
@@ -14182,17 +14319,17 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     if (config->GetOutput_FileFormat() == PARAVIEW) {
       Wing_File.open("wing_distribution.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
-        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"LE Radius (1/in)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Front Spar Thickness (in)\",\"Rear Spar Thickness (in)\",\"Mean Spar Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\",\"Front Spar XLoc/SemiSpan\",\"Front Spar ZLoc/SemiSpan\",\"Rear Spar XLoc/SemiSpan\",\"Rear Spar ZLoc/SemiSpan\"" << endl;
       else
-        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"LE Radius (1/m)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Front Spar Thickness (m)\",\"Rear Spar Thickness (m)\",\"Mean Spar Thickness (m)\",\"Chord (m)\",\"Leading Edge Radius (1/m)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\",\"Front Spar XLoc/SemiSpan\",\"Front Spar ZLoc/SemiSpan\",\"Rear Spar XLoc/SemiSpan\",\"Rear Spar ZLoc/SemiSpan\"" << endl;
     }
     else {
       Wing_File.open("wing_description.dat", ios::out);
       Wing_File << "TITLE = \"Wing description\"" << endl;
       if (config->GetSystemMeasurements() == US)
-        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"LE Radius (1/in)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Front Spar Thickness (in)\",\"Rear Spar Thickness (in)\",\"Mean Spar Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\",\"Front Spar XLoc/SemiSpan\",\"Front Spar ZLoc/SemiSpan\",\"Rear Spar XLoc/SemiSpan\",\"Rear Spar ZLoc/SemiSpan\"" << endl;
       else
-        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"LE Radius (1/m)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Front Spar Thickness (m)\",\"Rear Spar Thickness (m)\",\"Mean Spar Thickness (m)\",\"Chord (m)\",\"Leading Edge Radius (1/m)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\",\"Front Spar XLoc/SemiSpan\",\"Front Spar ZLoc/SemiSpan\",\"Rear Spar XLoc/SemiSpan\",\"Rear Spar ZLoc/SemiSpan\"" << endl;
       Wing_File << "ZONE T= \"Baseline wing\"" << endl;
     }
 
@@ -14206,28 +14343,52 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
         TrailingEdge[iPlane][iDim] = 0.0;
       }
 
-      Area[iPlane]         = 0.0;
-      MaxThickness[iPlane] = 0.0;
-      Chord[iPlane]        = 0.0;
-      LERadius[iPlane]     = 0.0;
-      ToC[iPlane]          = 0.0;
-      Twist[iPlane]        = 0.0;
+      Area[iPlane]                = 0.0;
+      MaxThickness[iPlane]        = 0.0;
+      FrontSpar_Thickness[iPlane] = 0.0;
+      RearSpar_Thickness[iPlane]  = 0.0;
+      MeanSpar_Thickness[iPlane]  = 0.0;
+      Chord[iPlane]               = 0.0;
+      LERadius[iPlane]            = 0.0;
+      ToC[iPlane]                 = 0.0;
+      Twist[iPlane]               = 0.0;
 
       if (Xcoord_Airfoil[iPlane].size() > 1) {
 
-        Compute_Wing_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Compute_Wing_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        MaxThickness[iPlane]= Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        MaxThickness[iPlane]= Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        LERadius[iPlane] = Compute_LERadius(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Twist[iPlane] = Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        YLoc = Plane_P0[iPlane][1];
+        XLoc = config->GetFront_Spar_XLoc_Interp_Abs(YLoc);
+        XLoc_Local = 1.0 - ((TrailingEdge[iPlane][0] - XLoc) / (Chord[iPlane]*cos(Twist[iPlane]*PI_NUMBER/180)));
+
+        FrontSpar[iPlane][0] = XLoc;
+        FrontSpar[iPlane][1] = YLoc;
+        FrontSpar_Thickness[iPlane] = Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], XLoc_Local, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Thickness_ZLoc);
+        FrontSpar[iPlane][2] = Thickness_ZLoc;
+
+        YLoc = Plane_P0[iPlane][1];
+        XLoc = config->GetRear_Spar_XLoc_Interp_Abs(YLoc);
+        XLoc_Local = 1.0 - ((TrailingEdge[iPlane][0] - XLoc) / (Chord[iPlane]*cos(Twist[iPlane]*PI_NUMBER/180)));
+
+        RearSpar[iPlane][0] = XLoc;
+        RearSpar[iPlane][1] = YLoc;
+        RearSpar_Thickness[iPlane] = Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], XLoc_Local, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Thickness_ZLoc);
+        RearSpar[iPlane][2] = Thickness_ZLoc;
+
+        MeanSpar_Thickness[iPlane] = 0.5 * (FrontSpar_Thickness[iPlane] + RearSpar_Thickness[iPlane]);
+
+        LERadius[iPlane] = Compute_LERadius(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
         ToC[iPlane] = MaxThickness[iPlane] / Chord[iPlane];
 
-        Twist[iPlane] = Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
       }
 
@@ -14271,16 +14432,28 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
     	if (Xcoord_Airfoil[iPlane].size() > 1) {
     		if (config->GetOutput_FileFormat() == PARAVIEW) {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane]  <<", "<< MaxThickness[iPlane]  <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane]  <<", "<< MaxThickness[iPlane]
+    			           <<", "<< FrontSpar_Thickness[iPlane] <<", "<< RearSpar_Thickness[iPlane]
+    			           <<", "<< MeanSpar_Thickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
     			           <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
-    			           <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][1]  <<", "<< LeadingEdge[iPlane][2]
-    			                                                                                                                                                                                                                                                                                                              <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][1]  <<", "<< TrailingEdge[iPlane][2]  << endl;
+    			           <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
+    			           <<", "<< TrailingEdge[iPlane][0]/SemiSpan <<", "<< TrailingEdge[iPlane][2]/SemiSpan
+                     <<", "<< FrontSpar[iPlane][0]/SemiSpan <<", "<< FrontSpar[iPlane][2]/SemiSpan
+                     <<", "<< RearSpar[iPlane][0]/SemiSpan <<", "<< RearSpar[iPlane][2]/SemiSpan << endl;
+
+
+
     		}
     		else  {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane]  <<" "<< MaxThickness[iPlane]  <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane]  <<" "<< MaxThickness[iPlane]
+    			           <<" "<< FrontSpar_Thickness[iPlane] <<" "<< RearSpar_Thickness[iPlane]
+    			           <<" "<< MeanSpar_Thickness[iPlane] <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
     			           <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
-    			           <<" "<< LeadingEdge[iPlane][0] <<" "<< LeadingEdge[iPlane][1]  <<" "<< LeadingEdge[iPlane][2]
-    			                                                                                                                                                                                                                                                                                                     <<" "<< TrailingEdge[iPlane][0] <<" "<< TrailingEdge[iPlane][1]  <<" "<< TrailingEdge[iPlane][2] << endl;
+    			           <<" "<< LeadingEdge[iPlane][0]/SemiSpan <<" "<< LeadingEdge[iPlane][2]/SemiSpan
+    			           <<" "<< TrailingEdge[iPlane][0]/SemiSpan <<" "<< TrailingEdge[iPlane][2]/SemiSpan
+                     <<" "<< FrontSpar[iPlane][0]/SemiSpan <<" "<< FrontSpar[iPlane][2]/SemiSpan
+                     <<" "<< RearSpar[iPlane][0]/SemiSpan <<" "<< RearSpar[iPlane][2]/SemiSpan << endl;
+
     		}
     	}
     }
@@ -14376,6 +14549,14 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   delete [] TrailingEdge;
 
   for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] FrontSpar[iPlane];
+  delete [] FrontSpar;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] RearSpar[iPlane];
+  delete [] RearSpar;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
     delete [] Plane_P0[iPlane];
   delete [] Plane_P0;
   
@@ -14385,6 +14566,9 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   
   delete [] Area;
   delete [] MaxThickness;
+  delete [] FrontSpar_Thickness;
+  delete [] RearSpar_Thickness;
+  delete [] MeanSpar_Thickness;
   delete [] Chord;
   delete [] LERadius;
   delete [] ToC;
@@ -14525,17 +14709,17 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
       if (Xcoord_Airfoil[iPlane].size() > 1) {
 
-        Compute_Fuselage_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Compute_Fuselage_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        Length[iPlane] = Compute_Length(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Length[iPlane] = Compute_Length(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        Width[iPlane] = Compute_Width(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Width[iPlane] = Compute_Width(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        WaterLineWidth[iPlane] = Compute_WaterLineWidth(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        WaterLineWidth[iPlane] = Compute_WaterLineWidth(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        Height[iPlane] = Compute_Height(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Height[iPlane] = Compute_Height(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
       }
 

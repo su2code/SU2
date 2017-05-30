@@ -723,7 +723,7 @@ inline void CSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_con
                                        CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                CConfig *config, unsigned short val_marker, bool inlet_surface) { }
+                                CConfig *config, unsigned short val_marker, bool val_inlet_surface) { }
 
 inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                     CConfig *config, unsigned short val_marker) { }

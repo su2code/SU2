@@ -5726,7 +5726,7 @@ void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_co
 }
 
 void CAdjEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, bool inlet_surface) {
+                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
   
 }
 

@@ -891,15 +891,17 @@ static const map<string, ENGINE_INFLOW_TYPE> Engine_EngineInflow_Map = CCreateMa
  * \brief types actuator disk boundary treatments
  */
 enum ACTDISK_TYPE {
-  VARIABLES_JUMP = 1,		/*!< \brief User specifies the variables jump. */
-  BC_THRUST = 2,     /*!< \brief User specifies the BC thrust. */
-  NET_THRUST = 3,     /*!< \brief User specifies the Net thrust. */
-  DRAG_MINUS_THRUST = 4,     /*!< \brief ACDC computes the right thrust. */
-  MASSFLOW = 5,     /*!< \brief ACDC computes the right thrust. */
-  POWER = 6     /*!< \brief User specifies the Net thrust. */
+  PRESS_TEMP_INC = 1,   /*!< \brief User specifies pressure and temperature increment. */
+  PRESS_TEMP_RATIO = 2,		/*!< \brief User specifies pressure and temperature ratio. */
+  BC_THRUST = 3,     /*!< \brief User specifies the BC thrust. */
+  NET_THRUST = 4,     /*!< \brief User specifies the Net thrust. */
+  DRAG_MINUS_THRUST = 5,     /*!< \brief ACDC computes the right thrust. */
+  MASSFLOW = 6,     /*!< \brief ACDC computes the right thrust. */
+  POWER = 7     /*!< \brief User specifies the Net thrust. */
 };
 static const map<string, ACTDISK_TYPE> ActDisk_Map = CCreateMap<string, ACTDISK_TYPE>
-("VARIABLES_JUMP", VARIABLES_JUMP)
+("PRESS_TEMP_INC", PRESS_TEMP_INC)
+("PRESS_TEMP_RATIO", PRESS_TEMP_RATIO)
 ("BC_THRUST", BC_THRUST)
 ("NET_THRUST", NET_THRUST)
 ("DRAG_MINUS_THRUST", DRAG_MINUS_THRUST)

@@ -132,7 +132,12 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
   unsigned short iLine, nLine = 10;
   char cstr[200];
   string::size_type position;
-
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
   /*--- Search the mesh file for the 'NZONE' keyword. ---*/
 
   switch (val_format) {
@@ -143,9 +148,9 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
       strcpy (cstr, val_mesh_filename.c_str());
       mesh_file.open(cstr, ios::in);
       if (mesh_file.fail()) {
-        cout << "cstr=" << cstr << endl;
-        cout << "There is no geometry file (GetnZone))!" << endl;
-
+        if (rank == MASTER_NODE) {
+          cout << "There is no geometry file called " << cstr << "." << endl;
+        }
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
@@ -447,6 +452,7 @@ void CConfig::SetPointersNull(void) {
   default_ffd_axis      = NULL;
   default_eng_cyl       = NULL;
   default_eng_val       = NULL;
+  default_geo_def       = NULL;
   default_cfl_adapt     = NULL;
   default_ad_coeff_flow = NULL;
   default_ad_coeff_adj  = NULL;
@@ -515,6 +521,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_ffd_axis      = new su2double[3];
   default_eng_cyl       = new su2double[7];
   default_eng_val       = new su2double[5];
+  default_geo_def       = new su2double[4];
   default_cfl_adapt     = new su2double[4];
   default_ad_coeff_flow = new su2double[3];
   default_ad_coeff_adj  = new su2double[3];
@@ -717,6 +724,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("REF_AREA", RefArea, 1.0);
   /*!\brief SEMI_SPAN\n DESCRIPTION: Wing semi-span (1 by deafult) \ingroup Config*/
   addDoubleOption("SEMI_SPAN", SemiSpan, 1.0);
+  /*!\brief FRONT_SPAR_XLOC\n DESCRIPTION: X location of the front spar \ingroup Config*/
+  addDoubleListOption("FRONT_SPAR_XLOC", nFront_Spar_XLoc, Front_Spar_XLoc);
+  /*!\brief FRONT_SPAR_YLOC\n DESCRIPTION: Y location of the front spar \ingroup Config*/
+  addDoubleListOption("FRONT_SPAR_YLOC", nFront_Spar_YLoc, Front_Spar_YLoc);
+  /*!\brief REAR_SPAR_XLOC\n DESCRIPTION: X location of the front spar \ingroup Config*/
+  addDoubleListOption("REAR_SPAR_XLOC", nRear_Spar_XLoc, Rear_Spar_XLoc);
+  /*!\brief REAR_SPAR_YLOC\n DESCRIPTION: Y location of the front spar \ingroup Config*/
+  addDoubleListOption("REAR_SPAR_YLOC", nRear_Spar_YLoc, Rear_Spar_YLoc);
   /*!\brief REF_LENGTH\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
   addDoubleOption("REF_LENGTH", RefLength, 1.0);
   /*!\brief REF_ELEM_LENGTH\n DESCRIPTION: Reference element length for computing the slope limiter epsilon \ingroup Config*/
@@ -780,8 +795,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
 
-  /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: VARIABLES_JUMP \ingroup Config*/
-  addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, VARIABLES_JUMP);
+  /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: PRESS_TEMP_INC \ingroup Config*/
+  addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, PRESS_TEMP_INC);
 
   /*!\brief MARKER_ACTDISK\n DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
@@ -832,7 +847,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Highlite area */
   addDoubleOption("HIGHLITE_AREA", Highlite_Area, 1.0);
   /* DESCRIPTION: Fan poly efficiency */
-  addDoubleOption("FAN_POLY_EFF", Fan_Poly_Eff, 1.0);
+  addDoubleOption("ACTDISK_POLY_EFF", ActDisk_Poly_Eff, 1.0);
+  /* DESCRIPTION: Actuatord disk tangential velocity */
+  addDoubleOption("ACTDISK_TANG_VEL", ActDisk_Tang_Vel, 1.0);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
   addBoolOption("SUBSONIC_ENGINE", SubsonicEngine, false);
   /* DESCRIPTION: Actuator disk double surface */
@@ -844,6 +861,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the distortion rack (radial number of proves / circumferential density (degree) */
   default_distortion[0] =  5.0; default_distortion[1] =  15.0;
   addDoubleArrayOption("DISTORTION_RACK", 2, DistortionRack, default_distortion);
+  /* DESCRIPTION: Values of the box to impose a subsonic nacellle (mach, Pressure, Temperature) */
+  default_geo_def[0]=0.0; default_geo_def[1]=0.0; default_geo_def[2]=0.0;
+  default_geo_def[1]=1.0;
+  addDoubleArrayOption("ACTDISK_GEO_DEF", 4, ActDisk_GeoDef, default_geo_def);
   /* DESCRIPTION: Values of the box to impose a subsonic nacellle (mach, Pressure, Temperature) */
   default_eng_val[0]=0.0; default_eng_val[1]=0.0; default_eng_val[2]=0.0;
   default_eng_val[3]=0.0;  default_eng_val[4]=0.0;
@@ -1181,8 +1202,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, TECPLOT);
-  /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
-  addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
+  /* \n DESCRIPTION: Block the flow that is in the reverse direction \ingroup Config*/
+  addBoolOption("ACTDISK_BLOCK_REVERSE_FLOW", ActDisk_Block_ReverseFlow, true);
+  /* \n DESCRIPTION: Non uniform actuator disk jump \ingroup Config*/
+  addBoolOption("ACTDISK_UNIFORM_JUMP", ActDisk_Uniform_Jump, true);
+  /*!\brief ACTDISK_INC_PRESS\n DESCRIPTION: Value of the total pressure increment \ingroup Config*/
+  addDoubleListOption("ACTDISK_INC_PRESS", nActDisk_Inc_Pressure, ActDisk_Inc_Pressure);
+  /*!\brief ACTDISK_INC_TEMP\n DESCRIPTION: Value of the total pressure increment \ingroup Config*/
+  addDoubleListOption("ACTDISK_INC_TEMP", nActDisk_Inc_Temperature, ActDisk_Inc_Temperature);
+  /*!\brief ACTDISK_INC_RADIAL_DIST\n DESCRIPTION: Location of the radial distribution \ingroup Config*/
+  addDoubleListOption("ACTDISK_INC_RADIAL_DIST", nActDisk_Inc_Radial, ActDisk_Inc_Radial);
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION:  Mesh input file */
@@ -2007,13 +2036,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Store the SU2 module that we are executing. ---*/
   
   Kind_SU2 = val_software;
-
-  /*--- Set the default for thrust in ActDisk ---*/
-  
-  if ((Kind_ActDisk == NET_THRUST) || (Kind_ActDisk == BC_THRUST)
-      || (Kind_ActDisk == DRAG_MINUS_THRUST) || (Kind_ActDisk == MASSFLOW)
-      || (Kind_ActDisk == POWER))
-    ActDisk_Jump = RATIO;
 
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
 
@@ -3036,6 +3058,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SubsonicEngine_Cyl[5] = SubsonicEngine_Cyl[5]/12.0;
     SubsonicEngine_Cyl[6] = SubsonicEngine_Cyl[6]/12.0;
     
+    ActDisk_GeoDef[0] = ActDisk_GeoDef[0]/12.0;
+    ActDisk_GeoDef[1] = ActDisk_GeoDef[1]/12.0;
+    ActDisk_GeoDef[2] = ActDisk_GeoDef[2]/12.0;
+    ActDisk_GeoDef[3] = ActDisk_GeoDef[3]/12.0;
+
   }
   
   /*--- Check for constant lift mode. Initialize the update flag for
@@ -3149,6 +3176,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   		MinLogResidual = -24;
   	}
   }
+
+  /*--- If there are not design variables defined in the file ---*/
+
+  if (nDV == 0) {
+    nDV = 1;
+    Design_Variable = new unsigned short [nDV];
+    Design_Variable[0] = NO_DEFORMATION;
+  }
+
+  if (nFront_Spar_XLoc != 0) { Front_Spar_XLoc_Abs = new su2double [nFront_Spar_XLoc]; }
+  if (nFront_Spar_YLoc != 0) { Front_Spar_YLoc_Abs = new su2double [nFront_Spar_YLoc]; }
+
+  if (nRear_Spar_XLoc != 0) { Rear_Spar_XLoc_Abs = new su2double [nRear_Spar_XLoc]; }
+  if (nRear_Spar_YLoc != 0) { Rear_Spar_YLoc_Abs = new su2double [nRear_Spar_YLoc]; }
 
 }
 
@@ -4087,6 +4128,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       }
       
+      else if (Design_Variable[iDV] == NO_DEFORMATION) {
+        cout << "No deformation of the numerical grid. Just output .su2 file." << endl;
+      }
+
       else if (Design_Variable[iDV] == FFD_SETTING) {
         
         cout << "Setting the FFD box structure." << endl;
@@ -5594,6 +5639,7 @@ CConfig::~CConfig(void) {
   if (default_ffd_axis      != NULL) delete [] default_ffd_axis;
   if (default_eng_cyl       != NULL) delete [] default_eng_cyl;
   if (default_eng_val       != NULL) delete [] default_eng_val;
+  if (default_geo_def       != NULL) delete [] default_geo_def;
   if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
   if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
   if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;
@@ -6217,6 +6263,97 @@ unsigned short CConfig::GetKind_Data_Riemann(string val_marker) {
   return Kind_Data_Riemann[iMarker_Riemann];
 }
 
+su2double CConfig::GetActDisk_IncPT(su2double val_radial) {
+
+  unsigned short iVar;
+  su2double PT;
+
+  if (val_radial <= 0.0) { PT = ActDisk_Inc_Pressure[0]; return PT; }
+  if (val_radial >= 1.0) { PT = ActDisk_Inc_Pressure[nActDisk_Inc_Radial-1]; return PT; }
+
+  for (iVar = 0; iVar < nActDisk_Inc_Radial-1; iVar++) {
+    if ((val_radial >= ActDisk_Inc_Radial[iVar]) && (val_radial <= ActDisk_Inc_Radial[iVar+1]))
+      break;
+  }
+
+  su2double PT1 = ActDisk_Inc_Pressure[iVar];
+  su2double PT2 = ActDisk_Inc_Pressure[iVar+1];
+  su2double R1 = ActDisk_Inc_Radial[iVar];
+  su2double R2 = ActDisk_Inc_Radial[iVar+1];
+  PT = PT1 + (PT2-PT1)*(val_radial-R1)/(R2-R1);
+
+  return PT;
+
+}
+
+su2double CConfig::GetActDisk_IncTT(su2double val_radial) {
+
+  unsigned short iVar;
+  su2double TT;
+
+  if (val_radial <= 0.0) { TT = ActDisk_Inc_Temperature[0]; return TT; }
+  if (val_radial >= 1.0) { TT = ActDisk_Inc_Temperature[nActDisk_Inc_Radial-1]; return TT; }
+
+  for (iVar = 0; iVar < nActDisk_Inc_Radial-1; iVar++) {
+    if ((val_radial >= ActDisk_Inc_Radial[iVar]) && (val_radial <= ActDisk_Inc_Radial[iVar+1]))
+      break;
+  }
+
+  su2double TT1 = ActDisk_Inc_Temperature[iVar];
+  su2double TT2 = ActDisk_Inc_Temperature[iVar+1];
+  su2double R1 = ActDisk_Inc_Radial[iVar];
+  su2double R2 = ActDisk_Inc_Radial[iVar+1];
+  TT = TT1 + (TT2-TT1)*(val_radial-R1)/(R2-R1);
+
+  return TT;
+
+}
+
+su2double CConfig::GetFront_Spar_XLoc_Interp_Abs(su2double val_yloc) {
+
+  unsigned short iVar;
+  su2double Xloc;
+
+  if (val_yloc <= Front_Spar_YLoc_Abs[0]) { Xloc = Front_Spar_XLoc_Abs[0]; return Xloc; }
+  if (val_yloc >= Front_Spar_YLoc_Abs[nFront_Spar_YLoc-1]) { Xloc = Front_Spar_XLoc_Abs[nFront_Spar_YLoc-1]; return Xloc; }
+
+  for (iVar = 0; iVar < nFront_Spar_YLoc-1; iVar++) {
+    if ((val_yloc >= Front_Spar_YLoc_Abs[iVar]) && (val_yloc <= Front_Spar_YLoc_Abs[iVar+1]))
+      break;
+  }
+
+  su2double Xloc1 = Front_Spar_XLoc_Abs[iVar];
+  su2double Xloc2 = Front_Spar_XLoc_Abs[iVar+1];
+  su2double Yloc1 = Front_Spar_YLoc_Abs[iVar];
+  su2double Yloc2 = Front_Spar_YLoc_Abs[iVar+1];
+  Xloc = Xloc1 + (Xloc2-Xloc1)*(val_yloc-Yloc1)/(Yloc2-Yloc1);
+
+  return Xloc;
+
+}
+
+su2double CConfig::GetRear_Spar_XLoc_Interp_Abs(su2double val_yloc) {
+
+  unsigned short iVar;
+  su2double Xloc;
+
+  if (val_yloc <= Rear_Spar_YLoc_Abs[0]) { Xloc = Rear_Spar_XLoc_Abs[0]; return Xloc; }
+  if (val_yloc >= Rear_Spar_YLoc_Abs[nRear_Spar_YLoc-1]) { Xloc = Rear_Spar_XLoc_Abs[nRear_Spar_YLoc-1]; return Xloc; }
+
+  for (iVar = 0; iVar < nRear_Spar_YLoc-1; iVar++) {
+    if ((val_yloc >= Rear_Spar_YLoc_Abs[iVar]) && (val_yloc <= Rear_Spar_YLoc_Abs[iVar+1]))
+      break;
+  }
+
+  su2double Xloc1 = Rear_Spar_XLoc_Abs[iVar];
+  su2double Xloc2 = Rear_Spar_XLoc_Abs[iVar+1];
+  su2double Yloc1 = Rear_Spar_YLoc_Abs[iVar];
+  su2double Yloc2 = Rear_Spar_YLoc_Abs[iVar+1];
+  Xloc = Xloc1 + (Xloc2-Xloc1)*(val_yloc-Yloc1)/(Yloc2-Yloc1);
+
+  return Xloc;
+
+}
 
 su2double CConfig::GetNRBC_Var1(string val_marker) {
   unsigned short iMarker_NRBC;

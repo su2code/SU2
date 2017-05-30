@@ -76,7 +76,8 @@ private:
   unsigned short *Kind_TurboPerformance; /*!< \brief Kind of Turbomachinery performance calculation.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
   su2double Highlite_Area; /*!< \brief Highlite area. */
-  su2double Fan_Poly_Eff; /*!< \brief Highlite area. */
+  su2double ActDisk_Poly_Eff; /*!< \brief Actuator disk polytropic efficiency. */
+  su2double ActDisk_Tang_Vel; /*!< \brief Actuator disk tangential velocity. */
   su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
   su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
   su2double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
@@ -90,6 +91,7 @@ private:
   su2double* Obj_ChainRuleCoeff; /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   su2double* SubsonicEngine_Cyl; /*!< \brief Coordinates of the box subsonic region */
+  su2double* ActDisk_GeoDef; /*!< \brief actuator disk geometrical definition */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
   su2double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
   su2double *DistortionRack;
@@ -97,6 +99,8 @@ private:
   *DensityLimits,
   *TemperatureLimits; /*!< \brief Limits for the primitive variables */
   bool ActDisk_DoubleSurface;  /*!< \brief actuator disk double surface  */
+  bool ActDisk_Block_ReverseFlow;  /*!< \brief block the flow in the reverse direction  */
+  bool ActDisk_Uniform_Jump;  /*!< \brief Actuator disk uniform jump  */
   bool Engine_HalfModel;  /*!< \brief only half model is in the computational grid  */
   bool ActDisk_SU2_DEF;  /*!< \brief actuator disk double surface  */
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
@@ -396,7 +400,18 @@ private:
   unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
   *MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
-  su2double *LocationStations;   /*!< \brief Airfoil sections in wing slicing subroutine. */
+  su2double *LocationStations,   /*!< \brief Airfoil sections in wing slicing subroutine. */
+  *ActDisk_Inc_Pressure,   /*!< \brief PT distribution for the actuator disk. */
+  *ActDisk_Inc_Temperature,   /*!< \brief TT distribution for the actuator disk. */
+  *ActDisk_Inc_Radial;   /*!< \brief Radial distribution for the actuator disk. */
+  su2double *Front_Spar_XLoc,   /*!< \brief X location of the front spar. */
+  *Front_Spar_XLoc_Abs,   /*!< \brief X location of the front spar. */
+  *Front_Spar_YLoc,   /*!< \brief Y location of the front spar. */
+  *Front_Spar_YLoc_Abs,   /*!< \brief Y location of the front spar. */
+  *Rear_Spar_XLoc,   /*!< \brief X location of the rear spar. */
+  *Rear_Spar_XLoc_Abs,   /*!< \brief X location of the rear spar. */
+  *Rear_Spar_YLoc,   /*!< \brief X location of the rear spar. */
+  *Rear_Spar_YLoc_Abs;   /*!< \brief X location of the rear spar. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
@@ -482,7 +497,14 @@ private:
   unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double *Stations_Bounds;                  /*!< \brief Airfoil section limit. */
   unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
-  nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
+  nActDisk_Inc_Pressure,                        /*!< \brief PT distribution for the actuator disk . */
+  nActDisk_Inc_Temperature,                       /*!< \brief TT distribution for the actuator disk . */
+  nActDisk_Inc_Radial,                    /*!< \brief Radial distribution for the actuator disk . */
+  nWingStations,               /*!< \brief Number of section cuts to make when calculating internal volume. */
+  nFront_Spar_XLoc,            /*!< \brief X location of the front spar . */
+  nFront_Spar_YLoc,            /*!< \brief Y location of the front spar . */
+  nRear_Spar_XLoc,            /*!< \brief X location of the rear spar . */
+  nRear_Spar_YLoc;            /*!< \brief Y location of the rear spar . */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
   *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
@@ -593,7 +615,6 @@ private:
   unsigned short Geo_Description;	/*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
-  unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
   su2double RefArea,		/*!< \brief Reference area for coefficient computation. */
   RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
@@ -824,6 +845,7 @@ private:
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
+  *default_geo_def,           /*!< \brief Default Actuator disk geometrical definition. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
@@ -1288,6 +1310,12 @@ public:
   su2double *GetSubsonicEngine_Values(void);
   
   /*!
+   * \brief Get the geometrical definiton of the actuator disk.
+   * \return Coordiantes and radious of the actuator disk.
+   */
+  su2double *GetActDisk_GeoDef(void);
+
+  /*!
    * \brief Get the the coordinates where of the box where a subsonic region is imposed.
    * \return Coordinates where of the box where the grid is going to be a subsonic region.
    */
@@ -1526,11 +1554,17 @@ public:
   su2double GetHighlite_Area(void);
   
   /*!
-   * \brief Get the value of the reference viscosity for non-dimensionalization.
-   * \return Reference viscosity for non-dimensionalization.
+   * \brief Get the value of polytropic efficiency for the actuator disk.
+   * \return Polytropic efficiency of the actuator disk.
    */
-  su2double GetFan_Poly_Eff(void);
+  su2double GetActDisk_Poly_Eff(void);
   
+  /*!
+   * \brief Get coeff that multiply the tangential velocity.
+   * \return Tangential velocity coefficient.
+   */
+  su2double GetActDisk_Tang_Vel(void);
+
   /*!
    * \brief Get the value of the reference conductivity for non-dimensionalization.
    * \return Reference conductivity for non-dimensionalization.
@@ -4116,12 +4150,6 @@ public:
   unsigned short GetOutput_FileFormat(void);
   
   /*!
-   * \brief Get the format of the output solution.
-   * \return Format of the output solution.
-   */
-  unsigned short GetActDisk_Jump(void);
-  
-  /*!
    * \brief Get the name of the file with the convergence history of the problem.
    * \return Name of the file with convergence history of the problem.
    */
@@ -4370,6 +4398,18 @@ public:
    */
   bool GetActDisk_DoubleSurface(void);
   
+  /*!
+   * \brief Block the flow in the reverse direction.
+   * \return <code>TRUE</code> if the block inm the reverse direction should be blocked; otherwise <code>FALSE</code>.
+   */
+  bool GetActDisk_Block_ReverseFlow(void);
+
+  /*!
+   * \brief Actuator disk uniform jump.
+   * \return <code>TRUE</code> if the uniform jump; otherwise <code>FALSE</code>.
+   */
+  bool GetActDisk_Uniform_Jump(void);
+
   /*!
    * \brief Only halg of the engine is in the compputational grid.
    * \return <code>TRUE</code> if the engine is complete; otherwise <code>FALSE</code>.
@@ -5288,7 +5328,101 @@ public:
    * \return The var1
    */
   su2double GetNRBC_Var1(string val_marker);
+
+  /*!
+   * \brief Get the PT at a particular radial station.
+   * \param[in] val_radial - Radial location.
+   * \return Value of the PT
+   */
+  su2double GetActDisk_IncPT(su2double val_radial);
+
+  /*!
+   * \brief Get the TT at a particular radial station.
+   * \param[in] val_radial - Radial location.
+   * \return Value of the TT
+   */
+  su2double GetActDisk_IncTT(su2double val_radial);
   
+  /*!
+   * \brief Get the Xlocation of the front spar given a Y location.
+   * \param[in] val_var - location index.
+   * \return Value of the Xlocation of the spar
+   */
+  void SetFront_Spar_AbsLoc(unsigned short val_var, su2double val_xloc, su2double val_yloc);
+
+  /*!
+   * \brief Get the Xlocation of the front spar given a Y location.
+   * \param[in] val_var - location index.
+   * \return Value of the Xlocation of the spar
+   */
+  void SetRear_Spar_AbsLoc(unsigned short val_var, su2double val_xloc, su2double val_yloc);
+
+  /*!
+   * \brief Get the number of locations for the rear spar definition.
+   * \return number of locations for the front spar definition
+   */
+  unsigned short GetnFront_Spar_XLoc();
+
+  /*!
+   * \brief Get the Xlocation of the front spar given a Y location.
+   * \param[in] val_var - location index.
+   * \return Value of the Xlocation of the spar
+   */
+  su2double GetFront_Spar_XLoc(unsigned short val_var);
+
+  /*!
+   * \brief Get the number of locations for the rear spar definition.
+   * \return number of locations for the front spar definition
+   */
+  unsigned short GetnFront_Spar_YLoc();
+
+  /*!
+   * \brief Get the Ylocation of the front spar given a Y location.
+   * \param[in] val_var - location index.
+   * \return Value of the Ylocation of the spar
+   */
+  su2double GetFront_Spar_YLoc(unsigned short val_var);
+
+  /*!
+   * \brief Get the number of locations for the rear spar definition.
+   * \return number of locations for the front spar definition
+   */
+  unsigned short GetnRear_Spar_XLoc();
+
+  /*!
+   * \brief Get the Ylocation of the rear spar given a Y location.
+   * \param[in] val_var - location index.
+   * \return Value of the Xlocation of the spar
+   */
+  su2double GetRear_Spar_XLoc(unsigned short val_var);
+
+  /*!
+   * \brief Get the number of locations for the rear spar definition.
+   * \return number of locations for the rear spar definition
+   */
+  unsigned short GetnRear_Spar_YLoc();
+
+  /*!
+   * \brief Get the Ylocation of the rear spar given a Y location.
+   * \param[in] val_var - location index.
+   * \return Value of the Ylocation of the spar
+   */
+  su2double GetRear_Spar_YLoc(unsigned short val_var);
+
+  /*!
+   * \brief Get the Xlocation of the front spar given a Y location.
+   * \param[in] val_yloc - Y location of the spar.
+   * \return Value of the Xlocation of the spar
+   */
+  su2double GetFront_Spar_XLoc_Interp_Abs(su2double val_yloc);
+
+  /*!
+   * \brief Get the Xlocation of the rear spar given a Y location.
+   * \param[in] val_yloc - Y location of the spar.
+   * \return Value of the Xlocation of the spar
+   */
+  su2double GetRear_Spar_XLoc_Interp_Abs(su2double val_yloc);
+
   /*!
    * \brief Get the var 2 at NRBC boundary.
    * \param[in] val_marker - Index corresponding to the NRBC boundary.

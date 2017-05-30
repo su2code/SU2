@@ -1991,14 +1991,19 @@ void CTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                               CConfig *config, unsigned short val_marker, bool inlet_surface) {
+                               CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
   
   unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex, iPoint_Normal;
-  su2double *V_outlet, *V_inlet, *V_domain, *Normal, *UnitNormal, Area, Vn;
+  su2double *V_outlet = NULL, *V_inlet = NULL, *V_domain, *Normal, *UnitNormal, Area;
+  su2double *V_inlet_temp, *V_outlet_temp, Vn_inlet, Vn_outlet;
+
   bool ReverseFlow;
+  bool inlet_surface     = val_inlet_surface;
+
   unsigned short iDim;
   
-  bool grid_movement = config->GetGrid_Movement();
+  bool BlockReverseFlow  = config->GetActDisk_Block_ReverseFlow();
+  bool grid_movement     = config->GetGrid_Movement();
   
   Normal = new su2double[nDim];
   UnitNormal = new su2double[nDim];
@@ -2029,33 +2034,58 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
       
-      /*--- Retrieve solution at the farfield boundary node ---*/
+      /*--- Retrieve solution at the actuator disk node boundary node ---*/
       
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+
+      /*--- Project the velocities into the normal direction ---*/
+
+      if (val_inlet_surface) {
+        V_inlet_temp = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+        V_outlet_temp = solver_container[FLOW_SOL]->GetDonorPrimVar(val_marker, iVertex);
+      }
+      else {
+        V_inlet_temp = solver_container[FLOW_SOL]->GetDonorPrimVar(val_marker, iVertex);
+        V_outlet_temp = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      }
       
-      /*--- Check the flow direction. Project the flow into the normal to the inlet face ---*/
+      /*--- Compute the projected velocities ---*/
+
+      Vn_inlet = 0.0; Vn_outlet = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vn_inlet += V_inlet_temp[iDim+1]*UnitNormal[iDim];
+        Vn_outlet += V_outlet_temp[iDim+1]*UnitNormal[iDim];
+      }
+
+      /*--- Set the logic to identify the boundary conditions. Note that if one boundary is reversed.
+       it will change both boundary conditions, to be sure that they are consistent one with the other
+       one inlet correspond with one outlet ---*/
+
+      ReverseFlow = false;
+      if ((val_inlet_surface) && ((Vn_inlet < 0.0) || (Vn_outlet < 0.0)) )  { ReverseFlow = true; }
+      if ((!val_inlet_surface) && ((Vn_inlet > 0.0) || (Vn_outlet > 0.0)) ) { ReverseFlow = true; }
       
-      Vn = 0.0; ReverseFlow = false;
-      for (iDim = 0; iDim < nDim; iDim++) {  Vn += V_domain[iDim+1]*UnitNormal[iDim]; }
-      
-      if ((inlet_surface) && (Vn < 0.0)) { ReverseFlow = true; }
-      if ((!inlet_surface) && (Vn > 0.0)) { ReverseFlow = true; }
-      
+      /*--- Standard situation where the physical inlet is the geometrical inlet ---*/
+
+      inlet_surface = val_inlet_surface;
+
+      /*--- There is flow in the reverse direction and we are not going to block it  ---*/
+
+      if ((!BlockReverseFlow) && (ReverseFlow)) { inlet_surface = !val_inlet_surface; }
+
       /*--- Do not anything if there is a
        reverse flow, Euler b.c. for the direct problem ---*/
       
-      if (!ReverseFlow) {
+      if ((!ReverseFlow) || (!BlockReverseFlow)) {
         
         /*--- Allocate the value at the infinity ---*/
         
         if (inlet_surface) {
           V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-          V_outlet = solver_container[FLOW_SOL]->GetDonorPrimVar(val_marker, iVertex);
           conv_numerics->SetPrimitive(V_domain, V_inlet);
         }
         else {
           V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-          V_inlet = solver_container[FLOW_SOL]->GetDonorPrimVar(val_marker, iVertex);
           conv_numerics->SetPrimitive(V_domain, V_outlet);
         }
         
@@ -2067,71 +2097,59 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
         
         Solution_i[0] = node[iPoint]->GetSolution(0);
         
-        //      if (inlet_surface) Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_outlet [nDim+9]);
-        //      else Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_inlet [nDim+9]);
-        
-        //      /*--- Inflow analysis (interior extrapolation) ---*/
-        //      if (((inlet_surface) && (!ReverseFlow)) || ((!inlet_surface) && (ReverseFlow))) {
-        //        Solution_j[0] = 2.0*node[iPoint]->GetSolution(0) - node[iPoint_Normal]->GetSolution(0);
-        //      }
-        
-        //      /*--- Outflow analysis ---*/
-        //      else {
-        //        if (inlet_surface) Solution_j[0] = Factor_nu_ActDisk*V_outlet [nDim+9];
-        //        else { Solution_j[0] = Factor_nu_ActDisk*V_inlet [nDim+9]; }
-        //      }
-        
-        /*--- Inflow analysis (interior extrapolation) ---*/
-        if (((inlet_surface) && (!ReverseFlow)) || ((!inlet_surface) && (ReverseFlow))) {
-          Solution_j[0] = node[iPoint]->GetSolution(0);
+        if ((!ReverseFlow) || (!BlockReverseFlow)) {
+
+          /*--- Inflow analysis (interior extrapolation) ---*/
+
+          if (inlet_surface) { Solution_j[0] = node[iPoint]->GetSolution(0); }
+
+          /*--- Outflow analysis ---*/
+
+          else { Solution_j[0] = nu_tilde_ActDisk; }
+
+          conv_numerics->SetTurbVar(Solution_i, Solution_j);
+
+           /*--- Grid Movement ---*/
+
+           if (grid_movement)
+             conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+           /*--- Compute the residual using an upwind scheme ---*/
+
+           conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+           LinSysRes.AddBlock(iPoint, Residual);
+
+           /*--- Jacobian contribution for implicit integration ---*/
+
+           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+           /*--- Viscous contribution ---*/
+
+           visc_numerics->SetNormal(Normal);
+           visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
+
+           /*--- Conservative variables w/o reconstruction ---*/
+
+           if (inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
+           else visc_numerics->SetPrimitive(V_domain, V_outlet);
+
+           /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+
+           visc_numerics->SetTurbVar(Solution_i, Solution_j);
+
+           visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+           /*--- Compute residual, and Jacobians ---*/
+
+           visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+           /*--- Subtract residual, and update Jacobians ---*/
+
+           LinSysRes.SubtractBlock(iPoint, Residual);
+           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
         }
-        
-        /*--- Outflow analysis ---*/
-        else {
-          Solution_j[0] = nu_tilde_ActDisk;
-        }
-        
-        conv_numerics->SetTurbVar(Solution_i, Solution_j);
-        
-        /*--- Grid Movement ---*/
-        
-        if (grid_movement)
-          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-        
-        /*--- Compute the residual using an upwind scheme ---*/
-        
-        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.AddBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-        
-        /*--- Viscous contribution ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
-        
-        /*--- Conservative variables w/o reconstruction ---*/
-        
-        if (inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
-        else visc_numerics->SetPrimitive(V_domain, V_outlet);
-        
-        /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-        
-        visc_numerics->SetTurbVar(Solution_i, Solution_j);
-        
-        visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-        
-        /*--- Compute residual, and Jacobians ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        
-        /*--- Subtract residual, and update Jacobians ---*/
-        
-        //        LinSysRes.SubtractBlock(iPoint, Residual);
-        //        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
+
       }
     }
   }

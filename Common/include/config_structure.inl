@@ -293,6 +293,8 @@ inline su2double *CConfig::GetSubsonicEngine_Cyl(void) { return SubsonicEngine_C
 
 inline su2double *CConfig::GetSubsonicEngine_Values(void) { return SubsonicEngine_Values; }
 
+inline su2double *CConfig::GetActDisk_GeoDef(void) { return ActDisk_GeoDef; }
+
 inline su2double *CConfig::GetDistortionRack(void) { return DistortionRack; }
 
 inline unsigned short CConfig::GetAnalytical_Surface(void) { return Analytical_Surface; }
@@ -403,11 +405,33 @@ inline su2double CConfig::GetConductivity_Ref(void) { return Conductivity_Ref; }
 
 inline su2double CConfig::GetHighlite_Area(void) { return Highlite_Area; }
 
-inline su2double CConfig::GetFan_Poly_Eff(void) { return Fan_Poly_Eff; }
+inline su2double CConfig::GetActDisk_Poly_Eff(void) { return ActDisk_Poly_Eff; }
+
+inline su2double CConfig::GetActDisk_Tang_Vel(void) { return ActDisk_Tang_Vel; }
 
 inline su2double CConfig::GetOmega_Ref(void) { return Omega_Ref; }
 
 inline su2double CConfig::GetForce_Ref(void) { return Force_Ref; }
+
+inline void CConfig::SetFront_Spar_AbsLoc(unsigned short val_var, su2double val_xloc, su2double val_yloc) { Front_Spar_XLoc_Abs[val_var] = val_xloc; Front_Spar_YLoc_Abs[val_var] = val_yloc; }
+
+inline void CConfig::SetRear_Spar_AbsLoc(unsigned short val_var, su2double val_xloc, su2double val_yloc)  { Rear_Spar_XLoc_Abs[val_var] = val_xloc; Rear_Spar_YLoc_Abs[val_var] = val_yloc; }
+
+inline unsigned short CConfig::GetnFront_Spar_XLoc(void) { return nFront_Spar_XLoc; }
+
+inline su2double CConfig::GetFront_Spar_XLoc(unsigned short val_var) { return Front_Spar_XLoc[val_var]; }
+  
+inline unsigned short CConfig::GetnFront_Spar_YLoc(void) { return nFront_Spar_YLoc; }
+
+inline su2double CConfig::GetFront_Spar_YLoc(unsigned short val_var) { return Front_Spar_YLoc[val_var]; }
+
+inline unsigned short CConfig::GetnRear_Spar_XLoc(void) { return nRear_Spar_XLoc; }
+  
+inline su2double CConfig::GetRear_Spar_XLoc(unsigned short val_var) { return Rear_Spar_XLoc[val_var]; }
+
+inline unsigned short CConfig::GetnRear_Spar_YLoc(void) { return nRear_Spar_YLoc; }
+
+inline su2double CConfig::GetRear_Spar_YLoc(unsigned short val_var) { return Rear_Spar_YLoc[val_var]; }
 
 inline su2double CConfig::GetPressure_FreeStreamND(void) { return Pressure_FreeStreamND; }
 
@@ -1108,8 +1132,6 @@ inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat
 
 inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFormat; }
 
-inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
-
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
 
 inline string CConfig::GetConv_FileName_FSI(void) { return Conv_FileName_FSI; }
@@ -1189,6 +1211,10 @@ inline su2double CConfig::GetTotal_UnstTime(void) { return Total_UnstTime; }
 inline bool CConfig::GetSubsonicEngine(void) { return SubsonicEngine; }
 
 inline bool CConfig::GetActDisk_DoubleSurface(void) { return ActDisk_DoubleSurface; }
+
+inline bool CConfig::GetActDisk_Block_ReverseFlow(void) { return ActDisk_Block_ReverseFlow; }
+
+inline bool CConfig::GetActDisk_Uniform_Jump(void) { return ActDisk_Uniform_Jump; }
 
 inline bool CConfig::GetEngine_HalfModel(void) { return Engine_HalfModel; }
 
