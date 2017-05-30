@@ -307,7 +307,7 @@ static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string
 ("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
 ("ISOPARAMETRIC",    ISOPARAMETRIC)
 ("CONSISTCONSERVE",  CONSISTCONSERVE)
-("SLIDING_MESH",     SLIDING_MESH);
+("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE);
 
 /*!
  * \brief different regime modes
