@@ -275,7 +275,6 @@ int main(int argc, char *argv[]) {
 		  /*--- Write the new adapted grid, including the modified boundaries surfaces ---*/
     
 		  geo_adapt[iZone]->SetMeshFile(config_container[iZone], config_container[iZone]->GetMesh_Out_FileName(), iZone);
-      getchar();
     }
     
 		/*--- Write the restart file ---*/

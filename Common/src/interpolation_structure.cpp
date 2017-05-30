@@ -63,6 +63,12 @@ CInterpolator::CInterpolator(void) {
   Buffer_Send_Normal               = NULL;
   Buffer_Receive_Coord             = NULL;
   Buffer_Receive_Normal            = NULL;
+  
+  Receive_GlobalPoint              = NULL;
+  Buffer_Receive_nLinkedNodes      = NULL;
+  Buffer_Receive_LinkedNodes       = NULL;
+  Buffer_Receive_StartLinkedNodes  = NULL;
+  Buffer_Receive_Proc              = NULL;   
 
 }
 
@@ -276,6 +282,307 @@ int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_mark
   return -1;
 }
 
+
+void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
+    
+  CGeometry *geom = Geometry[val_zone][MESH_0];
+    
+  int nProcessor, rank, iRank;
+  unsigned long iVertex, jVertex, kVertex;
+    
+  unsigned long count, iTmp, iTmp2, *uptr, tmp_index, tmp_index_2, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
+   
+  unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
+    
+    
+  nDim = geom->GetnDim();
+  
+  if( val_marker != -1 )
+    nVertex  = geom->GetnVertex(  val_marker  );
+  else
+    nVertex  = 0;
+      
+    
+  su2double *Buffer_Send_Coord           = new su2double     [ nVertex * nDim ];
+  unsigned long *Buffer_Send_GlobalPoint = new unsigned long [ nVertex ];
+  
+  unsigned long *Buffer_Send_nLinkedNodes       = new unsigned long [ nVertex ];
+  unsigned long *Buffer_Send_StartLinkedNodes   = new unsigned long [ nVertex ];
+  unsigned long **Aux_Send_Map                  = new unsigned long*[ nVertex ];
+
+#ifdef HAVE_MPI
+  
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+
+#else
+
+  nProcessor = SINGLE_NODE;
+  rank = MASTER_NODE;
+
+#endif
+        
+  /*--- Copy coordinates and point to the auxiliar vector ---*/
+  
+  nGlobalVertex     = 0;
+  nLocalVertex      = 0;
+  nLocalLinkedNodes = 0;
+  
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+    
+    Buffer_Send_nLinkedNodes[iVertex] = 0;
+    Aux_Send_Map[iVertex]             = NULL;
+    
+    iPoint = geom->vertex[val_marker][iVertex]->GetNode();
+    
+    if (geom->node[iPoint]->GetDomain()) {
+      Buffer_Send_GlobalPoint[nLocalVertex] = geom->node[iPoint]->GetGlobalIndex();
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        Buffer_Send_Coord[nLocalVertex*nDim+iDim] = geom->node[iPoint]->GetCoord(iDim);
+   
+      nNodes = 0;
+      nEdges = geom->node[iPoint]->GetnPoint();
+        
+      for (jEdge = 0; jEdge < nEdges; jEdge++){
+        EdgeIndex = geom->node[iPoint]->GetEdge(jEdge);
+
+        if( iPoint == geom->edge[EdgeIndex]->GetNode(0) )
+          dPoint = geom->edge[EdgeIndex]->GetNode(1);
+        else
+          dPoint = geom->edge[EdgeIndex]->GetNode(0);
+
+        if ( geom->node[dPoint]->GetVertex(val_marker) != -1 )
+          nNodes++;
+      }
+
+      Buffer_Send_StartLinkedNodes[nLocalVertex] = nLocalLinkedNodes;
+      Buffer_Send_nLinkedNodes[nLocalVertex]     = nNodes;
+
+      nLocalLinkedNodes += nNodes;
+
+      Aux_Send_Map[nLocalVertex] = new unsigned long[ nNodes ];
+      nNodes = 0;
+
+      for (jEdge = 0; jEdge < nEdges; jEdge++){    
+        EdgeIndex = geom->node[iPoint]->GetEdge(jEdge);
+
+        if( iPoint == geom->edge[EdgeIndex]->GetNode(0) )
+          dPoint = geom->edge[EdgeIndex]->GetNode(1);
+        else
+          dPoint = geom->edge[EdgeIndex]->GetNode(0);                
+
+        if ( geom->node[dPoint]->GetVertex(val_marker) != -1 ){    
+          Aux_Send_Map[nLocalVertex][nNodes] = geom->node[dPoint]->GetGlobalIndex();
+          nNodes++;
+        }
+      }  
+      nLocalVertex++;
+    }
+  }
+    
+  unsigned long *Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];
+
+  nLocalLinkedNodes = 0;
+
+  for (iVertex = 0; iVertex < nLocalVertex; iVertex++){
+    for (jEdge = 0; jEdge < Buffer_Send_nLinkedNodes[iVertex]; jEdge++){
+      Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Aux_Send_Map[iVertex][jEdge];
+      nLocalLinkedNodes++;
+    }
+  }
+    
+ for (iVertex = 0; iVertex < nVertex; iVertex++){
+    if( Aux_Send_Map[iVertex] != NULL )
+      delete [] Aux_Send_Map[iVertex];
+  }
+  delete [] Aux_Send_Map; Aux_Send_Map = NULL;
+
+  /*--- Reconstruct  boundary by gathering data from all ranks ---*/
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(     &nLocalVertex,      &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalLinkedNodes, &nGlobalLinkedNodes, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nGlobalVertex      = nLocalVertex;
+  nGlobalLinkedNodes = nLocalLinkedNodes;
+#endif 
+
+  Buffer_Receive_Coord       = new su2double    [ nGlobalVertex * nDim ];
+  Buffer_Receive_GlobalPoint = new unsigned long[ nGlobalVertex ];
+  Buffer_Receive_Proc        = new unsigned long[ nGlobalVertex ];
+   
+  Buffer_Receive_nLinkedNodes     = new unsigned long[ nGlobalVertex ];
+  Buffer_Receive_LinkedNodes      = new unsigned long[ nGlobalLinkedNodes   ];
+  Buffer_Receive_StartLinkedNodes = new unsigned long[ nGlobalVertex ];
+
+#ifdef HAVE_MPI
+  if (rank == MASTER_NODE){
+
+    for (iVertex = 0; iVertex < nDim*nLocalVertex; iVertex++)
+      Buffer_Receive_Coord[iVertex]  = Buffer_Send_Coord[iVertex];
+
+    for (iVertex = 0; iVertex < nLocalVertex; iVertex++){
+      Buffer_Receive_GlobalPoint[iVertex]      = Buffer_Send_GlobalPoint[iVertex];
+      Buffer_Receive_Proc[iVertex]             = MASTER_NODE;
+      Buffer_Receive_nLinkedNodes[iVertex]     = Buffer_Send_nLinkedNodes[iVertex];
+      Buffer_Receive_StartLinkedNodes[iVertex] = Buffer_Send_StartLinkedNodes[iVertex];
+    }
+      
+    for (iVertex = 0; iVertex < nLocalLinkedNodes; iVertex++)
+      Buffer_Receive_LinkedNodes[iVertex] = Buffer_Send_LinkedNodes[iVertex];
+ 
+    tmp_index   = nLocalVertex;
+    tmp_index_2 = nLocalLinkedNodes;
+
+    for(iRank = 1; iRank < nProcessor; iRank++){
+       
+      SU2_MPI::Recv(                           &iTmp2,     1, MPI_UNSIGNED_LONG, iRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_LinkedNodes[tmp_index_2], iTmp2, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+      SU2_MPI::Recv(                         &iTmp,         1, MPI_UNSIGNED_LONG, iRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_Coord[tmp_index*nDim], nDim*iTmp,        MPI_DOUBLE, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      
+      SU2_MPI::Recv(     &Buffer_Receive_GlobalPoint[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(    &Buffer_Receive_nLinkedNodes[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_StartLinkedNodes[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+      for (iVertex = 0; iVertex < iTmp; iVertex++){
+        Buffer_Receive_Proc[ tmp_index + iVertex ] = iRank;
+        Buffer_Receive_StartLinkedNodes[ tmp_index + iVertex ] += tmp_index_2;
+      }
+        
+      tmp_index   += iTmp;
+      tmp_index_2 += iTmp2;
+    }
+  }
+  else{
+    SU2_MPI::Send(     &nLocalLinkedNodes,                 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD);
+    SU2_MPI::Send(Buffer_Send_LinkedNodes, nLocalLinkedNodes, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
+    
+    SU2_MPI::Send(    &nLocalVertex,                   1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD);
+    SU2_MPI::Send(Buffer_Send_Coord, nDim * nLocalVertex,        MPI_DOUBLE, 0, 1, MPI_COMM_WORLD);
+      
+    SU2_MPI::Send(     Buffer_Send_GlobalPoint, nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
+    SU2_MPI::Send(    Buffer_Send_nLinkedNodes, nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
+    SU2_MPI::Send(Buffer_Send_StartLinkedNodes, nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
+  }    
+#else
+  for (iVertex = 0; iVertex < nDim * nGlobalVertex; iVertex++)
+    Buffer_Receive_Coord[iVertex] = Buffer_Send_Coord[iVertex];
+     
+  for (iVertex = 0; iVertex < nGlobalVertex; iVertex++){
+    Buffer_Receive_GlobalPoint[iVertex]      = Buffer_Send_GlobalPoint[iVertex];
+    Buffer_Receive_Proc[iVertex]             = MASTER_NODE;
+    Buffer_Receive_nLinkedNodes[iVertex]     = Buffer_Send_nLinkedNodes[iVertex];
+    Buffer_Receive_StartLinkedNodes[iVertex] = Buffer_Send_StartLinkedNodes[iVertex];
+  }
+    
+  for (iVertex = 0; iVertex < nGlobalLinkedNodes; iVertex++)
+    Buffer_Receive_LinkedNodes[iVertex] = Buffer_Send_LinkedNodes[iVertex];
+#endif 
+
+  if (rank == MASTER_NODE){
+    for (iVertex = 0; iVertex < nGlobalVertex; iVertex++){
+      count = 0;
+      uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[iVertex] ];
+      
+      for (jVertex = 0; jVertex < Buffer_Receive_nLinkedNodes[iVertex]; jVertex++){
+        iTmp = uptr[ jVertex ];
+        for (kVertex = 0; kVertex < nGlobalVertex; kVertex++){
+          if( Buffer_Receive_GlobalPoint[kVertex] == iTmp ){
+            uptr[ jVertex ] = kVertex;
+            count++;
+            break;
+          }
+        }
+          
+        if( count != (jVertex+1) ){
+          for (kVertex = jVertex; kVertex < Buffer_Receive_nLinkedNodes[iVertex]-1; kVertex++){
+            uptr[ kVertex ] = uptr[ kVertex + 1];
+          }
+          Buffer_Receive_nLinkedNodes[iVertex]--;
+          jVertex--;   
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_MPI    
+  SU2_MPI::Bcast(      Buffer_Receive_Coord, nGlobalVertex * nDim,        MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(Buffer_Receive_GlobalPoint, nGlobalVertex,        MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(      Buffer_Receive_Proc, nGlobalVertex,        MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+  
+  SU2_MPI::Bcast(    Buffer_Receive_nLinkedNodes,      nGlobalVertex, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(Buffer_Receive_StartLinkedNodes,      nGlobalVertex, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(     Buffer_Receive_LinkedNodes, nGlobalLinkedNodes, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+#endif
+  
+  if( Buffer_Send_Coord              != NULL) {delete [] Buffer_Send_Coord;            Buffer_Send_Coord            = NULL;} 
+  if( Buffer_Send_GlobalPoint        != NULL) {delete [] Buffer_Send_GlobalPoint;      Buffer_Send_GlobalPoint      = NULL;}
+  if( Buffer_Send_LinkedNodes        != NULL) {delete [] Buffer_Send_LinkedNodes;      Buffer_Send_LinkedNodes      = NULL;}
+  if( Buffer_Send_nLinkedNodes       != NULL) {delete [] Buffer_Send_nLinkedNodes;     Buffer_Send_nLinkedNodes     = NULL;}
+  if( Buffer_Send_StartLinkedNodes   != NULL) {delete [] Buffer_Send_StartLinkedNodes; Buffer_Send_StartLinkedNodes = NULL;}
+}
+
+bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget){
+  
+  int Donor_check, Target_check;
+  
+  #ifdef HAVE_MPI
+    
+  int *Buffer_Recv_mark = NULL;
+  int iRank,  rank, nProcessor;
+  
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  
+  if (rank == MASTER_NODE) 
+    Buffer_Recv_mark = new int[nProcessor];
+
+  Donor_check  = -1;
+  Target_check = -1;
+
+  /*--- We gather a vector in MASTER_NODE to determine whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+
+  SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (rank == MASTER_NODE)
+    for (iRank = 0; iRank < nProcessor; iRank++)
+      if( Buffer_Recv_mark[iRank] != -1 ){
+        Donor_check = Buffer_Recv_mark[iRank];
+        break;
+      }
+
+  SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+
+  SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (rank == MASTER_NODE)
+    for (iRank = 0; iRank < nProcessor; iRank++)
+      if( Buffer_Recv_mark[iRank] != -1 ){
+        Target_check = Buffer_Recv_mark[iRank];
+        break;
+      }
+
+
+  SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  
+  if (rank == MASTER_NODE) 
+    delete [] Buffer_Recv_mark;
+
+#else
+  Donor_check  = markDonor;
+  Target_check = markTarget;
+#endif
+
+  if(Target_check == -1 || Donor_check == -1)
+    return false;
+  else 
+    return true;
+}
+
 su2double CInterpolator::PointsDistance(su2double *point_i, su2double *point_j){
 
   /*--- Compute distance between 2 points ---*/
@@ -304,9 +611,9 @@ CNearestNeighbor::~CNearestNeighbor() {}
 void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
   int iProcessor, pProcessor, nProcessor;
-  int markDonor, markTarget, Target_check, Donor_check;
+  int markDonor, markTarget;
 
-  unsigned short iDim, nDim, iMarkerInt, nMarkerInt, iDonor;    
+  unsigned short nDim, iMarkerInt, nMarkerInt, iDonor;    
 
   unsigned long nVertexDonor, nVertexTarget, Point_Target, jVertex, iVertexTarget;
   unsigned long Global_Point_Donor, pGlobalPoint=0;
@@ -314,20 +621,9 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   su2double *Coord_i, *Coord_j, dist, mindist, maxdist;
 
 #ifdef HAVE_MPI
-
-  int rank = MASTER_NODE;
-  int *Buffer_Recv_mark = NULL, iRank;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  if (rank == MASTER_NODE) 
-    Buffer_Recv_mark = new int[nProcessor];
-
 #else
-
   nProcessor = SINGLE_NODE;
-
 #endif
 
   /*--- Initialize variables --- */
@@ -352,43 +648,8 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
     markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-    #ifdef HAVE_MPI
-    
-    Donor_check  = -1;
-    Target_check = -1;
-        
-    /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
-    
-    SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Donor_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-    
-    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    
-    SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Target_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-        
-    #else
-    Donor_check  = markDonor;
-    Target_check = markTarget;  
-    #endif
-    
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(Target_check == -1 || Donor_check == -1)
+    if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
 
     if(markDonor != -1)
@@ -470,11 +731,6 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   }
 
   delete[] Buffer_Receive_nVertex_Donor;
-
-  #ifdef HAVE_MPI
-  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL ) 
-    delete [] Buffer_Recv_mark;
-  #endif
 }
 
 
@@ -501,7 +757,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   unsigned short iMarkerInt;
 
   int markDonor=0, markTarget=0;
-  int Target_check, Donor_check;
 
   long donor_elem=0, temp_donor=0;
   unsigned int nNodes=0;
@@ -534,20 +789,11 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   Coord = new su2double[nDim];
   Normal = new su2double[nDim];
 
-#ifdef HAVE_MPI
-
-  int *Buffer_Recv_mark=NULL, iRank;
-  
+#ifdef HAVE_MPI  
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  if (rank == MASTER_NODE) 
-    Buffer_Recv_mark = new int[nProcessor];
-
 #else
-
   nProcessor = SINGLE_NODE;
-
 #endif
 
   nMarkerInt = (config[donorZone]->GetMarker_n_ZoneInterface())/2;
@@ -566,42 +812,8 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
     markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-    #ifdef HAVE_MPI
-    
-    Donor_check  = -1;
-    Target_check = -1;
-        
-    /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
-    
-    SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Donor_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-    
-    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Target_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-        
-    #else
-    Donor_check  = markDonor;
-    Target_check = markTarget;  
-    #endif
-    
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(Target_check == -1 || Donor_check == -1)
+    if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
 
     if(markDonor != -1)
@@ -881,11 +1093,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   delete [] Normal;
   
   delete [] projected_point;
-
-  #ifdef HAVE_MPI
-  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL) 
-    delete [] Buffer_Recv_mark;
-  #endif
 }
 
 void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
@@ -1100,7 +1307,6 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   unsigned short iMarkerInt;
 
   int markDonor=0, markTarget=0;
-  int Target_check, Donor_check;
 
   unsigned int nNodes=0, iNodes=0;
   unsigned long nVertexDonor = 0, nVertexTarget= 0;
@@ -1117,18 +1323,10 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   int nProcessor = SINGLE_NODE;
 
 #ifdef HAVE_MPI
-  int *Buffer_Recv_mark=NULL, iRank;
-  
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  if (rank == MASTER_NODE) 
-    Buffer_Recv_mark = new int[nProcessor];
-
 #else
-
   nProcessor = SINGLE_NODE;
-
 #endif
 
   su2double *Buffer_Send_Coeff, *Buffer_Receive_Coeff;
@@ -1151,42 +1349,8 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
     markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-    #ifdef HAVE_MPI
-
-    Donor_check  = -1;
-    Target_check = -1;
-
-    /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
-
-    SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Donor_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ) {
-          Target_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    #else
-    Donor_check  = markDonor;
-    Target_check = markTarget;  
-    #endif
-
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(Target_check == -1 || Donor_check == -1)
+    if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
 
     if(markDonor != -1)
@@ -1359,14 +1523,9 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
     delete[] Buffer_Receive_Coeff;
 
   }
-
-  #ifdef HAVE_MPI
-  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL) 
-    delete [] Buffer_Recv_mark;
-  #endif
 }
 
-CSlidingmesh::CSlidingmesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone)  :  CInterpolator(geometry_container, config, iZone, jZone){
+CSlidingMesh::CSlidingMesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone)  :  CInterpolator(geometry_container, config, iZone, jZone){
 
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(config);
@@ -1375,11 +1534,12 @@ CSlidingmesh::CSlidingmesh(CGeometry ***geometry_container, CConfig **config, un
  // InitializeData(Zones,nDim);
 }
 
-CSlidingmesh::~CSlidingmesh(){}
+CSlidingMesh::~CSlidingMesh(){}
 
-void CSlidingmesh::Set_TransferCoeff(CConfig **config){
+void CSlidingMesh::Set_TransferCoeff(CConfig **config){
     
   /* --- This routine sets the transfer coefficient for sliding mesh approach --- */
+  
   /*
    * The algorithm is based on Rinaldi et al. "Flux-conserving treatment of non-conformal interfaces 
    * for finite-volume discritization of conservaation laws" 2015, Comp. Fluids, 120, pp 126-139
@@ -1394,21 +1554,16 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
   
   unsigned short iDim, nDim;
   
-  unsigned long ii, jj, iTmp, tmp_index, tmp_index_2, iTmp2;
-  unsigned long vPoint, nEdges, jEdge, EdgeIndex, dPoint, nNodes,  count;
-  unsigned long nGlobalLinkedNodes, nLocalLinkedNodes;
+  unsigned long ii, jj, *uptr;
+  unsigned long vPoint, dPoint;
   unsigned long iEdgeVisited, nEdgeVisited, iNodeVisited;
   unsigned long nAlreadyVisited, nToVisit, StartVisited;
   
   unsigned long *alreadyVisitedDonor, *ToVisit, *tmpVect;
   unsigned long *storeProc, *tmp_storeProc;
 
-  unsigned long *Buffer_Send_nLinkedNodes, *Buffer_Send_LinkedNodes, *Buffer_Send_StartLinkedNodes, **Aux_Send_Map;
-  unsigned long *Buffer_Receive_nLinkedNodes, *Buffer_Receive_LinkedNodes, *Buffer_Receive_StartLinkedNodes;
-
   su2double dTMP;
-  su2double *Coeff_Vect, *tmp_Coeff_Vect;             
-  
+  su2double *Coeff_Vect, *tmp_Coeff_Vect;               
 
   /* --- Geometrical variables --- */
 
@@ -1421,52 +1576,41 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
   unsigned short iMarkerInt, nMarkerInt; 
 
-  unsigned long jVertex, iVertex, nVertexDonor , nVertexTarget;
+  unsigned long iVertex, nVertexDonor, nVertexTarget;
 
-  int markDonor, markTarget, Target_check, Donor_check;
+  int markDonor, markTarget;
 
   /* --- Target variables --- */
 
   unsigned long target_iPoint, jVertexTarget;
-  unsigned long nGlobalVertex_Target, nLocalVertex_Target, iVertexTarget, iPointTarget;
   unsigned long nEdges_target, nNode_target;
 
   unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNodes, *target_segment;
-  unsigned long *Buffer_Send_Target_GlobalPoint, *Target_GlobalPoint;  
+  unsigned long *Target_GlobalPoint, *Target_Proc;  
   
-  su2double *TargetPoint_Coord, *target_iMidEdge_point, *target_jMidEdge_point, **target_element, *Buffer_Send_Target_Coord;
-
+  su2double *TargetPoint_Coord, *target_iMidEdge_point, *target_jMidEdge_point, **target_element;
 
   /* --- Donor variables --- */
 
   unsigned long donor_StartIndex, donor_forward_point, donor_backward_point, donor_iPoint, donor_OldiPoint; 
-  unsigned long nEdges_donor, nNode_donor, nGlobalVertex_Donor, nLocalVertex_Donor, iVertexDonor, jVertexDonor, iPointDonor; 
+  unsigned long nEdges_donor, nNode_donor, nGlobalVertex_Donor; 
 
   unsigned long nDonorPoints, iDonor;
   unsigned long *Donor_Vect, *tmp_Donor_Vect;
-  unsigned long *Buffer_Send_Donor_GlobalPoint, *Donor_GlobalPoint, *Donor_proc;
-
+  unsigned long *Donor_nLinkedNodes, *Donor_LinkedNodes, *Donor_StartLinkedNodes;
+  unsigned long *Donor_GlobalPoint, *Donor_Proc;
+  
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
-  su2double **donor_element, *DonorPoint_Coord, *Buffer_Send_Donor_Coord;
-  unsigned long kVertexTarget, kVertexDonor, *uptr;
+  su2double **donor_element, *DonorPoint_Coord;
     
   /*  1 - Variable pre-processing - */
 
 #ifdef HAVE_MPI
-
-  int *Buffer_Recv_mark = NULL, iRank;
-  
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  if (rank == MASTER_NODE) 
-    Buffer_Recv_mark = new int[nProcessor];
-
 #else
-
   nProcessor = SINGLE_NODE;
   rank = MASTER_NODE;
-
 #endif
 
   nDim = donor_geometry->GetnDim();
@@ -1480,17 +1624,6 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
   tmp_Donor_Vect = NULL;
   tmp_Coeff_Vect = NULL;
   tmp_storeProc  = NULL;
-  
-  Buffer_Send_LinkedNodes       = NULL;
-  Buffer_Send_Donor_Coord       = NULL;  
-  Buffer_Send_nLinkedNodes      = NULL;
-  Buffer_Send_StartLinkedNodes  = NULL;
-  Buffer_Send_Donor_GlobalPoint = NULL;
-  
-  Buffer_Receive_StartLinkedNodes = NULL;
-  
-  Buffer_Send_Target_Coord       = NULL;
-  Buffer_Send_Target_GlobalPoint = NULL;
   
   Normal    = new su2double[nDim];
   Direction = new su2double[nDim];
@@ -1510,43 +1643,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
     markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-#ifdef HAVE_MPI
-
-    Donor_check  = -1;
-    Target_check = -1;
-
-    /*--- We gather a vector in MASTER_NODE to determine whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
-
-    SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
-          Donor_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-
-    SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (rank == MASTER_NODE)
-      for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
-          Target_check = Buffer_Recv_mark[iRank];
-          break;
-        }
-
-    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-#else
-    Donor_check  = markDonor;
-    Target_check = markTarget;  
-#endif
-
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(Target_check == -1 || Donor_check == -1)
+    if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
 
     if(markDonor != -1)
@@ -1560,436 +1658,39 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
       nVertexTarget  = 0;
 
     /*
-    3 - For each target node find the closest donor node
-    * - From them retrieve their vertex boundary face
-    * - Build a local donor supermesh until the area of the initial boundary face is covered
+    3 -Reconstruct the boundaries from parallel partitioning
     */
 
-    Buffer_Send_Target_Coord       = new su2double     [ nVertexTarget * nDim ];
-    Buffer_Send_Target_GlobalPoint = new unsigned long [ nVertexTarget ];
+    /*--- Target boundary ---*/
+    ReconstructBoundary(targetZone, markTarget);
     
-    Buffer_Send_nLinkedNodes       = new unsigned long [ nVertexTarget ];
-    Buffer_Send_StartLinkedNodes   = new unsigned long [ nVertexTarget ];
-    Aux_Send_Map                   = new unsigned long*[ nVertexTarget ];
-        
-    /*--- Copy coordinates and point to the auxiliar vector ---*/
-  
-    nGlobalVertex_Target = 0;
-    nLocalVertex_Target  = 0;
-    nLocalLinkedNodes    = 0;
-  
-    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
-      
-      Buffer_Send_nLinkedNodes[iVertexTarget] = 0;
-      Aux_Send_Map[iVertexTarget]             = NULL;
-      
-      iPointTarget = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
-      
-      if (target_geometry->node[iPointTarget]->GetDomain()) {
-        Buffer_Send_Target_GlobalPoint[nLocalVertex_Target] = target_geometry->node[iPointTarget]->GetGlobalIndex();
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Target_Coord[nLocalVertex_Target*nDim+iDim] = target_geometry->node[iPointTarget]->GetCoord(iDim);
-   
-        nNodes = 0;
-        nEdges = target_geometry->node[iPointTarget]->GetnPoint();
-        
-        for (jEdge = 0; jEdge < nEdges; jEdge++){
-          EdgeIndex = target_geometry->node[iPointTarget]->GetEdge(jEdge);
+    nGlobalVertex_Target = nGlobalVertex;
 
-          if( iPointTarget == target_geometry->edge[EdgeIndex]->GetNode(0) )
-            dPoint = target_geometry->edge[EdgeIndex]->GetNode(1);
-          else
-            dPoint = target_geometry->edge[EdgeIndex]->GetNode(0);
-
-          if ( target_geometry->node[dPoint]->GetVertex(markTarget) != -1 )
-            nNodes++;
-        }
-
-        Buffer_Send_StartLinkedNodes[nLocalVertex_Target] = nLocalLinkedNodes;
-        Buffer_Send_nLinkedNodes[nLocalVertex_Target]     = nNodes;
-
-        nLocalLinkedNodes += nNodes;
-
-        Aux_Send_Map[nLocalVertex_Target] = new unsigned long[ nNodes ];
-        nNodes = 0;
-
-        for (jEdge = 0; jEdge < nEdges; jEdge++){    
-          EdgeIndex = target_geometry->node[iPointTarget]->GetEdge(jEdge);
-
-          if( iPointTarget == target_geometry->edge[EdgeIndex]->GetNode(0) )
-            dPoint = target_geometry->edge[EdgeIndex]->GetNode(1);
-          else
-            dPoint = target_geometry->edge[EdgeIndex]->GetNode(0);                
-
-          if ( target_geometry->node[dPoint]->GetVertex(markTarget) != -1 ){    
-            Aux_Send_Map[nLocalVertex_Target][nNodes] = target_geometry->node[dPoint]->GetGlobalIndex();
-            nNodes++;
-          }
-        }  
-        nLocalVertex_Target++;
-      }
-    }
+    TargetPoint_Coord       = Buffer_Receive_Coord;
+    Target_GlobalPoint      = Buffer_Receive_GlobalPoint;
+    Target_nLinkedNodes     = Buffer_Receive_nLinkedNodes;
+    Target_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
+    Target_LinkedNodes      = Buffer_Receive_LinkedNodes;
+    Target_Proc             = Buffer_Receive_Proc;
     
-    Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];
-
-    nLocalLinkedNodes = 0;
-
-    for (iVertexTarget = 0; iVertexTarget < nLocalVertex_Target; iVertexTarget++){
-      for (jEdge = 0; jEdge < Buffer_Send_nLinkedNodes[iVertexTarget]; jEdge++){
-        Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Aux_Send_Map[iVertexTarget][jEdge];
-        nLocalLinkedNodes++;
-      }
-    }
+    /*--- Donor boundary ---*/
+    ReconstructBoundary(donorZone, markDonor);
     
-   for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++){
-      if( Aux_Send_Map[iVertexTarget] != NULL )
-        delete [] Aux_Send_Map[iVertexTarget];
-    }
-    delete [] Aux_Send_Map; Aux_Send_Map = NULL;
+    nGlobalVertex_Donor = nGlobalVertex;
 
-/*--- Reconstruct Target boundary by gathering data from all ranks ---*/
+    DonorPoint_Coord       = Buffer_Receive_Coord;
+    Donor_GlobalPoint      = Buffer_Receive_GlobalPoint;
+    Donor_nLinkedNodes     = Buffer_Receive_nLinkedNodes;
+    Donor_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
+    Donor_LinkedNodes      = Buffer_Receive_LinkedNodes;
+    Donor_Proc             = Buffer_Receive_Proc;
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&nLocalVertex_Target, &nGlobalVertex_Target, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nLocalLinkedNodes  , &nGlobalLinkedNodes  , 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-    nGlobalVertex_Target = nLocalVertex_Target;
-    nGlobalLinkedNodes   = nLocalLinkedNodes;
-#endif 
-
-    TargetPoint_Coord  = new su2double    [ nGlobalVertex_Target * nDim ];
-    Target_GlobalPoint = new unsigned long[ nGlobalVertex_Target        ];
-    
-    Target_nLinkedNodes     = new unsigned long[ nGlobalVertex_Target ];
-    Target_LinkedNodes      = new unsigned long[ nGlobalLinkedNodes   ];
-    Target_StartLinkedNodes = new unsigned long[ nGlobalVertex_Target ];
-
-#ifdef HAVE_MPI
-    if (rank == MASTER_NODE){
-
-      for (iVertexTarget = 0; iVertexTarget < nDim*nLocalVertex_Target; iVertexTarget++)
-        TargetPoint_Coord[iVertexTarget]  = Buffer_Send_Target_Coord[iVertexTarget];
-
-      for (iVertexTarget = 0; iVertexTarget < nLocalVertex_Target; iVertexTarget++){
-        Target_GlobalPoint[iVertexTarget]      = Buffer_Send_Target_GlobalPoint[iVertexTarget];
-        Target_nLinkedNodes[iVertexTarget]     = Buffer_Send_nLinkedNodes[iVertexTarget];
-        Target_StartLinkedNodes[iVertexTarget] = Buffer_Send_StartLinkedNodes[iVertexTarget];
-       }
-      
-      for (iVertexTarget = 0; iVertexTarget < nLocalLinkedNodes; iVertexTarget++)
-        Target_LinkedNodes[iVertexTarget] = Buffer_Send_LinkedNodes[iVertexTarget];
- 
-      tmp_index   = nLocalVertex_Target;
-      tmp_index_2 = nLocalLinkedNodes;
-
-      for(iRank = 1; iRank < nProcessor; iRank++){
-        
-        SU2_MPI::Recv(&iTmp2, 1, MPI_UNSIGNED_LONG, iRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        SU2_MPI::Recv(&Target_LinkedNodes[tmp_index_2], iTmp2, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-
-        SU2_MPI::Recv(&iTmp,                              1,         MPI_UNSIGNED_LONG, iRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        SU2_MPI::Recv(&TargetPoint_Coord[tmp_index*nDim], nDim*iTmp, MPI_DOUBLE,        iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      
-        SU2_MPI::Recv(&Target_GlobalPoint[tmp_index],      iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        SU2_MPI::Recv(&Target_nLinkedNodes[tmp_index],     iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        SU2_MPI::Recv(&Target_StartLinkedNodes[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-        for (iVertexTarget = 0; iVertexTarget < iTmp; iVertexTarget++)
-          Target_StartLinkedNodes[ tmp_index + iVertexTarget ] += tmp_index_2;
-        
-        tmp_index   += iTmp;
-        tmp_index_2 += iTmp2;
-      }
-    }
-    else{
-      SU2_MPI::Send(&nLocalLinkedNodes     , 1                , MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD);
-      SU2_MPI::Send(Buffer_Send_LinkedNodes, nLocalLinkedNodes, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
-    
-    
-      SU2_MPI::Send(&nLocalVertex_Target    , 1                         , MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD);
-      SU2_MPI::Send(Buffer_Send_Target_Coord, nDim * nLocalVertex_Target, MPI_DOUBLE       , 0, 1, MPI_COMM_WORLD);
-      
-      SU2_MPI::Send(Buffer_Send_Target_GlobalPoint, nLocalVertex_Target, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
-      SU2_MPI::Send(Buffer_Send_nLinkedNodes,       nLocalVertex_Target, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
-      SU2_MPI::Send(Buffer_Send_StartLinkedNodes,   nLocalVertex_Target, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
-    }    
-#else
-    for (iVertexTarget = 0; iVertexTarget < nDim * nGlobalVertex_Target; iVertexTarget++)
-      TargetPoint_Coord[iVertexTarget] = Buffer_Send_Target_Coord[iVertexTarget];
-     
-    for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
-      Target_GlobalPoint[iVertexTarget]      = Buffer_Send_Target_GlobalPoint[iVertexTarget];
-      Target_nLinkedNodes[iVertexTarget]     = Buffer_Send_nLinkedNodes[iVertexTarget];
-      Target_StartLinkedNodes[iVertexTarget] = Buffer_Send_StartLinkedNodes[iVertexTarget];
-    }
-    
-    for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++)
-      Target_LinkedNodes[iVertexTarget] = Buffer_Send_LinkedNodes[iVertexTarget];
-#endif 
-
-    if (rank == MASTER_NODE){
-      for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
-        count = 0;
-        uptr = &Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] ];
-        
-        for (jVertexTarget = 0; jVertexTarget < Target_nLinkedNodes[iVertexTarget]; jVertexTarget++){
-          iTmp = uptr[ jVertexTarget ];
-          for (kVertexTarget = 0; kVertexTarget < nGlobalVertex_Target; kVertexTarget++){
-            if( Target_GlobalPoint[kVertexTarget] == iTmp ){
-              uptr[ jVertexTarget ] = kVertexTarget;
-              count++;
-              break;
-            }
-          }
-          
-          if( count != (jVertexTarget+1) ){
-            for (kVertexTarget = jVertexTarget; kVertexTarget < Target_nLinkedNodes[iVertexTarget]-1; kVertexTarget++){
-              uptr[ kVertexTarget ] = uptr[ kVertexTarget + 1];
-            }
-            Target_nLinkedNodes[iVertexTarget]--;
-            jVertexTarget--;   
-          }
-        }
-      }
-    }
-
-#ifdef HAVE_MPI    
-    SU2_MPI::Bcast(TargetPoint_Coord , nGlobalVertex_Target * nDim, MPI_DOUBLE       , 0, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Target_GlobalPoint, nGlobalVertex_Target       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-  
-    SU2_MPI::Bcast(Target_nLinkedNodes    , nGlobalVertex_Target, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Target_StartLinkedNodes, nGlobalVertex_Target, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Target_LinkedNodes,      nGlobalLinkedNodes  , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-#endif
-  
-    if( Buffer_Send_Target_Coord       != NULL) {delete [] Buffer_Send_Target_Coord;       Buffer_Send_Target_Coord       = NULL;} 
-    if( Buffer_Send_Target_GlobalPoint != NULL) {delete [] Buffer_Send_Target_GlobalPoint; Buffer_Send_Target_GlobalPoint = NULL;}
-    
-    if( Buffer_Send_LinkedNodes        != NULL) {delete [] Buffer_Send_LinkedNodes;        Buffer_Send_LinkedNodes        = NULL;}
-    if( Buffer_Send_nLinkedNodes       != NULL) {delete [] Buffer_Send_nLinkedNodes;       Buffer_Send_nLinkedNodes       = NULL;}
-    if( Buffer_Send_StartLinkedNodes   != NULL) {delete [] Buffer_Send_StartLinkedNodes;   Buffer_Send_StartLinkedNodes   = NULL;}
-    
-    /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor ---*/
-
-    Buffer_Send_Donor_Coord       = new su2double     [ nVertexDonor * nDim ];
-    Buffer_Send_Donor_GlobalPoint = new unsigned long [ nVertexDonor ];
-    
-    Buffer_Send_nLinkedNodes      = new unsigned long [ nVertexDonor ];
-    Buffer_Send_StartLinkedNodes  = new unsigned long [ nVertexDonor ];
-    Aux_Send_Map                  = new unsigned long*[ nVertexDonor ];
-    
-    /*--- Copy coordinates and point to the auxiliar vector ---*/
-  
-    nGlobalVertex_Donor = 0;
-    nLocalVertex_Donor  = 0;
-    nLocalLinkedNodes   = 0;
-
-    for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
-
-      Buffer_Send_nLinkedNodes[iVertexDonor] = 0;
-      Aux_Send_Map[iVertexDonor]        = NULL;
-
-      iPointDonor = donor_geometry->vertex[markDonor][iVertexDonor]->GetNode();
-
-      if (donor_geometry->node[iPointDonor]->GetDomain()) {
-        Buffer_Send_Donor_GlobalPoint[nLocalVertex_Donor] = donor_geometry->node[iPointDonor]->GetGlobalIndex();
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Donor_Coord[nLocalVertex_Donor*nDim+iDim] = donor_geometry->node[iPointDonor]->GetCoord(iDim);
-
-        nNodes = 0;
-        nEdges = donor_geometry->node[iPointDonor]->GetnPoint();
-        
-        for (jEdge = 0; jEdge < nEdges; jEdge++){
-          EdgeIndex = donor_geometry->node[iPointDonor]->GetEdge(jEdge);
-
-          if( iPointDonor == donor_geometry->edge[EdgeIndex]->GetNode(0) )
-            dPoint = donor_geometry->edge[EdgeIndex]->GetNode(1);
-          else
-            dPoint = donor_geometry->edge[EdgeIndex]->GetNode(0);
-
-          if ( donor_geometry->node[dPoint]->GetVertex(markDonor) != -1 )
-            nNodes++;
-        }
-
-        Buffer_Send_StartLinkedNodes[nLocalVertex_Donor] = nLocalLinkedNodes;
-        Buffer_Send_nLinkedNodes[nLocalVertex_Donor]     = nNodes;
-
-        nLocalLinkedNodes += nNodes;
-
-        Aux_Send_Map[nLocalVertex_Donor] = new unsigned long[ nNodes ];
-        nNodes = 0;
-
-        for (jEdge = 0; jEdge < nEdges; jEdge++){    
-          EdgeIndex = donor_geometry->node[iPointDonor]->GetEdge(jEdge);
-
-          if( iPointDonor == donor_geometry->edge[EdgeIndex]->GetNode(0) )
-            dPoint = donor_geometry->edge[EdgeIndex]->GetNode(1);
-          else
-            dPoint = donor_geometry->edge[EdgeIndex]->GetNode(0);                
-
-          if ( donor_geometry->node[dPoint]->GetVertex(markDonor) != -1 ){    
-            Aux_Send_Map[nLocalVertex_Donor][nNodes] = donor_geometry->node[dPoint]->GetGlobalIndex();
-            nNodes++;
-          }
-        }
-
-        nLocalVertex_Donor++;
-      }
-    }
-
-    Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];
-
-    nLocalLinkedNodes = 0;
-
-    for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
-      for (jEdge = 0; jEdge < Buffer_Send_nLinkedNodes[iVertexDonor]; jEdge++){
-        Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Aux_Send_Map[iVertexDonor][jEdge];
-        nLocalLinkedNodes++;
-      }
-    }
-    
-    if(Aux_Send_Map != NULL){
-      for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++){
-        if( Aux_Send_Map[iVertexDonor] != NULL )
-          delete [] Aux_Send_Map[iVertexDonor];
-      }
-      delete [] Aux_Send_Map; Aux_Send_Map = NULL;
-    }
-    
-    /*--- Reconstruct Donor boundary by gathering data from all ranks ---*/
-    
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&nLocalVertex_Donor, &nGlobalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nLocalLinkedNodes,  &nGlobalLinkedNodes,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-    nGlobalVertex_Donor = nLocalVertex_Donor;
-    nGlobalLinkedNodes  = nLocalLinkedNodes;
-#endif 
-
-    DonorPoint_Coord  = new su2double    [ nGlobalVertex_Donor * nDim ];
-    Donor_GlobalPoint = new unsigned long[ nGlobalVertex_Donor        ];
-    Donor_proc        = new unsigned long[ nGlobalVertex_Donor        ];
-
-
-    Buffer_Receive_nLinkedNodes     = new unsigned long[ nGlobalVertex_Donor ];
-    Buffer_Receive_LinkedNodes      = new unsigned long[ nGlobalLinkedNodes  ];
-    Buffer_Receive_StartLinkedNodes = new unsigned long[ nGlobalVertex_Donor ];
-
-#ifdef HAVE_MPI
-    if (rank == MASTER_NODE){
-
-      for (iVertexDonor = 0; iVertexDonor < nDim*nLocalVertex_Donor; iVertexDonor++)
-        DonorPoint_Coord[iVertexDonor]  = Buffer_Send_Donor_Coord[iVertexDonor];
- 
-      for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
-        Donor_GlobalPoint[iVertexDonor]               = Buffer_Send_Donor_GlobalPoint[iVertexDonor];
-        Donor_proc[iVertexDonor]                      = MASTER_NODE;
-        Buffer_Receive_nLinkedNodes[iVertexDonor]     = Buffer_Send_nLinkedNodes[iVertexDonor];
-        Buffer_Receive_StartLinkedNodes[iVertexDonor] = Buffer_Send_StartLinkedNodes[iVertexDonor];
-      }
-      
-      for (iVertexDonor = 0; iVertexDonor < nLocalLinkedNodes; iVertexDonor++)
-        Buffer_Receive_LinkedNodes[iVertexDonor] = Buffer_Send_LinkedNodes[iVertexDonor];
- 
-      tmp_index   = nLocalVertex_Donor;
-      tmp_index_2 = nLocalLinkedNodes;
-
-      for(iRank = 1; iRank < nProcessor; iRank++){
-        
-        SU2_MPI::Recv(&iTmp2, 1, MPI_UNSIGNED_LONG, iRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        SU2_MPI::Recv(&Buffer_Receive_LinkedNodes[tmp_index_2], iTmp2, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-
-        SU2_MPI::Recv(&iTmp, 1, MPI_UNSIGNED_LONG, iRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        SU2_MPI::Recv(&DonorPoint_Coord[tmp_index*nDim], nDim*iTmp, MPI_DOUBLE, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      
-        SU2_MPI::Recv(&Donor_GlobalPoint[tmp_index],               iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        SU2_MPI::Recv(&Buffer_Receive_nLinkedNodes[tmp_index],     iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        SU2_MPI::Recv(&Buffer_Receive_StartLinkedNodes[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-        for (iVertexDonor = 0; iVertexDonor < iTmp; iVertexDonor++){
-          Donor_proc[ tmp_index + iVertexDonor ] = iRank;
-        
-          Buffer_Receive_StartLinkedNodes[ tmp_index + iVertexDonor ] += tmp_index_2;
-        }  
-        tmp_index   += iTmp;
-        tmp_index_2 += iTmp2;
-      }
-    }
-    else{
-      SU2_MPI::Send( &nLocalLinkedNodes, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD );
-      SU2_MPI::Send( Buffer_Send_LinkedNodes, nLocalLinkedNodes, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
-    
-    
-      SU2_MPI::Send( &nLocalVertex_Donor, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD );
-      SU2_MPI::Send( Buffer_Send_Donor_Coord, nDim*nLocalVertex_Donor, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD );
-      
-      SU2_MPI::Send( Buffer_Send_Donor_GlobalPoint, nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
-      SU2_MPI::Send( Buffer_Send_nLinkedNodes,      nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
-      SU2_MPI::Send( Buffer_Send_StartLinkedNodes,  nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
-    }
-#else
-    for (iVertexDonor = 0; iVertexDonor < nDim * nGlobalVertex_Donor; iVertexDonor++)
-      DonorPoint_Coord[iVertexDonor] = Buffer_Send_Donor_Coord[iVertexDonor];
-
-    for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
-      Donor_GlobalPoint[iVertexDonor]               = Buffer_Send_Donor_GlobalPoint[iVertexDonor];
-      Donor_proc[ iVertexDonor ]                    = MASTER_NODE;
-      Buffer_Receive_nLinkedNodes[iVertexDonor]     = Buffer_Send_nLinkedNodes[iVertexDonor];
-      Buffer_Receive_StartLinkedNodes[iVertexDonor] = Buffer_Send_StartLinkedNodes[iVertexDonor];
-    }
-    
-    for (iVertexDonor = 0; iVertexDonor < nGlobalLinkedNodes; iVertexDonor++)
-      Buffer_Receive_LinkedNodes[iVertexDonor] = Buffer_Send_LinkedNodes[iVertexDonor];
-#endif 
-
-    if (rank == MASTER_NODE){
-      for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
-        count = 0;
-        uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[iVertexDonor] ];
-        
-        for (jVertexDonor = 0; jVertexDonor < Buffer_Receive_nLinkedNodes[iVertexDonor]; jVertexDonor++){
-          iTmp = uptr[ jVertexDonor ];
-          for (kVertexDonor = 0; kVertexDonor < nGlobalVertex_Donor; kVertexDonor++){
-            if( Donor_GlobalPoint[kVertexDonor] == iTmp ){
-              uptr[ jVertexDonor ] = kVertexDonor;
-              count++;
-              break;
-            }
-          }
-          
-          if( count != (jVertexDonor+1) ){
-            for (kVertexDonor = jVertexDonor; kVertexDonor < Buffer_Receive_nLinkedNodes[iVertexDonor]-1; kVertexDonor++){
-              uptr[ kVertexDonor ] = uptr[ kVertexDonor + 1];
-            }
-            Buffer_Receive_nLinkedNodes[iVertexDonor]--;
-            jVertexDonor--;   
-          }
-        }
-      }
-    }
-
-#ifdef HAVE_MPI    
-    SU2_MPI::Bcast( DonorPoint_Coord , nGlobalVertex_Donor * nDim, MPI_DOUBLE       , 0, MPI_COMM_WORLD );
-    SU2_MPI::Bcast( Donor_GlobalPoint, nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-    SU2_MPI::Bcast( Donor_proc       , nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-  
-    SU2_MPI::Bcast( Buffer_Receive_nLinkedNodes    , nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-    SU2_MPI::Bcast( Buffer_Receive_StartLinkedNodes, nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-    SU2_MPI::Bcast( Buffer_Receive_LinkedNodes,      nGlobalLinkedNodes        , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-#endif
-
-    if( Buffer_Send_LinkedNodes       != NULL) {delete [] Buffer_Send_LinkedNodes;       Buffer_Send_LinkedNodes       = NULL;}
-    if( Buffer_Send_Donor_Coord       != NULL) {delete [] Buffer_Send_Donor_Coord;       Buffer_Send_Donor_Coord       = NULL;} 
-    if( Buffer_Send_nLinkedNodes      != NULL) {delete [] Buffer_Send_nLinkedNodes;      Buffer_Send_nLinkedNodes      = NULL;}
-    if( Buffer_Send_StartLinkedNodes  != NULL) {delete [] Buffer_Send_StartLinkedNodes;  Buffer_Send_StartLinkedNodes  = NULL;}
-    if( Buffer_Send_Donor_GlobalPoint != NULL) {delete [] Buffer_Send_Donor_GlobalPoint; Buffer_Send_Donor_GlobalPoint = NULL;}
-
-
-    /*--- Starts building the supermesh layer (2D and 3D) ---*/
+    /*--- Starts building the supermesh layer (2D or 3D) ---*/
+    /* - For each target node, it first finds the closest donor point
+     * - Then it creates the supermesh in the close proximity of the target point:
+     * - Starting from the closest donor node, it expands the supermesh by including 
+     * donor elements neighboring the initial one, until the overall target area is fully covered.
+     */
 
     if(nDim == 2){
         
@@ -2079,12 +1780,12 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
   
             /*--- Proceeds until the value of the intersection area is null ---*/
 
-            if ( Buffer_Receive_nLinkedNodes[donor_iPoint] == 1 ){
-              donor_forward_point  = Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ];
+            if ( Donor_nLinkedNodes[donor_iPoint] == 1 ){
+              donor_forward_point  = Donor_LinkedNodes[ Donor_StartLinkedNodes[donor_iPoint] ];
               donor_backward_point = donor_iPoint;
             }
             else{
-              uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ];
+              uptr = &Donor_LinkedNodes[ Donor_StartLinkedNodes[donor_iPoint] ];
               
               if( donor_OldiPoint != uptr[0] ){
                 donor_forward_point  = uptr[0];
@@ -2115,9 +1816,9 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
   
             /*--- In case the element intersects the target cell, update the auxiliary communication data structure ---*/
 
-            tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
-            tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-            tmp_storeProc  = new unsigned long[ nDonorPoints ];
+            tmp_Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+            tmp_Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+            tmp_storeProc  = new unsigned long[ nDonorPoints + 1 ];
  
             for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
               tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
@@ -2125,48 +1826,28 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
               tmp_storeProc[iDonor]  = storeProc[iDonor];
             }
 
-            if (Donor_Vect != NULL)
-              delete [] Donor_Vect;
-  
-            if (Coeff_Vect != NULL)
-              delete [] Coeff_Vect;
+            tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
+            tmp_Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
+            tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
             
-            if (storeProc  != NULL)
-              delete [] storeProc;
+            if (Donor_Vect != NULL) delete [] Donor_Vect;  
+            if (Coeff_Vect != NULL) delete [] Coeff_Vect;            
+            if (storeProc  != NULL) delete [] storeProc;
 
-            Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
-            Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-            storeProc  = new unsigned long[ nDonorPoints + 1 ];
-          
-            for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-              Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
-              Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
-              storeProc[iDonor]  = tmp_storeProc[iDonor];
-            }
-
-            Donor_Vect[ nDonorPoints ] = donor_iPoint;
-            Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
-            storeProc[  nDonorPoints ] = Donor_proc[donor_iPoint];
-
-            if (tmp_Donor_Vect != NULL)
-              delete [] tmp_Donor_Vect;
-
-            if (tmp_Coeff_Vect != NULL)
-              delete [] tmp_Coeff_Vect;
-          
-            if (tmp_storeProc  != NULL)
-              delete [] tmp_storeProc;
+            Donor_Vect = tmp_Donor_Vect;
+            Coeff_Vect = tmp_Coeff_Vect;
+            storeProc  = tmp_storeProc;
 
             donor_OldiPoint = donor_iPoint;
-            donor_iPoint = donor_forward_point;
+            donor_iPoint    = donor_forward_point;
 
             nDonorPoints++;
           }
              
-          if ( Buffer_Receive_nLinkedNodes[donor_StartIndex] == 2 ){
+          if ( Donor_nLinkedNodes[donor_StartIndex] == 2 ){
             check = false;
            
-            uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_StartIndex] ];
+            uptr = &Donor_LinkedNodes[ Donor_StartLinkedNodes[donor_StartIndex] ];
 
             donor_iPoint = uptr[1];
             donor_OldiPoint = donor_StartIndex;
@@ -2179,12 +1860,12 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
           while( !check ){
 
             /*--- Proceeds until the value of the intersection length is null ---*/
-            if ( Buffer_Receive_nLinkedNodes[donor_iPoint] == 1 ){
+            if ( Donor_nLinkedNodes[donor_iPoint] == 1 ){
               donor_forward_point  = donor_OldiPoint;
               donor_backward_point = donor_iPoint;
             }
             else{
-              uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ];
+              uptr = &Donor_LinkedNodes[ Donor_StartLinkedNodes[donor_iPoint] ];
               
               if( donor_OldiPoint != uptr[0] ){
                 donor_forward_point  = uptr[0];
@@ -2215,50 +1896,30 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
             /*--- In case the element intersects the target cell, update the auxiliary communication data structure ---*/
 
-            tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
-            tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-            tmp_storeProc  = new unsigned long[ nDonorPoints ];
+            tmp_Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+            tmp_Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+            tmp_storeProc  = new unsigned long[ nDonorPoints + 1 ];
  
             for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
               tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
               tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
               tmp_storeProc[iDonor]  = storeProc[iDonor];
             }
+                  
+            tmp_Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;                  
+            tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
+            tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-            if (Donor_Vect != NULL)
-              delete [] Donor_Vect;
-  
-            if (Coeff_Vect != NULL)
-              delete [] Coeff_Vect;
-            
-            if (storeProc  != NULL)
-              delete [] storeProc;
+            if (Donor_Vect != NULL) delete [] Donor_Vect;
+            if (Coeff_Vect != NULL) delete [] Coeff_Vect;
+            if (storeProc  != NULL) delete [] storeProc;
 
-            Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
-            Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-            storeProc  = new unsigned long[ nDonorPoints + 1 ];
-          
-            for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-              Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
-              Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
-              storeProc[iDonor]  = tmp_storeProc[iDonor];
-            }
-
-            Donor_Vect[ nDonorPoints ] = donor_iPoint;
-            Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
-            storeProc[  nDonorPoints ] = Donor_proc[donor_iPoint];
-
-            if (tmp_Donor_Vect != NULL)
-              delete [] tmp_Donor_Vect;
-  
-            if (tmp_Coeff_Vect != NULL)
-              delete [] tmp_Coeff_Vect;
-          
-            if (tmp_storeProc  != NULL)
-              delete [] tmp_storeProc;
+            Donor_Vect = tmp_Donor_Vect;
+            Coeff_Vect = tmp_Coeff_Vect;
+            storeProc  = tmp_storeProc;
 
             donor_OldiPoint = donor_iPoint;
-            donor_iPoint = donor_forward_point;
+            donor_iPoint    = donor_forward_point;
   
             nDonorPoints++;
           }
@@ -2322,7 +1983,6 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
         
           /*--- Build local surface dual mesh for target element ---*/
         
-          count  = 0;
           nEdges_target = Target_nLinkedNodes[target_iPoint];
 
           nNode_target = 2*(nEdges_target + 1);
@@ -2357,13 +2017,13 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
                 
           donor_iPoint = donor_StartIndex;
 
-          nEdges_donor = Buffer_Receive_nLinkedNodes[donor_iPoint];
+          nEdges_donor = Donor_nLinkedNodes[donor_iPoint];
 
           donor_element = new su2double*[ 2*nEdges_donor + 2 ];
           for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
             donor_element[ii] = new su2double[nDim];                
 
-          nNode_donor = Build_3D_surface_element(Buffer_Receive_LinkedNodes, Buffer_Receive_StartLinkedNodes, Buffer_Receive_nLinkedNodes, DonorPoint_Coord, donor_iPoint, donor_element);
+          nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes, DonorPoint_Coord, donor_iPoint, donor_element);
 
           Area = 0;
           for (ii = 1; ii < nNode_target-1; ii++){
@@ -2387,7 +2047,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
           Coeff_Vect[0] = Area;
           Donor_Vect[0] = donor_iPoint;
-          storeProc[0]  = Donor_proc[donor_iPoint];
+          storeProc[0]  = Donor_Proc[donor_iPoint];
 
           alreadyVisitedDonor = new unsigned long[1];
 
@@ -2413,11 +2073,11 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
               vPoint = alreadyVisitedDonor[ iNodeVisited ];
             
-              nEdgeVisited = Buffer_Receive_nLinkedNodes[vPoint];
+              nEdgeVisited = Donor_nLinkedNodes[vPoint];
  
               for (iEdgeVisited = 0; iEdgeVisited < nEdgeVisited; iEdgeVisited++){
 
-                donor_iPoint = Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[vPoint] + iEdgeVisited];
+                donor_iPoint = Donor_LinkedNodes[ Donor_StartLinkedNodes[vPoint] + iEdgeVisited];
 
                 /*--- Check if the node to visit is already listed in the data structure to avoid double visits ---*/
 
@@ -2441,34 +2101,29 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
                 if( check == 0 ){ 
                   /*--- If the node was not already visited, visit it and list it into data structure ---*/
   
-                  tmpVect = new unsigned long[ nToVisit ];
+                  tmpVect = new unsigned long[ nToVisit + 1 ];
 
                   for( jj = 0; jj < nToVisit; jj++ )
                     tmpVect[jj] = ToVisit[jj];
+                  tmpVect[nToVisit] = donor_iPoint;
 
                   if( ToVisit != NULL )
                     delete [] ToVisit;
-
-                  ToVisit = new unsigned long[nToVisit + 1];
-
-                  for( jj = 0; jj < nToVisit; jj++ )
-                    ToVisit[jj] = tmpVect[jj];
-
-                  delete [] tmpVect;              
-
-                  ToVisit[nToVisit] = donor_iPoint;
+                    
+                  ToVisit = tmpVect;
+                  tmpVect = NULL;
 
                   nToVisit++; 
 
                   /*--- Find the value of the intersection area between the current donor element and the target element --- */
 
-                  nEdges_donor = Buffer_Receive_nLinkedNodes[donor_iPoint];
+                  nEdges_donor = Donor_nLinkedNodes[donor_iPoint];
 
                   donor_element = new su2double*[ 2*nEdges_donor + 2 ];   
                   for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
                     donor_element[ii] = new su2double[nDim];             
 
-                  nNode_donor = Build_3D_surface_element(Buffer_Receive_LinkedNodes, Buffer_Receive_StartLinkedNodes, Buffer_Receive_nLinkedNodes, DonorPoint_Coord, donor_iPoint, donor_element);
+                  nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes, DonorPoint_Coord, donor_iPoint, donor_element);
 
                   tmp_Area = 0;
                   for (ii = 1; ii < nNode_target-1; ii++)
@@ -2481,38 +2136,32 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
  
                   /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
 
-                  tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
-                  tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-                  tmp_storeProc  = new unsigned long[ nDonorPoints ];
+                  tmp_Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+                  tmp_Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+                  tmp_storeProc  = new unsigned long[ nDonorPoints + 1 ];
  
                   for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
                     tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
                     tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
                     tmp_storeProc[iDonor]  = storeProc[iDonor];
                   }
+                  
+                  tmp_Coeff_Vect[ nDonorPoints ] = tmp_Area;                  
+                  tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
+                  tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-                  if (Donor_Vect != NULL) {delete [] Donor_Vect; Donor_Vect = NULL;}
-                  if (Coeff_Vect != NULL) {delete [] Coeff_Vect; Coeff_Vect = NULL;}
-                  if (storeProc  != NULL) {delete [] storeProc;  storeProc  = NULL;}
+                  if (Donor_Vect != NULL) {delete [] Donor_Vect; }
+                  if (Coeff_Vect != NULL) {delete [] Coeff_Vect; }
+                  if (storeProc  != NULL) {delete [] storeProc;  }
 
-                  Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
-                  Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-                  storeProc  = new unsigned long[ nDonorPoints + 1 ];
-          
-                  for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-                    Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
-                    Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
-                    storeProc[iDonor]  = tmp_storeProc[iDonor];
-                  }
+                  Donor_Vect = tmp_Donor_Vect;
+                  Coeff_Vect = tmp_Coeff_Vect;
+                  storeProc  = tmp_storeProc;
 
-                  Coeff_Vect[ nDonorPoints ] = tmp_Area;                  
-                  Donor_Vect[ nDonorPoints ] = donor_iPoint;
-                  storeProc[  nDonorPoints ] = Donor_proc[donor_iPoint];
+                  tmp_Coeff_Vect = NULL;                  
+                  tmp_Donor_Vect = NULL;
+                  tmp_storeProc  = NULL;
 
-                  if (tmp_Donor_Vect != NULL) delete [] tmp_Donor_Vect;
-                  if (tmp_Coeff_Vect != NULL) delete [] tmp_Coeff_Vect;
-                  if (tmp_storeProc  != NULL) delete [] tmp_storeProc;
-  
                   nDonorPoints++;
    
                   Area += tmp_Area;
@@ -2524,23 +2173,18 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
  
             StartVisited = nAlreadyVisited;
 
-            tmpVect = new unsigned long[ nAlreadyVisited ];
+            tmpVect = new unsigned long[ nAlreadyVisited + nToVisit ];
 
             for( jj = 0; jj < nAlreadyVisited; jj++ )
               tmpVect[jj] = alreadyVisitedDonor[jj];
+              
+            for( jj = 0; jj < nToVisit; jj++ )
+              tmpVect[ nAlreadyVisited + jj ] = ToVisit[jj];
 
             if( alreadyVisitedDonor != NULL )
               delete [] alreadyVisitedDonor;
 
-            alreadyVisitedDonor = new unsigned long[ nAlreadyVisited + nToVisit ];
-
-            for( jj = 0; jj < nAlreadyVisited; jj++ )
-              alreadyVisitedDonor[jj] = tmpVect[jj];
-
-            for( jj = 0; jj < nToVisit; jj++ )
-             alreadyVisitedDonor[ nAlreadyVisited + jj ] = ToVisit[jj];
- 
-            delete [] tmpVect;              
+            alreadyVisitedDonor = tmpVect;            
 
             nAlreadyVisited += nToVisit;    
 
@@ -2575,18 +2219,17 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
     delete [] TargetPoint_Coord;
     delete [] Target_GlobalPoint;
-    
-    delete [] DonorPoint_Coord;
-    delete [] Donor_GlobalPoint;
-    delete [] Donor_proc;
-    
+    delete [] Target_Proc;
     delete [] Target_nLinkedNodes;
     delete [] Target_LinkedNodes;
     delete [] Target_StartLinkedNodes;
-
-    delete [] Buffer_Receive_nLinkedNodes;      
-    delete [] Buffer_Receive_StartLinkedNodes;  
-    delete [] Buffer_Receive_LinkedNodes;       
+        
+    delete [] DonorPoint_Coord;
+    delete [] Donor_GlobalPoint;
+    delete [] Donor_Proc;
+    delete [] Donor_nLinkedNodes;      
+    delete [] Donor_StartLinkedNodes;  
+    delete [] Donor_LinkedNodes;       
     
   }
 
@@ -2596,15 +2239,9 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
   if (Donor_Vect != NULL) delete [] Donor_Vect;
   if (Coeff_Vect != NULL) delete [] Coeff_Vect;
   if (storeProc  != NULL) delete [] storeProc;  
-
-#ifdef HAVE_MPI
-  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL ) 
-    delete [] Buffer_Recv_mark;
-#endif
-    
 }
 
-int CSlidingmesh::Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element){
+int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element){
     
   /*--- Given a node "centralNode", this routines reconstruct the vertex centered surface element around the node and store it into "element" ---*/
   /*--- Returns the number of points included in the element ---*/
@@ -2714,7 +2351,7 @@ int CSlidingmesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
   return iElementNode;
 }
 
-su2double CSlidingmesh::ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){
+su2double CSlidingMesh::ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){
     
   /*--- Given 2 segments, each defined by 2 points, it projects them along a given direction and it computes the length of the segment resulting from their intersection ---*/
   /*--- The algorithm works for both 2D and 3D problems ---*/
@@ -2769,7 +2406,7 @@ su2double CSlidingmesh::ComputeLineIntersectionLength(su2double* A1, su2double* 
   return 0.0;
 }
 
-su2double CSlidingmesh::Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction){
+su2double CSlidingMesh::Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction){
     
   /* --- This routine is ONLY for 3D grids --- */
   /* --- Projects triangle points onto a plane, specified by its normal "Direction", and calls the ComputeIntersectionArea routine --- */
@@ -2851,7 +2488,7 @@ su2double CSlidingmesh::Compute_Triangle_Intersection(su2double* A1, su2double* 
   return ComputeIntersectionArea( a1, a2, a3, b1, b2, b3 );
 }
 
-su2double CSlidingmesh::ComputeIntersectionArea( su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3 ){
+su2double CSlidingMesh::ComputeIntersectionArea( su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3 ){
     
   /* --- This routines computes the area of the polygonal element generated by the superimposition of 2 planar triangle --- */
   /* --- The 2 triangle must lie on the same plane --- */
@@ -3006,7 +2643,7 @@ su2double CSlidingmesh::ComputeIntersectionArea( su2double* P1, su2double* P2, s
   return fabs(Area)/2;
 }
 
-void CSlidingmesh::ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint ){
+void CSlidingMesh::ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint ){
     
   /* --- Uses determinant rule to compute the intersection point between 2 straight segments --- */
   /* This works only for lines on a 2D plane, A1, A2 and B1, B2 are respectively the head and the tail points of each segment, 
@@ -3024,9 +2661,15 @@ void CSlidingmesh::ComputeLineIntersectionPoint( su2double* A1, su2double* A2, s
   return;
 }
 
-bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3){
+bool CSlidingMesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3){
 
   /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
+  /* For each edge it checks on which side the point lies:
+   * - Computes the unit vector pointing at the internal side of the edge
+   * - Comutes the vector that connects the point to a point along the edge
+   * - If the dot product is positive it means that the point is on the internal side of the edge
+   * - If the check is positive for all the 3 edges, then the point lies within the triangle
+   */ 
 
   unsigned short iDim, nDim, check;
 
@@ -3040,12 +2683,12 @@ bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 
   dot = 0;
   for(iDim = 0; iDim < nDim; iDim++){
-    vect1[iDim] = T3[iDim] - T1[iDim];
-    vect2[iDim] = T2[iDim] - T1[iDim];
+    vect1[iDim] = T3[iDim] - T1[iDim]; // vec 1 is aligned to the edge
+    vect2[iDim] = T2[iDim] - T1[iDim]; // vect 2 is the vector connecting one edge point to the third triangle vertex
 
-    r[iDim] = Point[iDim] - T1[iDim];
+    r[iDim] = Point[iDim] - T1[iDim];  // Connects point to vertex T1
 
-    dot += vect2[iDim] * vect2[iDim];
+    dot += vect2[iDim] * vect2[iDim];  
   }
   dot = sqrt(dot);
 
@@ -3057,10 +2700,10 @@ bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
     dot += vect1[iDim] * vect2[iDim];
 
   for(iDim = 0; iDim < nDim; iDim++)
-    vect1[iDim] = T3[iDim] - (T1[iDim] + dot * vect2[iDim]);
+    vect1[iDim] = T3[iDim] - (T1[iDim] + dot * vect2[iDim]); // Computes the inward unit vector
 
   dot = 0;
-  for(iDim = 0; iDim < nDim; iDim++)
+  for(iDim = 0; iDim < nDim; iDim++)  // Checs that the point lies on the internal plane
     dot += vect1[iDim] * r[iDim];
 
   if (dot >= 0)

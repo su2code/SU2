@@ -83,8 +83,19 @@ protected:
   *Buffer_Send_Normal,/*!\brief Buffer to send normal vector values */
   *Buffer_Receive_Coord,/*!\brief Buffer to receive coordinate values*/
   *Buffer_Receive_Normal;/*!\brief Buffer to receive normal vector values*/
-
-
+  
+  unsigned long *Receive_GlobalPoint, /*!\brief Buffer to receive Global point indexes*/
+  *Buffer_Receive_nLinkedNodes,       /*!\brief Buffer to receive the number of edges connected to each node*/
+  *Buffer_Receive_LinkedNodes,        /*!\brief Buffer to receive the list of notes connected to the nodes through an edge*/
+  *Buffer_Receive_StartLinkedNodes,   /*!\brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins */
+  *Buffer_Receive_Proc;               /*!\brief Buffer to receive the thread that owns the node*/
+  
+  unsigned long  nGlobalVertex_Target, /*!\brief Global number of vertex of the target boundary*/
+  nLocalVertex_Target,                 /*!\brief Number of vertex of the target boundary owned by the thread*/
+  nGlobalVertex_Donor,                 /*!\brief Global number of vertex of the donor boundary*/
+  nLocalVertex_Donor,                  /*!\brief Number of vertex of the donor boundary owned by the thread*/
+  nGlobalVertex,                       /*!\brief Dummy variable to temporarily store the global number of vertex of a boundary*/
+  nLocalLinkedNodes;                   /*!\brief Dummy variable to temporarily store the number of vertex of a boundary*/
 
 public:
   CGeometry*** Geometry;        /*! \brief Vector which stores n zones of geometry. */
@@ -116,6 +127,20 @@ public:
    * \param[in] val_marker_interface - Interface tag.
    */
   int Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface);
+
+  /*!
+   * \brief Check whether the interface should be processed or not
+   * \param[in] val_markDonor  - Marker tag from donor zone.
+   * \param[in] val_markTarget - Marker tag from target zone.
+   */  
+  bool CheckInterfaceBoundary(int val_markDonor, int val_markTarget);
+  
+  /*!
+   * \brief Recontstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads
+   * \param[in] val_zone   - index of the zone
+   * \param[in] val_marker - index of the marker
+   */
+  void ReconstructBoundary(unsigned long val_zone, int val_marker);
   
   /*!
    * \brief compute distance between 2 points
@@ -266,7 +291,7 @@ public:
 /*!
  * \brief Sliding mesh approach
   */
-class CSlidingmesh : public CInterpolator {
+class CSlidingMesh : public CInterpolator {
 public:
 
   /*!
@@ -276,12 +301,12 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CSlidingmesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CSlidingMesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSlidingmesh(void);
+  ~CSlidingMesh(void);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
