@@ -2365,7 +2365,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
               PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
             }
 
-            coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+            coeff = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
 
             /*--- Set primitive variables ---*/
 
@@ -2780,10 +2780,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
 
       for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-        SlidingState[iMarker][iPoint] = new su2double*[nVar+1];
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
 
         SlidingStateNodes[iMarker][iPoint] = 0;
-        for (iVar = 0; iVar < nVar+1; iVar++)
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
           SlidingState[iMarker][iPoint][iVar] = NULL;
       }
 
@@ -3362,7 +3362,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
               PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
             }
 
-            coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+            coeff = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
 
             /*--- Set primitive variables ---*/
 
