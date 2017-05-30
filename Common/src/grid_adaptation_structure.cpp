@@ -338,7 +338,7 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
   unsigned long iEdge, jEdge, nEdges, EdgeIndex, ip_0, ip_1, ip_2, ip_3, iBound;
   
   unsigned long *gridPoints2Add;
-  unsigned long *uptr;
+  unsigned long *uptr, *uptr2;
   
   su2double *Coord_i, *Coord_j, *P1, *P2, *P3;
   su2double mindist, dist, m;
@@ -643,7 +643,7 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
                 
               if(m >= 0){
                 EdgeIndex = geo_adapt[donorZone]->FindEdge(dPoint, DonorClosestNode);
-                cout << geo_adapt[donorZone]->FindEdge(dPoint, DonorClosestNode) << "  " << EdgeIndex << "  " << dPoint << "  " << DonorClosestNode << endl;
+                //cout << geo_adapt[donorZone]->FindEdge(dPoint, DonorClosestNode) << "  " << EdgeIndex << "  " << dPoint << "  " << DonorClosestNode << endl;
                 break;
               }
             }
@@ -693,7 +693,7 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
             
             delete geo_adapt[donorZone]->edge[EdgeIndex];
                   
-            iEdge = geo_adapt[donorZone]->GetnEdge(); cout << iEdge << endl;
+            iEdge = geo_adapt[donorZone]->GetnEdge(); 
             geo_adapt[donorZone]->edge[EdgeIndex] = new CEdge(DonorClosestNode, iPoint, 2);
             geo_adapt[donorZone]->edge[iEdge]     = new CEdge(iPoint, dPoint,           2);
             geo_adapt[donorZone]->edge[iEdge+1]   = new CEdge(iPoint, pPoint,           2);
@@ -701,57 +701,64 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
             geo_adapt[donorZone]->node[iPoint]->SetEdge(EdgeIndex, 0);
             geo_adapt[donorZone]->node[iPoint]->SetEdge(iEdge,     1);
             geo_adapt[donorZone]->node[iPoint]->SetEdge(iEdge + 1, 2);
-            
-            cout << "Edges " << endl;
-            for(jEdge = 0; jEdge < geo_adapt[donorZone]->node[iPoint]->GetnPoint(); jEdge++){
-              cout << geo_adapt[donorZone]->node[iPoint]->GetEdge(jEdge) << "  ";
-            }
-            cout << "<end Edges " << endl;
-            
-            uptr = new unsigned long[geo_adapt[donorZone]->node[DonorClosestNode]->GetnPoint()];
+
+
+            uptr  = new unsigned long[geo_adapt[donorZone]->node[DonorClosestNode]->GetnPoint()];
+            uptr2 = new unsigned long[geo_adapt[donorZone]->node[DonorClosestNode]->GetnPoint()];
+
             for(jEdge = 0; jEdge < geo_adapt[donorZone]->node[DonorClosestNode]->GetnPoint(); jEdge++){
               if(geo_adapt[donorZone]->node[DonorClosestNode]->GetPoint(jEdge) == dPoint)
                 uptr[jEdge] = iPoint;
               else
                 uptr[jEdge] = geo_adapt[donorZone]->node[DonorClosestNode]->GetPoint(jEdge);
+                
+              uptr2[jEdge] = geo_adapt[donorZone]->node[DonorClosestNode]->GetEdge(jEdge);
             }
                         
             iTmp = geo_adapt[donorZone]->node[DonorClosestNode]->GetnPoint();
             geo_adapt[donorZone]->node[DonorClosestNode]->ResetPoint();
             
-            for(jEdge = 0; jEdge < iTmp; jEdge++)
+            for(jEdge = 0; jEdge < iTmp; jEdge++){
               geo_adapt[donorZone]->node[DonorClosestNode]->SetPoint( uptr[jEdge] );
+              geo_adapt[donorZone]->node[DonorClosestNode]->SetEdge( uptr2[jEdge], jEdge );
+            }
             
             delete [] uptr;
+            delete [] uptr2;
+
             
-            
-            
-            
-            
-            
-            uptr = new unsigned long[geo_adapt[donorZone]->node[dPoint]->GetnPoint()];
+            uptr  = new unsigned long[geo_adapt[donorZone]->node[dPoint]->GetnPoint()];
+            uptr2 = new unsigned long[geo_adapt[donorZone]->node[dPoint]->GetnPoint()];
             
             //cout << "cmp  " << endl;
+            //cout << iEdge << endl;
             for(jEdge = 0; jEdge < geo_adapt[donorZone]->node[dPoint]->GetnPoint(); jEdge++){
-              //cout << geo_adapt[donorZone]->node[dPoint]->GetPoint(jEdge) << "  ";
+              //cout << geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge) << "  ";
               if(geo_adapt[donorZone]->node[dPoint]->GetPoint(jEdge) == DonorClosestNode){
-                geo_adapt[donorZone]->node[dPoint]->SetEdge(iEdge, jEdge);
-                uptr[jEdge] = iPoint;
+                uptr[jEdge]  = iPoint;
+                uptr2[jEdge] = iEdge;
               }
-              else
-                uptr[jEdge] = geo_adapt[donorZone]->node[dPoint]->GetPoint(jEdge);
+              else{
+                uptr[jEdge]  = geo_adapt[donorZone]->node[dPoint]->GetPoint(jEdge);
+                uptr2[jEdge] = geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge);
+              }
             }
             //cout << endl;
             
             iTmp = geo_adapt[donorZone]->node[dPoint]->GetnPoint();
             geo_adapt[donorZone]->node[dPoint]->ResetPoint();
             
-            for(jEdge = 0; jEdge < iTmp; jEdge++)
-              geo_adapt[donorZone]->node[dPoint]->SetPoint( uptr[jEdge] );//cout << geo_adapt[donorZone]->node[dPoint]->GetPoint(jEdge) << "  ";}
+            //cout << "cmp2  " << endl;
+            for(jEdge = 0; jEdge < iTmp; jEdge++){
+              geo_adapt[donorZone]->node[dPoint]->SetPoint( uptr[jEdge] );
+              geo_adapt[donorZone]->node[dPoint]->SetEdge( uptr2[jEdge], jEdge );
+              
+              //cout << geo_adapt[donorZone]->node[dPoint]->GetEdge(jEdge) << "  ";
+            }
             //cout << endl;
             
             delete [] uptr;
-            
+            delete [] uptr2;
             
             geo_adapt[donorZone]->node[pPoint]->SetEdge(iEdge + 1, geo_adapt[donorZone]->node[pPoint]->GetnPoint()+1);
             geo_adapt[donorZone]->node[pPoint]->SetPoint(iPoint);
