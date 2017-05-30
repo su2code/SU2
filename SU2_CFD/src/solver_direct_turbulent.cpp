@@ -2337,7 +2337,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
   su2double *tmp_residual = new su2double[nVar];
   
   unsigned long nDonorVertex;
-  su2double coeff;
+  su2double weight;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -2349,9 +2349,13 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
         if (geometry->node[iPoint]->GetDomain()) {
           
           nDonorVertex = GetnSlidingStates(iMarker, iVertex);
+          
+          /*--- Initialize Residual, this will serve to accumulate the average ---*/
 
           for (iVar = 0; iVar < nVar; iVar++)
             Residual[iVar] = 0.0;
+
+          /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
           for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
 
@@ -2365,7 +2369,9 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
               PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
             }
 
-            coeff = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+            /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+
+            weight = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
 
             /*--- Set primitive variables ---*/
 
@@ -2387,8 +2393,10 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
 
             conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
 
+            /*--- Accumulate the residuals to compute the average ---*/
+            
             for (iVar = 0; iVar < nVar; iVar++)
-              Residual[iVar] += coeff*tmp_residual[iVar];
+              Residual[iVar] += weight*tmp_residual[iVar];
           }
 
           /*--- Add Residuals and Jacobians ---*/
@@ -3334,7 +3342,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
   su2double *tmp_residual = new su2double[nVar];
   
   unsigned long nDonorVertex;
-  su2double coeff;
+  su2double weight;
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -3347,9 +3355,13 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
           nDonorVertex = GetnSlidingStates(iMarker, iVertex);
 
+          /*--- Initialize Residual, this will serve to accumulate the average ---*/
+          
           for (iVar = 0; iVar < nVar; iVar++)
             Residual[iVar] = 0.0;
 
+          /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
+          
           for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
             
             Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
@@ -3362,7 +3374,9 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
               PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
             }
 
-            coeff = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+            /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+            
+            weight = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
 
             /*--- Set primitive variables ---*/
 
@@ -3386,8 +3400,10 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
             conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
 
+            /*--- Accumulate the residuals to compute the average ---*/
+            
             for (iVar = 0; iVar < nVar; iVar++)
-              Residual[iVar] += coeff*tmp_residual[iVar];
+              Residual[iVar] += weight*tmp_residual[iVar];
           }
           
           /*--- Add Residuals and Jacobians ---*/
