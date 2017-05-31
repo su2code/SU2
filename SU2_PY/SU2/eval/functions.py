@@ -270,10 +270,6 @@ def aerodynamics( config, state=None ):
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
             
-    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:    
-        import downstream_function
-        state['FUNCTIONS']['OUTFLOW_GENERALIZED']=downstream_function.downstream_function(config,state)
-        
     return funcs
 
 #: def aerodynamics()
