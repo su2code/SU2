@@ -2764,6 +2764,8 @@ void CDriver::TurbomachineryPreprocessing(){
       for (targetZone = 0; targetZone < nZone; targetZone++) {
         if (targetZone != donorZone){
           transfer_performance_container[donorZone][targetZone]->SetSpanWiseLevels(config_container[donorZone], config_container[targetZone]);
+          interpolator_container[donorZone][targetZone]->SetSpanWiseLevels(config_container[targetZone]);
+          interpolator_container[donorZone][targetZone]->Set_TransferCoeff(config_container);
         }
       }
     }
