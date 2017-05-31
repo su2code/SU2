@@ -4245,7 +4245,7 @@ void CTurbomachineryDriver::DynamicMeshUpdate(unsigned long ExtIter) {
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Dynamic mesh update ---*/
-    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && !mixingplane) {
+    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && mixingplane) {
       iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
 
       /*--- Turbo-vertex update ---*/
