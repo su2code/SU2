@@ -191,9 +191,9 @@ CDriver::CDriver(char* confFile,
   }
 
   /*--- If activated by the compile directive, perform a partition analysis. ---*/
-//#if PARTITION
+#if PARTITION
   Partition_Analysis(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-//#endif
+#endif
 
   /*--- Output some information about the driver that has been instantiated for the problem. ---*/
 
@@ -3982,7 +3982,8 @@ void CTurbomachineryDriver::Run() {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
+  //TODO REMOVE FOR DEBUG
+//  feenableexcept(FE_INVALID | FE_OVERFLOW);
 
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
@@ -5207,7 +5208,7 @@ void CHBMultiZoneDriver::Run() {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-if (ExtIter > 1)
+//if (ExtIter > 1)
 //TODO REMOVE FOR DEBUG
 //feenableexcept(FE_INVALID | FE_OVERFLOW);
   /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all

@@ -10690,14 +10690,14 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
 
         int var_tag = -1;
         /*--- Performance calculation single rows for all time instances---*/
-        sbuf_var[++var_tag] = EntropyGen       [iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
-        sbuf_var[++var_tag] = KineticEnergyLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
-        sbuf_var[++var_tag] = TotalPressureLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)]*100.;
+        sbuf_var[++var_tag] = EntropyGen       [iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)];
+        sbuf_var[++var_tag] = KineticEnergyLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)];
+        sbuf_var[++var_tag] = TotalPressureLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)];
 
         /*--- Performance calculation stage for all time instances---*/
         iMarker_PerformanceStage = iTimeInstance * nMarkerTurboPerf;
-        sbuf_var[++var_tag] = TotalStaticEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections]*100.0;
-        sbuf_var[++var_tag] = TotalTotalEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections]*100.0;
+        sbuf_var[++var_tag] = TotalStaticEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections];
+        sbuf_var[++var_tag] = TotalTotalEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections];
 
         /*--- Performance copy between send and receiver buffers (not useful at the moment) ---*/
         for (iVar = 0; iVar < nVar_output; iVar++)

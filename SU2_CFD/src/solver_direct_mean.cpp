@@ -13582,27 +13582,28 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
             visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
 
-            /*--- Secondary variables ---*/
-            Secondary_i = node[iPoint]->GetSecondary();
+            if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ) {
+              /*--- Secondary variables ---*/
+              Secondary_i = node[iPoint]->GetSecondary();
 
-            /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
+              /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 
-            Secondary_j[0]= FluidModel->GetdPdrho_e();
-            Secondary_j[1]= FluidModel->GetdPde_rho();
+              Secondary_j[0]= FluidModel->GetdPdrho_e();
+              Secondary_j[1]= FluidModel->GetdPde_rho();
 
-            Secondary_j[2]= FluidModel->GetdTdrho_e();
-            Secondary_j[3]= FluidModel->GetdTde_rho();
+              Secondary_j[2]= FluidModel->GetdTdrho_e();
+              Secondary_j[3]= FluidModel->GetdTde_rho();
 
-            /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+              /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
 
-            Secondary_j[4]= FluidModel->Getdmudrho_T();
-            Secondary_j[5]= FluidModel->GetdmudT_rho();
+              Secondary_j[4]= FluidModel->Getdmudrho_T();
+              Secondary_j[5]= FluidModel->GetdmudT_rho();
 
-            Secondary_j[6]= FluidModel->Getdktdrho_T();
-            Secondary_j[7]= FluidModel->GetdktdT_rho();
+              Secondary_j[6]= FluidModel->Getdktdrho_T();
+              Secondary_j[7]= FluidModel->GetdktdT_rho();
 
-            visc_numerics->SetSecondary(Secondary_i, Secondary_j);
-
+              visc_numerics->SetSecondary(Secondary_i, Secondary_j);
+            }
             /*--- Turbulent kinetic energy ---*/
 
             if (config->GetKind_Turb_Model() == SST)
@@ -15668,13 +15669,13 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 avgMixVelocity[iDim] = avgAreaVelocity[iDim];
               ComputeTurboVelocity(avgMixVelocity, AverageTurboNormal , avgMixTurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
             }else {
-//              MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgMixPressure, avgMixDensity);
+              MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgMixPressure, avgMixDensity);
               avgMixTurboVelocity[0]= ( AverageFlux[iMarker][iSpan][1] - avgMixPressure) / AverageFlux[iMarker][iSpan][0];
               for (iDim = 2; iDim < nDim +1;iDim++)
                 avgMixTurboVelocity[iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
               if (avgMixDensity!= avgMixDensity || avgMixPressure!= avgMixPressure || avgMixPressure < 0.0 || avgMixDensity < 0.0 ){
                 val_init_pressure = avgAreaPressure;
-//                MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgMixPressure, avgMixDensity);
+                MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgMixPressure, avgMixDensity);
                 avgMixTurboVelocity[0]= ( AverageFlux[iMarker][iSpan][1] - avgMixPressure) / AverageFlux[iMarker][iSpan][0];
                 for (iDim = 2; iDim < nDim +1;iDim++)
                   avgMixTurboVelocity[iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];

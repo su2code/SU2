@@ -1401,7 +1401,6 @@ void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
   su2double PitchDonor, AngularCoord_Donor, MinAngularCoord_Donor, MaxAngularCoord_Donor;
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
 
-  unsigned short count;
 
 #ifdef HAVE_MPI
 

@@ -54,7 +54,6 @@ int main(int argc, char *argv[]) {
   SU2_Comm MPICommunicator(0);
 #endif
 
-
   /*--- Create a pointer to the main SU2 Driver ---*/
   
   CDriver *driver = NULL;
