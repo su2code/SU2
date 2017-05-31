@@ -10663,7 +10663,8 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
 
   unsigned short nVar_output = 5;      // Number of performance output variables TODO generalize using vectors
   unsigned short output_precision = 8; //Output precision
-
+  cout << "nTotTI " << nTotTimeIntances;
+  cout << "nGeomZones: " << nGeomZones;
   /*--- Allocate memory for send buffer ---*/
   sbuf_var = new su2double[nVar_output];
 
@@ -10695,10 +10696,16 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
         sbuf_var[++var_tag] = TotalPressureLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)];
 
         /*--- Performance calculation stage for all time instances---*/
-        iMarker_PerformanceStage = iTimeInstance * nMarkerTurboPerf;
-        sbuf_var[++var_tag] = TotalStaticEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections];
-        sbuf_var[++var_tag] = TotalTotalEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections];
-
+        if (nGeomZones > 1) {
+          iMarker_PerformanceStage = iTimeInstance * nMarkerTurboPerf;
+          sbuf_var[++var_tag] = TotalStaticEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections];
+          sbuf_var[++var_tag] = TotalTotalEfficiency[iMarker_PerformanceStage + nGeomZones + nStages][nSpanWiseSections];
+        }
+        else{
+          iMarker_PerformanceStage = iTimeInstance * nMarkerTurboPerf;
+          sbuf_var[++var_tag] = -8888.8888;
+          sbuf_var[++var_tag] = -8888.8888;
+        }
         /*--- Performance copy between send and receiver buffers (not useful at the moment) ---*/
         for (iVar = 0; iVar < nVar_output; iVar++)
           rbuf_var[iVar] = sbuf_var[iVar];
