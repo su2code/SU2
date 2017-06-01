@@ -5256,10 +5256,17 @@ void CHBMultiZoneDriver::Run() {
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
     iteration_container[iTimeInstance]->Postprocess(config_container, geometry_container,
         solver_container, iTimeInstance);
+
   if (rank == MASTER_NODE){
     for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
       SetTurboPerformance(iTimeInstance);
+  }
 
+  if (rank == MASTER_NODE){
+    for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++)
+      output->ComputeAvgTurboPerformance_HB(config_container[ZONE_0], nTimeInstances, iGeomZone);
+
+    output->WriteHBTurbomachineryOutput(solver_container, config_container, nTotTimeInstances, iTimeInstance);
   }
 
 }
@@ -5352,10 +5359,8 @@ void CHBMultiZoneDriver::Update() {
     iteration_container[iTimeInstance]->Update(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
-
-    output->WriteHBTurbomachineryOutput(solver_container, config_container, nTotTimeInstances, iTimeInstance);
-
   }
+
 
 }
 
@@ -5375,6 +5380,11 @@ void CHBMultiZoneDriver::SetTurboPerformance(unsigned short iTimeInstance){
   /* --- compute turboperformance for each stage and the global machine ---*/
 
   output->ComputeTurboPerformance(solver_container[iTimeInstance][MESH_0][FLOW_SOL], geometry_container[iTimeInstance][MESH_0], config_container[iTimeInstance]);
+
+}
+
+void CHBMultiZoneDriver::SetAvgTurboPerformance_HB(unsigned short iGeomZone){
+
 
 }
 

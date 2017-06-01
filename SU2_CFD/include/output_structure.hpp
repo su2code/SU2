@@ -176,6 +176,11 @@ class COutput {
         **TotalTemperatureOut,
         **EnthalpyIn;
 
+  su2double *EntropyGenAverage_HB,
+            *TotPressureLossAverage_HB;
+  su2double TotalTotalEfficiencyAverage_HB,
+            TotalStaticEfficiencyAverage_HB;
+
 protected:
 
 public:
@@ -648,6 +653,14 @@ public:
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 */
   void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+
+  /*!
+	 * \brief Compute turbomachinery performance for Harmonic Balance.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] Number of time instances in each blade row.
+	 * \param[in] Number of geometrical zones (blade rows).
+	 */
+  void ComputeAvgTurboPerformance_HB(CConfig *config, unsigned short nTimeInstances, unsigned short iGeomZone);
 
   /*!
 	 * \brief Compute .

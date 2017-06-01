@@ -276,6 +276,10 @@ COutput::COutput(CConfig *config) {
         }
       }
     }
+
+    EntropyGenAverage_HB = new su2double[config->GetnMarker_Turbomachinery()]();
+    TotPressureLossAverage_HB = new su2double[config->GetnMarker_Turbomachinery()]();
+
   }
 }
 
@@ -381,6 +385,9 @@ COutput::~COutput(void) {
     delete [] TotalPressureOut;
     delete [] TotalTemperatureOut;
     delete [] EnthalpyIn;
+
+    if (EntropyGenAverage_HB != NULL)      delete[] EntropyGenAverage_HB;
+    if (TotPressureLossAverage_HB != NULL) delete[] TotPressureLossAverage_HB;
   }
 }
 
@@ -10663,7 +10670,6 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
 
   unsigned short nVar_output = 5;      // Number of performance output variables TODO generalize using vectors
   unsigned short output_precision = 8; //Output precision
-  cout << "nTotTI " << nTotTimeIntances;
   cout << "nGeomZones: " << nGeomZones;
   /*--- Allocate memory for send buffer ---*/
   sbuf_var = new su2double[nVar_output];
@@ -10685,15 +10691,15 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
     /*--- Run through the zones, collecting the output variables
        N.B. Summing across processors within a given zone is being done
        elsewhere. ---*/
-    for (unsigned short iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++){
-      for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++){
+    for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++){
+      for (unsigned short iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++){
         iMarker_PerformanceRow = iTimeInstance * nMarkerTurboPerf + iGeomZone;
 
         int var_tag = -1;
         /*--- Performance calculation single rows for all time instances---*/
-        sbuf_var[++var_tag] = EntropyGen       [iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)];
-        sbuf_var[++var_tag] = KineticEnergyLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)];
-        sbuf_var[++var_tag] = TotalPressureLoss[iMarker_PerformanceRow][config[ZONE_0]->GetnSpan_iZones(iGeomZone)];
+        sbuf_var[++var_tag] = EntropyGen       [iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
+        sbuf_var[++var_tag] = KineticEnergyLoss[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
+        sbuf_var[++var_tag] = TotalPressureLoss[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
 
         /*--- Performance calculation stage for all time instances---*/
         if (nGeomZones > 1) {

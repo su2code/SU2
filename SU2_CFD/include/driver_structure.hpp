@@ -872,9 +872,15 @@ public:
   void Update();
 
   /*!
-   * \brief Set Mixing Plane interface within multiple zones.
+   * \brief Set turbomachienery performance within multiple zones.
    */
   void SetTurboPerformance(unsigned short targetZone);
+
+  /*!
+   * \brief Set turbomachinery HB performance for all the geometrical zones(blade rows).
+   * \brief i-th geometrical zone, corresponding to the blade row.
+   */
+  void SetAvgTurboPerformance_HB(unsigned short iGeomZone);
 
   /*!
    * \brief Monitor the computation.

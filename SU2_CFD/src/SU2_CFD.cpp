@@ -103,6 +103,7 @@ int main(int argc, char *argv[]) {
     driver = new CHBDriver(config_file_name, nTimeInstances, nDim, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && config->GetBoolTurbomachinery() ) {
+
     /*--- Define the meaning of 'zones' for HB multi-zone only.
      * Geometrical zones correspond to the physical domains.
      * A set of time instances is  associated with the single geometrical zone.

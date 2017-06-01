@@ -262,6 +262,39 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
   delete [] relVel;
 }
 
+void COutput::ComputeAvgTurboPerformance_HB(CConfig *config, unsigned short nTimeInstances, unsigned short iGeomZone) {
+  unsigned short iTimeInstance, nStages;
+  unsigned short nBladesRow = config->GetnMarker_Turbomachinery();
+  nStages    = SU2_TYPE::Int(nBladesRow/2);
+
+  EntropyGenAverage_HB     [iGeomZone] = 0.;
+  TotPressureLossAverage_HB[iGeomZone] = 0.;
+  TotalTotalEfficiencyAverage_HB = 0.;
+  TotalStaticEfficiencyAverage_HB= 0.;
+
+  for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++ ){
+    EntropyGenAverage_HB[iGeomZone]      += EntropyGen[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];
+    TotPressureLossAverage_HB[iGeomZone] += TotalPressureLoss[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];
+  }
+
+  EntropyGenAverage_HB[iGeomZone] /= nTimeInstances;
+  TotPressureLossAverage_HB[iGeomZone] /= nTimeInstances;
+//  cout << EntropyGenAverage_HB[iGeomZone] << endl;
+//  cout << TotPressureLossAverage_HB[iGeomZone] << endl;
+
+  if (nBladesRow > 1){
+    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++ ){
+      TotalTotalEfficiencyAverage_HB += TotalTotalEfficiency[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]  ;
+      TotalStaticEfficiencyAverage_HB += TotalStaticEfficiency[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections] ;
+    }
+
+    TotalTotalEfficiencyAverage_HB  /= nTimeInstances;
+    TotalStaticEfficiencyAverage_HB /= nTimeInstances;
+
+
+  }
+
+}
 
 su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan){return EntropyGen[iMarkerTP][iSpan];}
 
