@@ -991,7 +991,7 @@ public:
 	 */
   CPhysicalGeometry(CGeometry *geometry, CConfig *config);
   
-	/*!
+	/*!s
 	 * \brief Destructor of the class.
 	 */
 	~CPhysicalGeometry(void);

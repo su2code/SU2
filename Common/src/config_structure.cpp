@@ -1177,6 +1177,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
+  /*!\brief INTERP_MESH
+  * \n DESCRIPTION: Check if solution needs to be interpolated to another mesh
+    \n Format: INTERP_MESH = YES \n DEFAULT: NO \ingroup Config*/
+    addBoolOption("INTERP_MESH", interp_mesh, false);
+  /* DESCRIPTION:  Interpolated mesh file name if needed */
+  addStringOption("MESH_INTERP_FILENAME", Mesh_interp_FileName, string("mesh_interp.su2"));
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
 

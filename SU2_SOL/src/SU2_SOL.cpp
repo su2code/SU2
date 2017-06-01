@@ -61,7 +61,10 @@ int main(int argc, char *argv[]) {
   CGeometry **geometry_container = NULL;
   CSolver **solver_container     = NULL;
   CConfig **config_container     = NULL;
-
+  CGeometry **geometry_container_interp = NULL;
+  CSolver **solver_container_interp     = NULL;
+  CConfig **config_container_interp     = NULL;
+    
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
 
@@ -70,7 +73,7 @@ int main(int argc, char *argv[]) {
 
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_SOL);
-
+    
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
@@ -78,11 +81,18 @@ int main(int argc, char *argv[]) {
   solver_container = new CSolver*[nZone];
   config_container = new CConfig*[nZone];
   geometry_container = new CGeometry*[nZone];
-
+    
+  solver_container_interp = new CSolver*[nZone];
+  config_container_interp = new CConfig*[nZone];
+  geometry_container_interp = new CGeometry*[nZone];
+    
   for (iZone = 0; iZone < nZone; iZone++) {
     solver_container[iZone]       = NULL;
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
+    solver_container_interp[iZone]   = NULL;
+    config_container_interp[iZone]       = NULL;
+    geometry_container_interp[iZone] = NULL;
   }
 
   /*--- Loop over all zones to initialize the various classes. In most
@@ -97,24 +107,34 @@ int main(int argc, char *argv[]) {
 
     config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
-
+    
+    config_container_interp[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
+    config_container_interp[iZone]->SetMPICommunicator(MPICommunicator);
+    /* Setting the mesh file to interpolated mesh to be read in */
+    string mesh_filename = config_container_interp[iZone]->GetInterpMesh_FileName();
+    config_container_interp[iZone]->SetMesh_FileName(mesh_filename);
+    cout << "The mesh file read in by interpolated container is " <<config_container_interp[iZone]->GetMesh_FileName() << endl;
+      
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
     CGeometry *geometry_aux = NULL;
+    CGeometry *geometry_aux_interp = NULL;
 
     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
     geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    geometry_aux_interp = new CPhysicalGeometry(config_container_interp[iZone], iZone, nZone);
 
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+    geometry_aux_interp->SetColorGrid_Parallel(config_container_interp[iZone]);
 
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
 
     geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-
+    geometry_container_interp[iZone] = new CPhysicalGeometry(geometry_aux_interp, config_container_interp[iZone]);
     /*--- Deallocate the memory of geometry_aux ---*/
 
     delete geometry_aux;
@@ -122,21 +142,31 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
 
     geometry_container[iZone]->SetSendReceive(config_container[iZone]);
-
+    geometry_container_interp[iZone]->SetSendReceive(config_container_interp[iZone]);
+      
     /*--- Add the Send/Receive boundaries ---*/
 
     geometry_container[iZone]->SetBoundaries(config_container[iZone]);
+    geometry_container_interp[iZone]->SetBoundaries(config_container_interp[iZone]);
 
     /*--- Create the vertex structure (required for MPI) ---*/
 
     if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
     geometry_container[iZone]->SetVertex(config_container[iZone]);
+    geometry_container_interp[iZone]->SetVertex(config_container_interp[iZone]);
 
     /*--- Store the global to local mapping after preprocessing. ---*/
 
     if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
     geometry_container[iZone]->SetGlobal_to_Local_Point();
-
+    geometry_container_interp[iZone]->SetGlobal_to_Local_Point();
+      
+    if (rank == MASTER_NODE) cout << "Point and Element connectivity for solution interpolation." << endl;
+    geometry_container[iZone]->SetPoint_Connectivity();
+    geometry_container[iZone]->SetElement_Connectivity();
+    geometry_container_interp[iZone]->SetPoint_Connectivity();
+    geometry_container_interp[iZone]->SetElement_Connectivity();
+      
   }
 
   /*--- Determine whether the simulation is a FSI simulation ---*/
@@ -217,6 +247,9 @@ int main(int argc, char *argv[]) {
         /*--- Set the current iteration number in the config class. ---*/
         config_container[ZONE_0]->SetExtIter(iExtIter);
         config_container[ZONE_1]->SetExtIter(iExtIter);
+          
+        config_container_interp[ZONE_0]->SetExtIter(iExtIter);
+        config_container_interp[ZONE_1]->SetExtIter(iExtIter);
 
         /*--- Read in the restart file for this time step ---*/
 
@@ -227,6 +260,7 @@ int main(int argc, char *argv[]) {
                                iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                iExtIter+1 == config_container[ZONE_0]->GetnExtIter()))) {
           solver_container[ZONE_0] = new CBaselineSolver(geometry_container[ZONE_0], config_container[ZONE_0]);
+          solver_container_interp[ZONE_0] = new CBaselineSolver(geometry_container_interp[ZONE_0], config_container_interp[ZONE_0]);
           SolutionInstantiatedFlow = true;
         }
           solver_container[ZONE_0]->LoadRestart_FSI(geometry_container[ZONE_0], &solver_container, config_container[ZONE_0], SU2_TYPE::Int(MESH_0));
@@ -296,16 +330,19 @@ int main(int argc, char *argv[]) {
 
                 /*--- Set the current iteration number in the config class. ---*/
                 config_container[iZone]->SetExtIter(iExtIter);
-
+                config_container_interp[iZone]->SetExtIter(iExtIter);
+                  
                 /*--- Either instantiate the solution class or load a restart file. ---*/
                 if (SolutionInstantiated[iZone] == false &&
                     (iExtIter == 0 || (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
                                                                                   iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                                                   iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
                   solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
+                  solver_container_interp[iZone] = new CBaselineSolver(geometry_container_interp[iZone], config_container_interp[iZone]);
                   SolutionInstantiated[iZone] = true;
                 }
                   solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+                  //solver_container_interp[iZone]->LoadRestart(geometry_container_interp, &solver_container_interp, config_container_interp[iZone], SU2_TYPE::Int(MESH_0), true);
               }
 
               if (rank == MASTER_NODE)
@@ -328,6 +365,9 @@ int main(int argc, char *argv[]) {
         solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
         solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
 
+        solver_container_interp[iZone] = new CBaselineSolver(geometry_container_interp[iZone], config_container_interp[iZone]);
+        //solver_container_interp[iZone]->LoadRestart(geometry_container_interp, &solver_container_interp, config_container_interp[iZone], SU2_TYPE::Int(MESH_0), true);
+          
         /*--- Print progress in solution writing to the screen. ---*/
         if (rank == MASTER_NODE) {
           cout << "Storing the volume solution for time instance " << iZone << "." << endl;
@@ -406,6 +446,9 @@ int main(int argc, char *argv[]) {
         /*--- Definition of the solution class ---*/
         solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
         solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+          
+        solver_container_interp[iZone] = new CBaselineSolver(geometry_container_interp[iZone], config_container_interp[iZone]);
+        //solver_container_interp[iZone]->LoadRestart(geometry_container_interp, &solver_container_interp, config_container_interp[iZone], SU2_TYPE::Int(MESH_0), true);
       }
 
       output->SetBaselineResult_Files(solver_container, geometry_container, config_container, 0, nZone);
@@ -421,7 +464,14 @@ int main(int argc, char *argv[]) {
       // Answer element 1233 - probe inside the elemnt containing nearest edge
       probe_loc[0] = 6.085e-01; probe_loc[1] = 6.359e-02;
       // Answer element - 404 - probe not inside the elements containing nearest edge
-      probe_loc[0] = 6.90307918179839852; probe_loc[1] = 12.3417305259928352;        output->Probe_sol(solver_container[ZONE_0], geometry_container[ZONE_0], config_container[ZONE_0], probe_loc);
+      probe_loc[0] = 6.90307918179839852; probe_loc[1] = 12.3417305259928352;
+      // In fine grid 0012 for check
+      //probe_loc[0] = 1.6565; probe_loc[1] = -1.25456;
+      //output->Probe_sol(solver_container[ZONE_0], geometry_container[ZONE_0], config_container[ZONE_0], probe_loc);
+      cout << "entering Solution interpolation " << endl;
+      output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0]);
+      delete [] probe_loc;
+      
   }
   
   

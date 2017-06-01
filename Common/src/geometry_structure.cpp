@@ -543,8 +543,6 @@ bool CGeometry::SegmentIntersectsSegment(su2double point0[2], su2double point1[2
     
     diff0_A = point0[0] - point1[0];
     diff1_A = point0[1] - point1[1];
-    cout << "vert0[0] = " << vert0[0] << ", vert0[1] = " << vert0[1] << endl;
-    cout << "vert1[0] = " << vert1[0] << ", vert1[1] = " << vert1[1] << endl;
     diff0_B = vert0[0] - vert1[0];
     diff1_B = vert0[1] - vert1[1];
     
@@ -559,7 +557,6 @@ bool CGeometry::SegmentIntersectsSegment(su2double point0[2], su2double point1[2
     
     intersect[1] =  ((point0[0]*point1[1] - point0[1]*point1[0])*diff1_B
                      -(vert0[0]* vert1[1]  - vert0[1]* vert1[0])*diff1_A)/det;
-    
     
     /*--- Check that the point is between the two surface points ---*/
     
@@ -581,7 +578,16 @@ bool CGeometry::SegmentIntersectsSegment(su2double point0[2], su2double point1[2
     
     length2 = diff0_B*diff0_B + diff1_B*diff1_B;
     
-    if ( (dist0 > length1) || (dist1 > length1) || (dist1 > length2) || (dist3 > length2)) {
+    if ( (dist0 > length1) || (dist1 > length1) || (dist2 > length2) || (dist3 > length2)) {
+        //cout << " In inside false criterion " << endl;
+        return false;
+    }
+    
+    /* Case where the probe location is on the edge connecting the mesh nodes */
+    /* To be revisited later to correct it */
+    if (dist0 < 1e-13 || dist1 < 1e-13)
+    {
+        cout << " Probe on edge connecting nodes of mesh " << endl;
         return false;
     }
     
@@ -1498,6 +1504,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   }
   
 }
+
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   

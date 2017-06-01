@@ -690,6 +690,28 @@ public:
   void SortOutputData_Surface(CConfig *config, CGeometry *geometry);
   
   /*!
+   * \brief Interpolation of solution from one mesh to another
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] config_interp - Definition of the particular problem to be interpolated.
+   * \param[in] geometry_interp - Geometry container of the mesh on which solution is interpolated.
+   * \param[in] solver_interp - Solver container of the interpolated solution.
+   */
+   void Solution_Interpolation(CSolver **solver, CGeometry *geometry, CConfig *config,
+                   CSolver **solver_interp, CGeometry *geometry_interp, CConfig *config_interp);
+    
+   /*!
+    * \brief To find the element in which the probe is located given the nearest node
+    * \param[in] geometry - geometry container of the mesh in which probe is to be located
+    * \param[in] pointID  - Nearest node point number in the geometry
+    * \param[in] probe_loc - coordinates of probe to be located
+    */
+   unsigned long FindProbeLocElement_fromNearestNode(CGeometry *geometry,
+                                                    unsigned long pointID,
+                                                    su2double *probe_loc);
+    
+  /*!
    * \brief Probing flow solution data at a point using ADT search
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.

@@ -601,7 +601,9 @@ private:
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
   nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
   nRefOriginMoment_Z;           /*!< \brief Number of Z-coordinate moment computation origins. */
+  bool interp_mesh;
   string Mesh_FileName,			/*!< \brief Mesh input file. */
+  Mesh_interp_FileName,       /*!< \brief Interpolated Mesh file name. */
   Mesh_Out_FileName,				/*!< \brief Mesh output file. */
   Solution_FlowFileName,			/*!< \brief Flow solution input file. */
   Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
@@ -4048,7 +4050,24 @@ public:
    * \return File name of the input grid.
    */
   string GetMesh_FileName(void);
-  
+
+  /*!
+   * \brief Get name of the input grid.
+   * \return File name of the input grid.
+   */
+  void SetMesh_FileName(string mesh_filename);
+  /*!
+   * \brief Status of mesh)interp
+   * \return boolean to know if interpolation is needed or not
+   */
+   bool GetMesh_Interp(void);
+    
+   /*!
+    * \brief Get name of the mesh on which solution needs to be interpolated.
+    * \return File name of the interpolation grid.
+    */
+   string GetInterpMesh_FileName(void);
+    
   /*!
    * \brief Get name of the output grid, this parameter is important for grid
    *        adaptation and deformation.

@@ -1088,6 +1088,12 @@ inline unsigned short CConfig::GetnObj(void) { return nObj;}
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
+inline void CConfig::SetMesh_FileName(string mesh_filename) { Mesh_FileName = mesh_filename; }
+
+inline bool CConfig::GetMesh_Interp(void) { return interp_mesh; }
+
+inline string CConfig::GetInterpMesh_FileName(void) { return Mesh_interp_FileName; }
+
 inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }
 
 inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat; }
