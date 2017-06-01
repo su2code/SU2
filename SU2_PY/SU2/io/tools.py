@@ -531,11 +531,7 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
-<<<<<<< HEAD
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
-=======
-                 "FREE_SURFACE"            : "fs"        ,
->>>>>>> develop
                  "AERO_DRAG"               : "acd"       ,
                  "RADIAL_DISTORTION"              : "rdis"       ,
                  "CIRCUMFERENTIAL_DISTORTION"     : "cdis"       ,
@@ -609,13 +605,9 @@ def get_dvMap():
                15  : "FFD_CONTROL_POINT_2D"  ,
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
-<<<<<<< HEAD
                20  : "FFD_TWIST_2D"          ,
                50  : "CUSTOM"                ,
                51  : "CST"                   ,
-=======
-               20  : "CST"                   ,
->>>>>>> develop
                101 : "ANGLE_OF_ATTACK"       ,
                102 : "FFD_ANGLE_OF_ATTACK"                    }
     
