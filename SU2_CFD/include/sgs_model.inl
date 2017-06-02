@@ -77,7 +77,9 @@ inline void CSGSModel::ComputeGradEddyViscosity_2D(const su2double rho,
                                                    const su2double lenScale,
                                                    const su2double distToWall,
                                                          su2double &dMuTdx,
-                                                         su2double &dMuTdy) {}
+                                                         su2double &dMuTdy) {
+  dMuTdx = dMuTdy = 0.0;
+}
 
 inline void CSGSModel::ComputeGradEddyViscosity_3D(const su2double rho,
                                                    const su2double drhodx,
@@ -114,9 +116,15 @@ inline void CSGSModel::ComputeGradEddyViscosity_3D(const su2double rho,
                                                    const su2double distToWall,
                                                          su2double &dMuTdx,
                                                          su2double &dMuTdy,
-                                                         su2double &dMuTdz) {}
+                                                         su2double &dMuTdz) {
+  dMuTdx = dMuTdy = dMuTdz = 0.0;
+}
 
-inline CSmagorinskyModel::CSmagorinskyModel(void) : CSGSModel() {}
+inline CSmagorinskyModel::CSmagorinskyModel(void) : CSGSModel() {
+  const_smag  = 0.1;
+  filter_mult = 2.0;
+}
+
 inline CSmagorinskyModel::~CSmagorinskyModel(void){}
 
 inline su2double CSmagorinskyModel::ComputeEddyViscosity_2D(const su2double rho,
@@ -126,8 +134,19 @@ inline su2double CSmagorinskyModel::ComputeEddyViscosity_2D(const su2double rho,
                                                             const su2double dvdy,
                                                             const su2double lenScale,
                                                             const su2double distToWall) {
-  cout << "CSmagorinskyModel::ComputeEddyViscosity_2D: Not implemented yet" << endl;
-  exit(1);
+  /* Constant coefficient Smagorinsky SGS is calculated:
+   * ( C_s * L_c )^2 * |S(x,t)|
+   * C_s = Smagorinsky constant
+   * L_c = Filter width
+   * S(x,t) = Rate of Strain Tensor ( 1/2 [ du_i/dx_j + du_j/dx_i] )
+   */
+  const su2double C_s_filter_width = const_smag*filter_mult*lenScale;
+
+  const su2double S12          = 0.5*(dudy + dvdx);
+  const su2double strain_rate2 = 2.0*(dudx*dudx + dvdy*dvdy + 2.0*S12*S12);
+
+  /* Return the SGS dynamic viscosity. */
+  return C_s_filter_width*C_s_filter_width*sqrt(rho*strain_rate2);
 }
 
 inline su2double CSmagorinskyModel::ComputeEddyViscosity_3D(const su2double rho,
@@ -142,8 +161,23 @@ inline su2double CSmagorinskyModel::ComputeEddyViscosity_3D(const su2double rho,
                                                             const su2double dwdz,
                                                             const su2double lenScale,
                                                             const su2double distToWall) {
-  cout << "CSmagorinskyModel::ComputeEddyViscosity_3D: Not implemented yet" << endl;
-  exit(1);
+  /* Constant coefficient Smagorinsky SGS is calculated:
+   * ( C_s * L_c )^2 * |S(x,t)|
+   * C_s = Smagorinsky constant
+   * L_c = Filter width
+   * S(x,t) = Rate of Strain Tensor ( 1/2 [ du_i/dx_j + du_j/dx_i] )
+   */
+  const su2double C_s_filter_width = const_smag*filter_mult*lenScale;
+
+  const su2double S12 = 0.5*(dudy + dvdx);
+  const su2double S13 = 0.5*(dudz + dwdx);
+  const su2double S23 = 0.5*(dvdz + dwdy);
+
+  const su2double strain_rate2 = 2.0*(dudx*dudx + dvdy*dvdy + dwdz*dwdz
+                               +      2.0*(S12*S12 + S13*S13 + S23*S23));
+
+  /* Return the SGS dynamic viscosity. */
+  return C_s_filter_width*C_s_filter_width*sqrt(rho*strain_rate2);
 }
 
 inline void CSmagorinskyModel::ComputeGradEddyViscosity_2D(const su2double rho,

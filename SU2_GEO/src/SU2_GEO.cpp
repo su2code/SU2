@@ -562,10 +562,6 @@ int main(int argc, char *argv[]) {
         MoveSurface = true;
         surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
-      
-      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM && rank == MASTER_NODE) {
-        cout <<"Custom design variable will be used in external script" << endl;
-      }
 
       /*--- Design variable not implement ---*/
       
