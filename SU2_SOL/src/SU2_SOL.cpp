@@ -447,13 +447,18 @@ int main(int argc, char *argv[]) {
         solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
         solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
           
-        solver_container_interp[iZone] = new CBaselineSolver(geometry_container_interp[iZone], config_container_interp[iZone]);
-        //solver_container_interp[iZone]->LoadRestart(geometry_container_interp, &solver_container_interp, config_container_interp[iZone], SU2_TYPE::Int(MESH_0), true);
+        /*--- Load the config container for interpoalted case with fields and number of variables from original solver container ---*/
+        solver_container_interp[iZone] = new CBaselineSolver(geometry_container_interp[iZone], config_container_interp[iZone],solver_container[iZone]->GetnVar(),config_container[iZone]->fields);
       }
 
       output->SetBaselineResult_Files(solver_container, geometry_container, config_container, 0, nZone);
+        
+      cout << "entering Solution interpolation " << endl;
 
-		  }
+      output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0]);
+      cout << "Writing volume solution for inteprolated mesh.. " << endl;
+      output->SetBaselineResult_Files(solver_container_interp, geometry_container_interp, config_container_interp, 0, nZone);
+    }
     
       /* Probing */
       su2double *probe_loc;
@@ -465,11 +470,9 @@ int main(int argc, char *argv[]) {
       probe_loc[0] = 6.085e-01; probe_loc[1] = 6.359e-02;
       // Answer element - 404 - probe not inside the elements containing nearest edge
       probe_loc[0] = 6.90307918179839852; probe_loc[1] = 12.3417305259928352;
-      // In fine grid 0012 for check
-      //probe_loc[0] = 1.6565; probe_loc[1] = -1.25456;
       //output->Probe_sol(solver_container[ZONE_0], geometry_container[ZONE_0], config_container[ZONE_0], probe_loc);
-      cout << "entering Solution interpolation " << endl;
-      output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0]);
+      
+      
       delete [] probe_loc;
       
   }

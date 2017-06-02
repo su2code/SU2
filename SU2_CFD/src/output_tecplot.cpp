@@ -34,7 +34,7 @@
 #include "../include/output_structure.hpp"
 
 void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
-  
+
   unsigned short iDim, iVar, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
   
@@ -48,7 +48,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
 
   char cstr[200], buffer[50];
   string filename;
-  
+
   /*--- Write file name with extension ---*/
   
   if (surf_sol) {

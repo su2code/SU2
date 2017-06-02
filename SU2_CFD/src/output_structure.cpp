@@ -3841,7 +3841,6 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   }
   
   restart_file << "\n";
-  
   /*--- Write the restart file ---*/
   
   for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
@@ -3849,15 +3848,18 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     /*--- Index of the point ---*/
     restart_file << iPoint << "\t";
     
-    /*--- Write the grid coordinates first ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      restart_file << scientific << Coords[iDim][iPoint] << "\t";
+    /*--- Write the grid coordinates first if it is not called by SU2_SOL(for interpolated mesh solution to write restarts)---*/
+    if (!(config->GetKind_SU2() == SU2_SOL)) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+              restart_file << scientific << Coords[iDim][iPoint] << "\t";
+        }
     }
-    
+      
     /*--- Loop over the variables and write the values to file ---*/
     for (iVar = 0; iVar < nVar_Total; iVar++) {
       restart_file << scientific << Data[iVar][iPoint] << "\t";
     }
+      //cout << "Set Vars done " << endl;
     restart_file << "\n";
   }
 
@@ -7340,7 +7342,11 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     if (!Low_MemoryOutput) {
       
       if (rank == MASTER_NODE) {
-        
+          
+        /* For interpolation of solution from one mesh to another */
+        cout << "Writing SU2 native restart file." << endl;
+        SetRestart(config[iZone], geometry[iZone], solver, iZone);
+          
         if (Wrt_Vol) {
           
           switch (FileFormat) {
@@ -15152,7 +15158,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     
     unsigned short nVar = solver[FLOW_SOL]->GetnVar();
     su2double solution_interp[nVar];
-    
+    cout << "NUmber of varaibles = " << nVar << endl;
     /*--- Allocate the vectors to hold boundary node coordinates
      and its local ID. ---*/
     
@@ -15213,7 +15219,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                             cout << "solver[1] for node = " <<  geometry->node[pointID]->GetGlobalIndex() << " = " << solver[FLOW_SOL]->node[pointID]->GetSolution(iVar) << endl;
                         solution_interp[iVar] = solver[FLOW_SOL]->node[pointID]->GetSolution(iVar);
                     }
-                }
+                  }
                 else {
                     /* local element number inside which the probe is located */
                     probe_elem = FindProbeLocElement_fromNearestNode(geometry, pointID, probe_loc);
