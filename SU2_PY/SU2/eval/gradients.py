@@ -94,14 +94,7 @@ def gradient( func_name, method, config, state=None ):
 
         # Adjoint Gradients
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
-
-            # If using chain rule
-            if 'OUTFLOW_GENERALIZED' in ', '.join(func_name):
-                import downstream_function
-                chaingrad = downstream_function.downstream_gradient(config,state)
-                # Set coefficients for gradients
-                config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
-                
+              
             # Aerodynamics
             if func_output in su2io.optnames_aero:
                 grads = adjoint( func_name, config, state )
@@ -130,15 +123,6 @@ def gradient( func_name, method, config, state=None ):
         else:
             raise Exception , 'unrecognized gradient method'
         
-        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in ', '.join(func_name)):
-            import downstream_function
-            chaingrad = downstream_function.downstream_gradient(config,state)
-            n_dv = len(grads[func_output])
-            custom_dv=1
-            for idv in range(n_dv):
-                if (config.DV_KIND[idv] == 'CUSTOM'):
-                    grads[func_output][idv] = chaingrad[4+custom_dv]
-                    custom_dv = custom_dv+1
         # store
         state['GRADIENTS'].update(grads)
 
@@ -554,12 +538,7 @@ def findiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
-    # Use custom variable
-    if ('CUSTOM' in konfig.DV_KIND and 'OUTFLOW_GENERALIZED' in grads.keys()):
-        import downstream_function
-        chaingrad = downstream_function.downstream_gradient(config,state)
-        custom_dv=1
-        
+       
     # output redirection
     with redirect_folder('FINDIFF',pull,link) as push:
         with redirect_output(log_findiff):
@@ -598,11 +577,7 @@ def findiff( config, state=None ):
                         this_grad = ( func_step[key] - func_base[key] ) / this_step
                         grads[key].append(this_grad)
                         
-                # Use custom DV
-                if (konfig.DV_KIND[i_dv] == 'CUSTOM' and 'OUTFLOW_GENERALIZED' in grads.keys()):
-                    grads['OUTFLOW_GENERALIZED'][i_dv] = chaingrad[4+custom_dv]
-                    custom_dv +=1
-                    
+                   
                 #: for each grad name
                     
                 su2util.write_plot(grad_filename,output_format,grads)

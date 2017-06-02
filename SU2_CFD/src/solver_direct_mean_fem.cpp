@@ -206,13 +206,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
     const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-    sizeVecTmp = 2*nIntegrationMax*(2 + nVar) + sizeFluxes + sizeGradSolInt
+    sizeVecTmp = nIntegrationMax*(4 + 3*nVar) + sizeFluxes + sizeGradSolInt
                + max(nIntegrationMax,nDOFsMax)*nVar;
   }
   else {
 
     /* Inviscid simulation. */
-    unsigned int sizeVol = nVar*nIntegrationMax*(nDim+1);
+    unsigned int sizeVol = nVar*nIntegrationMax*(nDim+2);
     unsigned int sizeSur = nVar*(2*nIntegrationMax + max(nIntegrationMax,nDOFsMax));
 
     sizeVecTmp = max(sizeVol, sizeSur);
@@ -3250,8 +3250,6 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               config->Tick(&tick);
               Volume_Residual(config, nVolElemOwnedPerTimeLevel[level],
                               nVolElemOwnedPerTimeLevel[level+1]);
-              Source_Residual(config, nVolElemOwnedPerTimeLevel[level],
-                              nVolElemOwnedPerTimeLevel[level+1]);
               config->Tock(tick,"Volume_Residual",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4290,9 +4288,14 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
                                           const unsigned long elemBeg,
                                           const unsigned long elemEnd) {
 
+  /*--- Determine whether body force term is present in configuration. ---*/
+  bool body_force = config->GetBody_Force();
+  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
+
   /*--- Set the pointers for the local arrays. ---*/
-  su2double *solInt = VecTmpMemory.data();
-  su2double *fluxes = solInt + nIntegrationMax*nVar;
+  su2double *sources = VecTmpMemory.data();
+  su2double *solInt  = sources + nIntegrationMax*nVar;
+  su2double *fluxes  = solInt  + nIntegrationMax*nVar;
   su2double tick = 0.0;
 
   /* Store the number of metric points per integration point, which depends
@@ -4308,6 +4311,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
     const unsigned short nDOFs           = volElem[l].nDOFsSol;
     const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+    const su2double *matBasisIntTrans    = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
     const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
     const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
 
@@ -4329,6 +4333,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
     /*---         integration weight, in the integration points.           ---*/
+    /*---         If needed, also the source terms are computed.           ---*/
     /*------------------------------------------------------------------------*/
 
     /* Make a distinction between two and three space dimensions
@@ -4341,10 +4346,10 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
            the fluxes. */
         for(unsigned short i=0; i<nInt; ++i) {
 
-          /* Easier storage of the metric terms in this integration point and
-             compute the inverse of the Jacobian. */
+          /* Easier storage of the metric terms in this integration point. */
           const su2double *metricTerms = volElem[l].metricTerms.data()
                                        + i*nMetricPerPoint;
+          const su2double Jac          = metricTerms[0];
 
           /* Compute the metric terms multiplied by minus the integration weight.
              The minus sign comes from the integration by parts in the weak
@@ -4389,6 +4394,20 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
           flux[5] = rhoUs*u + Pressure*wDsdx;
           flux[6] = rhoUs*v + Pressure*wDsdy;
           flux[7] = rhoUs*H;
+
+          /*--- If needed, compute the body forces in this integration point.
+                Note that the source terms are multiplied with minus the
+                integration weight in order to be consistent with the
+                formulation of the residual. ---*/
+          if( body_force ) {
+            su2double *source         = sources + i*nVar;
+            const su2double weightJac = weights[i]*Jac;
+
+            source[0] =  0.0;
+            source[1] = -weightJac*body_force_vector[0];
+            source[2] = -weightJac*body_force_vector[1];
+            source[3] = -weightJac*(u*body_force_vector[0] + v*body_force_vector[1]);
+          }
         }
 
         break;
@@ -4402,10 +4421,10 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
            the fluxes. */
         for(unsigned short i=0; i<nInt; ++i) {
 
-          /* Easier storage of the metric terms in this integration point and
-             compute the inverse of the Jacobian. */
+          /* Easier storage of the metric terms in this integration point. */
           const su2double *metricTerms = volElem[l].metricTerms.data()
                                        + i*nMetricPerPoint;
+          const su2double Jac          = metricTerms[0];
 
           /* Compute the metric terms multiplied by minus the integration weight.
              The minus sign comes from the integration by parts in the weak
@@ -4468,6 +4487,22 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
           flux[12] = rhoUt*v + Pressure*wDtdy;
           flux[13] = rhoUt*w + Pressure*wDtdz;
           flux[14] = rhoUt*H;
+
+          /*--- If needed, compute the body forces in this integration point.
+                Note that the source terms are multiplied with minus the
+                integration weight in order to be consistent with the
+                formulation of the residual. ---*/
+          if( body_force ) {
+            su2double *source         = sources + i*nVar;
+            const su2double weightJac = weights[i]*Jac;
+
+            source[0] =  0.0;
+            source[1] = -weightJac*body_force_vector[0];
+            source[2] = -weightJac*body_force_vector[1];
+            source[3] = -weightJac*body_force_vector[2];
+            source[4] = -weightJac*(u*body_force_vector[0] + v*body_force_vector[1]
+                      +             w*body_force_vector[2]);
+          }
         }
 
         break;
@@ -4486,30 +4521,20 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
-  }
-}
 
-void CFEM_DG_EulerSolver::Source_Residual(CConfig             *config,
-                                          const unsigned long elemBeg,
-                                          const unsigned long elemEnd) {
+    /* Add the contribution from the source terms, if needed. Use solInt
+       as temporary storage for the matrix product. */
+    if( body_force ) {
 
-  /*--- Stub for source term integration. ---*/
+      /* Call the general function to carry out the matrix product. */
+      config->GEMM_Tick(&tick);
+      DenseMatrixProduct(nDOFs, nVar, nInt, matBasisIntTrans, sources, solInt);
+      config->GEMM_Tock(tick, "Volume_Residual3", nDOFs, nVar, nInt);
 
-  bool body_force = config->GetBody_Force();
-
-  if (body_force) {
-
-    su2double *body_force_vector = config->GetBody_Force_Vector();
-
-    /*--- Source term integration goes here... dummy output for now. ---*/
-
-    cout << " Applying a body force of (";
-    for( unsigned short iDim = 0; iDim < nDim; iDim++) {
-      cout << body_force_vector[iDim];
-      if (iDim < nDim-1) cout << ", ";
+      /* Add the residuals due to source terms to the volume residuals */
+      for(unsigned short i=0; i<(nDOFs*nVar); ++i)
+        res[i] += solInt[i];
     }
-    cout << ")." << endl;
-
   }
 }
 
@@ -6618,7 +6643,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[0] + skipVars;
+      index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) {
         VecSolDOFs[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
       }
@@ -9092,6 +9117,10 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
                                        const unsigned long elemBeg,
                                        const unsigned long elemEnd) {
 
+  /*--- Determine whether body force term is present in configuration. ---*/
+  bool body_force = config->GetBody_Force();
+  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
+
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
@@ -9099,7 +9128,8 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
   /*--- Set the pointers for the local arrays. ---*/
   su2double tick = 0.0;
 
-  su2double *solAndGradInt = VecTmpMemory.data();
+  su2double *sources       = VecTmpMemory.data();
+  su2double *solAndGradInt = sources       + nIntegrationMax*nVar;
   su2double *fluxes        = solAndGradInt + nIntegrationMax*nVar*(nDim+1);
 
   /* Store the number of metric points per integration point, which depends
@@ -9116,6 +9146,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
     const unsigned short nDOFs           = volElem[l].nDOFsSol;
     const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
     const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
+    const su2double *matBasisIntTrans    = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
     const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
 
     unsigned short nPoly = standardElementsSol[ind].GetNPoly();
@@ -9279,6 +9310,20 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
           flux[6] = rhoUs*v - tauxy*wDsdx + (Pressure - tauyy)*wDsdy;
           flux[7] = rhoUs*H - (u*tauxx + v*tauxy + qx)*wDsdx
                             - (u*tauxy + v*tauyy + qy)*wDsdy;
+
+          /*--- If needed, compute the body forces in this integration point.
+                Note that the source terms are multiplied with minus the
+                integration weight in order to be consistent with the
+                formulation of the residual. ---*/
+          if( body_force ) {
+            su2double *source         = sources + i*nVar;
+            const su2double weightJac = weights[i]*Jac;
+
+            source[0] =  0.0;
+            source[1] = -weightJac*body_force_vector[0];
+            source[2] = -weightJac*body_force_vector[1];
+            source[3] = -weightJac*(u*body_force_vector[0] + v*body_force_vector[1]);
+          }
         }
 
         break;
@@ -9460,6 +9505,22 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
           flux[14] = rhoUt*H - (u*tauxx + v*tauxy + w*tauxz + qx)*wDtdx
                              - (u*tauxy + v*tauyy + w*tauyz + qy)*wDtdy
                              - (u*tauxz + v*tauyz + w*tauzz + qz)*wDtdz;
+
+          /*--- If needed, compute the body forces in this integration point.
+                Note that the source terms are multiplied with minus the
+                integration weight in order to be consistent with the
+                formulation of the residual. ---*/
+          if( body_force ) {
+            su2double *source         = sources + i*nVar;
+            const su2double weightJac = weights[i]*Jac;
+
+            source[0] =  0.0;
+            source[1] = -weightJac*body_force_vector[0];
+            source[2] = -weightJac*body_force_vector[1];
+            source[3] = -weightJac*body_force_vector[2];
+            source[4] = -weightJac*(u*body_force_vector[0] + v*body_force_vector[1]
+                      +             w*body_force_vector[2]);
+          }
         }
 
         break;
@@ -9480,6 +9541,20 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
+
+    /* Add the contribution from the source terms, if needed. Use solAndGradInt
+       as temporary storage for the matrix product. */
+    if( body_force ) {
+
+      /* Call the general function to carry out the matrix product. */
+      config->GEMM_Tick(&tick);
+      DenseMatrixProduct(nDOFs, nVar, nInt, matBasisIntTrans, sources, solAndGradInt);
+      config->GEMM_Tock(tick, "Volume_Residual3", nDOFs, nVar, nInt);
+
+      /* Add the residuals due to source terms to the volume residuals */
+      for(unsigned short i=0; i<(nDOFs*nVar); ++i)
+        res[i] += solAndGradInt[i];
+    }
   }
 }
 
