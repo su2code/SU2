@@ -10669,8 +10669,7 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
   unsigned short iGeomZone;
 
   unsigned short nVar_output = 5;      // Number of performance output variables TODO generalize using vectors
-  unsigned short output_precision = 8; //Output precision
-  cout << "nGeomZones: " << nGeomZones;
+  unsigned short output_precision = 8;
   /*--- Allocate memory for send buffer ---*/
   sbuf_var = new su2double[nVar_output];
 

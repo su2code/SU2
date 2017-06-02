@@ -10424,9 +10424,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
         Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
       }
-      //      cout << Velocity_i[0] <<" " << Velocity_i[1]<<endl;
-      //			cout<< " "<<endl;
-      //			getchar();
 
       Density_i = node[iPoint]->GetDensity();
 
@@ -10451,9 +10448,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       switch(config->GetKind_Data_Riemann(Marker_Tag))
       {
-      //TODO(turbo), generilize for 3D case
-      //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
-      //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
+
       case TOTAL_CONDITIONS_PT:
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
@@ -10461,7 +10456,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         else P_Total  = config->GetRiemann_Var1(Marker_Tag);
         T_Total  = config->GetRiemann_Var2(Marker_Tag);
         Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
-
         /*--- Non-dim. the inputs if necessary. ---*/
         P_Total /= config->GetPressure_Ref();
         T_Total /= config->GetTemperature_Ref();
@@ -10482,11 +10476,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           for (iDim = 0; iDim < nDim; iDim++)
             Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
 
-          //						NormalVelocity= -sqrt(Velocity2_e)*Flow_Dir[0];
-          //						TangVelocity= -sqrt(Velocity2_e)*Flow_Dir[1];
-          //						Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
-          //						Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
-          //						Velocity_e[2] = sqrt(Velocity2_e)*Flow_Dir[2];
         }
         StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
         FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
@@ -10551,39 +10540,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         if (tkeNeeded) Energy_e += GetTke_Inf();
         break;
 
-//			case MIXING_IN:
-//
-//				/*--- Retrieve the specified total conditions for this boundary. ---*/
-//				P_Total = ExtAverageTotPressure[val_marker][0];
-//				T_Total = ExtAverageTotTemperature[val_marker][0];
-//				ext_flow_angle = atan(ExtAverageTurboVelocity[val_marker][0][1]/ExtAveragedTurboVelocity[val_marker]);
-//				FlowDirMix[0] = cos(ext_flow_angle);
-//				FlowDirMix[1] = sin(ext_flow_angle);
-//
-//				/* --- Computes the total state --- */
-//				FluidModel->SetTDState_PT(P_Total, T_Total);
-//				Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-//				Entropy_e = FluidModel->GetEntropy();
-//
-//				/* --- Compute the boundary state u_e --- */
-//				Velocity2_e = Velocity2_i;
-//				if (nDim == 2){
-//					NormalVelocity= -sqrt(Velocity2_e)*FlowDirMix[0];
-//					TangVelocity= -sqrt(Velocity2_e)*FlowDirMix[1];
-//					Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
-//					Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
-//				}else{
-//					for (iDim = 0; iDim < nDim; iDim++)
-//						Velocity_e[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
-//				}
-//				StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-//				FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
-//				Density_e = FluidModel->GetDensity();
-//				StaticEnergy_e = FluidModel->GetStaticEnergy();
-//				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-//				if (tkeNeeded) Energy_e += GetTke_Inf();
-//				break;
-
       case DENSITY_VELOCITY:
 
         /*--- Retrieve the specified density and velocity magnitude ---*/
@@ -10599,22 +10555,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Velocity_e[iDim] = VelMag_e*Flow_Dir[iDim];
         Energy_e = Energy_i;
         break;
-
-        //        case MIXING_OUT:
-        //
-        //          /*--- Retrieve the staic pressure for this boundary. ---*/
-        //          Pressure_e = ExtAveragedPressure[val_marker];
-        //          Density_e = Density_i;
-        //
-        //          /* --- Compute the boundary state u_e --- */
-        //          FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-        //          Velocity2_e = 0.0;
-        //          for (iDim = 0; iDim < nDim; iDim++) {
-        //            Velocity_e[iDim] = Velocity_i[iDim];
-        //            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-        //          }
-        //          Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-        //          break;
 
       case STATIC_PRESSURE:
 
@@ -10952,6 +10892,27 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
     invP_Tensor[iVar] = new su2double[nVar];
   }
 
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+
+  su2double Physical_t;
+  su2double Physical_dt;
+  /*--- Calculation of Physical time step for unsteady simulation ---*/
+  if (harmonic_balance) {
+
+    /*--- time interval using nTimeInstances ---*/
+    Physical_dt  = (su2double)config->GetHarmonicBalance_Period()/(su2double)(config->GetnTimeInstances());
+
+    /*--- Non-dimensionalization of time step.  ---*/
+    Physical_dt /= config->GetTime_Ref();
+    Physical_t  = config->GetiZone()*Physical_dt;
+  }
+  else {
+    Physical_dt = (su2double)config->GetDelta_UnstTimeND();
+    Physical_t  = (config->GetExtIter())*Physical_dt;
+  }
+  if (config->GetUnsteady_Simulation() == STEADY) Physical_t = 0;
+
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
     for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
@@ -11011,129 +10972,131 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         switch(config->GetKind_Data_Riemann(Marker_Tag))
         {
-          //TODO(turbo), generilize for 3D case
-          //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
-          //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
-          case TOTAL_CONDITIONS_PT:
+        //TODO(turbo), generilize for 3D case
+        //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
+        //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
+        case TOTAL_CONDITIONS_PT:
 
-            /*--- Retrieve the specified total conditions for this boundary. ---*/
-            if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
-            else P_Total  = config->GetRiemann_Var1(Marker_Tag);
-            T_Total  = config->GetRiemann_Var2(Marker_Tag);
-            Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
-
-            /*--- Non-dim. the inputs if necessary. ---*/
-            P_Total /= config->GetPressure_Ref();
-            T_Total /= config->GetTemperature_Ref();
-
-            /* --- Computes the total state --- */
-            FluidModel->SetTDState_PT(P_Total, T_Total);
-            Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-            Entropy_e = FluidModel->GetEntropy();
-
-            /* --- Compute the boundary state u_e --- */
-            Velocity2_e = Velocity2_i;
-            for (iDim = 0; iDim < nDim; iDim++)
-              turboVelocity[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
-            ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
-            StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-            FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
-            Density_e = FluidModel->GetDensity();
-            StaticEnergy_e = FluidModel->GetStaticEnergy();
-            Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-            if (tkeNeeded) Energy_e += GetTke_Inf();
-            break;
-
-          case MIXING_IN:
-
-            /* --- compute total averaged quantities ---*/
-            FluidModel->SetTDState_Prho(ExtAveragePressure[val_marker][iSpan], ExtAverageDensity[val_marker][iSpan]);
-            AverageEnthalpy = FluidModel->GetStaticEnergy() + ExtAveragePressure[val_marker][iSpan]/ExtAverageDensity[val_marker][iSpan];
-            AverageEntropy  = FluidModel->GetEntropy();
-
-            FlowDirMixMag = 0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              FlowDirMixMag += ExtAverageTurboVelocity[val_marker][iSpan][iDim]*ExtAverageTurboVelocity[val_marker][iSpan][iDim];
-            for (iDim = 0; iDim < nDim; iDim++){
-              FlowDirMix[iDim] = ExtAverageTurboVelocity[val_marker][iSpan][iDim]/sqrt(FlowDirMixMag);
-            }
+          /*--- Retrieve the specified total conditions for this boundary. ---*/
+          if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+          else P_Total  = config->GetRiemann_Var1(Marker_Tag);
+          T_Total  = config->GetRiemann_Var2(Marker_Tag);
+          Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
 
 
-            /* --- Computes the total state --- */
-            Enthalpy_e = AverageEnthalpy;
-            Entropy_e = AverageEntropy;
+          P_Total = config->GetRiemann_Var1(Marker_Tag)*( 1+0.04*sin(config->GetOmega_HB()[1]/config->GetOmega_Ref()*Physical_t));
+          /*--- Non-dim. the inputs if necessary. ---*/
+          P_Total /= config->GetPressure_Ref();
+          T_Total /= config->GetTemperature_Ref();
 
-            /* --- Compute the boundary state u_e --- */
-            Velocity2_e = Velocity2_i;
-            for (iDim = 0; iDim < nDim; iDim++){
-              turboVelocity[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
+          /* --- Computes the total state --- */
+          FluidModel->SetTDState_PT(P_Total, T_Total);
+          Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+          Entropy_e = FluidModel->GetEntropy();
 
-            }
-            ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
+          /* --- Compute the boundary state u_e --- */
+          Velocity2_e = Velocity2_i;
+          for (iDim = 0; iDim < nDim; iDim++)
+            turboVelocity[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+          ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
+          StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+          FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+          Density_e = FluidModel->GetDensity();
+          StaticEnergy_e = FluidModel->GetStaticEnergy();
+          Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+          if (tkeNeeded) Energy_e += GetTke_Inf();
+          break;
 
-            StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-            FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
-            Density_e = FluidModel->GetDensity();
-            StaticEnergy_e = FluidModel->GetStaticEnergy();
-            Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-            //				if (tkeNeeded) Energy_e += GetTke_Inf();
-            break;
+        case MIXING_IN:
 
+          /* --- compute total averaged quantities ---*/
+          FluidModel->SetTDState_Prho(ExtAveragePressure[val_marker][iSpan], ExtAverageDensity[val_marker][iSpan]);
+          AverageEnthalpy = FluidModel->GetStaticEnergy() + ExtAveragePressure[val_marker][iSpan]/ExtAverageDensity[val_marker][iSpan];
+          AverageEntropy  = FluidModel->GetEntropy();
 
-          case MIXING_OUT:
-
-            /*--- Retrieve the staic pressure for this boundary. ---*/
-            Pressure_e = ExtAveragePressure[val_marker][iSpan];
-            Density_e = Density_i;
-
-            /* --- Compute the boundary state u_e --- */
-            FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-            Velocity2_e = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Velocity_e[iDim] = Velocity_i[iDim];
-              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-            }
-            Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-            break;
-
-          case STATIC_PRESSURE:
-
-            /*--- Retrieve the staic pressure for this boundary. ---*/
-            Pressure_e = config->GetRiemann_Var1(Marker_Tag);
-            Pressure_e /= config->GetPressure_Ref();
-            Density_e = Density_i;
-
-            /* --- Compute the boundary state u_e --- */
-            FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-            Velocity2_e = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Velocity_e[iDim] = Velocity_i[iDim];
-              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-            }
-            Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-            break;
+          FlowDirMixMag = 0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            FlowDirMixMag += ExtAverageTurboVelocity[val_marker][iSpan][iDim]*ExtAverageTurboVelocity[val_marker][iSpan][iDim];
+          for (iDim = 0; iDim < nDim; iDim++){
+            FlowDirMix[iDim] = ExtAverageTurboVelocity[val_marker][iSpan][iDim]/sqrt(FlowDirMixMag);
+          }
 
 
-          case RADIAL_EQUILIBRIUM:
+          /* --- Computes the total state --- */
+          Enthalpy_e = AverageEnthalpy;
+          Entropy_e = AverageEntropy;
 
-            /*--- Retrieve the staic pressure for this boundary. ---*/
-            Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
-            Density_e = Density_i;
+          /* --- Compute the boundary state u_e --- */
+          Velocity2_e = Velocity2_i;
+          for (iDim = 0; iDim < nDim; iDim++){
+            turboVelocity[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
 
-            /* --- Compute the boundary state u_e --- */
-            FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-            Velocity2_e = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Velocity_e[iDim] = Velocity_i[iDim];
-              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-            }
-            Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-            break;
+          }
+          ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
 
-          default:
-            cout << "Warning! Invalid Riemann input!" << endl;
-            exit(EXIT_FAILURE);
-            break;
+          StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+          FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+          Density_e = FluidModel->GetDensity();
+          StaticEnergy_e = FluidModel->GetStaticEnergy();
+          Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+          //				if (tkeNeeded) Energy_e += GetTke_Inf();
+          break;
+
+
+        case MIXING_OUT:
+
+          /*--- Retrieve the staic pressure for this boundary. ---*/
+          Pressure_e = ExtAveragePressure[val_marker][iSpan];
+          Density_e = Density_i;
+
+          /* --- Compute the boundary state u_e --- */
+          FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+          Velocity2_e = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity_e[iDim] = Velocity_i[iDim];
+            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+          }
+          Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+          break;
+
+        case STATIC_PRESSURE:
+
+          /*--- Retrieve the staic pressure for this boundary. ---*/
+          Pressure_e = config->GetRiemann_Var1(Marker_Tag);
+          Pressure_e /= config->GetPressure_Ref();
+          Density_e = Density_i;
+
+          /* --- Compute the boundary state u_e --- */
+          FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+          Velocity2_e = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity_e[iDim] = Velocity_i[iDim];
+            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+          }
+          Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+          break;
+
+
+        case RADIAL_EQUILIBRIUM:
+
+          /*--- Retrieve the staic pressure for this boundary. ---*/
+          Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
+          Density_e = Density_i;
+
+          /* --- Compute the boundary state u_e --- */
+          FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+          Velocity2_e = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity_e[iDim] = Velocity_i[iDim];
+            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+          }
+          Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+          break;
+
+        default:
+          cout << "Warning! Invalid Riemann input!" << endl;
+          exit(EXIT_FAILURE);
+          break;
 
         }
 
@@ -11371,7 +11334,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         }
       }
     }
-}
+  }
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
