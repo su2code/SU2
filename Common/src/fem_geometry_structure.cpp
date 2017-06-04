@@ -1817,7 +1817,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
            stored in this halo point. */
         su2double dx =             haloPoints[i].coor[0] - center[0];
         su2double dy =             haloPoints[i].coor[1] - center[1];
-        su2double dz = nDim == 3 ? haloPoints[i].coor[2] - center[2] : 0.0;
+        su2double dz = nDim == 3 ? haloPoints[i].coor[2] - center[2] : su2double(0.0);
 
         haloPoints[i].coor[0] = rotMatrix[0][0]*dx + rotMatrix[0][1]*dy
                               + rotMatrix[0][2]*dz + translation[0];
@@ -2062,7 +2062,7 @@ void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
            the inverse of the length. Make sure that a division by zero is
            avoided, although this is most likely never active. */
         const su2double lenNorm    = sqrt(dxdr*dxdr + dydr*dydr);
-        const su2double invLenNorm = lenNorm < 1.e-35 ? 1.e+35 : 1.0/lenNorm;
+        const su2double invLenNorm = lenNorm < su2double(1.e-35) ? su2double(1.e+35) : 1.0/lenNorm;
 
         /* Store the corresponding unit normal vector and its length. The
            direction of the normal vector is such that it is outward pointing
@@ -2103,7 +2103,7 @@ void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
         const su2double nz = dxdr*dyds - dxds*dydr;
 
         const su2double lenNorm    = sqrt(nx*nx + ny*ny + nz*nz);
-        const su2double invLenNorm = lenNorm < 1.e-50 ? 1.e+50 : 1.0/lenNorm;
+        const su2double invLenNorm = lenNorm < su2double(1.e-35) ? su2double(1.e+35) : 1.0/lenNorm;
 
         /* Store the components of the unit normal as well as its length in the
            normals. Note that the current direction of the normal is pointing

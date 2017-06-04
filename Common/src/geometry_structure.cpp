@@ -9138,19 +9138,21 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
           istringstream point_line(text_line);
 
           switch(nDim) {
-            case 2:
+            case 2: {
               su2double Coord_2D[2];
               point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
               node[ii] = new CPoint(Coord_2D[0], Coord_2D[1], i, config);
               ii++;
               break;
+            }
 
-            case 3:
+            case 3: {
               su2double Coord_3D[3];
               point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
               node[ii] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], i, config);
               ii++;
               break;
+            }
           }
         }
       }
@@ -13281,7 +13283,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
 
           const su2double dx =             coor[0] - center[0];
           const su2double dy =             coor[1] - center[1];
-          const su2double dz = nDim == 3 ? coor[2] - center[2] : 0.0;
+          const su2double dz = nDim == 3 ? coor[2] - center[2] : su2double(0.0);
 
           thisMatchingFace.cornerCoor[j][0] = rotMatrix[0][0]*dx + rotMatrix[0][1]*dy
                                             + rotMatrix[0][2]*dz + translation[0];

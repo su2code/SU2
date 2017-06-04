@@ -963,7 +963,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ***geometry,
                                                unsigned short iZone) {
 
   unsigned short iMesh, iStep, iLimit = 1;
-  su2double tick = 0.0;
+  double tick = 0.0;
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
   
@@ -1077,7 +1077,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
                                             unsigned short RunTime_EqSystem) {
   
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*--- Runge-Kutta type of time integration schemes. In the first step, i.e.
         if iStep == 0, set the old solution (working solution for the DG part),
@@ -1104,7 +1104,7 @@ void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver
                                     unsigned short RunTime_EqSystem, unsigned long Iteration) {
   
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
-  su2double tick = 0.0;
+  double tick = 0.0;
   
   /*--- Perform the time integration ---*/
   switch (config->GetKind_TimeIntScheme()) {

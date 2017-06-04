@@ -1366,7 +1366,7 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
   
   /*--- Create the map from the global DOF ID to the local index. ---*/
   vector<su2double> DOFsCoords;
-  vector<su2double> globalID;
+  vector<unsigned long> globalID;
   
   /*--- Update the solution by looping over the owned volume elements. ---*/
   unsigned long nLocalPoint = 0;
@@ -4407,7 +4407,7 @@ void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **
   /*--- Create the map from the global DOF ID to the local index. ---*/
   map<unsigned long, unsigned long> mapLocal2Global;
   vector<su2double> DOFsSol;
-  vector<su2double> globalID;
+  vector<unsigned long> globalID;
   
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -4805,7 +4805,7 @@ void COutput::MergeBaselineSolution_FEM(CConfig *config, CGeometry *geometry, CS
 
   /*--- Create the map from the global DOF ID to the local index. ---*/
   vector<su2double> DOFsSol;
-  vector<su2double> globalID;
+  vector<unsigned long> globalID;
 
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -15374,7 +15374,7 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
   /*--- Create the map from the global DOF ID to the local index. ---*/
 
   //map<unsigned long, unsigned long> mapLocal2Global;
-  vector<su2double> globalID;
+  vector<unsigned long> globalID;
 
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {

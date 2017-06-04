@@ -3061,7 +3061,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
                                              CNumerics **numerics, CConfig *config,
                                              unsigned short iMesh) {
   /* Variable for the internal timing and store the number of time levels.. */
-  su2double tick = 0.0;
+  double tick = 0.0;
   const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
 
   /* Define and initialize the bool vector, that indicates whether or
@@ -3390,7 +3390,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                     CNumerics **numerics, CConfig *config,
                                                     unsigned short iMesh, unsigned short RunTime_EqSystem) {
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /* Preprocessing. */
   config->Tick(&tick);
@@ -4293,7 +4293,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solInt = VecTmpMemory.data();
   su2double *fluxes = solInt + nIntegrationMax*nVar;
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
@@ -4594,7 +4594,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
   su2double *solIntL = VecTmpMemory.data();
   su2double *solIntR = solIntL + nIntegrationMax*nVar;
   su2double *fluxes  = solIntR + nIntegrationMax*nVar;
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*--- Loop over the requested range of matching faces. ---*/
   for(unsigned long l=indFaceBeg; l<indFaceEnd; ++l) {
@@ -4686,7 +4686,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
      same memory can be used for the storage of the solution of the DOFs of
      the face and the fluxes. */
   su2double *solFace = fluxes;
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*------------------------------------------------------------------------*/
   /*--- Step 1: Interpolate the left state in the integration points of  ---*/
@@ -4966,7 +4966,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *tmpRes = VecTmpMemory.data();
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*--- Set the reference to the correct residual. This depends
         whether or not the ADER scheme is used. ---*/
@@ -5009,7 +5009,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 
 void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*--- Set the pointers for the local arrays and determine the number of bytes
         for the call to memcpy later in this function. ---*/
@@ -6051,7 +6051,7 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
   const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
   const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const su2double *weights   = standardBoundaryFacesSol[ind].GetWeightsIntegration();
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*------------------------------------------------------------------------*/
   /*--- Step 1: Compute the fluxes in the integration points using the   ---*/
@@ -6101,7 +6101,7 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(CConfig *confi
   const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
   const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const su2double *basisFace = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /* Easier storage of the DOFs of the face. */
   const unsigned long *DOFs = surfElem->DOFsSolFace.data();
@@ -6886,7 +6886,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam = Gamma/Prandtl_Lam;
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*--- Set the pointers for the local arrays and determine the number
         of bytes for the call to memcpy later in this function. ---*/
@@ -9097,7 +9097,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
 
   /*--- Set the pointers for the local arrays. ---*/
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   su2double *solAndGradInt = VecTmpMemory.data();
   su2double *fluxes        = solAndGradInt + nIntegrationMax*nVar*(nDim+1);
@@ -9494,8 +9494,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
   const bool CartGradBasisFunctionsStored = config->GetStore_Cart_Grad_BasisFunctions_DGFEM();
 
   /*--- Set the pointers for the local arrays. ---*/
-  su2double tick = 0.0;
-  su2double tick2 = 0.0;
+  double tick = 0.0;
+  double tick2 = 0.0;
 
   unsigned int sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
@@ -9836,15 +9836,15 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig                 *config,
                                                    su2double         *viscosityInt,
                                                    su2double         *kOverCvInt) {
 
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /* Constant factor present in the heat flux vector. Set it to zero if the heat
      flux is prescribed, such that no if statements are needed in the loop. */
-  const su2double factHeatFlux_Lam  = HeatFlux_Prescribed ? 0.0: Gamma/Prandtl_Lam;
-  const su2double factHeatFlux_Turb = HeatFlux_Prescribed ? 0.0: Gamma/Prandtl_Turb;
+  const su2double factHeatFlux_Lam  = HeatFlux_Prescribed ? su2double(0.0): Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = HeatFlux_Prescribed ? su2double(0.0): Gamma/Prandtl_Turb;
 
   /* Set the value of the prescribed heat flux for the same reason. */
-  const su2double HeatFlux = HeatFlux_Prescribed ? Wall_HeatFlux : 0.0;
+  const su2double HeatFlux = HeatFlux_Prescribed ? Wall_HeatFlux : su2double(0.0);
 
   /* Determine the number of DOFs of the adjacent element and the offset that
      must be applied to access the correct data for this element in the working
@@ -10668,7 +10668,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
                                     const CSurfaceElementFEM *surfElem,
                                     su2double                *resFaces,
                                     CNumerics                *conv_numerics){
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
@@ -11636,7 +11636,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /* Determine whether or not the Cartesian gradients of the basis functions
      are stored. */
