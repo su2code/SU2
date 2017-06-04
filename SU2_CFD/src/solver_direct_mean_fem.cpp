@@ -1473,10 +1473,10 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
         /* Determine the tasks to be completed before the communication of time
            level nL can be completed. */
         prevInd[0] = prevInd[1] = prevInd[2] = -1;
-  #ifdef HAVE_MPI
+#ifdef HAVE_MPI
         if( nCommRequests[nL] )
           prevInd[0] = indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][nL];
-  #endif
+#endif
 
         if( elementsSendSelfComm[nL].size() ) {
           prevInd[1] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][nL];
@@ -1862,7 +1862,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 #endif
     } */
 
-//  cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER not implemented yet";
+//  cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER tasklist printed";
 //  exit(1);
 
     // END EXTRA FOR DEBUGGING.
