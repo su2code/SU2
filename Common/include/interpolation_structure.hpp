@@ -194,6 +194,11 @@ public:
    * \param[in] jZone - index of the target zone
    */
   CIsoparametric(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  
+  /*!
+   * \brief To use isoparameters method in general for mesh interpolations 
+   */
+  CIsoparametric(void);
 
   /*!
    * \brief Destructor of the class.

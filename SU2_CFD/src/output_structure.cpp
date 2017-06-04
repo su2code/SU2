@@ -15136,10 +15136,8 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     unsigned short nDim = 2;
     su2double *probe_loc;
     probe_loc = new su2double[2];
-    /* ----- For NOW -----*/
-    probe_loc[0] = 6.90307918179839852; probe_loc[1] = 12.3417305259928352;
-    //probe_loc = geometry_interp->node[10990]->GetCoord();
-    cout << "***/// In sol interp , the probe loc are x= " << probe_loc[0] << ", y= " << probe_loc[1] << endl;
+    su2double isoparams[10];
+
     /*--- Compute the total number of nodes on no-slip boundaries ---*/
     unsigned long iPoint, probe_elem;
     /* Total number of points in given processor */
@@ -15147,8 +15145,11 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     cout << "nPoint = " << nPoint_proc << endl;
     su2double dist_probe;
     unsigned long pointID = 0;
-    int rankID=0, rank, size;
     
+    /*CIsoparametric *isoparam_container = NULL;
+    isoparam_container = new CIsoparametric();*/
+    
+    int rankID=0, rank, size;
     rank = MASTER_NODE;
     size = SINGLE_NODE;
 #ifdef HAVE_MPI
@@ -15175,6 +15176,12 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             Coord_bound[ii++] = geometry->node[iPoint]->GetCoord(iDim);
     }
     
+    /* ---------- For now Assuming we knwo type of elements and all elements are same type either triangles or quads ------*/
+    su2double *X_donor=NULL;
+    /* ---- Quads -----*/
+    unsigned short nNodes_elem = 4;
+    X_donor = new su2double[nDim*nNodes_elem];
+    
     /*--- Build the ADT of the all nodes. ---*/
     
     su2_adtPointsOnlyClass NodesADT(nDim, nPoint_proc, Coord_bound.data(), PointIDs.data());
@@ -15195,37 +15202,37 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
          distance for all nodes. ---*/
         //su2double dist;
         for (unsigned long iPoint =0; iPoint < geometry_interp->GetnPoint(); iPoint++) {
-                cout << " Getting solution in interpolated mesh for node " << geometry_interp->node[iPoint]->GetGlobalIndex() << endl;
-                probe_loc = geometry_interp->node[iPoint]->GetCoord();
-                NodesADT.DetermineNearestNode(probe_loc, dist_probe,pointID, rankID);
+            cout << " Getting solution in interpolated mesh for node " << geometry_interp->node[iPoint]->GetGlobalIndex() << endl;
+            probe_loc[0] = geometry_interp->node[iPoint]->GetCoord(0);
+            probe_loc[1] = geometry_interp->node[iPoint]->GetCoord(1);
             
-                for (unsigned short iVar=0; iVar < nVar; iVar++)
-                    solution_interp[iVar] = 0.0;
+            NodesADT.DetermineNearestNode(probe_loc, dist_probe,pointID, rankID);
             
-                solution_interp[0] = geometry_interp->node[iPoint]->GetCoord(0);
-                solution_interp[1] = geometry_interp->node[iPoint]->GetCoord(1);
+            for (unsigned short iVar=0; iVar < nVar; iVar++)
+                solution_interp[iVar] = 0.0;
             
-                if (rank == rankID)
-                {
-                    cout << "Nearest node distance for probe located at (" << probe_loc[0] << ", " << probe_loc[1] << ") = " << dist_probe << endl;
-                    cout << "The point is " << geometry->node[pointID]->GetGlobalIndex() << " and local index = " << pointID << " in rank " << rankID << endl;
-                    cout << "Coords are x = " << geometry->node[pointID]->GetCoord(0) << ", y= " << geometry->node[pointID]->GetCoord(1) << endl;
+            solution_interp[0] = geometry_interp->node[iPoint]->GetCoord(0);
+            solution_interp[1] = geometry_interp->node[iPoint]->GetCoord(1);
+            
+            if (rank == rankID)
+            {
+                cout << "Nearest node distance for probe located at (" << probe_loc[0] << ", " << probe_loc[1] << ") = " << dist_probe << endl;
+                cout << "The point is " << geometry->node[pointID]->GetGlobalIndex() << " and local index = " << pointID << " in rank " << rankID << endl;
+                cout << "Coords are x = " << geometry->node[pointID]->GetCoord(0) << ", y= " << geometry->node[pointID]->GetCoord(1) << endl;
                 
-                    if (dist_probe < 1e-12) {
+                if (dist_probe < 1e-12) {
                     cout << " LOCATECD!! Probe intersects with reference mesh node number " << geometry->node[pointID]->GetGlobalIndex() << endl;
                     
                     for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
-                        if(iVar == 2)
-                            cout << "solver[1] for node = " <<  geometry->node[pointID]->GetGlobalIndex() << " = " << solver[FLOW_SOL]->node[pointID]->GetSolution(iVar) << endl;
                         solution_interp[iVar] = solver[FLOW_SOL]->node[pointID]->GetSolution(iVar);
                     }
-                  }
+                }
                 else {
                     /* local element number inside which the probe is located */
                     probe_elem = FindProbeLocElement_fromNearestNode(geometry, pointID, probe_loc);
                 
                     /* Linear interpolation of solution of the vertices of the probe_elem */
-                    unsigned short nNodes_elem = geometry->elem[probe_elem]->GetnNodes();
+                    /*unsigned short nNodes_elem = geometry->elem[probe_elem]->GetnNodes();
                     
                     for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
                         unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
@@ -15234,19 +15241,42 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                                 cout << "solver[1] for node = " <<  geometry->node[iPoint_loc]->GetGlobalIndex() << " = " << solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar) << endl;
                             solution_interp[iVar] += solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar)/nNodes_elem;
                         }
+                    }*/
+                    
+                    for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
+                        unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
+                        for (unsigned short iDim=0; iDim < nDim; iDim++) {
+                            X_donor[iDim*nNodes_elem + iNode] = geometry->node[iPoint_loc]->GetCoord(iDim);
+                        }
                     }
+                    
+                    Isoparameters(nDim, nNodes_elem, X_donor, probe_loc, isoparams);
+                    
+                    for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
+                        unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
+                        for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
+                            if (iVar == 2)
+                                cout << "solver[1] for node = " <<  geometry->node[iPoint_loc]->GetGlobalIndex() << " = " << solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar) << endl;
+                            /*if(iVar ==2)
+                                cout << "Isopram[" << iNode << "] = " << isoparams[iNode] << endl;*/
+                            solution_interp[iVar] += solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar)*isoparams[iNode];
+                        }
+                    }
+                    
                 }
                 for (unsigned short iVar=0; iVar < nVar; iVar++) {
                     solver_interp[FLOW_SOL]->node[iPoint]->SetSolution(iVar,solution_interp[iVar]);
                     //if(iVar == 1)
-                        cout << "Solution in iPoint " << geometry_interp->node[iPoint]->GetGlobalIndex() << "of coarse mesh of iVar = " << iVar << " is " << solver_interp[FLOW_SOL]->node[iPoint]->GetSolution(iVar) << endl;
+                        //cout << "Solution in iPoint " << geometry_interp->node[iPoint]->GetGlobalIndex() << "of coarse mesh of iVar = " << iVar << " is " << solver_interp[FLOW_SOL]->node[iPoint]->GetSolution(iVar) << endl;
                 }
               }
         }
         
     }
     
-    delete [] probe_loc;
+    if(probe_loc != NULL) delete [] probe_loc;
+    if(X_donor != NULL) delete [] X_donor;
+    //delete isoparam_container;
 }
 
 unsigned long COutput::FindProbeLocElement_fromNearestNode(CGeometry *geometry,
@@ -15371,6 +15401,219 @@ bool COutput::IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,uns
     return Inside;
     
 }
+
+void COutput::Isoparameters(unsigned short nDim, unsigned short nDonor,
+                                   su2double *X, su2double *xj, su2double *isoparams) {
+    cout << "Inside isoparameters method in the inteprolator class " << endl;
+    short iDonor,iDim,k; // indices
+    su2double tmp, tmp2;
+    
+    /*su2double *x     = new su2double[nDim+1];
+    su2double *x_tmp = new su2double[nDim+1];
+    su2double *Q     = new su2double[nDonor*nDonor];
+    su2double *R     = new su2double[nDonor*nDonor];
+    su2double *A     = new su2double[nDim+1*nDonor];
+    su2double *A2    = NULL;
+    su2double *x2    = new su2double[nDim+1];
+    
+    bool *test  = new bool[nDim+1];
+    bool *testi = new bool[nDim+1];*/
+    
+    /*for (iDim=0; iDim < nDim; iDim++) {
+        for (iDonor=0; iDonor < nDonor; iDonor++) {
+            cout << "X[" << iDim << "][" << iDonor << "]= " << X[iDim*nDonor+iDonor] << endl;
+         }
+        cout << "xj[" << iDim << "] = " << xj[iDim] << endl;
+    }*/
+    su2double x[nDim+1];
+    su2double x_tmp[nDim+1];
+    su2double Q[nDonor*nDonor];
+    su2double R[nDonor*nDonor];
+    su2double A[nDim+1*nDonor];
+    su2double *A2    = NULL;
+    su2double x2[nDim+1];
+    
+    bool test[nDim+1];
+    bool testi[nDim+1];
+    
+    su2double eps = 1E-10;
+    
+    short n = nDim+1;
+    
+    if (nDonor>2) {
+        /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
+        /*--- Right hand side is [1, \vec{x}']'---*/
+        for (iDonor=0; iDonor<nDonor; iDonor++) {
+            isoparams[iDonor]=0;
+            A[iDonor] = 1.0;
+            for (iDim=0; iDim<n; iDim++)
+                A[(iDim+1)*nDonor+iDonor]=X[iDim*nDonor+iDonor];
+        }
+        
+        x[0] = 1.0;
+        for (iDim=0; iDim<nDim; iDim++)
+            x[iDim+1]=xj[iDim];
+        
+        /*--- Eliminate degenerate rows:
+         * for example, if z constant including the z values will make the system degenerate
+         * TODO: improve efficiency of this loop---*/
+        test[0]=true; // always keep the 1st row
+        for (iDim=1; iDim<nDim+1; iDim++) {
+            // Test this row against all previous
+            test[iDim]=true; // Assume that it is not degenerate
+            for (k=0; k<iDim; k++) {
+                tmp=0; tmp2=0;
+                for (iDonor=0;iDonor<nDonor;iDonor++) {
+                    tmp+= A[iDim*nDonor+iDonor]*A[iDim*nDonor+iDonor];
+                    tmp2+=A[k*nDonor+iDonor]*A[k*nDonor+iDonor];
+                }
+                tmp  = pow(tmp,0.5);
+                tmp2 = pow(tmp2,0.5);
+                testi[k]=false;
+                for (iDonor=0; iDonor<nDonor; iDonor++) {
+                    // If at least one ratio is non-matching row iDim is not degenerate w/ row k
+                    if (A[iDim*nDonor+iDonor]/tmp != A[k*nDonor+iDonor]/tmp2)
+                        testi[k]=true;
+                }
+                // If any of testi (k<iDim) are false, row iDim is degenerate
+                test[iDim]=(test[iDim] && testi[k]);
+            }
+            if (!test[iDim]) n--;
+        }
+
+        /*--- Initialize A2 now that we might have a smaller system --*/
+        A2 = new su2double[n*nDonor];
+        iDim=0;
+
+        /*--- Copy only the rows that are non-degenerate ---*/
+        for (k=0; k<nDim+1; k++) {
+            if (test[k]) {
+                for (iDonor=0;iDonor<nDonor;iDonor++ ) {
+                    A2[nDonor*iDim+iDonor]=A[nDonor*k+iDonor];
+                }
+                x2[iDim]=x[k];
+                iDim++;
+            }
+        }
+        /*--- Initialize Q,R to 0 --*/
+        for (k=0; k<nDonor*nDonor; k++) {
+            Q[k]=0;
+            R[k]=0;
+        }
+        /*--- TODO: make this loop more efficient ---*/
+        /*--- Solve for rectangular Q1 R1 ---*/
+        for (iDonor=0; iDonor<nDonor; iDonor++) {
+            tmp=0;
+            for (iDim=0; iDim<n; iDim++)
+                tmp += (A2[iDim*nDonor+iDonor])*(A2[iDim*nDonor+iDonor]);
+            
+            R[iDonor*nDonor+iDonor]= pow(tmp,0.5);
+            if (tmp>eps && iDonor<n) {
+                for (iDim=0; iDim<n; iDim++)
+                    Q[iDim*nDonor+iDonor]=A2[iDim*nDonor+iDonor]/R[iDonor*nDonor+iDonor];
+            }
+            else if (tmp!=0) {
+                for (iDim=0; iDim<n; iDim++)
+                    Q[iDim*nDonor+iDonor]=A2[iDim*nDonor+iDonor]/tmp;
+            }
+            for (iDim=iDonor+1; iDim<nDonor; iDim++) {
+                tmp=0;
+                for (k=0; k<n; k++)
+                    tmp+=A2[k*nDonor+iDim]*Q[k*nDonor+iDonor];
+                
+                R[iDonor*nDonor+iDim]=tmp;
+                
+                for (k=0; k<n; k++)
+                    A2[k*nDonor+iDim]=A2[k*nDonor+iDim]-Q[k*nDonor+iDonor]*R[iDonor*nDonor+iDim];
+            }
+        }
+
+        /*--- x_tmp = Q^T * x2 ---*/
+        for (iDonor=0; iDonor<nDonor; iDonor++)
+            x_tmp[iDonor]=0.0;
+        for (iDonor=0; iDonor<nDonor; iDonor++) {
+            for (iDim=0; iDim<n; iDim++)
+                x_tmp[iDonor]+=Q[iDim*nDonor+iDonor]*x2[iDim];
+        }
+        
+        /*--- solve x_tmp = R*isoparams for isoparams: upper triangular system ---*/
+        for (iDonor = n-1; iDonor>=0; iDonor--) {
+            if (R[iDonor*nDonor+iDonor]>eps)
+                isoparams[iDonor]=x_tmp[iDonor]/R[iDonor*nDonor+iDonor];
+            else
+                isoparams[iDonor]=0;
+            for (k=0; k<iDonor; k++)
+                x_tmp[k]=x_tmp[k]-R[k*nDonor+iDonor]*isoparams[iDonor];
+        }
+    }
+    else {
+        /*-- For 2-donors (lines) it is simpler: */
+        tmp =  pow(X[0*nDonor+0]- X[0*nDonor+1],2.0);
+        tmp += pow(X[1*nDonor+0]- X[1*nDonor+1],2.0);
+        tmp = sqrt(tmp);
+        
+        tmp2 = pow(X[0*nDonor+0] - xj[0],2.0);
+        tmp2 += pow(X[1*nDonor+0] - xj[1],2.0);
+        tmp2 = sqrt(tmp2);
+        isoparams[1] = tmp2/tmp;
+        
+        tmp2 = pow(X[0*nDonor+1] - xj[0],2.0);
+        tmp2 += pow(X[1*nDonor+1] - xj[1],2.0);
+        tmp2 = sqrt(tmp2);
+        isoparams[0] = tmp2/tmp;
+    }
+
+    /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
+    /*if (nDonor==4) {
+        //-- Bilinear coordinates, bounded by [-1,1]
+        su2double xi, eta;
+        xi = (1.0-isoparams[0]/isoparams[1])/(1.0+isoparams[0]/isoparams[1]);
+        eta = 1- isoparams[2]*4/(1+xi);
+        if (xi>1.0) xi=1.0;
+        if (xi<-1.0) xi=-1.0;
+        if (eta>1.0) eta=1.0;
+        if (eta<-1.0) eta=-1.0;
+        isoparams[0]=0.25*(1-xi)*(1-eta);
+        isoparams[1]=0.25*(1+xi)*(1-eta);
+        isoparams[2]=0.25*(1+xi)*(1+eta);
+        isoparams[3]=0.25*(1-xi)*(1+eta);
+        
+    }*/
+    /*cout << "After bilinear " << endl;
+    if (nDonor<4) {
+        tmp = 0.0; // value for normalization
+        tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
+        k=0; // index for maximum value
+        for (iDonor=0; iDonor< nDonor; iDonor++) {
+            if (isoparams[iDonor]>tmp2) {
+                k=iDonor;
+                tmp2=isoparams[iDonor];
+            }
+            // [0,1]
+            if (isoparams[iDonor]<0) isoparams[iDonor]=0;
+            if (isoparams[iDonor]>1) isoparams[iDonor] = 1;
+            tmp +=isoparams[iDonor];
+        }
+        if (tmp>0)
+            for (iDonor=0; iDonor< nDonor; iDonor++)
+                isoparams[iDonor]=isoparams[iDonor]/tmp;
+        else {
+            isoparams[k] = 1.0;
+        }
+    }*/
+    
+    /*delete [] x;
+    delete [] x_tmp;
+    delete [] Q;
+    delete [] R;
+    delete [] A;*/
+    if (A2 != NULL) delete [] A2;
+    /*delete [] x2;
+    
+    delete [] test;
+    delete [] testi;*/
+}
+
 
 void COutput::Probe_sol(CSolver *solver, CGeometry *geometry, CConfig *config,
                         su2double *probe_loc){

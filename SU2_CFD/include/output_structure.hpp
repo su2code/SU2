@@ -36,6 +36,7 @@
 
 #include "../../Common/include/mpi_structure.hpp"
 #include "../../Common/include/adt_structure.hpp"
+#include "../../Common/include/interpolation_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
@@ -728,6 +729,9 @@ public:
    * \param[in] jElem - element in which presence of probe is checked
    */
    bool IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,unsigned long jElem);
+    
+   void Isoparameters(unsigned short nDim, unsigned short nDonor,
+                                su2double *X, su2double *xj, su2double *isoparams);
     
   /*!
    * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.

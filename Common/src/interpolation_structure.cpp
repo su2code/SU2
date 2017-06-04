@@ -478,6 +478,10 @@ CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config
  // InitializeData(Zones,nDim);
 }
 
+CIsoparametric::CIsoparametric() : CInterpolator(){
+    
+}
+
 CIsoparametric::~CIsoparametric() {}
 
 void CIsoparametric::Set_TransferCoeff(CConfig **config) {
@@ -881,6 +885,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
 
 void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
     su2double *X, su2double *xj, su2double *isoparams) {
+    cout << "Inside isoparameters method in the inteprolator class " << endl;
   short iDonor,iDim,k; // indices
   su2double tmp, tmp2;
   
@@ -939,7 +944,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
       }
       if (!test[iDim]) n--;
     }
-
+      cout << " before initializing A2 matrix " << endl;
     /*--- Initialize A2 now that we might have a smaller system --*/
     A2 = new su2double[n*nDonor];
     iDim=0;
@@ -985,6 +990,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
           A2[k*nDonor+iDim]=A2[k*nDonor+iDim]-Q[k*nDonor+iDonor]*R[iDonor*nDonor+iDim];
       }
     }
+      cout << "Before setting up x_tmp" << endl;
     /*--- x_tmp = Q^T * x2 ---*/
     for (iDonor=0; iDonor<nDonor; iDonor++)
       x_tmp[iDonor]=0.0;
@@ -1019,7 +1025,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
     tmp2 = sqrt(tmp2);
     isoparams[0] = tmp2/tmp;
   }
-
+    cout << "Bfore bilinear coordinates" << endl;
   /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
   if (nDonor==4) {
     /*-- Bilinear coordinates, bounded by [-1,1] ---*/
@@ -1036,6 +1042,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
     isoparams[3]=0.25*(1-xi)*(1+eta);
 
   }
+    cout << "After bilinear " << endl;
   if (nDonor<4) {
     tmp = 0.0; // value for normalization
     tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
@@ -1068,7 +1075,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
   
   delete [] test;
   delete [] testi;
-
+    cout << "Done with isoparametrs ******-------------************" << endl;
 }
 
 

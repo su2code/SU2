@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
   CGeometry **geometry_container_interp = NULL;
   CSolver **solver_container_interp     = NULL;
   CConfig **config_container_interp     = NULL;
-    
+
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
 
