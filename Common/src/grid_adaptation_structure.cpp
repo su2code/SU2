@@ -281,7 +281,6 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
     if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
     if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)      SPRINTF (buffer, "_pe.dat");
     if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
-    if (config->GetKind_ObjFunc() == OUTFLOW_GENERALIZED)       SPRINTF (buffer, "_chn.dat");
 	}
 
 	strcat(cstr, buffer);
@@ -3553,7 +3552,6 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
     if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
     if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)      SPRINTF (buffer, "_pe.dat");
     if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
-    if (config->GetKind_ObjFunc() == OUTFLOW_GENERALIZED)       SPRINTF (buffer, "_chn.dat");
   }
   
 	strcat(cstr, buffer);

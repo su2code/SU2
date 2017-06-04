@@ -135,7 +135,7 @@ def main():
     # test continuous_adjoint.py, with multiple objectives
     discadj_multi_py            = TestCase('discadj_multi_py')
     discadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
-    discadj_multi_py.cfg_file   = "inv_wedge_ROE_disc_multiobj.cfg"
+    discadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
     discadj_multi_py.test_iter  = 10
     discadj_multi_py.su2_exec   = "discrete_adjoint.py"
     discadj_multi_py.timeout    = 1600
