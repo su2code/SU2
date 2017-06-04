@@ -46,7 +46,7 @@ CDriver::CDriver(char* confFile,
 
   unsigned short jZone, iSol;
   bool fem_solver = false;
-  su2double tick = 0.0;
+  double tick = 0.0;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -481,7 +481,7 @@ void CDriver::Postprocessing() {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
-  su2double tick = 0.0;
+  double tick = 0.0;
   config_container[ZONE_0]->Tick(&tick);
 
     /*--- Output some information to the console. ---*/
@@ -2902,7 +2902,7 @@ void CDriver::StartSolver(){
 #endif
 
   int rank = MASTER_NODE;
-  su2double tick = 0.0;
+  double tick = 0.0;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
