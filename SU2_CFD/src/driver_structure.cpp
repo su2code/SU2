@@ -812,6 +812,11 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 
       if (hybrid) {
         switch (config->GetKind_Hybrid_Blending()) {
+          case RANS_ONLY: // Only the source numerics object is different.
+            solver_container[iMGlevel][HYBRID_SOL] = new CHybridConvSolver(geometry[iMGlevel], config, iMGlevel);
+            solver_container[iMGlevel][HYBRID_SOL]->AddHybridMediator(hybrid_mediator);
+            solver_container[iMGlevel][HYBRID_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+            break;
           case CONVECTIVE:
             solver_container[iMGlevel][HYBRID_SOL] = new CHybridConvSolver(geometry[iMGlevel], config, iMGlevel);
             solver_container[iMGlevel][HYBRID_SOL]->AddHybridMediator(hybrid_mediator);
@@ -1501,6 +1506,10 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // XXX: Allow convection (there's no dummy Upwinding Convection class)
+          numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Turb, config);
+          break;
         case CONVECTIVE:
           numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Turb, config);
           break;
@@ -1518,6 +1527,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
+          break;
         case CONVECTIVE:
           numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_HybridConv(nDim, nVar_Turb, config);
           break;
@@ -1529,6 +1541,10 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // XXX: Allow convection (there's no dummy Upwinding Convection class)
+          numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Turb, config);
+          break;
         case CONVECTIVE:
           numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Turb, config);
           break;

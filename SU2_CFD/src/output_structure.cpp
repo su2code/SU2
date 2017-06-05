@@ -3958,6 +3958,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool hybrid = config->isHybrid_Turb_Model();
   bool frozen_turb = config->GetFrozen_Visc();
   bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
   bool output_1d = config->GetWrt_1D_Output();
@@ -4050,6 +4051,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     case SA_NEG: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
     case SST:     SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
   }
+  char hybrid_resid[] = ",\"Res_Hybrid[0]\"";
   char adj_turb_resid[]= ",\"Res_AdjTurb[0]\"";
   char wave_resid[]= ",\"Res_Wave[0]\",\"Res_Wave[1]\"";
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
@@ -4083,6 +4085,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (rotating_frame) ConvHist_file[0] << rotating_frame_coeff;
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
+      if (hybrid) ConvHist_file[0] << hybrid_resid;
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_1d) ConvHist_file[0] << oneD_outputs;
@@ -4194,7 +4197,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
      may have to adjust them to be larger if adding more entries. ---*/
     char begin[1000], direct_coeff[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
-    adj_turb_resid[1000], wave_coeff[1000],
+    adj_turb_resid[1000], wave_coeff[1000], hybrid_resid[1000],
     heat_coeff[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
     fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000];
 
@@ -4216,6 +4219,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
     bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
+    bool hybrid = (config[val_iZone]->isHybrid_Turb_Model());
     bool thermal = false; /* flag for whether to print heat flux values */
     if (config[val_iZone]->GetKind_Solver() == RANS or config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES) {
       thermal = true;
@@ -4296,6 +4300,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double *residual_fea          = NULL;
     su2double *residual_fem       = NULL;
     su2double *residual_heat         = NULL;
+    su2double *residual_hybrid       = NULL;
     
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
@@ -4314,7 +4319,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Initialize number of variables ---*/
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
     nVar_Trans = 0, nVar_Wave = 0, nVar_Heat = 0,
-    nVar_AdjFlow = 0, nVar_AdjTurb = 0,
+    nVar_AdjFlow = 0, nVar_AdjTurb = 0, nVar_Hybrid = 0,
     nVar_FEM = 0;
     
     /*--- Direct problem variables ---*/
@@ -4326,6 +4331,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SST:    nVar_Turb = 2; break;
       }
     }
+    if (hybrid) nVar_Hybrid = 1;
     if (transition) nVar_Trans = 2;
     if (wave) nVar_Wave = 2;
     if (heat) nVar_Heat = 1;
@@ -4344,7 +4350,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SST:    nVar_AdjTurb = 2; break;
       }
     }
-    
+
     /*--- Allocate memory for the residual ---*/
     residual_flow       = new su2double[nVar_Flow];
     residual_turbulent  = new su2double[nVar_Turb];
@@ -4352,6 +4358,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     residual_wave       = new su2double[nVar_Wave];
     residual_heat       = new su2double[nVar_Heat];
     residual_fem     = new su2double[nVar_FEM];
+    residual_hybrid     = new su2double[nVar_Hybrid];
     
     residual_adjflow      = new su2double[nVar_AdjFlow];
     residual_adjturbulent = new su2double[nVar_AdjTurb];
@@ -4563,6 +4570,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             residual_transition[iVar] = solver_container[val_iZone][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
         }
         
+        /*--- Hybrid parameter solver ---*/
+
+        if (hybrid) {
+          for (iVar = 0; iVar < nVar_Hybrid; iVar++)
+            residual_hybrid[iVar] = solver_container[val_iZone][FinestMesh][HYBRID_SOL]->GetRes_RMS(iVar);
+        }
+
         
         /*--- FEA residual ---*/
         //        if (fluid_structure) {
@@ -4825,6 +4839,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 case 2: SPRINTF (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
               }
             }
+
+            /*--- Hybrid RANS/LES hybrid parameter transport model ---*/
+            if (hybrid) {
+              SPRINTF(hybrid_resid, ", %12.10f", log10(residual_hybrid[0]));
+            }
+
             /*---- Averaged stagnation pressure at an exit ----*/
             if (output_1d) {
               SPRINTF( oneD_outputs, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
@@ -4833,6 +4853,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               SPRINTF(massflow_outputs,", %12.10f", Total_Mdot);
             }
             
+            /*--- Hybrid RANS/LES model hybrid parameter residual ---*/
+            if (hybrid) {
+              SPRINTF (hybrid_resid, ", %12.10f", log10(residual_hybrid[0]));
+            }
             
             /*--- Transition residual ---*/
             if (transition) {
@@ -5197,6 +5221,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               case SST:     cout << "     Res[kine]" << "     Res[omega]"; break;
             }
             
+            if (hybrid)
+              cout << "    Res[alpha]";
+
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
             else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
@@ -5452,6 +5479,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.width(15); cout << log10(residual_turbulent[1]); break;
           }
           
+          if (hybrid) {
+            cout.width(14); cout << log10(residual_hybrid[0]);
+          }
+
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
           
           if (rotating_frame && nDim == 3 ) {
@@ -5631,6 +5662,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     delete [] residual_flow;
     delete [] residual_turbulent;
     delete [] residual_transition;
+    delete [] residual_hybrid;
     delete [] residual_wave;
     delete [] residual_fea;
     delete [] residual_fem;

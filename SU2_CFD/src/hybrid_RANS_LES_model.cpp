@@ -237,3 +237,59 @@ void CHybrid_Mediator::CalculateApproxStructFunc(su2double** ResolutionTensor,
             PrimVar_Grad[lDim+1][kDim]*
             ResolutionTensor[lDim][jDim];
 }
+
+
+
+CHybrid_Dummy_Mediator::CHybrid_Dummy_Mediator(int nDim, CConfig* config) : nDim(nDim) {
+}
+
+CHybrid_Dummy_Mediator::~CHybrid_Dummy_Mediator() {
+}
+
+void CHybrid_Dummy_Mediator::SetupRANSNumerics(CGeometry* geometry,
+                                         CSolver **solver_container,
+                                         CNumerics* rans_numerics,
+                                         unsigned short iPoint,
+                                         unsigned short jPoint) {
+  su2double* alpha =
+      solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
+  // TODO: Check what other source term functions do for Set/Get
+  rans_numerics->SetHybridParameter(alpha, alpha);
+}
+
+void CHybrid_Dummy_Mediator::SetupHybridParamSolver(CGeometry* geometry,
+                                           CSolver **solver_container,
+                                           unsigned short iPoint) {
+}
+
+void CHybrid_Dummy_Mediator::SetupHybridParamNumerics(CGeometry* geometry,
+                                             CSolver **solver_container,
+                                             CNumerics *hybrid_param_numerics,
+                                             unsigned short iPoint,
+                                             unsigned short jPoint) {
+}
+
+void CHybrid_Dummy_Mediator::SetupStressAnisotropy(CGeometry* geometry,
+                                             CSolver **solver_container,
+                                             CHybrid_Visc_Anisotropy* hybrid_anisotropy,
+                                             unsigned short iPoint) {
+}
+
+void CHybrid_Dummy_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
+                                             CSolver **solver_container,
+                                             CNumerics* visc_numerics,
+                                             unsigned short iPoint,
+                                             unsigned short jPoint) {
+
+  /*--- Pass alpha to the resolved flow ---*/
+
+  su2double* alpha_i = solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
+  su2double* alpha_j = solver_container[HYBRID_SOL]->node[jPoint]->GetSolution();
+  visc_numerics->SetHybridParameter(alpha_i, alpha_j);
+
+  /*--- Pass the stress anisotropy tensor to the resolved flow ---*/
+
+  su2double** aniso_i = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscAnisotropy();
+  su2double** aniso_j = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscAnisotropy();
+  visc_numerics->SetEddyViscAnisotropy(aniso_i, aniso_j);
+}

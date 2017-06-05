@@ -641,9 +641,11 @@ static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, EN
  * These define the transport equation for the hybrid parameter.
  */
 enum ENUM_HYBRID_BLENDING {
-    CONVECTIVE = 0 /*!< \brief Kind of hybrid RANS/LES blending (Convective). */
+    RANS_ONLY = 0, /*!< \brief Kind of hybrid RANS/LES blending (RANS only). */
+    CONVECTIVE = 1 /*!< \brief Kind of hybrid RANS/LES blending (Convective). */
 };
 static const map<string, ENUM_HYBRID_BLENDING> Hybrid_Blending_Map = CCreateMap<string, ENUM_HYBRID_BLENDING>
+("RANS_ONLY", RANS_ONLY)
 ("CONVECTIVE", CONVECTIVE);
 
 /*!

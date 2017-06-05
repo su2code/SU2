@@ -239,16 +239,6 @@ class CAbstract_Hybrid_Mediator {
 /*!
  * \class CHybrid_Mediator
  * \brief Mediator object for the Q-based hybrid RANS/LES model.
- *
- * In order to decouple the RANS model, the subgrid model, the hybrid parameter,
- * and the resolved flow, a mediator object is necessary.  This allows the
- * RANS, subgrid, hybrid parameter, and resolved flow equations to follow the
- * single responsibility principle, while this class makes sure they
- * have the information they need.
- *
- * The main purpose of this class is to pass variables to where they
- * need to go.
- *
  * \author: C. Pederson
  * \version 5.0.0 "Raven"
  */
@@ -365,3 +355,98 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
                              unsigned short iPoint,
                              unsigned short jPoint);
 };
+
+/*!
+ * \class CHybrid_Dummy_Mediator
+ * \brief Mediator object for RANS-only operation; isotropic stress and dummy hybrid parameter
+ * \author: C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CHybrid_Dummy_Mediator : public CAbstract_Hybrid_Mediator {
+ protected:
+
+  unsigned short nDim;
+
+ public:
+
+  /**
+   * \brief Constructor for the hybrid mediator object.
+   * \param[in] nDim - The number of dimensions of the problem
+   * \param[in] CConfig - The configuration for the current zone
+   */
+  CHybrid_Dummy_Mediator(int nDim, CConfig* config);
+
+  /**
+   * \brief Destructor for the hybrid mediator object.
+   */
+  ~CHybrid_Dummy_Mediator();
+
+  /**
+   * \brief RANS needs the hybrid parameter (the energy flow parameter).
+   *
+   * This function sets the hybrid parameter from the previous timestep.
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] rans_numerics - The source numerics for the turb. solver
+   * \param[in] iPoint - The number of the node being evaluated
+   * \param[in] jPoint - The number of the opposite node
+   */
+  void SetupRANSNumerics(CGeometry* geometry, CSolver **solver_container,
+                         CNumerics* rans_numerics,
+                         unsigned short iPoint, unsigned short jPoint);
+
+  /**
+   * \brief The hybrid solver doesn't need anything.
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] iPoint - The node being evaluated
+   */
+  void SetupHybridParamSolver(CGeometry* geometry, CSolver **solver_container,
+                           unsigned short iPoint);
+
+  /**
+   * \brief The hybrid numerics don't need anything.
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] hybrid_numerics - The source numerics for the hybrid parameter
+   * \param[in] iPoint - The number of the node being evaluated
+   * \param[in] jPoint - The number of the opposite node
+   */
+  void SetupHybridParamNumerics(CGeometry* geometry, CSolver **solver_container,
+                                CNumerics *hybrid_param_numerics,
+                                unsigned short iPoint, unsigned short jPoint);
+
+  /**
+   * \brief The turbulent stress anisotropy needs the weighting factor and the
+   *        second order structure function.
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] hybrid_anisotropy - The hybrid anisotropy model
+   * \param[in] iPoint - The node being evaluated
+   */
+  void SetupStressAnisotropy(CGeometry* geometry,
+                             CSolver **solver_container,
+                             CHybrid_Visc_Anisotropy* hybrid_anisotropy,
+                             unsigned short iPoint);
+
+  /**
+   * \brief The resolved flow needs the hybrid parameter (the energy flow
+   *        parameter) and the turbulent stress anisotropy tensor.
+   *
+   * \param[in] geometry - A pointer to the geometry
+   * \param[in] solver_container - An array of solvers
+   * \param[in] visc_numerics - The viscous numerics for the resolved flow solver
+   * \param[in] iPoint - The number of the node being evaluated
+   * \param[in] jPoint - The number of the opposite node
+   */
+  void SetupResolvedFlowNumerics(CGeometry* geometry,
+                             CSolver **solver_container,
+                             CNumerics* visc_numerics,
+                             unsigned short iPoint,
+                             unsigned short jPoint);
+};
+
