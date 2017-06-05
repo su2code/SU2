@@ -64,6 +64,7 @@ CDriver::CDriver(char* confFile,
   FFDBox                        = NULL;
   interpolator_container        = NULL;
   transfer_container            = NULL;
+  hybrid_mediator               = NULL;
 
   /*--- Definition and of the containers for all possible zones. ---*/
 
@@ -426,6 +427,11 @@ void CDriver::Postprocessing() {
   delete [] integration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIntegration container." << endl;
   
+  if (hybrid_mediator != NULL) {
+    delete hybrid_mediator;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted Hybrid RANS/LES mediator." << endl;
+
   for (iZone = 0; iZone < nZone; iZone++) {
     Solver_Postprocessing(solver_container[iZone],
                           geometry_container[iZone],
@@ -750,6 +756,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   /*--- Creation of the hybrid mediator class ---*/
   
   if (hybrid) {
+    /*--- Only one hybrid model can be used for all zones ---*/
     // Once more than one mediator exists, this will need to be changed to a
     // switch/case.
     hybrid_mediator = new CHybrid_Mediator(nDim, config);

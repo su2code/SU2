@@ -76,8 +76,7 @@ CHybrid_Aniso_Q::CHybrid_Aniso_Q(unsigned short nDim)
 void CHybrid_Aniso_Q::CalculateViscAnisotropy() {
   su2double w_RANS = CalculateIsotropyWeight(resolution_adequacy);
 
-  // FIXME: How to get Qstar_norm?
-  Qstar_norm = Qstar[0][0] + Qstar[1][1] + Qstar[2][2];
+  Qstar_norm = (Qstar[0][0] + Qstar[1][1] + Qstar[2][2])/3.0;
 
   unsigned short iDim, jDim;
   for (iDim = 0; iDim < nDim; iDim++) {

@@ -15398,6 +15398,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         cout << "       At line " << __LINE__ << " of file " __FILE__ << std::endl;
         exit(EXIT_FAILURE);
     }
+  } else {
+    hybrid_anisotropy = NULL;
   }
   
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
@@ -15665,6 +15667,7 @@ CNSSolver::~CNSSolver(void) {
     delete [] Inlet_FlowDir;
   }
 
+  if (hybrid_anisotropy != NULL) delete hybrid_anisotropy;
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -15776,7 +15779,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     HybridMediator->SetupStressAnisotropy(geometry, solver_container, hybrid_anisotropy, iPoint);
     hybrid_anisotropy->CalculateViscAnisotropy();
     node[iPoint]->SetEddyViscAnisotropy(hybrid_anisotropy->GetViscAnisotropy());
-    // The mediator doesn't need to set up the mean flow solver
+    // The mediator doesn't need to set up the resolved flow solver
   }
 
   /*--- Error message ---*/
