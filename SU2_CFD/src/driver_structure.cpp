@@ -1507,7 +1507,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
-          // XXX: Allow convection (there's no dummy Upwinding Convection class)
+          // XXX: Allow convection (there's no dummy upwinding convection class)
           numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Turb, config);
           break;
         case CONVECTIVE:
@@ -1542,7 +1542,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
-          // XXX: Allow convection (there's no dummy Upwinding Convection class)
+          // XXX: Allow convection (there's no dummy upwinding convection class)
           numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Turb, config);
           break;
         case CONVECTIVE:
