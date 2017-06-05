@@ -195,19 +195,19 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
   hybrid_anisotropy->SetResolutionAdequacy(r_k);
 }
 
-void CHybrid_Mediator::SetupMeanFlowNumerics(CGeometry* geometry,
+void CHybrid_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
                                              CSolver **solver_container,
                                              CNumerics* visc_numerics,
                                              unsigned short iPoint,
                                              unsigned short jPoint) {
 
-  /*--- Pass alpha to the mean flow ---*/
+  /*--- Pass alpha to the resolved flow ---*/
 
   su2double* alpha_i = solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
   su2double* alpha_j = solver_container[HYBRID_SOL]->node[jPoint]->GetSolution();
   visc_numerics->SetHybridParameter(alpha_i, alpha_j);
 
-  /*--- Pass the stress anisotropy tensor to the mean flow ---*/
+  /*--- Pass the stress anisotropy tensor to the resolved flow ---*/
 
   su2double** aniso_i = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscAnisotropy();
   su2double** aniso_j = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscAnisotropy();

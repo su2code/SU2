@@ -146,8 +146,8 @@ class CHybrid_Aniso_Q : public CHybrid_Visc_Anisotropy {
  * \brief Base abstract class for a hybrid model mediator object.
  *
  * In order to decouple the RANS model, the subgrid model, the hybrid parameter,
- * and the mean flow, a mediator object is necessary.  This allows the
- * RANS, subgrid, hybrid parameter, and mean flow equations to follow the
+ * and the resolved flow, a mediator object is necessary.  This allows the
+ * RANS, subgrid, hybrid parameter, and resolved flow equations to follow the
  * single responsibility principle, while this class makes sure they
  * have the information they need.
  *
@@ -220,15 +220,15 @@ class CAbstract_Hybrid_Mediator {
                                      unsigned short iPoint) = 0;
 
   /**
-   * \brief Retrieve and pass along all necessary info for the mean numerics.
+   * \brief Retrieve and pass along all necessary info for resolved numerics.
    *
    * \param[in] geometry - A pointer to the geometry
    * \param[in] solver_container - An array of solvers
-   * \param[in] visc_numerics - The viscous numerics for the mean flow solver
+   * \param[in] visc_numerics - The viscous numerics for the resolved flow solver
    * \param[in] iPoint - The number of the node being evaluated
    * \param[in] jPoint - The number of the opposite node
    */
-  virtual void SetupMeanFlowNumerics(CGeometry* geometry,
+  virtual void SetupResolvedFlowNumerics(CGeometry* geometry,
                                      CSolver **solver_container,
                                      CNumerics* visc_numerics,
                                      unsigned short iPoint,
@@ -355,11 +355,11 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
    *
    * \param[in] geometry - A pointer to the geometry
    * \param[in] solver_container - An array of solvers
-   * \param[in] visc_numerics - The viscous numerics for the mean flow solver
+   * \param[in] visc_numerics - The viscous numerics for the resolved flow solver
    * \param[in] iPoint - The number of the node being evaluated
    * \param[in] jPoint - The number of the opposite node
    */
-  void SetupMeanFlowNumerics(CGeometry* geometry,
+  void SetupResolvedFlowNumerics(CGeometry* geometry,
                              CSolver **solver_container,
                              CNumerics* visc_numerics,
                              unsigned short iPoint,
