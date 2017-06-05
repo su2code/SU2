@@ -1894,7 +1894,7 @@ inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long va
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
 
-inline void CBlendingSolver::AddHybridMediator(CAbstract_Hybrid_Mediator* hybrid_mediator) { HybridMediator = hybrid_mediator; }
+inline void CHybridSolver::AddHybridMediator(CAbstract_Hybrid_Mediator* hybrid_mediator) { HybridMediator = hybrid_mediator; }
 
 inline void CTurbSolver::AddHybridMediator(CAbstract_Hybrid_Mediator* hybrid_mediator) { HybridMediator = hybrid_mediator; }
 

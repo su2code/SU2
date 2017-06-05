@@ -230,10 +230,10 @@ inline void CNumerics::SetTurbTimescale(su2double val_turb_T) {
   TurbT = val_turb_T;
 }
 
-inline void CNumerics::SetBlendingCoef(su2double* val_blending_coef_i,
-                                       su2double* val_blending_coef_j) {
-  HybridBlendingCoef_i = val_blending_coef_i;
-  HybridBlendingCoef_j = val_blending_coef_j;
+inline void CNumerics::SetHybridParameter(su2double* val_hybrid_param_i,
+                                          su2double* val_hybrid_param_j) {
+  HybridParameter_i = val_hybrid_param_i;
+  HybridParameter_j = val_hybrid_param_j;
 }
 
 inline void CNumerics::SetResolutionTensor(su2double** val_resolution_tensor_i,

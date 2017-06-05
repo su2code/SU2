@@ -8795,13 +8795,13 @@ public:
 
 
 /*!
- * \class CBlendingSolver
- * \brief Base class for hybrid RANS/LES blending models.
- * \ingroup Hybrid_Blending_Model
+ * \class CHybridSolver
+ * \brief Base class for solving the transport equation for the hybrid parameter
+ * \ingroup Hybrid_Parameter_Model
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CBlendingSolver: public CSolver {
+class CHybridSolver: public CSolver {
 
  protected:
    su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
@@ -8813,17 +8813,17 @@ class CBlendingSolver: public CSolver {
    /*!
     * \brief Constructor of the class.
     */
-   CBlendingSolver();
+   CHybridSolver();
 
    /*!
     * \brief Destructor of the class.
     */
-   virtual ~CBlendingSolver(void);
+   virtual ~CHybridSolver(void);
 
    /*!
     * \brief Constructor of the class.
     */
-   CBlendingSolver(CConfig *config);
+   CHybridSolver(CConfig *config);
 
    /*!
     * \brief Impose the send-receive boundary condition.
@@ -8925,13 +8925,13 @@ class CBlendingSolver: public CSolver {
 
 
 /*!
- * \class CBlendingConvSolver
- * \brief Base class for hybrid RANS/LES blending models.
- * \ingroup Hybrid_Blending_Model
+ * \class CHybridConvSolver
+ * \brief Solver for the transport of the hybrid parameter (for hybrid RANS/LES)
+ * \ingroup Hybrid_Parameter_Model
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CBlendingConvSolver: public CBlendingSolver {
+class CHybridConvSolver: public CHybridSolver {
 private:
   const su2double alpha_Inf;
 
@@ -8939,7 +8939,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CBlendingConvSolver();
+  CHybridConvSolver();
 
   /*!
    * \overload
@@ -8948,12 +8948,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] FluidModel
    */
-  CBlendingConvSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  CHybridConvSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CBlendingConvSolver(void);
+  ~CHybridConvSolver(void);
 
   /*!
    * \brief Restart residual and compute gradients.

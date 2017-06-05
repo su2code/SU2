@@ -1,6 +1,6 @@
 /*!
- * \file numerics_direct_blending.cpp
- * \brief 
+ * \file numerics_direct_hybrid.cpp
+ * \brief This file contains all the discretizations for hybrid parameter(s).
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  *
@@ -33,7 +33,7 @@
 
 #include "../include/numerics_structure.hpp"
 
-CUpwSca_BlendingConv::CUpwSca_BlendingConv(unsigned short val_nDim,
+CUpwSca_HybridConv::CUpwSca_HybridConv(unsigned short val_nDim,
                                            unsigned short val_nVar,
                                            CConfig *config)
 : CNumerics(val_nDim, val_nVar, config) {
@@ -47,20 +47,20 @@ CUpwSca_BlendingConv::CUpwSca_BlendingConv(unsigned short val_nDim,
 
 }
 
-CUpwSca_BlendingConv::~CUpwSca_BlendingConv(void) {
+CUpwSca_HybridConv::~CUpwSca_HybridConv(void) {
 
   delete [] Velocity_i;
   delete [] Velocity_j;
 
 }
 
-void CUpwSca_BlendingConv::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_HybridConv::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
   q_ij = 0.0;
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
-  AD::SetPreaccIn(HybridBlendingCoef_i[0]); AD::SetPreaccIn(HybridBlendingCoef_j[0]);
+  AD::SetPreaccIn(HybridParameter_i[0]); AD::SetPreaccIn(HybridParameter_j[0]);
   AD::SetPreaccIn(Normal, nDim);
   if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
@@ -82,7 +82,7 @@ void CUpwSca_BlendingConv::ComputeResidual(su2double *val_residual, su2double **
 
   a0 = 0.5*(q_ij+fabs(q_ij));
   a1 = 0.5*(q_ij-fabs(q_ij));
-  val_residual[0] = a0*HybridBlendingCoef_i[0]+a1*HybridBlendingCoef_j[0];
+  val_residual[0] = a0*HybridParameter_i[0]+a1*HybridParameter_j[0];
 
   if (implicit) {
     val_Jacobian_i[0][0] = a0;
@@ -93,7 +93,7 @@ void CUpwSca_BlendingConv::ComputeResidual(su2double *val_residual, su2double **
   AD::EndPreacc();
 }
 
-CSourcePieceWise_BlendingConv::CSourcePieceWise_BlendingConv(unsigned short val_nDim, unsigned short val_nVar,
+CSourcePieceWise_HybridConv::CSourcePieceWise_HybridConv(unsigned short val_nDim, unsigned short val_nVar,
                                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -102,15 +102,15 @@ CSourcePieceWise_BlendingConv::CSourcePieceWise_BlendingConv(unsigned short val_
 
 }
 
-CSourcePieceWise_BlendingConv::~CSourcePieceWise_BlendingConv(void) { }
+CSourcePieceWise_HybridConv::~CSourcePieceWise_HybridConv(void) { }
 
-void CSourcePieceWise_BlendingConv::ComputeResidual(su2double *val_residual,
+void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
                                                     su2double **val_Jacobian_i,
                                                     su2double **val_Jacobian_j,
                                                     CConfig *config) {
   su2double udMdx; // Dot product of resolved velocity and resolution tensor gradient
   su2double max_udMdx; // Max value of the convection of the resolution tensor
-  su2double S_r, // Gentle switch between raising and lowering blending coefficient
+  su2double S_r, // Gentle switch between raising and lowering hybrid parameter
             S_c, // Source for removing turbulent scales
             T_c; // Timescale for removal of turbulent scales
 
@@ -124,7 +124,7 @@ void CSourcePieceWise_BlendingConv::ComputeResidual(su2double *val_residual,
     for (unsigned int jDim = 0; jDim < nDim; jDim++) {
       udMdx = 0.0;
       for (unsigned int kDim = 0; kDim < nDim; nDim++) {
-        //XXX: This is NOT upwinded.  It could be improved to upwind the product.
+        // XXX: This is NOT upwinded.  It could be improved to upwind the product.
         udMdx += V_i[kDim+1] * Resolution_Tensor_Gradient[kDim][iDim][jDim];
       }
       if (iDim == 0 and jDim == 0) max_udMdx = udMdx;

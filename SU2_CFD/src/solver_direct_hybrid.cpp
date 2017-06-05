@@ -1,6 +1,6 @@
 /*!
- * \file solver_direct_blending.cpp
- * \brief 
+ * \file solver_direct_hybrid.cpp
+ * \brief Main subroutines for solving the transport of the hybrid parameter
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  *
@@ -33,7 +33,7 @@
 
 #include "../include/solver_structure.hpp"
 
-CBlendingSolver::CBlendingSolver()
+CHybridSolver::CHybridSolver()
   : CSolver(){
 
   FlowPrimVar_i = NULL;
@@ -41,21 +41,21 @@ CBlendingSolver::CBlendingSolver()
 
 }
 
-CBlendingSolver::CBlendingSolver(CConfig *config) : CSolver() {
+CHybridSolver::CHybridSolver(CConfig *config) : CSolver() {
 
   FlowPrimVar_i = NULL;
   FlowPrimVar_j = NULL;
 
 }
 
-CBlendingSolver::~CBlendingSolver(void) {
+CHybridSolver::~CHybridSolver(void) {
 
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
 
 }
 
-void CBlendingSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
+void CHybridSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector, nBufferS_Scalar, nBufferR_Scalar;
   su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
@@ -132,7 +132,7 @@ void CBlendingSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CBlendingSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
+void CHybridSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
@@ -206,7 +206,7 @@ void CBlendingSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config)
   }
 }
 
-void CBlendingSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
+void CHybridSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
@@ -328,7 +328,7 @@ void CBlendingSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *co
 
 }
 
-void CBlendingSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
+void CHybridSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
@@ -407,12 +407,12 @@ void CBlendingSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *con
 
 }
 
-void CBlendingSolver::Upwind_Residual(CGeometry *geometry,
+void CHybridSolver::Upwind_Residual(CGeometry *geometry,
                                       CSolver **solver_container,
                                       CNumerics *numerics, CConfig *config,
                                       unsigned short iMesh) {
 
-  su2double *Blend_i, *Blend_j, *Limiter_i = NULL, *Limiter_j = NULL,
+  su2double *Hybrid_Param_i, *Hybrid_Param_j, *Limiter_i = NULL, *Limiter_j = NULL,
       *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
@@ -436,11 +436,11 @@ void CBlendingSolver::Upwind_Residual(CGeometry *geometry,
     V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
     numerics->SetPrimitive(V_i, V_j);
 
-    /*--- Blending variables w/o reconstruction ---*/
+    /*--- hybrid parameters w/o reconstruction ---*/
 
-    Blend_i = node[iPoint]->GetSolution();
-    Blend_j = node[jPoint]->GetSolution();
-    numerics->SetBlendingCoef(Blend_i, Blend_j);
+    Hybrid_Param_i = node[iPoint]->GetSolution();
+    Hybrid_Param_j = node[jPoint]->GetSolution();
+    numerics->SetHybridParameter(Hybrid_Param_i, Hybrid_Param_j);
 
     /*--- Grid Movement ---*/
 
@@ -484,7 +484,7 @@ void CBlendingSolver::Upwind_Residual(CGeometry *geometry,
 
       numerics->SetPrimitive(FlowPrimVar_i, FlowPrimVar_j);
 
-      /*--- Blending variables using gradient reconstruction and limiters ---*/
+      /*--- hybrid parameters using gradient reconstruction and limiters ---*/
 
       Gradient_i = node[iPoint]->GetGradient();
       Gradient_j = node[jPoint]->GetGradient();
@@ -500,16 +500,16 @@ void CBlendingSolver::Upwind_Residual(CGeometry *geometry,
           Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
         }
         if (limiter) {
-          Solution_i[iVar] = Blend_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          Solution_j[iVar] = Blend_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+          Solution_i[iVar] = Hybrid_Param_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+          Solution_j[iVar] = Hybrid_Param_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
         }
         else {
-          Solution_i[iVar] = Blend_i[iVar] + Project_Grad_i;
-          Solution_j[iVar] = Blend_j[iVar] + Project_Grad_j;
+          Solution_i[iVar] = Hybrid_Param_i[iVar] + Project_Grad_i;
+          Solution_j[iVar] = Hybrid_Param_j[iVar] + Project_Grad_j;
         }
       }
 
-      numerics->SetBlendingCoef(Solution_i, Solution_j);
+      numerics->SetHybridParameter(Solution_i, Solution_j);
 
     }
 
@@ -531,7 +531,7 @@ void CBlendingSolver::Upwind_Residual(CGeometry *geometry,
 
 }
 
-void CBlendingConvSolver::Source_Residual(CGeometry *geometry,
+void CHybridConvSolver::Source_Residual(CGeometry *geometry,
                                           CSolver **solver_container,
                                           CNumerics *numerics,
                                           CNumerics *second_numerics,
@@ -550,7 +550,7 @@ void CBlendingConvSolver::Source_Residual(CGeometry *geometry,
 
     /*--- Hybrid method ---*/
 
-    HybridMediator->SetupBlendingNumerics(geometry, solver_container, numerics, iPoint, iPoint);
+    HybridMediator->SetupHybridParamNumerics(geometry, solver_container, numerics, iPoint, iPoint);
 
     /*--- Pass the gradient of the resolution tensor to the numerics ---*/
 
@@ -575,20 +575,20 @@ void CBlendingConvSolver::Source_Residual(CGeometry *geometry,
 
 }
 
-void CBlendingSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Convective fluxes across symmetry plane are equal to zero. ---*/
 
 }
 
-void CBlendingSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
+void CHybridSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Convective fluxes across euler wall are equal to zero. ---*/
 
 }
 
-void CBlendingSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CHybridSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned short iVar;
   unsigned long iPoint, total_index;
@@ -648,7 +648,7 @@ void CBlendingSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   if (!adjoint) {
 
-    /*--- Update and clip blending solution ---*/
+    /*--- Update and clip hybrid solution ---*/
 
     switch (config->GetKind_Hybrid_Blending()) {
     // FIXME: Update with Jacobian information
@@ -667,7 +667,7 @@ void CBlendingSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
 }
 
-void CBlendingSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+void CHybridSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
   /*--- Local variables ---*/
@@ -872,7 +872,7 @@ void CBlendingSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 }
 
 
-void CBlendingSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
+void CHybridSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
 
   /*--- Restart the solution from file information ---*/
 
@@ -978,8 +978,8 @@ void CBlendingSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
-  solver[MESH_0][BLEND_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  solver[MESH_0][BLEND_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+  solver[MESH_0][HYBRID_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][HYBRID_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -990,20 +990,20 @@ void CBlendingSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
         Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
         Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-        Solution_Fine = solver[iMesh-1][BLEND_SOL]->node[Point_Fine]->GetSolution();
+        Solution_Fine = solver[iMesh-1][HYBRID_SOL]->node[Point_Fine]->GetSolution();
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
         }
       }
-      solver[iMesh][BLEND_SOL]->node[iPoint]->SetSolution(Solution);
+      solver[iMesh][HYBRID_SOL]->node[iPoint]->SetSolution(Solution);
     }
-    solver[iMesh][BLEND_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-    solver[iMesh][BLEND_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+    solver[iMesh][HYBRID_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][HYBRID_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
 
 }
 
-CBlendingConvSolver::CBlendingConvSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CBlendingSolver(), alpha_Inf(1.0) {
+CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CHybridSolver(), alpha_Inf(1.0) {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
   su2double Density_Inf, Viscosity_Inf, dull_val;
@@ -1129,7 +1129,7 @@ CBlendingConvSolver::CBlendingConvSolver(CGeometry *geometry, CConfig *config, u
   /*--- Restart the solution from file information ---*/
   if (!restart || (iMesh != MESH_0)) {
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CBlendingConvVariable(alpha_Inf, nDim, nVar, config);
+      node[iPoint] = new CHybridConvVariable(alpha_Inf, nDim, nVar, config);
   }
   else {
 
@@ -1218,7 +1218,7 @@ CBlendingConvSolver::CBlendingConvSolver(CGeometry *geometry, CConfig *config, u
         }
 
         /*--- Instantiate the solution at this node, note that the eddy viscosity should be recomputed ---*/
-        node[iPoint_Local] = new CBlendingConvVariable(Solution[0], nDim, nVar, config);
+        node[iPoint_Local] = new CHybridConvVariable(Solution[0], nDim, nVar, config);
         iPoint_Global_Local++;
       }
 
@@ -1251,7 +1251,7 @@ CBlendingConvSolver::CBlendingConvSolver(CGeometry *geometry, CConfig *config, u
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CBlendingConvVariable(Solution[0], nDim, nVar, config);
+      node[iPoint] = new CHybridConvVariable(Solution[0], nDim, nVar, config);
     }
 
     /*--- Close the restart file ---*/
@@ -1264,11 +1264,11 @@ CBlendingConvSolver::CBlendingConvSolver(CGeometry *geometry, CConfig *config, u
 
 }
 
-CBlendingConvSolver::~CBlendingConvSolver(void) {
+CHybridConvSolver::~CHybridConvSolver(void) {
 
 }
 
-void CBlendingConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint;
 
@@ -1285,7 +1285,7 @@ void CBlendingConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
 
   /*--- Use the hybrid mediator to set up the solver ---*/
 
-  HybridMediator->SetupBlendingSolver(geometry, solver_container, iPoint);
+  HybridMediator->SetupHybridParamSolver(geometry, solver_container, iPoint);
 
   /*--- Initialize the Jacobian matrices ---*/
 
@@ -1302,10 +1302,10 @@ void CBlendingConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CBlendingConvSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+void CHybridConvSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 }
 
-void CBlendingConvSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridConvSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex;
   unsigned short iVar;
 
@@ -1332,7 +1332,7 @@ void CBlendingConvSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver
 
 }
 
-void CBlendingConvSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CHybridConvSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
   unsigned long iPoint, iVertex;
   unsigned short iVar;
@@ -1359,7 +1359,7 @@ void CBlendingConvSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solv
 
 }
 
-void CBlendingConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
@@ -1392,12 +1392,12 @@ void CBlendingConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_con
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
-      /*--- Set blending variable at the wall, and at infinity ---*/
+      /*--- Set hybrid parameter at the wall, and at infinity ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
         Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
       Solution_j[0] = alpha_Inf;
-      conv_numerics->SetBlendingCoef(Solution_i, Solution_j);
+      conv_numerics->SetHybridParameter(Solution_i, Solution_j);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -1422,7 +1422,7 @@ void CBlendingConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_con
 
 }
 
-void CBlendingConvSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridConvSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -1464,12 +1464,12 @@ void CBlendingConvSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-      /*--- Set the blending variable states (prescribed for an inflow) ---*/
+      /*--- Set the hybrid parameter states (prescribed for an inflow) ---*/
 
       Solution_i[0] = node[iPoint]->GetSolution(0);
       Solution_j[0] = alpha_Inf;
 
-      conv_numerics->SetBlendingCoef(Solution_i, Solution_j);
+      conv_numerics->SetHybridParameter(Solution_i, Solution_j);
 
       /*--- Set various other quantities in the conv_numerics class ---*/
 
@@ -1501,7 +1501,7 @@ void CBlendingConvSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-void CBlendingConvSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+void CHybridConvSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;
@@ -1536,17 +1536,15 @@ void CBlendingConvSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
 
       conv_numerics->SetPrimitive(V_domain, V_outlet);
 
-      /*--- Set the blending variables. Here we use a Neumann BC such
-       that the blending variable is copied from the interior of the
-       domain to the outlet before computing the residual.
-       Solution_i --> BlendingVar_internal,
-       Solution_j --> BlendingVar_outlet ---*/
+      /*--- Set the hybrid parameters. Here we use a Neumann BC such
+       that the hybrid parameter is copied from the interior of the
+       domain to the outlet before computing the residual. ---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
         Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
         Solution_j[iVar] = node[iPoint]->GetSolution(iVar);
       }
-      conv_numerics->SetBlendingCoef(Solution_i, Solution_j);
+      conv_numerics->SetHybridParameter(Solution_i, Solution_j);
 
       /*--- Set Normal (negate for outward convention) ---*/
 
@@ -1582,7 +1580,7 @@ void CBlendingConvSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
 
 }
 
-void CBlendingConvSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridConvSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
   unsigned short iDim;
@@ -1612,11 +1610,11 @@ void CBlendingConvSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver
 
       conv_numerics->SetPrimitive(V_domain, V_inflow);
 
-      /*--- Set the blending variables. Here we use a Neumann BC such
-       that the blending variable is copied from the interior of the
+      /*--- Set the hybrid parameters. Here we use a Neumann BC such
+       that the hybrid parameter is copied from the interior of the
        domain to the outlet before computing the residual. ---*/
 
-      conv_numerics->SetBlendingCoef(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+      conv_numerics->SetHybridParameter(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
 
       /*--- Set Normal (negate for outward convention) ---*/
 
@@ -1648,7 +1646,7 @@ void CBlendingConvSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver
 
 }
 
-void CBlendingConvSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridConvSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
   unsigned long iVertex, iPoint;
@@ -1685,12 +1683,12 @@ void CBlendingConvSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solve
 
       conv_numerics->SetPrimitive(V_domain, V_exhaust);
 
-      /*--- Set the blending variable states (prescribed for an inflow) ---*/
+      /*--- Set the hybrid parameter states (prescribed for an inflow) ---*/
 
       Solution_i[0] = node[iPoint]->GetSolution(0);
       Solution_j[0] = alpha_Inf;
 
-      conv_numerics->SetBlendingCoef(Solution_i, Solution_j);
+      conv_numerics->SetHybridParameter(Solution_i, Solution_j);
 
       /*--- Set various other quantities in the conv_numerics class ---*/
 
@@ -1719,7 +1717,7 @@ void CBlendingConvSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solve
 
 }
 
-void CBlendingConvSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CHybridConvSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics,
@@ -1727,7 +1725,7 @@ void CBlendingConvSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver
 
 }
 
-void CBlendingConvSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CHybridConvSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics,
@@ -1735,7 +1733,7 @@ void CBlendingConvSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solve
 
 }
 
-void CBlendingConvSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+void CHybridConvSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                CConfig *config, unsigned short val_marker, bool inlet_surface) {
 
   unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex, iPoint_Normal;
@@ -1804,11 +1802,11 @@ void CBlendingConvSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_conta
           conv_numerics->SetPrimitive(V_domain, V_outlet);
         }
 
-        /*--- Set the blending variable solution
-         set  the blending variables. Here we use a Neumann BC such
-         that the blending variable is copied from the interior of the
+        /*--- Set the hybrid parameter solution
+         set  the hybrid parameters. Here we use a Neumann BC such
+         that the hybrid parameter is copied from the interior of the
          domain to the outlet before computing the residual.
-         or set the blending variable states (prescribed for an inflow)  ----*/
+         or set the hybrid parameter states (prescribed for an inflow)  ----*/
 
         Solution_i[0] = node[iPoint]->GetSolution(0);
 
@@ -1823,7 +1821,7 @@ void CBlendingConvSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_conta
           Solution_j[0] = alpha_Inf;
         }
 
-        conv_numerics->SetBlendingCoef(Solution_i, Solution_j);
+        conv_numerics->SetHybridParameter(Solution_i, Solution_j);
 
         /*--- Grid Movement ---*/
 
@@ -1855,17 +1853,17 @@ void CBlendingConvSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CBlendingConvSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CHybridConvSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                           CConfig *config, unsigned short val_marker) {
-  //FIXME: BC_Interface_Boundary not yet finished for blending solver
+  //FIXME: BC_Interface_Boundary not yet finished for hybrid parameter solver
 }
 
-void CBlendingConvSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CHybridConvSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                           CConfig *config, unsigned short val_marker) {
-  //FIXME: BC_Interface_Boundary not yet finished for blending solver
+  //FIXME: BC_Interface_Boundary not yet finished for hybrid parameter solver
 }
 
-void CBlendingConvSolver::SetFreeStream_Solution(CConfig *config) {
+void CHybridConvSolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint]->SetSolution(0, alpha_Inf);
 }

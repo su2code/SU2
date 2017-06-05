@@ -101,8 +101,8 @@ public:
   su2double Resolution_Adequacy; /*!< \brief Resolution adequacy parameter for a hybrid RANS/LES at point i. */
   su2double TurbT, /*!< \brief Turbulent timescale */
             TurbL; /*!< \brief Turbulent lengthscale */
-  su2double *HybridBlendingCoef_i, /*!< \brief Vector of variables for hybrid RANS/LES blending at point i. */
-            *HybridBlendingCoef_j; /*!< \brief Vector of variables for hybrid RANS/LES blending at point j. */
+  su2double *HybridParameter_i, /*!< \brief Vector of variables for hybrid RANS/LES "hybrid parameters" at point i. */
+            *HybridParameter_j; /*!< \brief Vector of variables for hybrid RANS/LES "hybrid parameters" at point j. */
   su2double turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;      /*!< \brief Turbulent kinetic energy at point j. */
   su2double Pressure_i,  /*!< \brief Pressure at point i. */
@@ -533,10 +533,10 @@ public:
 
   /*!
    * \brief Set the value of the hybrid RANS/LES blending variable.
-   * \param[in] val_blending_coef_i - Value of the blending coefficient(s) at point i.
-   * \param[in] val_blending_coef_j - Value of the blending coefficient(s) at point j.
+   * \param[in] val_hybrid_param_i - Value of the hybrid parameter(s) at point i.
+   * \param[in] val_hybrid_param_j - Value of the hybrid parameter(s) at point j.
    */
-  void SetBlendingCoef(su2double* val_blending_coef_i, su2double* val_blending_coef_j);
+  void SetHybridParameter(su2double* val_hybrid_param_i, su2double* val_hybrid_param_j);
 
   /*!
    * \brief Set the resolution tensors
@@ -2342,14 +2342,14 @@ public:
 };
 
 /*!
- * \class CUpwSca_BlendingConv
+ * \class CUpwSca_HybridConv
  * \brief Class for doing a scalar upwind solver for the hybrid RANS/LES
  *        blending equation.
  * \ingroup ConvDiscr
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CUpwSca_BlendingConv : public CNumerics {
+class CUpwSca_HybridConv : public CNumerics {
 private:
   su2double *Velocity_i, *Velocity_j;
   bool implicit, grid_movement, incompressible;
@@ -2364,13 +2364,13 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_BlendingConv(unsigned short val_nDim,
+  CUpwSca_HybridConv(unsigned short val_nDim,
                        unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwSca_BlendingConv(void);
+  ~CUpwSca_HybridConv(void);
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -4482,13 +4482,14 @@ public:
 };
 
 /*!
- * \class CSourcePieceWise_BlendingConv
- * \brief Class for integrating the source terms of the hybrid RANS/LES blending.
+ * \class CSourcePieceWise_HybridConv
+ * \brief Class for integrating the source terms of the transport equation for
+ *        the hybrid parameters (in a hybrid RANS/LES model).
  * \ingroup SourceDiscr
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CSourcePieceWise_BlendingConv : public CNumerics {
+class CSourcePieceWise_HybridConv : public CNumerics {
 private:
   bool incompressible;
   bool rotating_frame;
@@ -4501,12 +4502,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourcePieceWise_BlendingConv(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourcePieceWise_HybridConv(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourcePieceWise_BlendingConv(void);
+  ~CSourcePieceWise_HybridConv(void);
 
   /*!
    * \brief Residual for source term integration.

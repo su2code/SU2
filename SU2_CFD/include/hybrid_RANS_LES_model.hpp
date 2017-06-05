@@ -145,9 +145,9 @@ class CHybrid_Aniso_Q : public CHybrid_Visc_Anisotropy {
  * \class CAbstract_Hybrid_Mediator
  * \brief Base abstract class for a hybrid model mediator object.
  *
- * In order to decouple the RANS model, the subgrid model, the blending,
+ * In order to decouple the RANS model, the subgrid model, the hybrid parameter,
  * and the mean flow, a mediator object is necessary.  This allows the
- * RANS, subgrid, blending, and mean flow equations to follow the
+ * RANS, subgrid, hybrid parameter, and mean flow equations to follow the
  * single responsibility principle, while this class makes sure they
  * have the information they need.
  *
@@ -180,30 +180,30 @@ class CAbstract_Hybrid_Mediator {
                                  unsigned short jPoint) = 0;
 
   /**
-   * \brief Retrieve and pass along all necessary info for the blending solver   *
+   * \brief Retrieve and pass along all necessary info for the hybrid solver
    *
    * \param[in] geometry - A pointer to the geometry
    * \param[in] solver_container - An array of solvers
    * \param[in] iPoint - The node being evaluated
    */
-  virtual void SetupBlendingSolver(CGeometry* geometry,
-                                   CSolver **solver_container,
-                                   unsigned short iPoint) = 0;
+  virtual void SetupHybridParamSolver(CGeometry* geometry,
+                                      CSolver **solver_container,
+                                      unsigned short iPoint) = 0;
 
   /**
-   * \brief Retrieve and pass along all necessary info for the blending numerics
+   * \brief Retrieve and pass along all necessary info for the hybrid parameter numerics
    *
    * \param[in] geometry - A pointer to the geometry
    * \param[in] solver_container - An array of solvers
-   * \param[in] blending_numerics - The source numerics for the blending solver
+   * \param[in] hybrid_numerics - The source numerics for the hybrid parameter
    * \param[in] iPoint - The number of the node being evaluated
    * \param[in] jPoint - The number of the opposite node
    */
-  virtual void SetupBlendingNumerics(CGeometry* geometry,
-                                     CSolver **solver_container,
-                                     CNumerics *blending_numerics,
-                                     unsigned short iPoint,
-                                     unsigned short jPoint) = 0;
+  virtual void SetupHybridParamNumerics(CGeometry* geometry,
+                                        CSolver **solver_container,
+                                        CNumerics *hybrid_numerics,
+                                        unsigned short iPoint,
+                                        unsigned short jPoint) = 0;
 
   /**
    * \brief Retrieve and pass along all necessary info for the stress
@@ -240,9 +240,9 @@ class CAbstract_Hybrid_Mediator {
  * \class CHybrid_Mediator
  * \brief Mediator object for the Q-based hybrid RANS/LES model.
  *
- * In order to decouple the RANS model, the subgrid model, the blending,
+ * In order to decouple the RANS model, the subgrid model, the hybrid parameter,
  * and the resolved flow, a mediator object is necessary.  This allows the
- * RANS, subgrid, blending, and resolved flow equations to follow the
+ * RANS, subgrid, hybrid parameter, and resolved flow equations to follow the
  * single responsibility principle, while this class makes sure they
  * have the information they need.
  *
@@ -296,9 +296,9 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   ~CHybrid_Mediator();
 
   /**
-   * \brief RANS needs the blending coefficient (the energy flow parameter).
+   * \brief RANS needs the hybrid parameter (the energy flow parameter).
    *
-   * This function sets the blending coefficient from the previous timestep.
+   * This function sets the hybrid parameter from the previous timestep.
    *
    * \param[in] geometry - A pointer to the geometry
    * \param[in] solver_container - An array of solvers
@@ -311,29 +311,29 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
                          unsigned short iPoint, unsigned short jPoint);
 
   /**
-   * \brief The blending solver needs the resolution adequacy parameter, which
+   * \brief The hybrid solver needs the resolution adequacy parameter, which
    *        is dependent on RANS results.
    *
    * \param[in] geometry - A pointer to the geometry
    * \param[in] solver_container - An array of solvers
    * \param[in] iPoint - The node being evaluated
    */
-  void SetupBlendingSolver(CGeometry* geometry, CSolver **solver_container,
+  void SetupHybridParamSolver(CGeometry* geometry, CSolver **solver_container,
                            unsigned short iPoint);
 
   /**
-   * \brief The blending numerics need the turbulence length and timescales as
+   * \brief The hybrid numerics need the turbulence length and timescales as
    *        well as the resolution adequacy parameter.
    *
    * \param[in] geometry - A pointer to the geometry
    * \param[in] solver_container - An array of solvers
-   * \param[in] blending_numerics - The source numerics for the blending solver
+   * \param[in] hybrid_numerics - The source numerics for the hybrid parameter
    * \param[in] iPoint - The number of the node being evaluated
    * \param[in] jPoint - The number of the opposite node
    */
-  void SetupBlendingNumerics(CGeometry* geometry, CSolver **solver_container,
-                             CNumerics *blending_numerics,
-                             unsigned short iPoint, unsigned short jPoint);
+  void SetupHybridParamNumerics(CGeometry* geometry, CSolver **solver_container,
+                                CNumerics *hybrid_param_numerics,
+                                unsigned short iPoint, unsigned short jPoint);
 
   /**
    * \brief The turbulent stress anisotropy needs the weighting factor and the
@@ -350,7 +350,7 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
                              unsigned short iPoint);
 
   /**
-   * \brief The resolved flow needs the blending coefficient (the energy flow
+   * \brief The resolved flow needs the hybrid parameter (the energy flow
    *        parameter) and the turbulent stress anisotropy tensor.
    *
    * \param[in] geometry - A pointer to the geometry

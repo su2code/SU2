@@ -95,7 +95,7 @@ libSU2Core_sources = \
   ../src/numerics_direct_mean_inc.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
-  ../src/numerics_direct_blending.cpp \
+  ../src/numerics_direct_hybrid.cpp \
   ../src/numerics_direct_wave.cpp \
   ../src/numerics_direct_elasticity_nonlinear.cpp \
   ../src/numerics_direct_elasticity_linear.cpp \
@@ -118,7 +118,7 @@ libSU2Core_sources = \
   ../src/solver_direct_mean_inc.cpp \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
-  ../src/solver_direct_blending.cpp \
+  ../src/solver_direct_hybrid.cpp \
   ../src/solver_direct_wave.cpp \
   ../src/solver_direct_elasticity.cpp \
   ../src/solver_structure.cpp \
@@ -137,7 +137,7 @@ libSU2Core_sources = \
   ../src/variable_direct_mean_inc.cpp \
   ../src/variable_direct_transition.cpp \
   ../src/variable_direct_turbulent.cpp \
-  ../src/variable_direct_blending.cpp \
+  ../src/variable_direct_hybrid.cpp \
   ../src/variable_direct_wave.cpp \
   ../src/variable_direct_elasticity.cpp \
   ../src/variable_structure.cpp \

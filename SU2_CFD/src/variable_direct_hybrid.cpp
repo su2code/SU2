@@ -1,6 +1,6 @@
 /*!
- * \file variable_direct_blending.cpp
- * \brief Definition of the blending variables for hybrid RANS/LES
+ * \file variable_direct_hybrid.cpp
+ * \brief Definition of the hybrid parameter(s) for hybrid RANS/LES
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  *
@@ -33,12 +33,12 @@
 
 #include "../include/variable_structure.hpp"
 
-CBlendingVariable::CBlendingVariable(void) {
+CHybridVariable::CHybridVariable(void) {
 }
 
-CBlendingVariable::~CBlendingVariable(void) {};
+CHybridVariable::~CHybridVariable(void) {};
 
-CBlendingVariable::CBlendingVariable(unsigned short val_nDim,
+CHybridVariable::CHybridVariable(unsigned short val_nDim,
                                      unsigned short val_nvar,
                                      CConfig *config)
   : CVariable(val_nDim, val_nvar, config) {
@@ -60,26 +60,26 @@ CBlendingVariable::CBlendingVariable(unsigned short val_nDim,
 
 }
 
-CBlendingConvVariable::CBlendingConvVariable(su2double val_blending_coef,
+CHybridConvVariable::CHybridConvVariable(su2double val_hybrid_param,
                                              unsigned short val_nDim,
                                              unsigned short val_nvar,
                                              CConfig *config)
-  : CBlendingVariable(val_nDim, val_nvar, config) {
+  : CHybridVariable(val_nDim, val_nvar, config) {
 
     bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
-    /*--- Initialization of blending coefficient ---*/
-    Solution[0] = val_blending_coef;    Solution_Old[0] = val_blending_coef;
+    /*--- Initialization of hybrid parameter ---*/
+    Solution[0] = val_hybrid_param;    Solution_Old[0] = val_hybrid_param;
 
     /*--- Allocate and initialize solution for the dual time strategy ---*/
     if (dual_time) {
-      Solution_time_n[0]  = val_blending_coef;
-      Solution_time_n1[0] = val_blending_coef;
+      Solution_time_n[0]  = val_hybrid_param;
+      Solution_time_n1[0] = val_hybrid_param;
     }
 
 }
 
-CBlendingConvVariable::~CBlendingConvVariable(void) {};
+CHybridConvVariable::~CHybridConvVariable(void) {};
 
 

@@ -114,10 +114,10 @@ int main() {
     resolution_j[iDim][iDim] = 1.0;
   }
 
-  su2double* blending_coef_i = new su2double[1];
-  su2double* blending_coef_j = new su2double[1];
-  blending_coef_i[0] = 1.0;
-  blending_coef_j[0] = 1.0;
+  su2double* hybrid_param_i = new su2double[1];
+  su2double* hybrid_param_j = new su2double[1];
+  hybrid_param_i[0] = 1.0;
+  hybrid_param_j[0] = 1.0;
 
   su2double** anisotropy_i = new su2double*[nDim];
   su2double** anisotropy_j = new su2double*[nDim];
@@ -154,7 +154,7 @@ int main() {
    isotropic_numerics.SetPrimVarGradient(primvar_grad_i, primvar_grad_j);
    isotropic_numerics.ComputeResidual(residual_a, Jacobian_i, Jacobian_j, test_config);
 
-   anisotropic_numerics.SetBlendingCoef(blending_coef_i, blending_coef_j);
+   anisotropic_numerics.SetHybridParameter(hybrid_param_i, hybrid_param_j);
    anisotropic_numerics.SetNormal(normal);
    anisotropic_numerics.SetResolutionTensor(resolution_i, resolution_j);
    anisotropic_numerics.SetPrimitive(primvar_i, primvar_j);

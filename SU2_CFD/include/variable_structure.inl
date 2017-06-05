@@ -1187,9 +1187,9 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
   }
 }
 
-inline void CBlendingVariable::SetResolutionAdequacy(su2double val_r_k) { resolution_adequacy = val_r_k;}
+inline void CHybridVariable::SetResolutionAdequacy(su2double val_r_k) { resolution_adequacy = val_r_k;}
 
-inline su2double CBlendingVariable::GetResolutionAdequacy() { return resolution_adequacy; }
+inline su2double CHybridVariable::GetResolutionAdequacy() { return resolution_adequacy; }
 
 inline void CNSVariable::SetEddyViscAnisotropy(su2double** val_anisotropy) {
     // Copy values instead of copying pointers to values that may change

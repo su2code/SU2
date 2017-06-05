@@ -123,12 +123,12 @@ void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
                                          unsigned short iPoint,
                                          unsigned short jPoint) {
   su2double* alpha =
-      solver_container[BLEND_SOL]->node[iPoint]->GetSolution();
+      solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
   // TODO: Check what other source term functions do for Set/Get
-  rans_numerics->SetBlendingCoef(alpha, alpha);
+  rans_numerics->SetHybridParameter(alpha, alpha);
 }
 
-void CHybrid_Mediator::SetupBlendingSolver(CGeometry* geometry,
+void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
                                            CSolver **solver_container,
                                            unsigned short iPoint) {
 
@@ -141,12 +141,12 @@ void CHybrid_Mediator::SetupBlendingSolver(CGeometry* geometry,
 
   CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Q);
   su2double r_k = CalculateRk(Q, v2_);
-  solver_container[BLEND_SOL]->node[iPoint]->SetResolutionAdequacy(r_k);
+  solver_container[HYBRID_SOL]->node[iPoint]->SetResolutionAdequacy(r_k);
 }
 
-void CHybrid_Mediator::SetupBlendingNumerics(CGeometry* geometry,
+void CHybrid_Mediator::SetupHybridParamNumerics(CGeometry* geometry,
                                              CSolver **solver_container,
-                                             CNumerics *blending_numerics,
+                                             CNumerics *hybrid_param_numerics,
                                              unsigned short iPoint,
                                              unsigned short jPoint) {
 
@@ -166,13 +166,13 @@ void CHybrid_Mediator::SetupBlendingNumerics(CGeometry* geometry,
     exit(EXIT_FAILURE);
   }
 
-  blending_numerics->SetTurbTimescale(turb_T);
-  blending_numerics->SetTurbLengthscale(turb_L);
+  hybrid_param_numerics->SetTurbTimescale(turb_T);
+  hybrid_param_numerics->SetTurbLengthscale(turb_L);
 
   /*--- Pass resolution adequacy into the numerics object ---*/
 
-  su2double r_k = solver_container[BLEND_SOL]->node[iPoint]->GetSolution(0);
-  blending_numerics->SetResolutionAdequacy(r_k);
+  su2double r_k = solver_container[HYBRID_SOL]->node[iPoint]->GetSolution(0);
+  hybrid_param_numerics->SetResolutionAdequacy(r_k);
 }
 
 void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
@@ -191,7 +191,7 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
 
   /*--- Retrieve and pass along the resolution adequacy parameter ---*/
 
-  su2double r_k = solver_container[BLEND_SOL]->node[iPoint]->GetResolutionAdequacy();
+  su2double r_k = solver_container[HYBRID_SOL]->node[iPoint]->GetResolutionAdequacy();
   hybrid_anisotropy->SetResolutionAdequacy(r_k);
 }
 
@@ -203,9 +203,9 @@ void CHybrid_Mediator::SetupMeanFlowNumerics(CGeometry* geometry,
 
   /*--- Pass alpha to the mean flow ---*/
 
-  su2double* alpha_i = solver_container[BLEND_SOL]->node[iPoint]->GetSolution();
-  su2double* alpha_j = solver_container[BLEND_SOL]->node[jPoint]->GetSolution();
-  visc_numerics->SetBlendingCoef(alpha_i, alpha_j);
+  su2double* alpha_i = solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
+  su2double* alpha_j = solver_container[HYBRID_SOL]->node[jPoint]->GetSolution();
+  visc_numerics->SetHybridParameter(alpha_i, alpha_j);
 
   /*--- Pass the stress anisotropy tensor to the mean flow ---*/
 

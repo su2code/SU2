@@ -457,7 +457,7 @@ private:
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
-  bool Hybrid_Turb_Model;  /*!< \brief A k-based blending hybrid model will be used. */
+  bool Hybrid_Turb_Model;  /*!< \brief A hybrid RANS/LES model (other than DES) will be used. */
   unsigned short Kind_Hybrid_Blending; /*!< \brief Hybrid RANS/LES blending definition */
   unsigned short Kind_Hybrid_Aniso_Model; /*!< \brief Hybrid RANS/LES subgrid anisotropy model definition */
   su2double Hybrid_Model_Constant; /*!< \brief Model constant relating the approximate second order structure function to the unresolved turbulent kinetic energy */

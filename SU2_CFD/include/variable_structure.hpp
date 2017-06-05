@@ -3852,25 +3852,26 @@ public:
 };
 
 /*!
- * \class CBlendingVariable
- * \brief Base class for the variables pertaining to a hybrid RANS/LES blending.
- * \ingroup Hybrid_Blending_Model
+ * \class CHybridVariable
+ * \brief Base class for the "hybrid parameters"; the variables defining the
+ *        hybridization of RANS/LES.
+ * \ingroup Hybrid_Parameter_Model
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CBlendingVariable : public CVariable {
+class CHybridVariable : public CVariable {
 protected:
   su2double resolution_adequacy; /*!< \brief A measure of the ability of the grid to resolve the turbulence */
 public:
   /*!
    * \brief Constructor of the class.
    */
-  CBlendingVariable(void);
+  CHybridVariable(void);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CBlendingVariable(void);
+  virtual ~CHybridVariable(void);
 
   /*!
    * \overload
@@ -3878,7 +3879,7 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CBlendingVariable(unsigned short val_nDim, unsigned short val_nvar,
+  CHybridVariable(unsigned short val_nDim, unsigned short val_nvar,
                     CConfig *config);
 
   /*!
@@ -3895,32 +3896,33 @@ public:
 };
 
 /*!
- * \class CBlendingVariable
- * \brief Base class for the variables pertaining to a hybrid RANS/LES blending.
- * \ingroup Hybrid_Blending_Model
+ * \class CHybridConvVariable
+ * \brief Hybrid parameter corresponding to Gadebusch and Perot's method
+ * \ingroup Hybrid_Parameter_Model
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CBlendingConvVariable : public CBlendingVariable {
+class CHybridConvVariable : public CHybridVariable {
 public:
   /*!
    * \brief Constructor of the class.
    */
-  CBlendingConvVariable(void);
+  CHybridConvVariable(void);
 
   /*!
    * \overload
+   * \param[in] hybrid_param - The hybrid parameter ("energy flow" parameter)
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CBlendingConvVariable(su2double blending_coef, unsigned short val_nDim,
-                        unsigned short val_nvar, CConfig *config);
+  CHybridConvVariable(su2double hybrid_param, unsigned short val_nDim,
+                      unsigned short val_nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CBlendingConvVariable(void);
+  ~CHybridConvVariable(void);
 };
 
 /*!
