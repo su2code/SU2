@@ -848,6 +848,7 @@ private:
   su2double Quadrature_Factor_Time_ADER_DG;  /*!< \brief Factor applied during quadrature in time for ADER-DG. */
   su2double Theta_Interior_Penalty_DGFEM;    /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
   bool Store_Cart_Grad_BasisFunctions_DGFEM; /*!< \brief Flag to know if the Cartesian gradients of the DGFEM basis functions are stored. */
+  bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
   bool Body_Force;  			     /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;              /*!< \brief Values of the prescribed body force vector. */
 
@@ -7011,6 +7012,13 @@ public:
    * \return The boolean whether or not the gradients are stored.
    */
   bool GetStore_Cart_Grad_BasisFunctions_DGFEM(void);
+
+  /*!
+   * \brief Function to make available whether or not only the exact Jacobian
+            of the spatial discretization must be computed.
+   * \return The boolean whether or not the Jacobian must be computed.
+   */
+  bool GetJacobian_Spatial_Discretization_Only(void);
 
   /*!
    * \brief Get the interpolation method used for matching between zones.
