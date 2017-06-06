@@ -1552,7 +1552,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("THETA_INTERIOR_PENALTY_DG_FEM", Theta_Interior_Penalty_DGFEM, 1.0);
   /* DESCRIPTION: Store the Cartesian gradients of the DGFEM basis functions (NO, YES) */
   addBoolOption("STORE_CARTESIAN_GRADIENTS_BASIS_DGFEM", Store_Cart_Grad_BasisFunctions_DGFEM, false);
-  /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
+  /* DESCRIPTION: Only compute the exact Jacobian of the spatial discretization (NO, YES) */
+  addBoolOption("JACOBIAN_SPATIAL_DISCRETIZATION_ONLY", Jacobian_Spatial_Discretization_Only, false);
 
   /*!\par CONFIG_CATEGORY: FEA solver \ingroup Config*/
   /*--- Options related to the FEA solver ---*/

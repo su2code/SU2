@@ -3184,7 +3184,7 @@ public:
    * \ Get the one-dimensionalized pressure at a marker.(same as area averaged pressure)
    */
   virtual su2double GetOneD_AvgPress(void);
-  
+
   /*!
    * \brief A virtual member.
    * \ Set the one-dimensionalized pressure at a marker. (same as area averaged pressure)
@@ -3195,25 +3195,25 @@ public:
    * \ Get the one-dimensionalized density at a marker. (\f$ = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
    */
   virtual su2double GetOneD_AvgDensity(void);
-  
+
   /*!
    * \brief A virtual member.
    * \ Set the one-dimensionalized density at a marker.( \f$= (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
    */
   virtual void SetOneD_AvgDensity(su2double Density1D);
-  
+
   /*!
    * \brief A virtual member.
    * \ Get the one-dimensionalized velocity at a marker. = \f$ \sqrt ( \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
    */
   virtual su2double GetOneD_AvgVelocity(void);
-  
+
   /*!
    * \brief A virtual member.
    * \ Set the one-dimensionalized velocity at a marker. = \f$ \sqrt (  \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
    */
   virtual void SetOneD_AvgVelocity(su2double Velocity1D);
-  
+
   /*!
    * \brief A virtual member.
    * \ Get the one-dimensionalized enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA )} \f$
@@ -6110,42 +6110,42 @@ public:
    * \brief Get the one-dimensionalized pressure at a marker.(same as area averaged pressure)
    */
   su2double GetOneD_AvgPress(void);
-  
+
   /*!
    * \brief Set the one-dimensionalized pressure at a marker. (same as area averaged pressure)
    */
   void SetOneD_AvgPress(su2double Pressure1D);
-  
+
   /*!
    * \brief Get the one-dimensionalized density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
    */
   su2double GetOneD_AvgDensity(void);
-  
+
   /*!
    * \brief Set the one-dimensionalized density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
    */
   void SetOneD_AvgDensity(su2double Density1D);
-  
+
   /*!
    * \brief Get the one-dimensionalized velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
    */
   su2double GetOneD_AvgVelocity(void);
-  
+
   /*!
    * \brief Set the one-dimensionalized velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
    */
   void SetOneD_AvgVelocity(su2double Velocity1D);
-  
+
   /*!
    * \brief Get the one-dimensionalized enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
    */
   su2double GetOneD_AvgEnthalpy(void);
-  
+
   /*!
    * \brief Set the one-dimensionalized enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
    */
   void SetOneD_AvgEnthalpy(su2double Enthalpy1D);
-  
+
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -13049,6 +13049,21 @@ private:
                                                       const su2double   *sol,
                                                       su2double         *res,
                                                       su2double         *work);
+
+  /*!
+   * \brief Function, which computes the graph of the spatial discretization
+            for all the DOFs.
+   * \param[in]  config              - Definition of the particular problem.
+   * \param[out] nDOFsPerRank        - Number of DOFs per rank, cumulative storage format.
+   * \param[out] nNeighborsLocalDOFs - Number of neighbors in the graph for the
+                                       local DOFs, cumulative storage format.
+   * \param[out] neighborsLocalDOFs  - The actual neighboring DOFs in global numbering.
+   */
+  void DetermineGraphDOFs(CConfig               *config,
+                          vector<unsigned long> &nDOFsPerRank,
+                          vector<unsigned long> &nNeighborsLocalDOFs,
+                          vector<unsigned long> &neighborsLocalDOFs);
+
   /*!
    * \brief Function, which sets up the list of tasks to be carried out in the
             computationally expensive part of the solver.

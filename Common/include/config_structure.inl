@@ -1528,6 +1528,8 @@ inline su2double CConfig::GetTheta_Interior_Penalty_DGFEM(void) {return Theta_In
 
 inline bool CConfig::GetStore_Cart_Grad_BasisFunctions_DGFEM(void) {return Store_Cart_Grad_BasisFunctions_DGFEM;}
 
+inline bool CConfig::GetJacobian_Spatial_Discretization_Only(void) {return Jacobian_Spatial_Discretization_Only;}
+
 inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
 
 inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}

@@ -651,7 +651,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     }
   }
 
-  /*--- Start the solution from the free-stream state ---*/
+  /*--- Start the solution from the free-stream state. This is overruled
+        when a restart takes place. ---*/
   unsigned long ii = 0;
   for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
     for(unsigned short j=0; j<nVar; ++j, ++ii) {
@@ -659,8 +660,20 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     }
   }
 
-  /*--- Set up the persistent communication for the conservative variables and
-   the reverse communication for the residuals of the halo elements. ---*/
+  /* Check if the exact Jacobian of the spatial discretization must be
+     determined. If so, the color of each DOF must be determined. */
+  if( config->GetJacobian_Spatial_Discretization_Only() ) {
+    vector<unsigned long> nDOFsPerRank, nNeighborsLocalDOFs, neighborsLocalDOFs;
+
+    DetermineGraphDOFs(config, nDOFsPerRank, nNeighborsLocalDOFs, neighborsLocalDOFs);
+    //DetermineColorDOFs(nDOFsPerRank, nNeighborsLocalDOFs, neighborsLocalDOFs,
+    //                   nGlobalColors, colorLocalDOFs);
+    cout << "Colors of the DOFs must be determined." << endl;
+    exit(1);
+  }
+
+  /* Set up the persistent communication for the conservative variables and
+     the reverse communication for the residuals of the halo elements. */
   Prepare_MPI_Communication(DGGeometry, config);
 
   /* Set up the list of tasks to be carried out in the computational expensive
