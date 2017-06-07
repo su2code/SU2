@@ -451,14 +451,14 @@ inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *va
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, 
                   su2double **val_Jacobian_j, su2double *val_Jacobian_muj, su2double ***val_Jacobian_gradj, CConfig *config) { }
 
-inline void CNumerics::SetTauWall(double val_tauwall_i, double val_tauwall_j) { }
+inline void CNumerics::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) { }
 
-inline void CAvgGrad_Flow::SetTauWall(double val_tauwall_i, double val_tauwall_j) {
+inline void CAvgGrad_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
   TauWall_i = val_tauwall_i;
   TauWall_j = val_tauwall_j;
 }
 
-inline void CAvgGradCorrected_Flow::SetTauWall(double val_tauwall_i, double val_tauwall_j) {
+inline void CAvgGradCorrected_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
   TauWall_i = val_tauwall_i;
   TauWall_j = val_tauwall_j;
 }

@@ -790,7 +790,8 @@ public:
   void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
                           su2double val_turb_ke, su2double *val_normal,
                           su2double val_laminar_viscosity,
-                          su2double val_eddy_viscosity);
+                          su2double val_eddy_viscosity,
+                          su2double val_tau_wall);
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction for general fluid model.
    * \param[in] val_primvar - Primitive variables.
@@ -1401,6 +1402,7 @@ public:
    */
   void CreateBasis(su2double *val_Normal);
   
+  virtual void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j); 
 };
 
 /*!
@@ -3120,7 +3122,7 @@ private:
   Mean_turb_ke,         /*!< \brief Mean value of the turbulent kinetic energy. */
   dist_ij_2,           /*!< \brief Length of the edge and face. */
   TauWall_i, TauWall_j,  /*!< \brief Wall shear stress at point i and j (wall functions). */
-  Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
+  Mean_TauWall;     /*!< \brief Mean wall shear stress (wall functions). */
   bool implicit;      /*!< \brief Implicit calculus. */
   bool limiter;      /*!< \brief Viscous limiter. */
   

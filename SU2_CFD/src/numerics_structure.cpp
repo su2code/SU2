@@ -1838,7 +1838,7 @@ void CNumerics::GetViscousArtCompProjFlux(su2double **val_gradprimvar, su2double
 }
 
 void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double val_laminar_viscosity,
-    su2double val_eddy_viscosity, su2double val_tau_wall, su2double val_dist_ij, su2double *val_normal, su2double val_dS,
+    su2double val_eddy_viscosity, su2double val_dist_ij, su2double *val_normal, su2double val_dS,
     su2double *val_Proj_Visc_Flux, su2double **val_Proj_Jac_Tensor_i, su2double **val_Proj_Jac_Tensor_j) {
   unsigned short iDim, iVar, jVar;
 
