@@ -1,11 +1,9 @@
 /*!
  * \file grid_adaptation_structure.hpp
  * \brief Headers of the main subroutines for doing the numerical grid
- *        movement (including volumetric movement, surface movement and Free From
- *        technique definition). The subroutines and functions are in
- *        the <i>grid_movement_structure.cpp</i> file.
+ *        adaptation.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,8 +13,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,9 +34,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
@@ -59,19 +58,19 @@ protected:
 	nElem_new;					/*!< \brief Number of new elements. */
 	unsigned short nDim,	/*!< \brief Number of dimensions of the problem. */
 	nVar;					/*!< \brief Number of variables in the problem. */
-	double **ConsVar_Sol,	/*!< \brief Conservative variables (original solution). */
+	su2double **ConsVar_Sol,	/*!< \brief Conservative variables (original solution). */
 	**ConsVar_Res,			/*!< \brief Conservative variables (residual). */
 	**ConsVar_Adapt;		/*!< \brief Conservative variables (adapted solution). */
-	double **AdjVar_Sol,	/*!< \brief Adjoint variables (original solution). */
+	su2double **AdjVar_Sol,	/*!< \brief Adjoint variables (original solution). */
 	**AdjVar_Res,			/*!< \brief Adjoint variables (residual). */
 	**AdjVar_Adapt;			/*!< \brief Adjoint variables (adapted solution). */
-	double **LinVar_Sol,	/*!< \brief Linear variables (original solution). */
+	su2double **LinVar_Sol,	/*!< \brief Linear variables (original solution). */
 	**LinVar_Res,			/*!< \brief Linear variables (residual). */
 	**LinVar_Adapt;			/*!< \brief Linear variables (adapted solution). */
-	double **Gradient,		/*!< \brief Gradient value. */
+	su2double **Gradient,		/*!< \brief Gradient value. */
 	**Gradient_Flow,		/*!< \brief Gradient of the flow variables. */
 	**Gradient_Adj;			/*!< \brief Fradient of the adjoint variables. */
-	double *Index;			/*!< \brief Adaptation index (indicates the value of the adaptation). */
+	su2double *Index;			/*!< \brief Adaptation index (indicates the value of the adaptation). */
 	
 public:
 
@@ -115,21 +114,7 @@ public:
 	 */	
 	void GetAdjResidual(CGeometry *geometry, CConfig *config);
 	
-	/*! 
-	 * \brief Read the flow solution from the restart file.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */	
-	void GetLinSolution(CGeometry *geometry, CConfig *config);
-	
-	/*! 
-	 * \brief Read the flow solution from the restart file.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */	
-	void GetLinResidual(CGeometry *geometry, CConfig *config);
-	
-	/*! 
+	/*!
 	 * \brief Do a complete adaptation of the computational grid.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] strength - Adaptation Strength.	 

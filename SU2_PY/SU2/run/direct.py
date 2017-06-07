@@ -3,7 +3,7 @@
 ## \file direct.py
 #  \brief python package for running direct solutions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,8 +13,10 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -75,11 +77,18 @@ def direct ( config ):
     konfig['MATH_PROBLEM']  = 'DIRECT'
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_direct'    
     
+    direct_diff = konfig.get('DIRECT_DIFF','NO') == "YES"
+
     # Run Solution
     SU2_CFD(konfig)
     
+    # multizone cases
+    multizone_cases = su2io.get_multizone(konfig)
+
     # merge
-    konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME'] 
+    konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME']
+    if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
+        konfig['SOLUTION_STRUCTURE_FILENAME'] = konfig['RESTART_STRUCTURE_FILENAME']
     su2merge(konfig)
     
     # filenames

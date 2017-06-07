@@ -3,7 +3,7 @@
 ## \file projection.py
 #  \brief python package for running gradient projection
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,8 +13,10 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -44,8 +46,8 @@ from interface import DOT as SU2_DOT
 #  Gradient Projection
 # ----------------------------------------------------------------------
 
-def projection( config, step = 1e-3 ):
-    """ info = SU2.run.projection(config,step=1e-3)
+def projection( config, state={}, step = 1e-3 ):
+    """ info = SU2.run.projection(config,state,step=1e-3)
         
         Runs an gradient projection with:
             SU2.run.decomp()
@@ -57,6 +59,7 @@ def projection( config, step = 1e-3 ):
             
         Inputs:
             config - an SU2 config
+            state  - only required when using external custom DV
             step   - a float or list of floats for geometry sensitivity
                      finite difference step
             
@@ -75,7 +78,7 @@ def projection( config, step = 1e-3 ):
             
     # choose dv values 
     Definition_DV = konfig['DEFINITION_DV']
-    n_DV          = len(Definition_DV['KIND'])
+    n_DV          = sum(Definition_DV['SIZE'])
     if isinstance(step,list):
         assert len(step) == n_DV , 'unexpected step vector length'
     else:
@@ -99,6 +102,8 @@ def projection( config, step = 1e-3 ):
     raw_gradients = su2io.read_gradients(grad_filename)
     os.remove(grad_filename)
     
+    info = su2io.State()
+       
     # Write Gradients
     data_plot = su2util.ordered_bunch()
     data_plot['VARIABLE']     = range(len(raw_gradients)) 
@@ -107,10 +112,13 @@ def projection( config, step = 1e-3 ):
     su2util.write_plot(grad_plotname,output_format,data_plot)
 
     # gradient output dictionary
-    gradients = { objective : raw_gradients }
+    objective = objective.split(',')
+    if (len(objective)>1 ):
+        objective = ['COMBO']
+
+    gradients = { objective[0] : raw_gradients }
     
     # info out
-    info = su2io.State()
     info.GRADIENTS.update( gradients )
     
     return info

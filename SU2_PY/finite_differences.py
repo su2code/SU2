@@ -3,7 +3,7 @@
 ## \file finite_differences.py
 #  \brief Python script for doing the finite differences computation using the SU2 suite.
 #  \author F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,8 +13,10 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -45,19 +47,15 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-s", "--step",       dest="step",       default=1E-3,
-                      help="finite difference STEP", metavar="STEP")
     parser.add_option("-q", "--quiet",      dest="quiet",      default='False',
                       help="output QUIET to log files", metavar="QUIET")    
     
     (options, args)=parser.parse_args()
     options.partitions = int( options.partitions )
-    options.step       = float( options.step )    
     options.quiet      = options.quiet.upper() == 'TRUE'
         
     finite_differences( options.filename   ,
                         options.partitions ,
-                        options.step       ,
                         options.quiet       )
 #: def main()
 
@@ -68,7 +66,6 @@ def main():
 
 def finite_differences( filename           , 
                         partitions = 0     , 
-                        step       = 1e-3  ,
                         quiet      = False  ):
     # Config
     config = SU2.io.Config(filename)
@@ -82,7 +79,7 @@ def finite_differences( filename           ,
     state.find_files(config)
     
     # Finite Difference Gradients
-    SU2.eval.gradients.findiff(config,state,step)
+    SU2.eval.gradients.findiff(config,state)
     
     return state
 

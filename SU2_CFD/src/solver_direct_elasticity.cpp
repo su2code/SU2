@@ -1,8 +1,8 @@
 /*!
- * \file solution_direct_elasticity.cpp
- * \brief Main subrotuines for solving the linear elasticity equation.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \file solver_direct_elasticity.cpp
+ * \brief Main subroutines for solving direct FEM elasticity problems.
+ * \author R. Sanchez
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,1051 +33,1469 @@
 
 #include "../include/solver_structure.hpp"
 
-CFEASolver::CFEASolver(void) : CSolver() { }
-
-CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
+CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
   
-	unsigned long iPoint;
-	unsigned short iDim, iVar, jVar, NodesElement = 0, nLineLets;
-  double dull_val;
+  nElement = 0;
+  nDim = 0;
+  nMarker = 0;
+  
+  nPoint = 0;
+  nPointDomain = 0;
+  
+  Total_CFEA = 0.0;
+  WAitken_Dyn = 0.0;
+  WAitken_Dyn_tn1 = 0.0;
+  loadIncrement = 1.0;
+  
+  element_container = NULL;
+  node = NULL;
+  
+  GradN_X = NULL;
+  GradN_x = NULL;
+  
+  Jacobian_c_ij = NULL;
+  Jacobian_s_ij = NULL;
+  Jacobian_k_ij = NULL;
+  
+  MassMatrix_ij = NULL;
+  
+  mZeros_Aux = NULL;
+  mId_Aux = NULL;
+  
+  Res_Stress_i = NULL;
+  Res_Ext_Surf = NULL;
+  Res_Time_Cont = NULL;
+  Res_FSI_Cont = NULL;
+  
+  Res_Dead_Load = NULL;
+  
+  nodeReactions = NULL;
+  
+  solutionPredictor = NULL;
+  
+  SolRest = NULL;
+  
+  normalVertex = NULL;
+  stressTensor = NULL;
+  
+  Solution_Interm = NULL;
+  
+}
+
+CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config) : CSolver() {
+  
+  unsigned long iPoint;
+  unsigned short iVar, jVar, iDim, jDim;
+  unsigned short iTerm, iKind;
+
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  bool fsi = config->GetFSI_Simulation();                        // FSI simulation
+  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);  // Generalized alpha method requires residual at previous time step.
+  
+  bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
+  bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  nPoint =        geometry->GetnPoint();
-  nPointDomain =  geometry->GetnPointDomain();
-	nDim =          geometry->GetnDim();
-	node =          new CVariable*[nPoint];
-  if (config->GetUnsteady_Simulation() == STEADY) nVar = nDim;
-  else nVar = 2*nDim;
+  su2double E = config->GetElasticyMod();
   
-	if (nDim == 2) NodesElement = 4;
-	if (nDim == 3) NodesElement = 8;
-	
+  nElement      = geometry->GetnElem();
+  nDim          = geometry->GetnDim();
+  nMarker       = geometry->GetnMarker();
+  
+  nPoint        = geometry->GetnPoint();
+  nPointDomain  = geometry->GetnPointDomain();
+  
+  /*--- Here is where we assign the kind of each element ---*/
+  
+  /*--- First level: different possible terms of the equations ---*/
+  element_container = new CElement** [MAX_TERMS];
+  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
+    element_container[iTerm] = new CElement* [MAX_FE_KINDS];
+  
+  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++) {
+    for (iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
+      element_container[iTerm][iKind] = NULL;
+    }
+  }
+  
+  if (nDim == 2) {
+    if (incompressible) {
+      element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+      element_container[FEA_TERM][EL_QUAD] = new CQUAD4P1(nDim, config);
+    }
+    else {
+      element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+      element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+    }
+  }
+  else if (nDim == 3) {
+    if (incompressible) {
+      element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+      element_container[FEA_TERM][EL_HEXA] = new CHEXA8P1(nDim, config);
+    }
+    else {
+      element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+      element_container[FEA_TERM][EL_HEXA] = new CHEXA8(nDim, config);
+    }
+  }
+  
+  node              = new CVariable*[nPoint];
+  
+  GradN_X = new su2double [nDim];
+  GradN_x = new su2double [nDim];
+  
+  Total_CFEA      = 0.0;
+  WAitken_Dyn        = 0.0;
+  WAitken_Dyn_tn1    = 0.0;
+  loadIncrement     = 0.0;
+  
+  SetFSI_ConvValue(0,0.0);
+  SetFSI_ConvValue(1,0.0);
+  
+  nVar = nDim;
+  
   /*--- Define some auxiliary vectors related to the residual ---*/
   
-  Residual = new double[nVar];          for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-  Residual_RMS = new double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-  Residual_Max = new double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+  Residual = new su2double[nVar];          for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
+  Residual_RMS = new su2double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+  Residual_Max = new su2double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
   Point_Max = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
-  Point_Max_Coord = new double*[nVar];
+  Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new double[nDim];
+    Point_Max_Coord[iVar] = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
   }
   
   /*--- Define some auxiliary vectors related to the solution ---*/
   
-	Solution   = new double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
+  Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
   
-	/*--- Element aux stiffness matrix definition ---*/
+  Solution_Interm = NULL;
+  if (gen_alpha) {
+    Solution_Interm = new su2double[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) Solution_Interm[iVar] = 0.0;
+  }
   
-	StiffMatrix_Elem = new double*[NodesElement*nDim];
-	for (iVar = 0; iVar < NodesElement*nDim; iVar++) {
-		StiffMatrix_Elem[iVar] = new double [NodesElement*nDim];
-    for (jVar = 0; jVar < NodesElement*nDim; jVar++) {
-      StiffMatrix_Elem[iVar][jVar] = 0.0;
-    }
-	}
-	
-	/*--- Node aux stiffness matrix definition ---*/
+  nodeReactions = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) nodeReactions[iVar]   = 0.0;
   
-	StiffMatrix_Node = new double*[nVar];
-	for (iVar = 0; iVar < nVar; iVar++) {
-		StiffMatrix_Node[iVar] = new double [nVar];
+  /*--- The length of the solution vector depends on whether the problem is static or dynamic ---*/
+  
+  unsigned short nSolVar;
+  string text_line, filename;
+  ifstream restart_file;
+
+  if (dynamic) nSolVar = 3 * nVar;
+  else nSolVar = nVar;
+  
+  SolRest = new su2double[nSolVar];
+
+  /*--- Initialize from zero everywhere. ---*/
+
+  for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
+  }
+
+  bool prestretch_fem = config->GetPrestretch();
+  if (prestretch_fem) Set_Prestretch(geometry, config);  
+  
+  /*--- Term ij of the Jacobian ---*/
+  
+  Jacobian_ij = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_ij[iVar] = new su2double [nVar];
     for (jVar = 0; jVar < nVar; jVar++) {
-      StiffMatrix_Node[iVar][jVar] = 0.0;
+      Jacobian_ij[iVar][jVar] = 0.0;
     }
-	}
+  }
   
-	/*--- Initialization of matrix structures ---*/
+  /*--- Term ij of the Mass Matrix (only if dynamic analysis) ---*/
+  MassMatrix_ij = NULL;
+  if (dynamic) {
+    MassMatrix_ij = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      MassMatrix_ij[iVar] = new su2double [nVar];
+      for (jVar = 0; jVar < nVar; jVar++) {
+        MassMatrix_ij[iVar][jVar] = 0.0;
+      }
+    }
+  }
   
-  StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Linear Elasticity)." << endl;
+  Jacobian_c_ij = NULL;
+  Jacobian_s_ij = NULL;
+  if (nonlinear_analysis) {
+    
+    /*--- Term ij of the Jacobian (constitutive contribution) ---*/
+    
+    Jacobian_c_ij = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_c_ij[iVar] = new su2double [nVar];
+      for (jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_c_ij[iVar][jVar] = 0.0;
+      }
+    }
+    
+    /*--- Term ij of the Jacobian (stress contribution) ---*/
+    
+    Jacobian_s_ij = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_s_ij[iVar] = new su2double [nVar];
+      for (jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_s_ij[iVar][jVar] = 0.0;
+      }
+    }
+    
+  }
+  
+  /*--- Term ij of the Jacobian (incompressibility term) ---*/
+  Jacobian_k_ij = NULL;
+  if (incompressible) {
+    Jacobian_k_ij = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_k_ij[iVar] = new su2double [nVar];
+      for (jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_k_ij[iVar][jVar] = 0.0;
+      }
+    }
+  }
+  
+  /*--- Stress contribution to the node i ---*/
+  Res_Stress_i = new su2double[nVar];
+  
+  /*--- Contribution of the external surface forces to the residual (auxiliary vector) ---*/
+  Res_Ext_Surf = new su2double[nVar];
+  
+  /*--- Contribution of the body forces to the residual (auxiliary vector) ---*/
+  Res_Dead_Load = NULL;
+  if (body_forces) {
+    Res_Dead_Load = new su2double[nVar];
+  }
+  
+  /*--- Contribution of the fluid tractions to the residual (auxiliary vector) ---*/
+  Res_FSI_Cont = NULL;
+  if (fsi) {
+    Res_FSI_Cont = new su2double[nVar];
+  }
+  
+  /*--- Time integration contribution to the residual ---*/
+  Res_Time_Cont = NULL;
+  if (dynamic) {
+    Res_Time_Cont = new su2double [nVar];
+  }
+  
+  /*--- Matrices to impose clamped boundary conditions ---*/
+  
+  mZeros_Aux = new su2double *[nDim];
+  for(iDim = 0; iDim < nDim; iDim++)
+    mZeros_Aux[iDim] = new su2double[nDim];
+  
+  mId_Aux = new su2double *[nDim];
+  for(iDim = 0; iDim < nDim; iDim++)
+    mId_Aux[iDim] = new su2double[nDim];
+  
+  for(iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      mZeros_Aux[iDim][jDim] = 0.0;
+      mId_Aux[iDim][jDim] = 0.0;
+    }
+    mId_Aux[iDim][iDim] = E;
+  }
+  
+  
+  /*--- Initialization of matrix structures ---*/
+  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Non-Linear Elasticity)." << endl;
+  
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   
-  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+  if (dynamic) {
+    MassMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+    TimeRes_Aux.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    TimeRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   }
   
   /*--- Initialization of linear solver structures ---*/
-  
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  
   LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
-	/*--- Computation of gradients by least squares ---*/
+  LinSysReact.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
-	Smatrix = new double* [nDim];
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Smatrix[iDim] = new double [nDim];
+  /*--- Initialize the auxiliary vector and matrix for the computation of the nodal Reactions ---*/
   
-	cvector = new double* [nVar];
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		cvector[iVar] = new double [nDim];
+  normalVertex = new su2double [nDim];
   
-  /*--- Check for a restart, initialize from zero otherwise ---*/
-  
-	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-	
-	if (!restart) {
-		for (iPoint = 0; iPoint < nPoint; iPoint++) {
-			for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-			node[iPoint] = new CFEAVariable(Solution, nDim, nVar, config);
-    }
-	}
-	else {
-		unsigned long index;
-		string text_line, mesh_filename;
-    ifstream restart_file;
-    
-		/*--- Restart the solution from file information ---*/
-    
-		mesh_filename = config->GetSolution_FlowFileName();
-    restart_file.open(mesh_filename.data(), ios::in);
-		
-    /*--- In case there is no file ---*/
-    
-		if (restart_file.fail()) {
-			cout << "There is no fea restart file!!" << endl;
-			exit(EXIT_FAILURE);
-		}
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    long *Global2Local;
-    Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    
-    /*--- First, set all indices to a negative value by default ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-      Global2Local[iPoint] = -1;
-    }
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    }
-    
-		/*--- Read all lines in the restart file ---*/
-    
-    long iPoint_Local; unsigned long iPoint_Global = 0;
-    
-    /*--- The first line is the header ---*/
-    
-    getline (restart_file, text_line);
-    
-    while (getline (restart_file, text_line)) {
-			istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      
-      iPoint_Local = Global2Local[iPoint_Global];
-      if (iPoint_Local >= 0) {
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-        node[iPoint_Local] = new CFEAVariable(Solution, nDim, nVar, config);
-      }
-      iPoint_Global++;
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    
-    for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
-      node[iPoint] = new CFEAVariable(Solution, nDim, nVar, config);
-    }
-    
-		/*--- Close the restart file ---*/
-    
-		restart_file.close();
-    
-    /*--- Free memory needed for the transformation ---*/
-    
-    delete [] Global2Local;
-	}
-  
-}
-
-CFEASolver::~CFEASolver(void) {
-  
-	unsigned short iVar, iDim, NodesElement = 0;
-  
-	if (nDim == 2) NodesElement = 4;
-	if (nDim == 3) NodesElement = 8;
-  
-	delete [] Residual;
-	delete [] Residual_Max;
-	delete [] Solution;
-  
-	for (iVar = 0; iVar < NodesElement*nDim; iVar++)
-		delete [] StiffMatrix_Elem[iVar];
-  
-	for (iVar = 0; iVar < nVar; iVar++)
-		delete [] StiffMatrix_Node[iVar];
-  
-	delete [] StiffMatrix_Elem;
-	delete [] StiffMatrix_Node;
-  
-	/*--- Computation of gradients by least-squares ---*/
-  
-	for (iDim = 0; iDim < nDim; iDim++)
-		delete [] Smatrix[iDim];
-	delete [] Smatrix;
-  
-	for (iVar = 0; iVar < nVar; iVar++)
-		delete [] cvector[iVar];
-	delete [] cvector;
-  
-}
-
-void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-	unsigned long iPoint;
-  
-  GetSurface_Pressure(geometry, config);
-  
-  /*--- Set residuals and auxiliar variable to zero ---*/
-  
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		LinSysRes.SetBlock_Zero(iPoint);
-    LinSysAux.SetBlock_Zero(iPoint);
-	}
-	
-	/*--- Set matrix entries to zero ---*/
-  
-	StiffMatrixSpace.SetValZero();
-	StiffMatrixTime.SetValZero();
-	Jacobian.SetValZero();
-  
-}
-
-void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                 CConfig *config, unsigned short iMesh) {
-  
-  if (config->GetUnsteady_Simulation() != STEADY) {
-    
-    unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-    double a[3], b[3], c[3], d[3], Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
-    double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
-    unsigned short iDim, iVar, jVar;
-    
-//    double MassMatrix_Elem_2D [6][6] =
-//    {{ 2, 0, 1, 0, 1, 0 },
-//      { 0, 2, 0, 1, 0, 1 },
-//      { 1, 0, 2, 0, 1, 0 },
-//      { 0, 1, 0, 2, 0, 1 },
-//      { 1, 0, 1, 0, 2, 0 },
-//      { 0, 1, 0, 1, 0, 2 }};
-//    
-//    double MassMatrix_Elem_3D [12][12] =
-//    {{ 2, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0 },
-//      { 0, 2, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0 },
-//      { 0, 0, 2, 0, 0, 1, 0, 0, 1, 0, 0, 1 },
-//      { 1, 0, 0, 2, 0, 0, 1, 0, 0, 1, 0, 0 },
-//      { 0, 1, 0, 0, 2, 0, 0, 1, 0, 0, 1, 0 },
-//      { 0, 0, 1, 0, 0, 2, 0, 0, 1, 0, 0, 1 },
-//      { 1, 0, 0, 1, 0, 0, 2, 0, 0, 1, 0, 0 },
-//      { 0, 1, 0, 0, 1, 0, 0, 2, 0, 0, 1, 0 },
-//      { 0, 0, 1, 0, 0, 1, 0, 0, 2, 0, 0, 1 },
-//      { 1, 0, 0, 1, 0, 0, 1, 0, 0, 2, 0, 0 },
-//      { 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 2, 0 },
-//      { 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 2 }};
-    
-    double Density = config->GetMaterialDensity();
-    
-    /*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
-    
-    if (config->GetUnsteady_Simulation() == TIME_STEPPING) Time_Num = config->GetDelta_UnstTimeND();
-    else Time_Num = 1.0;
-    if (config->GetUnsteady_Simulation() == STEADY) Time_Num = 1.0;
-    
-    /*--- Loop through elements to compute contributions from the matrix
-     blocks involving time. These contributions are also added to the
-     Jacobian w/ the time step. Spatial source terms are also computed. ---*/
-    
-    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-      
-      /*--- Get node numbers and their coordinate vectors ---*/
-      
-      Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
-      Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
-      Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
-      
-      if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord(); }
-      
-      if (nDim == 2) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-          b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-        }
-        
-        /*--- Compute element area ---*/
-        
-        Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-        
-      }
-      if (nDim == 3) {
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-          b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-          c[iDim] = Coord_3[iDim]-Coord_2[iDim];
-        }
-        d[0] = a[1]*b[2]-a[2]*b[1];
-        d[1] = -(a[0]*b[2]-a[2]*b[0]);
-        d[2] = a[0]*b[1]-a[1]*b[0];
-        
-        /*--- Compute element volume ---*/
-        
-        Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
-        
-      }
-      
-      /*--- Block contributions to the Jacobian (includes time step) ---*/
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          StiffMatrix_Node[iVar][jVar] = 0.0;
-      
-      /*--- Diagonal value identity matrix ---*/
-      
-      if (nDim == 2) {
-        StiffMatrix_Node[0][0] = 1.0/Time_Num;
-        StiffMatrix_Node[1][1] = 1.0/Time_Num;
-      }
-      else {
-        StiffMatrix_Node[0][0] = 1.0/Time_Num;
-        StiffMatrix_Node[1][1] = 1.0/Time_Num;
-        StiffMatrix_Node[2][2] = 1.0/Time_Num;
-      }
-      
-      /*--- Diagonal value ---*/
-      
-      if (nDim == 2) {
-        StiffMatrix_Node[2][2] = Density*(2.0/12.0)*(Area_Local/Time_Num);
-        StiffMatrix_Node[3][3] = Density*(2.0/12.0)*(Area_Local/Time_Num);
-      }
-      else {
-        StiffMatrix_Node[3][3] = Density*(2.0/20.0)*(Volume_Local/Time_Num);
-        StiffMatrix_Node[4][4] = Density*(2.0/20.0)*(Volume_Local/Time_Num);
-        StiffMatrix_Node[5][5] = Density*(2.0/20.0)*(Volume_Local/Time_Num);
-      }
-      Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-      if (nDim == 3) Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node);
-      
-      /*--- Off Diagonal value ---*/
-      
-      if (nDim == 2) {
-        StiffMatrix_Node[2][2] = Density*(1.0/12.0)*(Area_Local/Time_Num);
-        StiffMatrix_Node[3][3] = Density*(1.0/12.0)*(Area_Local/Time_Num);
-      }
-      else {
-        StiffMatrix_Node[3][3] = Density*(1.0/20.0)*(Volume_Local/Time_Num);
-        StiffMatrix_Node[4][4] = Density*(1.0/20.0)*(Volume_Local/Time_Num);
-        StiffMatrix_Node[5][5] = Density*(1.0/20.0)*(Volume_Local/Time_Num);
-      }
-      Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-      
-      if (nDim == 3) {
-        Jacobian.AddBlock(Point_0, Point_3, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_1, Point_3, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_2, Point_3, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_3, Point_0, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_3, Point_1, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_3, Point_2, StiffMatrix_Node);
-      }
-      
-//      /*--- Add volumetric forces as source term (gravity and coriollis) ---*/
-//      double RhoG= Density*STANDART_GRAVITY;
-//      
-//      unsigned short NodesElement = 4; // Triangles in 2D
-//      if (nDim == 3) NodesElement = 8;	// Tets in 3D
-//      
-//      double *ElemForce = new double [nDim*NodesElement];
-//      double *ElemResidual = new double [nDim*NodesElement];
-//      
-//      if (nDim == 2) {
-//        ElemForce[0] = 0.0;	ElemForce[1] = -RhoG;
-//        ElemForce[2] = 0.0;	ElemForce[3] = -RhoG;
-//        ElemForce[4] = 0.0;	ElemForce[5] = -RhoG;
-//        
-//        for (iVar = 0; iVar < nDim*NodesElement; iVar++) {
-//          ElemResidual[iVar] = 0.0;
-//          for (jVar = 0; jVar < nDim*NodesElement; jVar++) {
-//            ElemResidual[iVar] += MassMatrix_Elem_2D[iVar][jVar]*ElemForce[jVar]*Area_Local/12.0;
-//          }
-//        }
-//        
-//        Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[0]; Residual[3] = ElemResidual[1];
-//        LinSysRes.AddBlock(Point_0, Residual);
-//        
-//        Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[2]; Residual[3] = ElemResidual[3];
-//        LinSysRes.AddBlock(Point_1, Residual);
-//        
-//        Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[4]; Residual[3] = ElemResidual[5];
-//        LinSysRes.AddBlock(Point_2, Residual);
-//        
-//      }
-//      
-//      else {
-//        
-//        ElemForce[0] = 0.0; ElemForce[1] = 0.0;		ElemForce[2] = -RhoG;
-//        ElemForce[3] = 0.0; ElemForce[4] = 0.0;		ElemForce[5] = -RhoG;
-//        ElemForce[6] = 0.0; ElemForce[7] = 0.0;		ElemForce[8] = -RhoG;
-//        ElemForce[9] = 0.0; ElemForce[10] = 0.0;	ElemForce[11] = -RhoG;
-//        
-//        for (iVar = 0; iVar < nDim*NodesElement; iVar++) {
-//          ElemResidual[iVar] = 0.0;
-//          for (jVar = 0; jVar < nDim*NodesElement; jVar++) {
-//            ElemResidual[iVar] += MassMatrix_Elem_3D[iVar][jVar]*ElemForce[jVar]*Volume_Local/20.0;
-//          }
-//        }
-//        
-//        Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
-//        Residual[3] = ElemResidual[0];	Residual[4] = ElemResidual[1];	Residual[5] = ElemResidual[2];
-//        LinSysRes.AddBlock(Point_0, Residual);
-//        
-//        Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
-//        Residual[3] = ElemResidual[3];	Residual[4] = ElemResidual[4];	Residual[5] = ElemResidual[5];
-//        LinSysRes.AddBlock(Point_1, Residual);
-//        
-//        Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
-//        Residual[3] = ElemResidual[6];	Residual[4] = ElemResidual[7];	Residual[5] = ElemResidual[8];
-//        LinSysRes.AddBlock(Point_2, Residual);
-//        
-//        Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
-//        Residual[3] = ElemResidual[9];	Residual[4] = ElemResidual[10];	Residual[5] = ElemResidual[11];
-//        LinSysRes.AddBlock(Point_3, Residual);
-//        
-//      }
-//      
-//      delete [] ElemForce;
-//      delete [] ElemResidual;
-      
-    }
-    
+  stressTensor = new su2double* [nDim];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    stressTensor[iVar] = new su2double [nDim];
   }
   
-}
-
-void CFEASolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  /*---- Initialize the auxiliary vector for the solution predictor ---*/
   
-  unsigned short iVar, jVar, nNodes = 0, iNodes, iDim, jDim;
-	unsigned long iElem, PointCorners[8], iPoint, total_index;
-	double CoordCorners[8][3];
+  solutionPredictor = new su2double [nVar];
   
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
-    
-    for (iNodes = 0; iNodes < nNodes; iNodes++) {
-      PointCorners[iNodes] = geometry->elem[iElem]->GetNode(iNodes);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        CoordCorners[iNodes][iDim] = geometry->node[PointCorners[iNodes]]->GetCoord(iDim);
-      }
-    }
-    
-    if (nDim == 2) numerics->SetFEA_StiffMatrix2D(StiffMatrix_Elem, CoordCorners, nNodes);
-    if (nDim == 3) numerics->SetFEA_StiffMatrix3D(StiffMatrix_Elem, CoordCorners, nNodes);
-    
-    /*--- Initialization of the auxiliar matrix ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        StiffMatrix_Node[iVar][jVar] = 0.0;
-    
-    /*--- Steady simulation ---*/
-    
-    if (config->GetUnsteady_Simulation() == STEADY) {
-
-      /*--- Transform the stiffness matrix into the
-       contributions for the individual nodes relative to each other. ---*/
-      
-      for (iVar = 0; iVar < nNodes; iVar++) {
-        for (jVar = 0; jVar < nNodes; jVar++) {
-          for (iDim = 0; iDim < nVar; iDim++) {
-            for (jDim = 0; jDim < nVar; jDim++) {
-              StiffMatrix_Node[iDim][jDim] = StiffMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
-            }
-          }
-          Jacobian.AddBlock(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
-          
-        }
-      }
-    }
-    
-    /*--- Unsteady simulation ---*/
-
-    else {
-      
-      if (nDim == 2) {
-        StiffMatrix_Node[0][2] = -1.0;
-        StiffMatrix_Node[1][3] = -1.0;
-      }
-      if (nDim == 3) {
-        StiffMatrix_Node[0][3] = -1.0;
-        StiffMatrix_Node[1][4] = -1.0;
-        StiffMatrix_Node[2][5] = -1.0;
-      }
-      
-      for (iVar = 0; iVar < nNodes; iVar++) {
-        for (jVar = 0; jVar < nNodes; jVar++) {
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (jDim = 0; jDim < nDim; jDim++) {
-              StiffMatrix_Node[nDim+iDim][jDim] = StiffMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
-            }
-          }
-          Jacobian.AddBlock(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
-        }
-      }
-      
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          LinSysSol[total_index] = node[iPoint]->GetSolution(iVar);
-          LinSysAux[total_index] = 0.0;
-        }
-      }
-      
-      StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysAux);
-      
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Residual[iVar] = LinSysAux[total_index];
-        }
-        LinSysRes.SubtractBlock(iPoint, Residual);
-      }
-      
-    }
-    
-	}
+  /*--- Perform the MPI communication of the solution ---*/
+  
+  Set_MPI_Solution(geometry, config);
+  
+  /*--- If dynamic, we also need to communicate the old solution ---*/
+  
+  if(dynamic) Set_MPI_Solution_Old(geometry, config);
   
 }
 
-void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                        unsigned short val_marker) {
-	unsigned long iPoint, iVertex, total_index;
-	unsigned short iVar, iDim;
-  double *Normal, Area, UnitaryNormal[3] = {0.0,0.0,0.0};
-	
-	double TotalDispl = config->GetDispl_Value(config->GetMarker_All_TagBound(val_marker));
-	
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-    
-    /*--- Compute area, and unitary normal ---*/
-    
-		Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-    for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = Normal[iDim]/Area;
-    
-    if (config->GetUnsteady_Simulation() == STEADY) {
-      if (nDim == 2) {
-        Solution[0] = TotalDispl*UnitaryNormal[0];  Solution[1] = TotalDispl*UnitaryNormal[1];
-        Residual[0] = TotalDispl*UnitaryNormal[0];  Residual[1] = TotalDispl*UnitaryNormal[1];
-      }
-      else {
-        Solution[0] = TotalDispl*UnitaryNormal[0];  Solution[1] = TotalDispl*UnitaryNormal[1];  Solution[2] = TotalDispl*UnitaryNormal[2];
-        Residual[0] = TotalDispl*UnitaryNormal[0];  Residual[1] = TotalDispl*UnitaryNormal[1];  Residual[2] = TotalDispl*UnitaryNormal[2];
-      }
-    }
-    else {
-      if (nDim == 2) {
-        Solution[0] = TotalDispl*UnitaryNormal[0];  Solution[1] = TotalDispl*UnitaryNormal[1];
-        Solution[2] = 0.0;                          Solution[3] = 0.0;
-        Residual[0] = 0.0;                          Residual[1] = 0.0;
-        Residual[2] = 0.0;                          Residual[3] = 0.0;
-      }
-      else {
-        Solution[0] = TotalDispl*UnitaryNormal[0];  Solution[1] = TotalDispl*UnitaryNormal[1];  Solution[2] = TotalDispl*UnitaryNormal[2];
-        Solution[3] = 0.0;                          Solution[4] = 0.0;                          Solution[5] = 0.0;
-        Residual[0] = 0.0;                          Residual[1] = 0.0;                          Residual[2] = 0.0;
-        Residual[3] = 0.0;                          Residual[4] = 0.0;                          Residual[5] = 0.0;
-      }
-    }
-		
-		node[iPoint]->SetSolution(Solution);
-		node[iPoint]->SetSolution_Old(Solution);
-    
-    LinSysRes.SetBlock(iPoint, Residual);
-    
-    /*--- Set the dirichlet condition ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      Jacobian.DeleteValsRowi(total_index);
-    }
-    
-	}
-}
-
-void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                unsigned short val_marker) {
-	
-	double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	double *Coord_0 = NULL, *Coord_1 = NULL, *Coord_2 = NULL;
-	double Normal_Elem[3] = {0.0, 0.0, 0.0};
-	unsigned short iDim;
-	
-	double TotalLoad = 100*config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
-	
-	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
-    
-		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);                   Coord_0 = geometry->node[Point_0]->GetCoord();
-		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);                   Coord_1 = geometry->node[Point_1]->GetCoord();
-		if (nDim == 3) { Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord(); }
-    
-		/*--- Compute area (3D), and length of the surfaces (2D) ---*/
-    
-		if (nDim == 2) {
-      
-			for (iDim = 0; iDim < nDim; iDim++)
-				a[iDim] = Coord_0[iDim]-Coord_1[iDim];
-      
-      Normal_Elem[0] = -(-a[1]);
-			Normal_Elem[1] = -(a[0]);
-      
-		}
-		if (nDim == 3) {
-      
-			for (iDim = 0; iDim < nDim; iDim++) {
-				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-			}
-      
-      Normal_Elem[0] = -(0.5*(a[1]*b[2]-a[2]*b[1]));
-			Normal_Elem[1] = -(-0.5*(a[0]*b[2]-a[2]*b[0]));
-			Normal_Elem[2] = -(0.5*(a[0]*b[1]-a[1]*b[0]));
-      
-		}
-		
-    /*--- Steady simulation ---*/
-    
-    if (config->GetUnsteady_Simulation() == STEADY) {
-      
-      if (nDim == 2) {
-        Residual[0] = (1.0/2.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/2.0)*TotalLoad*Normal_Elem[1];
-        LinSysRes.AddBlock(Point_0, Residual);
-        Residual[0] = (1.0/2.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/2.0)*TotalLoad*Normal_Elem[1];
-        LinSysRes.AddBlock(Point_1, Residual);
-      }
-      
-      else {
-        Residual[0] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[2] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_0, Residual);
-        
-        Residual[0] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[2] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_1, Residual);
-        
-        Residual[0] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[2] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_2, Residual);
-      }
-      
-    }
-    
-    /*--- Unsteady simulation ---*/
-
-    else {
-      
-      if (nDim == 2) {
-        Residual[0] = 0.0; Residual[1] = 0.0;
-        Residual[2] = (1.0/2.0)*TotalLoad*Normal_Elem[0]; Residual[3] = (1.0/2.0)*TotalLoad*Normal_Elem[1];
-        LinSysRes.AddBlock(Point_0, Residual);
-        Residual[0] = 0.0; Residual[1] = 0.0;
-        Residual[2] = (1.0/2.0)*TotalLoad*Normal_Elem[0]; Residual[3] = (1.0/2.0)*TotalLoad*Normal_Elem[1];
-        LinSysRes.AddBlock(Point_1, Residual);
-      }
-      else {
-        Residual[0] = 0.0;                                          Residual[1] = 0.0;                                          Residual[2] = 0.0;
-        Residual[3] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[4] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[5] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_0, Residual);
-        
-        Residual[0] = 0.0;                                          Residual[1] = 0.0;                                          Residual[2] = 0.0;
-        Residual[3] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[4] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[5] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_1, Residual);
-        
-        Residual[0] = 0.0;                                          Residual[1] = 0.0;                                          Residual[2] = 0.0;
-        Residual[3] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[4] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[5] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_2, Residual);
-      }
-      
-    }
-		
-	}
-	
-}
-
-void CFEASolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                unsigned short val_marker) {
-	
-#ifndef DEBUG
+CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
   
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	double *Coord_0 = NULL, *Coord_1 = NULL, *Coord_2 = NULL,
-  Normal_Elem[3] = {0.0, 0.0, 0.0}, Pressure[3] = {0.0, 0.0, 0.0}, a[3], b[3];
-	unsigned short iDim;
-		
-	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
-		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);
-    Coord_0 = geometry->node[Point_0]->GetCoord();
-    Pressure[0] = node[Point_0]->GetFlow_Pressure();
-		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);
-    Coord_1 = geometry->node[Point_1]->GetCoord();
-    Pressure[1] = node[Point_1]->GetFlow_Pressure();
-		if (nDim == 3) {
-      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);
-      Coord_2 = geometry->node[Point_2]->GetCoord();
-      Pressure[2] = node[Point_2]->GetFlow_Pressure();
-    }
-    
-		/*--- Compute area (3D), and length of the surfaces (2D) ---*/
-    
-		if (nDim == 2) {
-			for (iDim = 0; iDim < nDim; iDim++)
-				a[iDim] = Coord_0[iDim]-Coord_1[iDim];
-      
-      Normal_Elem[0] = -(-a[1]);
-			Normal_Elem[1] = -(a[0]);
-      
-		}
-		if (nDim == 3) {
-			for (iDim = 0; iDim < nDim; iDim++) {
-				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-			}
-      
-      Normal_Elem[0] = -(0.5*(a[1]*b[2]-a[2]*b[1]));
-			Normal_Elem[1] = -(-0.5*(a[0]*b[2]-a[2]*b[0]));
-			Normal_Elem[2] = -(0.5*(a[0]*b[1]-a[1]*b[0]));
-		}
-		
-    /*--- Add the residual corresponding to the force on the surface ---*/
-
-    if (config->GetUnsteady_Simulation() == STEADY) {
-      if (nDim == 2) {
-        Residual[0] = (1.0/2.0)*Pressure[0]*Normal_Elem[0];
-        Residual[1] = (1.0/2.0)*Pressure[0]*Normal_Elem[1];
-        LinSysRes.AddBlock(Point_0, Residual);
-        Residual[0] = (1.0/2.0)*Pressure[1]*Normal_Elem[0];
-        Residual[1] = (1.0/2.0)*Pressure[1]*Normal_Elem[1];
-        LinSysRes.AddBlock(Point_1, Residual);
-      }
-      else {
-        Residual[0] = (1.0/3.0)*Pressure[0]*Normal_Elem[0];
-        Residual[1] = (1.0/3.0)*Pressure[0]*Normal_Elem[1];
-        Residual[2] = (1.0/3.0)*Pressure[0]*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_0, Residual);
-        
-        Residual[0] = (1.0/3.0)*Pressure[1]*Normal_Elem[0];
-        Residual[1] = (1.0/3.0)*Pressure[1]*Normal_Elem[1];
-        Residual[2] = (1.0/3.0)*Pressure[1]*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_1, Residual);
-        
-        Residual[0] = (1.0/3.0)*Pressure[2]*Normal_Elem[0];
-        Residual[1] = (1.0/3.0)*Pressure[2]*Normal_Elem[1];
-        Residual[2] = (1.0/3.0)*Pressure[2]*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_2, Residual);
-      }
-    }
-    else {
-      if (nDim == 2) {
-        Residual[0] = 0.0; Residual[1] = 0.0;
-        Residual[2] = (1.0/2.0)*Pressure[0]*Normal_Elem[0];
-        Residual[3] = (1.0/2.0)*Pressure[0]*Normal_Elem[1];
-        LinSysRes.AddBlock(Point_0, Residual);
-        Residual[0] = 0.0; Residual[1] = 0.0;
-        Residual[2] = (1.0/2.0)*Pressure[1]*Normal_Elem[0];
-        Residual[3] = (1.0/2.0)*Pressure[1]*Normal_Elem[1];
-        LinSysRes.AddBlock(Point_1, Residual);
-      }
-      else {
-        Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-        Residual[3] = (1.0/3.0)*Pressure[0]*Normal_Elem[0];
-        Residual[4] = (1.0/3.0)*Pressure[0]*Normal_Elem[1];
-        Residual[5] = (1.0/3.0)*Pressure[0]*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_0, Residual);
-        
-        Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-        Residual[3] = (1.0/3.0)*Pressure[1]*Normal_Elem[0];
-        Residual[4] = (1.0/3.0)*Pressure[1]*Normal_Elem[1];
-        Residual[5] = (1.0/3.0)*Pressure[1]*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_1, Residual);
-        
-        Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-        Residual[3] = (1.0/3.0)*Pressure[2]*Normal_Elem[0];
-        Residual[4] = (1.0/3.0)*Pressure[2]*Normal_Elem[1];
-        Residual[5] = (1.0/3.0)*Pressure[2]*Normal_Elem[2];
-        LinSysRes.AddBlock(Point_2, Residual);
-      }
-    }
-		
-	}
-  
-#else
-
-  double StiffMatrix_BoundElem[9][9], Vector_BoundElem[9], LoadNode[9];
-  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-  double Length_Elem, Area_Elem, Pressure[3];
   unsigned short iVar, jVar;
   
-  if (nDim == 2) {
-    
-    Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);
-    Pressure[0] = node[Point_0]->GetFlow_Pressure();
-		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);
-    Pressure[1] = node[Point_1]->GetFlow_Pressure();
-    
-    StiffMatrix_BoundElem[0][0] = (2.0/6.0)*Length_Elem;
-    StiffMatrix_BoundElem[0][1] = 0.0;
-    StiffMatrix_BoundElem[0][2] = (1.0/6.0)*Length_Elem;
-    StiffMatrix_BoundElem[0][3] = 0.0;
-    StiffMatrix_BoundElem[1][0] = 0.0;
-    StiffMatrix_BoundElem[1][1] = (2.0/6.0)*Length_Elem;
-    StiffMatrix_BoundElem[1][2] = 0.0;
-    StiffMatrix_BoundElem[1][3] = (1.0/6.0)*Length_Elem;
-    StiffMatrix_BoundElem[2][0] = (1.0/6.0)*Length_Elem;
-    StiffMatrix_BoundElem[2][1] = 0.0;
-    StiffMatrix_BoundElem[2][2] = (2.0/6.0)*Length_Elem;
-    StiffMatrix_BoundElem[2][3] = 0.0;
-    StiffMatrix_BoundElem[3][0] = 0.0;
-    StiffMatrix_BoundElem[3][1] = (1.0/6.0)*Length_Elem;
-    StiffMatrix_BoundElem[3][2] = 0.0;
-    StiffMatrix_BoundElem[3][3] = (2.0/6.0)*Length_Elem;
-    
-    LoadNode[0] = 0.0; LoadNode[1] = Pressure[0]; LoadNode[2] = 0.0;	LoadNode[3] = Pressure[1];
-    
-    for (iVar = 0; iVar < 4; iVar++) {
-      Vector_BoundElem[iVar] = 0.0;
-      for (jVar = 0; jVar < 4; jVar++) {
-        Vector_BoundElem[iVar] += StiffMatrix_BoundElem[iVar][jVar]*LoadNode[jVar];
+  if (element_container != NULL) {
+    for (iVar = 0; iVar < MAX_TERMS; iVar++) {
+      for (jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
+        if (element_container[iVar][jVar] != NULL) delete element_container[iVar][jVar];
       }
+      delete [] element_container[iVar];
     }
-    
-    Residual[0] = 0.0;
-    Residual[1] = 0.0;
-    Residual[2] = Vector_BoundElem[0];
-    Residual[3] = Vector_BoundElem[1];
-    LinSysRes.AddBlock(Point_0, Residual);
-    
-    Residual[0] = 0.0;
-    Residual[1] = 0.0;
-    Residual[2] = Vector_BoundElem[2];
-    Residual[3] = Vector_BoundElem[3];
-    LinSysRes.AddBlock(Point_1, Residual);
-    
+    delete [] element_container;
   }
   
-  if (nDim == 3) {
-    
-    Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);
-    Pressure[0] = node[Point_0]->GetFlow_Pressure();
-		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);
-    Pressure[1] = node[Point_1]->GetFlow_Pressure();
-    Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);
-    Pressure[2] = node[Point_2]->GetFlow_Pressure();
-    
-    StiffMatrix_BoundElem[0][0] = (2.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[0][1] = 0.0;
-    StiffMatrix_BoundElem[0][2] = 0.0;
-    StiffMatrix_BoundElem[0][3] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[0][4] = 0.0;
-    StiffMatrix_BoundElem[0][5] = 0.0;
-    StiffMatrix_BoundElem[0][6] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[0][7] = 0.0;
-    StiffMatrix_BoundElem[0][8] = 0.0;
-    StiffMatrix_BoundElem[1][0] = 0.0;
-    StiffMatrix_BoundElem[1][1] = (2.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[1][2] = 0.0;
-    StiffMatrix_BoundElem[1][3] = 0.0;
-    StiffMatrix_BoundElem[1][4] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[1][5] = 0.0;
-    StiffMatrix_BoundElem[1][6] = 0.0;
-    StiffMatrix_BoundElem[1][7] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[1][8] = 0.0;
-    StiffMatrix_BoundElem[2][0] = 0.0;
-    StiffMatrix_BoundElem[2][1] = 0.0;
-    StiffMatrix_BoundElem[2][2] = (2.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[2][3] = 0.0;
-    StiffMatrix_BoundElem[2][4] = 0.0;
-    StiffMatrix_BoundElem[2][5] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[2][6] = 0.0;
-    StiffMatrix_BoundElem[2][7] = 0.0;
-    StiffMatrix_BoundElem[2][8] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[3][0] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[3][1] = 0.0;
-    StiffMatrix_BoundElem[3][2] = 0.0;
-    StiffMatrix_BoundElem[3][3] = (2.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[3][4] = 0.0;
-    StiffMatrix_BoundElem[3][5] = 0.0;
-    StiffMatrix_BoundElem[3][6] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[3][7] = 0.0;
-    StiffMatrix_BoundElem[3][8] = 0.0;
-    StiffMatrix_BoundElem[4][0] = 0.0;
-    StiffMatrix_BoundElem[4][1] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[4][2] = 0.0;
-    StiffMatrix_BoundElem[4][3] = 0.0;
-    StiffMatrix_BoundElem[4][4] = (2.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[4][5] = 0.0;
-    StiffMatrix_BoundElem[4][6] = 0.0;
-    StiffMatrix_BoundElem[4][7] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[4][8] = 0.0;
-    StiffMatrix_BoundElem[5][0] = 0.0;
-    StiffMatrix_BoundElem[5][1] = 0.0;
-    StiffMatrix_BoundElem[5][2] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[5][3] = 0.0;
-    StiffMatrix_BoundElem[5][4] = 0.0;
-    StiffMatrix_BoundElem[5][5] = (2.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[5][6] = 0.0;
-    StiffMatrix_BoundElem[5][7] = 0.0;
-    StiffMatrix_BoundElem[5][8] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[6][0] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[6][1] = 0.0;
-    StiffMatrix_BoundElem[6][2] = 0.0;
-    StiffMatrix_BoundElem[6][3] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[6][4] = 0.0;
-    StiffMatrix_BoundElem[6][5] = 0.0;
-    StiffMatrix_BoundElem[6][6] = (2.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[6][7] = 0.0;
-    StiffMatrix_BoundElem[6][8] = 0.0;
-    StiffMatrix_BoundElem[7][0] = 0.0;
-    StiffMatrix_BoundElem[7][1] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[7][2] = 0.0;
-    StiffMatrix_BoundElem[7][3] = 0.0;
-    StiffMatrix_BoundElem[7][4] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[7][5] = 0.0;
-    StiffMatrix_BoundElem[7][6] = 0.0;
-    StiffMatrix_BoundElem[7][7] = (2.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[7][8] = 0.0;
-    StiffMatrix_BoundElem[8][0] = 0.0;
-    StiffMatrix_BoundElem[8][1] = 0.0;
-    StiffMatrix_BoundElem[8][2] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[8][3] = 0.0;
-    StiffMatrix_BoundElem[8][4] = 0.0;
-    StiffMatrix_BoundElem[8][5] = (1.0/12.0)*Area_Elem;
-    StiffMatrix_BoundElem[8][6] = 0.0;
-    StiffMatrix_BoundElem[8][7] = 0.0;
-    StiffMatrix_BoundElem[8][8] = (2.0/12.0)*Area_Elem;
-    
-    LoadNode[0] = 0.0;	LoadNode[1] = 0.0;	LoadNode[2] = Pressure[0];
-    LoadNode[3] = 0.0;	LoadNode[4] = 0.0;	LoadNode[5] = Pressure[1];
-    LoadNode[6] = 0.0;	LoadNode[7] = 0.0;	LoadNode[8] = Pressure[2];
-    
-    for (iVar = 0; iVar < 9; iVar++) {
-      Vector_BoundElem[iVar] = 0.0;
-      for (jVar = 0; jVar < 9; jVar++) {
-        Vector_BoundElem[iVar] += StiffMatrix_BoundElem[iVar][jVar]*LoadNode[jVar];
-      }
-    }
-    
-    Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-    Residual[3] = Vector_BoundElem[0]; Residual[4] = Vector_BoundElem[1]; Residual[5] = Vector_BoundElem[2];
-    LinSysRes.AddBlock(Point_0, Residual);
-    
-    Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-    Residual[3] = Vector_BoundElem[3]; Residual[4] = Vector_BoundElem[4]; Residual[5] = Vector_BoundElem[5];
-    LinSysRes.AddBlock(Point_1, Residual);
-    
-    Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-    Residual[3] = Vector_BoundElem[6]; Residual[4] = Vector_BoundElem[7]; Residual[5] = Vector_BoundElem[8];
-    LinSysRes.AddBlock(Point_2, Residual);
-    
+  for (iVar = 0; iVar < nVar; iVar++) {
+    if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij[iVar];
+    if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij[iVar];
+    if (Jacobian_k_ij != NULL) delete[] Jacobian_k_ij[iVar];
+    delete [] mZeros_Aux[iVar];
+    delete [] mId_Aux[iVar];
+    delete [] stressTensor[iVar];
   }
-
-#endif
-
+  
+  if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij;
+  if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij;
+  if (Jacobian_k_ij != NULL) delete [] Jacobian_k_ij;
+  delete [] Res_Stress_i;
+  delete [] Res_Ext_Surf;
+  if (Res_Time_Cont != NULL) delete[] Res_Time_Cont;
+  if (Res_Dead_Load != NULL) delete[] Res_Dead_Load;
+  delete [] SolRest;
+  delete [] GradN_X;
+  delete [] GradN_x;
+  
+  delete [] mZeros_Aux;
+  delete [] mId_Aux;
+  
+  delete [] nodeReactions;
+  
+  delete [] normalVertex;
+  delete [] stressTensor;
+  
 }
 
-void CFEASolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                              unsigned short val_marker) { }
+void CFEM_ElasticitySolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
+  
+  
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+  
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  
+  unsigned short nSolVar;
+  
+  if (dynamic) nSolVar = 3 * nVar;
+  else nSolVar = nVar;
+  
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+      
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nSolVar;     nBufferR_Vector = nVertexR*nSolVar;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
+      
+      /*--- Copy the solution that should be sent ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
+        if (dynamic) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Buffer_Send_U[(iVar+nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Vel(iVar);
+            Buffer_Send_U[(iVar+2*nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Accel(iVar);
+          }
+        }
+      }
+      
+#ifdef HAVE_MPI
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+        if (dynamic) {
+          for (iVar = nVar; iVar < 3*nVar; iVar++)
+            Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+        }
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_U;
+      
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        
+        /*--- Copy solution variables. ---*/
+        for (iVar = 0; iVar < nSolVar; iVar++)
+          SolRest[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
+        
+        /*--- Store received values back into the variable. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetSolution(iVar, SolRest[iVar]);
+        
+        if (dynamic) {
+          
+          for (iVar = 0; iVar < nVar; iVar++) {
+            node[iPoint]->SetSolution_Vel(iVar, SolRest[iVar+nVar]);
+            node[iPoint]->SetSolution_Accel(iVar, SolRest[iVar+2*nVar]);
+          }
+          
+        }
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_U;
+      
+    }
+    
+  }
+  
+}
+
+void CFEM_ElasticitySolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
+  
+  
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+  
+  unsigned short nSolVar;
+  
+  nSolVar = 3 * nVar;
+  
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+      
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nSolVar;     nBufferR_Vector = nVertexR*nSolVar;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
+      
+      /*--- Copy the solution that should be sent ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_time_n(iVar);
+          Buffer_Send_U[(iVar+nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Vel_time_n(iVar);
+          Buffer_Send_U[(iVar+2*nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Accel_time_n(iVar);
+        }
+      }
+      
+#ifdef HAVE_MPI
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nSolVar; iVar++)
+          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_U;
+      
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        
+        /*--- Copy solution variables. ---*/
+        for (iVar = 0; iVar < nSolVar; iVar++)
+          SolRest[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
+        
+        /*--- Store received values back into the variable. ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          node[iPoint]->SetSolution_time_n(iVar, SolRest[iVar]);
+          node[iPoint]->SetSolution_Vel_time_n(iVar, SolRest[iVar+nVar]);
+          node[iPoint]->SetSolution_Accel_time_n(iVar, SolRest[iVar+2*nVar]);
+        }
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_U;
+      
+    }
+    
+  }
+  
+}
+
+void CFEM_ElasticitySolver::Set_MPI_Solution_DispOnly(CGeometry *geometry, CConfig *config) {
+  
+  
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+  
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+      
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;         nBufferR_Vector = nVertexR*nVar;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
+      
+      /*--- Copy the solution that should be sent ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
+      }
+      
+#ifdef HAVE_MPI
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_U;
+      
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        
+        /*--- Copy solution variables. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          SolRest[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
+        
+        /*--- Store received values back into the variable. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetSolution(iVar, SolRest[iVar]);
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_U;
+      
+    }
+    
+  }
+  
+}
+
+void CFEM_ElasticitySolver::Set_MPI_Solution_Pred(CGeometry *geometry, CConfig *config) {
+  
+  
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+  
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+      
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;     nBufferR_Vector = nVertexR*nVar;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
+      
+      /*--- Copy the solution that should be sent ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Pred(iVar);
+      }
+      
+#ifdef HAVE_MPI
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_U;
+      
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        
+        /*--- Copy predicted solution variables back into the variables. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetSolution_Pred(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_U;
+      
+    }
+    
+  }
+  
+}
+
+void CFEM_ElasticitySolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config) {
+  
+  /*--- We are communicating the solution predicted, current and old, and the old solution ---*/
+  /*--- necessary for the Aitken relaxation ---*/
+  
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+  
+  /*--- Analogous to the dynamic solution, in this case we need 3 * nVar variables per node ---*/
+  unsigned short nSolVar;
+  nSolVar = 3 * nVar;
+  
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+      
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nSolVar;     nBufferR_Vector = nVertexR*nSolVar;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
+      
+      /*--- Copy the solution that should be sent ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Old(iVar);
+          Buffer_Send_U[(iVar+nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Pred(iVar);
+          Buffer_Send_U[(iVar+2*nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Pred_Old(iVar);
+        }
+      }
+      
+#ifdef HAVE_MPI
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nSolVar; iVar++)
+          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_U;
+      
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        
+        /*--- Store received values back into the variable. ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          node[iPoint]->SetSolution_Old(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
+          node[iPoint]->SetSolution_Pred(iVar, Buffer_Receive_U[(iVar+nVar)*nVertexR+iVertex]);
+          node[iPoint]->SetSolution_Pred_Old(iVar, Buffer_Receive_U[(iVar+2*nVar)*nVertexR+iVertex]);
+        }
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_U;
+      
+    }
+    
+  }
+  
+}
 
 
-void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
+  
+  unsigned long index;
+  
+  unsigned short iVar;
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry->GetnZone();
+  
+  string filename;
+  ifstream prestretch_file;
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  
+  /*--- Restart the solution from file information ---*/
+  
+  filename = config->GetPrestretch_FEMFileName();
+  
+  /*--- If multizone, append zone name ---*/
+  if (nZone > 1)
+    filename = config->GetMultizone_FileName(filename, iZone);
+  
+  cout << "Filename: " << filename << "." << endl;
+  
+  prestretch_file.open(filename.data(), ios::in);
+  
+  /*--- In case there is no file ---*/
+  
+  if (prestretch_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There is no FEM prestretch reference file!!" << endl;
+    exit(EXIT_FAILURE);
+  }
+  
+  /*--- Read all lines in the restart file ---*/
+  
+  long iPoint_Local;
+  unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+  
+  /*--- The first line is the header ---*/
+  
+  getline (prestretch_file, text_line);
+  
+  while (getline (prestretch_file, text_line)) {
+    istringstream point_line(text_line);
+    
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+      
+      if (nDim == 2) point_line >> Solution[0] >> Solution[1] >> index;
+      if (nDim == 3) point_line >> Solution[0] >> Solution[1] >> Solution[2] >> index;
+      
+      for (iVar = 0; iVar < nVar; iVar++) node[iPoint_Local]->SetPrestretch(iVar, Solution[iVar]);
+      
+      iPoint_Global_Local++;
+    }
+    iPoint_Global++;
+  }
+  
+  /*--- Detect a wrong solution file ---*/
+  
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+  
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+  
+  /*--- TODO: We need to communicate here the prestretched geometry for the halo nodes. ---*/
+  
+  /*--- Close the restart file ---*/
+  
+  prestretch_file.close();
+  
+}
+
+
+void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
+  
+  
   unsigned long iPoint;
-  double Strain_xx, Strain_yy, Strain_xy, Strain_zz = 0.0, Strain_xz = 0.0, Strain_yz = 0.0, **Stress, VonMises_Stress, MaxVonMises_Stress = 0.0, Strain_Trace;
+  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
+  bool first_iter = (config->GetIntIter() == 0);                          // Checks if it is the first iteration
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
+  bool restart = config->GetRestart();                        // Restart analysis
+  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter()); // Initial calculation for restart
   
-  double E = config->GetElasticyMod();
-  double Nu = config->GetPoissonRatio();
-  double Mu = E / (2.0*(1.0 + Nu));
-  double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));		// For plane strain and 3-D
+  bool incremental_load = config->GetIncrementalLoad();                // If an incremental load is applied
   
-	/*--- Compute the gradient of the displacement ---*/
+  bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
   
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  /*--- Set vector entries to zero ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+    LinSysAux.SetBlock_Zero(iPoint);
+    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysSol.SetBlock_Zero(iPoint);
+  }
   
-  /*--- Compute the strains and streeses ---*/
+  /*--- Set matrix entries to zero ---*/
   
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Strain_xx = node[iPoint]->GetGradient(0,0);
-    Strain_yy = node[iPoint]->GetGradient(1,1);
-    Strain_xy = 0.5*(node[iPoint]->GetGradient(0,1) + node[iPoint]->GetGradient(1,0));
-    Strain_Trace = Strain_xx + Strain_yy;
+  /*
+   * If the problem is linear, we only need one Jacobian matrix in the problem, because
+   * it is going to be constant along the calculations. Therefore, we only initialize
+   * the Jacobian matrix once, at the beginning of the simulation.
+   *
+   * We don't need first_iter, because there is only one iteration per time step in linear analysis.
+   */
+  if ((initial_calc && linear_analysis)||
+      (restart && initial_calc_restart && linear_analysis)) {
+    Jacobian.SetValZero();
+  }
+  
+  /*
+   * If the problem is dynamic, we need a mass matrix, which will be constant along the calculation
+   * both for linear and nonlinear analysis. Only initialized once, at the first time step.
+   *
+   * The same with the integration constants, as for now we consider the time step to be constant.
+   *
+   * We need first_iter, because in nonlinear problems there are more than one subiterations in the first time step.
+   */
+  if ((dynamic && initial_calc && first_iter) ||
+      (dynamic && restart && initial_calc_restart && first_iter)) {
+    MassMatrix.SetValZero();
+    Compute_IntegrationConstants(config);
+    Compute_MassMatrix(geometry, solver_container, numerics, config);
+  }
+  
+  /*
+   * If body forces are taken into account, we need to compute the term that goes into the residual,
+   * which will be constant along the calculation both for linear and nonlinear analysis.
+   *
+   * Only initialized once, at the first iteration or the beginning of the calculation after a restart.
+   *
+   * We need first_iter, because in nonlinear problems there are more than one subiterations in the first time step.
+   */
+  
+  if ((body_forces && initial_calc && first_iter) ||
+      (body_forces && restart && initial_calc_restart && first_iter)) {
+    // If the load is incremental, we have to reset the variable to avoid adding up over the increments
+    if (incremental_load) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_BodyForces_Res();
+    }
+    // Compute the dead load term
+    Compute_DeadLoad(geometry, solver_container, numerics, config);
+  }
+  
+  /*
+   * If the problem is nonlinear, we need to initialize the Jacobian and the stiffness matrix at least at the beginning
+   * of each time step. If the solution method is Newton Rapshon, we initialize it also at the beginning of each
+   * iteration.
+   */
+  
+  if ((nonlinear_analysis) && ((newton_raphson) || (first_iter)))  {
+    Jacobian.SetValZero();
+    //    StiffMatrix.SetValZero();
+  }
+  
+  /*
+   * Some external forces may be considered constant over the time step.
+   */
+  if (first_iter)  {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_SurfaceLoad_Res();
+  }
+  
+  /*
+   * If we apply pressure forces, we need to clear the residual on each iteration
+   */
+  unsigned short iMarker;
+  unsigned long iVertex;
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case LOAD_BOUNDARY:
+        /*--- Only if the load is nonzero - reduces computational cost ---*/
+        if(config->GetLoad_Value(config->GetMarker_All_TagBound(iMarker)) != 0 ) {
+          /*--- For all the vertices in the marker iMarker ---*/
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            /*--- Retrieve the point ID ---*/
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            /*--- Clear the residual of the node, to avoid adding on previous values ---*/
+            node[iPoint]->Clear_SurfaceLoad_Res();
+          }
+        }
+        break;
+    }
+  
+  
+}
+
+void CFEM_ElasticitySolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
+
+void CFEM_ElasticitySolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+  
+  unsigned long iPoint, nPoint;
+  bool incremental_load = config->GetIncrementalLoad();              // If an incremental load is applied
+  
+  nPoint = geometry[MESH_0]->GetnPoint();
+  
+  /*--- We store the current solution as "Solution Old", for the case that we need to retrieve it ---*/
+  
+  if (incremental_load) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Set_OldSolution();
+  }
+  
+  
+}
+
+void CFEM_ElasticitySolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+  
+  unsigned long iPoint, nPoint;
+  bool incremental_load = config->GetIncrementalLoad();              // If an incremental load is applied
+  
+  nPoint = geometry[MESH_0]->GetnPoint();
+  
+  /*--- We store the current solution as "Solution Old", for the case that we need to retrieve it ---*/
+  
+  if (incremental_load) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Set_Solution();
+  }
+  
+}
+
+void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+  
+  unsigned long iElem, iVar, jVar;
+  unsigned short iNode, iDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord;
+  int EL_KIND = 0;
+  
+  su2double *Kab = NULL;
+  unsigned short NelNodes, jNode;
+  
+  /*--- Loops over all the elements ---*/
+  
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->GetnDim() == 3) {
-      Strain_zz = node[iPoint]->GetGradient(2,2);
-      Strain_xz = 0.5*(node[iPoint]->GetGradient(0,2) + node[iPoint]->GetGradient(2,0));
-      Strain_yz = 0.5*(node[iPoint]->GetGradient(1,2) + node[iPoint]->GetGradient(2,1));
-      Strain_Trace += Strain_zz;
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+    
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+    
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+      }
     }
     
-    node[iPoint]->SetStress(0, 0, 2.0*Mu*Strain_xx + Lambda*Strain_Trace);
-    node[iPoint]->SetStress(1, 1, 2.0*Mu*Strain_yy + Lambda*Strain_Trace);
-    node[iPoint]->SetStress(0, 1, 2.0*Mu*Strain_xy);
-    node[iPoint]->SetStress(1, 0, 2.0*Mu*Strain_xy);
+    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
     
-    if (geometry->GetnDim() == 3) {
-      node[iPoint]->SetStress(2, 2, 2.0*Mu*Strain_zz + Lambda*Strain_Trace);
-      node[iPoint]->SetStress(0, 2, 2.0*Mu*Strain_xz);
-      node[iPoint]->SetStress(2, 0, 2.0*Mu*Strain_xz);
-      node[iPoint]->SetStress(1, 2, 2.0*Mu*Strain_yz);
-      node[iPoint]->SetStress(2, 1, 2.0*Mu*Strain_yz);
+    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+    
+    for (iNode = 0; iNode < NelNodes; iNode++) {
+      
+      for (jNode = 0; jNode < NelNodes; jNode++) {
+        
+        Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
+          }
+        }
+        
+        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+        
+      }
+      
     }
     
-    /*---Compute Von Mises criteria ---*/
+  }
+  
+  
+}
+
+void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+  
+  unsigned long iElem, iVar, jVar;
+  unsigned short iNode, iDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord, val_Sol, val_Ref = 0.0;
+  int EL_KIND = 0;
+  
+  bool prestretch_fem = config->GetPrestretch();
+  
+  su2double Ks_ab;
+  su2double *Kab = NULL;
+  su2double *Kk_ab = NULL;
+  su2double *Ta = NULL;
+  unsigned short NelNodes, jNode;
+  
+  bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
+  
+  /*--- Loops over all the elements ---*/
+  
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    Stress = node[iPoint]->GetStress();
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
     
-    if (geometry->GetnDim() == 2) {
-      VonMises_Stress = sqrt(  Stress[0][0]*Stress[0][0]
-                             - Stress[0][0]*Stress[1][1]
-                             + Stress[1][1]*Stress[1][1]
-                             + 3.0*Stress[0][1]*Stress[0][1]
-                             );
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+    
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        if (prestretch_fem) {
+          val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
+        }
+        else {
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        }
+      }
+    }
+    
+    /*--- If incompressible, we compute the Mean Dilatation term first so the volume is already computed ---*/
+    
+    if (incompressible) numerics[FEA_TERM]->Compute_MeanDilatation_Term(element_container[FEA_TERM][EL_KIND], config);
+    
+    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+    
+    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+    
+    for (iNode = 0; iNode < NelNodes; iNode++) {
+      
+      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
+      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+      
+      /*--- Check if this is my node or not ---*/
+      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+      
+      for (jNode = 0; jNode < NelNodes; jNode++) {
+        
+        Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
+        Ks_ab = element_container[FEA_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
+        if (incompressible) Kk_ab = element_container[FEA_TERM][EL_KIND]->Get_Kk_ab(iNode,jNode);
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Jacobian_s_ij[iVar][iVar] = Ks_ab;
+          for (jVar = 0; jVar < nVar; jVar++) {
+            Jacobian_c_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
+            if (incompressible) Jacobian_k_ij[iVar][jVar] = Kk_ab[iVar*nVar+jVar];
+          }
+        }
+        
+        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
+        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
+        if (incompressible) Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
+        
+      }
+      
+    }
+    
+  }
+  
+}
+
+void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+  
+  unsigned long iElem, iVar;
+  unsigned short iNode, iDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord;
+  int EL_KIND = 0;
+  
+  su2double Mab;
+  unsigned short NelNodes, jNode;
+  
+  /*--- Loops over all the elements ---*/
+  
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+    
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+    
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+      }
+    }
+    
+    numerics[FEA_TERM]->Compute_Mass_Matrix(element_container[FEA_TERM][EL_KIND], config);
+    
+    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+    
+    for (iNode = 0; iNode < NelNodes; iNode++) {
+      
+      for (jNode = 0; jNode < NelNodes; jNode++) {
+        
+        Mab = element_container[FEA_TERM][EL_KIND]->Get_Mab(iNode, jNode);
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          MassMatrix_ij[iVar][iVar] = Mab;
+        }
+        
+        MassMatrix.AddBlock(indexNode[iNode], indexNode[jNode], MassMatrix_ij);
+        
+      }
+      
+    }
+    
+  }
+  
+}
+
+void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+  
+  
+  unsigned long iElem, iVar;
+  unsigned short iNode, iDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord, val_Sol, val_Ref = 0.0;
+  int EL_KIND = 0;
+  
+  bool prestretch_fem = config->GetPrestretch();
+  
+  su2double *Ta = NULL;
+  unsigned short NelNodes;
+  
+  /*--- Loops over all the elements ---*/
+  
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+    
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+      //      for (iDim = 0; iDim < nDim; iDim++) {
+      //        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+      //        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+      //        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+      //        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+      //      }
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        if (prestretch_fem) {
+          val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
+        }
+        else {
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        }
+      }
+    }
+    
+    numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
+    
+    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+    
+    for (iNode = 0; iNode < NelNodes; iNode++) {
+      
+      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
+      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+      
+      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+      
+    }
+    
+  }
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    val_Coord = geometry->node[0]->GetCoord(iDim);
+    val_Sol = node[0]->GetSolution(iDim) + val_Coord;
+  }
+  
+}
+
+void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+  
+  unsigned long iPoint, iElem, iVar;
+  unsigned short iNode, iDim, iStress;
+  unsigned short nNodes = 0, nStress;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord, val_Sol, val_Ref = 0.0;
+  int EL_KIND = 0;
+  
+  bool prestretch_fem = config->GetPrestretch();
+  
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  
+  if (nDim == 2) nStress = 3;
+  else nStress = 6;
+  
+  su2double *Ta = NULL;
+  
+  unsigned short NelNodes;
+  
+  /*--- Restart stress to avoid adding results from previous time steps ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iStress = 0; iStress < nStress; iStress++) {
+      node[iPoint]->SetStress_FEM(iStress, 0.0);
+    }
+  }
+  
+  /*--- Loops over all the elements ---*/
+  
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+    
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+      //      for (iDim = 0; iDim < nDim; iDim++) {
+      //        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+      //        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+      //        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+      //        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+      //      }
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        if (prestretch_fem) {
+          val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
+        }
+        else {
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        }
+      }
+    }
+    
+    numerics[FEA_TERM]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND], config);
+    
+    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+    
+    for (iNode = 0; iNode < NelNodes; iNode++) {
+      
+      /*--- This only works if the problem is nonlinear ---*/
+      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
+      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+      
+      LinSysReact.AddBlock(indexNode[iNode], Res_Stress_i);
+      
+      for (iStress = 0; iStress < nStress; iStress++) {
+        node[indexNode[iNode]]->AddStress_FEM(iStress,
+                                              (element_container[FEA_TERM][EL_KIND]->Get_NodalStress(iNode, iStress) /
+                                               geometry->node[indexNode[iNode]]->GetnElem()) );
+      }
+      
+    }
+    
+  }
+  
+  su2double *Stress;
+  su2double VonMises_Stress, MaxVonMises_Stress = 0.0;
+  su2double Sxx,Syy,Szz,Sxy,Sxz,Syz,S1,S2;
+  
+  /*--- For the number of nodes in the mesh ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- Get the stresses, added up from all the elements that connect to the node ---*/
+    
+    Stress  = node[iPoint]->GetStress_FEM();
+    
+    /*--- Compute the stress averaged from all the elements connecting to the node and the Von Mises stress ---*/
+    
+    if (nDim == 2) {
+      
+      Sxx=Stress[0];
+      Syy=Stress[1];
+      Sxy=Stress[2];
+      
+      S1=(Sxx+Syy)/2+sqrt(((Sxx-Syy)/2)*((Sxx-Syy)/2)+Sxy*Sxy);
+      S2=(Sxx+Syy)/2-sqrt(((Sxx-Syy)/2)*((Sxx-Syy)/2)+Sxy*Sxy);
+      
+      VonMises_Stress = sqrt(S1*S1+S2*S2-2*S1*S2);
+      
     }
     else {
-      VonMises_Stress = sqrt(0.5*(  pow(Stress[0][0] - Stress[1][1], 2.0)
-                                  + pow(Stress[1][1] - Stress[2][2], 2.0)
-                                  + pow(Stress[2][2] - Stress[0][0], 2.0)
-                                  + 6.0*(Stress[0][1]*Stress[0][1]+Stress[1][2]*Stress[1][2]+Stress[2][0]*Stress[2][0])
+      
+      Sxx = Stress[0];
+      Syy = Stress[1];
+      Szz = Stress[3];
+      
+      Sxy = Stress[2];
+      Sxz = Stress[4];
+      Syz = Stress[5];
+      
+      VonMises_Stress = sqrt(0.5*(   pow(Sxx - Syy, 2.0)
+                                  + pow(Syy - Szz, 2.0)
+                                  + pow(Szz - Sxx, 2.0)
+                                  + 6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)
                                   ));
+      
     }
-    
-    /*---Store the Von Mises criteria ---*/
     
     node[iPoint]->SetVonMises_Stress(VonMises_Stress);
     
@@ -1089,8 +1509,8 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   
   /*--- Compute MaxVonMises_Stress using all the nodes ---*/
   
-  double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
-  MPI_Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  su2double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
+  SU2_MPI::Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   
 #endif
   
@@ -1098,356 +1518,2576 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   
   Total_CFEA = MaxVonMises_Stress;
   
-}
-
-void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
-                                      unsigned short iMesh, unsigned short RunTime_EqSystem) {
-	 
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-	double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, d[3] = {0.0,0.0,0.0}, Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
-	unsigned short iDim, iVar, jVar;
-	double Density = config->GetMaterialDensity(), TimeJac = 0.0;
-	
-	/*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
   
-	Time_Num = config->GetDelta_UnstTimeND();
-	
-	/*--- Loop through elements to compute contributions from the matrix
-   blocks involving time. These contributions are also added to the
-   Jacobian w/ the time step. Spatial source terms are also computed. ---*/
+  bool outputReactions = false;
   
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		
-    /*--- Get node numbers and their coordinate vectors ---*/
-		Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
-		Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
-		Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
-		
-		if (nDim == 2) {
-			
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-        b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+  if (outputReactions) {
+    
+    ofstream myfile;
+    myfile.open ("Reactions.txt");
+    
+    unsigned short iMarker;
+    unsigned long iVertex;
+    su2double val_Reaction;
+    
+    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+    bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+    
+    if (!dynamic) {
+      /*--- Loop over all the markers  ---*/
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+        switch (config->GetMarker_All_KindBC(iMarker)) {
+            
+            /*--- If it corresponds to a clamped boundary  ---*/
+            
+          case CLAMPED_BOUNDARY:
+            
+            myfile << "MARKER " << iMarker << ":" << endl;
+            
+            /*--- Loop over all the vertices  ---*/
+            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+              
+              /*--- Get node index ---*/
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              
+              myfile << "Node " << iPoint << "." << " \t ";
+              
+              for (iDim = 0; iDim < nDim; iDim++) {
+                /*--- Retrieve coordinate ---*/
+                val_Coord = geometry->node[iPoint]->GetCoord(iDim);
+                myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
+              }
+              
+              for (iVar = 0; iVar < nVar; iVar++) {
+                /*--- Retrieve reaction ---*/
+                val_Reaction = LinSysReact.GetBlock(iPoint, iVar);
+                myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
+              }
+              
+              myfile << endl;
+            }
+            myfile << endl;
+            break;
+        }
+    }
+    else if (dynamic) {
+      
+      switch (config->GetKind_TimeIntScheme_FEA()) {
+        case (CD_EXPLICIT):
+          cout << "NOT IMPLEMENTED YET" << endl;
+          break;
+        case (NEWMARK_IMPLICIT):
+          
+          /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
+          if (linear_analysis) {
+            for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+              for (iVar = 0; iVar < nVar; iVar++) {
+                Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
+                a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
+                a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
+              }
+              TimeRes_Aux.SetBlock(iPoint, Residual);
+            }
+          }
+          else if (nonlinear_analysis) {
+            for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+              for (iVar = 0; iVar < nVar; iVar++) {
+                Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+                - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+                + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+                + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
+              }
+              TimeRes_Aux.SetBlock(iPoint, Residual);
+            }
+          }
+          /*--- Once computed, compute M*TimeRes_Aux ---*/
+          MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
+          
+          /*--- Loop over all the markers  ---*/
+          for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            switch (config->GetMarker_All_KindBC(iMarker)) {
+                
+                /*--- If it corresponds to a clamped boundary  ---*/
+                
+              case CLAMPED_BOUNDARY:
+                
+                myfile << "MARKER " << iMarker << ":" << endl;
+                
+                /*--- Loop over all the vertices  ---*/
+                for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+                  
+                  /*--- Get node index ---*/
+                  iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                  
+                  myfile << "Node " << iPoint << "." << " \t ";
+                  
+                  for (iDim = 0; iDim < nDim; iDim++) {
+                    /*--- Retrieve coordinate ---*/
+                    val_Coord = geometry->node[iPoint]->GetCoord(iDim);
+                    myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
+                  }
+                  
+                  for (iVar = 0; iVar < nVar; iVar++) {
+                    /*--- Retrieve the time contribution ---*/
+                    Res_Time_Cont[iVar] = TimeRes.GetBlock(iPoint, iVar);
+                    /*--- Retrieve reaction ---*/
+                    val_Reaction = LinSysReact.GetBlock(iPoint, iVar) + Res_Time_Cont[iVar];
+                    myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
+                  }
+                  
+                  myfile << endl;
+                }
+                myfile << endl;
+                break;
+            }
+          
+          
+          break;
+        case (GENERALIZED_ALPHA):
+          cout << "NOT IMPLEMENTED YET" << endl;
+          break;
       }
       
-      /*--- Compute element area ---*/
-      Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+    }
+    
+    
+    
+    myfile.close();
+    
+  }
+  
+}
+
+void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+  
+  unsigned long iElem, iVar;
+  unsigned short iNode, iDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord;
+  int EL_KIND = 0;
+  
+  su2double *Dead_Load = NULL;
+  unsigned short NelNodes;
+  
+  /*--- Loops over all the elements ---*/
+  
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+    
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+      }
+    }
+    
+    numerics[FEA_TERM]->Compute_Dead_Load(element_container[FEA_TERM][EL_KIND], config);
+    
+    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+    
+    for (iNode = 0; iNode < NelNodes; iNode++) {
+      
+      Dead_Load = element_container[FEA_TERM][EL_KIND]->Get_FDL_a(iNode);
+      for (iVar = 0; iVar < nVar; iVar++) Res_Dead_Load[iVar] = Dead_Load[iVar];
+      
+      node[indexNode[iNode]]->Add_BodyForces_Res(Res_Dead_Load);
+      
+    }
+    
+  }
+  
+  
+}
+
+void CFEM_ElasticitySolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+}
+
+void CFEM_ElasticitySolver::Compute_IntegrationConstants(CConfig *config) {
+  
+  su2double Delta_t= config->GetDelta_DynTime();
+  
+  su2double delta = config->GetNewmark_delta(), alpha = config->GetNewmark_alpha();
+  
+  switch (config->GetKind_TimeIntScheme_FEA()) {
+    case (CD_EXPLICIT):
+      cout << "NOT IMPLEMENTED YET" << endl;
+      break;
+    case (NEWMARK_IMPLICIT):
+      
+      /*--- Integration constants for Newmark scheme ---*/
+      
+      a_dt[0]= 1 / (alpha*pow(Delta_t,2.0));
+      a_dt[1]= delta / (alpha*Delta_t);
+      a_dt[2]= 1 / (alpha*Delta_t);
+      a_dt[3]= 1 /(2*alpha) - 1;
+      a_dt[4]= delta/alpha - 1;
+      a_dt[5]= (Delta_t/2) * (delta/alpha - 2);
+      a_dt[6]= Delta_t * (1-delta);
+      a_dt[7]= delta * Delta_t;
+      a_dt[8]= 0.0;
+      
+      break;
+      
+    case (GENERALIZED_ALPHA):
+      
+      /*--- Integration constants for Generalized Alpha ---*/
+      /*--- Needs to be updated if accounting for structural damping ---*/
+      
+      //      su2double beta = config->Get_Int_Coeffs(0);
+      //      //  su2double gamma =  config->Get_Int_Coeffs(1);
+      //      su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
+      //
+      //      a_dt[0]= (1 / (beta*pow(Delta_t,2.0))) * ((1 - alpha_m) / (1 - alpha_f)) ;
+      //      a_dt[1]= 0.0 ;
+      //      a_dt[2]= (1 - alpha_m) / (beta*Delta_t);
+      //      a_dt[3]= ((1 - 2*beta)*(1-alpha_m) / (2*beta)) - alpha_m;
+      //      a_dt[4]= 0.0;
+      //      a_dt[5]= 0.0;
+      //      a_dt[6]= Delta_t * (1-delta);
+      //      a_dt[7]= delta * Delta_t;
+      //      a_dt[8]= (1 - alpha_m) / (beta*pow(Delta_t,2.0));
+      
+      break;
+  }
+  
+  
+}
+
+
+void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                       unsigned short val_marker) {
+  
+  unsigned long iPoint, iVertex;
+  unsigned short iVar, jVar;
+  
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    /*--- Get node index ---*/
+    
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      if (nDim == 2) {
+        Solution[0] = 0.0;  Solution[1] = 0.0;
+        Residual[0] = 0.0;  Residual[1] = 0.0;
+      }
+      else {
+        Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
+        Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
+      }
+      
+      node[iPoint]->SetSolution(Solution);
+      
+      if (dynamic) {
+        node[iPoint]->SetSolution_Vel(Solution);
+        node[iPoint]->SetSolution_Accel(Solution);
+      }
+      
+      
+      /*--- Initialize the reaction vector ---*/
+      LinSysReact.SetBlock(iPoint, Residual);
+      
+      LinSysRes.SetBlock(iPoint, Residual);
+      
+      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
+      
+      /*--- Delete the columns for a particular node ---*/
+      
+      for (iVar = 0; iVar < nPoint; iVar++) {
+        if (iVar==iPoint) {
+          Jacobian.SetBlock(iVar,iPoint,mId_Aux);
+        }
+        else {
+          Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
+        }
+      }
+      
+      /*--- Delete the rows for a particular node ---*/
+      for (jVar = 0; jVar < nPoint; jVar++) {
+        if (iPoint!=jVar) {
+          Jacobian.SetBlock(iPoint,jVar,mZeros_Aux);
+        }
+      }
+      
+      /*--- If the problem is dynamic ---*/
+      /*--- Enforce that in the previous time step all nodes had 0 U, U', U'' ---*/
+      
+      if(dynamic) {
+        
+        node[iPoint]->SetSolution_time_n(Solution);
+        node[iPoint]->SetSolution_Vel_time_n(Solution);
+        node[iPoint]->SetSolution_Accel_time_n(Solution);
+        
+      }
+      
+    }
+    
+  }
+  
+}
+
+void CFEM_ElasticitySolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                            unsigned short val_marker) {
+  
+  unsigned long iPoint, iVertex;
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    /*--- Get node index ---*/
+    
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    if (nDim == 2) {
+      Solution[0] = 0.0;  Solution[1] = 0.0;
     }
     else {
-      
-      Point_3 = geometry->elem[iElem]->GetNode(3);
-      Coord_3 = geometry->node[Point_3]->GetCoord();
-      
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-        b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-        c[iDim] = Coord_3[iDim]-Coord_2[iDim];
-      }
-      d[0] = a[1]*b[2]-a[2]*b[1]; d[1] = -(a[0]*b[2]-a[2]*b[0]); d[2] = a[0]*b[1]-a[1]*b[0];
-      
-      /*--- Compute element volume ---*/
-      Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
-      
+      Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
     }
-		
-		/*----------------------------------------------------------------*/
-		/*--- Block contributions to the Jacobian (includes time step) ---*/
-		/*----------------------------------------------------------------*/
-		
-		for (iVar = 0; iVar < nVar; iVar++)
-			for (jVar = 0; jVar < nVar; jVar++)
-				StiffMatrix_Node[iVar][jVar] = 0.0;
-		
-		if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) TimeJac = 1.0/Time_Num;
-		if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) TimeJac = 3.0/(2.0*Time_Num);
-		
-		/*--- Diagonal value identity matrix ---*/
-		if (nDim == 2) {
-			StiffMatrix_Node[0][0] = 1.0*TimeJac;
-			StiffMatrix_Node[1][1] = 1.0*TimeJac;
-		}
-		else {
-			StiffMatrix_Node[0][0] = 1.0*TimeJac;
-			StiffMatrix_Node[1][1] = 1.0*TimeJac;
-			StiffMatrix_Node[2][2] = 1.0*TimeJac;
-		}
-		
-		/*--- Diagonal value ---*/
-		if (nDim == 2) {
-			StiffMatrix_Node[2][2] = Density*(2.0/12.0)*(Area_Local*TimeJac);
-			StiffMatrix_Node[3][3] = Density*(2.0/12.0)*(Area_Local*TimeJac);
-		}
-		else {
-			StiffMatrix_Node[3][3] = Density*(2.0/20.0)*(Volume_Local*TimeJac);
-			StiffMatrix_Node[4][4] = Density*(2.0/20.0)*(Volume_Local*TimeJac);
-			StiffMatrix_Node[5][5] = Density*(2.0/20.0)*(Volume_Local*TimeJac);
-		}
-    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-		if (nDim == 3) { Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node); }
-		
-		/*--- Off Diagonal value ---*/
-		if (nDim == 2) {
-			StiffMatrix_Node[2][2] = Density*(1.0/12.0)*(Area_Local*TimeJac);
-			StiffMatrix_Node[3][3] = Density*(1.0/12.0)*(Area_Local*TimeJac);
-		}
-		else {
-			StiffMatrix_Node[3][3] = Density*(1.0/20.0)*(Volume_Local*TimeJac);
-			StiffMatrix_Node[4][4] = Density*(1.0/20.0)*(Volume_Local*TimeJac);
-			StiffMatrix_Node[5][5] = Density*(1.0/20.0)*(Volume_Local*TimeJac);
-		}
-		Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-		if (nDim == 3) {
-			Jacobian.AddBlock(Point_0, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_3, StiffMatrix_Node);
-			Jacobian.AddBlock(Point_1, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_3, StiffMatrix_Node);
-			Jacobian.AddBlock(Point_2, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_3, StiffMatrix_Node);
-			Jacobian.AddBlock(Point_3, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_0, StiffMatrix_Node);
-			Jacobian.AddBlock(Point_3, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_1, StiffMatrix_Node);
-			Jacobian.AddBlock(Point_3, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_2, StiffMatrix_Node);
-		}
-	}
-	
-	unsigned long iPoint, total_index;
-	double *U_time_nM1, *U_time_n, *U_time_nP1;
-	
-	/*--- loop over points ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		
-		/*--- Solution at time n-1, n and n+1 ---*/
-		U_time_nM1 = node[iPoint]->GetSolution_time_n1();
-		U_time_n   = node[iPoint]->GetSolution_time_n();
-		U_time_nP1 = node[iPoint]->GetSolution();
-		
-		/*--- Compute Residual ---*/
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-				LinSysSol[total_index] = ( U_time_nP1[iVar] - U_time_n[iVar] );
-			if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-				LinSysSol[total_index] = ( U_time_nP1[iVar] - (4.0/3.0)*U_time_n[iVar] + (1.0/3.0)*U_time_nM1[iVar] );
-		}
-	}
-	
-  /*--- Contribution to the residual ---*/
-	StiffMatrixTime.MatrixVectorProduct(LinSysSol, LinSysAux);
+    
+    node[iPoint]->SetSolution(Solution);
+    
+    if (dynamic) {
+      node[iPoint]->SetSolution_Vel(Solution);
+      node[iPoint]->SetSolution_Accel(Solution);
+    }
+    
+  }
   
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			Residual[iVar] = LinSysAux[total_index];
-		}
-		LinSysRes.SubtractBlock(iPoint, Residual);
-	}
-	
 }
 
-void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-
-  unsigned short iVar;
-	unsigned long iPoint, total_index;
-	
-	/*--- Build implicit system ---*/
+void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
+                                           unsigned short iMesh) {
   
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+  unsigned short iVar;
+  unsigned long iPoint, total_index;
+  
+  bool first_iter = (config->GetIntIter() == 0);
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);    // Nonlinear analysis.
+  
+  su2double solNorm = 0.0, solNorm_recv = 0.0;
+  
+#ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  if (nonlinear_analysis) {
     
-		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			LinSysSol[total_index] = 0.0;
-		}
+    /*--- If the problem is nonlinear, we have 3 convergence criteria ---*/
     
-	}
+    /*--- UTOL = norm(Delta_U(k)) / norm(U(k)) --------------------------*/
+    /*--- RTOL = norm(Residual(k)) / norm(Residual(0)) ------------------*/
+    /*--- ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) ----*/
+    
+    if (first_iter) {
+      Conv_Ref[0] = 1.0;                      // Position for the norm of the solution
+      Conv_Ref[1] = max(LinSysRes.norm(), EPS);          // Position for the norm of the residual
+      Conv_Ref[2] = max(dotProd(LinSysSol, LinSysRes), EPS);    // Position for the energy tolerance
+      
+      /*--- Make sure the computation runs at least 2 iterations ---*/
+      Conv_Check[0] = 1.0;
+      Conv_Check[1] = 1.0;
+      Conv_Check[2] = 1.0;
+    }
+    else {
+      /*--- Compute the norm of the solution vector Uk ---*/
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          solNorm += node[iPoint]->GetSolution(iVar) * node[iPoint]->GetSolution(iVar);
+        }
+      }
+      
+      // We need to communicate the norm of the solution and compute the RMS throughout the different processors
+      
+#ifdef HAVE_MPI
+      /*--- We sum the squares of the norms across the different processors ---*/
+      SU2_MPI::Allreduce(&solNorm, &solNorm_recv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+      solNorm_recv         = solNorm;
+#endif
+      
+      Conv_Ref[0] = max(sqrt(solNorm_recv), EPS);            // Norm of the solution vector
+      
+      Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];          // Norm of the delta-solution vector
+      Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];          // Norm of the residual
+      Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
+      
+    }
+    
+    /*--- MPI solution ---*/
+    
+    Set_MPI_Solution(geometry, config);
+    
+  } else {
+    
+    /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
+    
+    /*---  Compute the residual Ax-f ---*/
+    
+    Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+    
+    /*--- Set maximum residual to zero ---*/
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      SetRes_RMS(iVar, 0.0);
+      SetRes_Max(iVar, 0.0, 0);
+    }
+    
+    /*--- Compute the residual ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar+iVar;
+        AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
+        AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      }
+    }
+    
+    
+    /*--- MPI solution ---*/
+    
+    Set_MPI_Solution(geometry, config);
+    
+    /*--- Compute the root mean square residual ---*/
+    
+    SetResidual_RMS(geometry, config);
+  }
+  
+}
+
+void CFEM_ElasticitySolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                                   unsigned short val_marker) { }
+
+void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                           unsigned short val_marker) {
+  
+  /*--- Retrieve the normal pressure and the application conditions for the considered boundary ---*/
+  
+  su2double NormalLoad = config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
+  su2double TotalLoad = 0.0;
+  bool Sigmoid_Load = config->GetSigmoid_Load();
+  su2double Sigmoid_Time = config->GetSigmoid_Time();
+  su2double Sigmoid_K = config->GetSigmoid_K();
+  su2double SigAux = 0.0;
+  
+  su2double CurrentTime=config->GetCurrent_DynTime();
+  su2double ModAmpl, NonModAmpl;
+  
+  bool Ramp_Load = config->GetRamp_Load();
+  su2double Ramp_Time = config->GetRamp_Time();
+  
+  if (Ramp_Load) {
+    ModAmpl = NormalLoad*CurrentTime/Ramp_Time;
+    NonModAmpl = NormalLoad;
+    TotalLoad=min(ModAmpl,NonModAmpl);
+  }
+  else if (Sigmoid_Load) {
+    SigAux = CurrentTime/ Sigmoid_Time;
+    ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
+    ModAmpl = max(ModAmpl,0.0);
+    ModAmpl = min(ModAmpl,1.0);
+    TotalLoad=ModAmpl*NormalLoad;
+  }
+  else {
+    TotalLoad = NormalLoad;
+  }
+  
+  /*--- Do only if there is a load applied.
+   *--- This reduces the computational cost for cases in which we want boundaries with no load.
+   */
+  
+  if (TotalLoad != 0.0) {
+    
+    unsigned long iElem;
+    unsigned short nNodes = 0;
+    su2double Length_Elem_ref = 0.0,  Area_Elem_ref = 0.0;
+    su2double Length_Elem_curr = 0.0, Area_Elem_curr = 0.0;
+    unsigned long indexNode[4]   = {0,0,0,0};
+    unsigned long indexVertex[4] = {0,0,0,0};
+    su2double nodeCoord_ref[4][3], nodeCoord_curr[4][3];
+    su2double *nodal_normal, nodal_normal_unit[3];
+    su2double normal_ref_unit[3], normal_curr_unit[3];
+    su2double Norm, dot_Prod;
+    su2double val_Coord, val_Sol;
+    unsigned short iNode, iDim;
+    unsigned long iVertex, iPoint;
+    su2double a_ref[3], b_ref[3], AC_ref[3], BD_ref[3];
+    su2double a_curr[3], b_curr[3], AC_curr[3], BD_curr[3];
+    
+    /*--- Determine whether the load conditions are applied in the reference or in the current configuration ---*/
+    
+    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+    bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS); // Nonlinear analysis.
+    
+    for (iNode = 0; iNode < 4; iNode++) {
+      for (iDim = 0; iDim < 3; iDim++) {
+        nodeCoord_ref[iNode][iDim]  = 0.0;
+        nodeCoord_curr[iNode][iDim] = 0.0;
+      }
+    }
+    
+    for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+      
+      /*--- Identify the kind of boundary element ---*/
+      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == LINE)           nNodes = 2;
+      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE)       nNodes = 3;
+      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL)  nNodes = 4;
+      
+      /*--- Retrieve the boundary reference and current coordinates ---*/
+      for (iNode = 0; iNode < nNodes; iNode++) {
+        indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+          val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+          /*--- Assign values to the container ---*/
+          nodeCoord_ref[iNode][iDim]  = val_Coord;
+          nodeCoord_curr[iNode][iDim] = val_Sol;
+        }
+      }
+      
+      /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
+      for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+        iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          if (iPoint == indexNode[iNode]) indexVertex[iNode] = iVertex;
+        }
+      }
+      
+      /*--- Retrieve the reference normal for one of the points. They go INSIDE the structural domain. ---*/
+      nodal_normal = geometry->vertex[val_marker][indexVertex[0]]->GetNormal();
+      Norm = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Norm += nodal_normal[iDim]*nodal_normal[iDim];
+      }
+      Norm = sqrt(Norm);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        nodal_normal_unit[iDim] = nodal_normal[iDim] / Norm;
+      }
+      
+      /*--- Compute area (3D), and length of the surfaces (2D), and the unitary normal vector in current configuration ---*/
+      
+      if (nDim == 2) {
+        
+        /*-- Compute the vector a in reference and current configurations ---*/
+        for (iDim = 0; iDim < nDim; iDim++) {
+          a_ref[iDim]  = nodeCoord_ref[0][iDim] -nodeCoord_ref[1][iDim];
+          a_curr[iDim] = nodeCoord_curr[0][iDim]-nodeCoord_curr[1][iDim];
+        }
+        
+        /*-- Compute the length of the boundary element in reference and current configurations ---*/
+        Length_Elem_curr = sqrt(a_curr[0]*a_curr[0]+a_curr[1]*a_curr[1]);
+        Length_Elem_ref  = sqrt(a_ref[0]*a_ref[0]+a_ref[1]*a_ref[1]);
+        
+        /*-- Compute the length of the boundary element in reference and current configurations ---*/
+        normal_ref_unit[0] =   a_ref[1] /Length_Elem_ref;
+        normal_ref_unit[1] = -(a_ref[0])/Length_Elem_ref;
+        
+        normal_curr_unit[0] =   a_curr[1] /Length_Elem_curr;
+        normal_curr_unit[1] = -(a_curr[0])/Length_Elem_curr;
+        
+        /*-- Dot product to check the element orientation in the reference configuration ---*/
+        dot_Prod = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          dot_Prod += normal_ref_unit[iDim] * nodal_normal_unit[iDim];
+        }
+        
+        /*--- If dot_Prod > 0, the normal goes inside the structural domain. ---*/
+        /*--- If dot_Prod < 0, the normal goes outside the structural domain. ---*/
+        /*--- We adopt the criteria of the normal going inside the domain, so if dot_Prod < 1, we change the orientation. ---*/
+        if (dot_Prod < 0) {
+          for (iDim = 0; iDim < nDim; iDim++) {
+            normal_ref_unit[iDim]  = -1.0*normal_ref_unit[iDim];
+            normal_curr_unit[iDim] = -1.0*normal_curr_unit[iDim];
+          }
+        }
+        
+        if (linear_analysis) {
+          Residual[0] = (1.0/2.0) * TotalLoad * Length_Elem_ref * normal_ref_unit[0];
+          Residual[1] = (1.0/2.0) * TotalLoad * Length_Elem_ref * normal_ref_unit[1];
+          
+          node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+          node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+        }
+        else if (nonlinear_analysis) {
+          Residual[0] = (1.0/2.0) * TotalLoad * Length_Elem_curr * normal_curr_unit[0];
+          Residual[1] = (1.0/2.0) * TotalLoad * Length_Elem_curr * normal_curr_unit[1];
+          
+          node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+          node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+        }
+        
+      }
+      
+      if (nDim == 3) {
+        
+        if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE) {
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            a_ref[iDim] = nodeCoord_ref[1][iDim]-nodeCoord_ref[0][iDim];
+            b_ref[iDim] = nodeCoord_ref[2][iDim]-nodeCoord_ref[0][iDim];
+            
+            a_curr[iDim] = nodeCoord_curr[1][iDim]-nodeCoord_curr[0][iDim];
+            b_curr[iDim] = nodeCoord_curr[2][iDim]-nodeCoord_curr[0][iDim];
+          }
+          
+          su2double Ni=0, Nj=0, Nk=0;
+          
+          /*--- Reference configuration ---*/
+          Ni = a_ref[1]*b_ref[2] - a_ref[2]*b_ref[1];
+          Nj = a_ref[2]*b_ref[0] - a_ref[0]*b_ref[2];
+          Nk = a_ref[0]*b_ref[1] - a_ref[1]*b_ref[0];
+          
+          Area_Elem_ref = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+          
+          normal_ref_unit[0] = Ni / Area_Elem_ref;
+          normal_ref_unit[1] = Nj / Area_Elem_ref;
+          normal_ref_unit[2] = Nk / Area_Elem_ref;
+          
+          /*--- Current configuration ---*/
+          Ni = a_curr[1]*b_curr[2] - a_curr[2]*b_curr[1];
+          Nj = a_curr[2]*b_curr[0] - a_curr[0]*b_curr[2];
+          Nk = a_curr[0]*b_curr[1] - a_curr[1]*b_curr[0];
+          
+          Area_Elem_curr = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+          
+          normal_curr_unit[0] = Ni / Area_Elem_curr;
+          normal_curr_unit[1] = Nj / Area_Elem_curr;
+          normal_curr_unit[2] = Nk / Area_Elem_curr;
+          
+          /*-- Dot product to check the element orientation in the reference configuration ---*/
+          dot_Prod = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            dot_Prod += normal_ref_unit[iDim] * nodal_normal_unit[iDim];
+          }
+          
+          /*--- If dot_Prod > 0, the normal goes inside the structural domain. ---*/
+          /*--- If dot_Prod < 0, the normal goes outside the structural domain. ---*/
+          /*--- We adopt the criteria of the normal going inside the domain, so if dot_Prod < 1, we change the orientation. ---*/
+          if (dot_Prod < 0) {
+            for (iDim = 0; iDim < nDim; iDim++) {
+              normal_ref_unit[iDim]  = -1.0*normal_ref_unit[iDim];
+              normal_curr_unit[iDim] = -1.0*normal_curr_unit[iDim];
+            }
+          }
+          
+          if (linear_analysis) {
+            Residual[0] = (1.0/3.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[0];
+            Residual[1] = (1.0/3.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[1];
+            Residual[2] = (1.0/3.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[2];
+            
+            node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[2]]->Add_SurfaceLoad_Res(Residual);
+          }
+          else if (nonlinear_analysis) {
+            Residual[0] = (1.0/3.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[0];
+            Residual[1] = (1.0/3.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[1];
+            Residual[2] = (1.0/3.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[2];
+            
+            node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[2]]->Add_SurfaceLoad_Res(Residual);
+          }
+          
+        }
+        
+        else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL) {
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            AC_ref[iDim] = nodeCoord_ref[2][iDim]-nodeCoord_ref[0][iDim];
+            BD_ref[iDim] = nodeCoord_ref[3][iDim]-nodeCoord_ref[1][iDim];
+            
+            AC_curr[iDim] = nodeCoord_curr[2][iDim]-nodeCoord_curr[0][iDim];
+            BD_curr[iDim] = nodeCoord_curr[3][iDim]-nodeCoord_curr[1][iDim];
+          }
+          
+          su2double Ni=0, Nj=0, Nk=0;
+          
+          /*--- Reference configuration ---*/
+          Ni=AC_ref[1]*BD_ref[2]-AC_ref[2]*BD_ref[1];
+          Nj=-AC_ref[0]*BD_ref[2]+AC_ref[2]*BD_ref[0];
+          Nk=AC_ref[0]*BD_ref[1]-AC_ref[1]*BD_ref[0];
+          
+          Area_Elem_ref = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+          
+          normal_ref_unit[0] = Ni / Area_Elem_ref;
+          normal_ref_unit[1] = Nj / Area_Elem_ref;
+          normal_ref_unit[2] = Nk / Area_Elem_ref;
+          
+          /*--- Current configuration ---*/
+          Ni=AC_curr[1]*BD_curr[2]-AC_curr[2]*BD_curr[1];
+          Nj=-AC_curr[0]*BD_curr[2]+AC_curr[2]*BD_curr[0];
+          Nk=AC_curr[0]*BD_curr[1]-AC_curr[1]*BD_curr[0];
+          
+          Area_Elem_curr = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+          
+          normal_curr_unit[0] = Ni / Area_Elem_curr;
+          normal_curr_unit[1] = Nj / Area_Elem_curr;
+          normal_curr_unit[2] = Nk / Area_Elem_curr;
+          
+          /*-- Dot product to check the element orientation in the reference configuration ---*/
+          dot_Prod = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            dot_Prod += normal_ref_unit[iDim] * nodal_normal_unit[iDim];
+          }
+          
+          /*--- If dot_Prod > 0, the normal goes inside the structural domain. ---*/
+          /*--- If dot_Prod < 0, the normal goes outside the structural domain. ---*/
+          /*--- We adopt the criteria of the normal going inside the domain, so if dot_Prod < 1, we change the orientation. ---*/
+          if (dot_Prod < 0) {
+            for (iDim = 0; iDim < nDim; iDim++) {
+              normal_ref_unit[iDim]  = -1.0*normal_ref_unit[iDim];
+              normal_curr_unit[iDim] = -1.0*normal_curr_unit[iDim];
+            }
+          }
+          
+          if (linear_analysis) {
+            Residual[0] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[0];
+            Residual[1] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[1];
+            Residual[2] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[2];
+            
+            node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[2]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[3]]->Add_SurfaceLoad_Res(Residual);
+          }
+          else if (nonlinear_analysis) {
+            Residual[0] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[0];
+            Residual[1] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[1];
+            Residual[2] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[2];
+            
+            node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[2]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[3]]->Add_SurfaceLoad_Res(Residual);
+          }
+          
+        }
+        
+      }
+      
+      
+    }
+    
+  }
+  
+}
+
+void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                        unsigned short val_marker) {
+  
+  su2double a[3], b[3], AC[3], BD[3];
+  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
+  su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
+  su2double Length_Elem = 0.0, Area_Elem = 0.0;
+  unsigned short iDim;
+  
+  su2double LoadDirVal = config->GetLoad_Dir_Value(config->GetMarker_All_TagBound(val_marker));
+  su2double LoadDirMult = config->GetLoad_Dir_Multiplier(config->GetMarker_All_TagBound(val_marker));
+  su2double *Load_Dir_Local= config->GetLoad_Dir(config->GetMarker_All_TagBound(val_marker));
+  
+  su2double TotalLoad;
+  
+  bool Sigmoid_Load = config->GetSigmoid_Load();
+  su2double Sigmoid_Time = config->GetSigmoid_Time();
+  su2double Sigmoid_K = config->GetSigmoid_K();
+  su2double SigAux = 0.0;
+  
+  su2double CurrentTime=config->GetCurrent_DynTime();
+  su2double ModAmpl, NonModAmpl;
+  
+  bool Ramp_Load = config->GetRamp_Load();
+  su2double Ramp_Time = config->GetRamp_Time();
+  
+  if (Ramp_Load) {
+    ModAmpl=LoadDirVal*LoadDirMult*CurrentTime/Ramp_Time;
+    NonModAmpl=LoadDirVal*LoadDirMult;
+    TotalLoad=min(ModAmpl,NonModAmpl);
+  }
+  else if (Sigmoid_Load) {
+    SigAux = CurrentTime/ Sigmoid_Time;
+    ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
+    ModAmpl = max(ModAmpl,0.0);
+    ModAmpl = min(ModAmpl,1.0);
+    TotalLoad=ModAmpl*LoadDirVal*LoadDirMult;
+  }
+  else {
+    TotalLoad=LoadDirVal*LoadDirMult;
+  }
+  
+  /*--- Compute the norm of the vector that was passed in the config file ---*/
+  su2double Norm = 1.0;
+  if (nDim==2) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]);
+  if (nDim==3) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]+Load_Dir_Local[2]*Load_Dir_Local[2]);
+  
+  for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+    
+    Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);     Coord_0 = geometry->node[Point_0]->GetCoord();
+    Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);     Coord_1 = geometry->node[Point_1]->GetCoord();
+    if (nDim == 3) {
+      
+      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);  Coord_2 = geometry->node[Point_2]->GetCoord();
+      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL) {
+        Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);  Coord_3 = geometry->node[Point_3]->GetCoord();
+      }
+      
+    }
+    
+    /*--- Compute area (3D), and length of the surfaces (2D) ---*/
+    
+    if (nDim == 2) {
+      
+      for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
+      
+      Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
+      //      Normal_Elem[0] =   a[1];
+      //      Normal_Elem[1] = -(a[0]);
+      
+    }
+    
+    if (nDim == 3) {
+      
+      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE) {
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          a[iDim] = Coord_1[iDim]-Coord_0[iDim];
+          b[iDim] = Coord_2[iDim]-Coord_0[iDim];
+        }
+        
+        su2double Ni=0 , Nj=0, Nk=0;
+        
+        Ni=a[1]*b[2]-a[2]*b[1];
+        Nj=-a[0]*b[2]+a[2]*b[0];
+        Nk=a[0]*b[1]-a[1]*b[0];
+        
+        Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+        
+      }
+      
+      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL) {
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          AC[iDim] = Coord_2[iDim]-Coord_0[iDim];
+          BD[iDim] = Coord_3[iDim]-Coord_1[iDim];
+        }
+        
+        su2double Ni=0 , Nj=0, Nk=0;
+        
+        Ni=AC[1]*BD[2]-AC[2]*BD[1];
+        Nj=-AC[0]*BD[2]+AC[2]*BD[0];
+        Nk=AC[0]*BD[1]-AC[1]*BD[0];
+        
+        Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+        
+      }
+    }
+    
+    if (nDim == 2) {
+      
+      Residual[0] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
+      Residual[1] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
+      
+      node[Point_0]->Add_SurfaceLoad_Res(Residual);
+      node[Point_1]->Add_SurfaceLoad_Res(Residual);
+      
+    }
+    
+    else {
+      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE) {
+        
+        Residual[0] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
+        Residual[1] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
+        Residual[2] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
+        
+        node[Point_0]->Add_SurfaceLoad_Res(Residual);
+        node[Point_1]->Add_SurfaceLoad_Res(Residual);
+        node[Point_2]->Add_SurfaceLoad_Res(Residual);
+        
+      }
+      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL) {
+        
+        Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
+        Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
+        Residual[2] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
+        
+        node[Point_0]->Add_SurfaceLoad_Res(Residual);
+        node[Point_1]->Add_SurfaceLoad_Res(Residual);
+        node[Point_2]->Add_SurfaceLoad_Res(Residual);
+        node[Point_3]->Add_SurfaceLoad_Res(Residual);
+        
+      }
+      
+    }
+    
+  }
+  
+}
+
+void CFEM_ElasticitySolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                         unsigned short val_marker) { }
+
+void CFEM_ElasticitySolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                        unsigned short val_marker) { }
+
+void CFEM_ElasticitySolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned long iPoint, jPoint;
+  unsigned short iVar, jVar;
+  
+  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
+  bool first_iter = (config->GetIntIter() == 0);
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
+  bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
+  
+  bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
+  
+  bool restart = config->GetRestart();                          // Restart solution
+  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());  // Restart iteration
+  
+  bool incremental_load = config->GetIncrementalLoad();
+  
+  if (!dynamic) {
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      /*--- Add the external contribution to the residual    ---*/
+      /*--- (the terms that are constant over the time step) ---*/
+      if (incremental_load) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Ext_Surf[iVar] = loadIncrement * node[iPoint]->Get_SurfaceLoad_Res(iVar);
+        }
+      }
+      else {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Ext_Surf[iVar] = node[iPoint]->Get_SurfaceLoad_Res(iVar);
+        }
+        //Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+      }
+      
+      LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+      
+      /*--- Add the contribution to the residual due to body forces ---*/
+      
+      if (body_forces) {
+        if (incremental_load) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_Dead_Load[iVar] = loadIncrement * node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+        }
+        else {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+        }
+        
+        LinSysRes.AddBlock(iPoint, Res_Dead_Load);
+      }
+    }
+    
+  }
+  
+  if (dynamic) {
+    
+    /*--- Add the mass matrix contribution to the Jacobian ---*/
+    
+    /*
+     * If the problem is nonlinear, we need to add the Mass Matrix contribution to the Jacobian at the beginning
+     * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
+     * iteration, as the Jacobian is recomputed
+     *
+     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian at the first calculation.
+     * From then on, the Jacobian is always the same matrix.
+     *
+     */
+    
+    if ((nonlinear_analysis && (newton_raphson || first_iter)) ||
+        (linear_analysis && initial_calc) ||
+        (linear_analysis && restart && initial_calc_restart)) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (jPoint = 0; jPoint < nPoint; jPoint++) {
+          for(iVar = 0; iVar < nVar; iVar++) {
+            for (jVar = 0; jVar < nVar; jVar++) {
+              Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
+            }
+          }
+          Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
+        }
+      }
+    }
+    
+    
+    /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
+    if (linear_analysis) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
+          a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
+          a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
+        }
+        TimeRes_Aux.SetBlock(iPoint, Residual);
+      }
+    }
+    else if (nonlinear_analysis) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+          - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+          + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+          + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
+        }
+        TimeRes_Aux.SetBlock(iPoint, Residual);
+      }
+      
+    }
+    
+    /*--- Once computed, compute M*TimeRes_Aux ---*/
+    MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
+    /*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      
+      /*--- Dynamic contribution ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res_Time_Cont[iVar] = TimeRes.GetBlock(iPoint, iVar);
+      }
+      //Res_Time_Cont = TimeRes.GetBlock(iPoint);
+      LinSysRes.AddBlock(iPoint, Res_Time_Cont);
+      
+      /*--- External surface load contribution ---*/
+      if (incremental_load) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Ext_Surf[iVar] = loadIncrement * node[iPoint]->Get_SurfaceLoad_Res(iVar);
+        }
+      }
+      else {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Ext_Surf[iVar] = node[iPoint]->Get_SurfaceLoad_Res(iVar);
+        }
+        //Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+      }
+      LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+      
+      
+      /*--- Body forces contribution (dead load) ---*/
+      
+      if (body_forces) {
+        if (incremental_load) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_Dead_Load[iVar] = loadIncrement * node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+        }
+        else {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+        }
+        
+        LinSysRes.AddBlock(iPoint, Res_Dead_Load);
+      }
+      
+      /*--- FSI contribution (flow loads) ---*/
+      if (fsi) {
+        if (incremental_load) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_FSI_Cont[iVar] = loadIncrement * node[iPoint]->Get_FlowTraction(iVar);
+          }
+        }
+        else {
+          Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
+        }
+        LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
+      }
+    }
+  }
+  
+  
+}
+
+void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned short iVar;
+  unsigned long iPoint;
+  
+  bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);    // Geometrically linear problems
+  bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);          // Dynamic simulations.
+  
+  /*--- Update solution ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      
+      /*--- Displacements component of the solution ---*/
+      
+      /*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
+      
+      if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      
+      if (nonlinear)  node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      
+    }
+    
+  }
+  
+  if (dynamic) {
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        
+        /*--- Acceleration component of the solution ---*/
+        /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+        
+        Solution[iVar]=a_dt[0]*(node[iPoint]->GetSolution(iVar) -
+                                node[iPoint]->GetSolution_time_n(iVar)) -
+        a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
+        a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
+      }
+      
+      /*--- Set the acceleration in the node structure ---*/
+      
+      node[iPoint]->SetSolution_Accel(Solution);
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        
+        /*--- Velocity component of the solution ---*/
+        /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
+        
+        Solution[iVar]=node[iPoint]->GetSolution_Vel_time_n(iVar)+
+        a_dt[6]* node[iPoint]->GetSolution_Accel_time_n(iVar) +
+        a_dt[7]* node[iPoint]->GetSolution_Accel(iVar);
+        
+      }
+      
+      /*--- Set the velocity in the node structure ---*/
+      
+      node[iPoint]->SetSolution_Vel(Solution);
+      
+    }
+    
+  }
+  
+  /*--- Perform the MPI communication of the solution ---*/
+  
+  Set_MPI_Solution(geometry, config);
+  
+  
+}
+
+void CFEM_ElasticitySolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double *valSolutionPred;
+  
+  /*--- Update solution and set it to be the solution after applying relaxation---*/
+  
+  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+    
+    valSolutionPred = node[iPoint]->GetSolution_Pred();
+    
+    node[iPoint]->SetSolution(valSolutionPred);
+  }
+  
+  /*--- Compute velocities and accelerations ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      
+      /*--- Acceleration component of the solution ---*/
+      /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+      
+      Solution[iVar]=a_dt[0]*(node[iPoint]->GetSolution(iVar) -
+                              node[iPoint]->GetSolution_time_n(iVar)) -
+      a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
+      a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
+    }
+    
+    /*--- Set the acceleration in the node structure ---*/
+    
+    node[iPoint]->SetSolution_Accel(Solution);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      
+      /*--- Velocity component of the solution ---*/
+      /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
+      
+      Solution[iVar]=node[iPoint]->GetSolution_Vel_time_n(iVar)+
+      a_dt[6]* node[iPoint]->GetSolution_Accel_time_n(iVar) +
+      a_dt[7]* node[iPoint]->GetSolution_Accel(iVar);
+      
+    }
+    
+    /*--- Set the velocity in the node structure ---*/
+    
+    node[iPoint]->SetSolution_Vel(Solution);
+    
+  }
+  
+  
+  /*--- Perform the MPI communication of the solution ---*/
+  
+  Set_MPI_Solution(geometry, config);
+  
+  /*--- After the solution has been communicated, set the 'old' predicted solution as the solution ---*/
+  /*--- Loop over n points (as we have already communicated everything ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      node[iPoint]->SetSolution_Pred_Old(iVar,node[iPoint]->GetSolution(iVar));
+    }
+  }
+  
+  
+}
+
+
+void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned long iPoint, jPoint;
+  unsigned short iVar, jVar;
+  
+  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
+  bool first_iter = (config->GetIntIter() == 0);
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
+  bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
+  
+  bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
+  
+  bool restart = config->GetRestart();                          // Restart solution
+  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());  // Restart iteration
+  
+  su2double alpha_f = config->Get_Int_Coeffs(2);
+  
+  bool incremental_load = config->GetIncrementalLoad();
+  
+  if (!dynamic) {
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      /*--- Add the external contribution to the residual    ---*/
+      /*--- (the terms that are constant over the time step) ---*/
+      if (incremental_load) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Ext_Surf[iVar] = loadIncrement * node[iPoint]->Get_SurfaceLoad_Res(iVar);
+        }
+      }
+      else {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Ext_Surf[iVar] = node[iPoint]->Get_SurfaceLoad_Res(iVar);
+        }
+        //Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+      }
+      
+      LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+      
+      /*--- Add the contribution to the residual due to body forces ---*/
+      
+      if (body_forces) {
+        if (incremental_load) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_Dead_Load[iVar] = loadIncrement * node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+        }
+        else {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+        }
+        
+        LinSysRes.AddBlock(iPoint, Res_Dead_Load);
+      }
+      
+    }
+    
+  }
+  
+  if (dynamic) {
+    
+    /*--- Add the mass matrix contribution to the Jacobian ---*/
+    
+    /*
+     * If the problem is nonlinear, we need to add the Mass Matrix contribution to the Jacobian at the beginning
+     * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
+     * iteration, as the Jacobian is recomputed
+     *
+     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian at the first calculation.
+     * From then on, the Jacobian is always the same matrix.
+     *
+     */
+    
+    if ((nonlinear_analysis && (newton_raphson || first_iter)) ||
+        (linear_analysis && initial_calc) ||
+        (linear_analysis && restart && initial_calc_restart)) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (jPoint = 0; jPoint < nPoint; jPoint++) {
+          for(iVar = 0; iVar < nVar; iVar++) {
+            for (jVar = 0; jVar < nVar; jVar++) {
+              Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
+            }
+          }
+          Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
+        }
+      }
+    }
+    
+    
+    /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
+    if (linear_analysis) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
+          a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
+          a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
+        }
+        TimeRes_Aux.SetBlock(iPoint, Residual);
+      }
+    }
+    else if (nonlinear_analysis) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+          - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+          + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+          + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
+        }
+        TimeRes_Aux.SetBlock(iPoint, Residual);
+      }
+    }
+    /*--- Once computed, compute M*TimeRes_Aux ---*/
+    MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
+    /*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      /*--- Dynamic contribution ---*/
+      //Res_Time_Cont = TimeRes.GetBlock(iPoint);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res_Time_Cont[iVar] = TimeRes.GetBlock(iPoint, iVar);
+      }
+      LinSysRes.AddBlock(iPoint, Res_Time_Cont);
+      /*--- External surface load contribution ---*/
+      if (incremental_load) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Ext_Surf[iVar] = loadIncrement * ( (1 - alpha_f) * node[iPoint]->Get_SurfaceLoad_Res(iVar) +
+                                                alpha_f  * node[iPoint]->Get_SurfaceLoad_Res_n(iVar) );
+        }
+      }
+      else {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Ext_Surf[iVar] = (1 - alpha_f) * node[iPoint]->Get_SurfaceLoad_Res(iVar) +
+          alpha_f  * node[iPoint]->Get_SurfaceLoad_Res_n(iVar);
+        }
+      }
+      LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+      
+      /*--- Add the contribution to the residual due to body forces.
+       *--- It is constant over time, so it's not necessary to distribute it. ---*/
+      
+      if (body_forces) {
+        if (incremental_load) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_Dead_Load[iVar] = loadIncrement * node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+        }
+        else {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+        }
+        
+        LinSysRes.AddBlock(iPoint, Res_Dead_Load);
+      }
+      
+      /*--- Add FSI contribution ---*/
+      if (fsi) {
+        if (incremental_load) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_FSI_Cont[iVar] = loadIncrement * ( (1 - alpha_f) * node[iPoint]->Get_FlowTraction(iVar) +
+                                                  alpha_f  * node[iPoint]->Get_FlowTraction_n(iVar) );
+          }
+        }
+        else {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_FSI_Cont[iVar] = (1 - alpha_f) * node[iPoint]->Get_FlowTraction(iVar) +
+            alpha_f  * node[iPoint]->Get_FlowTraction_n(iVar);
+          }
+        }
+        LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
+      }
+    }
+  }
+  
+}
+
+void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned short iVar;
+  unsigned long iPoint;
+  
+  bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);    // Geometrically linear problems
+  bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
+  
+  /*--- Update solution ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      
+      /*--- Displacements component of the solution ---*/
+      
+      /*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
+      
+      if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      
+      if (nonlinear)  node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      
+    }
+    
+  }
+  
+  /*--- Perform the MPI communication of the solution, displacements only ---*/
+  
+  Set_MPI_Solution_DispOnly(geometry, config);
+  
+}
+
+void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned short iVar;
+  unsigned long iPoint;
+  
+  su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
+  
+  /*--- Compute solution at t_n+1, and update velocities and accelerations ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      
+      /*--- Compute the solution from the previous time step and the solution computed at t+1-alpha_f ---*/
+      /*--- U(t+dt) = 1/alpha_f*(U(t+1-alpha_f)-alpha_f*U(t)) ---*/
+      
+      Solution[iVar]=(1 / (1 - alpha_f))*(node[iPoint]->GetSolution(iVar) -
+                                          alpha_f * node[iPoint]->GetSolution_time_n(iVar));
+      
+
+    }
+    
+    /*--- Set the solution in the node structure ---*/
+    
+    node[iPoint]->SetSolution(Solution);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      
+      /*--- Acceleration component of the solution ---*/
+      /*--- U''(t+dt-alpha_m) = a8*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+      
+      Solution_Interm[iVar]=a_dt[8]*( node[iPoint]->GetSolution(iVar) -
+                                     node[iPoint]->GetSolution_time_n(iVar)) -
+      a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
+      a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
+      
+      /*--- Compute the solution from the previous time step and the solution computed at t+1-alpha_f ---*/
+      /*--- U''(t+dt) = 1/alpha_m*(U''(t+1-alpha_m)-alpha_m*U''(t)) ---*/
+      
+      Solution[iVar]=(1 / (1 - alpha_m))*(Solution_Interm[iVar] - alpha_m * node[iPoint]->GetSolution_Accel_time_n(iVar));
+    }
+    
+    /*--- Set the acceleration in the node structure ---*/
+    
+    node[iPoint]->SetSolution_Accel(Solution);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      
+      /*--- Velocity component of the solution ---*/
+      /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
+      
+      Solution[iVar]=node[iPoint]->GetSolution_Vel_time_n(iVar)+
+      a_dt[6]* node[iPoint]->GetSolution_Accel_time_n(iVar) +
+      a_dt[7]* node[iPoint]->GetSolution_Accel(iVar);
+      
+    }
+    
+    /*--- Set the velocity in the node structure ---*/
+    
+    node[iPoint]->SetSolution_Vel(Solution);
+    
+  }
+  
+  /*--- Perform the MPI communication of the solution ---*/
+  
+  Set_MPI_Solution(geometry, config);
+  
+}
+
+void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned long iPoint;
+  bool fsi = config->GetFSI_Simulation();
+  
+  /*--- Set the load conditions of the time step n+1 as the load conditions for time step n ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    node[iPoint]->Set_SurfaceLoad_Res_n();
+    if (fsi) node[iPoint]->Set_FlowTraction_n();
+  }
+  
+}
+
+void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned long IterLinSol = 0, iPoint, total_index;
+  unsigned short iVar;
   
   /*--- Initialize residual and solution at the ghost points ---*/
-  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+  
+  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = 0.0;
       LinSysSol[total_index] = 0.0;
     }
-  }
-	
-  /*--- Solve or smooth the linear system ---*/
-  
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  
-	/*--- Update solution (system written in terms of increments) ---*/
-  
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			if (config->GetUnsteady_Simulation() == STEADY) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-      else node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-		}
-	}
-	
-  /*--- MPI solution ---*/
-  
-  Set_MPI_Solution(geometry, config);
-  
-  /*---  Compute the residual Ax-f ---*/
-  
-	Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
-  
-  /*--- Set maximum residual to zero ---*/
-  
-	for (iVar = 0; iVar < nVar; iVar++) {
-		SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
+    
   }
   
-  /*--- Compute the residual ---*/
+  CSysSolve femSystem;
+  IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
-      AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-		}
-	}
+  /*--- The the number of iterations of the linear solver ---*/
   
-  /*--- Compute the root mean square residual ---*/
-  
-  SetResidual_RMS(geometry, config);
+  SetIterLinSolver(IterLinSol);
   
 }
 
-void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-	unsigned long iPoint;
+
+
+void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
+                                        CGeometry **flow_geometry, CConfig *fea_config,
+                                        CConfig *flow_config, CNumerics *fea_numerics) {
   
-	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  unsigned short nMarkerFSI, nMarkerFlow;    // Number of markers on FSI problem, FEA and Flow side
+  unsigned short iMarkerFSI, iMarkerFlow;    // Variables for iteration over markers
+  int Marker_Flow = -1;
   
-	/*--- Problem dimension and physical time step ---*/
-	unsigned short nDim = geometry[MESH_0]->GetnDim();
-	
-	for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-		
-		/*--- Set initial boundary condition at the first iteration ---*/
-		if ((ExtIter == 0) && (!restart)) {
-      
-      if (config->GetUnsteady_Simulation() == STEADY) {
-        if (nDim == 2) { Solution[0] = 0.0;	Solution[1] = 0.0; }
-        else { Solution[0] = 0.0;	Solution[1] = 0.0;	Solution[2] = 0.0; }
+  unsigned long iVertex, iPoint;                // Variables for iteration over vertices and nodes
+  
+  unsigned short iDim, jDim;
+  
+  // Check the kind of fluid problem
+  bool compressible       = (flow_config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible     = (flow_config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool viscous_flow       = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
+                             (flow_config->GetKind_Solver() == RANS) );
+  
+  /*--- Redimensionalize the pressure ---*/
+  
+  su2double *Velocity_ND, *Velocity_Real;
+  su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
+  su2double factorForces;
+  
+  Velocity_Real = flow_config->GetVelocity_FreeStream();
+  Density_Real = flow_config->GetDensity_FreeStream();
+  
+  Velocity_ND = flow_config->GetVelocity_FreeStreamND();
+  Density_ND = flow_config->GetDensity_FreeStreamND();
+  
+  Velocity2_Real = 0.0;
+  Velocity2_ND = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity2_Real += Velocity_Real[iDim]*Velocity_Real[iDim];
+    Velocity2_ND += Velocity_ND[iDim]*Velocity_ND[iDim];
+  }
+  
+  factorForces = Density_Real*Velocity2_Real/(Density_ND*Velocity2_ND);
+  
+  /*--- Apply a ramp to the transfer of the fluid loads ---*/
+  
+  su2double ModAmpl;
+  su2double CurrentTime = fea_config->GetCurrent_DynTime();
+  su2double Static_Time = fea_config->GetStatic_Time();
+  
+  bool Ramp_Load = fea_config->GetRamp_Load();
+  su2double Ramp_Time = fea_config->GetRamp_Time();
+  
+  if (CurrentTime <= Static_Time) { ModAmpl=0.0; }
+  else if((CurrentTime > Static_Time) &&
+          (CurrentTime <= (Static_Time + Ramp_Time)) &&
+          (Ramp_Load)) {
+    ModAmpl = (CurrentTime-Static_Time) / Ramp_Time;
+    ModAmpl = max(ModAmpl,0.0);
+    ModAmpl = min(ModAmpl,1.0);
+  }
+  else { ModAmpl = 1.0; }
+  
+  /*--- Number of markers on the FSI interface ---*/
+  
+  nMarkerFSI = (fea_config->GetMarker_n_FSIinterface())/2;
+  nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();    // Retrieve total number of markers on Fluid side
+  
+  // Parameters for the calculations
+  // Pn: Pressure
+  // Pinf: Pressure_infinite
+  // div_vel: Velocity divergence
+  // Dij: Dirac delta
+  su2double Pn = 0.0, Pinf = 0.0, div_vel = 0.0, Dij = 0.0;
+  su2double Viscosity = 0.0;
+  su2double **Grad_PrimVar = NULL;
+  su2double Tau[3][3];
+  
+  unsigned long Point_Flow, Point_Struct;
+  su2double *Normal_Flow;
+  
+  su2double *tn_f;
+  tn_f         = new su2double [nVar];      // Fluid traction
+  
+#ifndef HAVE_MPI
+  
+  unsigned long nVertexFlow;            // Number of vertices on FEA and Flow side
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint]->Clear_FlowTraction();
+  }
+  
+  /*--- Loop over all the markers on the interface ---*/
+  
+  for (iMarkerFSI = 0; iMarkerFSI < nMarkerFSI; iMarkerFSI++) {
+    
+    /*--- Identification of the markers ---*/
+    
+    /*--- Current fluid marker ---*/
+    for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++) {
+      if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSI+1)) {
+        Marker_Flow = iMarkerFlow;
       }
-      else {
-        if (nDim == 2) { Solution[0] = 0.0;	Solution[1] = 0.0; Solution[2] = 0.0;	Solution[3] = 0.0; }
-        else { Solution[0] = 0.0;	Solution[1] = 0.0;	Solution[2] = 0.0; Solution[3] = 0.0;	Solution[4] = 0.0;	Solution[5] = 0.0; }
-      }
-			
-			node[iPoint]->SetSolution(Solution);
-      
-			if (dual_time) {
-				node[iPoint]->Set_Solution_time_n();
-				node[iPoint]->Set_Solution_time_n1();
-			}
-			
-		}
-	}
-}
-
-void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
-  
-  unsigned short iMarker, icommas, iDim;
-  unsigned long iVertex, iPoint, iExtIter;
-  double Pressure = 0.0, Dist, Coord[3];
-  string text_line;
-  string::size_type position;
-  ifstream Surface_file;
-  char buffer[50], cstr[200];
-  
-  
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
-  /*--- Reset the value of the Flow_Pressure ---*/
-  
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    node[iPoint]->SetFlow_Pressure(0.0);
-
-  for (iExtIter = 0; iExtIter < config->GetnExtIter(); iExtIter++) {
-    
-    /*--- Prepare to read surface sensitivity files (CSV) ---*/
-
-    string surfadj_filename = config->GetSurfFlowCoeff_FileName();
-    strcpy (cstr, surfadj_filename.c_str());
-    
-    /*--- Write file name with extension if unsteady or steady ---*/
-    
-    if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
-        (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-      if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.csv", int(iExtIter));
-      if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
-      if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
-      if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
-      if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
     }
-    else sprintf (buffer, ".csv");
     
-    strcat (cstr, buffer);
+    nVertexFlow = flow_geometry[MESH_0]->GetnVertex(Marker_Flow);  // Retrieve total number of vertices on Fluid marker
     
-    /*--- Open the surface file ---*/
-    
-    Surface_file.open(cstr, ios::in);
-    
-    getline(Surface_file, text_line);
-    
-    /*--- Res the surface file ---*/
-    
-    while (getline(Surface_file, text_line)) {
+    /*--- Loop over the nodes in the fluid mesh, calculate the tf vector (unitary) ---*/
+    /*--- Here, we are looping over the fluid, and we find the pointer to the structure (Point_Struct) ---*/
+    for (iVertex = 0; iVertex < nVertexFlow; iVertex++) {
       
-      /*--- Remove commas from the surface file ---*/
+      // Node from the flow mesh
+      Point_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNode();
       
-      for (icommas = 0; icommas < 100; icommas++) {
-        position = text_line.find( ",", 0 );
-        if (position!=string::npos) text_line.erase (position, 1);
+      // Normals at the vertex: these normals go inside the fluid domain.
+      Normal_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNormal();
+      
+      // Corresponding node on the structural mesh
+      Point_Struct = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetDonorPoint();
+      
+      // Retrieve the values of pressure, viscosity and density
+      if (incompressible) {
+        
+        Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
+        Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+        
+        if (viscous_flow) {
+          
+          Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+          Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
+        }
+      }
+      else if (compressible) {
+        
+        Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
+        Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+        
+        if (viscous_flow) {
+          
+          Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+          Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
+        }
       }
       
-      /*--- Read the file ---*/
-      istringstream point_line(text_line);
-      if (nDim == 2) { point_line >> iPoint >> Coord[0] >> Coord[1] >> Pressure; }
-      if (nDim == 3) { point_line >> iPoint >> Coord[0] >> Coord[1] >> Coord[2] >> Pressure; }
+      // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+      for (iDim = 0; iDim < nDim; iDim++) {
+        tn_f[iDim] = -(Pn-Pinf)*Normal_Flow[iDim];
+      }
       
-      /*--- Compute the distance from the surface to the points in the .csv files ---*/
+      // Calculate tn in the fluid nodes for the viscous term
       
-      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-        if (config->GetMarker_All_KindBC(iMarker) == PRESSURE_BOUNDARY) {
-          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (viscous_flow) {
+        
+        // Divergence of the velocity
+        div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_PrimVar[iDim+1][iDim];
+        if (incompressible) div_vel = 0.0;
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          
+          for (jDim = 0 ; jDim < nDim; jDim++) {
+            // Dirac delta
+            Dij = 0.0; if (iDim == jDim) Dij = 1.0;
             
-            /*--- Compute the distance between the point and the grid points ---*/
-            Dist = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Dist += (Coord[iDim]-geometry->node[iPoint]->GetCoord(iDim))*(Coord[iDim]-geometry->node[iPoint]->GetCoord(iDim));
-            Dist = sqrt(Dist);
+            // Viscous stress
+            Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) -
+            TWO3*Viscosity*div_vel*Dij;
             
-            /*--- Check the distance and set the pressure ---*/
-            if (Dist < 1E-10) { node[iPoint]->SetFlow_Pressure(Pressure); }
-            
+            // Viscous component in the tn vector --> Units of force (non-dimensional).
+            tn_f[iDim] += Tau[iDim][jDim]*Normal_Flow[jDim];
           }
         }
       }
       
+      // Rescale tn to SI units and apply time-dependent coefficient (static structure, ramp load, full load)
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Residual[iDim] = tn_f[iDim]*factorForces*ModAmpl;
+      }
+      
+      /*--- Set the Flow traction ---*/
+      //node[Point_Struct]->Set_FlowTraction(Residual);
+      /*--- Add to the Flow traction (to add values to corners...) ---*/
+      node[Point_Struct]->Add_FlowTraction(Residual);
     }
     
-    Surface_file.close();
+  }
+  
+#else
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  
+  unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
+  
+  unsigned long MaxLocalVertexStruct = 0, MaxLocalVertexFlow = 0;
+  
+  unsigned long nBuffer_FlowTraction = 0, nBuffer_StructTraction = 0;
+  unsigned long nBuffer_DonorIndices = 0, nBuffer_SetIndex = 0;
+  
+  unsigned long Processor_Struct;
+  
+  int iProcessor, nProcessor = 0;
+  
+  unsigned short nMarkerStruct, iMarkerStruct;    // Variables for iteration over markers
+  int Marker_Struct = -1;
+  
+  /*--- Number of markers on the FSI interface ---*/
+  
+  nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
+  nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
+  nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
+  
+  nProcessor = size;
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint]->Clear_FlowTraction();
+  }
+  
+  /*--- Outer loop over the markers on the FSI interface: compute one by one ---*/
+  /*--- The tags are always an integer greater than 1: loop from 1 to nMarkerFSI ---*/
+  
+  for (iMarkerFSI = 1; iMarkerFSI <= nMarkerFSI; iMarkerFSI++) {
+    
+    Marker_Struct = -1;
+    Marker_Flow = -1;
+    
+    /*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
+    unsigned long Buffer_Send_nVertexStruct[1], *Buffer_Recv_nVertexStruct = NULL;
+    unsigned long Buffer_Send_nVertexFlow[1], *Buffer_Recv_nVertexFlow = NULL;
+    
+    /*--- The markers on the fluid and structural side are tagged with the same index.
+     *--- This is independent of the MPI domain decomposition.
+     *--- We need to loop over all markers on both sides and get the number of nodes
+     *--- that belong to each FSI marker for each processor ---*/
+    
+    /*--- On the structural side ---*/
+    
+    for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++) {
+      /*--- If the tag GetMarker_All_FSIinterface(iMarkerStruct) equals the index we are looping at ---*/
+      if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ) {
+        /*--- We have identified the local index of the FEA marker ---*/
+        /*--- Store the number of local points that belong to Marker_Struct on each processor ---*/
+        /*--- This includes the halo nodes ---*/
+        nLocalVertexStruct = fea_geometry[MESH_0]->GetnVertex(iMarkerStruct);
+        /*--- Store the identifier for the structural marker ---*/
+        Marker_Struct = iMarkerStruct;
+        /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+        break;
+      }
+      else {
+        /*--- If the tag hasn't matched any tag within the FEA markers ---*/
+        nLocalVertexStruct = 0;
+        Marker_Struct = -1;
+      }
+    }
+    
+    /*--- On the fluid side ---*/
+    
+    for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++) {
+      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ) {
+        /*--- We have identified the local index of the Flow marker ---*/
+        /*--- Store the number of local points that belong to Marker_Flow on each processor ---*/
+        /*--- This includes the halo nodes ---*/
+        nLocalVertexFlow = flow_geometry[MESH_0]->GetnVertex(iMarkerFlow);
+        /*--- Store the identifier for the fluid marker ---*/
+        Marker_Flow = iMarkerFlow;
+        /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+        break;
+      }
+      else {
+        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+        nLocalVertexFlow = 0;
+        Marker_Flow = -1;
+      }
+    }
+    
+    Buffer_Send_nVertexStruct[0] = nLocalVertexStruct;                  // Retrieve total number of vertices on FEA marker
+    Buffer_Send_nVertexFlow[0] = nLocalVertexFlow;                    // Retrieve total number of vertices on Flow marker
+    if (rank == MASTER_NODE) Buffer_Recv_nVertexStruct = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
+    if (rank == MASTER_NODE) Buffer_Recv_nVertexFlow = new unsigned long[size];     // Allocate memory to receive how many vertices are on each rank on the fluid side
+    
+    /*--- We receive MaxLocalVertexFEA as the maximum number of vertices in one single processor on the structural side---*/
+    SU2_MPI::Allreduce(&nLocalVertexStruct, &MaxLocalVertexStruct, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+    /*--- We receive MaxLocalVertexFlow as the maximum number of vertices in one single processor on the fluid side ---*/
+    SU2_MPI::Allreduce(&nLocalVertexFlow, &MaxLocalVertexFlow, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+    
+    /*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the structural side ---*/
+    SU2_MPI::Gather(&Buffer_Send_nVertexStruct, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexStruct, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    /*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the fluid side ---*/
+    SU2_MPI::Gather(&Buffer_Send_nVertexFlow, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexFlow, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    
+    /*--- We will be gathering the structural coordinates into the master node ---*/
+    /*--- Then we will distribute them using a scatter operation into the appropriate fluid processor ---*/
+    nBuffer_FlowTraction = MaxLocalVertexFlow * nDim;
+    nBuffer_StructTraction = MaxLocalVertexStruct * nDim;
+    
+    /*--- We will be gathering donor index and donor processor (for flow -> donor = structure) ---*/
+    /*--- Then we will pass on to the structural side the index (fea point) to the appropriate processor ---*/
+    nBuffer_DonorIndices = 2 * MaxLocalVertexFlow;
+    nBuffer_SetIndex = MaxLocalVertexStruct;
+    
+    /*--- Send and Recv buffers ---*/
+    
+    /*--- Buffers to send and receive the structural coordinates ---*/
+    su2double *Buffer_Send_FlowTraction = new su2double[nBuffer_FlowTraction];
+    su2double *Buffer_Recv_FlowTraction = NULL;
+    
+    /*--- Buffers to send and receive the donor index and processor ---*/
+    long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
+    long *Buffer_Recv_DonorIndices = NULL;
+    
+    /*--- Buffers to send and receive the new fluid coordinates ---*/
+    su2double *Buffer_Send_StructTraction = NULL;
+    su2double *Buffer_Recv_StructTraction = new su2double[nBuffer_StructTraction];
+    
+    /*--- Buffers to send and receive the fluid index ---*/
+    long *Buffer_Send_SetIndex = NULL;
+    long *Buffer_Recv_SetIndex = new long[nBuffer_SetIndex];
+    
+    /*--- Prepare the receive buffers (1st step) and send buffers (2nd step) on the master node only. ---*/
+    
+    if (rank == MASTER_NODE) {
+      Buffer_Recv_FlowTraction  = new su2double[size*nBuffer_FlowTraction];
+      Buffer_Recv_DonorIndices = new long[size*nBuffer_DonorIndices];
+      Buffer_Send_StructTraction = new su2double[size*nBuffer_StructTraction];
+      Buffer_Send_SetIndex     = new long[size*nBuffer_SetIndex];
+    }
+    
+    /*--- On the fluid side ---*/
+    
+    /*--- If this processor owns the marker we are looping at on the structural side ---*/
+    
+    /*--- First we initialize all of the indices and processors to -1 ---*/
+    /*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
+    for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
+      Buffer_Send_DonorIndices[iVertex] = -1;
+    
+    if (Marker_Flow >= 0) {
+      
+      /*--- We have identified the local index of the FEA marker ---*/
+      /*--- We loop over all the vertices in that marker and in that particular processor ---*/
+      
+      for (iVertex = 0; iVertex < nLocalVertexFlow; iVertex++) {
+        
+        Point_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNode();
+        
+        Point_Struct = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetDonorPoint();
+        
+        Processor_Struct = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetDonorProcessor();
+        
+        // Get the normal at the vertex: this normal goes inside the fluid domain.
+        Normal_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNormal();
+        
+        // Retrieve the values of pressure, viscosity and density
+        if (incompressible) {
+          
+          Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
+          Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+          
+          if (viscous_flow) {
+            
+            Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+            Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
+          }
+        }
+        else if (compressible) {
+          
+          Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
+          Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+          
+          if (viscous_flow) {
+            
+            Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+            Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
+          }
+        }
+        
+        // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+        for (iDim = 0; iDim < nDim; iDim++) {
+          tn_f[iDim] = -(Pn-Pinf)*Normal_Flow[iDim];
+        }
+        
+        // Calculate tn in the fluid nodes for the viscous term
+        
+        if ((incompressible || compressible) && viscous_flow) {
+          
+          // Divergence of the velocity
+          div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_PrimVar[iDim+1][iDim];
+          if (incompressible) div_vel = 0.0;
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            
+            for (jDim = 0 ; jDim < nDim; jDim++) {
+              // Dirac delta
+              Dij = 0.0; if (iDim == jDim) Dij = 1.0;
+              
+              // Viscous stress
+              Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) -
+              TWO3*Viscosity*div_vel*Dij;
+              
+              // Viscous component in the tn vector --> Units of force (non-dimensional).
+              tn_f[iDim] += Tau[iDim][jDim]*Normal_Flow[jDim];
+            }
+          }
+        }
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Buffer_Send_FlowTraction[iVertex*nDim+iDim] = tn_f[iDim]*factorForces*ModAmpl;
+        }
+        /*--- If this processor owns the node ---*/
+        if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()) {
+          Buffer_Send_DonorIndices[2*iVertex]     = Point_Struct;
+          Buffer_Send_DonorIndices[2*iVertex + 1] = Processor_Struct;
+        }
+        else {
+          /*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
+          Buffer_Send_DonorIndices[2*iVertex]     = -1;
+          Buffer_Send_DonorIndices[2*iVertex + 1] = -1;
+        }
+        
+      }
+    }
+    
+    /*--- Once all the messages have been sent, we gather them all into the MASTER_NODE ---*/
+    SU2_MPI::Gather(Buffer_Send_FlowTraction, nBuffer_FlowTraction, MPI_DOUBLE, Buffer_Recv_FlowTraction, nBuffer_FlowTraction, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    
+    //    if (rank == MASTER_NODE) {
+    //      cout << endl << "-----------------------------------------------------------" << endl;
+    //      cout << "For tag " << iMarkerFSI << ":" << endl;
+    //      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    //        cout << "The processor " << iProcessor << " has " << Buffer_Recv_nVertexStruct[iProcessor] << " nodes on the structural side and ";
+    //        cout << Buffer_Recv_nVertexFlow[iProcessor] << " nodes on the fluid side " << endl;
+    //      }
+    //      cout << "The max number of vertices is " << MaxLocalVertexStruct << " on the structural side and ";
+    //      cout << MaxLocalVertexFlow << " on the fluid side." << endl;
+    //
+    //      cout << "---------------- Check received buffers ---------------------" << endl;
+    //      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    //        long initialIndex, initialIndex2;
+    //        initialIndex = iProcessor*nBuffer_FlowTraction;
+    //        initialIndex2 = iProcessor*nBuffer_DonorIndices;
+    //        for (long iCheck = 0; iCheck < Buffer_Recv_nVertexStruct[iProcessor]; iCheck++) {
+    //          cout << "From processor " << iProcessor << " we get coordinates (";
+    //            for (iDim = 0; iDim < nDim; iDim++)
+    //              cout << Buffer_Recv_FlowTraction[initialIndex+iCheck*nDim+iDim] << ",";
+    //          cout << "), the donor index for the flow " << Buffer_Recv_DonorIndices[initialIndex2+iCheck*2] ;
+    //          cout << " and the donor processor " << Buffer_Recv_DonorIndices[initialIndex2+iCheck*2+1] << endl;
+    //
+    //        }
+    //      }
+    //
+    //    }
+    
+    /*--- Counter to determine where in the array we have to set the information ---*/
+    long *Counter_Processor_Struct = NULL;
+    long iProcessor_Flow = 0, iIndex_Flow = 0;
+    long iProcessor_Struct = 0, iPoint_Struct = 0, iIndex_Struct = 0;
+    long Point_Struct_Send, Processor_Struct_Send;
+    
+    /*--- Now we pack the information to send it over to the different processors ---*/
+    
+    if (rank == MASTER_NODE) {
+      
+      /*--- We set the counter to 0 ---*/
+      Counter_Processor_Struct = new long[nProcessor];
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        Counter_Processor_Struct[iProcessor] = 0;
+      }
+      
+      /*--- First we initialize the index vector to -1 ---*/
+      /*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
+      for (iVertex = 0; iVertex < nProcessor*nBuffer_SetIndex; iVertex++)
+        Buffer_Send_SetIndex[iVertex] = -2;
+      
+      /*--- As of now we do the loop over the flow points ---*/
+      /*--- The number of points for flow and structure does not necessarily have to match ---*/
+      /*--- In fact, it's possible that a processor asks for nStruct nodes and there are only ---*/
+      /*--- nFlow < nStruct available; this is due to halo nodes ---*/
+      
+      /*--- For every processor from which we have received information ---*/
+      /*--- (This is, for every processor on the structural side) ---*/
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        
+        /*--- This is the initial index on the coordinates buffer for that particular processor on the structural side ---*/
+        iProcessor_Flow = iProcessor*nBuffer_FlowTraction;
+        /*--- This is the initial index on the donor index/processor buffer for that particular processor on the structural side ---*/
+        iIndex_Flow = iProcessor*nBuffer_DonorIndices;
+        
+        /*--- For every vertex in the information retreived from iProcessor ---*/
+        for (iVertex = 0; iVertex < Buffer_Recv_nVertexFlow[iProcessor]; iVertex++) {
+          
+          /*--- The processor and index for the flow are: ---*/
+          Processor_Struct_Send = Buffer_Recv_DonorIndices[iIndex_Flow+iVertex*2+1];
+          Point_Struct_Send     = Buffer_Recv_DonorIndices[iIndex_Flow+iVertex*2];
+          
+          /*--- Load the buffer at the appropriate position ---*/
+          /*--- This is determined on the fluid side by:
+           *--- Processor_Flow*nBuffer_StructTraction -> Initial position of the processor array (fluid side)
+           *--- +
+           *--- Counter_Processor_Struct*nDim -> Initial position of the nDim array for the particular point on the fluid side
+           *--- +
+           *--- iDim -> Position within the nDim array that corresponds to a point
+           *---
+           *--- While on the structural side is:
+           *--- iProcessor*nBuffer_FlowTraction -> Initial position on the processor array (structural side)
+           *--- +
+           *--- iVertex*nDim -> Initial position of the nDim array for the particular point on the structural side
+           */
+          
+          /*--- We check that we are not setting the value for a halo node ---*/
+          if (Point_Struct_Send != -1) {
+            iProcessor_Struct = Processor_Struct_Send*nBuffer_StructTraction;
+            iIndex_Struct = Processor_Struct_Send*nBuffer_SetIndex;
+            iPoint_Struct = Counter_Processor_Struct[Processor_Struct_Send]*nDim;
+            
+            for (iDim = 0; iDim < nDim; iDim++)
+              Buffer_Send_StructTraction[iProcessor_Struct + iPoint_Struct + iDim] = Buffer_Recv_FlowTraction[iProcessor_Flow + iVertex*nDim + iDim];
+            
+            /*--- We set the fluid index at an appropriate position matching the coordinates ---*/
+            Buffer_Send_SetIndex[iIndex_Struct + Counter_Processor_Struct[Processor_Struct_Send]] = Point_Struct_Send;
+            
+            Counter_Processor_Struct[Processor_Struct_Send]++;
+          }
+          
+        }
+        
+      }
+      
+      //      cout << "---------------- Check send buffers ---------------------" << endl;
+      //
+      //      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      //        long initialIndex, initialIndex2;
+      //        initialIndex = iProcessor*nBuffer_StructTraction;
+      //        initialIndex2 = iProcessor*nBuffer_SetIndex;
+      //        for (long iCheck = 0; iCheck < Buffer_Recv_nVertexFlow[iProcessor]; iCheck++) {
+      //          cout << "Processor " << iProcessor << " will receive the node " ;
+      //          cout << Buffer_Send_SetIndex[initialIndex2+iCheck] << " which corresponds to the coordinates ";
+      //          for (iDim = 0; iDim < nDim; iDim++)
+      //            cout << "x" << iDim << "=" << Buffer_Send_StructTraction[initialIndex + iCheck*nDim + iDim] << ", ";
+      //          cout << endl;
+      //        }
+      //
+      //      }
+      
+    }
+    
+    /*--- Once all the messages have been prepared, we scatter them all from the MASTER_NODE ---*/
+    SU2_MPI::Scatter(Buffer_Send_StructTraction, nBuffer_StructTraction, MPI_DOUBLE, Buffer_Recv_StructTraction, nBuffer_StructTraction, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Scatter(Buffer_Send_SetIndex, nBuffer_SetIndex, MPI_LONG, Buffer_Recv_SetIndex, nBuffer_SetIndex, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    
+    long indexPoint_iVertex, Point_Struct_Check;
+    long Point_Struct_Recv;
+    
+    /*--- For the flow marker we are studying ---*/
+    if (Marker_Struct >= 0) {
+      
+      /*--- We have identified the local index of the Structural marker ---*/
+      /*--- We loop over all the vertices in that marker and in that particular processor ---*/
+      
+      for (iVertex = 0; iVertex < nLocalVertexStruct; iVertex++) {
+        
+        Point_Struct_Recv = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetNode();
+        
+        if (fea_geometry[MESH_0]->node[Point_Struct_Recv]->GetDomain()) {
+          /*--- Find the index of the point Point_Struct in the buffer Buffer_Recv_SetIndex ---*/
+          indexPoint_iVertex = std::distance(Buffer_Recv_SetIndex, std::find(Buffer_Recv_SetIndex, Buffer_Recv_SetIndex + MaxLocalVertexStruct, Point_Struct_Recv));
+          
+          Point_Struct_Check = Buffer_Recv_SetIndex[indexPoint_iVertex];
+          
+          if (Point_Struct_Check < 0) {
+            cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
+            exit(EXIT_FAILURE);
+          }
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            Residual[iDim] = Buffer_Recv_StructTraction[indexPoint_iVertex*nDim+iDim];
+          
+          /*--- Add to the Flow traction ---*/
+          node[Point_Struct_Recv]->Add_FlowTraction(Residual);
+          
+        }
+        
+      }
+      
+    }
+    
+    delete [] Buffer_Send_FlowTraction;
+    delete [] Buffer_Send_DonorIndices;
+    delete [] Buffer_Recv_StructTraction;
+    delete [] Buffer_Recv_SetIndex;
+    
+    if (rank == MASTER_NODE) {
+      delete [] Buffer_Recv_nVertexStruct;
+      delete [] Buffer_Recv_nVertexFlow;
+      delete [] Buffer_Recv_FlowTraction;
+      delete [] Buffer_Recv_DonorIndices;
+      delete [] Buffer_Send_StructTraction;
+      delete [] Buffer_Send_SetIndex;
+      delete [] Counter_Processor_Struct;
+    }
+    
+  }
+  
+#endif
+  
+  delete[] tn_f;
+  
+  
+}
+
+void CFEM_ElasticitySolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry,
+                                            CGeometry **flow_geometry, CConfig *fea_config,
+                                            CConfig *flow_config, CNumerics *fea_numerics) { }
+
+void CFEM_ElasticitySolver::PredictStruct_Displacement(CGeometry **fea_geometry,
+                                                       CConfig *fea_config, CSolver ***fea_solution) {
+  
+  unsigned short predOrder = fea_config->GetPredictorOrder();
+  su2double Delta_t = fea_config->GetDelta_DynTime();
+  unsigned long iPoint, iDim;
+  su2double *solDisp, *solVel, *solVel_tn, *valPred;
+  
+  //To nPointDomain: we need to communicate the predicted solution after setting it
+  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+    if (predOrder==0) fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
+    else if (predOrder==1) {
+      
+      solDisp = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
+      solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
+      valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+      
+      for (iDim=0; iDim < nDim; iDim++) {
+        valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
+      }
+      
+    }
+    else if (predOrder==2) {
+      
+      solDisp = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
+      solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
+      solVel_tn = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel_time_n();
+      valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+      
+      for (iDim=0; iDim < nDim; iDim++) {
+        valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
+      }
+      
+    }
+    else {
+      cout<< "Higher order predictor not implemented. Solving with order 0." << endl;
+      fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
+    }
+  }
+  
+}
+
+void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config,
+                                                      CSolver ***fea_solution, unsigned long iFSIIter) {
+  
+  unsigned long iPoint, iDim;
+  su2double rbuf_numAitk = 0, sbuf_numAitk = 0;
+  su2double rbuf_denAitk = 0, sbuf_denAitk = 0;
+  
+  su2double *dispPred, *dispCalc, *dispPred_Old, *dispCalc_Old;
+  su2double deltaU[3] = {0.0, 0.0, 0.0}, deltaU_p1[3] = {0.0, 0.0, 0.0};
+  su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
+  su2double CurrentTime=fea_config->GetCurrent_DynTime();
+  su2double Static_Time=fea_config->GetStatic_Time();
+  su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
+  
+  unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  ofstream historyFile_FSI;
+  bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
+  if (writeHistFSI && (rank == MASTER_NODE)) {
+    char cstrFSI[200];
+    string filenameHistFSI = fea_config->GetConv_FileName_FSI();
+    strcpy (cstrFSI, filenameHistFSI.data());
+    historyFile_FSI.open (cstrFSI, std::ios_base::app);
+  }
+  
+  
+  /*--- Only when there is movement, and a dynamic coefficient is requested, it makes sense to compute the Aitken's coefficient ---*/
+  
+  if (CurrentTime > Static_Time) {
+    
+    if (RelaxMethod_FSI == NO_RELAXATION) {
+      
+      if (writeHistFSI && (rank == MASTER_NODE)) {
+        
+        SetWAitken_Dyn(1.0);
+        
+        if (iFSIIter == 0) historyFile_FSI << " " << endl ;
+        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
+        historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
+        if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 ;
+        else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 << "," ;
+      }
+      
+    }
+    else if (RelaxMethod_FSI == FIXED_PARAMETER) {
+      
+      if (writeHistFSI && (rank == MASTER_NODE)) {
+        
+        SetWAitken_Dyn(fea_config->GetAitkenStatRelax());
+        
+        if (iFSIIter == 0) historyFile_FSI << " " << endl ;
+        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
+        historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
+        if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() ;
+        else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() << "," ;
+      }
+      
+    }
+    else if (RelaxMethod_FSI == AITKEN_DYNAMIC) {
+      
+      if (iFSIIter == 0) {
+        
+        WAitkDyn_tn1 = GetWAitken_Dyn_tn1();
+        WAitkDyn_Max = fea_config->GetAitkenDynMaxInit();
+        WAitkDyn_Min = fea_config->GetAitkenDynMinInit();
+        
+        WAitkDyn = min(WAitkDyn_tn1, WAitkDyn_Max);
+        WAitkDyn = max(WAitkDyn, WAitkDyn_Min);
+        
+        SetWAitken_Dyn(WAitkDyn);
+        if (writeHistFSI && (rank == MASTER_NODE)) {
+          if (iFSIIter == 0) historyFile_FSI << " " << endl ;
+          historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
+          historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
+          historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn ;
+        }
+        
+      }
+      else {
+        // To nPointDomain; we need to communicate the values
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          
+          dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+          dispPred_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred_Old();
+          dispCalc = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
+          dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Old();
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            
+            /*--- Compute the deltaU and deltaU_n+1 ---*/
+            deltaU[iDim] = dispCalc_Old[iDim] - dispPred_Old[iDim];
+            deltaU_p1[iDim] = dispCalc[iDim] - dispPred[iDim];
+            
+            /*--- Compute the difference ---*/
+            delta_deltaU[iDim] = deltaU_p1[iDim] - deltaU[iDim];
+            
+            /*--- Add numerator and denominator ---*/
+            sbuf_numAitk += deltaU[iDim] * delta_deltaU[iDim];
+            sbuf_denAitk += delta_deltaU[iDim] * delta_deltaU[iDim];
+            
+          }
+          
+        }
+        
+#ifdef HAVE_MPI
+        SU2_MPI::Allreduce(&sbuf_numAitk, &rbuf_numAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&sbuf_denAitk, &rbuf_denAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+        rbuf_numAitk = sbuf_numAitk;
+        rbuf_denAitk = sbuf_denAitk;
+#endif
+        
+        WAitkDyn = GetWAitken_Dyn();
+        
+        if (rbuf_denAitk > 1E-15) {
+          WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
+        }
+        
+        WAitkDyn = max(WAitkDyn, 0.1);
+        WAitkDyn = min(WAitkDyn, 1.0);
+        
+        SetWAitken_Dyn(WAitkDyn);
+        
+        if (writeHistFSI && (rank == MASTER_NODE)) {
+          historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
+          historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
+          historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn << "," ;
+        }
+        
+      }
+      
+    }
+    else {
+      if (rank == MASTER_NODE) cout << "No relaxation method used. " << endl;
+    }
+    
+  }
+  
+  if (writeHistFSI && (rank == MASTER_NODE)) {historyFile_FSI.close();}
+  
+}
+
+void CFEM_ElasticitySolver::SetAitken_Relaxation(CGeometry **fea_geometry,
+                                                 CConfig *fea_config, CSolver ***fea_solution) {
+  
+  unsigned long iPoint, iDim;
+  unsigned short RelaxMethod_FSI;
+  su2double *dispPred, *dispCalc;
+  su2double WAitken;
+  su2double CurrentTime=fea_config->GetCurrent_DynTime();
+  su2double Static_Time=fea_config->GetStatic_Time();
+  
+  RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
+  
+  /*--- Only when there is movement it makes sense to update the solutions... ---*/
+  
+  if (CurrentTime > Static_Time) {
+    
+    if (RelaxMethod_FSI == NO_RELAXATION) {
+      WAitken = 1.0;
+    }
+    else if (RelaxMethod_FSI == FIXED_PARAMETER) {
+      WAitken = fea_config->GetAitkenStatRelax();
+    }
+    else if (RelaxMethod_FSI == AITKEN_DYNAMIC) {
+      WAitken = GetWAitken_Dyn();
+    }
+    else {
+      WAitken = 1.0;
+    }
+    
+    // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine
+    for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+      
+      /*--- Retrieve pointers to the predicted and calculated solutions ---*/
+      dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+      dispCalc = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
+      
+      /*--- Set predicted solution as the old predicted solution ---*/
+      fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred_Old();
+      
+      /*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
+      fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Old(dispCalc);
+      
+      /*--- Apply the Aitken relaxation ---*/
+      for (iDim=0; iDim < nDim; iDim++) {
+        dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
+      }
+      
+    }
     
   }
   
 }
 
-void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry,
-                             CConfig *fea_config, CConfig *flow_config) { }
+void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
+                                                  CConfig *fea_config, CSolver ***fea_solution) {
+  
+  unsigned long iPoint;
+  su2double *valSolutionPred;
+  
+  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+    
+    valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+    
+    fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution(valSolutionPred);
+    
+  }
+  
+  /*--- Perform the MPI communication of the solution, displacements only ---*/
+  
+  Set_MPI_Solution_DispOnly(fea_geometry[MESH_0], fea_config);
+  
+}
+
+void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  unsigned short iVar, nSolVar;
+  unsigned long index;
+
+  ifstream restart_file;
+  string restart_filename, filename, text_line;
+
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry[MESH_0]->GetnZone();
+
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
+  if (dynamic) nSolVar = 3 * nVar;
+  else nSolVar = nVar;
+
+  su2double *Sol = new su2double[nSolVar];
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Restart the solution from file information ---*/
+
+  filename = config->GetSolution_FEMFileName();
+
+  /*--- If multizone, append zone name ---*/
+
+  if (nZone > 1)
+    filename = config->GetMultizone_FileName(filename, iZone);
+
+  if (dynamic) {
+    filename = config->GetUnsteady_FileName(filename, val_iter);
+  }
+
+  /*--- Read all lines in the restart file ---*/
+
+  int counter = 0;
+  long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nSolVar; iVar++) Sol[iVar] = Restart_Data[index+iVar];
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint_Local]->SetSolution(iVar, Sol[iVar]);
+        if (dynamic) {
+          node[iPoint_Local]->SetSolution_time_n(iVar, Sol[iVar]);
+          node[iPoint_Local]->SetSolution_Vel(iVar, Sol[iVar+nVar]);
+          node[iPoint_Local]->SetSolution_Vel_time_n(iVar, Sol[iVar+nVar]);
+          node[iPoint_Local]->SetSolution_Accel(iVar, Sol[iVar+2*nVar]);
+          node[iPoint_Local]->SetSolution_Accel_time_n(iVar, Sol[iVar+2*nVar]);
+          if (config->GetFSI_Simulation()) {
+            node[iPoint_Local]->SetSolution_Pred(iVar, Sol[iVar]);
+            node[iPoint_Local]->SetSolution_Pred_Old(iVar, Sol[iVar]);
+          }
+        }
+      }
+      iPoint_Global_Local++;
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+    }
+    
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- MPI. If dynamic, we also need to communicate the old solution ---*/
+
+  solver[MESH_0][FEA_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  if (dynamic) solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Old(geometry[MESH_0], config);
+
+  delete [] Sol;
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+  
+}

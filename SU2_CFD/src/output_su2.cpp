@@ -2,7 +2,7 @@
  * \file output_su2.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 3.2.9 "eagle"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,7 +38,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, nElem;
   unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
-  double *center, *angles, *transl;
+  su2double *center, *angles, *transl;
   ofstream output_file;
   ifstream input_file;
   string Grid_Marker, text_line, Marker_Tag, str;
@@ -54,6 +56,14 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
 
   output_file << "NDIME= " << nDim << endl;
   
+  /*--- Write the angle of attack offset. ---*/
+  
+  output_file << "AOA_OFFSET= " << config->GetAoA_Offset() << endl;
+  
+  /*--- Write the angle of attack offset. ---*/
+  
+  output_file << "AOS_OFFSET= " << config->GetAoS_Offset() << endl;
+
   /*--- Write connectivity data. ---*/
   
   nElem = nGlobal_Tria+nGlobal_Quad+nGlobal_Tetr+nGlobal_Hexa+nGlobal_Pris+nGlobal_Pyra;
@@ -116,9 +126,12 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   
   /*--- Write the node coordinates ---*/
   
-  output_file << "NPOIN= " << nGlobal_Poin<< endl;
+  output_file << "NPOIN= " << nGlobal_Doma;
+  if (geometry->GetGlobal_nPointDomain() != nGlobal_Doma)
+    output_file << "\t" << geometry->GetGlobal_nPointDomain();
+  output_file << endl;
 
-  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+  for (iPoint = 0; iPoint < nGlobal_Doma; iPoint++) {
      for (iDim = 0; iDim < nDim; iDim++)
       output_file << scientific << Coords[iDim][iPoint] << "\t";
     output_file << iPoint << endl;
@@ -163,6 +176,10 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
           output_file << "MARKER_TAG= " << Marker_Tag << endl;
           output_file << "MARKER_ELEMS= " << nElem_Bound_<< endl;
           
+          if (Marker_Tag == "SEND_RECEIVE") {
+            if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
+            if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
+          }
           for (iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
             
             getline(input_file, text_line);
@@ -180,9 +197,13 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
                 bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
                 output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
                 break;
-              case RECTANGLE:
+              case QUADRILATERAL:
                 bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
                 output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
+                break;
+              case VERTEX:
+                bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
+                output_file << "\t" << vnodes_edge[0] <<  "\t" << vnodes_edge[1] <<endl;
                 break;
             }
           }

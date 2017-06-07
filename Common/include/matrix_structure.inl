@@ -1,8 +1,8 @@
 /*!
  * \file matrix_structure.inl
  * \brief In-Line subroutines of the <i>matrix_structure.hpp</i> file.
- * \author F. Palacios, A. Bueno
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, A. Bueno, T. Economon
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +53,22 @@ inline void CSysMatrixVectorProduct::operator()(const CSysVector & u, CSysVector
   sparse_matrix->MatrixVectorProduct(u, v, geometry, config);
 }
 
+inline CSysMatrixVectorProductTransposed::CSysMatrixVectorProductTransposed(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+  sparse_matrix = &matrix_ref;
+  geometry = geometry_ref;
+  config = config_ref;
+}
+
+inline void CSysMatrixVectorProductTransposed::operator()(const CSysVector & u, CSysVector & v) const {
+  if (sparse_matrix == NULL) {
+    cerr << "CSysMatrixVectorProduct::operator()(const CSysVector &, CSysVector &): " << endl;
+    cerr << "pointer to sparse matrix is NULL." << endl;
+    throw(-1);
+  }
+  sparse_matrix->MatrixVectorProductTransposed(u, v, geometry, config);
+}
+
+
 inline CJacobiPreconditioner::CJacobiPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;
@@ -84,7 +102,7 @@ inline void CILUPreconditioner::operator()(const CSysVector & u, CSysVector & v)
 inline CLU_SGSPreconditioner::CLU_SGSPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
       geometry = geometry_ref;
-  config = config_ref;  
+  config = config_ref;
 }
 
 inline void CLU_SGSPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {

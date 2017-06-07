@@ -2,8 +2,8 @@
  * \file SU2_GEO.hpp
  * \brief Headers of the main subroutines of the code SU2_GEO.
  *        The subroutines and functions are in the <i>SU2_GEO.cpp</i> file.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,8 +13,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,9 +34,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "../../Common/include/mpi_structure.hpp"
+
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>

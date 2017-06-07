@@ -1,8 +1,8 @@
 /*!
  * \file SU2_MSH.cpp
  * \brief Main file of Mesh Adaptation Code (SU2_MSH).
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,7 +39,7 @@ int main(int argc, char *argv[]) {
 	/*--- Variable definitions ---*/
   
   unsigned short iZone, nZone = SINGLE_ZONE;
-  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
   char file_name[MAX_STRING_SIZE];
   int rank = MASTER_NODE, size = SINGLE_NODE;
@@ -46,9 +48,12 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization ---*/
   
 #ifdef HAVE_MPI
-  MPI_Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  SU2_MPI::Init(&argc,&argv);
+  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
+  MPI_Comm_rank(MPICommunicator,&rank);
+  MPI_Comm_size(MPICommunicator,&size);
+#else
+  SU2_Comm MPICommunicator(0);
 #endif
 	
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -82,7 +87,8 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_DEF, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone]->SetMPICommunicator(MPICommunicator);
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
@@ -99,7 +105,7 @@ int main(int argc, char *argv[]) {
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -120,7 +126,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StartTime = MPI_Wtime();
 #else
-  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
 	cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
@@ -138,7 +144,7 @@ int main(int argc, char *argv[]) {
 	/*--- Create the edge structure ---*/
   
 	cout << "Identify faces, edges and vertices." <<endl;
-	geometry_container[ZONE_0]->SetFaces(); geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]); geometry_container[ZONE_0]->SetCG();
+	geometry_container[ZONE_0]->SetFaces(); geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]); geometry_container[ZONE_0]->SetCoord_CG();
 	
 	/*--- Create the control volume structures ---*/
   
@@ -185,10 +191,6 @@ int main(int argc, char *argv[]) {
 				grid_adaptation->GetAdjSolution(geometry_container[ZONE_0], config_container[ZONE_0]);
 				grid_adaptation->SetComplete_Refinement(geometry_container[ZONE_0], 1);
 				break;
-			case FULL_LINEAR:
-				grid_adaptation->GetLinSolution(geometry_container[ZONE_0], config_container[ZONE_0]);
-				grid_adaptation->SetComplete_Refinement(geometry_container[ZONE_0], 1);
-				break;
 			case GRAD_FLOW:
 				grid_adaptation->SetIndicator_Flow(geometry_container[ZONE_0], config_container[ZONE_0], 1);
 				break;
@@ -210,16 +212,6 @@ int main(int argc, char *argv[]) {
 				cout << "Press any key to exit..." << endl;
 				cin.get();
 				exit(1);
-				break;
-			case ROBUST:
-				grid_adaptation->GetFlowResidual(geometry_container[ZONE_0], config_container[ZONE_0]);
-				grid_adaptation->GetAdjResidual(geometry_container[ZONE_0], config_container[ZONE_0]);
-				grid_adaptation->SetIndicator_Robust(geometry_container[ZONE_0], config_container[ZONE_0]);
-				break;
-			case COMPUTABLE_ROBUST:
-				grid_adaptation->GetAdjSolution(geometry_container[ZONE_0], config_container[ZONE_0]);
-				grid_adaptation->GetLinResidual(geometry_container[ZONE_0], config_container[ZONE_0]);
-				grid_adaptation->SetIndicator_Computable_Robust(geometry_container[ZONE_0], config_container[ZONE_0]);
 				break;
 			default :
 				cout << "The adaptation is not defined" << endl;
@@ -270,14 +262,10 @@ int main(int argc, char *argv[]) {
 			grid_adaptation->SetRestart_FlowSolution(config_container[ZONE_0], geo_adapt, config_container[ZONE_0]->GetRestart_FlowFileName());
 		
 		if ((config_container[ZONE_0]->GetKind_Adaptation() == GRAD_FLOW_ADJ) || (config_container[ZONE_0]->GetKind_Adaptation() == GRAD_ADJOINT)
-				|| (config_container[ZONE_0]->GetKind_Adaptation() == FULL_ADJOINT) || (config_container[ZONE_0]->GetKind_Adaptation() == ROBUST)
-				|| (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE) || (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
+				|| (config_container[ZONE_0]->GetKind_Adaptation() == FULL_ADJOINT) || (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE) ||
 				(config_container[ZONE_0]->GetKind_Adaptation() == REMAINING))
 			grid_adaptation->SetRestart_AdjSolution(config_container[ZONE_0], geo_adapt, config_container[ZONE_0]->GetRestart_AdjFileName());
 		
-		if ((config_container[ZONE_0]->GetKind_Adaptation() == FULL_LINEAR) || (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE_ROBUST)) {
-			grid_adaptation->SetRestart_LinSolution(config_container[ZONE_0], geo_adapt, config_container[ZONE_0]->GetRestart_LinFileName());
-		}
 	}
 	else {
     
@@ -319,7 +307,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StopTime = MPI_Wtime();
 #else
-  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
   /*--- Compute/print the total time for performance benchmarking. ---*/
