@@ -653,6 +653,8 @@ void CDriver::Geometrical_Preprocessing() {
       geometry_container[iZone][iMGlevel]->SetBoundControlVolume(config_container[iZone], geometry_container[iZone][iMGlevel-1], ALLOCATE);
       geometry_container[iZone][iMGlevel]->SetCoord(geometry_container[iZone][iMGlevel-1]);
 
+      geometry_container[iZone][iMGlevel]->SetResolutionTensor();
+
       /*--- Find closest neighbor to a surface point ---*/
 
       geometry_container[iZone][iMGlevel]->FindNormal_Neighbor(config_container[iZone]);
@@ -753,13 +755,18 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (config->isHybrid_Turb_Model()) hybrid = true;
   }
  
-  /*--- Creation of the hybrid mediator class ---*/
+  /*--- Creation of the hybrid mediator class ---*/ 
   
   if (hybrid) {
     /*--- Only one hybrid model can be used for all zones ---*/
-    // Once more than one mediator exists, this will need to be changed to a
-    // switch/case.
-    hybrid_mediator = new CHybrid_Mediator(nDim, config);
+    switch (config->GetKind_Hybrid_Blending()) {
+      case RANS_ONLY:
+        hybrid_mediator = new CHybrid_Dummy_Mediator(nDim, config);
+        break;
+      case CONVECTIVE:
+        hybrid_mediator = new CHybrid_Mediator(nDim, config);
+        break;
+    }
     // Hybrid anisotropy is created in the CNSSolver constructor
   }
 
@@ -1158,8 +1165,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     switch (config->GetKind_Turb_Model()) {
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;           break;
-
+      case SST:    menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
   }
@@ -1383,9 +1389,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           if (hybrid) {
-            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config, true);
+            numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config, true);
           } else {
-            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+            numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
           }
         }
         

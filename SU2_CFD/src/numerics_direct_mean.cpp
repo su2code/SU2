@@ -3414,10 +3414,12 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual,
   Eddy_Viscosity_i = V_i[nDim+6]; Eddy_Viscosity_j = V_j[nDim+6];
 
   if (hasAnisoEddyViscosity) {
+
     Mean_Aniso_Eddy_Viscosity = new su2double*[nDim];
     for (iDim = 0; iDim<nDim; iDim++)
       Mean_Aniso_Eddy_Viscosity[iDim] = new su2double[nDim];
 
+    // I assume here that it is hybrid
     for (iDim = 0; iDim<nDim; iDim++) {
       for (jDim = 0; jDim<nDim; jDim++) {
         Mean_Aniso_Eddy_Viscosity[iDim][jDim] = 0.5*

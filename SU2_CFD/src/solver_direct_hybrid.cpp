@@ -1084,7 +1084,7 @@ CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config, unsig
 
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Hybrid solver)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
 
     if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
@@ -1279,7 +1279,7 @@ void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Initialize the residual vector ---*/
 
-    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysRes.SetBlock_Zero(iPoint);  // FIXME: Conditional jump or move depends on uninitialised value(s)
 
   }
 
@@ -1289,16 +1289,14 @@ void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Initialize the Jacobian matrices ---*/
 
-  Jacobian.SetValZero();
+  Jacobian.SetValZero(); // FIXME: Conditional jump or move depends on uninitialised value(s)
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
   /*--- Upwind second order reconstruction ---*/
 
-  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
-
-  if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
+  // XXX: Do we need limiters?
 
 }
 

@@ -10242,6 +10242,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = (config->GetGrid_Movement());
+  bool hybrid         = config->isHybrid_Turb_Model();
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   
   int *Local_Halo = NULL;
@@ -10451,7 +10452,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Eddy_Viscosity");
       
     }
-    
+
     /*--- Add the distance to the nearest sharp edge if requested. ---*/
     
     if (config->GetWrt_SharpEdges()) {
@@ -10459,6 +10460,20 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
     
+    /*--- Add the hybrid parameter ---*/
+
+    if (hybrid) {
+      nVar_Par += 1; Variable_Names.push_back("Hybrid_Param");
+    }
+
+    /*--- Add the resolution adequacy ---*/
+
+    // FIXME: Add resolution adequacy
+
+    /*--- Add the viscosity anisotropy ---*/
+
+    // FIXME: Add the viscosity anisotropy
+
     /*--- New variables get registered here before the end of the loop. ---*/
     
   }
@@ -10671,6 +10686,18 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
         }
         
+        /*--- Load the hybrid parameter ---*/
+
+        if (hybrid) {
+          Local_Data[jPoint][iVar] =
+              solver[HYBRID_SOL]->node[iPoint]->GetPrimitive(0);
+          iVar++;
+        }
+
+        // FIXME Add resolution adequacy
+
+        // FIXME Add eddy viscosity anisotropy
+
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
         
