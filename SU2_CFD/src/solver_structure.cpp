@@ -2214,8 +2214,8 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		char fname[100];
 		strcpy(fname, val_filename.c_str());
-		int nVar_Buf = 4;
-		int var_buf[4];
+		int nVar_Buf = 5;
+		int var_buf[5];
 		int Restart_Iter = 0;
 		passivedouble Restart_Meta_Passive[5] = {0.0,0.0,0.0,0.0,0.0};
 		su2double Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};

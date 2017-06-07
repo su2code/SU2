@@ -725,13 +725,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SEMI_SPAN\n DESCRIPTION: Wing semi-span (1 by deafult) \ingroup Config*/
   addDoubleOption("SEMI_SPAN", SemiSpan, 1.0);
   /*!\brief FRONT_SPAR_XLOC\n DESCRIPTION: X location of the front spar \ingroup Config*/
-  addDoubleListOption("FRONT_SPAR_XLOC", nFront_Spar_XLoc, Front_Spar_XLoc);
+  addDoubleListOption("FRONT_SPAR_X_OVER_C", nFront_Spar_XoC, Front_Spar_XoC);
   /*!\brief FRONT_SPAR_YLOC\n DESCRIPTION: Y location of the front spar \ingroup Config*/
-  addDoubleListOption("FRONT_SPAR_YLOC", nFront_Spar_YLoc, Front_Spar_YLoc);
+  addDoubleListOption("FRONT_SPAR_ETA", nFront_Spar_Eta, Front_Spar_Eta);
   /*!\brief REAR_SPAR_XLOC\n DESCRIPTION: X location of the front spar \ingroup Config*/
-  addDoubleListOption("REAR_SPAR_XLOC", nRear_Spar_XLoc, Rear_Spar_XLoc);
+  addDoubleListOption("REAR_SPAR_X_OVER_C", nRear_Spar_XoC, Rear_Spar_XoC);
   /*!\brief REAR_SPAR_YLOC\n DESCRIPTION: Y location of the front spar \ingroup Config*/
-  addDoubleListOption("REAR_SPAR_YLOC", nRear_Spar_YLoc, Rear_Spar_YLoc);
+  addDoubleListOption("REAR_SPAR_ETA", nRear_Spar_Eta, Rear_Spar_Eta);
   /*!\brief REF_LENGTH\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
   addDoubleOption("REF_LENGTH", RefLength, 1.0);
   /*!\brief REF_ELEM_LENGTH\n DESCRIPTION: Reference element length for computing the slope limiter epsilon \ingroup Config*/
@@ -3192,11 +3192,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Design_Variable[0] = NO_DEFORMATION;
   }
 
-  if (nFront_Spar_XLoc != 0) { Front_Spar_XLoc_Abs = new su2double [nFront_Spar_XLoc]; }
-  if (nFront_Spar_YLoc != 0) { Front_Spar_YLoc_Abs = new su2double [nFront_Spar_YLoc]; }
+  if (nFront_Spar_XoC != 0) { Front_Spar_XoC_Abs = new su2double [nFront_Spar_XoC]; }
+  if (nFront_Spar_Eta != 0) { Front_Spar_Eta_Abs = new su2double [nFront_Spar_Eta]; }
 
-  if (nRear_Spar_XLoc != 0) { Rear_Spar_XLoc_Abs = new su2double [nRear_Spar_XLoc]; }
-  if (nRear_Spar_YLoc != 0) { Rear_Spar_YLoc_Abs = new su2double [nRear_Spar_YLoc]; }
+  if (nRear_Spar_XoC != 0) { Rear_Spar_XoC_Abs = new su2double [nRear_Spar_XoC]; }
+  if (nRear_Spar_Eta != 0) { Rear_Spar_Eta_Abs = new su2double [nRear_Spar_Eta]; }
 
 }
 
@@ -6312,46 +6312,46 @@ su2double CConfig::GetActDisk_IncTT(su2double val_radial) {
 
 }
 
-su2double CConfig::GetFront_Spar_XLoc_Interp_Abs(su2double val_yloc) {
+su2double CConfig::GetFront_Spar_XoC_Interp_Abs(su2double val_yloc) {
 
   unsigned short iVar;
   su2double Xloc;
 
-  if (val_yloc <= Front_Spar_YLoc_Abs[0]) { Xloc = Front_Spar_XLoc_Abs[0]; return Xloc; }
-  if (val_yloc >= Front_Spar_YLoc_Abs[nFront_Spar_YLoc-1]) { Xloc = Front_Spar_XLoc_Abs[nFront_Spar_YLoc-1]; return Xloc; }
+  if (val_yloc <= Front_Spar_Eta_Abs[0]) { Xloc = Front_Spar_XoC_Abs[0]; return Xloc; }
+  if (val_yloc >= Front_Spar_Eta_Abs[nFront_Spar_Eta-1]) { Xloc = Front_Spar_XoC_Abs[nFront_Spar_Eta-1]; return Xloc; }
 
-  for (iVar = 0; iVar < nFront_Spar_YLoc-1; iVar++) {
-    if ((val_yloc >= Front_Spar_YLoc_Abs[iVar]) && (val_yloc <= Front_Spar_YLoc_Abs[iVar+1]))
+  for (iVar = 0; iVar < nFront_Spar_Eta-1; iVar++) {
+    if ((val_yloc >= Front_Spar_Eta_Abs[iVar]) && (val_yloc <= Front_Spar_Eta_Abs[iVar+1]))
       break;
   }
 
-  su2double Xloc1 = Front_Spar_XLoc_Abs[iVar];
-  su2double Xloc2 = Front_Spar_XLoc_Abs[iVar+1];
-  su2double Yloc1 = Front_Spar_YLoc_Abs[iVar];
-  su2double Yloc2 = Front_Spar_YLoc_Abs[iVar+1];
+  su2double Xloc1 = Front_Spar_XoC_Abs[iVar];
+  su2double Xloc2 = Front_Spar_XoC_Abs[iVar+1];
+  su2double Yloc1 = Front_Spar_Eta_Abs[iVar];
+  su2double Yloc2 = Front_Spar_Eta_Abs[iVar+1];
   Xloc = Xloc1 + (Xloc2-Xloc1)*(val_yloc-Yloc1)/(Yloc2-Yloc1);
 
   return Xloc;
 
 }
 
-su2double CConfig::GetRear_Spar_XLoc_Interp_Abs(su2double val_yloc) {
+su2double CConfig::GetRear_Spar_XoC_Interp_Abs(su2double val_yloc) {
 
   unsigned short iVar;
   su2double Xloc;
 
-  if (val_yloc <= Rear_Spar_YLoc_Abs[0]) { Xloc = Rear_Spar_XLoc_Abs[0]; return Xloc; }
-  if (val_yloc >= Rear_Spar_YLoc_Abs[nRear_Spar_YLoc-1]) { Xloc = Rear_Spar_XLoc_Abs[nRear_Spar_YLoc-1]; return Xloc; }
+  if (val_yloc <= Rear_Spar_Eta_Abs[0]) { Xloc = Rear_Spar_XoC_Abs[0]; return Xloc; }
+  if (val_yloc >= Rear_Spar_Eta_Abs[nRear_Spar_Eta-1]) { Xloc = Rear_Spar_XoC_Abs[nRear_Spar_Eta-1]; return Xloc; }
 
-  for (iVar = 0; iVar < nRear_Spar_YLoc-1; iVar++) {
-    if ((val_yloc >= Rear_Spar_YLoc_Abs[iVar]) && (val_yloc <= Rear_Spar_YLoc_Abs[iVar+1]))
+  for (iVar = 0; iVar < nRear_Spar_Eta-1; iVar++) {
+    if ((val_yloc >= Rear_Spar_Eta_Abs[iVar]) && (val_yloc <= Rear_Spar_Eta_Abs[iVar+1]))
       break;
   }
 
-  su2double Xloc1 = Rear_Spar_XLoc_Abs[iVar];
-  su2double Xloc2 = Rear_Spar_XLoc_Abs[iVar+1];
-  su2double Yloc1 = Rear_Spar_YLoc_Abs[iVar];
-  su2double Yloc2 = Rear_Spar_YLoc_Abs[iVar+1];
+  su2double Xloc1 = Rear_Spar_XoC_Abs[iVar];
+  su2double Xloc2 = Rear_Spar_XoC_Abs[iVar+1];
+  su2double Yloc1 = Rear_Spar_Eta_Abs[iVar];
+  su2double Yloc2 = Rear_Spar_Eta_Abs[iVar+1];
   Xloc = Xloc1 + (Xloc2-Xloc1)*(val_yloc-Yloc1)/(Yloc2-Yloc1);
 
   return Xloc;

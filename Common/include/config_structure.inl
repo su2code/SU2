@@ -413,25 +413,25 @@ inline su2double CConfig::GetOmega_Ref(void) { return Omega_Ref; }
 
 inline su2double CConfig::GetForce_Ref(void) { return Force_Ref; }
 
-inline void CConfig::SetFront_Spar_AbsLoc(unsigned short val_var, su2double val_xloc, su2double val_yloc) { Front_Spar_XLoc_Abs[val_var] = val_xloc; Front_Spar_YLoc_Abs[val_var] = val_yloc; }
+inline void CConfig::SetFront_Spar_AbsLoc(unsigned short val_var, su2double val_xloc, su2double val_yloc) { Front_Spar_XoC_Abs[val_var] = val_xloc; Front_Spar_Eta_Abs[val_var] = val_yloc; }
 
-inline void CConfig::SetRear_Spar_AbsLoc(unsigned short val_var, su2double val_xloc, su2double val_yloc)  { Rear_Spar_XLoc_Abs[val_var] = val_xloc; Rear_Spar_YLoc_Abs[val_var] = val_yloc; }
+inline void CConfig::SetRear_Spar_AbsLoc(unsigned short val_var, su2double val_xloc, su2double val_yloc)  { Rear_Spar_XoC_Abs[val_var] = val_xloc; Rear_Spar_Eta_Abs[val_var] = val_yloc; }
 
-inline unsigned short CConfig::GetnFront_Spar_XLoc(void) { return nFront_Spar_XLoc; }
+inline unsigned short CConfig::GetnFront_Spar_XoC(void) { return nFront_Spar_XoC; }
 
-inline su2double CConfig::GetFront_Spar_XLoc(unsigned short val_var) { return Front_Spar_XLoc[val_var]; }
+inline su2double CConfig::GetFront_Spar_XoC(unsigned short val_var) { return Front_Spar_XoC[val_var]; }
   
-inline unsigned short CConfig::GetnFront_Spar_YLoc(void) { return nFront_Spar_YLoc; }
+inline unsigned short CConfig::GetnFront_Spar_Eta(void) { return nFront_Spar_Eta; }
 
-inline su2double CConfig::GetFront_Spar_YLoc(unsigned short val_var) { return Front_Spar_YLoc[val_var]; }
+inline su2double CConfig::GetFront_Spar_Eta(unsigned short val_var) { return Front_Spar_Eta[val_var]; }
 
-inline unsigned short CConfig::GetnRear_Spar_XLoc(void) { return nRear_Spar_XLoc; }
+inline unsigned short CConfig::GetnRear_Spar_XoC(void) { return nRear_Spar_XoC; }
   
-inline su2double CConfig::GetRear_Spar_XLoc(unsigned short val_var) { return Rear_Spar_XLoc[val_var]; }
+inline su2double CConfig::GetRear_Spar_XoC(unsigned short val_var) { return Rear_Spar_XoC[val_var]; }
 
-inline unsigned short CConfig::GetnRear_Spar_YLoc(void) { return nRear_Spar_YLoc; }
+inline unsigned short CConfig::GetnRear_Spar_Eta(void) { return nRear_Spar_Eta; }
 
-inline su2double CConfig::GetRear_Spar_YLoc(unsigned short val_var) { return Rear_Spar_YLoc[val_var]; }
+inline su2double CConfig::GetRear_Spar_Eta(unsigned short val_var) { return Rear_Spar_Eta[val_var]; }
 
 inline su2double CConfig::GetPressure_FreeStreamND(void) { return Pressure_FreeStreamND; }
 

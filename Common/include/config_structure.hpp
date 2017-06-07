@@ -404,14 +404,14 @@ private:
   *ActDisk_Inc_Pressure,   /*!< \brief PT distribution for the actuator disk. */
   *ActDisk_Inc_Temperature,   /*!< \brief TT distribution for the actuator disk. */
   *ActDisk_Inc_Radial;   /*!< \brief Radial distribution for the actuator disk. */
-  su2double *Front_Spar_XLoc,   /*!< \brief X location of the front spar. */
-  *Front_Spar_XLoc_Abs,   /*!< \brief X location of the front spar. */
-  *Front_Spar_YLoc,   /*!< \brief Y location of the front spar. */
-  *Front_Spar_YLoc_Abs,   /*!< \brief Y location of the front spar. */
-  *Rear_Spar_XLoc,   /*!< \brief X location of the rear spar. */
-  *Rear_Spar_XLoc_Abs,   /*!< \brief X location of the rear spar. */
-  *Rear_Spar_YLoc,   /*!< \brief X location of the rear spar. */
-  *Rear_Spar_YLoc_Abs;   /*!< \brief X location of the rear spar. */
+  su2double *Front_Spar_XoC,   /*!< \brief X location of the front spar. */
+  *Front_Spar_XoC_Abs,   /*!< \brief X location of the front spar. */
+  *Front_Spar_Eta,   /*!< \brief Y location of the front spar. */
+  *Front_Spar_Eta_Abs,   /*!< \brief Y location of the front spar. */
+  *Rear_Spar_XoC,   /*!< \brief X location of the rear spar. */
+  *Rear_Spar_XoC_Abs,   /*!< \brief X location of the rear spar. */
+  *Rear_Spar_Eta,   /*!< \brief X location of the rear spar. */
+  *Rear_Spar_Eta_Abs;   /*!< \brief X location of the rear spar. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
@@ -501,10 +501,10 @@ private:
   nActDisk_Inc_Temperature,                       /*!< \brief TT distribution for the actuator disk . */
   nActDisk_Inc_Radial,                    /*!< \brief Radial distribution for the actuator disk . */
   nWingStations,               /*!< \brief Number of section cuts to make when calculating internal volume. */
-  nFront_Spar_XLoc,            /*!< \brief X location of the front spar . */
-  nFront_Spar_YLoc,            /*!< \brief Y location of the front spar . */
-  nRear_Spar_XLoc,            /*!< \brief X location of the rear spar . */
-  nRear_Spar_YLoc;            /*!< \brief Y location of the rear spar . */
+  nFront_Spar_XoC,            /*!< \brief X location of the front spar . */
+  nFront_Spar_Eta,            /*!< \brief Y location of the front spar . */
+  nRear_Spar_XoC,            /*!< \brief X location of the rear spar . */
+  nRear_Spar_Eta;            /*!< \brief Y location of the rear spar . */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
   *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
@@ -5361,67 +5361,67 @@ public:
    * \brief Get the number of locations for the rear spar definition.
    * \return number of locations for the front spar definition
    */
-  unsigned short GetnFront_Spar_XLoc();
+  unsigned short GetnFront_Spar_XoC();
 
   /*!
    * \brief Get the Xlocation of the front spar given a Y location.
    * \param[in] val_var - location index.
    * \return Value of the Xlocation of the spar
    */
-  su2double GetFront_Spar_XLoc(unsigned short val_var);
+  su2double GetFront_Spar_XoC(unsigned short val_var);
 
   /*!
    * \brief Get the number of locations for the rear spar definition.
    * \return number of locations for the front spar definition
    */
-  unsigned short GetnFront_Spar_YLoc();
+  unsigned short GetnFront_Spar_Eta();
 
   /*!
    * \brief Get the Ylocation of the front spar given a Y location.
    * \param[in] val_var - location index.
    * \return Value of the Ylocation of the spar
    */
-  su2double GetFront_Spar_YLoc(unsigned short val_var);
+  su2double GetFront_Spar_Eta(unsigned short val_var);
 
   /*!
    * \brief Get the number of locations for the rear spar definition.
    * \return number of locations for the front spar definition
    */
-  unsigned short GetnRear_Spar_XLoc();
+  unsigned short GetnRear_Spar_XoC();
 
   /*!
    * \brief Get the Ylocation of the rear spar given a Y location.
    * \param[in] val_var - location index.
    * \return Value of the Xlocation of the spar
    */
-  su2double GetRear_Spar_XLoc(unsigned short val_var);
+  su2double GetRear_Spar_XoC(unsigned short val_var);
 
   /*!
    * \brief Get the number of locations for the rear spar definition.
    * \return number of locations for the rear spar definition
    */
-  unsigned short GetnRear_Spar_YLoc();
+  unsigned short GetnRear_Spar_Eta();
 
   /*!
    * \brief Get the Ylocation of the rear spar given a Y location.
    * \param[in] val_var - location index.
    * \return Value of the Ylocation of the spar
    */
-  su2double GetRear_Spar_YLoc(unsigned short val_var);
+  su2double GetRear_Spar_Eta(unsigned short val_var);
 
   /*!
    * \brief Get the Xlocation of the front spar given a Y location.
    * \param[in] val_yloc - Y location of the spar.
    * \return Value of the Xlocation of the spar
    */
-  su2double GetFront_Spar_XLoc_Interp_Abs(su2double val_yloc);
+  su2double GetFront_Spar_XoC_Interp_Abs(su2double val_yloc);
 
   /*!
    * \brief Get the Xlocation of the rear spar given a Y location.
    * \param[in] val_yloc - Y location of the spar.
    * \return Value of the Xlocation of the spar
    */
-  su2double GetRear_Spar_XLoc_Interp_Abs(su2double val_yloc);
+  su2double GetRear_Spar_XoC_Interp_Abs(su2double val_yloc);
 
   /*!
    * \brief Get the var 2 at NRBC boundary.
