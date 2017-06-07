@@ -3592,6 +3592,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_Wall_Functions_Mean(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+
+  virtual void Compute_Wall_Functions(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                             CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 };
 
 /*!
@@ -7774,7 +7785,14 @@ public:
    * \return Value of the Omega_Max
    */
   void SetOmega_Max(su2double val_omega_max);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_Wall_Functions_Mean(CGeometry *geometry, CSolver** solver_container, CConfig* config);
 };
 
 /*!
@@ -8544,6 +8562,8 @@ public:
    */
   void SetFreeStream_Solution(CConfig *config);
   
+  void Compute_Wall_Functions(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                              CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 };
 
 /*!
