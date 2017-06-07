@@ -2029,6 +2029,10 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
+
+  virtual void SetTauWall(su2double val_tau_wall);
+
+  virtual su2double GetTauWall();
 };
 
 /*!
