@@ -789,7 +789,7 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPyramid(
     /*--- Determine the step size along the edges of the current quad.
           Take the exceptional situation mPoly == 0 into account to avoid a
           division by zero.     ---*/
-    su2double dh = mPoly ? (rsMax-rsMin)/mPoly : 0.0;
+    su2double dh = mPoly ? (rsMax-rsMin)/mPoly : su2double(0.0);
 
     /*--- Loop over the vertices of the current quadrilateral. ---*/
     for(unsigned short j=0; j<=mPoly; ++j) {

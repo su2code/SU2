@@ -84,22 +84,11 @@ bool SortFacesClass::operator()(const FaceOfElementClass &f0,
     if(f0.faceIndicator != f1.faceIndicator) return f0.faceIndicator < f1.faceIndicator;
 
     /* Both faces belong to the same boundary marker. The second comparison is
-       based on the time level of the adjacent element. Note that the time
-       levels of the elements can only differ when time accurate local time
-       stepping is used. */
+       based on the on the local volume ID's of the adjacent elements. As the
+       volumes are sorted according to the time levels for time accurate
+       local stepping, there is no need to do this check seperately here. */
     unsigned long ind0 = f0.elemID0 < nVolElemTot ? f0.elemID0 : f0.elemID1;
     unsigned long ind1 = f1.elemID0 < nVolElemTot ? f1.elemID0 : f1.elemID1;
-
-    if(volElem[ind0].timeLevel != volElem[ind1].timeLevel)
-      return volElem[ind0].timeLevel < volElem[ind1].timeLevel;
-
-    /* Both faces belong to the same time level as well. Make sure that the
-       sequence of the faces is identical to the sequence stored in the
-       surface connectivity of the boundary. This information is stored in
-       either nPolyGrid0 or nPolyGrid1, depending on which side of the face
-       the corresponding element is located. */
-    ind0 = f0.elemID0 < nVolElemTot ? f0.nPolyGrid1 : f0.nPolyGrid0;
-    ind1 = f1.elemID0 < nVolElemTot ? f1.nPolyGrid1 : f1.nPolyGrid0;
 
     return ind0 < ind1;
   }
@@ -663,9 +652,6 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*---           different rank.                                            ---*/
   /*---         - A reverse Cuthill McKee renumbering takes place to obtain  ---*/
   /*---           better cache performance for the face residuals.           ---*/
-  /*---                                                                      ---*/
-  /*---         The halo elements are sorted per rank and the sequence is    ---*/
-  /*---         determined by the local numbering on the sending rank.       ---*/
   /*----------------------------------------------------------------------------*/
 
   /* Sort the elements of owned elements in increasing order. */
@@ -948,6 +934,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         for(unsigned short k=0; k<thisSurfElem.nDOFsGrid; ++k)
           thisSurfElem.nodeIDsGrid[k] = longRecvBuf[i][indL++];
 
+        /* Convert the global volume element ID to the local one.
+           It is essential to do this before the sorting. */
+        map<unsigned long, unsigned long>::iterator MMI;
+        MMI = mapGlobalElemIDToInd.find(thisSurfElem.volElemID);
+        thisSurfElem.volElemID = MMI->second;
+
+        /* Store the surface element in the data structure for this boundary. */
         boundaries[iMarker].surfElem.push_back(thisSurfElem);
       }
     }
@@ -979,8 +972,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 4: Obtain the information of the halo elements, which are       ---*/
-  /*---         sorted per rank and the sequence is determined by the local  ---*/
-  /*---         numbering on the sending rank.                               ---*/
+  /*---         sorted per time level and afterwards per rank, where the     ---*/
+  /*---         sequence is determined by the numbering on the sending rank. ---*/
   /*----------------------------------------------------------------------------*/
 
   /* Determine the number of elements per rank of the originally partitioned grid
@@ -1559,6 +1552,25 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*---         receive buffers shortRecvBuf, longRecvBuf and doubleRecvBuf. ---*/
   /*----------------------------------------------------------------------------*/
 
+  /*--- The halo elements must be sorted first based on the time level, followed
+        by the rank and finally the index in the receive buffers (which represents
+        the sequence on the sending rank. This sorting can be accomplished by
+        using a vector of long3T. The contents of this vector is build below. ---*/
+  vector<long3T> haloElemInfo;
+  haloElemInfo.reserve(nVolElemTot - nVolElemOwned);
+
+  for(int i=0; i<nRankSend; ++i) {
+    unsigned long indS = 0;
+
+    for(long j=0; j<longRecvBuf[i][0]; ++j) {
+      const unsigned short nFaces = shortRecvBuf[i][indS+6];
+      haloElemInfo.push_back(long3T(shortRecvBuf[i][indS+7], sourceRank[i], j));
+      indS += nFaces + 8;
+    }
+  }
+
+  sort(haloElemInfo.begin(), haloElemInfo.end());
+
   /*--- Loop over the receive buffers to store the information of the
         halo elements and the halo points. ---*/
   vector<CPointFEM> haloPoints;
@@ -1570,9 +1582,17 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Loop over the halo elements received from this rank. */
     for(long j=0; j<longRecvBuf[i][0]; ++j) {
 
-      /* Retrieve the data from the communication buffers. */
-      const unsigned long indV = nHaloElemPerRank[sourceRank[i]] + j;
+      /* Create an object of long3T and search for its position
+         in haloElemInfo to determine the index in volElem, where
+         this element is stored. */
+      long3T thisElem(shortRecvBuf[i][indS+7], sourceRank[i], j);
+      vector<long3T>::iterator low;
+      low = lower_bound(haloElemInfo.begin(), haloElemInfo.end(), thisElem);
 
+      unsigned long indV = low - haloElemInfo.begin();
+      indV += nVolElemOwned;
+
+      /* Retrieve the data from the communication buffers. */
       volElem[indV].elemIDGlobal = longRecvBuf[i][indL++];
       volElem[indV].rankOriginal = sourceRank[i];
 
@@ -1676,14 +1696,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     mapGlobalPointIDToInd[globIndAndPer] = i;
   }
 
-  /*--- Convert the global indices in the boundary connectivities to local ones. ---*/
+  /*--- Convert the global indices in the boundary connectivities to local ones.
+        Note that the volume ID's already contain the local number. ---*/
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
     for(unsigned long i=0; i<boundaries[iMarker].surfElem.size(); ++i) {
-
-      /* Convert the corresponding volume element from global to local. */
-      map<unsigned long, unsigned long>::const_iterator LMI;
-      LMI = mapGlobalElemIDToInd.find(boundaries[iMarker].surfElem[i].volElemID);
-      boundaries[iMarker].surfElem[i].volElemID = LMI->second;
 
       /* Convert the global node ID's to local values. Note that for these node
          ID's no periodic transformation can be present. */
@@ -1801,7 +1817,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
            stored in this halo point. */
         su2double dx =             haloPoints[i].coor[0] - center[0];
         su2double dy =             haloPoints[i].coor[1] - center[1];
-        su2double dz = nDim == 3 ? haloPoints[i].coor[2] - center[2] : 0.0;
+        su2double dz = nDim == 3 ? haloPoints[i].coor[2] - center[2] : su2double(0.0);
 
         haloPoints[i].coor[0] = rotMatrix[0][0]*dx + rotMatrix[0][1]*dy
                               + rotMatrix[0][2]*dz + translation[0];
@@ -1869,6 +1885,16 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     const unsigned short diffTimeLevel = nTimeLevels - 1 - volElem[i].timeLevel;
     volElem[i].factTimeLevel = pow(2, diffTimeLevel);
   }
+
+  /* Determine the number of halo elements per time level in cumulative
+     storage format. */
+  nVolElemHaloPerTimeLevel.assign(nTimeLevels+1, 0);
+  for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i)
+    ++nVolElemHaloPerTimeLevel[volElem[i].timeLevel+1];
+
+  nVolElemHaloPerTimeLevel[0] = nVolElemOwned;
+  for(unsigned short i=0; i<nTimeLevels; ++i)
+    nVolElemHaloPerTimeLevel[i+1] += nVolElemHaloPerTimeLevel[i];
 }
 
 void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration,
@@ -2036,7 +2062,7 @@ void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
            the inverse of the length. Make sure that a division by zero is
            avoided, although this is most likely never active. */
         const su2double lenNorm    = sqrt(dxdr*dxdr + dydr*dydr);
-        const su2double invLenNorm = lenNorm < 1.e-35 ? 1.e+35 : 1.0/lenNorm;
+        const su2double invLenNorm = lenNorm < su2double(1.e-35) ? su2double(1.e+35) : 1.0/lenNorm;
 
         /* Store the corresponding unit normal vector and its length. The
            direction of the normal vector is such that it is outward pointing
@@ -2077,7 +2103,7 @@ void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
         const su2double nz = dxdr*dyds - dxds*dydr;
 
         const su2double lenNorm    = sqrt(nx*nx + ny*ny + nz*nz);
-        const su2double invLenNorm = lenNorm < 1.e-50 ? 1.e+50 : 1.0/lenNorm;
+        const su2double invLenNorm = lenNorm < su2double(1.e-35) ? su2double(1.e+35) : 1.0/lenNorm;
 
         /* Store the components of the unit normal as well as its length in the
            normals. Note that the current direction of the normal is pointing
@@ -2505,11 +2531,6 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
             MPI_Finalize();
 #endif
           }
-
-          /* Store the local index of the boundary face in the variable for the
-             polynomial degree, which is not used in localFaces. */
-          if( side0IsBoundary ) low->nPolyGrid1 = k;
-          else                  low->nPolyGrid0 = k;
         }
         else {
           cout << "Boundary face not found in localFaces. "
@@ -2931,6 +2952,52 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
       /* Update the counter ii for the next internal matching face. */
       ++ii;
+    }
+  }
+
+  /* Loop over the faces to flag the elements that share one or more faces
+     with elements from a lower time level. */
+  vector<bool> elemAdjLowTimeLevel(nVolElemTot, false);
+  for(unsigned long i=0; i<matchingFaces.size(); ++i) {
+    const unsigned long e0 = matchingFaces[i].elemID0;
+    const unsigned long e1 = matchingFaces[i].elemID1;
+
+    if(volElem[e0].timeLevel > volElem[e1].timeLevel) elemAdjLowTimeLevel[e0] = true;
+    if(volElem[e1].timeLevel > volElem[e0].timeLevel) elemAdjLowTimeLevel[e1] = true;
+  }
+
+  /* Determine the list of elements per time level, which share one or more
+     faces with elements of the lower time level. Make a distinction between
+     owned and halo elements. */
+  ownedElemAdjLowTimeLevel.resize(nTimeLevels);
+  haloElemAdjLowTimeLevel.resize(nTimeLevels);
+
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    if( elemAdjLowTimeLevel[i] )
+      ownedElemAdjLowTimeLevel[volElem[i].timeLevel].push_back(i);
+  }
+
+  for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) {
+    if( elemAdjLowTimeLevel[i] )
+      haloElemAdjLowTimeLevel[volElem[i].timeLevel].push_back(i);
+  }
+
+  /* Determine the offsets of the solution DOFs in the solution working vectors
+     of the solver for the different time levels. These are needed when time
+     accurate local time stepping is employed. */
+  vector<unsigned long> counterDOFs(nTimeLevels, 0);
+
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    const unsigned short lev = volElem[i].timeLevel;
+    volElem[i].offsetDOFsSolThisTimeLevel = counterDOFs[lev];
+    counterDOFs[lev] += volElem[i].nDOFsSol;
+
+    if( elemAdjLowTimeLevel[i] ) {
+      volElem[i].offsetDOFsSolPrevTimeLevel = counterDOFs[lev-1];
+      counterDOFs[lev-1] += volElem[i].nDOFsSol;
+    }
+    else {
+      volElem[i].offsetDOFsSolPrevTimeLevel = ULONG_MAX;
     }
   }
 
@@ -5878,8 +5945,8 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
 
   /* Determine the number of time integration points of ADER as well
      as their location on the interval [-1..1]. */
-  const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
-  const su2double      *TimeIntegrationPoints = config->GetTimeIntegrationADER_DG();
+  unsigned short  nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
+  const su2double *TimeIntegrationPoints = config->GetTimeIntegrationADER_DG();
 
   /* Compute the Vandermonde matrix for the time integration points. */
   vector<su2double> rTimeIntPoints(nTimeIntegrationPoints);
@@ -5934,6 +6001,80 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
     val = 1.0/val;
     for(unsigned short i=0; i<nTimeDOFs; ++i)
       timeInterpolDOFToIntegrationADER_DG[jj+i] *= val;
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Determine the interpolation matrix from the time DOFs of ADER-DG   ---*/
+  /*--- of adjacent elements of a higher time level to the time            ---*/
+  /*--- integration points.                                                ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Determine the location of the time integration points from the
+     perspective of an adjacent element with twice the time step. Note that
+     the time step of this adjacent element covers two fine time steps and
+     hence the number of integration points double and the position is
+     determined via the transformation xxi = 0.5(xi-1) and xi varies between
+     -1 and 3. */
+  rTimeIntPoints.resize(2*nTimeIntegrationPoints);
+  for(unsigned short i=0; i<nTimeIntegrationPoints; ++i)
+    rTimeIntPoints[i] = 0.5*(TimeIntegrationPoints[i]-1.0);
+
+  for(unsigned short i=0; i<nTimeIntegrationPoints; ++i) {
+    const unsigned short ii = i + nTimeIntegrationPoints;
+    rTimeIntPoints[ii] = 0.5*(TimeIntegrationPoints[i]+1.0);
+  }
+
+  nTimeIntegrationPoints *= 2;
+
+  /* Compute the Vandermonde matrix for these time integration points. */
+  V.resize(nTimeIntegrationPoints*nTimeDOFs);
+  timeElement.Vandermonde1D(nTimeDOFs, rTimeIntPoints, V);
+
+  /* Allocate the memory for the time interpolation coefficients and initialize
+     them to zero. */
+  timeInterpolAdjDOFToIntegrationADER_DG.assign(nTimeIntegrationPoints*nTimeDOFs, 0.0);
+
+  /* Determine the matrix products V*VInv to get the correct expression for
+     mTimeInterpolAdjDOFToIntegration. Note that from mathematical point of view
+     the transpose of V*VInv is stored, because in this way the interpolation
+     data for a time integration point is contiguous in memory. */
+  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+    for(unsigned short i=0; i<nTimeIntegrationPoints; ++i) {
+      const unsigned short ii = i*nTimeDOFs + j;
+
+      for(unsigned short k=0; k<nTimeDOFs; ++k) {
+        const unsigned short indV    = k*nTimeIntegrationPoints + i;
+        const unsigned short indVInv = j*nTimeDOFs + k;
+
+        timeInterpolAdjDOFToIntegrationADER_DG[ii] += V[indV]*VInv[indVInv];
+      }
+    }
+  }
+
+  /*--- To reduce the error due to round off, make sure that the row sum is 1.
+        Also check if the difference is not too large to be solely caused by
+        roundoff.  ---*/
+  for(unsigned short j=0; j<nTimeIntegrationPoints; ++j) {
+    const unsigned short jj = j*nTimeDOFs;
+
+    val = 0.0;
+    for(unsigned short i=0; i<nTimeDOFs; ++i)
+      val += timeInterpolAdjDOFToIntegrationADER_DG[jj+i];
+
+    if(fabs(val-1.0) > 1.e-6){
+      cout << "In CMeshFEM_DG::TimeCoefficientsPredictorADER_DG." << endl;
+      cout << "Difference is too large to be caused by roundoff" << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+
+    val = 1.0/val;
+    for(unsigned short i=0; i<nTimeDOFs; ++i)
+      timeInterpolAdjDOFToIntegrationADER_DG[jj+i] *= val;
   }
 }
 

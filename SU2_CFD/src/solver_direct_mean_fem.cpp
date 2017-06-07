@@ -54,23 +54,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
 
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
-
-  /*--- Initialize boolean for deallocating MPI comm. structure. ---*/
-  mpiCommsPresent = false;
-
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh) : CSolver() {
-
-  /*--- Dummy solver constructor that calls the SetNondim. routine in
-   order to load the flow non-dim. information into the config class.
-   This is needed to complete a partitioning for time-accurate local
-   time stepping that depends on the flow state. ---*/
-
-  nDim = val_nDim;
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-  SetNondimensionalization(config, iMesh, false);
 
   /*--- Basic array initialization ---*/
 
@@ -94,17 +80,17 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
 
-  /*--- Initialize boolean for deallocating MPI comm. structure. ---*/
-  mpiCommsPresent = false;
-
+  /*--- Dummy solver constructor that calls the SetNondim. routine in
+        order to load the flow non-dim. information into the config class.
+        This is needed to complete a partitioning for time-accurate local
+        time stepping that depends on the flow state. ---*/
+  nDim = val_nDim;
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
+  SetNondimensionalization(config, iMesh, false);
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Array initialization ---*/
   FluidModel = NULL;
@@ -146,6 +132,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   nVolElemOwnedPerTimeLevel    = DGGeometry->GetNVolElemOwnedPerTimeLevel();
   nVolElemInternalPerTimeLevel = DGGeometry->GetNVolElemInternalPerTimeLevel();
+  nVolElemHaloPerTimeLevel     = DGGeometry->GetNVolElemHaloPerTimeLevel();
+
+  ownedElemAdjLowTimeLevel = DGGeometry->GetOwnedElemAdjLowTimeLevel();
+  haloElemAdjLowTimeLevel  = DGGeometry->GetHaloElemAdjLowTimeLevel();
 
   nMeshPoints = DGGeometry->GetNMeshPoints();
   meshPoints  = DGGeometry->GetMeshPoints();
@@ -164,8 +154,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   standardElementsSol      = DGGeometry->GetStandardElementsSol();
   standardMatchingFacesSol = DGGeometry->GetStandardMatchingFacesSol();
 
-  LagrangianBeginTimeIntervalADER_DG  = DGGeometry->GetLagrangianBeginTimeIntervalADER_DG();
-  timeInterpolDOFToIntegrationADER_DG = DGGeometry->GetTimeInterpolDOFToIntegrationADER_DG();
+  LagrangianBeginTimeIntervalADER_DG     = DGGeometry->GetLagrangianBeginTimeIntervalADER_DG();
+  timeInterpolDOFToIntegrationADER_DG    = DGGeometry->GetTimeInterpolDOFToIntegrationADER_DG();
+  timeInterpolAdjDOFToIntegrationADER_DG = DGGeometry->GetTimeInterpolAdjDOFToIntegrationADER_DG();
 
   /*--- Determine the maximum number of integration points used. Usually this
         is for the volume integral, but to avoid problems the faces are also
@@ -215,13 +206,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
     const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-    sizeVecTmp = 2*nIntegrationMax*(2 + nVar) + sizeFluxes + sizeGradSolInt
+    sizeVecTmp = nIntegrationMax*(4 + 3*nVar) + sizeFluxes + sizeGradSolInt
                + max(nIntegrationMax,nDOFsMax)*nVar;
   }
   else {
 
     /* Inviscid simulation. */
-    unsigned int sizeVol = nVar*nIntegrationMax*(nDim+1);
+    unsigned int sizeVol = nVar*nIntegrationMax*(nDim+2);
     unsigned int sizeSur = nVar*(2*nIntegrationMax + max(nIntegrationMax,nDOFsMax));
 
     sizeVecTmp = max(sizeVol, sizeSur);
@@ -334,8 +325,22 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   nDOFsLocTot = nDOFsLocOwned;
   for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) nDOFsLocTot += volElem[i].nDOFsSol;
 
-  VecSolDOFs.resize(nVar*nDOFsLocTot);
-  VecSolDOFsOld.resize(nVar*nDOFsLocOwned);
+  VecSolDOFs.resize(nVar*nDOFsLocOwned);
+
+  /*--- Allocate the memory for the working vectors for the solution variables
+        for all the time levels used. ---*/
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+  VecWorkSolDOFs.resize(nTimeLevels);
+
+  vector<unsigned long> nDOFsTimeLevels(nTimeLevels, 0);
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    nDOFsTimeLevels[volElem[i].timeLevel] += volElem[i].nDOFsSol;
+    if(volElem[i].offsetDOFsSolPrevTimeLevel != ULONG_MAX)
+      nDOFsTimeLevels[volElem[i].timeLevel-1] += volElem[i].nDOFsSol;
+  }
+
+  for(unsigned short i=0; i<nTimeLevels; ++i)
+    VecWorkSolDOFs[i].resize(nVar*nDOFsTimeLevels[i]);
 
   /*--- Check for the ADER-DG time integration scheme and allocate the memory
         for the additional vectors. ---*/
@@ -343,8 +348,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
     const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
 
-    VecTotResDOFsADER.resize(nVar*nDOFsLocOwned);
-    VecSolDOFsPredictorADER.resize(nTimeDOFs*nVar*nDOFsLocOwned);
+    VecTotResDOFsADER.assign(nVar*nDOFsLocTot, 0.0);
+    VecSolDOFsPredictorADER.resize(nTimeDOFs*nVar*nDOFsLocTot);
   }
   else {
 
@@ -367,11 +372,15 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Allocate the memory to store the time steps, residuals, etc. ---*/
   VecDeltaTime.resize(nVolElemOwned);
-  VecResDOFs.resize(nVar*nDOFsLocTot);
-  nEntriesResFaces.assign(nDOFsLocTot+1, 0);
-  startLocResFacesMarkers.resize(nMarker);
 
-  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG)
+    VecResDOFs.resize(nVar*nDOFsLocOwned);
+  else
+    VecResDOFs.resize(nVar*nDOFsLocTot);
+
+  nEntriesResFaces.assign(nDOFsLocTot+1, 0);
+  nEntriesResAdjFaces.assign(nDOFsLocTot+1, 0);
+  startLocResFacesMarkers.resize(nMarker);
 
   startLocResInternalFacesLocalElem.assign(nTimeLevels+1, 0);
   startLocResInternalFacesWithHaloElem.assign(nTimeLevels+1, 0);
@@ -387,18 +396,37 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   unsigned long sizeVecResFaces = 0;
   for(unsigned long i=0; i<nMatchingInternalFacesWithHaloElem[nTimeLevels]; ++i) {
 
-    /* The terms that only contribute to the DOFs located on the face. */
+    /* Determine the time level of the face. */
+    const unsigned long  elem0     = matchingInternalFaces[i].elemID0;
+    const unsigned long  elem1     = matchingInternalFaces[i].elemID1;
+    const unsigned short timeLevel = min(volElem[elem0].timeLevel,
+                                         volElem[elem1].timeLevel);
+
+    /* The terms that only contribute to the DOFs located on the face.
+       Check the time level of the element compared to the face. */
     const unsigned short ind = matchingInternalFaces[i].indStandardElement;
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
 
     sizeVecResFaces += nDOFsFace0;
-    for(unsigned short j=0; j<nDOFsFace0; ++j)
-      ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide0[j]+1];
+    if(timeLevel == volElem[elem0].timeLevel) {
+      for(unsigned short j=0; j<nDOFsFace0; ++j)
+        ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide0[j]+1];
+    }
+    else {
+      for(unsigned short j=0; j<nDOFsFace0; ++j)
+        ++nEntriesResAdjFaces[matchingInternalFaces[i].DOFsSolFaceSide0[j]+1];
+    }
 
     sizeVecResFaces += nDOFsFace1;
-    for(unsigned short j=0; j<nDOFsFace1; ++j)
-      ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide1[j]+1];
+    if(timeLevel == volElem[elem1].timeLevel) {
+      for(unsigned short j=0; j<nDOFsFace1; ++j)
+        ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide1[j]+1];
+    }
+    else {
+      for(unsigned short j=0; j<nDOFsFace1; ++j)
+        ++nEntriesResAdjFaces[matchingInternalFaces[i].DOFsSolFaceSide1[j]+1];
+    }
 
     /* The symmetrizing terms, if present, contribute to all
        the DOFs of the adjacent elements. */
@@ -407,21 +435,27 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
 
       sizeVecResFaces += nDOFsElem0;
-      for(unsigned short j=0; j<nDOFsElem0; ++j)
-        ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide0[j]+1];
+      if(timeLevel == volElem[elem0].timeLevel) {
+        for(unsigned short j=0; j<nDOFsElem0; ++j)
+          ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide0[j]+1];
+      }
+      else {
+        for(unsigned short j=0; j<nDOFsElem0; ++j)
+          ++nEntriesResAdjFaces[matchingInternalFaces[i].DOFsSolElementSide0[j]+1];
+      }
 
       sizeVecResFaces += nDOFsElem1;
-      for(unsigned short j=0; j<nDOFsElem1; ++j)
-        ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide1[j]+1];
+      if(timeLevel == volElem[elem1].timeLevel) {
+        for(unsigned short j=0; j<nDOFsElem1; ++j)
+          ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide1[j]+1];
+      }
+      else {
+        for(unsigned short j=0; j<nDOFsElem1; ++j)
+          ++nEntriesResAdjFaces[matchingInternalFaces[i].DOFsSolElementSide1[j]+1];
+      }
     }
 
-    /* Determine the time level of this face and store the position of the
-       residual in the appropriate entry. */
-    const unsigned long  elem0     = matchingInternalFaces[i].elemID0;
-    const unsigned long  elem1     = matchingInternalFaces[i].elemID1;
-    const unsigned short timeLevel = min(volElem[elem0].timeLevel,
-                                         volElem[elem1].timeLevel);
-
+    /* Store the position of the residual in the appropriate entry. */
     if(i < nMatchingInternalFacesWithHaloElem[0] )
       startLocResInternalFacesLocalElem[timeLevel+1] = sizeVecResFaces;
     else
@@ -488,36 +522,64 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     }
   }
 
-  /*--- Put nEntriesResFaces in cumulative storage format and allocate the
-        memory for entriesResFaces and VecResFaces. ---*/
-  for(unsigned long i=0; i<nDOFsLocTot; ++i)
-    nEntriesResFaces[i+1] += nEntriesResFaces[i];
+  /*--- Put nEntriesResFaces and nEntriesResAdjFaces in cumulative storage
+        format and allocate the memory for entriesResFaces, entriesResAdjFaces
+        and VecResFaces. ---*/
+  for(unsigned long i=0; i<nDOFsLocTot; ++i) {
+    nEntriesResFaces[i+1]    += nEntriesResFaces[i];
+    nEntriesResAdjFaces[i+1] += nEntriesResAdjFaces[i];
+  }
 
   entriesResFaces.resize(nEntriesResFaces[nDOFsLocTot]);
+  entriesResAdjFaces.resize(nEntriesResAdjFaces[nDOFsLocTot]);
   VecResFaces.resize(nVar*sizeVecResFaces);
 
   /*--- Repeat the loops over the internal and boundary faces, but now store
-        the enties in entriesResFaces. A counter variable is needed to keep
-        track of the appropriate location in entriesResFaces. ---*/
-  vector<unsigned long> counterEntries = nEntriesResFaces;
+        the entries in entriesResFaces and entriesResAdjFaces. A counter
+        variable is needed to keep track of the appropriate location in
+        entriesResFaces and entriesResAdjFaces. ---*/
+  vector<unsigned long> counterEntries    = nEntriesResFaces;
+  vector<unsigned long> counterEntriesAdj = nEntriesResAdjFaces;
 
   /* First the loop over the internal matching faces. */
   sizeVecResFaces = 0;
   for(unsigned long i=0; i<nMatchingInternalFacesWithHaloElem[nTimeLevels]; ++i) {
+
+    /* Determine the time level of the face. */
+    const unsigned long  elem0     = matchingInternalFaces[i].elemID0;
+    const unsigned long  elem1     = matchingInternalFaces[i].elemID1;
+    const unsigned short timeLevel = min(volElem[elem0].timeLevel,
+                                         volElem[elem1].timeLevel);
 
     /* The terms that only contribute to the DOFs located on the face. */
     const unsigned short ind = matchingInternalFaces[i].indStandardElement;
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
 
-    for(unsigned short j=0; j<nDOFsFace0; ++j) {
-      unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolFaceSide0[j]]++;
-      entriesResFaces[jj] = sizeVecResFaces++;
+    if(timeLevel == volElem[elem0].timeLevel) {
+      for(unsigned short j=0; j<nDOFsFace0; ++j) {
+        const unsigned long jj = counterEntries[matchingInternalFaces[i].DOFsSolFaceSide0[j]]++;
+        entriesResFaces[jj]    = sizeVecResFaces++;
+      }
+    }
+    else {
+      for(unsigned short j=0; j<nDOFsFace0; ++j) {
+        const unsigned long jj = counterEntriesAdj[matchingInternalFaces[i].DOFsSolFaceSide0[j]]++;
+        entriesResAdjFaces[jj] = sizeVecResFaces++;
+      }
     }
 
-    for(unsigned short j=0; j<nDOFsFace1; ++j) {
-      unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolFaceSide1[j]]++;
-      entriesResFaces[jj] = sizeVecResFaces++;
+    if(timeLevel == volElem[elem1].timeLevel) {
+      for(unsigned short j=0; j<nDOFsFace1; ++j) {
+        const unsigned long jj = counterEntries[matchingInternalFaces[i].DOFsSolFaceSide1[j]]++;
+        entriesResFaces[jj]    = sizeVecResFaces++;
+      }
+    }
+    else {
+      for(unsigned short j=0; j<nDOFsFace1; ++j) {
+        const unsigned long jj = counterEntriesAdj[matchingInternalFaces[i].DOFsSolFaceSide1[j]]++;
+        entriesResAdjFaces[jj] = sizeVecResFaces++;
+      }
     }
 
     /* The symmetrizing terms, if present, contribute to all
@@ -526,14 +588,30 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
       const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
 
-      for(unsigned short j=0; j<nDOFsElem0; ++j) {
-        unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolElementSide0[j]]++;
-        entriesResFaces[jj] = sizeVecResFaces++;
+      if(timeLevel == volElem[elem0].timeLevel) {
+        for(unsigned short j=0; j<nDOFsElem0; ++j) {
+          const unsigned long jj = counterEntries[matchingInternalFaces[i].DOFsSolElementSide0[j]]++;
+          entriesResFaces[jj]    = sizeVecResFaces++;
+        }
+      }
+      else {
+        for(unsigned short j=0; j<nDOFsElem0; ++j) {
+          const unsigned long jj = counterEntriesAdj[matchingInternalFaces[i].DOFsSolElementSide0[j]]++;
+          entriesResAdjFaces[jj] = sizeVecResFaces++;
+        }
       }
 
-      for(unsigned short j=0; j<nDOFsElem1; ++j) {
-        unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolElementSide1[j]]++;
-        entriesResFaces[jj] = sizeVecResFaces++;
+      if(timeLevel == volElem[elem1].timeLevel) {
+        for(unsigned short j=0; j<nDOFsElem1; ++j) {
+          const unsigned long jj = counterEntries[matchingInternalFaces[i].DOFsSolElementSide1[j]]++;
+          entriesResFaces[jj]    = sizeVecResFaces++;
+        }
+      }
+      else {
+        for(unsigned short j=0; j<nDOFsElem1; ++j) {
+          const unsigned long jj = counterEntriesAdj[matchingInternalFaces[i].DOFsSolElementSide1[j]]++;
+          entriesResAdjFaces[jj] = sizeVecResFaces++;
+        }
       }
     }
   }
@@ -574,9 +652,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   }
 
   /*--- Start the solution from the free-stream state ---*/
-
   unsigned long ii = 0;
-  for(unsigned long i=0; i<nDOFsLocTot; ++i) {
+  for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
     for(unsigned short j=0; j<nVar; ++j, ++ii) {
       VecSolDOFs[ii] = ConsVarFreeStream[j];
     }
@@ -586,13 +663,11 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
    the reverse communication for the residuals of the halo elements. ---*/
   Prepare_MPI_Communication(DGGeometry, config);
 
-  /*--- Initialize boolean for deallocating MPI comm. structure. ---*/
-  mpiCommsPresent = true;
-
-  /*--- Perform the MPI communication of the solution. ---*/
-  Initiate_MPI_Communication();
-  Complete_MPI_Communication();
-
+  /* Set up the list of tasks to be carried out in the computational expensive
+     part of the code. For the Runge-Kutta schemes this is typically the
+     computation of the spatial residual, while for ADER this list contains
+     the tasks to be done for one space time step. */
+  SetUpTaskList(config);
 }
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
@@ -635,17 +710,23 @@ CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
 
 #ifdef HAVE_MPI
 
-  if (mpiCommsPresent) {
-
-    /*--- Release the memory of the persistent communication and the derived
-          data types. ---*/
-    for(int i=0; i<nCommRequests; ++i) MPI_Request_free(&commRequests[i]);
-    for(int i=0; i<nCommRequests; ++i) MPI_Type_free(&commTypes[i]);
-
-    for(int i=0; i<nCommRequests; ++i) MPI_Request_free(&reverseCommRequests[i]);
-    for(unsigned int i=0; i<reverseCommTypes.size(); ++i)
-       MPI_Type_free(&reverseCommTypes[i]);
+  /*--- Release the memory of the persistent communication and the derived
+        data types. ---*/
+  for(unsigned long i=0; i<commRequests.size(); ++i) {
+    for(unsigned long j=0; j<commRequests[i].size(); ++j)
+      MPI_Request_free(&commRequests[i][j]);
   }
+
+  for(unsigned long i=0; i<commTypes.size(); ++i)
+    MPI_Type_free(&commTypes[i]);
+
+  for(unsigned long i=0; i<reverseCommRequests.size(); ++i) {
+    for(unsigned long j=0; j<reverseCommRequests[i].size(); ++j)
+      MPI_Request_free(&reverseCommRequests[i][j]);
+  }
+
+  for(unsigned int i=0; i<reverseCommTypes.size(); ++i)
+     MPI_Type_free(&reverseCommTypes[i]);
 
 #endif
 }
@@ -1232,6 +1313,584 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   }
 }
 
+void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
+
+  /* Check whether an ADER space-time step must be carried out. */
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
+
+    /*------------------------------------------------------------------------*/
+    /* ADER time integration with local time stepping. There are 2^(M-1)      */
+    /* subtime steps, where M is the number of time levels. For each of       */
+    /* the subtime steps a number of tasks must be carried out, hence the     */
+    /* total list can become rather lengthy.                                  */
+    /*------------------------------------------------------------------------*/
+
+    /* Determine the number of subtime steps and abbreviate the number of
+       time integration points a bit easier.  */
+    const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+    const unsigned int nSubTimeSteps = pow(2,nTimeLevels-1);
+
+    const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
+
+    /* Define the two dimensional vector to store the latest index for a
+       certain task for every time level. */
+    vector<vector<int> > indexInList(CTaskDefinition::ADER_UPDATE_SOLUTION+1,
+                                     vector<int>(nTimeLevels, -1));
+
+    /* Loop over the number of subtime steps in the algorithm. */
+    for(unsigned int step=0; step<nSubTimeSteps; ++step) {
+
+      /* Determine the time level for which an update must be carried out
+         for this step. */
+      unsigned int ii = step+1;
+      unsigned short timeLevel = 0;
+      while( !(ii%2) ) {ii/=2; ++timeLevel;}
+
+      /* Definition of the variable to store a previous indices of
+         tasks that must have been completed. */
+      int prevInd[4];
+
+      /* Carry out the predictor step of the communication elements of level 0
+         if these elements are present on this rank. */
+      unsigned long elemBeg = nVolElemOwnedPerTimeLevel[0]
+                            + nVolElemInternalPerTimeLevel[0];
+      unsigned long elemEnd = nVolElemOwnedPerTimeLevel[1];
+      if(elemEnd > elemBeg) {
+        prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][0];
+        indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][0] = tasksList.size();
+        tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS, 0, prevInd[0]));
+      }
+
+      /* Initiate the communication of elements of level 0, if there is
+         something to be communicated. */
+#ifdef HAVE_MPI
+      if( nCommRequests[0] ) {
+        if(elemEnd > elemBeg)   // Data needs to be computed before sending.
+          prevInd[0] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][0];
+        else                    // Data only needs to be received.
+          prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][0];
+
+        /* Make sure that any previous communication has been completed. */
+        prevInd[1] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][0];
+
+        /* Create the task. */
+        indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][0] = tasksList.size();
+        tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION, 0,
+                                            prevInd[0], prevInd[1]));
+      }
+#endif
+
+      /* Check if the time level is not nTimeLevels-1. In that case carry out
+         the predictor step of the communication elements for the next time
+         level and initiate their communication, if appropriate on this rank. */
+      if(timeLevel < (nTimeLevels-1)) {
+        const unsigned short nL = timeLevel+1;
+
+        /* Carry out the predictor step of the communication elements of level nL
+           if these elements are present on this rank. */
+        elemBeg = nVolElemOwnedPerTimeLevel[nL] + nVolElemInternalPerTimeLevel[nL];
+        elemEnd = nVolElemOwnedPerTimeLevel[nL+1];
+
+        if(elemEnd > elemBeg) {
+          prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][nL];
+          indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][nL] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS, nL, prevInd[0]));
+        }
+
+        /* Initiate the communication of elements of level nL, if there is
+           something to be communicated. */
+#ifdef HAVE_MPI
+        if( nCommRequests[nL] ) {
+          if(elemEnd > elemBeg)   // Data needs to be computed before sending.
+            prevInd[0] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][nL];
+          else                    // Data only needs to be received.
+            prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][nL];
+
+          /* Make sure that any previous communication has been completed. */
+          prevInd[1] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][nL];
+
+          /* Create the actual task. */
+          indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][nL] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION, nL,
+                                              prevInd[0], prevInd[1]));
+        }
+#endif
+      }
+
+      /* Carry out the predictor step of the internal elements of time level 0,
+         if these elements are present on this rank. */
+      elemBeg = nVolElemOwnedPerTimeLevel[0];
+      elemEnd = nVolElemOwnedPerTimeLevel[0] + nVolElemInternalPerTimeLevel[0];
+
+      if(elemEnd > elemBeg) {
+        prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][0];
+        indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][0] = tasksList.size();
+        tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS, 0, prevInd[0]));
+      }
+
+      /* Determine the tasks to be completed before the communication of time
+         level 0 can be completed. */
+      prevInd[0] = prevInd[1] = prevInd[2] = -1;
+#ifdef HAVE_MPI
+      if( nCommRequests[0] )
+        prevInd[0] = indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][0];
+#endif
+
+      if( elementsSendSelfComm[0].size() ) {
+        prevInd[1] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][0];
+        prevInd[2] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][0];
+      }
+
+      /* Make sure that the -1 in prevInd, if any, are numbered last. */
+      sort(prevInd, prevInd+3, greater<int>());
+
+      /* Complete the communication of time level 0, if there is something
+         to be completed. */
+      if(prevInd[0] > -1) {
+        indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][0] = tasksList.size();
+        tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION, 0,
+                                            prevInd[0], prevInd[1], prevInd[2]));
+      }
+
+      /* Check if the time level is not nTimeLevels-1. In that case carry out
+         the predictor step of the internal elements for the next time
+         level and complete the communication for this time level,
+         if appropriate on this rank. */
+      if(timeLevel < (nTimeLevels-1)) {
+        const unsigned short nL = timeLevel+1;
+
+        /* Carry out the predictor step of the internal elements of level nL
+           if these elements are present on this rank. */
+        elemBeg = nVolElemOwnedPerTimeLevel[nL];
+        elemEnd = nVolElemOwnedPerTimeLevel[nL] + nVolElemInternalPerTimeLevel[nL];
+
+        if(elemEnd > elemBeg) {
+          prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][nL];
+          indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][nL] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS, nL, prevInd[0]));
+        }
+
+        /* Determine the tasks to be completed before the communication of time
+           level nL can be completed. */
+        prevInd[0] = prevInd[1] = prevInd[2] = -1;
+#ifdef HAVE_MPI
+        if( nCommRequests[nL] )
+          prevInd[0] = indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][nL];
+#endif
+
+        if( elementsSendSelfComm[nL].size() ) {
+          prevInd[1] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][nL];
+          prevInd[2] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][nL];
+        }
+
+        /* Make sure that the -1 in prevInd, if any, are numbered last. */
+        sort(prevInd, prevInd+3, greater<int>());
+
+        /* Complete the communication of time level nL, if there is something
+           to be completed. */
+        if(prevInd[0] > -1) {
+          indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][nL] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION, nL,
+                                              prevInd[0], prevInd[1], prevInd[2]));
+        }
+      }
+
+      /* Loop over the time integration points to compute the space time
+         integral for the corrector step. */
+      for(unsigned short intPoint=0; intPoint<nTimeIntegrationPoints; ++intPoint) {
+
+        /* Loop over the time levels to be treated. */
+        for(unsigned short level=0; level<=timeLevel; ++level) {
+
+          /* The solution of the owned elements of the current time level and
+             the adjacent owned elements of the next time level must be
+             interpolated to the integration point intPoint. Check if these
+             elements are present. */
+          unsigned long nAdjOwnedElem = 0;
+          if(level < (nTimeLevels-1))
+            nAdjOwnedElem = ownedElemAdjLowTimeLevel[level+1].size();
+
+          unsigned long nOwnedElem = nVolElemOwnedPerTimeLevel[level+1]
+                                   - nVolElemOwnedPerTimeLevel[level];
+          if(nAdjOwnedElem || nOwnedElem) {
+
+            /* Determine the tasks that should have been completed before this
+               task can be carried out. This depends on the time integration
+               point. */
+            if(intPoint == 0) {
+
+              /* First time integration point. The predictor steps of the
+                 owned elements must have been completed before this task
+                 can be carried out. */
+              if( nOwnedElem ) {
+                prevInd[0] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][level];
+                prevInd[1] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][level];
+              }
+              else {
+                prevInd[0] = prevInd[1] = -1;
+              }
+
+              if( nAdjOwnedElem ) {
+                prevInd[2] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][level+1];
+                prevInd[3] = indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][level+1];
+              }
+              else {
+                prevInd[2] = prevInd[3] = -1;
+              }
+            }
+            else {
+
+              /* Not the first integration point. The residual computations of
+                 the previous integration point must have been completed, because
+                 the solution in the work vectors is overwritten. */
+              prevInd[0] = indexInList[CTaskDefinition::VOLUME_RESIDUAL][level];
+              prevInd[1] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS][level];
+              prevInd[2] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
+              prevInd[3] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level];
+            }
+
+            /* Create the task. */
+            indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS,
+                                                level, prevInd[0], prevInd[1], prevInd[2], prevInd[3]));
+
+            /* The info on the integration point and whether or not this
+               time integration corresponds to the second part for the
+               adjacent elements must be added to the task just created. */
+            tasksList.back().intPointADER          = intPoint;
+            tasksList.back().secondPartTimeIntADER = level < timeLevel;
+
+            /* If artificial viscosity is used for the shock capturing
+               terms, these terms must be computed for the owned elements,
+               including the adjacent ones. */
+            prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS][level];
+            indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS,
+                                                level, prevInd[0]));
+          }
+
+          /* The solution of the halo elements of the current time level and
+             the adjacent halo elements of the next time level must be
+             interpolated to the integration point intPoint. Check if these
+             elements are present. */
+          unsigned long nAdjHaloElem = 0;
+          if(level < (nTimeLevels-1))
+            nAdjHaloElem = haloElemAdjLowTimeLevel[level+1].size();
+
+          unsigned long nHaloElem = nVolElemHaloPerTimeLevel[level+1]
+                                  - nVolElemHaloPerTimeLevel[level];
+          if(nAdjHaloElem || nHaloElem) {
+
+            /* Determine the tasks that should have been completed before this
+               task can be carried out. This depends on the time integration
+               point. */
+            if(intPoint == 0) {
+
+              /* First time integration point. The communication of the
+                 halo elements must have been completed before this task
+                 can be carried out. */
+             if( nHaloElem )
+               prevInd[0] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][level];
+             else
+               prevInd[0] = -1;
+
+             if( nAdjHaloElem )
+               prevInd[1] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][level+1];
+             else
+               prevInd[1] = -1;
+            }
+            else {
+
+              /* Not the first integration point. The residual computation of
+                 the previous integration point must have been completed, because
+                 the solution in the work vectors is overwritten. */
+              prevInd[0] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
+              prevInd[1] = -1;
+            }
+
+            /* Create the task. */
+            indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS,
+                                                level, prevInd[0], prevInd[1]));
+
+            /* The info on the integration point and whether or not this
+               time integration corresponds to the second part for the
+               adjacent elements must be added to the task just created. */
+            tasksList.back().intPointADER          = intPoint;
+            tasksList.back().secondPartTimeIntADER = level < timeLevel;
+
+            /* If artificial viscosity is used for the shock capturing
+               terms, these terms must be computed for the halo elements,
+               including the adjacent ones. */
+            prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][level];
+            indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS,
+                                                level, prevInd[0]));
+          }
+
+          /* Compute the surface residuals for this time level that involve
+             halo elements, if present. Afterwards, accumulate the space time
+             residuals for the halo elements. */
+          if(nMatchingInternalFacesWithHaloElem[level+1] >
+             nMatchingInternalFacesWithHaloElem[level]) {
+
+            /* Create the dependencies for the surface residual part that involve
+               halo elements. For all but the first integration point, make sure
+               that the previous residual is already accumulated, because this
+               task will overwrite that residual. */
+            prevInd[0] = indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS][level];
+            prevInd[1] = indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS][level];
+
+            if(intPoint == 0)
+              prevInd[2] = -1;
+            else
+              prevInd[2] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level];
+
+            /* Create the task for the surface residual. */
+            indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS,
+                                                level, prevInd[0], prevInd[1], prevInd[2]));
+
+            /* Create the task to accumulate the surface residuals of the halo
+               elements. Make sure to set the integration point for this task. */
+            prevInd[0] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
+            indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS,
+                                                level, prevInd[0]));
+            tasksList.back().intPointADER = intPoint;
+          }
+
+          /* If this is the last integration point, initiate the reverse
+             communication for the residuals of this time level, if there
+             is something to communicate. */
+          if(intPoint == (nTimeIntegrationPoints-1)) {
+
+            /* Check if there is something to communicate. Despite the fact
+               that self communication takes place when the reverse communication
+               is completed, a check for self communication is still needed,
+               because of the periodic transformations. */
+            bool commData = false;
+
+#ifdef HAVE_MPI
+            if( nCommRequests[level] ) commData = true;
+#endif
+            if(commData || elementsSendSelfComm[level].size()) {
+
+              /* Determine the dependencies before the reverse communication
+                 can start. */
+              prevInd[0] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level];
+              if( haloElemAdjLowTimeLevel[level].size() )
+                prevInd[1] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level-1];
+              else
+                prevInd[1] = -1;
+
+              prevInd[2] = indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][level];
+
+              /* Create the task. */
+              indexInList[CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION][level] = tasksList.size();
+              tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION,
+                                                  level, prevInd[0], prevInd[1], prevInd[2]));
+            }
+          }
+
+          /* Compute the contribution of the volume integral, boundary conditions and
+             surface integral between owned elements for this time level, if present. */
+          if( nOwnedElem ) {
+
+            /* Create the dependencies for this task. The shock capturing viscosity of
+               the owned elements must be completed and for all integration points but
+               the first, the computed residuals must have been accumulated in the space
+               time residual, because the tasks below will overwrite the residuals. */
+            prevInd[0] = indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS][level];
+            if(intPoint == 0)
+              prevInd[1] = -1;
+            else
+              prevInd[1] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level];
+
+            /* Create the tasks. */
+            indexInList[CTaskDefinition::VOLUME_RESIDUAL][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::VOLUME_RESIDUAL, level,
+                                                prevInd[0], prevInd[1]));
+
+            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS, level,
+                                                prevInd[0], prevInd[1]));
+
+            if(nMatchingInternalFacesLocalElem[level+1] >
+               nMatchingInternalFacesLocalElem[level]) {
+              indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level] = tasksList.size();
+              tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS,
+                                                  level, prevInd[0], prevInd[1]));
+            }
+          }
+
+          /* Accumulate the space time residuals for the owned elements of this
+             level, if these elements are present. */
+          if(nAdjOwnedElem || nOwnedElem) {
+
+            /* Create the dependencies for this task. */
+            prevInd[0] = indexInList[CTaskDefinition::VOLUME_RESIDUAL][level];
+            prevInd[1] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS][level];
+            prevInd[2] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level];
+            prevInd[3] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
+
+            /* Create the task. */
+            indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS,
+                                                level, prevInd[0], prevInd[1], prevInd[2], prevInd[3]));
+            tasksList.back().intPointADER = intPoint;
+          }
+
+          /* If this is the last integration point, complete the reverse
+             communication for the residuals of this time level, if there
+             is something to communicate. */
+          if(intPoint == (nTimeIntegrationPoints-1)) {
+
+            bool commData = false;
+
+#ifdef HAVE_MPI
+            if( nCommRequests[level] ) commData = true;
+#endif
+            if(commData || elementsSendSelfComm[level].size()) {
+
+              /* Determine the dependencies before the reverse communication
+                 can be completed. */
+              prevInd[0] = indexInList[CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION][level];
+              prevInd[1] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level];
+              if( ownedElemAdjLowTimeLevel[level].size() )
+                prevInd[2] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level-1];
+              else
+                prevInd[2] = -1;
+
+              /* Create the task. */
+              indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][level] = tasksList.size();
+              tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION,
+                                                  level, prevInd[0], prevInd[1], prevInd[2]));
+            }
+          }
+
+        } /* End loop time level. */
+
+      } /* End loop time integration points. */
+
+      /* Loop again over the number of active time levels for this subtime
+         step and compute the update for the DOFs of the owned elements. */
+      for(unsigned short level=0; level<=timeLevel; ++level) {
+        if(nVolElemOwnedPerTimeLevel[level+1] > nVolElemOwnedPerTimeLevel[level]) {
+
+          /* Updates must be carried out for this time level. First multiply the
+             residuals by the inverse of the mass matrix. This task can be
+             completed if the communication of this level has been completed.
+             However, it is possible that no communication is needed and
+             therefore the accumulation of the space time residuals is also
+             added to the dependency list. */
+          prevInd[0] = indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][level];
+          prevInd[1] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level];
+          if( ownedElemAdjLowTimeLevel[level].size() )
+            prevInd[2] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level-1];
+          else
+            prevInd[2] = -1;
+
+          indexInList[CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX][level] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX,
+                                               level, prevInd[0], prevInd[1], prevInd[2]));
+
+          /* Compute the new state vector for this time level. */
+          prevInd[0] = indexInList[CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX][level];
+          indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][level] = tasksList.size();
+          tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_UPDATE_SOLUTION,
+                                               level, prevInd[0]));
+        }
+      }
+
+    } /* End loop subtime steps. */
+
+
+    // EXTRA FOR DEBUGGING
+/*  int rank = MASTER_NODE, nProc = 1;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nProc);
+#endif
+
+    for(int i=0; i<nProc; ++i) {
+      if(i == rank) {
+        cout << endl;
+        cout << "Task list for rank " << rank << endl;
+        cout << "------------------------------------------------" << endl;
+        cout << "Number of tasks: " << tasksList.size() << endl;
+        for(unsigned long j=0; j<tasksList.size(); ++j) {
+
+          cout << "Task " << j << ": ";
+          switch( tasksList[j].task ) {
+            case CTaskDefinition::NO_TASK: cout << "NO_TASK" << endl; break;
+            case CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS: cout << "ADER_PREDICTOR_STEP_COMM_ELEMENTS" << endl; break;
+            case CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS: cout << "ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS" << endl; break;
+            case CTaskDefinition::INITIATE_MPI_COMMUNICATION: cout << "INITIATE_MPI_COMMUNICATION" << endl; break;
+            case CTaskDefinition::COMPLETE_MPI_COMMUNICATION: cout << "COMPLETE_MPI_COMMUNICATION" << endl; break;
+            case CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION: cout << "INITIATE_REVERSE_MPI_COMMUNICATION" << endl; break;
+            case CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION: cout << "COMPLETE_REVERSE_MPI_COMMUNICATION" << endl; break;
+            case CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS: cout << "ADER_TIME_INTERPOLATE_OWNED_ELEMENTS" << endl; break;
+            case CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS: cout << "ADER_TIME_INTERPOLATE_HALO_ELEMENTS" << endl; break;
+            case CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS: cout << "SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS" << endl; break;
+            case CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS: cout << "SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS" << endl; break;
+            case CTaskDefinition::VOLUME_RESIDUAL: cout << "VOLUME_RESIDUAL" << endl; break;
+            case CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS: cout << "SURFACE_RESIDUAL_OWNED_ELEMENTS" << endl; break;
+            case CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS: cout << "SURFACE_RESIDUAL_HALO_ELEMENTS" << endl; break;
+            case CTaskDefinition::BOUNDARY_CONDITIONS: cout << "BOUNDARY_CONDITIONS" << endl; break;
+            case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS: cout << "SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS" << endl; break;
+            case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS: cout << "SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS" << endl; break;
+            case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS: cout << "ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS" << endl; break;
+            case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS: cout << "ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS" << endl; break;
+            case CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX: cout << "MULTIPLY_INVERSE_MASS_MATRIX" << endl; break;
+            case CTaskDefinition::ADER_UPDATE_SOLUTION: cout << "ADER_UPDATE_SOLUTION" << endl; break;
+            default: cout << "This cannot happen" << endl;
+          }
+          cout << " Time level: " << tasksList[j].timeLevel
+               << " Integration point: " << tasksList[j].intPointADER
+               << " Second part: " << tasksList[j].secondPartTimeIntADER << endl;
+          cout << " Depends on tasks:";
+          for(unsigned short k=0; k<tasksList[j].nIndMustBeCompleted; ++k)
+            cout << " " << tasksList[j].indMustBeCompleted[k];
+          cout << endl << endl;
+        }
+
+      }
+
+#ifdef HAVE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    } */
+
+//  cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER tasklist printed";
+//  exit(1);
+
+    // END EXTRA FOR DEBUGGING.
+  }
+  else {
+
+    /*------------------------------------------------------------------------*/
+    /* Standard time integration scheme for which the spatial residual must   */
+    /* be computed for the DOFS of the owned elements. This results in a      */
+    /* relatively short tasks list, which can be set easily.                  */
+    /*------------------------------------------------------------------------*/
+
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION,                   0));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS,     0));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::VOLUME_RESIDUAL,                              0,  1));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION,                   0,  0));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS,      0,  3));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS,               0,  1, 4));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS,  0,  5));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION,           0,  6));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS,              0,  1));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS,                          0,  1));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION,           0,  2, 7));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS, 0,  2, 8, 9, 10));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX,                 0, 11));
+  }
+}
+
 void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
                                                     CConfig        *config) {
 
@@ -1244,9 +1903,47 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   const vector<vector<unsigned long> > &elementsRecv = FEMGeometry->GetEntitiesRecv();
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 1. Find out whether or not self communication is present.     ---*/
-  /*---         This can only be the case when periodic boundaries are     ---*/
-  /*---         present in the grid.                                       ---*/
+  /*--- Step 1. Create the triple vector, which contain elements to be     ---*/
+  /*---         sent and received per time level. Note that when time      ---*/
+  /*---         accurate local time stepping is not used, this is just a   ---*/
+  /*---         copy of elementsSend and elementsRecv.                     ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Allocate the first two indices of the triple vectors. */
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+
+  vector<vector<vector<unsigned long> > > elemSendPerTimeLevel, elemRecvPerTimeLevel;
+  elemSendPerTimeLevel.resize(nTimeLevels);
+  elemRecvPerTimeLevel.resize(nTimeLevels);
+
+  for(unsigned short i=0; i<nTimeLevels; ++i) {
+    elemSendPerTimeLevel[i].resize(elementsSend.size());
+    elemRecvPerTimeLevel[i].resize(elementsRecv.size());
+  }
+
+  /* Loop over the send data and set the corresponding data
+     in elemSendPerTimeLevel. */
+  for(unsigned long i=0; i<elementsSend.size(); ++i) {
+    for(unsigned long j=0; j<elementsSend[i].size(); ++j) {
+      const unsigned long ii = elementsSend[i][j];
+      elemSendPerTimeLevel[volElem[ii].timeLevel][i].push_back(ii);
+    }
+  }
+
+  /* Loop over the receive data and set the corresponding data
+     in recvSendPerTimeLevel. */
+  for(unsigned long i=0; i<elementsRecv.size(); ++i) {
+    for(unsigned long j=0; j<elementsRecv[i].size(); ++j) {
+      const unsigned long ii = elementsRecv[i][j];
+      elemRecvPerTimeLevel[volElem[ii].timeLevel][i].push_back(ii);
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Find out whether or not self communication is present and  ---*/
+  /*---         set the corresponding data for elementsSendSelfComm and    ---*/
+  /*---         elementsRecvSelfComm for all time levels. This can only be ---*/
+  /*---         the case when periodic boundaries are present in the grid. ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Determine the rank inside MPI_COMM_WORLD. */
@@ -1255,201 +1952,291 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  /* Store the send information of the self communication in
-     elementsSendSelfComm, if present. */
+  /* Allocate the first index of elementsSendSelfComm and elementsRecvSelfComm. */
+  elementsSendSelfComm.resize(nTimeLevels);
+  elementsRecvSelfComm.resize(nTimeLevels);
+
+  /* Loop over the ranks to send data and copy the elements for self
+     communication for all time levels. */
   for(unsigned long i=0; i<ranksSend.size(); ++i) {
-    if(ranksSend[i] == rank)
-      elementsSendSelfComm = elementsSend[i];
+    if(ranksSend[i] == rank) {
+      for(unsigned short j=0; j<nTimeLevels; ++j)
+        elementsSendSelfComm[j] = elemSendPerTimeLevel[j][i];
+    }
   }
 
-  /* Store the receive information of the self communication in
-     elementsRecvSelfComm, if present. */
+  /* Loop over the ranks to receive data and copy the elements for self
+     communication for all time levels. */
   for(unsigned long i=0; i<ranksRecv.size(); ++i) {
-    if(ranksRecv[i] == rank)
-      elementsRecvSelfComm = elementsRecv[i];
+    if(ranksRecv[i] == rank) {
+      for(unsigned short j=0; j<nTimeLevels; ++j)
+        elementsRecvSelfComm[j] = elemRecvPerTimeLevel[j][i];
+    }
   }
 
 #ifdef HAVE_MPI
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 2. Set up the persistent MPI communication for the halo data. ---*/
+  /*--- Step 3. Set up the persistent MPI communication for the halo data  ---*/
+  /*---         for all time levels.                                       ---*/
   /*--------------------------------------------------------------------------*/
 
-  /*--- Determine the number of communication requests that take place
-        for the exchange of the halo data. These requests are both send and
-        receive requests. Allocate the necessary memory for the communication
-        of the halo data. ---*/
-  nCommRequests = ranksSend.size() + ranksRecv.size();
-  if( elementsRecvSelfComm.size() ) --nCommRequests;
-  if( elementsSendSelfComm.size() ) --nCommRequests;
+  /* Set the pointer to the memory, whose data must be communicated.
+     This depends on the time integration scheme used. For ADER the data of
+     the predictor part is communicated, while for the other time integration
+     schemes typically the working solution is communicated. Note that if the
+     working solution is communicated, there is only one time level. */
+  unsigned short nTimeDOFs;
+  su2double *commData, *revCommData;
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
+    nTimeDOFs   = config->GetnTimeDOFsADER_DG();
+    commData    = VecSolDOFsPredictorADER.data();
+    revCommData = VecTotResDOFsADER.data();
+  }
+  else {
+    nTimeDOFs   = 1;
+    commData    = VecWorkSolDOFs[0].data();
+    revCommData = VecResDOFs.data();
+  }
 
-  commRequests.resize(nCommRequests);
-  commTypes.resize(nCommRequests);
-
-  /*--- Loop over the ranks to which this rank has to send halo data and create
-        the send requests. Exclude self communication. ---*/
-  unsigned int nn = 0;
+  /*--- Determine the number of communication requests per time level that take
+        place or the exchange of the halo data. These requests are both send and
+        receive requests. Allocate the required memory. ---*/
+  nCommRequests.assign(nTimeLevels, 0);
   for(unsigned long i=0; i<ranksSend.size(); ++i) {
     if(ranksSend[i] != rank) {
-
-      /*--- Determine the derived data type for sending the data. ---*/
-      const unsigned int nElemSend = elementsSend[i].size();
-      vector<int> blockLen(nElemSend), displ(nElemSend);
-
-      for(unsigned int j=0; j<nElemSend; ++j) {
-        const unsigned long jj = elementsSend[i][j];
-        blockLen[j] = nVar*volElem[jj].nDOFsSol;
-        displ[j]    = nVar*volElem[jj].offsetDOFsSolLocal;
+      for(unsigned short j=0; j<nTimeLevels; ++j) {
+        if( elemSendPerTimeLevel[j][i].size() ) ++nCommRequests[j];
       }
-
-      MPI_Type_indexed(nElemSend, blockLen.data(), displ.data(),
-                       MPI_DOUBLE, &commTypes[nn]);
-      MPI_Type_commit(&commTypes[nn]);
-
-      /* Create the communication request for this send operation and
-         update the counter nn for the next request. */
-      MPI_Send_init(VecSolDOFs.data(), 1, commTypes[nn], ranksSend[i],
-                    ranksSend[i], MPI_COMM_WORLD, &commRequests[nn]);
-      ++nn;
     }
   }
 
-  /*--- Loop over the ranks from which this rank has to receive data and create
-        the receive requests. Exclude self communication. ---*/
   for(unsigned long i=0; i<ranksRecv.size(); ++i) {
     if(ranksRecv[i] != rank) {
-
-      /*--- Determine the derived data type for receiving the data. ---*/
-      const unsigned int nElemRecv = elementsRecv[i].size();
-      vector<int> blockLen(nElemRecv), displ(nElemRecv);
-
-      for(unsigned int j=0; j<nElemRecv; ++j) {
-        const unsigned long jj = elementsRecv[i][j];
-        blockLen[j] = nVar*volElem[jj].nDOFsSol;
-        displ[j]    = nVar*volElem[jj].offsetDOFsSolLocal;
+      for(unsigned short j=0; j<nTimeLevels; ++j) {
+        if( elemRecvPerTimeLevel[j][i].size() ) ++nCommRequests[j];
       }
+    }
+  }
 
-      MPI_Type_indexed(nElemRecv, blockLen.data(), displ.data(),
-                       MPI_DOUBLE, &commTypes[nn]);
-      MPI_Type_commit(&commTypes[nn]);
+  unsigned int nn = 0;
+  commRequests.resize(nTimeLevels);
+  for(unsigned short i=0; i<nTimeLevels; ++i) {
+    commRequests[i].resize(nCommRequests[i]);
+    nn += nCommRequests[i];
+  }
 
-      /* Create the communication request for this receive operation and
-         update the counter nn for the next request. */
-      MPI_Recv_init(VecSolDOFs.data(), 1, commTypes[nn], ranksRecv[i],
-                    rank, MPI_COMM_WORLD, &commRequests[nn]);
-      ++nn;
+  commTypes.resize(nn);
+
+  /* Loop over the time levels to set up the communication requests for
+     each time level. */
+  nn = 0;
+  for(unsigned short level=0; level<nTimeLevels; ++level) {
+    unsigned int mm = 0;
+
+    /* Loop over the ranks of ranksSend and check if something must be sent
+       to this rank. Self communication is excluded. */
+    for(unsigned long i=0; i<ranksSend.size(); ++i) {
+      if((ranksSend[i] != rank) && elemSendPerTimeLevel[level][i].size()) {
+
+        /*--- Elements must be sent to this rank for this time level. Determine
+              the derived data type for sending the data. ---*/
+        const unsigned long nElemSend = elemSendPerTimeLevel[level][i].size();
+        vector<int> blockLen(nElemSend*nTimeDOFs), displ(nElemSend*nTimeDOFs);
+
+        unsigned long kk = 0;
+        for(unsigned short k=0; k<nTimeDOFs; ++k) {
+          for(unsigned long j=0; j<nElemSend; ++j, ++kk) {
+            const unsigned long jj = elemSendPerTimeLevel[level][i][j];
+            blockLen[kk] = nVar*volElem[jj].nDOFsSol;
+            displ[kk]    = nVar*(volElem[jj].offsetDOFsSolLocal + k*nDOFsLocTot);
+          }
+        }
+
+        MPI_Type_indexed(nElemSend*nTimeDOFs, blockLen.data(), displ.data(),
+                         MPI_DOUBLE, &commTypes[nn]);
+        MPI_Type_commit(&commTypes[nn]);
+
+        /* Create the communication request for this send operation and
+           update the counters nn and mm for the next request.  */
+        int tag = ranksSend[i] + level;
+        MPI_Send_init(commData, 1, commTypes[nn], ranksSend[i],
+                      tag, MPI_COMM_WORLD, &commRequests[level][mm]);
+        ++nn;
+        ++mm;
+      }
+    }
+
+    /* Loop over the ranks of ranksRecv and check if something must be received
+       from this rank. Self communication is excluded. */
+    for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+      if((ranksRecv[i] != rank) && elemRecvPerTimeLevel[level][i].size()) {
+
+        /*--- Elements must be received from this rank for this time level.
+              Determine the derived data type for receiving the data. ---*/
+        const unsigned long nElemRecv = elemRecvPerTimeLevel[level][i].size();
+        vector<int> blockLen(nElemRecv*nTimeDOFs), displ(nElemRecv*nTimeDOFs);
+
+        unsigned long kk = 0;
+        for(unsigned short k=0; k<nTimeDOFs; ++k) {
+          for(unsigned int j=0; j<nElemRecv; ++j, ++kk) {
+            const unsigned long jj = elemRecvPerTimeLevel[level][i][j];
+            blockLen[kk] = nVar*volElem[jj].nDOFsSol;
+            displ[kk]    = nVar*(volElem[jj].offsetDOFsSolLocal + k*nDOFsLocTot);
+          }
+        }
+
+        MPI_Type_indexed(nElemRecv*nTimeDOFs, blockLen.data(), displ.data(),
+                         MPI_DOUBLE, &commTypes[nn]);
+        MPI_Type_commit(&commTypes[nn]);
+
+        /* Create the communication request for this receive operation and
+           update the counters nn and mm for the next request.  */
+        int tag = rank + level;
+        MPI_Recv_init(commData, 1, commTypes[nn], ranksRecv[i],
+                      tag, MPI_COMM_WORLD, &commRequests[level][mm]);
+        ++nn;
+        ++mm;
+      }
     }
   }
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 3. Set up the persistent reverse MPI communication for the    ---*/
+  /*--- Step 4. Set up the persistent reverse MPI communication for the    ---*/
   /*---         residuals.                                                 ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Determine the number of derived data types necessary in the reverse
      communication. This is the number of ranks to which this rank has to send
-     halo data, which corresponds to the original receive pattern. Exclude
-     self communication. */
-  nn = ranksRecv.size();
-  if( elementsRecvSelfComm.size() ) --nn;
+     halo residual data. This corresponds to the original receive pattern.
+     Exclude self communication. */
+  nn = 0;
+  for(unsigned short level=0; level<nTimeLevels; ++level) {
+    for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+      if((ranksRecv[i] != rank) && elemRecvPerTimeLevel[level][i].size()) ++nn;
+    }
+  }
 
   /* Allocate the memory for the reverse communication requests. The sending and
      receiving are reversed, but the total number of requests is the same. Also
      allocate the memory for the derived data types for the reverse communcation
-     which are only needed for the sending of the halo data. */
-  reverseCommRequests.resize(nCommRequests);
+     which are only needed for the sending of the halo residual data. */
+  reverseCommRequests.resize(nTimeLevels);
+  for(unsigned short i=0; i<nTimeLevels; ++i)
+    reverseCommRequests[i].resize(nCommRequests[i]);
+
   reverseCommTypes.resize(nn);
 
-  /*--- Loop over the ranks to which this rank has to send residual data and
-        create the send requests. Exclude self communication. ---*/
+  /* Allocate the first index of the receive buffers and the corresponding
+     indices of the elements. */
+  reverseElementsRecv.resize(nTimeLevels);
+  reverseCommRecvBuf.resize(nTimeLevels);
+
+  /* Loop over the time levels to set up the reverse communication requests for
+     each time level. */
   nn = 0;
-  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
-    if(ranksRecv[i] != rank) {
+  for(unsigned short level=0; level<nTimeLevels; ++level) {
+    unsigned int mm = 0;
 
-      /*--- Determine the derived data type for sending the data. ---*/
-      const unsigned int nElemRecv = elementsRecv[i].size();
-      vector<int> blockLen(nElemRecv), displ(nElemRecv);
+    /* Loop over the ranks of ranksRecv and check if something must be sent to
+       this rank in the reverse communication. Self communication is excluded. */
+    for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+      if((ranksRecv[i] != rank) && elemRecvPerTimeLevel[level][i].size()) {
 
-      for(unsigned int j=0; j<nElemRecv; ++j) {
-        const unsigned long jj = elementsRecv[i][j];
-        blockLen[j] = nVar*volElem[jj].nDOFsSol;
-        displ[j]    = nVar*volElem[jj].offsetDOFsSolLocal;
+        /*--- Determine the derived data type for sending the data. ---*/
+        const unsigned int nElemSend = elemRecvPerTimeLevel[level][i].size();
+
+        vector<int> blockLen(nElemSend), displ(nElemSend);
+
+        for(unsigned int j=0; j<nElemSend; ++j) {
+          const unsigned long jj = elemRecvPerTimeLevel[level][i][j];
+          blockLen[j] = nVar*volElem[jj].nDOFsSol;
+          displ[j]    = nVar*volElem[jj].offsetDOFsSolLocal;
+        }
+
+        MPI_Type_indexed(nElemSend, blockLen.data(), displ.data(),
+                         MPI_DOUBLE, &reverseCommTypes[nn]);
+        MPI_Type_commit(&reverseCommTypes[nn]);
+
+        /* Create the communication request for this send operation and
+           update the counters nn and mm for the next request.  */
+        int tag = ranksRecv[i] + nTimeLevels + level;
+        MPI_Send_init(revCommData, 1, reverseCommTypes[nn], ranksRecv[i],
+                      tag, MPI_COMM_WORLD, &reverseCommRequests[level][mm]);
+        ++nn;
+        ++mm;
       }
-
-      MPI_Type_indexed(nElemRecv, blockLen.data(), displ.data(),
-                       MPI_DOUBLE, &reverseCommTypes[nn]);
-      MPI_Type_commit(&reverseCommTypes[nn]);
-
-      /* Create the communication request for this send operation and
-         update the counter nn for the next request. */
-      MPI_Send_init(VecResDOFs.data(), 1, reverseCommTypes[nn], ranksRecv[i],
-                    ranksRecv[i], MPI_COMM_WORLD, &reverseCommRequests[nn]);
-      ++nn;
     }
-  }
 
-  /*--- Determine the number of receive buffers needed to receive the externally
-        computed part of the residuals. Allocate its first index as well as
-        the first index of reverseElementsRecv, which stores the corresponding
-        elements where the residual must be stored. */
-  unsigned int mm = ranksSend.size();
-  if( elementsSendSelfComm.size() ) --mm;
+    /* Determine the number of ranks from which data is received for this
+       time level. Allocate the memory for the second index of the receive
+       buffers and the corresponding indices of the elements. */
+    unsigned int kk = 0;
+    for(unsigned long i=0; i<ranksSend.size(); ++i) {
+      if((ranksSend[i] != rank) && elemSendPerTimeLevel[level][i].size()) ++kk;
+    }
 
-  reverseCommRecvBuf.resize(mm);
-  reverseElementsRecv.resize(mm);
+    reverseElementsRecv[level].resize(kk);
+    reverseCommRecvBuf[level].resize(kk);
 
-  /*--- Loop over the ranks from which I receive residual data and
-        create the receive requests. Exclude self communication. ---*/
-  mm = 0;
-  for(unsigned long i=0; i<ranksSend.size(); ++i) {
-    if(ranksSend[i] != rank) {
+    /* Loop over the ranks of ranksSend and check if something must received
+       from this rank in the reverse communication. Exclude self communication. */
+    kk = 0;
+    for(unsigned long i=0; i<ranksSend.size(); ++i) {
+      if((ranksSend[i] != rank) && elemSendPerTimeLevel[level][i].size()) {
 
-      /* Copy the data of elementsSend into reverseElementsRecv. */
-      reverseElementsRecv[mm] = elementsSend[i];
+        /* Copy the data of elemSendPerTimeLevel into reverseElementsRecv. */
+        reverseElementsRecv[level][kk] = elemSendPerTimeLevel[level][i];
 
-      /* Determine the size of the receive buffer and allocate the memory. */
-      int sizeBuf = 0;
-      for(unsigned long j=0; j<elementsSend[i].size(); ++j) {
-        const unsigned long jj = elementsSend[i][j];
-        sizeBuf += volElem[jj].nDOFsSol;
+        /* Determine the size of the receive buffer and allocate the memory. */
+        int sizeBuf = 0;
+        for(unsigned long j=0; j<reverseElementsRecv[level][kk].size(); ++j) {
+          const unsigned long jj = reverseElementsRecv[level][kk][j];
+          sizeBuf += volElem[jj].nDOFsSol;
+        }
+
+        sizeBuf *= nVar;
+        reverseCommRecvBuf[level][kk].resize(sizeBuf);
+
+        /* Create the communication request for this receive operation and
+           update the counters mm and kk for the next request. */
+        int tag = rank + nTimeLevels + level;
+        MPI_Recv_init(reverseCommRecvBuf[level][kk].data(), sizeBuf, MPI_DOUBLE,
+                      ranksSend[i], tag, MPI_COMM_WORLD,
+                      &reverseCommRequests[level][mm]);
+        ++mm;
+        ++kk;
       }
-
-      sizeBuf *= nVar;
-      reverseCommRecvBuf[mm].resize(sizeBuf);
-
-      /* Create the communication request for this receive operation and
-         update the counters mm and nn for the next request. */
-      MPI_Recv_init(reverseCommRecvBuf[mm].data(), sizeBuf, MPI_DOUBLE,
-                    ranksSend[i], rank, MPI_COMM_WORLD, &reverseCommRequests[nn]);
-      ++mm;
-      ++nn;
     }
   }
 
 #endif
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 4. Store the information for the rotational periodic          ---*/
+  /*--- Step 5. Store the information for the rotational periodic          ---*/
   /*---         corrections for the halo elements.                         ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Get the data for the rotational periodic halos from FEMGeometry. */
-  vector<unsigned short> markersRotationalPeriodicity = FEMGeometry->GetRotPerMarkers();
+  const vector<unsigned short> &markersRotPer = FEMGeometry->GetRotPerMarkers();
+  const vector<vector<unsigned long> > &rotPerHalos = FEMGeometry->GetRotPerHalos();
 
-  halosRotationalPeriodicity = FEMGeometry->GetRotPerHalos();
+  /* Allocate the memory for the first and second index of
+     halosRotationalPeriodicity. Also allocate the memory to store the
+     rotation matrices of the periodic transformations. */
+  const unsigned short nRotPerMarkers = markersRotPer.size();
+  halosRotationalPeriodicity.resize(nTimeLevels);
+  for(unsigned short i=0; i<nTimeLevels; ++i)
+    halosRotationalPeriodicity[i].resize(nRotPerMarkers);
 
-  /* Determine the number of rotational periodic transformations and allocate
-     the memory to store the corresponding rotation matrices. */
-  const unsigned short nRotPerMarkers = markersRotationalPeriodicity.size();
   rotationMatricesPeriodicity.resize(9*nRotPerMarkers);
 
-  /* Loop over the rotational periodic transformations and store the rotation
-     matrices in rotationMatricesPeriodicity. */
+  /* Loop over the rotational periodic transformations. */
   unsigned int ii = 0;
   for(unsigned short i=0; i<nRotPerMarkers; ++i) {
 
    /* Get the rotation angles from config for this marker. */
-   const unsigned short pInd = markersRotationalPeriodicity[i];
+   const unsigned short pInd = markersRotPer[i];
    su2double *angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(pInd));
 
     /*--- Determine the rotation matrix from the donor to the halo elements.
@@ -1471,46 +2258,91 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
     rotationMatricesPeriodicity[ii++] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
     rotationMatricesPeriodicity[ii++] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
     rotationMatricesPeriodicity[ii++] = cosTheta*cosPhi;
+
+    /* Loop over the elements of this periodic transformation and store them
+       in the appropriate location of halosRotationalPeriodicity. */
+    for(unsigned long j=0; j<rotPerHalos[i].size(); ++j) {
+      const unsigned long jj = rotPerHalos[i][j];
+      halosRotationalPeriodicity[volElem[jj].timeLevel][i].push_back(jj);
+    }
   }
 }
 
-void CFEM_DG_EulerSolver::Initiate_MPI_Communication(void) {
+void CFEM_DG_EulerSolver::Initiate_MPI_Communication(const unsigned short timeLevel) {
 
   /*--- Start the MPI communication, if needed. ---*/
 
 #ifdef HAVE_MPI
-  if( nCommRequests )
-    MPI_Startall(nCommRequests, commRequests.data());
+  if( nCommRequests[timeLevel] )
+    MPI_Startall(nCommRequests[timeLevel], commRequests[timeLevel].data());
 #endif
 }
 
-void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
+bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
+                                                     const unsigned short timeLevel,
+                                                     const bool commMustBeCompleted) {
+
+  /*-----------------------------------------------------------------------*/
+  /*--- Complete the MPI communication, if needed and if possible.      ---*/
+  /*-----------------------------------------------------------------------*/
+
+#ifdef HAVE_MPI
+  if( nCommRequests[timeLevel] ) {
+
+    /*--- There are communication requests to be completed. Check if these
+          requests must be completed. In that case MPI_Waitall is used.
+          Otherwise, MPI_Testall is used to check if all the requests have
+          been completed. If not, false is returned. ---*/
+    if( commMustBeCompleted ) {
+      SU2_MPI::Waitall(nCommRequests[timeLevel], commRequests[timeLevel].data(),
+                       MPI_STATUSES_IGNORE);
+    }
+    else {
+      int flag;
+      MPI_Testall(nCommRequests[timeLevel], commRequests[timeLevel].data(),
+                  &flag, MPI_STATUSES_IGNORE);
+      if( !flag ) return false;
+    }
+  }
+#endif
 
   /*-----------------------------------------------------------------------*/
   /*---               Carry out the self communication.                 ---*/
   /*-----------------------------------------------------------------------*/
 
+  /* Set the pointer to the memory, whose data must be communicated.
+     This depends on the time integration scheme used. For ADER the data of
+     the predictor part is communicated, while for the other time integration
+     schemes typically the working solution is communicated. Note that if the
+     working solution is communicated, there is only one time level. */
+  unsigned short nTimeDOFs;
+  su2double *commData;
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
+    nTimeDOFs = config->GetnTimeDOFsADER_DG();
+    commData  = VecSolDOFsPredictorADER.data();
+  }
+  else {
+    nTimeDOFs = 1;
+    commData  = VecWorkSolDOFs[0].data();
+  }
+
   /* Easier storage of the number of variables times the size of su2double. */
   const unsigned long sizeEntity = nVar*sizeof(su2double);
 
   /* Loop over the number of elements involved and copy the data of the DOFs. */
-  const unsigned long nSelfElements = elementsSendSelfComm.size();
+  const unsigned long nSelfElements = elementsSendSelfComm[timeLevel].size();
   for(unsigned long i=0; i<nSelfElements; ++i) {
-    const unsigned long indS   = nVar*volElem[elementsSendSelfComm[i]].offsetDOFsSolLocal;
-    const unsigned long indR   = nVar*volElem[elementsRecvSelfComm[i]].offsetDOFsSolLocal;
-    const unsigned long nBytes = volElem[elementsSendSelfComm[i]].nDOFsSol * sizeEntity;
+    const unsigned long elemS  = elementsSendSelfComm[timeLevel][i];
+    const unsigned long elemR  = elementsRecvSelfComm[timeLevel][i];
+    const unsigned long nBytes = volElem[elemS].nDOFsSol * sizeEntity;
 
-    memcpy(VecSolDOFs.data()+indR, VecSolDOFs.data()+indS, nBytes);
+    for(unsigned short j=0; j<nTimeDOFs; ++j) {
+      const unsigned long indS = nVar*(volElem[elemS].offsetDOFsSolLocal + j*nDOFsLocTot);
+      const unsigned long indR = nVar*(volElem[elemR].offsetDOFsSolLocal + j*nDOFsLocTot);
+
+      memcpy(commData+indR, commData+indS, nBytes);
+    }
   }
-
-  /*-----------------------------------------------------------------------*/
-  /*---         Complete the MPI communication, if needed.              ---*/
-  /*-----------------------------------------------------------------------*/
-
-#ifdef HAVE_MPI
-  if( nCommRequests )
-    SU2_MPI::Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
-#endif
 
   /*------------------------------------------------------------------------*/
   /*--- Correct the vector quantities in the rotational periodic halo's. ---*/
@@ -1519,8 +2351,8 @@ void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
   /*--- Loop over the markers for which a rotational periodic
         correction must be applied to the momentum variables. ---*/
   unsigned int ii = 0;
-  const unsigned short nRotPerMarkers = halosRotationalPeriodicity.size();
-  for(unsigned short k=0; k<nRotPerMarkers; ++k) {
+  const unsigned long nRotPerMarkers = halosRotationalPeriodicity[timeLevel].size();
+  for(unsigned long k=0; k<nRotPerMarkers; ++k) {
 
     /* Easier storage of the rotational matrix. */
     su2double rotMatrix[3][3];
@@ -1539,50 +2371,43 @@ void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
 
     /* Determine the number of elements for this transformation and
        loop over them. */
-    const unsigned long nHaloElem = halosRotationalPeriodicity[k].size();
+    const unsigned long nHaloElem = halosRotationalPeriodicity[timeLevel][k].size();
     for(unsigned long j=0; j<nHaloElem; ++j) {
 
-      /* Easier storage of the halo index and loop over its DOFs. */
-      const unsigned long ind = halosRotationalPeriodicity[k][j];
-      for(unsigned short i=0; i<volElem[ind].nDOFsSol; ++i) {
+      /* Easier storage of the halo index and loop over its DOFs, including
+         the multiple time DOFs for ADER. */
+      for(unsigned short tInd=0; tInd<nTimeDOFs; ++tInd) {
+        const unsigned long tIndOff = tInd*nDOFsLocTot;
+        const unsigned long ind     = halosRotationalPeriodicity[timeLevel][k][j];
+        for(unsigned short i=0; i<volElem[ind].nDOFsSol; ++i) {
 
-        /* Determine the pointer in VecSolDOFs where the solution of this DOF
-           is stored and copy the momentum variables. Note that a rotational
-           correction can only take place for a 3D simulation. */
-        su2double *sol = VecSolDOFs.data() + nVar*(volElem[ind].offsetDOFsSolLocal + i);
+          /* Determine the pointer in commData where the solution of this DOF
+             is stored and copy the momentum variables. Note that a rotational
+             correction can only take place for a 3D simulation. */
+          su2double *sol = commData + nVar*(volElem[ind].offsetDOFsSolLocal + i + tIndOff);
 
-        const su2double ru = sol[1], rv = sol[2], rw = sol[3];
+          const su2double ru = sol[1], rv = sol[2], rw = sol[3];
 
-        /* Correct the momentum variables. */
-        sol[1] = rotMatrix[0][0]*ru + rotMatrix[0][1]*rv + rotMatrix[0][2]*rw;
-        sol[2] = rotMatrix[1][0]*ru + rotMatrix[1][1]*rv + rotMatrix[1][2]*rw;
-        sol[3] = rotMatrix[2][0]*ru + rotMatrix[2][1]*rv + rotMatrix[2][2]*rw;
+          /* Correct the momentum variables. */
+          sol[1] = rotMatrix[0][0]*ru + rotMatrix[0][1]*rv + rotMatrix[0][2]*rw;
+          sol[2] = rotMatrix[1][0]*ru + rotMatrix[1][1]*rv + rotMatrix[1][2]*rw;
+          sol[3] = rotMatrix[2][0]*ru + rotMatrix[2][1]*rv + rotMatrix[2][2]*rw;
+        }
       }
     }
   }
+
+  /* Return true to indicate that the communication has been completed. */
+  return true;
 }
 
-void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
+void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
+                                                            const unsigned short timeLevel) {
 
-  /*------------------------------------------------------------------------*/
-  /*---            Accumulate the residuals of the halo DOFs.            ---*/
-  /*------------------------------------------------------------------------*/
-
-  /*--- Initialize the residuals of the halo elements to zero. ---*/
-  for(unsigned long i=nVar*nDOFsLocOwned; i<nVar*nDOFsLocTot; ++i)
-    VecResDOFs[i] = 0.0;
-
-  /*--- Loop over the external DOFs to accumulate the local data. ---*/
-  for(unsigned long i=nDOFsLocOwned; i<nDOFsLocTot; ++i) {
-
-    su2double *resDOF = VecResDOFs.data() + nVar*i;
-
-    for(unsigned long j=nEntriesResFaces[i]; j<nEntriesResFaces[i+1]; ++j) {
-      const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
-      for(unsigned short k=0; k<nVar; ++k)
-        resDOF[k] += resFace[k];
-    }
-  }
+  /* Set the pointer to the residual to be communicated. */
+  su2double *resComm;
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) resComm = VecTotResDOFsADER.data();
+  else                                                resComm = VecResDOFs.data();
 
   /*------------------------------------------------------------------------*/
   /*--- Correct the vector residuals in the rotational periodic halo's.  ---*/
@@ -1591,7 +2416,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
   /*--- Loop over the markers for which a rotational periodic
         correction must be applied to the momentum variables. ---*/
   unsigned int ii = 0;
-  const unsigned short nRotPerMarkers = halosRotationalPeriodicity.size();
+  const unsigned short nRotPerMarkers = halosRotationalPeriodicity[0].size();
   for(unsigned short k=0; k<nRotPerMarkers; ++k) {
 
     /* Easier storage of the transpose of the rotational matrix. */
@@ -1611,17 +2436,17 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
 
     /* Determine the number of elements for this transformation and
        loop over them. */
-    const unsigned long nHaloElem = halosRotationalPeriodicity[k].size();
+    const unsigned long nHaloElem = halosRotationalPeriodicity[timeLevel][k].size();
     for(unsigned long j=0; j<nHaloElem; ++j) {
 
       /* Easier storage of the halo index and loop over its DOFs. */
-      const unsigned long ind = halosRotationalPeriodicity[k][j];
+      const unsigned long ind = halosRotationalPeriodicity[timeLevel][k][j];
       for(unsigned short i=0; i<volElem[ind].nDOFsSol; ++i) {
 
         /* Determine the pointer in VecResDOFs where the residual of this DOF
            is stored and copy the momentum residuals. Note that a rotational
            correction can only take place for a 3D simulation. */
-        su2double *res = VecResDOFs.data() + nVar*(volElem[ind].offsetDOFsSolLocal + i);
+        su2double *res = resComm + nVar*(volElem[ind].offsetDOFsSolLocal + i);
 
         const su2double ru = res[1], rv = res[2], rw = res[3];
 
@@ -1636,8 +2461,74 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
   /*--- Start the MPI communication, if needed. ---*/
 
 #ifdef HAVE_MPI
-  if( nCommRequests )
-    MPI_Startall(nCommRequests, reverseCommRequests.data());
+  if( nCommRequests[timeLevel] )
+    MPI_Startall(nCommRequests[timeLevel], reverseCommRequests[timeLevel].data());
+#endif
+
+}
+
+bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
+                                                            const unsigned short timeLevel,
+                                                            const bool commMustBeCompleted) {
+#ifdef HAVE_MPI
+
+  /*-----------------------------------------------------------------------*/
+  /*---   Complete the MPI communication, if needed and if possible.    ---*/
+  /*-----------------------------------------------------------------------*/
+
+  /* Check if there are any requests to complete for this time level. */
+  if( nCommRequests[timeLevel] ) {
+
+    /*--- There are communication requests to be completed. Check if these
+          requests must be completed. In that case MPI_Waitall is used.
+          Otherwise, MPI_Testall is used to check if all the requests have
+          been completed. If not, return false. ---*/
+    if( commMustBeCompleted ) {
+      SU2_MPI::Waitall(nCommRequests[timeLevel], reverseCommRequests[timeLevel].data(),
+                       MPI_STATUSES_IGNORE);
+    }
+    else {
+      int flag;
+      MPI_Testall(nCommRequests[timeLevel], reverseCommRequests[timeLevel].data(),
+                  &flag, MPI_STATUSES_IGNORE);
+      if( !flag ) return false;
+    }
+  }
+
+#endif
+
+  /*---------------------------------------------------------------------------*/
+  /*---    Update the residuals of the owned DOFs with the data received.   ---*/
+  /*---------------------------------------------------------------------------*/
+
+  /* Set the pointer to the residual to be communicated. */
+  su2double *resComm;
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) resComm = VecTotResDOFsADER.data();
+  else                                                resComm = VecResDOFs.data();
+
+#ifdef HAVE_MPI
+
+  /*--- Loop over the received residual data from all ranks and update the
+        residual of the DOFs of the corresponding elements. ---*/
+  for(unsigned long i=0; i<reverseElementsRecv[timeLevel].size(); ++i) {
+
+    /* Loop over the elements that must be updated. */
+    unsigned long nn = 0;
+    for(unsigned long j=0; j<reverseElementsRecv[timeLevel][i].size(); ++j) {
+      const unsigned long jj = reverseElementsRecv[timeLevel][i][j];
+
+      /* Easier storage of the starting residual of this element and the
+         data in the buffer and update the residuals of the DOFs. */
+      const unsigned short nRes = nVar*volElem[jj].nDOFsSol;
+      su2double            *res = resComm + nVar*volElem[jj].offsetDOFsSolLocal;
+      const su2double      *buf = reverseCommRecvBuf[timeLevel][i].data() + nn;
+
+      nn += nRes;
+      for(unsigned short k=0; k<nRes; ++k)
+        res[k] += buf[k];
+    }
+  }
+
 #endif
 
   /*-----------------------------------------------------------------------*/
@@ -1646,67 +2537,39 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
 
   /*--- Loop over the number of elements involved and update the residuals
         of the owned DOFs. ---*/
-  const unsigned long nSelfElements = elementsSendSelfComm.size();
+  const unsigned long nSelfElements = elementsSendSelfComm[timeLevel].size();
   for(unsigned long i=0; i<nSelfElements; ++i) {
 
-    su2double *resOwned = VecResDOFs.data()
-                        + nVar*volElem[elementsSendSelfComm[i]].offsetDOFsSolLocal;
-    su2double *resHalo  = VecResDOFs.data()
-                        + nVar*volElem[elementsRecvSelfComm[i]].offsetDOFsSolLocal;
+    const unsigned long volOwned = elementsSendSelfComm[timeLevel][i];
+    const unsigned long volHalo  = elementsRecvSelfComm[timeLevel][i];
+    su2double *resOwned = resComm + nVar*volElem[volOwned].offsetDOFsSolLocal;
+    su2double *resHalo  = resComm + nVar*volElem[volHalo].offsetDOFsSolLocal;
 
-    const unsigned short nRes = nVar*volElem[elementsSendSelfComm[i]].nDOFsSol;
+    const unsigned short nRes = nVar*volElem[volOwned].nDOFsSol;
     for(unsigned short j=0; j<nRes; ++j)
       resOwned[j] += resHalo[j];
   }
-}
 
-void CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(void) {
+  /* Initialize the halo residuals of the just completed communication pattern
+     to zero if ADER-DG is used. */
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
+    const unsigned long iBeg      = nVar*volElem[nVolElemHaloPerTimeLevel[timeLevel]].offsetDOFsSolLocal;
+    const unsigned long volIndEnd = nVolElemHaloPerTimeLevel[timeLevel+1]-1;
+    const unsigned long iEnd      = nVar*(volElem[volIndEnd].offsetDOFsSolLocal
+                                  +       volElem[volIndEnd].nDOFsSol);
 
-#ifdef HAVE_MPI
-
-  /*-----------------------------------------------------------------------*/
-  /*---         Complete the MPI communication, if needed.              ---*/
-  /*-----------------------------------------------------------------------*/
-
-  if( nCommRequests )
-    SU2_MPI::Waitall(nCommRequests, reverseCommRequests.data(), MPI_STATUSES_IGNORE);
-
-  /*---------------------------------------------------------------------------*/
-  /*--- Update the residuals of the owned DOFs with the data just received. ---*/
-  /*---------------------------------------------------------------------------*/
-
-  /*--- Loop over the ranks from which this rank received residual data. As
-        the reverse communication pattern is used, ranksSend must be used.
-        Exclude self communication. ---*/
-  for(unsigned long i=0; i<reverseElementsRecv.size(); ++i) {
-
-    /* Loop over the elements that must be updated. */
-    unsigned long nn = 0;
-    for(unsigned long j=0; j<reverseElementsRecv[i].size(); ++j) {
-      const unsigned long jj = reverseElementsRecv[i][j];
-
-      /* Easier storage of the starting residual of this element, loop over the
-         DOFs of this element and update the residuals of the DOFs. */
-      su2double *res = VecResDOFs.data() + nVar*volElem[jj].offsetDOFsSolLocal;
-      const unsigned short nRes = nVar*volElem[jj].nDOFsSol;
-      for(unsigned short k=0; k<nRes; ++k, ++nn)
-        res[k] += reverseCommRecvBuf[i][nn];
-    }
+    for(unsigned long i=iBeg; i<iEnd; ++i)
+      VecTotResDOFsADER[i] = 0.0;
   }
 
-#endif
+  /* Return true to indicate that the communication has been completed. */
+  return true;
 }
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
 
-  /* Initialize solutionSet. If a solution is set below, this boolean must be
-     set to true, such that the solution is communicated to the halo elements
-     at the end of this function. */
-  bool solutionSet = false;
-
 #ifdef INVISCID_VORTEX
 
-  solutionSet = true;
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -1792,7 +2655,6 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
      final solution, shocks develop, which may destabilize the solution and it
      is impossible to obtain a converged solution. */
 
-  solutionSet = true;
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -1827,7 +2689,6 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 
 #elif TAYLOR_GREEN
 
-  solutionSet = true;
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -1895,12 +2756,6 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 
 #endif
 
-  /*--- If the solution was set in this function, perform the MPI
-        communication of the solution. ---*/
-  if( solutionSet ) {
-    Initiate_MPI_Communication();
-    Complete_MPI_Communication();
-  }
 }
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -1913,31 +2768,59 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
 
   if(config->GetKind_Regime() == COMPRESSIBLE) {
 
-    /*--- Loop over the owned DOFs and check for non-physical points. ---*/
-    for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+    /*--- Make a distinction between 2D and 3D for optimal performance. ---*/
+    switch( nDim ) {
 
-      su2double *solDOF = VecSolDOFs.data() + nVar*i;
+      case 2: {
+        /*--- 2D simulation. Loop over the owned DOFs and check for
+              non-physical solutions. If found, the state is overwritten with
+              the free-stream values. This usually does not work. ---*/
+        for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+          su2double *solDOF = VecSolDOFs.data() + nVar*i;
+          const su2double DensityInv   = 1.0/solDOF[0];
+          const su2double Mom2         = solDOF[1]*solDOF[1] + solDOF[2]*solDOF[2];
+          const su2double StaticEnergy = DensityInv*(solDOF[3] - 0.5*DensityInv*Mom2);
 
-      const su2double DensityInv = 1.0/solDOF[0];
-      su2double Velocity2 = 0.0;
-      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-        const su2double vel = solDOF[iDim]*DensityInv;
-        Velocity2 += vel*vel;
+          FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+          const su2double Pressure    = FluidModel->GetPressure();
+          const su2double Temperature = FluidModel->GetTemperature();
+
+          if((Pressure < 0.0) || (solDOF[0] < 0.0) || (Temperature < 0.0)) {
+            ++ErrorCounter;
+
+            solDOF[0] = ConsVarFreeStream[0]; solDOF[1] = ConsVarFreeStream[1];
+            solDOF[2] = ConsVarFreeStream[2]; solDOF[3] = ConsVarFreeStream[3];
+          }
+        }
+
+        break;
       }
 
-      su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
+      case 3: {
+        /*--- 3D simulation. Loop over the owned DOFs and check for
+              non-physical solutions. If found, the state is overwritten with
+              the free-stream values. This usually does not work. ---*/
+        for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+          su2double *solDOF = VecSolDOFs.data() + nVar*i;
+          const su2double DensityInv   = 1.0/solDOF[0];
+          const su2double Mom2         = solDOF[1]*solDOF[1] + solDOF[2]*solDOF[2]
+                                       + solDOF[3]*solDOF[3];
+          const su2double StaticEnergy = DensityInv*(solDOF[4] - 0.5*DensityInv*Mom2);
 
-      FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
-      su2double Pressure = FluidModel->GetPressure();
-      su2double Temperature = FluidModel->GetTemperature();
+          FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+          const su2double Pressure    = FluidModel->GetPressure();
+          const su2double Temperature = FluidModel->GetTemperature();
 
-      if((Pressure < 0.0) || (solDOF[0] < 0.0) || (Temperature < 0.0)) {
+          if((Pressure < 0.0) || (solDOF[0] < 0.0) || (Temperature < 0.0)) {
+            ++ErrorCounter;
 
-        /* Reset the state to the free-stream state. This usually does not work. */
-        for(unsigned short j=0; j<nVar; ++j) solDOF[j] = ConsVarFreeStream[j];
+            solDOF[0] = ConsVarFreeStream[0]; solDOF[1] = ConsVarFreeStream[1];
+            solDOF[2] = ConsVarFreeStream[2]; solDOF[3] = ConsVarFreeStream[3];
+            solDOF[4] = ConsVarFreeStream[4];
+          }
+        }
 
-        /* Update the error counter. */
-        ++ErrorCounter;
+        break;
       }
     }
 
@@ -1957,12 +2840,12 @@ void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_c
 
 void CFEM_DG_EulerSolver::Set_OldSolution(CGeometry *geometry) {
 
-  memcpy(VecSolDOFsOld.data(), VecSolDOFs.data(), VecSolDOFsOld.size()*sizeof(su2double));
+  memcpy(VecWorkSolDOFs[0].data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
 }
 
 void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
 
-  memcpy(VecSolDOFsNew.data(), VecSolDOFs.data(), VecSolDOFsNew.size()*sizeof(su2double));
+  memcpy(VecSolDOFsNew.data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
 }
 
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -1975,18 +2858,15 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
 
   /* Easier storage of the CFL number. Note that if we are using explicit
-   time stepping, the regular CFL condition has been overwritten with the
-   unsteady CFL condition in the config post-processing (if non-zero). */
-
+     time stepping, the regular CFL condition has been overwritten with the
+     unsteady CFL condition in the config post-processing (if non-zero). */
   const su2double CFL = config->GetCFL(iMesh);
 
-  /*--- Explicit time stepping with imposed time step (eventually will
-   allow for local time stepping with this value imposed as the time
-   for syncing the cells). If the unsteady CFL is set to zero (default),
-   it uses the defined unsteady time step, otherwise it computes the time
-   step based on the provided unsteady CFL. Note that the regular CFL
-   option in the config is always ignored with time stepping. ---*/
-
+  /*--- Explicit time stepping with imposed time step. If the unsteady CFL is
+        set to zero (default), it uses the defined unsteady time step,
+        otherwise it computes the time step based on the provided unsteady CFL.
+        Note that the regular CFL option in the config is always ignored with
+        time stepping. ---*/
   if (time_stepping && (config->GetUnst_CFL() == 0.0)) {
 
     /*--- Loop over the owned volume elements and set the fixed dt. ---*/
@@ -2001,36 +2881,70 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       /*--- Loop over the owned volume elements. ---*/
       for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
-        /*--- Loop over the DOFs of this element and determine
-              the maximum wave speed. ---*/
         su2double charVel2Max = 0.0;
-        for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-          const su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
 
-          /* Compute the velocities. */
-          su2double velAbs[3];
-          const su2double DensityInv = 1.0/solDOF[0];
-          su2double Velocity2 = 0.0;
-          for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-            const su2double vel = solDOF[iDim]*DensityInv;
-            velAbs[iDim-1] = fabs(vel);
-            Velocity2 += vel*vel;
+        /*--- Make a distinction between 2D and 3D for optimal performance. ---*/
+        switch( nDim ) {
+
+          case 2: {
+            /*--- 2D simulation. Loop over the DOFs of this element
+                  and determine the maximum wave speed. ---*/
+            for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+              const su2double *solDOF = VecSolDOFs.data()
+                                      + nVar*(volElem[i].offsetDOFsSolLocal + j);
+
+              /* Compute the velocities and the internal energy per unit mass. */
+              const su2double DensityInv   = 1.0/solDOF[0];
+              const su2double u            = DensityInv*solDOF[1];
+              const su2double v            = DensityInv*solDOF[2];
+              const su2double StaticEnergy = DensityInv*solDOF[3] - 0.5*(u*u + v*v);
+
+              /*--- Compute the maximum value of the wave speed. This is a rather
+                    conservative estimate. ---*/
+              FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+              const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+              const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
+
+              const su2double radx     = fabs(u) + SoundSpeed;
+              const su2double rady     = fabs(v) + SoundSpeed;
+              const su2double charVel2 = radx*radx + rady*rady;
+
+              charVel2Max = max(charVel2Max, charVel2);
+            }
+
+            break;
           }
 
-          /*--- Compute the maximum value of the wave speed. This is a rather
-           conservative estimate. ---*/
-          const su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
-          FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
-          const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
-          const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
+          case 3: {
+            /*--- 3D simulation. Loop over the DOFs of this element
+                  and determine the maximum wave speed. ---*/
+            for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+              const su2double *solDOF = VecSolDOFs.data()
+                                      + nVar*(volElem[i].offsetDOFsSolLocal + j);
 
-          su2double charVel2 = 0.0;
-          for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-            const su2double rad = velAbs[iDim] + SoundSpeed;
-            charVel2 += rad*rad;
+              /* Compute the velocities and the internal energy per unit mass. */
+              const su2double DensityInv   = 1.0/solDOF[0];
+              const su2double u            = DensityInv*solDOF[1];
+              const su2double v            = DensityInv*solDOF[2];
+              const su2double w            = DensityInv*solDOF[3];
+              const su2double StaticEnergy = DensityInv*solDOF[4] - 0.5*(u*u + v*v + w*w);
+
+              /*--- Compute the maximum value of the wave speed. This is a rather
+                    conservative estimate. ---*/
+              FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+              const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+              const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
+
+              const su2double radx     = fabs(u) + SoundSpeed;
+              const su2double rady     = fabs(v) + SoundSpeed;
+              const su2double radz     = fabs(w) + SoundSpeed;
+              const su2double charVel2 = radx*radx + rady*rady + radz*radz;
+
+              charVel2Max = max(charVel2Max, charVel2);
+            }
+
+            break;
           }
-
-          charVel2Max = max(charVel2Max, charVel2);
         }
 
         /*--- Compute the time step for the element and update the minimum and
@@ -2077,9 +2991,9 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     }
 
     /*--- Compute the max and the min dt (in parallel). Note that we only
-     do this for steady calculations if the high verbosity is set, but we
-     always perform the reduction for unsteady calculations where the CFL
-     limit is used to set the global time step. ---*/
+          do this for steady calculations if the high verbosity is set, but we
+          always perform the reduction for unsteady calculations where the CFL
+          limit is used to set the global time step. ---*/
     if ((config->GetConsole_Output_Verb() == VERB_HIGH) || time_stepping) {
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
@@ -2143,134 +3057,412 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
   else syncTimeReached = false;
 }
 
+void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
+                                             CNumerics **numerics, CConfig *config,
+                                             unsigned short iMesh) {
+  /* Variable for the internal timing and store the number of time levels.. */
+  double tick = 0.0;
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+
+  /* Define and initialize the bool vector, that indicates whether or
+     not the tasks from the list have been completed. */
+  vector<bool> taskCompleted(tasksList.size(), false);
+
+  /* While loop to carry out all the tasks in tasksList. */
+  unsigned long lowestIndexInList = 0;
+  while(lowestIndexInList < tasksList.size()) {
+
+    /* Find the next task that can be carried out. The outer loop is there
+       to make sure that a communication is completed in case there are no
+       other tasks */
+    for(unsigned short j=0; j<2; ++j) {
+      bool taskCarriedOut = false;
+      for(unsigned long i=lowestIndexInList; i<tasksList.size(); ++i) {
+
+        /* Determine whether or not it can be attempted to carry out
+           this task. */
+        bool taskCanBeCarriedOut = !taskCompleted[i];
+        for(unsigned short ind=0; ind<tasksList[i].nIndMustBeCompleted; ++ind) {
+          if( !taskCompleted[tasksList[i].indMustBeCompleted[ind]] )
+            taskCanBeCarriedOut = false;
+        }
+
+        if( taskCanBeCarriedOut ) {
+
+          /*--- Determine the actual task to be carried out and do so. The
+                only tasks that may fail are the completion of the non-blocking
+                communication. If that is the case the next task needs to be
+                found. ---*/
+          switch( tasksList[i].task ) {
+
+            case CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS: {
+
+              /* Carry out the ADER predictor step for the elements whose
+                 solution must be communicated for this time level. */
+              const unsigned short level   = tasksList[i].timeLevel;
+              const unsigned long  elemBeg = nVolElemOwnedPerTimeLevel[level]
+                                           + nVolElemInternalPerTimeLevel[level];
+              const unsigned long  elemEnd = nVolElemOwnedPerTimeLevel[level+1];
+
+              config->Tick(&tick);
+              ADER_DG_PredictorStep(config, elemBeg, elemEnd);
+              config->Tock(tick,"ADER_DG_PredictorStep",2);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS: {
+
+              /* Carry out the ADER predictor step for the elements whose
+                 solution must not be communicated for this time level. */
+              const unsigned short level   = tasksList[i].timeLevel;
+              const unsigned long  elemBeg = nVolElemOwnedPerTimeLevel[level];
+              const unsigned long  elemEnd = nVolElemOwnedPerTimeLevel[level]
+                                           + nVolElemInternalPerTimeLevel[level];
+              config->Tick(&tick);
+              ADER_DG_PredictorStep(config, elemBeg, elemEnd);
+              config->Tock(tick,"ADER_DG_PredictorStep",2);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::INITIATE_MPI_COMMUNICATION: {
+
+              /* Start the MPI communication of the solution in the halo elements. */
+              Initiate_MPI_Communication(tasksList[i].timeLevel);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::COMPLETE_MPI_COMMUNICATION: {
+
+              /* Attempt to complete the MPI communication of the solution data.
+                 For j==0, MPI_Testall will be used, which returns false if not
+                 all requests can be completed. In that case the next task on
+                 the list is carried out. If j==1, this means that the next
+                 tasks are waiting for this communication to be completed and
+                 hence MPI_Waitall is used. */
+              if( Complete_MPI_Communication(config, tasksList[i].timeLevel,
+                                             j==1) )
+                taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION: {
+
+              /* Start the communication of the residuals, for which the
+                 reverse communication must be used. */
+              Initiate_MPI_ReverseCommunication(config, tasksList[i].timeLevel);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION: {
+
+              /* Attempt to complete the MPI communication of the residual data.
+                 For j==0, MPI_Testall will be used, which returns false if not
+                 all requests can be completed. In that case the next task on
+                 the list is carried out. If j==1, this means that the next
+                 tasks are waiting for this communication to be completed and
+                 hence MPI_Waitall is used. */
+              if( Complete_MPI_ReverseCommunication(config, tasksList[i].timeLevel,
+                                                    j==1) )
+                taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS: {
+
+              /* Interpolate the predictor solution of the owned elements
+                 in time to the given time integration point for the
+                 given time level. */
+              const unsigned short level = tasksList[i].timeLevel;
+              unsigned long nAdjElem = 0, *adjElem = NULL;
+              if(level < (nTimeLevels-1)) {
+                nAdjElem = ownedElemAdjLowTimeLevel[level+1].size();
+                adjElem  = ownedElemAdjLowTimeLevel[level+1].data();
+              }
+
+              config->Tick(&tick);
+              ADER_DG_TimeInterpolatePredictorSol(config, tasksList[i].intPointADER,
+                                                  nVolElemOwnedPerTimeLevel[level],
+                                                  nVolElemOwnedPerTimeLevel[level+1],
+                                                  nAdjElem, adjElem,
+                                                  tasksList[i].secondPartTimeIntADER,
+                                                  VecWorkSolDOFs[level].data());
+              config->Tock(tick,"ADER_DG_TimeInterpolatePredictorSol",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS: {
+
+              /* Interpolate the predictor solution of the halo elements
+                 in time to the given time integration point for the
+                 given time level. */
+              const unsigned short level = tasksList[i].timeLevel;
+              unsigned long nAdjElem = 0, *adjElem = NULL;
+              if(level < (nTimeLevels-1)) {
+                nAdjElem = haloElemAdjLowTimeLevel[level+1].size();
+                adjElem  = haloElemAdjLowTimeLevel[level+1].data();
+              }
+
+              config->Tick(&tick);
+              ADER_DG_TimeInterpolatePredictorSol(config, tasksList[i].intPointADER,
+                                                  nVolElemHaloPerTimeLevel[level],
+                                                  nVolElemHaloPerTimeLevel[level+1],
+                                                  nAdjElem, adjElem,
+                                                  tasksList[i].secondPartTimeIntADER,
+                                                  VecWorkSolDOFs[level].data());
+              config->Tock(tick,"ADER_DG_TimeInterpolatePredictorSol",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS: {
+
+              /*--- Compute the artificial viscosity for shock capturing in DG. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              config->Tick(&tick);
+              Shock_Capturing_DG(config, nVolElemOwnedPerTimeLevel[level],
+                                 nVolElemOwnedPerTimeLevel[level+1]);
+              config->Tock(tick,"Shock_Capturing",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS: {
+
+              /*--- Compute the artificial viscosity for shock capturing in DG. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              config->Tick(&tick);
+              Shock_Capturing_DG(config, nVolElemHaloPerTimeLevel[level],
+                                 nVolElemHaloPerTimeLevel[level+1]);
+              config->Tock(tick,"Shock_Capturing",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::VOLUME_RESIDUAL: {
+
+              /*--- Compute the volume portion of the residual. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              config->Tick(&tick);
+              Volume_Residual(config, nVolElemOwnedPerTimeLevel[level],
+                              nVolElemOwnedPerTimeLevel[level+1]);
+              config->Tock(tick,"Volume_Residual",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS: {
+
+              /* Compute the residual of the faces that only involve owned elements. */
+              const unsigned short level = tasksList[i].timeLevel;
+              config->Tick(&tick);
+              unsigned long indResFaces = startLocResInternalFacesLocalElem[level];
+              ResidualFaces(config, nMatchingInternalFacesLocalElem[level],
+                            nMatchingInternalFacesLocalElem[level+1],
+                            indResFaces, numerics[CONV_TERM]);
+              config->Tock(tick,"ResidualFaces",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS: {
+
+              /* Compute the residual of the faces that involve a halo element. */
+              const unsigned short level = tasksList[i].timeLevel;
+              config->Tick(&tick);
+              unsigned long indResFaces = startLocResInternalFacesWithHaloElem[level];
+              ResidualFaces(config, nMatchingInternalFacesWithHaloElem[level],
+                            nMatchingInternalFacesWithHaloElem[level+1],
+                            indResFaces, numerics[CONV_TERM]);
+              config->Tock(tick,"ResidualFaces",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::BOUNDARY_CONDITIONS: {
+
+              /*--- Apply the boundary conditions ---*/
+              config->Tick(&tick);
+              Boundary_Conditions(tasksList[i].timeLevel, config, numerics);
+              config->Tock(tick,"Boundary_Conditions",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS: {
+
+              /* Create the final residual by summing up all contributions. */
+              config->Tick(&tick);
+              CreateFinalResidual(tasksList[i].timeLevel, true);
+              config->Tock(tick,"CreateFinalResidual",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS: {
+
+              /* Create the final residual by summing up all contributions. */
+              config->Tick(&tick);
+              CreateFinalResidual(tasksList[i].timeLevel, false);
+              config->Tock(tick,"CreateFinalResidual",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS: {
+
+              /* Accumulate the space time residuals for the owned elements
+                 for ADER-DG. */
+              config->Tick(&tick);
+              AccumulateSpaceTimeResidualADEROwnedElem(config, tasksList[i].timeLevel,
+                                                       tasksList[i].intPointADER);
+              config->Tock(tick,"AccumulateSpaceTimeResidualADEROwnedElem",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS: {
+
+              /* Accumulate the space time residuals for the halo elements
+                 for ADER-DG. */
+              config->Tick(&tick);
+              AccumulateSpaceTimeResidualADERHaloElem(config, tasksList[i].timeLevel,
+                                                      tasksList[i].intPointADER);
+              config->Tock(tick,"AccumulateSpaceTimeResidualADERHaloElem",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX: {
+
+              /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              config->Tick(&tick);
+              const bool useADER = config->GetKind_TimeIntScheme() == ADER_DG;
+              MultiplyResidualByInverseMassMatrix(config, useADER,
+                                                  nVolElemOwnedPerTimeLevel[level],
+                                                  nVolElemOwnedPerTimeLevel[level+1]);
+              config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_UPDATE_SOLUTION: {
+
+              /*--- Perform the update step for ADER-DG. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              config->Tick(&tick);
+              ADER_DG_Iteration(nVolElemOwnedPerTimeLevel[level],
+                                nVolElemOwnedPerTimeLevel[level+1]);
+              config->Tock(tick,"ADER_DG_Iteration",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            default: {
+
+              cout << "Task not defined. This should not happen." << endl;
+              exit(1);
+            }
+          }
+        }
+
+        /* Break the inner loop if a task has been carried out. */
+        if( taskCarriedOut ) break;
+      }
+
+      /* Break the outer loop if a task has been carried out. */
+      if( taskCarriedOut ) break;
+    }
+
+    /* Update the value of lowestIndexInList. */
+    for(; lowestIndexInList < tasksList.size(); ++lowestIndexInList)
+      if( !taskCompleted[lowestIndexInList] ) break;
+  }
+}
+
 void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                     CNumerics **numerics, CConfig *config,
                                                     unsigned short iMesh, unsigned short RunTime_EqSystem) {
+  double tick = 0.0;
 
-  su2double tick = 0.0;
-
-  /*--- Preprocessing ---*/
+  /* Preprocessing. */
   config->Tick(&tick);
   Preprocessing(geometry, solver_container, config, iMesh, 0, RunTime_EqSystem, false);
+  TolerancesADERPredictorStep();
   config->Tock(tick,"Preprocessing",2);
 
-  /*--- Set the old solution, carry out the predictor step and set the number
-        of time integration points and the corresponding weights. ---*/
-  Set_OldSolution(geometry);
-
+  /* Process the tasks list to carry out one ADER space time integration step. */
   config->Tick(&tick);
-  ADER_DG_PredictorStep(config, 0);
-  config->Tock(tick,"ADER_DG_PredictorStep",2);
+  ProcessTaskList_DG(geometry, solver_container, numerics, config, iMesh);
+  config->Tock(tick,"ProcessTaskList_DG",3);
 
-  const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
-  const su2double     *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
-
-  /* Loop over the number of integration points in time. */
-  for(unsigned short iTime=0; iTime<nTimeIntegrationPoints; iTime++) {
-
-    /* The predictor solution must be interpolated in time to the correct
-       time location of the current integration point. */
-    config->Tick(&tick);
-    ADER_DG_TimeInterpolatePredictorSol(config, iTime);
-    config->Tock(tick,"ADER_DG_TimeInterpolatePredictorSol",3);
-
-    /* Compute the artificial viscosity for shock capturing in DG. */
-    config->Tick(&tick);
-    Shock_Capturing_DG(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
-    config->Tock(tick,"Shock_Capturing",3);
-
-    /*--- Compute the volume portion of the residual. ---*/
-    config->Tick(&tick);
-    Volume_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
-    config->Tock(tick,"Volume_Residual",3);
-
-    /*--- Compute source term residuals ---*/
-    config->Tick(&tick);
-    Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
-    config->Tock(tick,"Source_Residual",3);
-
-    /*--- Boundary conditions ---*/
-    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      switch (config->GetMarker_All_KindBC(iMarker)) {
-        case EULER_WALL:
-          config->Tick(&tick);
-          BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Euler_Wall",3);
-          break;
-        case FAR_FIELD:
-          config->Tick(&tick);
-          BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Far_Field",3);
-          break;
-        case SYMMETRY_PLANE:
-          config->Tick(&tick);
-          BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Sym_Plane",3);
-          break;
-        case INLET_FLOW:
-          config->Tick(&tick);
-          BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Inlet",3);
-          break;
-        case OUTLET_FLOW:
-          config->Tick(&tick);
-          BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Outlet",3);
-          break;
-        case ISOTHERMAL:
-          config->Tick(&tick);
-          BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Isothermal_Wall",3);
-          break;
-        case HEAT_FLUX:
-          config->Tick(&tick);
-          BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_HeatFlux_Wall",3);
-          break;
-        case CUSTOM_BOUNDARY:
-          config->Tick(&tick);
-          BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-          config->Tock(tick,"BC_Custom",3);
-          break;
-        case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
-          break;
-        default:
-          cout << "BC not implemented." << endl;
-#ifndef HAVE_MPI
-          exit(EXIT_FAILURE);
-#else
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#endif
-      }
-    }
-
-    /*--- Compute surface portion of the residual. ---*/
-    config->Tick(&tick);
-    Surface_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
-    config->Tock(tick,"Surface_Residual",3);
-
-    /*--- Accumulate the space time residual. ---*/
-    AccumulateSpaceTimeResidualADER(iTime, timeIntegrationWeights[iTime]);
-  }
-
-  /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
-  config->Tick(&tick);
-  MultiplyResidualByInverseMassMatrix(config, true);
-  config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
-
-  /*--- Perform the time integration ---*/
-  config->Tick(&tick);
-  ADER_DG_Iteration(geometry, solver_container, config, 0);
-  config->Tock(tick,"ADER_DG_Iteration",3);
-
-  /*--- Postprocessing ---*/
+  /* Postprocessing. */
   config->Tick(&tick);
   Postprocessing(geometry, solver_container, config, iMesh);
   config->Tock(tick,"Postprocessing",2);
 }
 
-void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) {
+void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
+
+  /* Determine the maximum values of the conservative variables of the
+     locally stored DOFs. Make a distinction between 2D and 3D for
+     performance reasons. */
+  su2double URef[] = {0.0, 0.0, 0.0, 0.0, 0.0};
+
+  switch( nDim ) {
+    case 2: {
+      for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+        const su2double *solDOF = VecSolDOFs.data() + i*nVar;
+        URef[0] = max(URef[0], fabs(solDOF[0]));
+        URef[1] = max(URef[1], fabs(solDOF[1]));
+        URef[2] = max(URef[2], fabs(solDOF[2]));
+        URef[3] = max(URef[3], fabs(solDOF[3]));
+      }
+      break;
+    }
+
+    case 3: {
+      for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+        const su2double *solDOF = VecSolDOFs.data() + i*nVar;
+        URef[0] = max(URef[0], fabs(solDOF[0]));
+        URef[1] = max(URef[1], fabs(solDOF[1]));
+        URef[2] = max(URef[2], fabs(solDOF[2]));
+        URef[3] = max(URef[3], fabs(solDOF[3]));
+        URef[4] = max(URef[3], fabs(solDOF[4]));
+      }
+      break;
+    }
+  }
+
+  /* Determine the maximum values on all ranks. */
+  TolSolADER.resize(nVar);
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(URef, TolSolADER.data(), nVar, MPI_DOUBLE, MPI_MAX,
+                     MPI_COMM_WORLD);
+#else
+  for(unsigned short i=0; i<nVar; ++i) TolSolADER[i] = URef[i];
+#endif
+
+  /* Determine the maximum scale of the momentum variables and adapt the
+     corresponding values of TolSolADER accordingly. */
+  su2double momRef = TolSolADER[1];
+  for(unsigned short i=2; i<=nDim; ++i) momRef = max(momRef, TolSolADER[i]);
+  for(unsigned short i=1; i<=nDim; ++i) TolSolADER[i] = momRef;
+
+  /* Currently the maximum values of the conserved variables are stored.
+     Multiply by the relative tolerance to obtain the true tolerance values. */
+  for(unsigned short i=0; i<nVar; ++i) TolSolADER[i] *= 1.e-6;
+}
+
+void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
+                                                const unsigned long elemBeg,
+                                                const unsigned long elemEnd) {
 
   /*----------------------------------------------------------------------*/
   /*---        Get the data of the ADER time integration scheme.       ---*/
@@ -2281,41 +3473,8 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
   const su2double     *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
   const bool          useAliasedPredictor     = config->GetKind_ADER_Predictor() == ADER_ALIASED_PREDICTOR;
 
-  /*----------------------------------------------------------------------*/
-  /*--- Determine the reference values for the conservative variables. ---*/
-  /*----------------------------------------------------------------------*/
-
-  /* Initialization to zero. */
-  su2double URef[] = {0.0, 0.0, 0.0, 0.0, 0.0};
-
-  /* Loop over the owned DOFs to determine the maximum values of the
-     conservative variables on this rank. */
-  for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
-    const su2double *solDOF = VecSolDOFs.data() + i*nVar;
-
-    for(unsigned short j=0; j<nVar; ++j) {
-      const su2double solAbs = fabs(solDOF[j]);
-      if(solAbs > URef[j]) URef[j] = solAbs;
-    }
-  }
-
-  /*--- Determine the maximum values on all ranks in case of a
-        parallel computation. */
-#ifdef HAVE_MPI
-  su2double URefLoc[5];
-  for(unsigned short i=0; i<nVar; ++i) URefLoc[i] = URef[i];
-
-  SU2_MPI::Allreduce(URefLoc, URef, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#endif
-
-  /*--- Determine the maximum scale of the momentum variables and adapt the
-        corresponding values of URef accordingly. ---*/
-  su2double momRef = URef[1];
-  for(unsigned short i=2; i<=nDim; ++i) momRef  = max(momRef, URef[i]);
-  for(unsigned short i=1; i<=nDim; ++i) URef[i] = momRef;
-
   /*--------------------------------------------------------------------------*/
-  /*--- Loop over the owned elements to compute the predictor solution.    ---*/
+  /*--- Loop over the given elemen range to compute the predictor solution.---*/
   /*--- For the predictor solution only an integration over the element is ---*/
   /*--- performed to obtain the weak formulation, i.e. no integration by   ---*/
   /*--- parts. As a consequence there is no surface term and also no       ---*/
@@ -2323,27 +3482,31 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
   /*--- the ADER scheme is only conditionally stable.                      ---*/
   /*--------------------------------------------------------------------------*/
 
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
 
-    /* Easier storage of the number of spatial DOFs. */
-    const unsigned short nDOFs = volElem[l].nDOFsSol;
+    /* Easier storage of the number of spatial DOFs, the total
+       number of variables for this element per time level and the
+       number of space time DOFs. */
+    const unsigned short nDOFs          = volElem[l].nDOFsSol;
+    const unsigned short nVarNDOFs      = nVar*nDOFs;
+    const unsigned short nDOFsNTimeDOFs = nDOFs*nTimeDOFs;
 
     /* Set the pointers for the working variables. */
     su2double *resInt = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     su2double *solPred = VecTmpMemory.data();
-    su2double *solOld  = solPred + nVar*nDOFs*nTimeDOFs;
-    su2double *resSol  = solOld  + nVar*nDOFs*nTimeDOFs;
-    su2double *resTot  = resSol  + nVar*nDOFs*nTimeDOFs;
-    su2double *solInt  = resTot  + nVar*nDOFs*nTimeDOFs;
-    su2double *work    = solInt  + nVar*nDOFs;
+    su2double *solOld  = solPred + nVarNDOFs*nTimeDOFs;
+    su2double *resSol  = solOld  + nVarNDOFs*nTimeDOFs;
+    su2double *resTot  = resSol  + nVarNDOFs*nTimeDOFs;
+    su2double *solInt  = resTot  + nVarNDOFs*nTimeDOFs;
+    su2double *work    = solInt  + nVarNDOFs;
 
     /* Initialize the predictor solution to the current solution. */
     const su2double    *solCur = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
-    const unsigned long nBytes = nVar*nDOFs*sizeof(su2double);
+    const unsigned long nBytes = nVarNDOFs*sizeof(su2double);
 
     for(unsigned short j=0; j<nTimeDOFs; ++j) {
-      su2double *solPredTimeInd = solPred + j*nVar*nDOFs;
+      su2double *solPredTimeInd = solPred + j*nVarNDOFs;
       memcpy(solPredTimeInd, solCur, nBytes);
     }
 
@@ -2361,14 +3524,14 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
     /* starts at 1, such that the initial value is not touched yet.        */
     for(unsigned short j=1; j<nTimeDOFs; ++j) {
 
-      su2double *resSolTimeInd = resSol + j*nVar*nDOFs;
-      for(unsigned short i=0; i<(nVar*nDOFs); ++i)
+      su2double *resSolTimeInd = resSol + j*nVarNDOFs;
+      for(unsigned short i=0; i<nVarNDOFs; ++i)
         resSolTimeInd[i] = resSol[i]*LagrangianBeginTimeIntervalADER_DG[j];
     }
 
     /* Multiply the values of resSol for the first time DOF with the */
     /* value of its corresponding Lagrangian interpolation function. */
-    for(unsigned short i=0; i<(nVar*nDOFs); ++i)
+    for(unsigned short i=0; i<nVarNDOFs; ++i)
       resSol[i] *= LagrangianBeginTimeIntervalADER_DG[0];
 
     /*-------------------------------------------------------------------------*/
@@ -2390,7 +3553,7 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
 
         /*--------------------------------------------------------------------*/
         /*--- Interpolate the predictor solution to the current time       ---*/
-        /*--- integration point. It is likely that this integration        ---*/
+        /*--- integration point. It is likely that this integration point  ---*/
         /*--- coincides with the location of one of the time DOFs. When    ---*/
         /*--- this is the case the interpolation boils down to a copy.     ---*/
         /*--------------------------------------------------------------------*/
@@ -2400,13 +3563,13 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
                                           + intPoint*nTimeDOFs;
 
         /* Initialize the interpolated solution to zero. */
-        for(unsigned short i=0; i<(nVar*nDOFs); ++i) solInt[i] = 0.0;
+        for(unsigned short i=0; i<nVarNDOFs; ++i) solInt[i] = 0.0;
 
         /* Carry out the actual interpolation. */
         for(unsigned short j=0; j<nTimeDOFs; ++j) {
 
-          const su2double *solPredTimeInd = solPred + j*nVar*nDOFs;
-          for(unsigned short i=0; i<(nVar*nDOFs); ++i)
+          const su2double *solPredTimeInd = solPred + j*nVarNDOFs;
+          for(unsigned short i=0; i<nVarNDOFs; ++i)
             solInt[i] += DOFToThisTimeInt[j]*solPredTimeInd[i];
         }
 
@@ -2414,13 +3577,29 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
         /*--- Compute the spatial residual of the predictor step for the   ---*/
         /*--- current time integration point. A distinction is             ---*/
         /*--- made between an aliased and a non-aliased evaluation of the  ---*/
-        /*--- predictor residual.                                          ---*/
+        /*--- predictor residual and between 2D and 3D. The latter is for  ---*/
+        /*--- performance reasons.                                         ---*/
         /*--------------------------------------------------------------------*/
 
-        if( useAliasedPredictor )
-          ADER_DG_AliasedPredictorResidual(config, &volElem[l], solInt, resInt, work);
-        else
-          ADER_DG_NonAliasedPredictorResidual(config, &volElem[l], solInt, resInt, work);
+        switch( nDim ) {
+          case 2: {
+            if( useAliasedPredictor )
+              ADER_DG_AliasedPredictorResidual_2D(config, &volElem[l], solInt, resInt, work);
+            else
+              ADER_DG_NonAliasedPredictorResidual_2D(config, &volElem[l], solInt, resInt, work);
+
+            break;
+          }
+
+          case 3: {
+            if( useAliasedPredictor )
+              ADER_DG_AliasedPredictorResidual_3D(config, &volElem[l], solInt, resInt, work);
+            else
+              ADER_DG_NonAliasedPredictorResidual_3D(config, &volElem[l], solInt, resInt, work);
+
+            break;
+          }
+        }
 
         /*--------------------------------------------------------------------*/
         /*--- Update the total residual with the residual of the current   ---*/
@@ -2437,38 +3616,85 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
                             * VecDeltaTime[l]*DOFToThisTimeInt[j];
 
           /* Update the residual of this time DOF. */
-          su2double *res = resTot + j*nVar*nDOFs;
-          for(unsigned short i=0; i<(nVar*nDOFs); ++i)
+          su2double *res = resTot + j*nVarNDOFs;
+          for(unsigned short i=0; i<nVarNDOFs; ++i)
             res[i] -= w*resInt[i];
         }
       }
 
       /* Solve for the new values of solPred, which are obtained by
          carrying out the matrix product iterMat X resTot. */
-      DenseMatrixProduct(nDOFs*nTimeDOFs, nVar, nDOFs*nTimeDOFs,
+      DenseMatrixProduct(nDOFsNTimeDOFs, nVar, nDOFsNTimeDOFs,
                          volElem[l].ADERIterationMatrix.data(),
                          resTot, solPred);
 
-      /* Compute the L2 norm of the updates. */
-      su2double L2[5];
-      for(unsigned short i=0; i<nVar; ++i) L2[i] = 0.0;
+      /*--- Determine whether or not the iteration process is considered
+            converged. Make a distinction between 2D and 3D for performance
+            reasons. ---*/
+      bool converged = true;
 
-      for(unsigned short j=0; j<(nDOFs*nTimeDOFs); ++j) {
-        for(unsigned short i=0; i<nVar; ++i) {
-          const unsigned short ind  = j*nVar + i;
-          const su2double      diff = solPred[ind] - solOld[ind];
-          L2[i] += diff*diff;
+      switch( nDim ) {
+        case 2: {
+          /* 2D simulation. Compute the L2 norm of the updates. */
+          su2double L2[] = {0.0, 0.0, 0.0, 0.0};
+
+          for(unsigned short j=0; j<nDOFsNTimeDOFs; ++j) {
+            const su2double *solP = solPred + j*nVar;
+            const su2double *solO = solOld  + j*nVar;
+
+            su2double diff;
+            diff = solP[0] - solO[0]; L2[0] += diff*diff;
+            diff = solP[1] - solO[1]; L2[1] += diff*diff;
+            diff = solP[2] - solO[2]; L2[2] += diff*diff;
+            diff = solP[3] - solO[3]; L2[3] += diff*diff;
+          }
+
+          L2[0] = sqrt(L2[0]/nDOFsNTimeDOFs);
+          L2[1] = sqrt(L2[1]/nDOFsNTimeDOFs);
+          L2[2] = sqrt(L2[2]/nDOFsNTimeDOFs);
+          L2[3] = sqrt(L2[3]/nDOFsNTimeDOFs);
+
+          if(L2[0] > TolSolADER[0]) converged = false;
+          if(L2[1] > TolSolADER[1]) converged = false;
+          if(L2[2] > TolSolADER[2]) converged = false;
+          if(L2[3] > TolSolADER[3]) converged = false;
+
+          break;
+        }
+
+        case 3: {
+          /* 3D simulation. Compute the L2 norm of the updates. */
+          su2double L2[] = {0.0, 0.0, 0.0, 0.0, 0.0};
+
+          for(unsigned short j=0; j<nDOFsNTimeDOFs; ++j) {
+            const su2double *solP = solPred + j*nVar;
+            const su2double *solO = solOld  + j*nVar;
+
+            su2double diff;
+            diff = solP[0] - solO[0]; L2[0] += diff*diff;
+            diff = solP[1] - solO[1]; L2[1] += diff*diff;
+            diff = solP[2] - solO[2]; L2[2] += diff*diff;
+            diff = solP[3] - solO[3]; L2[3] += diff*diff;
+            diff = solP[4] - solO[4]; L2[4] += diff*diff;
+          }
+
+          L2[0] = sqrt(L2[0]/nDOFsNTimeDOFs);
+          L2[1] = sqrt(L2[1]/nDOFsNTimeDOFs);
+          L2[2] = sqrt(L2[2]/nDOFsNTimeDOFs);
+          L2[3] = sqrt(L2[3]/nDOFsNTimeDOFs);
+          L2[4] = sqrt(L2[4]/nDOFsNTimeDOFs);
+
+          if(L2[0] > TolSolADER[0]) converged = false;
+          if(L2[1] > TolSolADER[1]) converged = false;
+          if(L2[2] > TolSolADER[2]) converged = false;
+          if(L2[3] > TolSolADER[3]) converged = false;
+          if(L2[4] > TolSolADER[4]) converged = false;
+
+          break;
         }
       }
 
-      for(unsigned short i=0; i<nVar; ++i) L2[i] = sqrt(L2[i]/(nDOFs*nTimeDOFs));
-
-      /* Check for convergence. */
-      bool converged = true;
-      for(unsigned short i=0; i<nVar; ++i) {
-        if(L2[i] > 1.e-6*URef[i]) converged = false;
-      }
-
+      /* Break the iteration loop if the solution is considered converged. */
       if( converged ) break;
     }
 
@@ -2476,19 +3702,19 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
        VecSolDOFsPredictorADER. */
     for(unsigned short j=0; j<nTimeDOFs; ++j) {
       su2double *solCur      = VecSolDOFsPredictorADER.data()
-                             + nVar*(j*nDOFsLocOwned + volElem[l].offsetDOFsSolLocal);
-      su2double *solPredTime = solPred + j*nVar*nDOFs;
+                             + nVar*(j*nDOFsLocTot + volElem[l].offsetDOFsSolLocal);
+      su2double *solPredTime = solPred + j*nVarNDOFs;
 
-      memcpy(solCur, solPredTime, nVar*nDOFs*sizeof(su2double));
+      memcpy(solCur, solPredTime, nBytes);
     }
   }
 }
 
-void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual(CConfig           *config,
-                                                           CVolumeElementFEM *elem,
-                                                           const su2double   *sol,
-                                                           su2double         *res,
-                                                           su2double         *work) {
+void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           *config,
+                                                              CVolumeElementFEM *elem,
+                                                              const su2double   *sol,
+                                                              su2double         *res,
+                                                              su2double         *work) {
 
   /*--- Get the necessary information from the standard element. ---*/
   const unsigned short ind                = elem->indStandardElement;
@@ -2503,56 +3729,46 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual(CConfig           *co
      same array can be used for the first and last array, because divFlux is
      needed after fluxesDOF. */
   su2double *fluxesDOF     = work;
-  su2double *gradFluxesInt = fluxesDOF + nDOFs*nVar*nDim;
+  su2double *gradFluxesInt = fluxesDOF + 8*nDOFs; /* nDOFs*nVar*nDim. */
   su2double *divFlux       = work;
 
-  /* Determine the offset between the r-derivatives and s-derivatives, which is
-     also the offset between s- and t-derivatives, of the fluxes. */
-  const unsigned short offDeriv = nVar*nInt*nDim;
+  /* Determine the offset between the r-derivatives and s-derivatives of
+     the fluxes. */
+  const unsigned short offDeriv = 8*nInt;  /* nVar*nInt*nDim. */
 
-  /* Store the number of metric points per integration point, which depends
-     on the number of dimensions. */
-  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+  /* Store the number of metric points per integration point for readability. */
+  const unsigned short nMetricPerPoint = 5;  /* nDim*nDim + 1. */
 
   /*-- Compute the Cartesian fluxes in the DOFs. ---*/
   for(unsigned short i=0; i<nDOFs; ++i) {
 
     /* Set the pointers to the location where the solution of this DOF is
        stored and the location where the Cartesian fluxes are stored. */
-    const su2double *solDOF = sol       + i*nVar;
-    su2double       *fluxes = fluxesDOF + i*nVar*nDim;
+    const su2double *solDOF = sol       + 4*i;    /* nVar*i */
+    su2double       *fluxes = fluxesDOF + 8*i;    /* nVar*nDim*i */
 
     /*--- Compute the velocities and pressure in this DOF. ---*/
-    const su2double DensityInv = 1.0/solDOF[0];
-    su2double vel[3], Velocity2 = 0.0;
-    for(unsigned short j=0; j<nDim; ++j) {
-      vel[j]     = solDOF[j+1]*DensityInv;
-      Velocity2 += vel[j]*vel[j];
-    }
-
-    const su2double TotalEnergy  = solDOF[nDim+1]*DensityInv;
-    const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+    const su2double DensityInv   = 1.0/solDOF[0];
+    const su2double u            = DensityInv*solDOF[1];
+    const su2double v            = DensityInv*solDOF[2];
+    const su2double StaticEnergy = DensityInv*solDOF[3] - 0.5*(u*u + v*v);
 
     FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
     const su2double Pressure = FluidModel->GetPressure();
 
-    /* Loop over the number of dimensions for the number of fluxes. */
-    unsigned short ll = 0;
-    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+    /*--- Compute the Cartesian fluxes in this DOF. First the fluxes in
+          x-direction are stored, followed by the fluxes in y-direction. ---*/
+    const su2double rH = solDOF[3] + Pressure;
 
-      /* Mass flux for the current direction. */
-      fluxes[ll++] = solDOF[iDim+1];
+    fluxes[0] = solDOF[1];
+    fluxes[1] = solDOF[1]*u + Pressure;
+    fluxes[2] = solDOF[1]*v;
+    fluxes[3] = rH*u;
 
-      /* Momentum fluxes for the current direction. */
-      for(unsigned short jDim=0; jDim<nDim; ++jDim)
-        fluxes[ll+jDim] = solDOF[iDim+1]*vel[jDim];
-      fluxes[ll+iDim]  += Pressure;
-
-      ll += nDim;
-
-      /* Energy flux for the current direction. */
-      fluxes[ll++] = (solDOF[nDim+1] + Pressure)*vel[iDim];
-    }
+    fluxes[4] = solDOF[2];
+    fluxes[5] = solDOF[2]*u;
+    fluxes[6] = solDOF[2]*v + Pressure;
+    fluxes[7] = rH*v;
   }
 
   /* Compute the derivatives of the Cartesian fluxes w.r.t. the parametric
@@ -2566,40 +3782,32 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual(CConfig           *co
 
     /* Easier storage of the location where the data of the derivatives of the
        fluxes of this integration point starts. */
-    const su2double *gradFluxes = gradFluxesInt + nVar*nDim*i;
+    const su2double *gradFluxesDr = gradFluxesInt + 8*i;       /* nVar*nDim*i. */
+    const su2double *gradFluxesDs = gradFluxesDr  + offDeriv;
 
-    /* Easier storage of the metric terms in this integration point. The +1
-       is present, because the first element of the metric terms is the
-       Jacobian in the integration point. Also set the point where the divergence
-       of the flux terms is stored for the current integration point. */
-    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint + 1;
-    su2double       *divFluxInt  = divFlux + nVar*i;
+    /* Easier storage of the metric terms in this integration point.
+       Also set the point where the divergence of the flux terms is
+       stored for the current integration point. */
+    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+    su2double       *divFluxInt  = divFlux + 4*i;  /* nVar*i. */
 
-    /* Initialize the divergence to zero. */
-    for(unsigned short j=0; j<nVar; ++j) divFluxInt[j] = 0.0;
+    /* Compute the metric terms multiplied by the integration weight. Note that the
+       first term in the metric terms is the Jacobian. */
+    const su2double wDrdx = weights[i]*metricTerms[1];
+    const su2double wDrdy = weights[i]*metricTerms[2];
 
-    /* Loop over the nDim parametric coordinates. */
-    unsigned short ll = 0;
-    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+    const su2double wDsdx = weights[i]*metricTerms[3];
+    const su2double wDsdy = weights[i]*metricTerms[4];
 
-      /* Set the pointer to derivatives of this parametric coordinate. */
-      const su2double *derFluxes = gradFluxes + iDim*offDeriv;
-
-      /* Loop over the number of Cartesian dimensions. */
-      for(unsigned short jDim=0; jDim<nDim; ++jDim, ++ll) {
-
-        /* Set the pointer to the derivatives of the Cartesian flux in
-           the jDim direction. */
-        const su2double *derFlux = derFluxes + jDim*nVar;
-
-        /* Update the divergence for all equations. */
-        for(unsigned short j=0; j<nVar; ++j)
-          divFluxInt[j] += derFlux[j]*metricTerms[ll];
-      }
-    }
-
-    /* Multiply the divergence with the integration weight. */
-    for(unsigned short j=0; j<nVar; ++j) divFluxInt[j] *= weights[i];
+    /* Compute the divergence of the fluxes, multiplied by the integration weight. */
+    divFluxInt[0] = gradFluxesDr[0]*wDrdx + gradFluxesDs[0]*wDsdx
+                  + gradFluxesDr[4]*wDrdy + gradFluxesDs[4]*wDsdy;
+    divFluxInt[1] = gradFluxesDr[1]*wDrdx + gradFluxesDs[1]*wDsdx
+                  + gradFluxesDr[5]*wDrdy + gradFluxesDs[5]*wDsdy;
+    divFluxInt[2] = gradFluxesDr[2]*wDrdx + gradFluxesDs[2]*wDsdx
+                  + gradFluxesDr[6]*wDrdy + gradFluxesDs[6]*wDsdy;
+    divFluxInt[3] = gradFluxesDr[3]*wDrdx + gradFluxesDs[3]*wDsdx
+                  + gradFluxesDr[7]*wDrdy + gradFluxesDs[7]*wDsdy;
   }
 
   /* Compute the residual in the DOFs, which is the matrix product of
@@ -2607,11 +3815,245 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual(CConfig           *co
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
 }
 
-void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *config,
+void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           *config,
                                                               CVolumeElementFEM *elem,
                                                               const su2double   *sol,
                                                               su2double         *res,
                                                               su2double         *work) {
+
+  /*--- Get the necessary information from the standard element. ---*/
+  const unsigned short ind                = elem->indStandardElement;
+  const unsigned short nInt               = standardElementsSol[ind].GetNIntegration();
+  const unsigned short nDOFs              = elem->nDOFsSol;
+  const su2double *matBasisInt            = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+  const su2double *matDerBasisInt         = matBasisInt + nDOFs*nInt;
+  const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
+  const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
+
+  /* Set the pointers for fluxesDOF, gradFluxesInt and divFlux. Note that the
+     same array can be used for the first and last array, because divFlux is
+     needed after fluxesDOF. */
+  su2double *fluxesDOF     = work;
+  su2double *gradFluxesInt = fluxesDOF + 15*nDOFs; /* nDOFs*nVar*nDim. */
+  su2double *divFlux       = work;
+
+  /* Determine the offset between the r-derivatives and s-derivatives, which is
+     also the offset between s- and t-derivatives, of the fluxes. */
+  const unsigned short offDeriv = 15*nInt; /* nVar*nInt*nDim. */
+
+  /* Store the number of metric points per integration point for readability. */
+  const unsigned short nMetricPerPoint = 10;  /* nDim*nDim + 1. */
+
+  /*-- Compute the Cartesian fluxes in the DOFs. ---*/
+  for(unsigned short i=0; i<nDOFs; ++i) {
+
+    /* Set the pointers to the location where the solution of this DOF is
+       stored and the location where the Cartesian fluxes are stored. */
+    const su2double *solDOF = sol       +  5*i;  /* i*nVar. */
+    su2double       *fluxes = fluxesDOF + 15*i;  /* i*nVar*nDim. */
+
+    /*--- Compute the velocities and pressure in this DOF. ---*/
+    const su2double DensityInv   = 1.0/solDOF[0];
+    const su2double u            = DensityInv*solDOF[1];
+    const su2double v            = DensityInv*solDOF[2];
+    const su2double w            = DensityInv*solDOF[3];
+    const su2double StaticEnergy = DensityInv*solDOF[4] - 0.5*(u*u + v*v + w*w);
+
+    FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+    const su2double Pressure = FluidModel->GetPressure();
+
+    /*--- Compute the Cartesian fluxes in this DOF. First the fluxes in
+          x-direction are stored, followed by the fluxes in y-direction
+          and the fluxes in z-direction. ---*/
+    const su2double rH = solDOF[4] + Pressure;
+
+    fluxes[0] = solDOF[1];
+    fluxes[1] = solDOF[1]*u + Pressure;
+    fluxes[2] = solDOF[1]*v;
+    fluxes[3] = solDOF[1]*w;
+    fluxes[4] = rH*u;
+
+    fluxes[5] = solDOF[2];
+    fluxes[6] = solDOF[2]*u;
+    fluxes[7] = solDOF[2]*v + Pressure;
+    fluxes[8] = solDOF[2]*w;
+    fluxes[9] = rH*v;
+
+    fluxes[10] = solDOF[3];
+    fluxes[11] = solDOF[3]*u;
+    fluxes[12] = solDOF[3]*v;
+    fluxes[13] = solDOF[3]*w + Pressure;
+    fluxes[14] = rH*w;
+  }
+
+  /* Compute the derivatives of the Cartesian fluxes w.r.t. the parametric
+     coordinates in the integration points. */
+  DenseMatrixProduct(nInt*nDim, nVar*nDim, nDOFs, matDerBasisInt, fluxesDOF,
+                     gradFluxesInt);
+
+  /*--- Loop over the integration points to compute the divergence of the inviscid
+        fluxes in these integration points, multiplied by the integration weight. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the location where the data of the derivatives of the
+       fluxes of this integration point starts. */
+    const su2double *gradFluxesDr = gradFluxesInt + 15*i;       /* nVar*nDim*i. */
+    const su2double *gradFluxesDs = gradFluxesDr  + offDeriv;
+    const su2double *gradFluxesDt = gradFluxesDs  + offDeriv;
+
+    /* Easier storage of the metric terms in this integration point.
+       Also set the point where the divergence of the flux terms is
+       stored for the current integration point. */
+    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+    su2double       *divFluxInt  = divFlux + 5*i;  /* nVar*i. */
+
+    /* Compute the metric terms multiplied by the integration weight. Note that the
+       first term in the metric terms is the Jacobian. */
+    const su2double wDrdx = weights[i]*metricTerms[1];
+    const su2double wDrdy = weights[i]*metricTerms[2];
+    const su2double wDrdz = weights[i]*metricTerms[3];
+
+    const su2double wDsdx = weights[i]*metricTerms[4];
+    const su2double wDsdy = weights[i]*metricTerms[5];
+    const su2double wDsdz = weights[i]*metricTerms[6];
+
+    const su2double wDtdx = weights[i]*metricTerms[7];
+    const su2double wDtdy = weights[i]*metricTerms[8];
+    const su2double wDtdz = weights[i]*metricTerms[9];
+
+    /* Compute the divergence of the fluxes, multiplied by the integration weight. */
+    divFluxInt[0] = gradFluxesDr[0] *wDrdx + gradFluxesDs[0] *wDsdx + gradFluxesDt[0] *wDtdx
+                  + gradFluxesDr[5] *wDrdy + gradFluxesDs[5] *wDsdy + gradFluxesDt[5] *wDtdy
+                  + gradFluxesDr[10]*wDrdz + gradFluxesDs[10]*wDsdz + gradFluxesDt[10]*wDtdz;
+    divFluxInt[1] = gradFluxesDr[1] *wDrdx + gradFluxesDs[1] *wDsdx + gradFluxesDt[1] *wDtdx
+                  + gradFluxesDr[6] *wDrdy + gradFluxesDs[6] *wDsdy + gradFluxesDt[6] *wDtdy
+                  + gradFluxesDr[11]*wDrdz + gradFluxesDs[11]*wDsdz + gradFluxesDt[11]*wDtdz;
+    divFluxInt[2] = gradFluxesDr[2] *wDrdx + gradFluxesDs[2] *wDsdx + gradFluxesDt[2] *wDtdx
+                  + gradFluxesDr[7] *wDrdy + gradFluxesDs[7] *wDsdy + gradFluxesDt[7] *wDtdy
+                  + gradFluxesDr[12]*wDrdz + gradFluxesDs[12]*wDsdz + gradFluxesDt[12]*wDtdz;
+    divFluxInt[3] = gradFluxesDr[3] *wDrdx + gradFluxesDs[3] *wDsdx + gradFluxesDt[3] *wDtdx
+                  + gradFluxesDr[8] *wDrdy + gradFluxesDs[8] *wDsdy + gradFluxesDt[8] *wDtdy
+                  + gradFluxesDr[13]*wDrdz + gradFluxesDs[13]*wDsdz + gradFluxesDt[13]*wDtdz;
+    divFluxInt[4] = gradFluxesDr[4] *wDrdx + gradFluxesDs[4] *wDsdx + gradFluxesDt[4] *wDtdx
+                  + gradFluxesDr[9] *wDrdy + gradFluxesDs[9] *wDsdy + gradFluxesDt[9] *wDtdy
+                  + gradFluxesDr[14]*wDrdz + gradFluxesDs[14]*wDsdz + gradFluxesDt[14]*wDtdz;
+  }
+
+  /* Compute the residual in the DOFs, which is the matrix product of
+     basisFunctionsIntTrans and divFlux. */
+  DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
+}
+
+void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           *config,
+                                                                 CVolumeElementFEM *elem,
+                                                                 const su2double   *sol,
+                                                                 su2double         *res,
+                                                                 su2double         *work) {
+
+  /* Set the pointers for solAndGradInt and divFlux to work. The same array
+     can be used for both help arrays. */
+  su2double *solAndGradInt = work;
+  su2double *divFlux       = work;
+
+  /*--- Get the necessary information from the standard element. ---*/
+  const unsigned short ind                = elem->indStandardElement;
+  const unsigned short nInt               = standardElementsSol[ind].GetNIntegration();
+  const unsigned short nDOFs              = elem->nDOFsSol;
+  const su2double *matBasisInt            = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+  const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
+  const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
+
+  /* Determine the offset between the solution variables and the r-derivatives,
+     which is also the offset between the r- and s-derivatives. */
+  const unsigned short offDeriv = 4*nInt;  /* nVar*nInt. */
+
+  /* Store the number of metric points per integration point for readability. */
+  const unsigned short nMetricPerPoint = 5;  /* nDim*nDim + 1. */
+
+  /* Compute the solution and the derivatives w.r.t. the parametric coordinates
+     in the integration points. The first argument is nInt*(nDim+1). */
+  DenseMatrixProduct(nInt*3, nVar, nDOFs, matBasisInt, sol, solAndGradInt);
+
+  /*--- Loop over the integration points to compute the divergence of the inviscid
+        fluxes in these integration points, multiplied by the integration weight. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the location where the solution and gradient data
+       of this integration point starts. */
+    const su2double *sol   = solAndGradInt + 4*i; /* nVar*i. */
+    const su2double *solDr = sol   + offDeriv;
+    const su2double *solDs = solDr + offDeriv;
+
+    /*--- Compute the velocities, pressure and total enthalpy
+          in this integration point. ---*/
+    const su2double DensityInv   = 1.0/sol[0];
+    const su2double u            = DensityInv*sol[1];
+    const su2double v            = DensityInv*sol[2];
+    const su2double kinEnergy    = 0.5*(u*u + v*v);
+    const su2double StaticEnergy = DensityInv*sol[3] - kinEnergy;
+
+    FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+    const su2double Pressure = FluidModel->GetPressure();
+    const su2double Htot     = DensityInv*(sol[3] + Pressure);
+
+    /* Easier storage of the metric terms. Note that the first term is the Jacobian. */
+    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+
+    const su2double drdx = metricTerms[1];
+    const su2double drdy = metricTerms[2];
+    const su2double dsdx = metricTerms[3];
+    const su2double dsdy = metricTerms[4];
+
+    /*--- Compute the Cartesian gradients of the independent solution
+          variables from the gradients in parametric coordinates and the
+          metric terms in this integration point. Note that these gradients
+          must be scaled with the Jacobian. This scaling is already present
+          in the metric terms. ---*/
+    su2double solGradCart[4][2];
+
+    solGradCart[0][0] = solDr[0]*drdx + solDs[0]*dsdx;
+    solGradCart[1][0] = solDr[1]*drdx + solDs[1]*dsdx;
+    solGradCart[2][0] = solDr[2]*drdx + solDs[2]*dsdx;
+    solGradCart[3][0] = solDr[3]*drdx + solDs[3]*dsdx;
+
+    solGradCart[0][1] = solDr[0]*drdy + solDs[0]*dsdy;
+    solGradCart[1][1] = solDr[1]*drdy + solDs[1]*dsdy;
+    solGradCart[2][1] = solDr[2]*drdy + solDs[2]*dsdy;
+    solGradCart[3][1] = solDr[3]*drdy + solDs[3]*dsdy;
+
+    /*--- Compute the Cartesian gradients of the pressure, scaled with
+          the Jacobian. ---*/
+    const su2double dpdx = Gamma_Minus_One*(solGradCart[3][0] + kinEnergy*solGradCart[0][0]
+                         -                  u*solGradCart[1][0] - v*solGradCart[2][0]);
+    const su2double dpdy = Gamma_Minus_One*(solGradCart[3][1] + kinEnergy*solGradCart[0][1]
+                         -                  u*solGradCart[1][1] - v*solGradCart[2][1]);
+
+    /*--- Abbreviations, which make it easier to compute the divergence term. ---*/
+    const su2double abv1 =    solGradCart[1][0] +   solGradCart[2][1];
+    const su2double abv2 = u* solGradCart[0][0] + v*solGradCart[0][1];
+    const su2double abv3 = u*(solGradCart[3][0] + dpdx)
+                         + v*(solGradCart[3][1] + dpdy);
+
+    /*--- Set the pointer to store the divergence terms for this integration point.
+          and compute these terms, multiplied by the integration weight. ---*/
+    su2double *divFluxInt = divFlux + 4*i;  /* nVar*i. */
+
+    divFluxInt[0] = weights[i]* abv1;
+    divFluxInt[1] = weights[i]*(dpdx + u*(abv1 - abv2 + solGradCart[1][0]) + v*solGradCart[1][1]);
+    divFluxInt[2] = weights[i]*(dpdy + v*(abv1 - abv2 + solGradCart[2][1]) + u*solGradCart[2][0]);
+    divFluxInt[3] = weights[i]*(abv3 + Htot*(abv1 - abv2));
+  }
+
+  /* Compute the residual in the DOFs, which is the matrix product of
+     basisFunctionsIntTrans and divFlux. */
+  DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
+}
+
+void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           *config,
+                                                                 CVolumeElementFEM *elem,
+                                                                 const su2double   *sol,
+                                                                 su2double         *res,
+                                                                 su2double         *work) {
 
   /* Set the pointers for solAndGradInt and divFlux to work. The same array
      can be used for both help arrays. */
@@ -2629,44 +4071,53 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           
   /* Determine the offset between the solution variables and the r-derivatives,
      which is also the offset between the r- and s-derivatives and the offset
      between s- and t-derivatives. */
-  const unsigned short offDeriv = nVar*nInt;
+  const unsigned short offDeriv = 5*nInt; /* nVar*nInt. */
 
-  /* Store the number of metric points per integration point, which depends
-     on the number of dimensions. */
-  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+  /* Store the number of metric points per integration point for readability. */
+  const unsigned short nMetricPerPoint = 10;  /* nDim*nDim + 1. */
 
   /* Compute the solution and the derivatives w.r.t. the parametric coordinates
-     in the integration points. */
-  DenseMatrixProduct(nInt*(nDim+1), nVar, nDOFs, matBasisInt, sol, solAndGradInt);
+     in the integration points. The first argument is nInt*(nDim+1). */
+  DenseMatrixProduct(nInt*4, nVar, nDOFs, matBasisInt, sol, solAndGradInt);
 
   /*--- Loop over the integration points to compute the divergence of the inviscid
         fluxes in these integration points, multiplied by the integration weight. ---*/
   for(unsigned short i=0; i<nInt; ++i) {
 
-    /* Easier storage of the location where the solution data of this
-       integration point starts. */
-    const su2double *sol = solAndGradInt + nVar*i;
+    /* Easier storage of the location where the solution and gradient data
+       of this integration point starts. */
+    const su2double *sol   = solAndGradInt + 5*i; /* nVar*i. */
+    const su2double *solDr = sol   + offDeriv;
+    const su2double *solDs = solDr + offDeriv;
+    const su2double *solDt = solDs + offDeriv;
 
-    /*--- Compute the velocities and static energy in this integration point. ---*/
-    const su2double DensityInv = 1.0/sol[0];
-    su2double vel[3], Velocity2 = 0.0;
-    for(unsigned short j=0; j<nDim; ++j) {
-      vel[j]     = sol[j+1]*DensityInv;
-      Velocity2 += vel[j]*vel[j];
-    }
+    /*--- Compute the velocities, pressure and total enthalpy
+          in this integration point. ---*/
+    const su2double DensityInv   = 1.0/sol[0];
+    const su2double u            = DensityInv*sol[1];
+    const su2double v            = DensityInv*sol[2];
+    const su2double w            = DensityInv*sol[3];
+    const su2double kinEnergy    = 0.5*(u*u + v*v + w*w);
+    const su2double StaticEnergy = DensityInv*sol[4] - kinEnergy;
 
-    const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
-    const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
-
-    /*--- Compute the pressure and the total enthalpy. ---*/
     FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
     const su2double Pressure = FluidModel->GetPressure();
-    const su2double Htot     = (sol[nDim+1]+Pressure)*DensityInv;
+    const su2double Htot     = DensityInv*(sol[4] + Pressure);
 
-    /* Easier storage of the metric terms in this integration point. The +1
-       is present, because the first element of the metric terms is the
-       Jacobian in the integration point. */
-    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint + 1;
+    /* Easier storage of the metric terms. Note that the first term is the Jacobian. */
+    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+
+    const su2double drdx = metricTerms[1];
+    const su2double drdy = metricTerms[2];
+    const su2double drdz = metricTerms[3];
+
+    const su2double dsdx = metricTerms[4];
+    const su2double dsdy = metricTerms[5];
+    const su2double dsdz = metricTerms[6];
+
+    const su2double dtdx = metricTerms[7];
+    const su2double dtdy = metricTerms[8];
+    const su2double dtdz = metricTerms[9];
 
     /*--- Compute the Cartesian gradients of the independent solution
           variables from the gradients in parametric coordinates and the
@@ -2674,46 +4125,58 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           
           must be scaled with the Jacobian. This scaling is already present
           in the metric terms. ---*/
     su2double solGradCart[5][3];
-    for(unsigned short k=0; k<nDim; ++k) {
-      for(unsigned short j=0; j<nVar; ++j) {
-        solGradCart[j][k] = 0.0;
-        for(unsigned short l=0; l<nDim; ++l)
-          solGradCart[j][k] += sol[j+(l+1)*offDeriv]*metricTerms[k+l*nDim];
-      }
-    }
 
-    /*--- Compute the Cartesian gradients of the pressure, scaled with
+    solGradCart[0][0] = solDr[0]*drdx + solDs[0]*dsdx + solDt[0]*dtdx;
+    solGradCart[1][0] = solDr[1]*drdx + solDs[1]*dsdx + solDt[1]*dtdx;
+    solGradCart[2][0] = solDr[2]*drdx + solDs[2]*dsdx + solDt[2]*dtdx;
+    solGradCart[3][0] = solDr[3]*drdx + solDs[3]*dsdx + solDt[3]*dtdx;
+    solGradCart[4][0] = solDr[4]*drdx + solDs[4]*dsdx + solDt[4]*dtdx;
+
+    solGradCart[0][1] = solDr[0]*drdy + solDs[0]*dsdy + solDs[0]*dtdy;
+    solGradCart[1][1] = solDr[1]*drdy + solDs[1]*dsdy + solDs[1]*dtdy;
+    solGradCart[2][1] = solDr[2]*drdy + solDs[2]*dsdy + solDs[2]*dtdy;
+    solGradCart[3][1] = solDr[3]*drdy + solDs[3]*dsdy + solDs[3]*dtdy;
+    solGradCart[4][1] = solDr[4]*drdy + solDs[4]*dsdy + solDs[4]*dtdy;
+
+    solGradCart[0][2] = solDr[0]*drdz + solDs[0]*dsdz + solDs[0]*dtdz;
+    solGradCart[1][2] = solDr[1]*drdz + solDs[1]*dsdz + solDs[1]*dtdz;
+    solGradCart[2][2] = solDr[2]*drdz + solDs[2]*dsdz + solDs[2]*dtdz;
+    solGradCart[3][2] = solDr[3]*drdz + solDs[3]*dsdz + solDs[3]*dtdz;
+    solGradCart[4][2] = solDr[4]*drdz + solDs[4]*dsdz + solDs[4]*dtdz;
+
+     /*--- Compute the Cartesian gradients of the pressure, scaled with
           the Jacobian. ---*/
-    su2double pGradCart[] = {0.0, 0.0, 0.0};
-    for(unsigned short k=0; k<nDim; ++k) {
-      pGradCart[k] = solGradCart[nVar-1][k] + 0.5*Velocity2*solGradCart[0][k];
-      for(unsigned short l=0; l<nDim; ++l)
-        pGradCart[k] -= vel[l]*solGradCart[l+1][k];
-      pGradCart[k] *= Gamma_Minus_One;
-    }
+    su2double pGradCart[3];
+
+    pGradCart[0] = Gamma_Minus_One*(solGradCart[4][0] + kinEnergy*solGradCart[0][0]
+                 -                u*solGradCart[1][0] - v*solGradCart[2][0]
+                 -                w*solGradCart[3][0]);
+    pGradCart[1] = Gamma_Minus_One*(solGradCart[4][1] + kinEnergy*solGradCart[0][1]
+                 -                u*solGradCart[1][1] - v*solGradCart[2][1]
+                 -                w*solGradCart[3][1]);
+    pGradCart[2] = Gamma_Minus_One*(solGradCart[4][2] + kinEnergy*solGradCart[0][2]
+                 -                u*solGradCart[1][2] - v*solGradCart[2][2]
+                 -                w*solGradCart[3][2]);
 
     /*--- Abbreviations, which make it easier to compute the divergence term. ---*/
-    su2double abv1 = 0.0, abv2 = 0.0, abv3 = 0.0;
-    for(unsigned short k=0; k<nDim; ++k) {
-      abv1 += solGradCart[k+1][k];
-      abv2 += vel[k]*solGradCart[0][k];
-      abv3 += vel[k]*(solGradCart[nVar-1][k] + pGradCart[k]);
-    }
+    const su2double abv1 =    solGradCart[1][0] +   solGradCart[2][1] +   solGradCart[3][2];
+    const su2double abv2 = u* solGradCart[0][0] + v*solGradCart[0][1] + w*solGradCart[0][2];
+    const su2double abv3 = u*(solGradCart[4][0] +   pGradCart[0])
+                         + v*(solGradCart[4][1] +   pGradCart[1])
+                         + w*(solGradCart[4][2] +   pGradCart[2]);
 
     /*--- Set the pointer to store the divergence terms for this integration point.
           and compute these terms, multiplied by the integration weight. ---*/
-    su2double *divFluxInt = divFlux + nVar*i;
+    su2double *divFluxInt = divFlux + 5*i;  /* nVar*i. */
 
-    divFluxInt[0]      = weights[i]*abv1;
-    divFluxInt[nVar-1] = weights[i]*(abv3 + Htot*(abv1 - abv2));
-
-    for(unsigned short k=0; k<nDim; ++k) {
-      divFluxInt[k+1] = pGradCart[k] + vel[k]*(abv1 - abv2);
-      for(unsigned short l=0; l<nDim; ++l)
-        divFluxInt[k+1] += vel[l]*solGradCart[k+1][l];
-
-      divFluxInt[k+1] *= weights[i];
-    }
+    divFluxInt[0] = weights[i] *abv1;
+    divFluxInt[1] = weights[i]*(pGradCart[0] + u*(abv1 - abv2 + solGradCart[1][0])
+                  +             v*solGradCart[1][1] + w*solGradCart[1][2]);
+    divFluxInt[2] = weights[i]*(pGradCart[1] + v*(abv1 - abv2 + solGradCart[2][1])
+                  +             u*solGradCart[2][0] + w*solGradCart[2][2]);
+    divFluxInt[3] = weights[i]*(pGradCart[2] + w*(abv1 - abv2 + solGradCart[3][2])
+                  +             u*solGradCart[3][0] + v*solGradCart[3][1]);
+    divFluxInt[4] = weights[i]*(abv3 + Htot*(abv1 - abv2));
   }
 
   /* Compute the residual in the DOFs, which is the matrix product of
@@ -2721,31 +4184,98 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
 }
 
-void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *config,
-                                                              unsigned short iTime) {
+void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig             *config,
+                                                              const unsigned short iTime,
+                                                              const unsigned long  elemBeg,
+                                                              const unsigned long  elemEnd,
+                                                              const unsigned long  nAdjElem,
+                                                              const unsigned long  *adjElem,
+                                                              const bool           secondPartTimeInt,
+                                                              su2double            *solTimeLevel) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Interpolate the solution to the given integration point    ---*/
+  /*---         for the element range elemBeg to elemEnd. These elements   ---*/
+  /*---         belong to the time level considered (not needed to know    ---*/
+  /*---         the actual value in this function) and are therefore       ---*/
+  /*---         continuous in memory.                                      ---*/
+  /*--------------------------------------------------------------------------*/
 
   /* Easier storage of the interpolation coefficients for the current time
-     integration point (iTime).       */
+     integration point (iTime) for the elements of this time interval. */
   const unsigned short nTimeDOFs    = config->GetnTimeDOFsADER_DG();
   const su2double *DOFToThisTimeInt = timeInterpolDOFToIntegrationADER_DG
                                     + iTime*nTimeDOFs;
 
-  /* Initialize the solution of the owned DOFs to zero. */
-  for(unsigned long i=0; i<(nVar*nDOFsLocOwned); ++i)
-     VecSolDOFs[i] = 0.0;
+  /* Loop over the element range of this time level. */
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
 
-  /* Loop over the time DOFs, for which the predictor solution is present. */
-  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+    /* Determine the number of solution variables for this element and
+       set the pointer where the solution variables for this element must be
+       stored in solTimeLevel. */
+    const unsigned short nSolVar = nVar*volElem[l].nDOFsSol;
+    su2double           *solDOFs = solTimeLevel + nVar*volElem[l].offsetDOFsSolThisTimeLevel;
 
-    /* Add the contribution of this predictor solution to the interpolated solution. */
-    const su2double *solPred = VecSolDOFsPredictorADER.data() + j*nVar*nDOFsLocOwned;
-    for(unsigned long i=0; i<(nVar*nDOFsLocOwned); ++i)
-       VecSolDOFs[i] += DOFToThisTimeInt[j]*solPred[i];
+    /* Initialize the solution to zero. */
+    for(unsigned short i=0; i<nSolVar; ++i) solDOFs[i] = 0.0;
+
+    /* Loop over the time DOFs, for which the predictor solution is present. */
+    for(unsigned short j=0; j<nTimeDOFs; ++j) {
+
+      /* Add the contribution of this predictor solution to the interpolated solution. */
+      const su2double *solPred = VecSolDOFsPredictorADER.data()
+                               + nVar*(j*nDOFsLocTot + volElem[l].offsetDOFsSolLocal);
+      for(unsigned short i=0; i<nSolVar; ++i)
+        solDOFs[i] += DOFToThisTimeInt[j]*solPred[i];
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Interpolate the solution to the given integration point    ---*/
+  /*---         for the elements of the next time level, which are         ---*/
+  /*---         adjacent to elements of the current time level. Note that  ---*/
+  /*---         these elements are not contiguous in memory.               ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* For the faces with adjacent elements of a higher time level, the time
+     integration takes place with twice the number of time integration points
+     from the perspective of the higher time level. Hence the integration points
+     iTime must be corrected if the state to be interpolated corresponds to the
+     second part of the time integration interval. Perform this correction and
+     determine the corresponding interpolation coefficients. */
+  unsigned short iiTime = iTime;
+  if( secondPartTimeInt ) iiTime += config->GetnTimeIntegrationADER_DG();
+
+  DOFToThisTimeInt = timeInterpolAdjDOFToIntegrationADER_DG + iiTime*nTimeDOFs;
+
+  /* Loop over the adjacent elements. */
+  for(unsigned long l=0; l<nAdjElem; ++l) {
+    const unsigned long ll = adjElem[l];
+
+    /* Determine the number of solution variables for this element and
+       set the pointer where the solution variables for this element must be
+       stored in solTimeLevel. */
+    const unsigned short nSolVar = nVar*volElem[ll].nDOFsSol;
+    su2double           *solDOFs = solTimeLevel + nVar*volElem[ll].offsetDOFsSolPrevTimeLevel;
+
+    /* Initialize the solution to zero. */
+    for(unsigned short i=0; i<nSolVar; ++i) solDOFs[i] = 0.0;
+
+    /* Loop over the time DOFs, for which the predictor solution is present. */
+    for(unsigned short j=0; j<nTimeDOFs; ++j) {
+
+      /* Add the contribution of this predictor solution to the interpolated solution. */
+      const su2double *solPred = VecSolDOFsPredictorADER.data()
+                               + nVar*(j*nDOFsLocTot + volElem[ll].offsetDOFsSolLocal);
+      for(unsigned short i=0; i<nSolVar; ++i)
+        solDOFs[i] += DOFToThisTimeInt[j]*solPred[i];
+    }
   }
 }
 
-void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
+                                             const unsigned long elemBeg,
+                                             const unsigned long elemEnd) {
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
@@ -2754,30 +4284,34 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
   }
 }
 
-void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
+                                          const unsigned long elemBeg,
+                                          const unsigned long elemEnd) {
 
-  /* Start the MPI communication of the solution in the halo elements. */
-  Initiate_MPI_Communication();
+  /*--- Determine whether body force term is present in configuration. ---*/
+  bool body_force = config->GetBody_Force();
+  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
 
   /*--- Set the pointers for the local arrays. ---*/
-  su2double *solInt = VecTmpMemory.data();
-  su2double *fluxes = solInt + nIntegrationMax*nVar;
-  su2double tick = 0.0;
+  su2double *sources = VecTmpMemory.data();
+  su2double *solInt  = sources + nIntegrationMax*nVar;
+  su2double *fluxes  = solInt  + nIntegrationMax*nVar;
+  double tick = 0.0;
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
-  const unsigned short nMetricPerPoint = ctc::nDim*ctc::nDim + 1;
+  const unsigned short nMetricPerPoint = nDim*nDim + 1;
 
-  /*--- Loop over the owned volume elements to compute the contribution of the
-        volume integral in the DG FEM formulation to the residual.       ---*/
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+  /*--- Loop over the given element range to compute the contribution of the
+        volume integral in the DG FEM formulation to the residual.  ---*/
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
 
     /* Get the data from the corresponding standard element. */
     const unsigned short ind             = volElem[l].indStandardElement;
     const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
     const unsigned short nDOFs           = volElem[l].nDOFsSol;
     const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+    const su2double *matBasisIntTrans    = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
     const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
     const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
 
@@ -2787,7 +4321,9 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     /*------------------------------------------------------------------------*/
 
     /* Easier storage of the solution variables for this element. */
-    su2double *solDOFs = VecSolDOFs.data() + ctc::nVar*volElem[l].offsetDOFsSolLocal;
+    const unsigned short timeLevel = volElem[l].timeLevel;
+    const su2double *solDOFs = VecWorkSolDOFs[timeLevel].data()
+                             + nVar*volElem[l].offsetDOFsSolThisTimeLevel;
 
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
@@ -2797,11 +4333,12 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
     /*---         integration weight, in the integration points.           ---*/
+    /*---         If needed, also the source terms are computed.           ---*/
     /*------------------------------------------------------------------------*/
 
     /* Make a distinction between two and three space dimensions
         in order to have the most efficient code. */
-    switch( ctc::nDim ) {
+    switch( nDim ) {
 
       case 2: {
 
@@ -2809,10 +4346,10 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
            the fluxes. */
         for(unsigned short i=0; i<nInt; ++i) {
 
-          /* Easier storage of the metric terms in this integration point and
-             compute the inverse of the Jacobian. */
+          /* Easier storage of the metric terms in this integration point. */
           const su2double *metricTerms = volElem[l].metricTerms.data()
                                        + i*nMetricPerPoint;
+          const su2double Jac          = metricTerms[0];
 
           /* Compute the metric terms multiplied by minus the integration weight.
              The minus sign comes from the integration by parts in the weak
@@ -2825,7 +4362,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
 
           /* Easier storage of the location where the solution data of this
              integration point starts. */
-          const su2double *sol = solInt + ctc::nVar*i;
+          const su2double *sol = solInt + nVar*i;
 
           /*--- Compute the velocities and static energy in this integration point. ---*/
           const su2double rhoInv       = 1.0/sol[0];
@@ -2839,7 +4376,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
           const su2double Pressure = FluidModel->GetPressure();
 
           /* Set the pointer for the fluxes in this integration point. */
-          su2double *flux = fluxes + i*ctc::nDim*ctc::nVar;
+          su2double *flux = fluxes + i*nDim*nVar;
 
           /*--- Fluxes in r-direction. */
           const su2double H     = TotalEnergy + rhoInv*Pressure;
@@ -2857,6 +4394,20 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
           flux[5] = rhoUs*u + Pressure*wDsdx;
           flux[6] = rhoUs*v + Pressure*wDsdy;
           flux[7] = rhoUs*H;
+
+          /*--- If needed, compute the body forces in this integration point.
+                Note that the source terms are multiplied with minus the
+                integration weight in order to be consistent with the
+                formulation of the residual. ---*/
+          if( body_force ) {
+            su2double *source         = sources + i*nVar;
+            const su2double weightJac = weights[i]*Jac;
+
+            source[0] =  0.0;
+            source[1] = -weightJac*body_force_vector[0];
+            source[2] = -weightJac*body_force_vector[1];
+            source[3] = -weightJac*(u*body_force_vector[0] + v*body_force_vector[1]);
+          }
         }
 
         break;
@@ -2871,10 +4422,10 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
 //#pragma simd
         for(unsigned short i=0; i<nInt; ++i) {
 
-          /* Easier storage of the metric terms in this integration point and
-             compute the inverse of the Jacobian. */
+          /* Easier storage of the metric terms in this integration point. */
           const su2double *metricTerms = volElem[l].metricTerms.data()
                                        + i*nMetricPerPoint;
+          const su2double Jac          = metricTerms[0];
 
           /* Compute the metric terms multiplied by minus the integration weight.
              The minus sign comes from the integration by parts in the weak
@@ -2893,7 +4444,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
 
           /* Easier storage of the location where the solution data of this
              integration point starts. */
-          const su2double *sol    = solInt + ctc::nVar*i;
+          const su2double *sol    = solInt + nVar*i;
 
           /*--- Compute the velocities and static energy in this integration point. ---*/
           const su2double rhoInv       = 1.0/sol[0];
@@ -2908,7 +4459,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
           const su2double Pressure = FluidModel->GetPressure();
 
           /* Set the pointer for the fluxes in this integration point. */
-          su2double *flux = fluxes + i*ctc::nDim*ctc::nVar;
+          su2double *flux = fluxes + i*nDim*nVar;
 
           /*--- Fluxes in r-direction. */
           const su2double H     = TotalEnergy + rhoInv*Pressure;
@@ -2937,6 +4488,22 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
           flux[12] = rhoUt*v + Pressure*wDtdy;
           flux[13] = rhoUt*w + Pressure*wDtdz;
           flux[14] = rhoUt*H;
+
+          /*--- If needed, compute the body forces in this integration point.
+                Note that the source terms are multiplied with minus the
+                integration weight in order to be consistent with the
+                formulation of the residual. ---*/
+          if( body_force ) {
+            su2double *source         = sources + i*nVar;
+            const su2double weightJac = weights[i]*Jac;
+
+            source[0] =  0.0;
+            source[1] = -weightJac*body_force_vector[0];
+            source[2] = -weightJac*body_force_vector[1];
+            source[3] = -weightJac*body_force_vector[2];
+            source[4] = -weightJac*(u*body_force_vector[0] + v*body_force_vector[1]
+                      +             w*body_force_vector[2]);
+          }
         }
 
         break;
@@ -2956,84 +4523,104 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
 
-  }
-}
+    /* Add the contribution from the source terms, if needed. Use solInt
+       as temporary storage for the matrix product. */
+    if( body_force ) {
 
-void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CNumerics *numerics,
-                                          CNumerics *second_numerics,
-                                          CConfig *config,
-                                          unsigned short iMesh) {
+      /* Call the general function to carry out the matrix product. */
+      config->GEMM_Tick(&tick);
+      DenseMatrixProduct(nDOFs, nVar, nInt, matBasisIntTrans, sources, solInt);
+      config->GEMM_Tock(tick, "Volume_Residual3", nDOFs, nVar, nInt);
 
-  /*--- Stub for source term integration. ---*/
-
-  bool body_force = config->GetBody_Force();
-
-  if (body_force) {
-
-    su2double *body_force_vector = config->GetBody_Force_Vector();
-
-    /*--- Source term integration goes here... dummy output for now. ---*/
-
-    cout << " Applying a body force of (";
-    for( unsigned short iDim = 0; iDim < nDim; iDim++) {
-      cout << body_force_vector[iDim];
-      if (iDim < nDim-1) cout << ", ";
-    }
-    cout << ")." << endl;
-
-  }
-
-}
-
-void CFEM_DG_EulerSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                           CConfig *config, unsigned short iMesh, unsigned short iStep) {
-
-  /* Complete the MPI communication of the solution data. */
-  Complete_MPI_Communication();
-
-  /* Compute the residual of the faces that involve a halo element. */
-  unsigned long indResFaces = startLocResInternalFacesWithHaloElem[0];
-  ResidualFaces(geometry, solver_container, numerics, config, iMesh, iStep,
-                nMatchingInternalFacesWithHaloElem[0],
-                nMatchingInternalFacesWithHaloElem[1], indResFaces);
-
-  /* Start the communication of the residuals, for which the
-     reverse communication must be used. */
-  Initiate_MPI_ReverseCommunication();
-
-  /* Compute the residual of the faces that only involve owned elements. */
-  indResFaces = startLocResInternalFacesLocalElem[0];
-  ResidualFaces(geometry, solver_container, numerics, config, iMesh, iStep,
-                nMatchingInternalFacesLocalElem[0],
-                nMatchingInternalFacesLocalElem[1], indResFaces);
-
-  /* Complete the communication of the residuals. */
-  Complete_MPI_ReverseCommunication();
-
-  /* Create the final residual by summing up all contributions. */
-  for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
-
-    su2double *resDOF = VecResDOFs.data() + nVar*i;
-    for(unsigned long j=nEntriesResFaces[i]; j<nEntriesResFaces[i+1]; ++j) {
-      const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
-      for(unsigned short k=0; k<nVar; ++k)
-        resDOF[k] += resFace[k];
+      /* Add the residuals due to source terms to the volume residuals */
+      for(unsigned short i=0; i<(nDOFs*nVar); ++i)
+        res[i] += solInt[i];
     }
   }
 }
 
-void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                        CConfig *config, unsigned short iMesh, unsigned short iStep,
-                                        const unsigned long indFaceBeg, const unsigned long indFaceEnd,
-                                        unsigned long &indResFaces) {
+void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
+                                              CConfig              *config,
+                                              CNumerics            **numerics){
+
+  /* Loop over all boundaries. */
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    /* Determine the range of faces for this time level and test if any
+       surface element for this marker must be treated at all. */
+    const unsigned long surfElemBeg = boundaries[iMarker].nSurfElem[timeLevel];
+    const unsigned long surfElemEnd = boundaries[iMarker].nSurfElem[timeLevel+1];
+
+    if(surfElemEnd > surfElemBeg) {
+
+      /* Set the starting position in the vector for the face residuals for
+         this boundary marker and time level and set the pointer to the boundary
+         faces for this boundary marker. */
+      su2double *resFaces = VecResFaces.data()
+                          + nVar*startLocResFacesMarkers[iMarker][timeLevel];
+
+      const CSurfaceElementFEM *surfElem = boundaries[iMarker].surfElem.data();
+
+      /* Apply the appropriate boundary condition. */
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case EULER_WALL:
+          BC_Euler_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                        numerics[CONV_BOUND_TERM]);
+          break;
+        case FAR_FIELD:
+          BC_Far_Field(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                       numerics[CONV_BOUND_TERM]);
+          break;
+        case SYMMETRY_PLANE:
+          BC_Sym_Plane(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                       numerics[CONV_BOUND_TERM]);
+          break;
+        case INLET_FLOW:
+          BC_Inlet(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                   numerics[CONV_BOUND_TERM], iMarker);
+          break;
+        case OUTLET_FLOW:
+          BC_Outlet(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                    numerics[CONV_BOUND_TERM], iMarker);
+          break;
+        case ISOTHERMAL:
+          BC_Isothermal_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                             numerics[CONV_BOUND_TERM], iMarker);
+          break;
+        case HEAT_FLUX:
+          BC_HeatFlux_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                           numerics[CONV_BOUND_TERM], iMarker);
+          break;
+        case CUSTOM_BOUNDARY:
+          BC_Custom(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                    numerics[CONV_BOUND_TERM]);
+          break;
+        case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
+          break;
+        default:
+          cout << "BC not implemented." << endl;
+#ifndef HAVE_MPI
+          exit(EXIT_FAILURE);
+#else
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
+#endif
+      }
+    }
+  }
+}
+
+void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
+                                        const unsigned long indFaceBeg,
+                                        const unsigned long indFaceEnd,
+                                        unsigned long       &indResFaces,
+                                        CNumerics           *numerics) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solIntL = VecTmpMemory.data();
   su2double *solIntR = solIntL + nIntegrationMax*nVar;
   su2double *fluxes  = solIntR + nIntegrationMax*nVar;
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*--- Loop over the requested range of matching faces. ---*/
   for(unsigned long l=indFaceBeg; l<indFaceEnd; ++l) {
@@ -3098,7 +4685,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
     else {
 
       /*--- The number of DOFs and hence the polynomial degree of side 1 is
-            different from side. Carry out the matrix multiplication to obtain
+            different from side 0. Carry out the matrix multiplication to obtain
             the residual. Afterwards the residual is negated, because the
             normal is pointing into the adjacent element. ---*/
       basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
@@ -3125,7 +4712,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
      same memory can be used for the storage of the solution of the DOFs of
      the face and the fluxes. */
   su2double *solFace = fluxes;
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*------------------------------------------------------------------------*/
   /*--- Step 1: Interpolate the left state in the integration points of  ---*/
@@ -3138,15 +4725,34 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
   const su2double     *basisFace0 = standardMatchingFacesSol[ind].GetBasisFaceIntegrationSide0();
 
+  /* Determine the time level of the face. */
+  const unsigned long  elem0         = internalFace->elemID0;
+  const unsigned long  elem1         = internalFace->elemID1;
+  const unsigned short timeLevelFace = min(volElem[elem0].timeLevel,
+                                           volElem[elem1].timeLevel);
+
+  /* The numbering of the DOFs is given for the entire grid. However, in the
+     working vectors for the solution a numbering per time level is used.
+     Therefore an offset must be applied, which can be obtained from the
+     corresponding volume element. Note that this offset is non-negative
+     and depends whether or not the element belongs to the same time
+     level as the face. */
+  unsigned long offset;
+  if(timeLevelFace == volElem[elem0].timeLevel)
+    offset = volElem[elem0].offsetDOFsSolLocal - volElem[elem0].offsetDOFsSolThisTimeLevel;
+  else
+    offset = volElem[elem0].offsetDOFsSolLocal - volElem[elem0].offsetDOFsSolPrevTimeLevel;
+
   /*--- Store the solution of the DOFs of side 0 of the face in contiguous memory
         such that the function DenseMatrixProduct can be used to compute the left
         states in the integration points of the face, i.e. side 0. ---*/
+  const unsigned long nBytes = nVar*sizeof(su2double);
   const unsigned long *DOFs = internalFace->DOFsSolFaceSide0.data();
   for(unsigned short i=0; i<nDOFsFace0; ++i) {
-    const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
+    const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
+                            + nVar*(DOFs[i] - offset);
     su2double       *sol    = solFace + nVar*i;
-    for(unsigned short j=0; j<nVar; ++j)
-      sol[j] = solDOF[j];
+    memcpy(sol, solDOF, nBytes);
   }
 
   config->GEMM_Tick(&tick);
@@ -3164,15 +4770,23 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
   const su2double     *basisFace1 = standardMatchingFacesSol[ind].GetBasisFaceIntegrationSide1();
 
+  /* Determine the offset between the numbering used in the DOFs of the face
+     and the numbering used in the working solution vectors, see above for a
+     more detailed explanation. */
+  if(timeLevelFace == volElem[elem1].timeLevel)
+    offset = volElem[elem1].offsetDOFsSolLocal - volElem[elem1].offsetDOFsSolThisTimeLevel;
+  else
+    offset = volElem[elem1].offsetDOFsSolLocal - volElem[elem1].offsetDOFsSolPrevTimeLevel;
+
   /*--- Store the solution of the DOFs of side 1 of the face in contiguous memory
         such that the function DenseMatrixProduct can be used to compute the right
         states in the integration points of the face, i.e. side 1. ---*/
   DOFs = internalFace->DOFsSolFaceSide1.data();
   for(unsigned short i=0; i<nDOFsFace1; ++i) {
-    const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
+    const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
+                            + nVar*(DOFs[i] - offset);
     su2double       *sol    = solFace + nVar*i;
-    for(unsigned short j=0; j<nVar; ++j)
-      sol[j] = solDOF[j];
+    memcpy(sol, solDOF, nBytes);
   }
 
   /* Compute the right states. Call the general function to
@@ -3191,43 +4805,201 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
                             solIntL, solIntR, fluxes, numerics);
 }
 
-void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight) {
+void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADEROwnedElem(
+                                                     CConfig             *config,
+                                                     const unsigned short timeLevel,
+                                                     const unsigned short intPoint) {
 
   /* Compute half the integration weight. The reason for doing this is that the
      given integration weight is based on the normalized interval [-1..1], i.e.
-     a length of two. */
-  const su2double halfWeight = 0.5*weight;
+     a length of two. Also compute a quarter of the weight, which is necessary
+     to accumulate the face residuals of the DOFs of elements adjacent to
+     element of a lower time level. */
+  const su2double *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
 
-  /* Determine the case we have. */
-  if(iTime == 0) {
+  const su2double halfWeight  = 0.5 *timeIntegrationWeights[intPoint];
+  const su2double quartWeight = 0.25*timeIntegrationWeights[intPoint];
 
-    /*--- First time integration point. Initialize the total ADER residual
-          to the spatial residual multiplied by halfWeight. ---*/
-    for(unsigned long i=0; i<VecTotResDOFsADER.size(); ++i)
-      VecTotResDOFsADER[i] = halfWeight*VecResDOFs[i];
+  /* Determine the owned element range that must be considered. */
+  const unsigned long elemBegOwned = nVolElemOwnedPerTimeLevel[timeLevel];
+  const unsigned long elemEndOwned = nVolElemOwnedPerTimeLevel[timeLevel+1];
+
+  /* Add the residuals coming from the volume integral to VecTotResDOFsADER. */
+  for(unsigned long l=elemBegOwned; l<elemEndOwned; ++l) {
+    const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
+    const su2double    *res     = VecResDOFs.data() + offset;
+    su2double          *resADER = VecTotResDOFsADER.data() + offset;
+
+    for(unsigned short i=0; i<(nVar*volElem[l].nDOFsSol); ++i)
+      resADER[i] += halfWeight*res[i];
   }
-  else {
 
-    /*--- Not the first integration point. The spatial residual, multiplied by
-          halfWeight must be added to the total ADER residual. ---*/
-    for(unsigned long i=0; i<VecTotResDOFsADER.size(); ++i)
-      VecTotResDOFsADER[i] += halfWeight*VecResDOFs[i];
+  /* Add the residuals coming from the surface integral to VecTotResDOFsADER.
+     This part is from faces with the same time level as the element. */
+  for(unsigned long l=elemBegOwned; l<elemEndOwned; ++l) {
+    for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
+      const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
+      su2double *resADER = VecTotResDOFsADER.data() + nVar*ii;
+
+      for(unsigned long j=nEntriesResFaces[ii]; j<nEntriesResFaces[ii+1]; ++j) {
+        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
+        for(unsigned short k=0; k<nVar; ++k)
+          resADER[k] += halfWeight*resFace[k];
+      }
+    }
+  }
+
+  /* Check if this is not the last time level. */
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+  if(timeLevel < (nTimeLevels-1)) {
+
+    /* There may exist faces of this time level, which have a neighboring
+       element of the next time level. The residuals of the DOFs of such
+       elements must be updated with the face residuals of the current
+       time level. However, on these elements the time step is twice as
+       large. This is taken into account by multiplying the face residual
+       with quartWeight when accumulating. */
+    const unsigned long nAdjElem = ownedElemAdjLowTimeLevel[timeLevel+1].size();
+    const unsigned long *adjElem = ownedElemAdjLowTimeLevel[timeLevel+1].data();
+
+    for(unsigned l=0; l<nAdjElem; ++l) {
+      const unsigned long ll = adjElem[l];
+      for(unsigned short i=0; i<volElem[ll].nDOFsSol; ++i) {
+        const unsigned long ii = volElem[ll].offsetDOFsSolLocal + i;
+        su2double *resADER = VecTotResDOFsADER.data() + nVar*ii;
+
+        for(unsigned long j=nEntriesResAdjFaces[ii]; j<nEntriesResAdjFaces[ii+1]; ++j) {
+          const su2double *resFace = VecResFaces.data() + nVar*entriesResAdjFaces[j];
+          for(unsigned short k=0; k<nVar; ++k)
+            resADER[k] += quartWeight*resFace[k];
+        }
+      }
+    }
   }
 }
 
-void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CConfig    *config,
-                                                              const bool useADER) {
+void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADERHaloElem(
+                                                     CConfig             *config,
+                                                     const unsigned short timeLevel,
+                                                     const unsigned short intPoint) {
+
+  /* Compute half the integration weight. The reason for doing this is that the
+     given integration weight is based on the normalized interval [-1..1], i.e.
+     a length of two. Also compute a quarter of the weight, which is necessary
+     to accumulate the face residuals of the DOFs of elements adjacent to
+     element of a lower time level. */
+  const su2double *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
+
+  const su2double halfWeight  = 0.5 *timeIntegrationWeights[intPoint];
+  const su2double quartWeight = 0.25*timeIntegrationWeights[intPoint];
+
+  /* Determine the halo element range that must be considered. */
+  const unsigned long elemBegHalo = nVolElemHaloPerTimeLevel[timeLevel];
+  const unsigned long elemEndHalo = nVolElemHaloPerTimeLevel[timeLevel+1];
+
+  /* Add the residuals coming from the surface integral to VecTotResDOFsADER.
+     This part is from faces with the same time level as the element. */
+  for(unsigned long l=elemBegHalo; l<elemEndHalo; ++l) {
+    for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
+      const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
+      su2double *resADER = VecTotResDOFsADER.data() + nVar*ii;
+
+      for(unsigned long j=nEntriesResFaces[ii]; j<nEntriesResFaces[ii+1]; ++j) {
+        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
+        for(unsigned short k=0; k<nVar; ++k)
+          resADER[k] += halfWeight*resFace[k];
+      }
+    }
+  }
+
+  /* Check if this is not the last time level. */
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+  if(timeLevel < (nTimeLevels-1)) {
+
+    /* There may exist faces of this time level, which have a neighboring
+       element of the next time level. The residuals of the DOFs of such
+       elements must be updated with the face residuals of the current
+       time level. However, on these elements the time step is twice as
+       large. This is taken into account by multiplying the face residual
+       with quartWeight when accumulating. */
+    const unsigned long nAdjElem = haloElemAdjLowTimeLevel[timeLevel+1].size();
+    const unsigned long *adjElem = haloElemAdjLowTimeLevel[timeLevel+1].data();
+
+    for(unsigned l=0; l<nAdjElem; ++l) {
+      const unsigned long ll = adjElem[l];
+      for(unsigned short i=0; i<volElem[ll].nDOFsSol; ++i) {
+        const unsigned long ii = volElem[ll].offsetDOFsSolLocal + i;
+        su2double *resADER = VecTotResDOFsADER.data() + nVar*ii;
+
+        for(unsigned long j=nEntriesResAdjFaces[ii]; j<nEntriesResAdjFaces[ii+1]; ++j) {
+          const su2double *resFace = VecResFaces.data() + nVar*entriesResAdjFaces[j];
+          for(unsigned short k=0; k<nVar; ++k)
+            resADER[k] += quartWeight*resFace[k];
+        }
+      }
+    }
+  }
+}
+
+void CFEM_DG_EulerSolver::CreateFinalResidual(const unsigned short timeLevel,
+                                              const bool ownedElements) {
+
+  /* Determine the element range for which the final residual must
+     be created. */
+  unsigned long elemStart, elemEnd;
+  if( ownedElements ) {
+    elemStart = nVolElemOwnedPerTimeLevel[0];
+    elemEnd   = nVolElemOwnedPerTimeLevel[timeLevel+1];
+  }
+  else {
+    elemStart = nVolElemHaloPerTimeLevel[0];
+    elemEnd   = nVolElemHaloPerTimeLevel[timeLevel+1];
+  }
+
+  /* For the halo elements the residual is initialized to zero. */
+  if( !ownedElements ) {
+
+    for(unsigned long l=elemStart; l<elemEnd; ++l) {
+      su2double *resDOFsElem = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+      for(unsigned short i=0; i<(nVar*volElem[l].nDOFsSol); ++i)
+        resDOFsElem[i] = 0.0;
+    }
+  }
+
+  /* Loop over the required element range. */
+  for(unsigned long l=elemStart; l<elemEnd; ++l) {
+
+    /* Loop over the DOFs of this element. */
+    for(unsigned long i=volElem[l].offsetDOFsSolLocal;
+                      i<(volElem[l].offsetDOFsSolLocal+volElem[l].nDOFsSol); ++i) {
+
+      /* Create the final residual by summing up all contributions. */
+      su2double *resDOF = VecResDOFs.data() + nVar*i;
+      for(unsigned long j=nEntriesResFaces[i]; j<nEntriesResFaces[i+1]; ++j) {
+        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
+        for(unsigned short k=0; k<nVar; ++k)
+          resDOF[k] += resFace[k];
+      }
+    }
+  }
+}
+
+void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
+                                              CConfig            *config,
+                                              const bool          useADER,
+                                              const unsigned long elemBeg,
+                                              const unsigned long elemEnd) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *tmpRes = VecTmpMemory.data();
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*--- Set the reference to the correct residual. This depends
         whether or not the ADER scheme is used. ---*/
   vector<su2double> &VecRes = useADER ? VecTotResDOFsADER : VecResDOFs;
 
   /* Loop over the owned volume elements. */
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
 
     /* Easier storage of the residuals for this volume element. */
     su2double *res = VecRes.data() + nVar*volElem[l].offsetDOFsSolLocal;
@@ -3236,7 +5008,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CConfig    *config
        the lumped mass matrix or the full mass matrix. Note that it is crucial
        that the test is performed with the lumpedMassMatrix and not with
        massMatrix. The reason is that for implicit time stepping schemes
-       both arrays are in use. */
+       both arrays may be in use. */
     if( volElem[l].lumpedMassMatrix.size() ) {
 
       /* Multiply the residual with the inverse of the lumped mass matrix. */
@@ -3263,9 +5035,13 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CConfig    *config
 
 void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
-  /*--- Set the pointers for the local arrays. ---*/
+  double tick = 0.0;
+
+  /*--- Set the pointers for the local arrays and determine the number of bytes
+        for the call to memcpy later in this function. ---*/
   su2double *solInt  = VecTmpMemory.data();
-  su2double *solDOFs = solInt + nIntegrationMax*nVar;
+  su2double *solCopy = solInt + nIntegrationMax*nVar;
+  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
@@ -3359,14 +5135,29 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
         /*--- Loop over the faces of this boundary. ---*/
         for(unsigned long l=0; l<nSurfElem; ++l) {
 
-          /* Compute the states in the integration points of the face. */
-          LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], solDOFs, solInt);
-
-          /*--- Get the number of integration points and the integration
-                weights from the corresponding standard element. ---*/
+          /* Get the required information from the corresponding standard face. */
           const unsigned short ind   = surfElem[l].indStandardElement;
           const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
+          const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
+          const su2double *basisFace = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
           const su2double *weights   = standardBoundaryFacesSol[ind].GetWeightsIntegration();
+
+          /* Easier storage of the DOFs of the face. */
+          const unsigned long *DOFs = surfElem[l].DOFsSolFace.data();
+
+          /* Copy the solution of the DOFs of the face such that it is
+             contiguous in memory. */
+          for(unsigned short i=0; i<nDOFs; ++i) {
+            const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
+            su2double       *sol    = solCopy + nVar*i;
+            memcpy(sol, solDOF, nBytes);
+          }
+
+          /* Call the general function to carry out the matrix product to determine
+             the solution in the integration points. */
+          config->GEMM_Tick(&tick);
+          DenseMatrixProduct(nInt, nVar, nDOFs, basisFace, solCopy, solInt);
+          config->GEMM_Tock(tick, "Pressure_Forces", nInt, nVar, nDOFs);
 
           /* Loop over the integration points of this surface element. */
           for(unsigned short i=0; i<nInt; ++i) {
@@ -3424,32 +5215,32 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
           CFy_Inv[iMarker]    =  ForceInviscid[1];
         }
         if(nDim == 3) {
-          CD_Inv[iMarker]      =  ForceInviscid[0]*cos(Alpha)*cos(Beta)
-                                  +  ForceInviscid[1]*sin(Beta)
-                                  +  ForceInviscid[2]*sin(Alpha)*cos(Beta);
-          CL_Inv[iMarker]      = -ForceInviscid[0]*sin(Alpha) + ForceInviscid[2]*cos(Alpha);
-          CSF_Inv[iMarker] = -ForceInviscid[0]*sin(Beta)*cos(Alpha)
-                                  +  ForceInviscid[1]*cos(Beta)
-                                  -  ForceInviscid[2]*sin(Beta)*sin(Alpha);
-          CEff_Inv[iMarker]       =  CL_Inv[iMarker] / (CD_Inv[iMarker] + EPS);
-          CMx_Inv[iMarker]        =  MomentInviscid[0];
-          CMy_Inv[iMarker]        =  MomentInviscid[1];
-          CMz_Inv[iMarker]        =  MomentInviscid[2];
-          CFx_Inv[iMarker]        =  ForceInviscid[0];
-          CFy_Inv[iMarker]        =  ForceInviscid[1];
-          CFz_Inv[iMarker]        =  ForceInviscid[2];
+          CD_Inv[iMarker]   =  ForceInviscid[0]*cos(Alpha)*cos(Beta)
+                            +  ForceInviscid[1]*sin(Beta)
+                            +  ForceInviscid[2]*sin(Alpha)*cos(Beta);
+          CL_Inv[iMarker]   = -ForceInviscid[0]*sin(Alpha) + ForceInviscid[2]*cos(Alpha);
+          CSF_Inv[iMarker]  = -ForceInviscid[0]*sin(Beta)*cos(Alpha)
+                            +  ForceInviscid[1]*cos(Beta)
+                            -  ForceInviscid[2]*sin(Beta)*sin(Alpha);
+          CEff_Inv[iMarker] =  CL_Inv[iMarker] / (CD_Inv[iMarker] + EPS);
+          CMx_Inv[iMarker]  =  MomentInviscid[0];
+          CMy_Inv[iMarker]  =  MomentInviscid[1];
+          CMz_Inv[iMarker]  =  MomentInviscid[2];
+          CFx_Inv[iMarker]  =  ForceInviscid[0];
+          CFy_Inv[iMarker]  =  ForceInviscid[1];
+          CFz_Inv[iMarker]  =  ForceInviscid[2];
         }
 
-        AllBound_CD_Inv    += CD_Inv[iMarker];
-        AllBound_CL_Inv    += CL_Inv[iMarker];
-        AllBound_CSF_Inv   += CSF_Inv[iMarker];
-        AllBound_CEff_Inv   = AllBound_CL_Inv / (AllBound_CD_Inv + EPS);
-        AllBound_CMx_Inv   += CMx_Inv[iMarker];
-        AllBound_CMy_Inv   += CMy_Inv[iMarker];
-        AllBound_CMz_Inv   += CMz_Inv[iMarker];
-        AllBound_CFx_Inv   += CFx_Inv[iMarker];
-        AllBound_CFy_Inv   += CFy_Inv[iMarker];
-        AllBound_CFz_Inv   += CFz_Inv[iMarker];
+        AllBound_CD_Inv  += CD_Inv[iMarker];
+        AllBound_CL_Inv  += CL_Inv[iMarker];
+        AllBound_CSF_Inv += CSF_Inv[iMarker];
+        AllBound_CEff_Inv = AllBound_CL_Inv / (AllBound_CD_Inv + EPS);
+        AllBound_CMx_Inv += CMx_Inv[iMarker];
+        AllBound_CMy_Inv += CMy_Inv[iMarker];
+        AllBound_CMz_Inv += CMz_Inv[iMarker];
+        AllBound_CFx_Inv += CFx_Inv[iMarker];
+        AllBound_CFy_Inv += CFy_Inv[iMarker];
+        AllBound_CFz_Inv += CFz_Inv[iMarker];
 
         /*--- Compute the coefficients per surface ---*/
         for(unsigned short iMarker_Monitoring=0; iMarker_Monitoring<config->GetnMarker_Monitoring();
@@ -3559,12 +5350,24 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config, unsigned short iRKStep) {
 
-  su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+  const su2double      RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+  const unsigned short nRKStages     = config->GetnRKStep();
 
   for(unsigned short iVar=0; iVar<nVar; ++iVar) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+
+  /* Set the pointer to the array where the new state vector must be stored.
+     If this is the last RK step, the solution should be stored in
+     VecSolDOFs, such that a new time step can be taken. Otherwise, the
+     solution should be stored in the first time level of the working vectors
+     for the solution. Note that only one working vector will be present for a
+     RK scheme, because time accurate local time stepping is not possible yet
+     with RK schemes. */
+  su2double *solNew;
+  if(iRKStep == (nRKStages-1)) solNew = VecSolDOFs.data();
+  else                         solNew = VecWorkSolDOFs[0].data();
 
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -3576,9 +5379,9 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
 
     /* Set the pointers for the residual and solution for this element. */
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
-    const su2double *res        = VecResDOFs.data()    + offset;
-    const su2double *solDOFsOld = VecSolDOFsOld.data() + offset;
-    su2double *solDOFs          = VecSolDOFs.data()    + offset;
+    const su2double *res        = VecResDOFs.data() + offset;
+    const su2double *solDOFsOld = VecSolDOFs.data() + offset;
+    su2double *solDOFs          = solNew            + offset;
 
     /* Loop over the DOFs for this element and update the solution and the L2 norm. */
     const su2double tmp = RK_AlphaCoeff*VecDeltaTime[l];
@@ -3662,9 +5465,12 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
     /* Set the pointers for the residual and solution for this element. */
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
     const su2double *res        = VecResDOFs.data()    + offset;
-    const su2double *solDOFsOld = VecSolDOFsOld.data() + offset;
+    const su2double *solDOFsOld = VecSolDOFs.data()    + offset;
     su2double *solDOFsNew       = VecSolDOFsNew.data() + offset;
-    su2double *solDOFs          = VecSolDOFs.data()    + offset;
+
+    su2double *solDOFs;
+    if(iRKStep < 3) solDOFs = VecWorkSolDOFs[0].data() + offset;
+    else            solDOFs = VecSolDOFs.data()        + offset;
 
     /* Loop over the DOFs for this element and update the solution and the L2 norm. */
     const su2double tmp_time = -1.0*RK_TimeCoeff[iRKStep]*VecDeltaTime[l];
@@ -3733,43 +5539,42 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
 #endif
 }
 
-void CFEM_DG_EulerSolver::ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                            unsigned short iStep) {
+void CFEM_DG_EulerSolver::ADER_DG_Iteration(const unsigned long elemBeg,
+                                            const unsigned long elemEnd) {
 
-  /*--- Update the solution by looping over the owned volume elements. ---*/
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+  /*--- Update the solution by looping over the given range
+        of volume elements. ---*/
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
 
     /* Set the pointers for the residual and solution for this element. */
-    const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
-    const su2double *res        = VecTotResDOFsADER.data() + offset;
-    const su2double *solDOFsOld = VecSolDOFsOld.data()     + offset;
-    su2double *solDOFs          = VecSolDOFs.data()        + offset;
+    const unsigned long offset = nVar*volElem[l].offsetDOFsSolLocal;
+    su2double *res     = VecTotResDOFsADER.data() + offset;
+    su2double *solDOFs = VecSolDOFs.data()        + offset;
 
-    /* Loop over the DOFs for this element and update the solution. */
-    for(unsigned short i=0; i<(nVar*volElem[l].nDOFsSol); ++i)
-      solDOFs[i] = solDOFsOld[i] - VecDeltaTime[l]*res[i];
+    /* Loop over the DOFs for this element and update the solution.
+       Initialize the residual to zero afterwards. */
+    for(unsigned short i=0; i<(nVar*volElem[l].nDOFsSol); ++i) {
+      solDOFs[i] -= VecDeltaTime[l]*res[i];
+      res[i]      = 0.0;
+    }
   }
 }
 
-void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                        CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
+                                        const unsigned long      surfElemBeg,
+                                        const unsigned long      surfElemEnd,
+                                        const CSurfaceElementFEM *surfElem,
+                                        su2double                *resFaces,
+                                        CNumerics                *conv_numerics) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solIntL = VecTmpMemory.data();
   su2double *solIntR = solIntL + nIntegrationMax*nVar;
   su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
@@ -3826,30 +5631,26 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_co
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
-    ResidualInviscidBoundaryFace(config, numerics, &surfElem[l], solIntL,
+    ResidualInviscidBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                  solIntR, fluxes, resFaces, indResFaces);
   }
 }
 
-void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
+                                       const unsigned long      surfElemBeg,
+                                       const unsigned long      surfElemEnd,
+                                       const CSurfaceElementFEM *surfElem,
+                                       su2double                *resFaces,
+                                       CNumerics                *conv_numerics) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solIntL = VecTmpMemory.data();
   su2double *solIntR = solIntL + nIntegrationMax*nVar;
   su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
@@ -3874,25 +5675,21 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_con
   }
 }
 
-void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
+                                       const unsigned long      surfElemBeg,
+                                       const unsigned long      surfElemEnd,
+                                       const CSurfaceElementFEM *surfElem,
+                                       su2double                *resFaces,
+                                       CNumerics                *conv_numerics) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solIntL = VecTmpMemory.data();
-  su2double *solIntR = solIntL + nIntegrationMax*ctc::nVar;
-  su2double *fluxes  = solIntR + nIntegrationMax*ctc::nVar;
+  su2double *solIntR = solIntL + nIntegrationMax*nVar;
+  su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
@@ -3904,7 +5701,7 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
 
     /* Make a distinction between two and three space dimensions
        in order to have the most efficient code. */
-    switch( ctc::nDim ) {
+    switch( nDim ) {
 
       case 2: {
 
@@ -3914,9 +5711,9 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
 
           /* Easier storage of the left and right solution and the normals
              for this integration point. */
-          const su2double *UL      = solIntL + i*ctc::nVar;
-                su2double *UR      = solIntR + i*ctc::nVar;
-          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(ctc::nDim+1);
+          const su2double *UL      = solIntL + i*nVar;
+                su2double *UR      = solIntR + i*nVar;
+          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
           /* Compute twice the normal component of the momentum variables. The
              factor 2 comes from the fact that the velocity must be mirrored. */
@@ -3944,9 +5741,9 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
 
           /* Easier storage of the left and right solution and the normals
              for this integration point. */
-          const su2double *UL      = solIntL + i*ctc::nVar;
-                su2double *UR      = solIntR + i*ctc::nVar;
-          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(ctc::nDim+1);
+          const su2double *UL      = solIntL + i*nVar;
+                su2double *UR      = solIntR + i*nVar;
+          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
           /* Compute twice the normal component of the momentum variables. The
              factor 2 comes from the fact that the velocity must be mirrored. */
@@ -3974,8 +5771,13 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
   }
 }
 
-void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
+                                   const unsigned long      surfElemBeg,
+                                   const unsigned long      surfElemEnd,
+                                   const CSurfaceElementFEM *surfElem,
+                                   su2double                *resFaces,
+                                   CNumerics                *conv_numerics,
+                                   unsigned short           val_marker) {
 
   /*--- Retrieve the specified total conditions for this inlet. ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -3996,17 +5798,9 @@ void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
   su2double *solIntR = solIntL + nIntegrationMax*nVar;
   su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
@@ -4106,8 +5900,13 @@ void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
   }
 }
 
-void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
+                                    const unsigned long      surfElemBeg,
+                                    const unsigned long      surfElemEnd,
+                                    const CSurfaceElementFEM *surfElem,
+                                    su2double                *resFaces,
+                                    CNumerics                *conv_numerics,
+                                    unsigned short           val_marker) {
 
   /*--- Retrieve the specified back pressure for this outlet.
         Nondimensionalize, if necessary. ---*/
@@ -4121,17 +5920,9 @@ void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
   su2double *solIntR = solIntL + nIntegrationMax*nVar;
   su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
@@ -4200,31 +5991,27 @@ void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
   }
 }
 
-void CFEM_DG_EulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container,
-                                    CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
+                                    const unsigned long      surfElemBeg,
+                                    const unsigned long      surfElemEnd,
+                                    const CSurfaceElementFEM *surfElem,
+                                    su2double                *resFaces,
+                                    CNumerics                *conv_numerics) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solIntL = VecTmpMemory.data();
   su2double *solIntR = solIntL + nIntegrationMax*nVar;
   su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
-    /*--- Apply the subsonic inlet boundary conditions to compute the right
+    /*--- Apply the boundary conditions to compute the right
           state in the integration points. ---*/
     const unsigned short ind  = surfElem[l].indStandardElement;
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
@@ -4270,7 +6057,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_contai
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
-    ResidualInviscidBoundaryFace(config, numerics, &surfElem[l], solIntL,
+    ResidualInviscidBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                  solIntR, fluxes, resFaces, indResFaces);
   }
 }
@@ -4290,7 +6077,7 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
   const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
   const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const su2double *weights   = standardBoundaryFacesSol[ind].GetWeightsIntegration();
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /*------------------------------------------------------------------------*/
   /*--- Step 1: Compute the fluxes in the integration points using the   ---*/
@@ -4340,25 +6127,34 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(CConfig *confi
   const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
   const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const su2double *basisFace = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /* Easier storage of the DOFs of the face. */
   const unsigned long *DOFs = surfElem->DOFsSolFace.data();
 
-  /* Copy the solution of the DOFs of the face such that it is contigious
+  /* The numbering of the DOFs is given for the entire grid. However, in the
+     working vectors for the solution a numbering per time level is used.
+     Therefore an offset must be applied, which can be obtained from the
+     corresponding volume element. Note that this offset is non-negative. */
+  const unsigned long  volID     = surfElem->volElemID;
+  const unsigned short timeLevel = volElem[volID].timeLevel;
+  const unsigned long  offset    = volElem[volID].offsetDOFsSolLocal
+                                 - volElem[volID].offsetDOFsSolThisTimeLevel;
+
+  /* Copy the solution of the DOFs of the face such that it is contiguous
      in memory. */
+  const unsigned long nBytes = nVar*sizeof(su2double);
   for(unsigned short i=0; i<nDOFs; ++i) {
-    const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
+
+    const su2double *solDOF = VecWorkSolDOFs[timeLevel].data() + nVar*(DOFs[i]-offset);
     su2double       *sol    = solFace + nVar*i;
-    for(unsigned short j=0; j<nVar; ++j)
-      sol[j] = solDOF[j];
+    memcpy(sol, solDOF, nBytes);
   }
 
   /* Call the general function to carry out the matrix product. */
   config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt, nVar, nDOFs, basisFace, solFace, solIntL);
   config->GEMM_Tock(tick, "LeftStatesIntegrationPointsBoundaryFace", nInt, nVar, nDOFs);
-
 }
 
 void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
@@ -4383,19 +6179,19 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
 
       /* Make a distinction between two and three space dimensions
          in order to have the most efficient code. */
-      switch( ctc::nDim ) {
+      switch( nDim ) {
 
         case 2: {
 
           /* Two dimensional simulation. Loop over the number of points. */
           for(unsigned long i=0; i<nPoints; ++i) {
-        
+
             /* Easier storage of the left and right solution, the face normals and
                the flux vector for this point. */
-            const su2double *UL   = solL + i*ctc::nVar;
-            const su2double *UR   = solR + i*ctc::nVar;
-            const su2double *norm = normalsFace + i*(ctc::nDim+1);
-                  su2double *flux = fluxes + i*ctc::nVar;
+            const su2double *UL   = solL + i*nVar;
+            const su2double *UR   = solR + i*nVar;
+            const su2double *norm = normalsFace + i*(nDim+1);
+                  su2double *flux = fluxes + i*nVar;
 
             const su2double nx = norm[0], ny = norm[1], area = norm[2];
 
@@ -4494,10 +6290,10 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
 
             /* Easier storage of the left and right solution, the face normals and
                the flux vector for this point. */
-            const su2double *UL   = solL + i*ctc::nVar;
-            const su2double *UR   = solR + i*ctc::nVar;
-            const su2double *norm = normalsFace + i*(ctc::nDim+1);
-                  su2double *flux = fluxes + i*ctc::nVar;
+            const su2double *UL   = solL + i*nVar;
+            const su2double *UR   = solR + i*nVar;
+            const su2double *norm = normalsFace + i*(nDim+1);
+                  su2double *flux = fluxes + i*nVar;
 
             const su2double nx = norm[0], ny = norm[1], nz = norm[2], area = norm[3];
 
@@ -4610,35 +6406,35 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
       su2double Normal[3];
       su2double Prim_L[8];
       su2double Prim_R[8];
-  
+
       Jacobian_i = new su2double*[nVar];
       Jacobian_j = new su2double*[nVar];
       for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
         Jacobian_i[iVar] = new su2double[nVar];
         Jacobian_j[iVar] = new su2double[nVar];
       }
-  
+
       /*--- Loop over the number of points. ---*/
-  
+
       for(unsigned long i=0; i<nPoints; ++i) {
-    
+
         /* Easier storage of the left and right solution, the face normals and
          the flux vector for this point. */
         const su2double *UL   = solL + i*nVar;
         const su2double *UR   = solR + i*nVar;
         const su2double *norm = normalsFace + i*(nDim+1);
         su2double       *flux = fluxes + i*nVar;
-    
+
         /*--- Store and load the normal into numerics. ---*/
         for (unsigned short iDim = 0; iDim < nDim; ++iDim)
           Normal[iDim] = norm[iDim]*norm[nDim];
         numerics->SetNormal(Normal);
-    
-        /*--- Prepare the primitive states for the numerics class. Note 
+
+        /*--- Prepare the primitive states for the numerics class. Note
          that for the FV solver, we have the following primitive
          variable ordering: Compressible flow, primitive variables nDim+5,
          (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
-    
+
         /*--- Left primitive state ---*/
         Prim_L[0] = 0.0;                                        // Temperature (unused)
         Prim_L[nDim+1] = gm1*UL[nVar-1];
@@ -4648,7 +6444,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
         }
         Prim_L[nDim+2] = UL[0];                                 // Density
         Prim_L[nDim+3] = (UL[nVar-1] + Prim_L[nDim+1]) / UL[0]; // Enthalpy
-    
+
         /*--- Right primitive state ---*/
         Prim_R[0] = 0.0;                                        // Temperature (unused)
         Prim_R[nDim+1] = gm1*UR[nVar-1];
@@ -4658,16 +6454,16 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
         }
         Prim_R[nDim+2] = UR[0];                                 // Density
         Prim_R[nDim+3] = (UR[nVar-1] + Prim_R[nDim+1]) / UR[0]; // Enthalpy
-    
+
         /*--- Load the primitive states into the numerics class. ---*/
         numerics->SetPrimitive(Prim_L, Prim_R);
-    
+
         /*--- Now simply call the ComputeResidual() function to calculate
          the flux using the chosen approximate Riemann solver. Note that
          the Jacobian arrays here are just dummies for now (no implicit). ---*/
         numerics->ComputeResidual(flux, Jacobian_i, Jacobian_j, config);
       }
-  
+
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         delete [] Jacobian_i[iVar];
         delete [] Jacobian_j[iVar];
@@ -4848,7 +6644,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[0] + skipVars;
+      index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) {
         VecSolDOFs[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
       }
@@ -4926,12 +6722,8 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
       cout << "Warning. The initial solution contains "<< nBadDOFs << " DOFs that are not physical." << endl;
   }
 
-  /*--- Perform the MPI communication of the solution. ---*/
-  Initiate_MPI_Communication();
-  Complete_MPI_Communication();
-
   /*--- Delete the class memory that is used to load the restart. ---*/
-  
+
   if (Restart_Vars != NULL) delete [] Restart_Vars;
   if (Restart_Data != NULL) delete [] Restart_Data;
   Restart_Vars = NULL; Restart_Data = NULL;
@@ -5120,12 +6912,14 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam = Gamma/Prandtl_Lam;
-  su2double tick = 0.0;
+  double tick = 0.0;
 
-  /*--- Set the pointers for the local arrays. ---*/
+  /*--- Set the pointers for the local arrays and determine the number
+        of bytes for the call to memcpy later in this function. ---*/
   su2double *solInt     = VecTmpMemory.data();
   su2double *gradSolInt = solInt     + nIntegrationMax*nVar;
-  su2double *solDOFs    = gradSolInt + nIntegrationMax*nVar*nDim;
+  su2double *solCopy    = gradSolInt + nIntegrationMax*nVar*nDim;
+  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
@@ -5211,30 +7005,42 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Loop over the faces of this boundary. ---*/
         for(unsigned long l=0; l<nSurfElem; ++l) {
 
-          /* Compute the states in the integration points of the face. */
-          LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], solDOFs, solInt);
+          /* Get the required information from the corresponding standard face. */
+          const unsigned short ind       = surfElem[l].indStandardElement;
+          const unsigned short nInt      = standardBoundaryFacesSol[ind].GetNIntegration();
+          const unsigned short nDOFsFace = standardBoundaryFacesSol[ind].GetNDOFsFace();
+          const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
+          const su2double *basisFace     = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
+          const su2double *derBasisElem  = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+          const su2double *weights       = standardBoundaryFacesSol[ind].GetWeightsIntegration();
 
-          /*--- Get the required information from the standard element. ---*/
-          const unsigned short ind          = surfElem[l].indStandardElement;
-          const unsigned short nInt         = standardBoundaryFacesSol[ind].GetNIntegration();
-          const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
-          const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
-          const su2double     *weights      = standardBoundaryFacesSol[ind].GetWeightsIntegration();
+          /* Copy the solution of the DOFs of the face such that it is
+             contiguous in memory. */
+          for(unsigned short i=0; i<nDOFsFace; ++i) {
+            const su2double *solDOF = VecSolDOFs.data() + nVar*surfElem[l].DOFsSolFace[i];
+            su2double       *sol    = solCopy + nVar*i;
+            memcpy(sol, solDOF, nBytes);
+          }
+
+          /* Call the general function to carry out the matrix product to determine
+             the solution in the integration points. */
+          config->GEMM_Tick(&tick);
+          DenseMatrixProduct(nInt, nVar, nDOFsFace, basisFace, solCopy, solInt);
+          config->GEMM_Tock(tick, "Friction_Forces", nInt, nVar, nDOFsFace);
 
           /*--- Store the solution of the DOFs of the adjacent element in contiguous
                 memory such that the function DenseMatrixProduct can be used to compute
                 the gradients solution variables in the integration points of the face. ---*/
           for(unsigned short i=0; i<nDOFsElem; ++i) {
-            const su2double *solDOFElem = VecSolDOFs.data() + nVar*surfElem[l].DOFsSolElement[i];
-            su2double       *sol        = solDOFs + nVar*i;
-           for(unsigned short j=0; j<nVar; ++j)
-             sol[j] = solDOFElem[j];
+            const su2double *solDOF = VecSolDOFs.data() + nVar*surfElem[l].DOFsSolElement[i];
+            su2double       *sol    = solCopy + nVar*i;
+            memcpy(sol, solDOF, nBytes);
           }
 
           /* Compute the gradients in the integration points. Call the general function to
              carry out the matrix product. */
           config->GEMM_Tick(&tick);
-          DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solDOFs, gradSolInt);
+          DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solCopy, gradSolInt);
           config->GEMM_Tock(tick, "Friction_Forces", nInt*nDim, nVar, nDOFsElem);
 
           /* Determine the offset between r- and -s-derivatives, which is also the
@@ -5569,96 +7375,215 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
           DenseMatrixProduct(nDOFs*nDim, nVar, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
         }
 
-        /*--- Loop over the DOFs of this element and determine the maximum wave speed
-              and the maximum value of the viscous spectral radius. ---*/
         su2double charVel2Max = 0.0, radViscMax = 0.0;
-        for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-          const su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
 
-          /* Compute the velocities. */
-          su2double velAbs[3], vel[3];
-          const su2double DensityInv = 1.0/solDOF[0];
-          su2double Velocity2 = 0.0;
-          for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-            vel[iDim]    = solDOF[iDim+1]*DensityInv;
-            velAbs[iDim] = fabs(vel[iDim]);
-            Velocity2 += vel[iDim]*vel[iDim];
-          }
+        /*--- Make a distinction between 2D and 3D for optimal performance. ---*/
+        switch( nDim ) {
 
-          /*--- Compute the maximum value of the wave speed. This is a rather
-                conservative estimate. ---*/
-          const su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
-          FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
-          const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
-          const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
+          case 2: {
+            /*--- 2D simulation. Loop over the DOFs of this element
+                  and determine the maximum wave speed and the maximum
+                  value of the viscous spectral radius. ---*/
+            for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+              const su2double *solDOF = VecSolDOFs.data()
+                                      + nVar*(volElem[i].offsetDOFsSolLocal + j);
 
-          su2double charVel2 = 0.0;
-          for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-            const su2double rad = velAbs[iDim] + SoundSpeed;
-            charVel2 += rad*rad;
-          }
+              /* Compute the velocities and the internal energy per unit mass. */
+              const su2double DensityInv   = 1.0/solDOF[0];
+              const su2double u            = DensityInv*solDOF[1];
+              const su2double v            = DensityInv*solDOF[2];
+              const su2double StaticEnergy = DensityInv*solDOF[3] - 0.5*(u*u + v*v);
 
-          charVel2Max = max(charVel2Max, charVel2);
+              /*--- Compute the maximum value of the wave speed. This is a rather
+                    conservative estimate. ---*/
+              FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+              const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+              const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
 
-          /* Compute the laminar kinematic viscosity and check if an eddy
-             viscosity must be determined. */
-          const su2double muLam = FluidModel->GetLaminarViscosity();
-          su2double muTurb      = 0.0;
+              const su2double radx     = fabs(u) + SoundSpeed;
+              const su2double rady     = fabs(v) + SoundSpeed;
+              const su2double charVel2 = radx*radx + rady*rady;
 
-          if( SGSModelUsed ) {
+              charVel2Max = max(charVel2Max, charVel2);
 
-            /* Set the pointer gradSolDOF to the location where the gradients
-               of this DOF start. */
-            const su2double *gradSolDOF = gradSolDOFs + j*nVar;
+              /* Compute the laminar kinematic viscosity and check if an eddy
+                 viscosity must be determined. */
+              const su2double muLam = FluidModel->GetLaminarViscosity();
+              su2double muTurb      = 0.0;
 
-            /* Easier storage of the metric terms in this DOF. First compute the
-               inverse of the Jacobian, the Jacobian is the first entry in the metric
-               terms, and afterwards update the metric terms by 1. */
-            const su2double *metricTerms = volElem[i].metricTermsSolDOFs.data()
-                                         + j*nMetricPerPoint;
-            const su2double Jac          = metricTerms[0];
-            const su2double JacInv       = 1.0/Jac;
-            metricTerms                 += 1;
+              if( SGSModelUsed ) {
 
-            /*--- Compute the Cartesian gradients of the independent solution
-                  variables from the gradients in parametric coordinates and the metric
-                  terms in this DOF. Note that at the end a multiplication with JacInv
-                  takes places, because the metric terms are scaled by the Jacobian. ---*/
-            su2double solGradCart[5][3];
-            for(unsigned short k=0; k<nDim; ++k) {
-              for(unsigned short l=0; l<nVar; ++l) {
-                solGradCart[l][k] = 0.0;
-                for(unsigned short m=0; m<nDim; ++m)
-                  solGradCart[l][k] += gradSolDOF[l+m*offDerivSol]*metricTerms[k+m*nDim];
-                solGradCart[l][k] *= JacInv;
+                /* Set the pointers to the locations where the gradients
+                   of this DOF start. */
+                const su2double *solDOFDr = gradSolDOFs + j*nVar;
+                const su2double *solDOFDs = solDOFDr    + offDerivSol;
+
+                /* Compute the true value of the metric terms in this DOF. Note that in
+                   metricTerms the metric terms scaled by the Jacobian are stored. */
+                const su2double *metricTerms = volElem[i].metricTermsSolDOFs.data()
+                                             + j*nMetricPerPoint;
+                const su2double JacInv       = 1.0/metricTerms[0];
+
+                const su2double drdx = JacInv*metricTerms[1];
+                const su2double drdy = JacInv*metricTerms[2];
+
+                const su2double dsdx = JacInv*metricTerms[3];
+                const su2double dsdy = JacInv*metricTerms[4];
+
+                /*--- Compute the Cartesian gradients of the independent solution
+                      variables from the gradients in parametric coordinates and the metric
+                      terms in this DOF. ---*/
+                su2double solGradCart[3][2];
+
+                solGradCart[0][0] = solDOFDr[0]*drdx + solDOFDs[0]*dsdx;
+                solGradCart[1][0] = solDOFDr[1]*drdx + solDOFDs[1]*dsdx;
+                solGradCart[2][0] = solDOFDr[2]*drdx + solDOFDs[2]*dsdx;
+
+                solGradCart[0][1] = solDOFDr[0]*drdy + solDOFDs[0]*dsdy;
+                solGradCart[1][1] = solDOFDr[1]*drdy + solDOFDs[1]*dsdy;
+                solGradCart[2][1] = solDOFDr[2]*drdy + solDOFDs[2]*dsdy;
+
+                /*--- Compute the Cartesian gradients of the velocities. ---*/
+                const su2double dudx = DensityInv*(solGradCart[1][0] - u*solGradCart[0][0]);
+                const su2double dvdx = DensityInv*(solGradCart[2][0] - v*solGradCart[0][0]);
+                const su2double dudy = DensityInv*(solGradCart[1][1] - u*solGradCart[0][1]);
+                const su2double dvdy = DensityInv*(solGradCart[2][1] - v*solGradCart[0][1]);
+
+                /* Compute the eddy viscosity. */
+                const su2double dist = volElem[i].wallDistanceSolDOFs[j];
+                muTurb = SGSModel->ComputeEddyViscosity_2D(solDOF[0], dudx, dudy,
+                                                           dvdx, dvdy, lenScale,
+                                                           dist);
               }
+
+              /*--- Determine the viscous spectral radius. ---*/
+              const su2double mu           = muLam + muTurb;
+              const su2double kOverCv      = muLam*factHeatFlux_Lam
+                                           + muTurb*factHeatFlux_Turb;
+              const su2double factHeatFlux = kOverCv/mu;
+
+              const su2double radVisc = DensityInv*mu*max(radOverNuTerm, factHeatFlux);
+
+              /* Update the maximum value of the viscous spectral radius. */
+              radViscMax = max(radViscMax, radVisc);
             }
 
-            /* Compute the Cartesian gradients of the velocities in this DOF. */
-            su2double velGrad[3][3];
-            for(unsigned short k=0; k<nDim; ++k) {
-              for(unsigned short l=0; l<nDim; ++l) {
-                velGrad[l][k] = DensityInv*(solGradCart[l+1][k]
-                              -      vel[l]*solGradCart[0][k]);
-              }
-            }
-
-            /* Compute the eddy viscosity. */
-            const su2double dist = volElem[i].wallDistanceSolDOFs[j];
-            muTurb = SGSModel->ComputeEddyViscosity(nDim, solDOF[0], velGrad,
-                                                    lenScale, dist);
+            break;
           }
 
-          /*--- Determine the viscous spectral radius. ---*/
-          const su2double mu           = muLam + muTurb;
-          const su2double kOverCv      = muLam*factHeatFlux_Lam
-                                       + muTurb*factHeatFlux_Turb;
-          const su2double factHeatFlux = kOverCv/mu;
+          case 3: {
+            /*--- 3D simulation. Loop over the DOFs of this element
+                  and determine the maximum wave speed and the maximum
+                  value of the viscous spectral radius. ---*/
+            for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+              const su2double *solDOF = VecSolDOFs.data()
+                                      + nVar*(volElem[i].offsetDOFsSolLocal + j);
 
-          const su2double radVisc = DensityInv*mu*max(radOverNuTerm, factHeatFlux);
+              /* Compute the velocities and the internal energy per unit mass. */
+              const su2double DensityInv   = 1.0/solDOF[0];
+              const su2double u            = DensityInv*solDOF[1];
+              const su2double v            = DensityInv*solDOF[2];
+              const su2double w            = DensityInv*solDOF[3];
+              const su2double StaticEnergy = DensityInv*solDOF[4] - 0.5*(u*u + v*v + w*w);
 
-          /* Update the maximum value of the viscous spectral radius. */
-          radViscMax = max(radViscMax, radVisc);
+              /*--- Compute the maximum value of the wave speed. This is a rather
+                    conservative estimate. ---*/
+              FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+              const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+              const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
+
+              const su2double radx     = fabs(u) + SoundSpeed;
+              const su2double rady     = fabs(v) + SoundSpeed;
+              const su2double radz     = fabs(w) + SoundSpeed;
+              const su2double charVel2 = radx*radx + rady*rady + radz*radz;
+
+              charVel2Max = max(charVel2Max, charVel2);
+
+              /* Compute the laminar kinematic viscosity and check if an eddy
+                 viscosity must be determined. */
+              const su2double muLam = FluidModel->GetLaminarViscosity();
+              su2double muTurb      = 0.0;
+
+              if( SGSModelUsed ) {
+
+                /* Set the pointers to the locations where the gradients
+                   of this DOF start. */
+                const su2double *solDOFDr = gradSolDOFs + j*nVar;
+                const su2double *solDOFDs = solDOFDr    + offDerivSol;
+                const su2double *solDOFDt = solDOFDt    + offDerivSol;
+
+                /* Compute the true value of the metric terms in this DOF. Note that in
+                   metricTerms the metric terms scaled by the Jacobian are stored. */
+                const su2double *metricTerms = volElem[i].metricTermsSolDOFs.data()
+                                             + j*nMetricPerPoint;
+                const su2double JacInv       = 1.0/metricTerms[0];
+
+                const su2double drdx = JacInv*metricTerms[1];
+                const su2double drdy = JacInv*metricTerms[2];
+                const su2double drdz = JacInv*metricTerms[3];
+
+                const su2double dsdx = JacInv*metricTerms[4];
+                const su2double dsdy = JacInv*metricTerms[5];
+                const su2double dsdz = JacInv*metricTerms[6];
+
+                const su2double dtdx = JacInv*metricTerms[7];
+                const su2double dtdy = JacInv*metricTerms[8];
+                const su2double dtdz = JacInv*metricTerms[9];
+
+                /*--- Compute the Cartesian gradients of the independent solution
+                      variables from the gradients in parametric coordinates and the metric
+                      terms in this DOF. ---*/
+                su2double solGradCart[4][3];
+
+                solGradCart[0][0] = solDOFDr[0]*drdx + solDOFDs[0]*dsdx + solDOFDt[0]*dtdx;
+                solGradCart[1][0] = solDOFDr[1]*drdx + solDOFDs[1]*dsdx + solDOFDt[1]*dtdx;
+                solGradCart[2][0] = solDOFDr[2]*drdx + solDOFDs[2]*dsdx + solDOFDt[2]*dtdx;
+                solGradCart[3][0] = solDOFDr[3]*drdx + solDOFDs[3]*dsdx + solDOFDt[3]*dtdx;
+
+                solGradCart[0][1] = solDOFDr[0]*drdy + solDOFDs[0]*dsdy + solDOFDt[0]*dtdy;
+                solGradCart[1][1] = solDOFDr[1]*drdy + solDOFDs[1]*dsdy + solDOFDt[1]*dtdy;
+                solGradCart[2][1] = solDOFDr[2]*drdy + solDOFDs[2]*dsdy + solDOFDt[2]*dtdy;
+                solGradCart[3][1] = solDOFDr[3]*drdy + solDOFDs[3]*dsdy + solDOFDt[3]*dtdy;
+
+                solGradCart[0][2] = solDOFDr[0]*drdz + solDOFDs[0]*dsdz + solDOFDt[0]*dtdz;
+                solGradCart[1][2] = solDOFDr[1]*drdz + solDOFDs[1]*dsdz + solDOFDt[1]*dtdz;
+                solGradCart[2][2] = solDOFDr[2]*drdz + solDOFDs[2]*dsdz + solDOFDt[2]*dtdz;
+                solGradCart[3][2] = solDOFDr[3]*drdz + solDOFDs[3]*dsdz + solDOFDt[3]*dtdz;
+
+                /*--- Compute the Cartesian gradients of the velocities. ---*/
+                const su2double dudx = DensityInv*(solGradCart[1][0] - u*solGradCart[0][0]);
+                const su2double dudy = DensityInv*(solGradCart[1][1] - u*solGradCart[0][1]);
+                const su2double dudz = DensityInv*(solGradCart[1][2] - u*solGradCart[0][2]);
+
+                const su2double dvdx = DensityInv*(solGradCart[2][0] - v*solGradCart[0][0]);
+                const su2double dvdy = DensityInv*(solGradCart[2][1] - v*solGradCart[0][1]);
+                const su2double dvdz = DensityInv*(solGradCart[2][2] - v*solGradCart[0][2]);
+
+                const su2double dwdx = DensityInv*(solGradCart[3][0] - w*solGradCart[0][0]);
+                const su2double dwdy = DensityInv*(solGradCart[3][1] - w*solGradCart[0][1]);
+                const su2double dwdz = DensityInv*(solGradCart[3][2] - w*solGradCart[0][2]);
+
+                /* Compute the eddy viscosity. */
+                const su2double dist = volElem[i].wallDistanceSolDOFs[j];
+                muTurb = SGSModel->ComputeEddyViscosity_3D(solDOF[0], dudx, dudy, dudz,
+                                                           dvdx, dvdy, dvdz, dwdx, dwdy,
+                                                           dwdz, lenScale, dist);
+              }
+
+              /*--- Determine the viscous spectral radius. ---*/
+              const su2double mu           = muLam + muTurb;
+              const su2double kOverCv      = muLam*factHeatFlux_Lam
+                                           + muTurb*factHeatFlux_Turb;
+              const su2double factHeatFlux = kOverCv/mu;
+
+              const su2double radVisc = DensityInv*mu*max(radOverNuTerm, factHeatFlux);
+
+              /* Update the maximum value of the viscous spectral radius. */
+              radViscMax = max(radViscMax, radVisc);
+            }
+
+            break;
+          }
         }
 
         /*--- Compute the time step for the element and update the minimum and
@@ -5683,7 +7608,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 #endif
 
       if(rank == MASTER_NODE) {
-        cout << "In function CFEM_DG_EulerSolver::SetTime_Step" << endl;
+        cout << "In function CFEM_DG_NSSolver::SetTime_Step" << endl;
         cout << "Incompressible solver not implemented yet" << endl;
       }
 
@@ -5722,11 +7647,11 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   }
 }
 
-void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *config,
-                                                        CVolumeElementFEM *elem,
-                                                        const su2double   *sol,
-                                                        su2double         *res,
-                                                        su2double         *work) {
+void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           *config,
+                                                           CVolumeElementFEM *elem,
+                                                           const su2double   *sol,
+                                                           su2double         *res,
+                                                           su2double         *work) {
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
@@ -5753,19 +7678,18 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
      gradFluxesInt and gradSolDOFs, because this information is needed after
      each other. */
   su2double *fluxesDOF     = work;
-  su2double *gradFluxesInt = fluxesDOF + nDOFs*nVar*nDim;
+  su2double *gradFluxesInt = fluxesDOF + 8*nDOFs; /* nDOFs*nVar*nDim. */
   su2double *gradSolDOFs   = gradFluxesInt;
   su2double *divFlux       = work;
 
-  /* Determine the offset between the r-derivatives and s-derivatives, which is
-     also the offset between s- and t-derivatives, of the fluxes in the
-     integration points and the solution in the DOFs. */
-  const unsigned short offDerivSol    = nVar*nDOFs;
-  const unsigned short offDerivFluxes = nVar*nInt*nDim;
+  /* Determine the offset between the r-derivatives and s-derivatives of the
+     fluxes in the integration points and the offset between the r-derivatives
+     and s-derivatives of the solution in the DOFs. */
+  const unsigned short offDerivSol    = 4*nDOFs;  /* nVar*nDOFs. */
+  const unsigned short offDerivFluxes = 8*nInt;   /* nVar*nInt*nDim. */
 
-  /* Store the number of metric points per integration point/DOF, which depends
-     on the number of dimensions. */
-  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+  /* Store the number of metric points per integration point for readability. */
+  const unsigned short nMetricPerPoint = 5;  /* nDim*nDim + 1. */
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Determine the Cartesian fluxes of the Navier-Stokes        ---*/
@@ -5782,71 +7706,67 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
     /* Set the pointers to the location where the solution, the gradients of the
        solution and the location where the Cartesian fluxes of this DOF
        are stored. */
-    const su2double *solDOF     = sol         + i*nVar;
-    const su2double *gradSolDOF = gradSolDOFs + i*nVar;
-    su2double       *fluxes     = fluxesDOF   + i*nVar*nDim;
+    const su2double *solDOF   = sol         + 4*i;     /* i*nVar. */
+    const su2double *solDOFDr = gradSolDOFs + 4*i;     /* i*nVar. */
+    const su2double *solDOFDs = solDOFDr    + offDerivSol;
+    su2double       *fluxes   = fluxesDOF   + 8*i;     /* i*nVar*nDim. */
 
-    /* Easier storage of the metric terms in this DOF. First compute the
-       inverse of the Jacobian, the Jacobian is the first entry in the metric
-       terms, and afterwards update the metric terms by 1. */
+    /* Compute the true value of the metric terms in this DOF. Note that in
+       metricTerms the metric terms scaled by the Jacobian are stored. */
     const su2double *metricTerms = elem->metricTermsSolDOFs.data()
                                  + i*nMetricPerPoint;
-    const su2double Jac          = metricTerms[0];
-    const su2double JacInv       = 1.0/Jac;
-    metricTerms                 += 1;
+    const su2double JacInv       = 1.0/metricTerms[0];
+
+    const su2double drdx = JacInv*metricTerms[1];
+    const su2double drdy = JacInv*metricTerms[2];
+
+    const su2double dsdx = JacInv*metricTerms[3];
+    const su2double dsdy = JacInv*metricTerms[4];
 
     /*--- Compute the Cartesian gradients of the independent solution
           variables from the gradients in parametric coordinates and the metric
-          terms in this DOF. Note that at the end a multiplication with JacInv
-          takes places, because the metric terms are scaled by the Jacobian. ---*/
-    su2double solGradCart[5][3];
-    for(unsigned short k=0; k<nDim; ++k) {
-      for(unsigned short j=0; j<nVar; ++j) {
-        solGradCart[j][k] = 0.0;
-        for(unsigned short l=0; l<nDim; ++l)
-          solGradCart[j][k] += gradSolDOF[j+l*offDerivSol]*metricTerms[k+l*nDim];
-        solGradCart[j][k] *= JacInv;
-      }
-    }
+          terms in this DOF. ---*/
+    su2double solGradCart[4][2];
 
-    /*--- Compute the velocities and static energy in this DOF. ---*/
-    const su2double DensityInv = 1.0/solDOF[0];
-    su2double vel[3], Velocity2 = 0.0;
-    for(unsigned short j=0; j<nDim; ++j) {
-      vel[j]     = solDOF[j+1]*DensityInv;
-      Velocity2 += vel[j]*vel[j];
-    }
+    solGradCart[0][0] = solDOFDr[0]*drdx + solDOFDs[0]*dsdx;
+    solGradCart[1][0] = solDOFDr[1]*drdx + solDOFDs[1]*dsdx;
+    solGradCart[2][0] = solDOFDr[2]*drdx + solDOFDs[2]*dsdx;
+    solGradCart[3][0] = solDOFDr[3]*drdx + solDOFDs[3]*dsdx;
 
-    const su2double TotalEnergy  = solDOF[nDim+1]*DensityInv;
-    const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+    solGradCart[0][1] = solDOFDr[0]*drdy + solDOFDs[0]*dsdy;
+    solGradCart[1][1] = solDOFDr[1]*drdy + solDOFDs[1]*dsdy;
+    solGradCart[2][1] = solDOFDr[2]*drdy + solDOFDs[2]*dsdy;
+    solGradCart[3][1] = solDOFDr[3]*drdy + solDOFDs[3]*dsdy;
 
-    /*--- Compute the Cartesian gradients of the velocities and static energy
-          in this integration point and also the divergence of the velocity. ---*/
-    su2double velGrad[3][3], StaticEnergyGrad[3], divVel = 0.0;
-    for(unsigned short k=0; k<nDim; ++k) {
-      StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
-                          -             TotalEnergy*solGradCart[0][k]);
-      for(unsigned short j=0; j<nDim; ++j) {
-        velGrad[j][k]        = DensityInv*(solGradCart[j+1][k]
-                             -      vel[j]*solGradCart[0][k]);
-        StaticEnergyGrad[k] -= vel[j]*velGrad[j][k];
-      }
-      divVel += velGrad[k][k];
-    }
+    /*--- Compute the velocities, pressure and laminar viscosity in this DOF. ---*/
+    const su2double DensityInv   = 1.0/solDOF[0];
+    const su2double u            = DensityInv*solDOF[1];
+    const su2double v            = DensityInv*solDOF[2];
+    const su2double TotalEnergy  = DensityInv*solDOF[3];
+    const su2double StaticEnergy = TotalEnergy - 0.5*(u*u + v*v);
 
-    /*--- Compute the pressure and the laminar viscosity. ---*/
     FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
     const su2double Pressure     = FluidModel->GetPressure();
     const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
 
+    /*--- Compute the Cartesian gradients of the velocities and
+          static energy in this DOF. ---*/
+    const su2double dudx = DensityInv*(solGradCart[1][0] - u*solGradCart[0][0]);
+    const su2double dvdx = DensityInv*(solGradCart[2][0] - v*solGradCart[0][0]);
+    const su2double dudy = DensityInv*(solGradCart[1][1] - u*solGradCart[0][1]);
+    const su2double dvdy = DensityInv*(solGradCart[2][1] - v*solGradCart[0][1]);
+
+    const su2double dedx = DensityInv*(solGradCart[3][0] - TotalEnergy*solGradCart[0][0])
+                         - u*dudx - v*dvdx;
+    const su2double dedy = DensityInv*(solGradCart[3][1] - TotalEnergy*solGradCart[0][1])
+                         - u*dudy - v*dvdy;
+
     /*--- Compute the eddy viscosity, if needed, and the total viscosity. ---*/
     su2double ViscosityTurb = 0.0;
-    if( SGSModelUsed ) {
-      const su2double dist = elem->wallDistanceSolDOFs[i];
-      ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, solDOF[0], velGrad,
-                                                    lenScale, dist);
-    }
-
+    if( SGSModelUsed )
+      ViscosityTurb = SGSModel->ComputeEddyViscosity_2D(solDOF[0], dudx, dudy,
+                                                        dvdx, dvdy, lenScale,
+                                                        elem->wallDistanceSolDOFs[i]);
     const su2double Viscosity = ViscosityLam + ViscosityTurb;
 
     /* Compute the total thermal conductivity divided by Cv. */
@@ -5856,40 +7776,26 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
     /*--- Set the value of the second viscosity and compute the divergence
           term in the viscous normal stresses. ---*/
     const su2double lambda     = -TWO3*Viscosity;
-    const su2double lamDivTerm =  lambda*divVel;
+    const su2double lamDivTerm =  lambda*(dudx + dvdy);
 
     /*--- Compute the viscous stress tensor. ---*/
-    su2double tauVis[3][3];
-    for(unsigned short k=0; k<nDim; ++k) {
-      tauVis[k][k] = 2.0*Viscosity*velGrad[k][k] + lamDivTerm;    // Normal stress
-      for(unsigned short j=(k+1); j<nDim; ++j) {
-        tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[k][j]); // Shear stress
-        tauVis[k][j] = tauVis[j][k];
-      }
-    }
+    const su2double tauxx = 2.0*Viscosity*dudx + lamDivTerm;
+    const su2double tauyy = 2.0*Viscosity*dvdy + lamDivTerm;
+    const su2double tauxy = Viscosity*(dudy + dvdx);
 
-    /* Loop over the number of dimensions for the number of fluxes. */
-    const su2double rH = solDOF[nDim+1] + Pressure;
-    unsigned short ll = 0;
-    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+    /*--- Compute the Cartesian fluxes in this DOF. First the fluxes in
+          x-direction are stored, followed by the fluxes in y-direction. ---*/
+    const su2double rH = solDOF[3] + Pressure;
 
-      /* Mass flux for the current direction. */
-      fluxes[ll++] = solDOF[iDim+1];
+    fluxes[0] = solDOF[1];
+    fluxes[1] = solDOF[1]*u + Pressure - tauxx;
+    fluxes[2] = solDOF[1]*v - tauxy;
+    fluxes[3] = rH*u - kOverCv*dedx - u*tauxx - v*tauxy;
 
-      /* Momentum fluxes for the current direction. */
-      for(unsigned short jDim=0; jDim<nDim; ++jDim)
-        fluxes[ll+jDim] = solDOF[iDim+1]*vel[jDim] - tauVis[jDim][iDim];
-      fluxes[ll+iDim]  += Pressure;
-
-      ll += nDim;
-
-      /* Energy flux for the current direction. */
-      fluxes[ll] = rH*vel[iDim]                         // Inviscid part
-                 - kOverCv*StaticEnergyGrad[iDim];      // Heat flux part
-      for(unsigned short jDim=0; jDim<nDim; ++jDim)
-        fluxes[ll] -= tauVis[jDim][iDim]*vel[jDim];     // Work of the viscous forces part
-      ++ll;
-    }
+    fluxes[4] = solDOF[2];
+    fluxes[5] = solDOF[2]*u - tauxy;
+    fluxes[6] = solDOF[2]*v + Pressure - tauyy;
+    fluxes[7] = rH*v - kOverCv*dedy - u*tauxy - v*tauyy;
   }
 
   /*--------------------------------------------------------------------------*/
@@ -5908,40 +7814,32 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
 
     /* Easier storage of the location where the data of the derivatives of the
        fluxes of this integration point starts. */
-    const su2double *gradFluxes = gradFluxesInt + nVar*nDim*i;
+    const su2double *gradFluxesDr = gradFluxesInt + 8*i;       /* nVar*nDim*i. */
+    const su2double *gradFluxesDs = gradFluxesDr  + offDerivFluxes;
 
-    /* Easier storage of the metric terms in this integration point. The +1
-       is present, because the first element of the metric terms is the
-       Jacobian in the integration point. Also set the point where the divergence
-       of the flux terms is stored for the current integration point. */
-    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint + 1;
-    su2double       *divFluxInt  = divFlux + nVar*i;
+    /* Easier storage of the metric terms in this integration point.
+       Also set the point where the divergence of the flux terms is
+       stored for the current integration point. */
+    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+    su2double       *divFluxInt  = divFlux + 4*i;  /* nVar*i. */
 
-    /* Initialize the divergence to zero. */
-    for(unsigned short j=0; j<nVar; ++j) divFluxInt[j] = 0.0;
+    /* Compute the metric terms multiplied by the integration weight. Note that the
+       first term in the metric terms is the Jacobian. */
+    const su2double wDrdx = weights[i]*metricTerms[1];
+    const su2double wDrdy = weights[i]*metricTerms[2];
 
-    /* Loop over the nDim parametric coordinates. */
-    unsigned short ll = 0;
-    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+    const su2double wDsdx = weights[i]*metricTerms[3];
+    const su2double wDsdy = weights[i]*metricTerms[4];
 
-      /* Set the pointer to derivatives of this parametric coordinate. */
-      const su2double *derFluxes = gradFluxes + iDim*offDerivFluxes;
-
-      /* Loop over the number of Cartesian dimensions. */
-      for(unsigned short jDim=0; jDim<nDim; ++jDim, ++ll) {
-
-        /* Set the pointer to the derivatives of the Cartesian flux in
-           the jDim direction. */
-        const su2double *derFlux = derFluxes + jDim*nVar;
-
-        /* Update the divergence for all equations. */
-        for(unsigned short j=0; j<nVar; ++j)
-          divFluxInt[j] += derFlux[j]*metricTerms[ll];
-      }
-    }
-
-    /* Multiply the divergence with the integration weight. */
-    for(unsigned short j=0; j<nVar; ++j) divFluxInt[j] *= weights[i];
+    /* Compute the divergence of the fluxes, multiplied by the integration weight. */
+    divFluxInt[0] = gradFluxesDr[0]*wDrdx + gradFluxesDs[0]*wDsdx
+                  + gradFluxesDr[4]*wDrdy + gradFluxesDs[4]*wDsdy;
+    divFluxInt[1] = gradFluxesDr[1]*wDrdx + gradFluxesDs[1]*wDsdx
+                  + gradFluxesDr[5]*wDrdy + gradFluxesDs[5]*wDsdy;
+    divFluxInt[2] = gradFluxesDr[2]*wDrdx + gradFluxesDs[2]*wDsdx
+                  + gradFluxesDr[6]*wDrdy + gradFluxesDs[6]*wDsdy;
+    divFluxInt[3] = gradFluxesDr[3]*wDrdx + gradFluxesDs[3]*wDsdx
+                  + gradFluxesDr[7]*wDrdy + gradFluxesDs[7]*wDsdy;
   }
 
   /* Compute the residual in the DOFs, which is the matrix product of
@@ -5949,11 +7847,264 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
 }
 
-void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *config,
+void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           *config,
                                                            CVolumeElementFEM *elem,
                                                            const su2double   *sol,
                                                            su2double         *res,
                                                            su2double         *work) {
+
+  /* Constant factor present in the heat flux vector. */
+  const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
+
+  /*--- Get the necessary information from the standard element. ---*/
+  const unsigned short ind                = elem->indStandardElement;
+  const unsigned short nInt               = standardElementsSol[ind].GetNIntegration();
+  const unsigned short nDOFs              = elem->nDOFsSol;
+  const su2double *matBasisInt            = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+  const su2double *matDerBasisInt         = matBasisInt + nDOFs*nInt;
+  const su2double *matDerBasisSolDOFs     = standardElementsSol[ind].GetMatDerBasisFunctionsSolDOFs();
+  const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
+  const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
+
+  unsigned short nPoly = standardElementsSol[ind].GetNPoly();
+  if(nPoly == 0) nPoly = 1;
+
+  /* Compute the length scale of the current element for the LES. */
+  const su2double lenScale = elem->lenScale/nPoly;
+
+  /* Set the pointers for fluxesDOF, gradFluxesInt, gradSolDOF and divFlux.
+     Note that the same array can be used for the fluxesDOF and divFlux and
+     gradFluxesInt and gradSolDOFs, because this information is needed after
+     each other. */
+  su2double *fluxesDOF     = work;
+  su2double *gradFluxesInt = fluxesDOF + 15*nDOFs; /* nDOFs*nVar*nDim. */
+  su2double *gradSolDOFs   = gradFluxesInt;
+  su2double *divFlux       = work;
+
+  /* Determine the offset between the r-derivatives and s-derivatives, which is
+     also the offset between s- and t-derivatives, of the fluxes in the
+     integration points and the solution in the DOFs. */
+  const unsigned short offDerivSol    =  5*nDOFs;    /* nVar*nDOFs.     */
+  const unsigned short offDerivFluxes = 15*nInt;     /* nVar*nInt*nDim. */
+
+  /* Store the number of metric points per integration point/DOF for readability. */
+  const unsigned short nMetricPerPoint = 10;  /* nDim*nDim + 1. */
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Determine the Cartesian fluxes of the Navier-Stokes        ---*/
+  /*---         equations in the DOFs.                                     ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Compute the derivatives of the solution variables w.r.t. the parametric
+     coordinates in the DOFs. */
+  DenseMatrixProduct(nDOFs*nDim, nVar, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
+
+  /* Loop over the DOFs. */
+  for(unsigned short i=0; i<nDOFs; ++i) {
+
+    /* Set the pointers to the location where the solution, the gradients of the
+       solution and the location where the Cartesian fluxes of this DOF
+       are stored. */
+    const su2double *solDOF   = sol         + 5*i;    /* i*nVar. */
+    const su2double *solDOFDr = gradSolDOFs + 5*i;    /* i*nVar. */
+    const su2double *solDOFDs = solDOFDr    + offDerivSol;
+    const su2double *solDOFDt = solDOFDs    + offDerivSol;
+    su2double       *fluxes   = fluxesDOF   + 15*i;   /* i*nVar*nDim. */
+
+    /* Compute the true value of the metric terms in this DOF. Note that in
+       metricTerms the metric terms scaled by the Jacobian are stored. */
+    const su2double *metricTerms = elem->metricTermsSolDOFs.data()
+                                 + i*nMetricPerPoint;
+    const su2double JacInv       = 1.0/metricTerms[0];
+
+    const su2double drdx = JacInv*metricTerms[1];
+    const su2double drdy = JacInv*metricTerms[2];
+    const su2double drdz = JacInv*metricTerms[3];
+
+    const su2double dsdx = JacInv*metricTerms[4];
+    const su2double dsdy = JacInv*metricTerms[5];
+    const su2double dsdz = JacInv*metricTerms[6];
+
+    const su2double dtdx = JacInv*metricTerms[7];
+    const su2double dtdy = JacInv*metricTerms[8];
+    const su2double dtdz = JacInv*metricTerms[9];
+
+    /*--- Compute the Cartesian gradients of the independent solution
+          variables from the gradients in parametric coordinates and the metric
+          terms in this DOF. ---*/
+    su2double solGradCart[5][3];
+
+    solGradCart[0][0] = solDOFDr[0]*drdx + solDOFDs[0]*dsdx + solDOFDt[0]*dtdx;
+    solGradCart[1][0] = solDOFDr[1]*drdx + solDOFDs[1]*dsdx + solDOFDt[1]*dtdx;
+    solGradCart[2][0] = solDOFDr[2]*drdx + solDOFDs[2]*dsdx + solDOFDt[2]*dtdx;
+    solGradCart[3][0] = solDOFDr[3]*drdx + solDOFDs[3]*dsdx + solDOFDt[3]*dtdx;
+    solGradCart[4][0] = solDOFDr[4]*drdx + solDOFDs[4]*dsdx + solDOFDt[4]*dtdx;
+
+    solGradCart[0][1] = solDOFDr[0]*drdy + solDOFDs[0]*dsdy + solDOFDt[0]*dtdy;
+    solGradCart[1][1] = solDOFDr[1]*drdy + solDOFDs[1]*dsdy + solDOFDt[1]*dtdy;
+    solGradCart[2][1] = solDOFDr[2]*drdy + solDOFDs[2]*dsdy + solDOFDt[2]*dtdy;
+    solGradCart[3][1] = solDOFDr[3]*drdy + solDOFDs[3]*dsdy + solDOFDt[3]*dtdy;
+    solGradCart[4][1] = solDOFDr[4]*drdy + solDOFDs[4]*dsdy + solDOFDt[4]*dtdy;
+
+    solGradCart[0][2] = solDOFDr[0]*drdz + solDOFDs[0]*dsdz + solDOFDt[0]*dtdz;
+    solGradCart[1][2] = solDOFDr[1]*drdz + solDOFDs[1]*dsdz + solDOFDt[1]*dtdz;
+    solGradCart[2][2] = solDOFDr[2]*drdz + solDOFDs[2]*dsdz + solDOFDt[2]*dtdz;
+    solGradCart[3][2] = solDOFDr[3]*drdz + solDOFDs[3]*dsdz + solDOFDt[3]*dtdz;
+    solGradCart[4][2] = solDOFDr[4]*drdz + solDOFDs[4]*dsdz + solDOFDt[4]*dtdz;
+
+    /*--- Compute the velocities, pressure and laminar viscosity in this DOF. ---*/
+    const su2double DensityInv   = 1.0/solDOF[0];
+    const su2double u            = DensityInv*solDOF[1];
+    const su2double v            = DensityInv*solDOF[2];
+    const su2double w            = DensityInv*solDOF[3];
+    const su2double TotalEnergy  = DensityInv*solDOF[4];
+    const su2double StaticEnergy = TotalEnergy - 0.5*(u*u + v*v + w*w);
+
+    FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+    const su2double Pressure     = FluidModel->GetPressure();
+    const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+
+    /*--- Compute the Cartesian gradients of the velocities and
+          static energy in this DOF. ---*/
+    const su2double dudx = DensityInv*(solGradCart[1][0] - u*solGradCart[0][0]);
+    const su2double dudy = DensityInv*(solGradCart[1][1] - u*solGradCart[0][1]);
+    const su2double dudz = DensityInv*(solGradCart[1][2] - u*solGradCart[0][2]);
+
+    const su2double dvdx = DensityInv*(solGradCart[2][0] - v*solGradCart[0][0]);
+    const su2double dvdy = DensityInv*(solGradCart[2][1] - v*solGradCart[0][1]);
+    const su2double dvdz = DensityInv*(solGradCart[2][2] - v*solGradCart[0][2]);
+
+    const su2double dwdx = DensityInv*(solGradCart[3][0] - w*solGradCart[0][0]);
+    const su2double dwdy = DensityInv*(solGradCart[3][1] - w*solGradCart[0][1]);
+    const su2double dwdz = DensityInv*(solGradCart[3][2] - w*solGradCart[0][2]);
+
+    const su2double dedx = DensityInv*(solGradCart[4][0] - TotalEnergy*solGradCart[0][0])
+                         - u*dudx - v*dvdx - w*dwdx;
+    const su2double dedy = DensityInv*(solGradCart[4][1] - TotalEnergy*solGradCart[0][1])
+                         - u*dudy - v*dvdy - w*dwdy;
+    const su2double dedz = DensityInv*(solGradCart[4][2] - TotalEnergy*solGradCart[0][2])
+                         - u*dudz - v*dvdz - w*dwdz;
+
+    /*--- Compute the eddy viscosity, if needed, and the total viscosity. ---*/
+    su2double ViscosityTurb = 0.0;
+    if( SGSModelUsed )
+      ViscosityTurb = SGSModel->ComputeEddyViscosity_3D(solDOF[0], dudx, dudy, dudz,
+                                                        dvdx, dvdy, dvdz, dwdx,
+                                                        dwdy, dwdz, lenScale,
+                                                        elem->wallDistanceSolDOFs[i]);
+    const su2double Viscosity = ViscosityLam + ViscosityTurb;
+
+    /* Compute the total thermal conductivity divided by Cv. */
+    const su2double kOverCv = ViscosityLam *factHeatFlux_Lam
+                            + ViscosityTurb*factHeatFlux_Turb;
+
+    /*--- Set the value of the second viscosity and compute the divergence
+          term in the viscous normal stresses. ---*/
+    const su2double lambda     = -TWO3*Viscosity;
+    const su2double lamDivTerm =  lambda*(dudx + dvdy + dwdz);
+
+    /*--- Compute the viscous stress tensor. ---*/
+    const su2double tauxx = 2.0*Viscosity*dudx + lamDivTerm;
+    const su2double tauyy = 2.0*Viscosity*dvdy + lamDivTerm;
+    const su2double tauzz = 2.0*Viscosity*dwdz + lamDivTerm;
+
+    const su2double tauxy = Viscosity*(dudy + dvdx);
+    const su2double tauxz = Viscosity*(dudz + dwdx);
+    const su2double tauyz = Viscosity*(dvdz + dwdy);
+
+    /*--- Compute the Cartesian fluxes in this DOF. First the fluxes in
+          x-direction are stored, followed by the fluxes in y-direction
+          and the fluxes in z-direction. ---*/
+    const su2double rH = solDOF[4] + Pressure;
+
+    fluxes[0] = solDOF[1];
+    fluxes[1] = solDOF[1]*u + Pressure - tauxx;
+    fluxes[2] = solDOF[1]*v - tauxy;
+    fluxes[3] = solDOF[1]*w - tauxz;
+    fluxes[4] = rH*u - kOverCv*dedx - u*tauxx - v*tauxy - w*tauxz;
+
+    fluxes[5] = solDOF[2];
+    fluxes[6] = solDOF[2]*u - tauxy;
+    fluxes[7] = solDOF[2]*v + Pressure - tauyy;
+    fluxes[8] = solDOF[2]*w - tauyz;
+    fluxes[9] = rH*v - kOverCv*dedy - u*tauxy - v*tauyy - w*tauyz;
+
+    fluxes[10] = solDOF[3];
+    fluxes[11] = solDOF[3]*u - tauxz;
+    fluxes[12] = solDOF[3]*v - tauyz;
+    fluxes[13] = solDOF[3]*w + Pressure - tauzz;
+    fluxes[14] = rH*w - kOverCv*dedz - u*tauxz - v*tauyz - w*tauzz;
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Compute the divergence of the fluxes in the integration    ---*/
+  /*---         points and distribute the divergence terms to the DOFs.    ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Compute the derivatives of the Cartesian fluxes w.r.t. the parametric
+     coordinates in the integration points. */
+  DenseMatrixProduct(nInt*nDim, nVar*nDim, nDOFs, matDerBasisInt, fluxesDOF,
+                     gradFluxesInt);
+
+  /*--- Loop over the integration points to compute the divergence of the inviscid
+        fluxes in these integration points, multiplied by the integration weight. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the location where the data of the derivatives of the
+       fluxes of this integration point starts. */
+    const su2double *gradFluxesDr = gradFluxesInt + 15*i;       /* nVar*nDim*i. */
+    const su2double *gradFluxesDs = gradFluxesDr  + offDerivFluxes;
+    const su2double *gradFluxesDt = gradFluxesDs  + offDerivFluxes;
+
+    /* Easier storage of the metric terms in this integration point.
+       Also set the point where the divergence of the flux terms is
+       stored for the current integration point. */
+    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+    su2double       *divFluxInt  = divFlux + 5*i;  /* nVar*i. */
+
+    /* Compute the metric terms multiplied by the integration weight. Note that the
+       first term in the metric terms is the Jacobian. */
+    const su2double wDrdx = weights[i]*metricTerms[1];
+    const su2double wDrdy = weights[i]*metricTerms[2];
+    const su2double wDrdz = weights[i]*metricTerms[3];
+
+    const su2double wDsdx = weights[i]*metricTerms[4];
+    const su2double wDsdy = weights[i]*metricTerms[5];
+    const su2double wDsdz = weights[i]*metricTerms[6];
+
+    const su2double wDtdx = weights[i]*metricTerms[7];
+    const su2double wDtdy = weights[i]*metricTerms[8];
+    const su2double wDtdz = weights[i]*metricTerms[9];
+
+    /* Compute the divergence of the fluxes, multiplied by the integration weight. */
+    divFluxInt[0] = gradFluxesDr[0] *wDrdx + gradFluxesDs[0] *wDsdx + gradFluxesDt[0] *wDtdx
+                  + gradFluxesDr[5] *wDrdy + gradFluxesDs[5] *wDsdy + gradFluxesDt[5] *wDtdy
+                  + gradFluxesDr[10]*wDrdz + gradFluxesDs[10]*wDsdz + gradFluxesDt[10]*wDtdz;
+    divFluxInt[1] = gradFluxesDr[1] *wDrdx + gradFluxesDs[1] *wDsdx + gradFluxesDt[1] *wDtdx
+                  + gradFluxesDr[6] *wDrdy + gradFluxesDs[6] *wDsdy + gradFluxesDt[6] *wDtdy
+                  + gradFluxesDr[11]*wDrdz + gradFluxesDs[11]*wDsdz + gradFluxesDt[11]*wDtdz;
+    divFluxInt[2] = gradFluxesDr[2] *wDrdx + gradFluxesDs[2] *wDsdx + gradFluxesDt[2] *wDtdx
+                  + gradFluxesDr[7] *wDrdy + gradFluxesDs[7] *wDsdy + gradFluxesDt[7] *wDtdy
+                  + gradFluxesDr[12]*wDrdz + gradFluxesDs[12]*wDsdz + gradFluxesDt[12]*wDtdz;
+    divFluxInt[3] = gradFluxesDr[3] *wDrdx + gradFluxesDs[3] *wDsdx + gradFluxesDt[3] *wDtdx
+                  + gradFluxesDr[8] *wDrdy + gradFluxesDs[8] *wDsdy + gradFluxesDt[8] *wDtdy
+                  + gradFluxesDr[13]*wDrdz + gradFluxesDs[13]*wDsdz + gradFluxesDt[13]*wDtdz;
+    divFluxInt[4] = gradFluxesDr[4] *wDrdx + gradFluxesDs[4] *wDsdx + gradFluxesDt[4] *wDtdx
+                  + gradFluxesDr[9] *wDrdy + gradFluxesDs[9] *wDsdy + gradFluxesDt[9] *wDtdy
+                  + gradFluxesDr[14]*wDrdz + gradFluxesDs[14]*wDsdz + gradFluxesDt[14]*wDtdz;
+  }
+
+  /* Compute the residual in the DOFs, which is the matrix product of
+     basisFunctionsIntTrans and divFlux. */
+  DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
+}
+
+void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           *config,
+                                                              CVolumeElementFEM *elem,
+                                                              const su2double   *sol,
+                                                              su2double         *res,
+                                                              su2double         *work) {
 
   /* Constant factor present in the heat flux vector, the inverse of
      the specific heat at constant volume and ratio lambdaOverMu. */
@@ -5984,24 +8135,22 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
      derivatives such that they are stored after the first derivatives. */
   su2double *solAndGradInt      = work;
   su2double *divFlux            = work;
-  const unsigned short offPoint = nVar*(nDim+1)*max(nInt, nDOFs);
+  const unsigned short offPoint = 12*max(nInt, nDOFs);  /*nVar*(nDim+1)*max(..). */
   su2double *secDerSolInt       = solAndGradInt + offPoint;
 
   /* Determine the offset between the solution variables and the r-derivatives,
-     which is also the offset between the r- and s-derivatives and the offset
-     between s- and t-derivatives. Also determine the offset between the data
-     of the second derivatives. */
-  const unsigned short offDeriv    = nVar*nInt;
-  const unsigned short off2ndDeriv = nDim*offDeriv;
+     which is also the offset between the r- and s-derivatives. Also determine
+     the offset between the data of the second derivatives. */
+  const unsigned short offDeriv    = 4*nInt;       /* nVar*nInt. */
+  const unsigned short off2ndDeriv = 2*offDeriv;   /* nDim*offDeriv. */
 
-  /* Store the number of metric points per integration point, which depends
-     on the number of dimensions. */
-  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+  /* Store the number of metric points per integration point for readability. */
+  const unsigned short nMetricPerPoint = 5;  /* nDim*nDim + 1. */
 
   /* Store the number of additional metric points per integration point, which
      are needed to compute the second derivatives. These terms take the
      non-constant metric into account. */
-  const unsigned short nMetric2ndDerPerPoint = nDim*(nDim + nDim*(nDim-1)/2);
+  const unsigned short nMetric2ndDerPerPoint = 6; /*nDim*(nDim + nDim*(nDim-1)/2). */
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Interpolate the conserved solution variables to the        ---*/
@@ -6020,15 +8169,13 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
 
   /* Store the gradients in true row major order for each DOF. */
   su2double *firstDerSolDOFs = solAndGradInt;
-  unsigned short ll = 0;
   for(unsigned short i=0; i<nDOFs; ++i) {
+    const su2double *dSolDr = gradSolDOFs + 4*i;     /* nVar*i. */
+    const su2double *dSolDs = dSolDr      + 4*nDOFs; /* nVar*nDOFs. */
+    su2double *firstDer = firstDerSolDOFs + 8*i;     /* nVar*nDim*i. */
 
-    for(unsigned short j=0; j<nDim; ++j) {
-      const su2double *gradSolDOF = gradSolDOFs + nVar*(i + j*nDOFs);
-
-      for(unsigned short k=0; k<nVar; ++k, ++ll)
-        firstDerSolDOFs[ll] = gradSolDOF[k];
-    }
+    memcpy(firstDer,   dSolDr, 4*sizeof(su2double));
+    memcpy(firstDer+4, dSolDs, 4*sizeof(su2double));
   }
 
   /* Compute the second derivatives w.r.t. the parametric coordinates
@@ -6037,8 +8184,8 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
                      firstDerSolDOFs, secDerSolInt);
 
   /* Compute the solution and the derivatives w.r.t. the parametric coordinates
-     in the integration points. */
-  DenseMatrixProduct(nInt*(nDim+1), nVar, nDOFs, matBasisInt, sol, solAndGradInt);
+     in the integration points. The first argument is nInt*(nDim+1). */
+  DenseMatrixProduct(nInt*3, nVar, nDOFs, matBasisInt, sol, solAndGradInt);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 2: Determine from the solution and gradients the divergence   ---*/
@@ -6049,58 +8196,60 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
         in these integration points, multiplied by the integration weight. ---*/
   for(unsigned short i=0; i<nInt; ++i) {
 
-    /* Easier storage of the location where the solution data of this
-       integration point starts. */
-    const su2double *sol = solAndGradInt + nVar*i;
+    /* Easier storage of the location where the solution and gradient data
+       of this integration point starts. */
+    const su2double *sol   = solAndGradInt + 4*i; /* nVar*i. */
+    const su2double *solDr = sol   + offDeriv;
+    const su2double *solDs = solDr + offDeriv;
 
-    /*--- Compute the velocities and static energy in this integration point. ---*/
-    const su2double DensityInv = 1.0/sol[0];
-    su2double vel[3], Velocity2 = 0.0;
-    for(unsigned short j=0; j<nDim; ++j) {
-      vel[j]     = sol[j+1]*DensityInv;
-      Velocity2 += vel[j]*vel[j];
-    }
+    /*--- Compute the velocities, pressure and total enthalpy
+          in this integration point. ---*/
+    const su2double DensityInv   = 1.0/sol[0];
+    const su2double u            = DensityInv*sol[1];
+    const su2double v            = DensityInv*sol[2];
+    const su2double kinEnergy    = 0.5*(u*u + v*v);
+    const su2double TotalEnergy  = DensityInv*sol[3];
+    const su2double StaticEnergy = TotalEnergy - kinEnergy;
 
-    const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
-    const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
-
-    /*--- Compute the laminar viscosity, its derivative w.r.t. temperature,
-          pressure and the total enthalpy. ---*/
     FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+    const su2double Pressure = FluidModel->GetPressure();
+    const su2double Htot     = DensityInv*(sol[3] + Pressure);
+
+    /* Compute the laminar viscosity and its derivative w.r.t. temperature. */
     const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
     const su2double dViscLamdT   = FluidModel->GetdmudT_rho();
-    const su2double Pressure     = FluidModel->GetPressure();
-    const su2double Htot         = (sol[nDim+1]+Pressure)*DensityInv;
 
-    /* Easier storage of the metric terms in this integration point.  Store the
-       Jacobian and its inverse for later purposes and update the pointer for
-       the metric terms by one, such that it starts at the position where drdx
-       of this integration point is stored. */
+    /* Compute the true metric terms. Note in metricTerms the actual metric
+       terms multiplied by the Jacobian are stored. */
     const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
     const su2double Jac          = metricTerms[0];
     const su2double JacInv       = 1.0/Jac;
-    const su2double JacInv2      = JacInv*JacInv;
-    metricTerms                 += 1;
+
+    const su2double drdx = JacInv*metricTerms[1];
+    const su2double drdy = JacInv*metricTerms[2];
+    const su2double dsdx = JacInv*metricTerms[3];
+    const su2double dsdy = JacInv*metricTerms[4];
 
     /*--- Compute the Cartesian gradients of the independent solution
           variables from the gradients in parametric coordinates and the
-          metric terms in this integration point. Note that at the end a
-          multiplication with JacInv takes places, because the metric terms
-          are scaled by the Jacobian. ---*/
-    su2double solGradCart[5][3];
-    for(unsigned short k=0; k<nDim; ++k) {
-      for(unsigned short j=0; j<nVar; ++j) {
-        solGradCart[j][k] = 0.0;
-        for(unsigned short l=0; l<nDim; ++l)
-          solGradCart[j][k] += sol[j+(l+1)*offDeriv]*metricTerms[k+l*nDim];
-        solGradCart[j][k] *= JacInv;
-      }
-    }
+          metric terms in this integration point. ---*/
+    su2double solGradCart[4][2];
+
+    solGradCart[0][0] = solDr[0]*drdx + solDs[0]*dsdx;
+    solGradCart[1][0] = solDr[1]*drdx + solDs[1]*dsdx;
+    solGradCart[2][0] = solDr[2]*drdx + solDs[2]*dsdx;
+    solGradCart[3][0] = solDr[3]*drdx + solDs[3]*dsdx;
+
+    solGradCart[0][1] = solDr[0]*drdy + solDs[0]*dsdy;
+    solGradCart[1][1] = solDr[1]*drdy + solDs[1]*dsdy;
+    solGradCart[2][1] = solDr[2]*drdy + solDs[2]*dsdy;
+    solGradCart[3][1] = solDr[3]*drdy + solDs[3]*dsdy;
 
     /* Easier storage of the location where the data of second derivatives of
        this integration point starts as well as the necessary additional metric
        terms to compute the Cartesian second derivatives. */
-    const su2double *sol2ndDer         = secDerSolInt + nVar*nDim*i;
+    const su2double *sol2ndDerDr       = secDerSolInt + 8*i;  /* nVar*nDim*i. */
+    const su2double *sol2ndDerDs       = sol2ndDerDr + off2ndDeriv;
     const su2double *metricTerms2ndDer = elem->metricTerms2ndDer.data()
                                        + i*nMetric2ndDerPerPoint;
 
@@ -6108,97 +8257,113 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
           variables from the gradients and second derivatives in parametric
           coordinates and the metric terms and its derivatives w.r.t. the
           parametric coordinates. ---*/
-    su2double sol2ndDerCart[5][3][3];
-    for(unsigned short j=0; j<nVar; ++j) {
-      unsigned short llDerMet = 0;
-      for(unsigned short l=0; l<nDim; ++l) {
-        for(unsigned short k=0; k<=l; ++k) {
-          sol2ndDerCart[j][k][l] = 0.0;
+    su2double sol2ndDerCart[4][2][2];
 
-          /* First the terms coming from the second derivatives w.r.t.
-             the parametric coordinates. The result is multiplied by the
-             square of the inverse of the Jacobian, because this term is
-             not present in the metric terms itself. */
-          for(unsigned short m=0; m<nDim; ++m) {
-            const su2double *secDerJ = sol2ndDer + m*off2ndDeriv + j;
-            for(unsigned short n=0; n<nDim; ++n)
-              sol2ndDerCart[j][k][l] += secDerJ[n*nVar]*metricTerms[l+m*nDim]
-                                      * metricTerms[k+n*nDim];
-          }
-          sol2ndDerCart[j][k][l] *= JacInv2;
+    sol2ndDerCart[0][0][0] = sol2ndDerDr[0]*drdx*drdx + sol2ndDerDs[4]*dsdx*dsdx
+                           + (sol2ndDerDr[4] + sol2ndDerDs[0])*drdx*dsdx
+                           + solDr[0]*metricTerms2ndDer[0] + solDs[0]*metricTerms2ndDer[1];
+    sol2ndDerCart[1][0][0] = sol2ndDerDr[1]*drdx*drdx + sol2ndDerDs[5]*dsdx*dsdx
+                           + (sol2ndDerDr[5] + sol2ndDerDs[1])*drdx*dsdx
+                           + solDr[1]*metricTerms2ndDer[0] + solDs[1]*metricTerms2ndDer[1];
+    sol2ndDerCart[2][0][0] = sol2ndDerDr[2]*drdx*drdx + sol2ndDerDs[6]*dsdx*dsdx
+                           + (sol2ndDerDr[6] + sol2ndDerDs[2])*drdx*dsdx
+                           + solDr[2]*metricTerms2ndDer[0] + solDs[2]*metricTerms2ndDer[1];
+    sol2ndDerCart[3][0][0] = sol2ndDerDr[3]*drdx*drdx + sol2ndDerDs[7]*dsdx*dsdx
+                           + (sol2ndDerDr[7] + sol2ndDerDs[3])*drdx*dsdx
+                           + solDr[3]*metricTerms2ndDer[0] + solDs[3]*metricTerms2ndDer[1];
 
-          /* There is also a contribution to the second derivative from the first
-             derivatives and non-constant metric terms. This is added here. */
-          for(unsigned short m=0; m<nDim; ++m, ++llDerMet)
-            sol2ndDerCart[j][k][l] += metricTerms2ndDer[llDerMet]*sol[j+(m+1)*offDeriv];
+    sol2ndDerCart[0][1][0] = sol2ndDerDr[0]*drdx*drdy + sol2ndDerDs[4]*dsdx*dsdy
+                           + 0.5*(sol2ndDerDr[4] + sol2ndDerDs[0])*(drdx*dsdy + dsdx*drdy)
+                           + solDr[0]*metricTerms2ndDer[2] + solDs[0]*metricTerms2ndDer[3];
+    sol2ndDerCart[1][1][0] = sol2ndDerDr[1]*drdx*drdy + sol2ndDerDs[5]*dsdx*dsdy
+                           + 0.5*(sol2ndDerDr[5] + sol2ndDerDs[1])*(drdx*dsdy + dsdx*drdy)
+                           + solDr[1]*metricTerms2ndDer[2] + solDs[1]*metricTerms2ndDer[3];
+    sol2ndDerCart[2][1][0] = sol2ndDerDr[2]*drdx*drdy + sol2ndDerDs[6]*dsdx*dsdy
+                           + 0.5*(sol2ndDerDr[6] + sol2ndDerDs[2])*(drdx*dsdy + dsdx*drdy)
+                           + solDr[2]*metricTerms2ndDer[2] + solDs[2]*metricTerms2ndDer[3];
+    sol2ndDerCart[3][1][0] = sol2ndDerDr[3]*drdx*drdy + sol2ndDerDs[7]*dsdx*dsdy
+                           + 0.5*(sol2ndDerDr[7] + sol2ndDerDs[3])*(drdx*dsdy + dsdx*drdy)
+                           + solDr[3]*metricTerms2ndDer[2] + solDs[3]*metricTerms2ndDer[3];
 
-          /* The Hessian is symmetric, so copy this derivative to its
-             symmetric counterpart. */
-          sol2ndDerCart[j][l][k] = sol2ndDerCart[j][k][l];
-        }
-      }
-    }
+    sol2ndDerCart[0][0][1] = sol2ndDerCart[0][1][0];
+    sol2ndDerCart[1][0][1] = sol2ndDerCart[1][1][0];
+    sol2ndDerCart[2][0][1] = sol2ndDerCart[2][1][0];
+    sol2ndDerCart[3][0][1] = sol2ndDerCart[3][1][0];
+
+    sol2ndDerCart[0][1][1] = sol2ndDerDr[0]*drdy*drdy + sol2ndDerDs[4]*dsdy*dsdy
+                           + (sol2ndDerDr[4] + sol2ndDerDs[0])*drdy*dsdy
+                           + solDr[0]*metricTerms2ndDer[4] + solDs[0]*metricTerms2ndDer[5];
+    sol2ndDerCart[1][1][1] = sol2ndDerDr[1]*drdy*drdy + sol2ndDerDs[5]*dsdy*dsdy
+                           + (sol2ndDerDr[5] + sol2ndDerDs[1])*drdy*dsdy
+                           + solDr[1]*metricTerms2ndDer[4] + solDs[1]*metricTerms2ndDer[5];
+    sol2ndDerCart[2][1][1] = sol2ndDerDr[2]*drdy*drdy + sol2ndDerDs[6]*dsdy*dsdy
+                           + (sol2ndDerDr[6] + sol2ndDerDs[2])*drdy*dsdy
+                           + solDr[2]*metricTerms2ndDer[4] + solDs[2]*metricTerms2ndDer[5];
+    sol2ndDerCart[3][1][1] = sol2ndDerDr[3]*drdy*drdy + sol2ndDerDs[7]*dsdy*dsdy
+                           + (sol2ndDerDr[7] + sol2ndDerDs[3])*drdy*dsdy
+                           + solDr[3]*metricTerms2ndDer[4] + solDs[3]*metricTerms2ndDer[5];
 
     /*--- Compute the Cartesian gradients of the pressure, velocity components,
           static energy and dynamic viscosity. ---*/
-    su2double pGrad[3], velGrad[3][3], StaticEnergyGrad[3], ViscosityLamGrad[3];
-    for(unsigned short k=0; k<nDim; ++k) {
-      pGrad[k]            = solGradCart[nVar-1][k] + 0.5*Velocity2*solGradCart[0][k];
-      StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
-                          -             TotalEnergy*solGradCart[0][k]);
-      for(unsigned short l=0; l<nDim; ++l) {
-        pGrad[k]            -= vel[l]*solGradCart[l+1][k];
-        velGrad[l][k]        = DensityInv*(solGradCart[l+1][k]
-                             -             vel[l]*solGradCart[0][k]);
-        StaticEnergyGrad[k] -= vel[l]*velGrad[l][k];
-      }
-      pGrad[k] *= Gamma_Minus_One;
+    const su2double dpdx = Gamma_Minus_One*(solGradCart[3][0] + kinEnergy*solGradCart[0][0]
+                         -                  u*solGradCart[1][0] - v*solGradCart[2][0]);
+    const su2double dpdy = Gamma_Minus_One*(solGradCart[3][1] + kinEnergy*solGradCart[0][1]
+                         -                  u*solGradCart[1][1] - v*solGradCart[2][1]);
 
-      ViscosityLamGrad[k] = CvInv*StaticEnergyGrad[k]*dViscLamdT;
-    }
+    const su2double dudx = DensityInv*(solGradCart[1][0] - u*solGradCart[0][0]);
+    const su2double dudy = DensityInv*(solGradCart[1][1] - u*solGradCart[0][1]);
+    const su2double dvdx = DensityInv*(solGradCart[2][0] - v*solGradCart[0][0]);
+    const su2double dvdy = DensityInv*(solGradCart[2][1] - v*solGradCart[0][1]);
+
+    const su2double dedx = DensityInv*(solGradCart[3][0] - TotalEnergy*solGradCart[0][0])
+                         - u*dudx - v*dvdx;
+    const su2double dedy = DensityInv*(solGradCart[3][1] - TotalEnergy*solGradCart[0][1])
+                         - u*dudy - v*dvdy;
+
+    const su2double dViscLamdx = CvInv*dedx*dViscLamdT;
+    const su2double dViscLamdy = CvInv*dedy*dViscLamdT;
 
     /*--- Compute the second derivatives of the velocity components. ---*/
-    su2double vel2ndDer[3][3][3];
-    for(unsigned short j=0; j<nDim; ++j) {
-      for(unsigned short l=0; l<nDim; ++l) {
-        for(unsigned short k=0; k<=l; ++k) {
-          vel2ndDer[j][k][l] = DensityInv*(sol2ndDerCart[j+1][k][l] - vel[j]*sol2ndDerCart[0][k][l]
-                             +     DensityInv*(2.0*vel[j]*solGradCart[0][k]*solGradCart[0][l]
-                             -                 solGradCart[j+1][k]*solGradCart[0][l]
-                             -                 solGradCart[j+1][l]*solGradCart[0][k]));
-          vel2ndDer[j][l][k] = vel2ndDer[j][k][l];
-        }
-      }
-    }
+    const su2double d2udxx = DensityInv*(sol2ndDerCart[1][0][0] - u*sol2ndDerCart[0][0][0]
+                           +    2.0*DensityInv*solGradCart[0][0]*(u*solGradCart[0][0] - solGradCart[1][0]));
+    const su2double d2udyy = DensityInv*(sol2ndDerCart[1][1][1] - u*sol2ndDerCart[0][1][1]
+                           +    2.0*DensityInv*solGradCart[0][1]*(u*solGradCart[0][1] - solGradCart[1][1]));
+    const su2double d2udxy = DensityInv*(sol2ndDerCart[1][0][1] - u*sol2ndDerCart[0][0][1]
+                           +       DensityInv*(solGradCart[0][0]*(u*solGradCart[0][1] - solGradCart[1][1])
+                           +                   solGradCart[0][1]*(u*solGradCart[0][0] - solGradCart[1][0])));
+
+    const su2double d2vdxx = DensityInv*(sol2ndDerCart[2][0][0] - v*sol2ndDerCart[0][0][0]
+                           +    2.0*DensityInv*solGradCart[0][0]*(v*solGradCart[0][0] - solGradCart[2][0]));
+    const su2double d2vdyy = DensityInv*(sol2ndDerCart[2][1][1] - v*sol2ndDerCart[0][1][1]
+                           +    2.0*DensityInv*solGradCart[0][1]*(v*solGradCart[0][1] - solGradCart[2][1]));
+    const su2double d2vdxy = DensityInv*(sol2ndDerCart[2][0][1] - v*sol2ndDerCart[0][0][1]
+                           +       DensityInv*(solGradCart[0][0]*(v*solGradCart[0][1] - solGradCart[2][1])
+                           +                   solGradCart[0][1]*(v*solGradCart[0][0] - solGradCart[2][0])));
 
     /*--- Compute the second derivatives of the static energy. Note that this
           term appears in the heat flux and therefore only the pure second
           derivatives are needed. Hence, the cross-derivatives are omitted. ---*/
-    su2double StaticEnergy2ndDer[3];
-    for(unsigned short l=0; l<nDim; ++l) {
-      StaticEnergy2ndDer[l] = DensityInv*(sol2ndDerCart[nDim+1][l][l] - TotalEnergy*sol2ndDerCart[0][0][l]
-                            +     2.0*DensityInv*(TotalEnergy*solGradCart[0][l]*solGradCart[0][l]
-                            -                     solGradCart[nDim+1][l]*solGradCart[0][l]));
-      for(unsigned short k=0; k<nDim; ++k)
-        StaticEnergy2ndDer[l] -= vel[k]*vel2ndDer[k][l][l] - velGrad[k][l]*velGrad[k][l];
-    }
+    const su2double d2edxx = DensityInv*(sol2ndDerCart[3][0][0] - TotalEnergy*sol2ndDerCart[0][0][0]
+                           +    2.0*DensityInv*solGradCart[0][0]*(TotalEnergy*solGradCart[0][0] - solGradCart[3][0]))
+                           -    u*d2udxx - dudx*dudx - v*d2vdxx - dvdx*dvdx;
+    const su2double d2edyy = DensityInv*(sol2ndDerCart[3][1][1] - TotalEnergy*sol2ndDerCart[0][1][1]
+                           +    2.0*DensityInv*solGradCart[0][1]*(TotalEnergy*solGradCart[0][1] - solGradCart[3][1]))
+                           -    u*d2udyy - dudy*dudy - v*d2vdyy - dvdy*dvdy;
 
     /*--- If an SGS model is used the eddy viscosity and its spatial
           derivatives must be computed. ---*/
     su2double ViscosityTurb = 0.0;
-    su2double ViscosityTurbGrad[] = {0.0, 0.0, 0.0};
+    su2double dViscTurbdx = 0.0, dViscTurbdy = 0.0;
 
     if( SGSModelUsed ) {
       const su2double dist = elem->wallDistance[i];
-      ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
-                                                    lenScale, dist);
+      ViscosityTurb = SGSModel->ComputeEddyViscosity_2D(sol[0], dudx, dudy, dvdx,
+                                                        dvdy, lenScale, dist);
 
-      su2double densityGrad[3];
-      for(unsigned short l=0; l<nDim; ++l) densityGrad[l] = solGradCart[0][l];
-
-      SGSModel->ComputeGradEddyViscosity(nDim, sol[0], densityGrad, velGrad,
-                                         vel2ndDer, lenScale, dist,
-                                         ViscosityTurbGrad);
+      SGSModel->ComputeGradEddyViscosity_2D(sol[0], solGradCart[0][0], solGradCart[0][1],
+                                            dudx, dudy, dvdx, dvdy, d2udxx, d2udyy,
+                                            d2udxy, d2vdxx, d2vdyy, d2vdxy, lenScale,
+                                            dist, dViscTurbdx, dViscTurbdy);
     }
 
     /*--- Compute the total viscosity, the total heat conductivity and their
@@ -6208,54 +8373,45 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
     const su2double kOverCv = ViscosityLam *factHeatFlux_Lam
                             + ViscosityTurb*factHeatFlux_Turb;
 
-    su2double ViscosityGrad[3], kOverCvGrad[3];
-    for(unsigned short k=0; k<nDim; ++k) {
-      ViscosityGrad[k] = ViscosityLamGrad[k] + ViscosityTurbGrad[k];
-      kOverCvGrad[k]   = ViscosityLamGrad[k] *factHeatFlux_Lam
-                       + ViscosityTurbGrad[k]*factHeatFlux_Turb;
-    }
+    const su2double dViscDx = dViscLamdx + dViscTurbdx;
+    const su2double dViscDy = dViscLamdy + dViscTurbdy;
+
+    const su2double dkOverCvdx = dViscLamdx *factHeatFlux_Lam
+                               + dViscTurbdx*factHeatFlux_Turb;
+    const su2double dkOverCvdy = dViscLamdy *factHeatFlux_Lam
+                               + dViscTurbdy*factHeatFlux_Turb;
 
     /* Abbreviations, which make it easier to compute the divergence term. */
-    su2double abv1 = 0.0, abv2 = 0.0, abv3 = 0.0, abv4 = 0.0;
-    for(unsigned short k=0; k<nDim; ++k) {
-      abv1 += solGradCart[k+1][k];
-      abv2 += vel[k]*solGradCart[0][k];
-      abv3 += vel[k]*(solGradCart[nVar-1][k] + pGrad[k]);
-      abv4 += velGrad[k][k];
-    }
+    const su2double abv1 = solGradCart[1][0] + solGradCart[2][1];
+    const su2double abv2 = u*solGradCart[0][0] + v*solGradCart[0][1];
+    const su2double abv3 = u*(solGradCart[3][0] + dpdx) + v*(solGradCart[3][1] + dpdy);
+    const su2double abv4 = dudx + dvdy;
 
     /*--- Set the pointer to store the divergence terms for this integration
           point and compute these terms, multiplied by the integration weight
           and Jacobian. ---*/
     const su2double weightJac = weights[i]*Jac;
-    su2double *divFluxInt     = divFlux + nVar*i;
+    su2double *divFluxInt     = divFlux + 4*i;   /* nVar*i. */
 
-    divFluxInt[0]      = weightJac*abv1;
-    divFluxInt[nVar-1] = abv3 + Htot*(abv1 - abv2);
-
-    for(unsigned short k=0; k<nDim; ++k) {
-      divFluxInt[k+1]     = pGrad[k] + vel[k]*(abv1 - abv2)
-                          - lambdaOverMu*ViscosityGrad[k]*abv4;
-      divFluxInt[nVar-1] -= abv4*lambdaOverMu*(Viscosity*velGrad[k][k]
-                          +                    vel[k]*ViscosityGrad[k])
-                          + kOverCvGrad[k]*StaticEnergyGrad[k]
-                          + kOverCv*StaticEnergy2ndDer[k];
-
-      for(unsigned short l=0; l<nDim; ++l) {
-        divFluxInt[k+1]    += vel[l]*solGradCart[k+1][l]
-                            - lambdaOverMu*Viscosity*vel2ndDer[l][k][l]
-                            - Viscosity*(vel2ndDer[k][l][l] + vel2ndDer[l][k][l])
-                            - ViscosityGrad[l]*(velGrad[k][l] + velGrad[l][k]);
-        divFluxInt[nVar-1] -= (Viscosity*velGrad[k][l] + vel[k]*ViscosityGrad[l])
-                            * (velGrad[k][l] + velGrad[l][k])
-                            + vel[k]*Viscosity*(vel2ndDer[k][l][l] + vel2ndDer[l][k][l]
-                            +                   lambdaOverMu*vel2ndDer[l][k][l]);
-      }
-
-      divFluxInt[k+1] *= weightJac;
-    }
-
-    divFluxInt[nVar-1] *= weightJac;
+    divFluxInt[0] = weightJac* abv1;
+    divFluxInt[1] = weightJac*(dpdx + u*(abv1-abv2) - lambdaOverMu*abv4*dViscDx
+                  +            u*solGradCart[1][0] + v*solGradCart[1][1]
+                  -            lambdaOverMu*Viscosity*(d2udxx + d2vdxy)
+                  -            Viscosity*(2.0*d2udxx + d2udyy + d2vdxy)
+                  -            2.0*dViscDx*dudx - dViscDy*(dudy+dvdx));
+    divFluxInt[2] = weightJac*(dpdy + v*(abv1-abv2) - lambdaOverMu*abv4*dViscDy
+                  +            u*solGradCart[2][0] + v*solGradCart[2][1]
+                  -            lambdaOverMu*Viscosity*(d2udxy + d2vdyy)
+                  -            Viscosity*(2.0*d2vdyy + d2vdxx + d2udxy)
+                  -            dViscDx*(dudy + dvdx) - 2.0*dViscDy*dvdy);
+    divFluxInt[3] = weightJac*(abv3 + Htot*(abv1 - abv2)
+                  -            abv4*lambdaOverMu*(Viscosity*abv4 + u*dViscDx + v*dViscDy)
+                  -            dkOverCvdx*dedx - dkOverCvdy*dedy - kOverCv*(d2edxx + d2edyy)
+                  -            (Viscosity*dudx + u*dViscDx)*2.0*dudx
+                  -            (Viscosity*dvdy + v*dViscDy)*2.0*dvdy
+                  -            (Viscosity*dudy + u*dViscDy + Viscosity*dvdx + v*dViscDx)*(dudy + dvdx)
+                  -            Viscosity*u*(d2udxx+d2udyy + (1.0+lambdaOverMu)*(d2udxx+d2vdxy))
+                  -            Viscosity*v*(d2vdxx+d2vdyy + (1.0+lambdaOverMu)*(d2udxy+d2vdyy)));
   }
 
   /*--------------------------------------------------------------------------*/
@@ -6266,21 +8422,545 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
 }
 
-void CFEM_DG_NSSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           *config,
+                                                              CVolumeElementFEM *elem,
+                                                              const su2double   *sol,
+                                                              su2double         *res,
+                                                              su2double         *work) {
+
+  /* Constant factor present in the heat flux vector, the inverse of
+     the specific heat at constant volume and ratio lambdaOverMu. */
+  const su2double factHeatFlux_Lam  =  Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb =  Gamma/Prandtl_Turb;
+  const su2double Gas_Constant      =  config->GetGas_ConstantND();
+  const su2double CvInv             =  Gamma_Minus_One/Gas_Constant;
+  const su2double lambdaOverMu      = -TWO3;
+
+  /*--- Get the necessary information from the standard element. ---*/
+  const unsigned short ind                = elem->indStandardElement;
+  const unsigned short nInt               = standardElementsSol[ind].GetNIntegration();
+  const unsigned short nDOFs              = elem->nDOFsSol;
+  const su2double *matBasisInt            = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+  const su2double *matDerBasisInt         = matBasisInt + nDOFs*nInt;
+  const su2double *matDerBasisSolDOFs     = standardElementsSol[ind].GetMatDerBasisFunctionsSolDOFs();
+  const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
+  const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
+
+  unsigned short nPoly = standardElementsSol[ind].GetNPoly();
+  if(nPoly == 0) nPoly = 1;
+
+  /* Compute the length scale of the current element for the LES. */
+  const su2double lenScale = elem->lenScale/nPoly;
+
+  /* Set the pointers for solAndGradInt and divFlux to work. The same array
+     can be used for both help arrays. Set the pointer for the second
+     derivatives such that they are stored after the first derivatives. */
+  su2double *solAndGradInt      = work;
+  su2double *divFlux            = work;
+  const unsigned short offPoint = 20*max(nInt, nDOFs);  /*nVar*(nDim+1)*max(..). */
+  su2double *secDerSolInt       = solAndGradInt + offPoint;
+
+  /* Determine the offset between the solution variables and the r-derivatives,
+     which is also the offset between the r- and s-derivatives and the offset
+     between s- and t-derivatives. Also determine the offset between the data
+     of the second derivatives. */
+  const unsigned short offDeriv    = 5*nInt;     /* nVar*nInt. */
+  const unsigned short off2ndDeriv = 3*offDeriv; /* nDim*offDeriv. */
+
+  /* Store the number of metric points per integration point for readability. */
+  const unsigned short nMetricPerPoint = 10;  /* nDim*nDim + 1. */
+
+  /* Store the number of additional metric points per integration point, which
+     are needed to compute the second derivatives. These terms take the
+     non-constant metric into account. */
+  const unsigned short nMetric2ndDerPerPoint = 18; /*nDim*(nDim + nDim*(nDim-1)/2). */
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Interpolate the conserved solution variables to the        ---*/
+  /*---         integration points and also determine the first and second ---*/
+  /*---         derivatives of these variables in the integration points.  ---*/
+  /*---         All derivatives are w.r.t. the parametric coordinates.     ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- The computation of the second derivatives happens in two stages. First
+        the first derivatives in the DOFs are determined and these are then
+        differentiated again to obtain the second derivatives in the integration
+        points. Note that secDerSolInt and solAndGradInt are used for temporary
+        storage of the first derivatives in the DOFs. ---*/
+  su2double *gradSolDOFs = secDerSolInt;
+  DenseMatrixProduct(nDOFs*nDim, nVar, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
+
+  /* Store the gradients in true row major order for each DOF. */
+  su2double *firstDerSolDOFs = solAndGradInt;
+  for(unsigned short i=0; i<nDOFs; ++i) {
+    const su2double *dSolDr = gradSolDOFs +  5*i;     /* nVar*i. */
+    const su2double *dSolDs = dSolDr      +  5*nDOFs; /* nVar*nDOFs. */
+    const su2double *dSolDt = dSolDs      +  5*nDOFs; /* nVar*nDOFs. */
+    su2double *firstDer = firstDerSolDOFs + 15*i;     /* nVar*nDim*i. */
+
+    memcpy(firstDer,    dSolDr, 5*sizeof(su2double));
+    memcpy(firstDer+ 5, dSolDs, 5*sizeof(su2double));
+    memcpy(firstDer+10, dSolDt, 5*sizeof(su2double));
+  }
+
+  /* Compute the second derivatives w.r.t. the parametric coordinates
+     in the integration points. */
+  DenseMatrixProduct(nInt*nDim, nVar*nDim, nDOFs, matDerBasisInt,
+                     firstDerSolDOFs, secDerSolInt);
+
+  /* Compute the solution and the derivatives w.r.t. the parametric coordinates
+     in the integration points. The first argument is nInt*(nDim+1). */
+  DenseMatrixProduct(nInt*4, nVar, nDOFs, matBasisInt, sol, solAndGradInt);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Determine from the solution and gradients the divergence   ---*/
+  /*---         of the fluxes in the integration points.                   ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Loop over the integration points to compute the divergence of the fluxes
+        in these integration points, multiplied by the integration weight. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the location where the solution and gradient data
+       of this integration point starts. */
+    const su2double *sol   = solAndGradInt + 5*i; /* nVar*i. */
+    const su2double *solDr = sol   + offDeriv;
+    const su2double *solDs = solDr + offDeriv;
+    const su2double *solDt = solDs + offDeriv;
+
+    /*--- Compute the velocities, pressure and total enthalpy
+          in this integration point. ---*/
+    const su2double DensityInv   = 1.0/sol[0];
+    const su2double u            = DensityInv*sol[1];
+    const su2double v            = DensityInv*sol[2];
+    const su2double w            = DensityInv*sol[3];
+    const su2double kinEnergy    = 0.5*(u*u + v*v + w*w);
+    const su2double TotalEnergy  = DensityInv*sol[4];
+    const su2double StaticEnergy = TotalEnergy - kinEnergy;
+
+    FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+    const su2double Pressure = FluidModel->GetPressure();
+    const su2double Htot     = DensityInv*(sol[4] + Pressure);
+
+    /* Compute the laminar viscosity and its derivative w.r.t. temperature. */
+    const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+    const su2double dViscLamdT   = FluidModel->GetdmudT_rho();
+
+    /* Compute the true metric terms. Note in metricTerms the actual metric
+       terms multiplied by the Jacobian are stored. */
+    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+    const su2double Jac          = metricTerms[0];
+    const su2double JacInv       = 1.0/Jac;
+
+    const su2double drdx = JacInv*metricTerms[1];
+    const su2double drdy = JacInv*metricTerms[2];
+    const su2double drdz = JacInv*metricTerms[3];
+
+    const su2double dsdx = JacInv*metricTerms[4];
+    const su2double dsdy = JacInv*metricTerms[5];
+    const su2double dsdz = JacInv*metricTerms[6];
+
+    const su2double dtdx = JacInv*metricTerms[7];
+    const su2double dtdy = JacInv*metricTerms[8];
+    const su2double dtdz = JacInv*metricTerms[9];
+
+    /*--- Compute the Cartesian gradients of the independent solution
+          variables from the gradients in parametric coordinates and the
+          metric terms in this integration point. ---*/
+    su2double solGradCart[5][3];
+
+    solGradCart[0][0] = solDr[0]*drdx + solDs[0]*dsdx + solDt[0]*dtdx;
+    solGradCart[1][0] = solDr[1]*drdx + solDs[1]*dsdx + solDt[1]*dtdx;
+    solGradCart[2][0] = solDr[2]*drdx + solDs[2]*dsdx + solDt[2]*dtdx;
+    solGradCart[3][0] = solDr[3]*drdx + solDs[3]*dsdx + solDt[3]*dtdx;
+    solGradCart[4][0] = solDr[4]*drdx + solDs[4]*dsdx + solDt[4]*dtdx;
+
+    solGradCart[0][1] = solDr[0]*drdy + solDs[0]*dsdy + solDt[0]*dtdy;
+    solGradCart[1][1] = solDr[1]*drdy + solDs[1]*dsdy + solDt[1]*dtdy;
+    solGradCart[2][1] = solDr[2]*drdy + solDs[2]*dsdy + solDt[2]*dtdy;
+    solGradCart[3][1] = solDr[3]*drdy + solDs[3]*dsdy + solDt[3]*dtdy;
+    solGradCart[4][1] = solDr[4]*drdy + solDs[4]*dsdy + solDt[4]*dtdy;
+
+    solGradCart[0][2] = solDr[0]*drdz + solDs[0]*dsdz + solDt[0]*dtdz;
+    solGradCart[1][2] = solDr[1]*drdz + solDs[1]*dsdz + solDt[1]*dtdz;
+    solGradCart[2][2] = solDr[2]*drdz + solDs[2]*dsdz + solDt[2]*dtdz;
+    solGradCart[3][2] = solDr[3]*drdz + solDs[3]*dsdz + solDt[3]*dtdz;
+    solGradCart[4][2] = solDr[4]*drdz + solDs[4]*dsdz + solDt[4]*dtdz;
+
+    /* Easier storage of the location where the data of second derivatives of
+       this integration point starts as well as the necessary additional metric
+       terms to compute the Cartesian second derivatives. */
+    const su2double *sol2ndDerDr       = secDerSolInt + 15*i;  /* nVar*nDim*i. */
+    const su2double *sol2ndDerDs       = sol2ndDerDr + off2ndDeriv;
+    const su2double *sol2ndDerDt       = sol2ndDerDs + off2ndDeriv;
+    const su2double *metricTerms2ndDer = elem->metricTerms2ndDer.data()
+                                       + i*nMetric2ndDerPerPoint;
+
+    /*--- Compute the Cartesian second derivatives of the independent solution
+          variables from the gradients and second derivatives in parametric
+          coordinates and the metric terms and its derivatives w.r.t. the
+          parametric coordinates. ---*/
+    su2double sol2ndDerCart[5][3][3];
+
+    sol2ndDerCart[0][0][0] = sol2ndDerDr[0]*drdx*drdx + sol2ndDerDs[5]*dsdx*dsdx + sol2ndDerDs[10]*dtdx*dtdx
+                           + (sol2ndDerDr[5]  + sol2ndDerDs[0])*drdx*dsdx + (sol2ndDerDr[10] + sol2ndDerDt[0])*drdx*dtdx
+                           + (sol2ndDerDs[10] + sol2ndDerDt[5])*dsdx*dtdx
+                           + solDr[0]*metricTerms2ndDer[0] + solDs[0]*metricTerms2ndDer[1] + solDt[0]*metricTerms2ndDer[2];
+    sol2ndDerCart[1][0][0] = sol2ndDerDr[1]*drdx*drdx + sol2ndDerDs[6]*dsdx*dsdx + sol2ndDerDs[11]*dtdx*dtdx
+                           + (sol2ndDerDr[6]  + sol2ndDerDs[1])*drdx*dsdx + (sol2ndDerDr[11] + sol2ndDerDt[1])*drdx*dtdx
+                           + (sol2ndDerDs[11] + sol2ndDerDt[6])*dsdx*dtdx
+                           + solDr[1]*metricTerms2ndDer[0] + solDs[1]*metricTerms2ndDer[1] + solDt[1]*metricTerms2ndDer[2];
+    sol2ndDerCart[2][0][0] = sol2ndDerDr[2]*drdx*drdx + sol2ndDerDs[7]*dsdx*dsdx + sol2ndDerDs[12]*dtdx*dtdx
+                           + (sol2ndDerDr[7]  + sol2ndDerDs[2])*drdx*dsdx + (sol2ndDerDr[12] + sol2ndDerDt[2])*drdx*dtdx
+                           + (sol2ndDerDs[12] + sol2ndDerDt[7])*dsdx*dtdx
+                           + solDr[2]*metricTerms2ndDer[0] + solDs[2]*metricTerms2ndDer[1] + solDt[2]*metricTerms2ndDer[2];
+    sol2ndDerCart[3][0][0] = sol2ndDerDr[3]*drdx*drdx + sol2ndDerDs[8]*dsdx*dsdx + sol2ndDerDs[13]*dtdx*dtdx
+                           + (sol2ndDerDr[8]  + sol2ndDerDs[3])*drdx*dsdx + (sol2ndDerDr[13] + sol2ndDerDt[3])*drdx*dtdx
+                           + (sol2ndDerDs[13] + sol2ndDerDt[8])*dsdx*dtdx
+                           + solDr[3]*metricTerms2ndDer[0] + solDs[3]*metricTerms2ndDer[1] + solDt[3]*metricTerms2ndDer[2];
+    sol2ndDerCart[4][0][0] = sol2ndDerDr[4]*drdx*drdx + sol2ndDerDs[9]*dsdx*dsdx + sol2ndDerDs[14]*dtdx*dtdx
+                           + (sol2ndDerDr[9]  + sol2ndDerDs[4])*drdx*dsdx + (sol2ndDerDr[14] + sol2ndDerDt[4])*drdx*dtdx
+                           + (sol2ndDerDs[14] + sol2ndDerDt[9])*dsdx*dtdx
+                           + solDr[4]*metricTerms2ndDer[0] + solDs[4]*metricTerms2ndDer[1] + solDt[4]*metricTerms2ndDer[2];
+
+    sol2ndDerCart[0][1][0] = sol2ndDerDr[0]*drdx*drdy + sol2ndDerDs[5]*dsdx*dsdy + sol2ndDerDs[10]*dtdx*dtdy
+                           + 0.5*(sol2ndDerDr[5]  + sol2ndDerDs[0])*(drdx*dsdy + dsdx*drdy)
+                           + 0.5*(sol2ndDerDr[10] + sol2ndDerDt[0])*(drdx*dtdy + dtdx*drdy)
+                           + 0.5*(sol2ndDerDs[10] + sol2ndDerDt[5])*(dsdx*dtdy + dtdx*dsdy)
+                           + solDr[0]*metricTerms2ndDer[3] + solDs[0]*metricTerms2ndDer[4] + solDt[0]*metricTerms2ndDer[5];
+    sol2ndDerCart[1][1][0] = sol2ndDerDr[1]*drdx*drdy + sol2ndDerDs[6]*dsdx*dsdy + sol2ndDerDs[11]*dtdx*dtdy
+                           + 0.5*(sol2ndDerDr[6]  + sol2ndDerDs[1])*(drdx*dsdy + dsdx*drdy)
+                           + 0.5*(sol2ndDerDr[11] + sol2ndDerDt[1])*(drdx*dtdy + dtdx*drdy)
+                           + 0.5*(sol2ndDerDs[11] + sol2ndDerDt[6])*(dsdx*dtdy + dtdx*dsdy)
+                           + solDr[1]*metricTerms2ndDer[3] + solDs[1]*metricTerms2ndDer[4] + solDt[1]*metricTerms2ndDer[5];
+    sol2ndDerCart[2][1][0] = sol2ndDerDr[2]*drdx*drdy + sol2ndDerDs[7]*dsdx*dsdy + sol2ndDerDs[12]*dtdx*dtdy
+                           + 0.5*(sol2ndDerDr[7]  + sol2ndDerDs[2])*(drdx*dsdy + dsdx*drdy)
+                           + 0.5*(sol2ndDerDr[12] + sol2ndDerDt[2])*(drdx*dtdy + dtdx*drdy)
+                           + 0.5*(sol2ndDerDs[12] + sol2ndDerDt[7])*(dsdx*dtdy + dtdx*dsdy)
+                           + solDr[2]*metricTerms2ndDer[3] + solDs[2]*metricTerms2ndDer[4] + solDt[2]*metricTerms2ndDer[5];
+    sol2ndDerCart[3][1][0] = sol2ndDerDr[3]*drdx*drdy + sol2ndDerDs[8]*dsdx*dsdy + sol2ndDerDs[13]*dtdx*dtdy
+                           + 0.5*(sol2ndDerDr[8]  + sol2ndDerDs[3])*(drdx*dsdy + dsdx*drdy)
+                           + 0.5*(sol2ndDerDr[13] + sol2ndDerDt[3])*(drdx*dtdy + dtdx*drdy)
+                           + 0.5*(sol2ndDerDs[13] + sol2ndDerDt[8])*(dsdx*dtdy + dtdx*dsdy)
+                           + solDr[3]*metricTerms2ndDer[3] + solDs[3]*metricTerms2ndDer[4] + solDt[3]*metricTerms2ndDer[5];
+    sol2ndDerCart[4][1][0] = sol2ndDerDr[4]*drdx*drdy + sol2ndDerDs[9]*dsdx*dsdy + sol2ndDerDs[14]*dtdx*dtdy
+                           + 0.5*(sol2ndDerDr[9]  + sol2ndDerDs[4])*(drdx*dsdy + dsdx*drdy)
+                           + 0.5*(sol2ndDerDr[14] + sol2ndDerDt[4])*(drdx*dtdy + dtdx*drdy)
+                           + 0.5*(sol2ndDerDs[14] + sol2ndDerDt[9])*(dsdx*dtdy + dtdx*dsdy)
+                           + solDr[4]*metricTerms2ndDer[3] + solDs[4]*metricTerms2ndDer[4] + solDt[4]*metricTerms2ndDer[5];
+
+    sol2ndDerCart[0][0][1] = sol2ndDerCart[0][1][0];
+    sol2ndDerCart[1][0][1] = sol2ndDerCart[1][1][0];
+    sol2ndDerCart[2][0][1] = sol2ndDerCart[2][1][0];
+    sol2ndDerCart[3][0][1] = sol2ndDerCart[3][1][0];
+    sol2ndDerCart[4][0][1] = sol2ndDerCart[4][1][0];
+
+    sol2ndDerCart[0][1][1] = sol2ndDerDr[0]*drdy*drdy + sol2ndDerDs[5]*dsdy*dsdy + sol2ndDerDs[10]*dtdy*dtdy
+                           + (sol2ndDerDr[5]  + sol2ndDerDs[0])*drdy*dsdy + (sol2ndDerDr[10] + sol2ndDerDt[0])*drdy*dtdy
+                           + (sol2ndDerDs[10] + sol2ndDerDt[5])*dsdy*dtdy
+                           + solDr[0]*metricTerms2ndDer[6] + solDs[0]*metricTerms2ndDer[7] + solDt[0]*metricTerms2ndDer[8];
+    sol2ndDerCart[1][1][1] = sol2ndDerDr[1]*drdy*drdy + sol2ndDerDs[6]*dsdy*dsdy + sol2ndDerDs[11]*dtdy*dtdy
+                           + (sol2ndDerDr[6]  + sol2ndDerDs[1])*drdy*dsdy + (sol2ndDerDr[11] + sol2ndDerDt[1])*drdy*dtdy
+                           + (sol2ndDerDs[11] + sol2ndDerDt[6])*dsdy*dtdy
+                           + solDr[1]*metricTerms2ndDer[6] + solDs[1]*metricTerms2ndDer[7] + solDt[1]*metricTerms2ndDer[8];
+    sol2ndDerCart[2][1][1] = sol2ndDerDr[2]*drdy*drdy + sol2ndDerDs[7]*dsdy*dsdy + sol2ndDerDs[12]*dtdy*dtdy
+                           + (sol2ndDerDr[7]  + sol2ndDerDs[2])*drdy*dsdy + (sol2ndDerDr[12] + sol2ndDerDt[2])*drdy*dtdy
+                           + (sol2ndDerDs[12] + sol2ndDerDt[7])*dsdy*dtdy
+                           + solDr[2]*metricTerms2ndDer[6] + solDs[2]*metricTerms2ndDer[7] + solDt[2]*metricTerms2ndDer[8];
+    sol2ndDerCart[3][1][1] = sol2ndDerDr[3]*drdy*drdy + sol2ndDerDs[8]*dsdy*dsdy + sol2ndDerDs[13]*dtdy*dtdy
+                           + (sol2ndDerDr[8]  + sol2ndDerDs[3])*drdy*dsdy + (sol2ndDerDr[13] + sol2ndDerDt[3])*drdy*dtdy
+                           + (sol2ndDerDs[13] + sol2ndDerDt[8])*dsdy*dtdy
+                           + solDr[3]*metricTerms2ndDer[6] + solDs[3]*metricTerms2ndDer[7] + solDt[3]*metricTerms2ndDer[8];
+    sol2ndDerCart[4][1][1] = sol2ndDerDr[4]*drdy*drdy + sol2ndDerDs[9]*dsdy*dsdy + sol2ndDerDs[14]*dtdy*dtdy
+                           + (sol2ndDerDr[9]  + sol2ndDerDs[4])*drdy*dsdy + (sol2ndDerDr[14] + sol2ndDerDt[4])*drdy*dtdy
+                           + (sol2ndDerDs[14] + sol2ndDerDt[9])*dsdy*dtdy
+                           + solDr[4]*metricTerms2ndDer[6] + solDs[4]*metricTerms2ndDer[7] + solDt[4]*metricTerms2ndDer[8];
+
+    sol2ndDerCart[0][2][0] = sol2ndDerDr[0]*drdx*drdz + sol2ndDerDs[5]*dsdx*dsdz + sol2ndDerDs[10]*dtdx*dtdz
+                           + 0.5*(sol2ndDerDr[5]  + sol2ndDerDs[0])*(drdx*dsdz + dsdx*drdz)
+                           + 0.5*(sol2ndDerDr[10] + sol2ndDerDt[0])*(drdx*dtdz + dtdx*drdz)
+                           + 0.5*(sol2ndDerDs[10] + sol2ndDerDt[5])*(dsdx*dtdz + dtdx*dsdz)
+                           + solDr[0]*metricTerms2ndDer[9] + solDs[0]*metricTerms2ndDer[10] + solDt[0]*metricTerms2ndDer[11];
+    sol2ndDerCart[1][2][0] = sol2ndDerDr[1]*drdx*drdz + sol2ndDerDs[6]*dsdx*dsdz + sol2ndDerDs[11]*dtdx*dtdz
+                           + 0.5*(sol2ndDerDr[6]  + sol2ndDerDs[1])*(drdx*dsdz + dsdx*drdz)
+                           + 0.5*(sol2ndDerDr[11] + sol2ndDerDt[1])*(drdx*dtdz + dtdx*drdz)
+                           + 0.5*(sol2ndDerDs[11] + sol2ndDerDt[6])*(dsdx*dtdz + dtdx*dsdz)
+                           + solDr[1]*metricTerms2ndDer[9] + solDs[1]*metricTerms2ndDer[10] + solDt[1]*metricTerms2ndDer[11];
+    sol2ndDerCart[2][2][0] = sol2ndDerDr[2]*drdx*drdz + sol2ndDerDs[7]*dsdx*dsdz + sol2ndDerDs[12]*dtdx*dtdz
+                           + 0.5*(sol2ndDerDr[7]  + sol2ndDerDs[2])*(drdx*dsdz + dsdx*drdz)
+                           + 0.5*(sol2ndDerDr[12] + sol2ndDerDt[2])*(drdx*dtdz + dtdx*drdz)
+                           + 0.5*(sol2ndDerDs[12] + sol2ndDerDt[7])*(dsdx*dtdz + dtdx*dsdz)
+                           + solDr[2]*metricTerms2ndDer[9] + solDs[2]*metricTerms2ndDer[10] + solDt[2]*metricTerms2ndDer[11];
+    sol2ndDerCart[3][2][0] = sol2ndDerDr[3]*drdx*drdz + sol2ndDerDs[8]*dsdx*dsdz + sol2ndDerDs[13]*dtdx*dtdz
+                           + 0.5*(sol2ndDerDr[8]  + sol2ndDerDs[3])*(drdx*dsdz + dsdx*drdz)
+                           + 0.5*(sol2ndDerDr[13] + sol2ndDerDt[3])*(drdx*dtdz + dtdx*drdz)
+                           + 0.5*(sol2ndDerDs[13] + sol2ndDerDt[8])*(dsdx*dtdz + dtdx*dsdz)
+                           + solDr[3]*metricTerms2ndDer[9] + solDs[3]*metricTerms2ndDer[10] + solDt[3]*metricTerms2ndDer[11];
+    sol2ndDerCart[4][2][0] = sol2ndDerDr[4]*drdx*drdz + sol2ndDerDs[9]*dsdx*dsdz + sol2ndDerDs[14]*dtdx*dtdz
+                           + 0.5*(sol2ndDerDr[9]  + sol2ndDerDs[4])*(drdx*dsdz + dsdx*drdz)
+                           + 0.5*(sol2ndDerDr[14] + sol2ndDerDt[4])*(drdx*dtdz + dtdx*drdz)
+                           + 0.5*(sol2ndDerDs[14] + sol2ndDerDt[9])*(dsdx*dtdz + dtdx*dsdz)
+                           + solDr[4]*metricTerms2ndDer[9] + solDs[4]*metricTerms2ndDer[10] + solDt[4]*metricTerms2ndDer[11];
+
+    sol2ndDerCart[0][0][2] = sol2ndDerCart[0][2][0];
+    sol2ndDerCart[1][0][2] = sol2ndDerCart[1][2][0];
+    sol2ndDerCart[2][0][2] = sol2ndDerCart[2][2][0];
+    sol2ndDerCart[3][0][2] = sol2ndDerCart[3][2][0];
+    sol2ndDerCart[4][0][2] = sol2ndDerCart[4][2][0];
+
+    sol2ndDerCart[0][2][1] = sol2ndDerDr[0]*drdy*drdz + sol2ndDerDs[5]*dsdy*dsdz + sol2ndDerDs[10]*dtdy*dtdz
+                           + 0.5*(sol2ndDerDr[5]  + sol2ndDerDs[0])*(drdy*dsdz + dsdy*drdz)
+                           + 0.5*(sol2ndDerDr[10] + sol2ndDerDt[0])*(drdy*dtdz + dtdy*drdz)
+                           + 0.5*(sol2ndDerDs[10] + sol2ndDerDt[5])*(dsdy*dtdz + dtdy*dsdz)
+                           + solDr[0]*metricTerms2ndDer[12] + solDs[0]*metricTerms2ndDer[13] + solDt[0]*metricTerms2ndDer[14];
+    sol2ndDerCart[1][2][1] = sol2ndDerDr[1]*drdy*drdz + sol2ndDerDs[6]*dsdy*dsdz + sol2ndDerDs[11]*dtdy*dtdz
+                           + 0.5*(sol2ndDerDr[6]  + sol2ndDerDs[1])*(drdy*dsdz + dsdy*drdz)
+                           + 0.5*(sol2ndDerDr[11] + sol2ndDerDt[1])*(drdy*dtdz + dtdy*drdz)
+                           + 0.5*(sol2ndDerDs[11] + sol2ndDerDt[6])*(dsdy*dtdz + dtdy*dsdz)
+                           + solDr[1]*metricTerms2ndDer[12] + solDs[1]*metricTerms2ndDer[13] + solDt[1]*metricTerms2ndDer[14];
+    sol2ndDerCart[2][2][1] = sol2ndDerDr[2]*drdy*drdz + sol2ndDerDs[7]*dsdy*dsdz + sol2ndDerDs[12]*dtdy*dtdz
+                           + 0.5*(sol2ndDerDr[7]  + sol2ndDerDs[2])*(drdy*dsdz + dsdy*drdz)
+                           + 0.5*(sol2ndDerDr[12] + sol2ndDerDt[2])*(drdy*dtdz + dtdy*drdz)
+                           + 0.5*(sol2ndDerDs[12] + sol2ndDerDt[7])*(dsdy*dtdz + dtdy*dsdz)
+                           + solDr[2]*metricTerms2ndDer[12] + solDs[2]*metricTerms2ndDer[13] + solDt[2]*metricTerms2ndDer[14];
+    sol2ndDerCart[3][2][1] = sol2ndDerDr[3]*drdy*drdz + sol2ndDerDs[8]*dsdy*dsdz + sol2ndDerDs[13]*dtdy*dtdz
+                           + 0.5*(sol2ndDerDr[8]  + sol2ndDerDs[3])*(drdy*dsdz + dsdy*drdz)
+                           + 0.5*(sol2ndDerDr[13] + sol2ndDerDt[3])*(drdy*dtdz + dtdy*drdz)
+                           + 0.5*(sol2ndDerDs[13] + sol2ndDerDt[8])*(dsdy*dtdz + dtdy*dsdz)
+                           + solDr[3]*metricTerms2ndDer[12] + solDs[3]*metricTerms2ndDer[13] + solDt[3]*metricTerms2ndDer[14];
+    sol2ndDerCart[4][2][1] = sol2ndDerDr[4]*drdy*drdz + sol2ndDerDs[9]*dsdy*dsdz + sol2ndDerDs[14]*dtdy*dtdz
+                           + 0.5*(sol2ndDerDr[9]  + sol2ndDerDs[4])*(drdy*dsdz + dsdy*drdz)
+                           + 0.5*(sol2ndDerDr[14] + sol2ndDerDt[4])*(drdy*dtdz + dtdy*drdz)
+                           + 0.5*(sol2ndDerDs[14] + sol2ndDerDt[9])*(dsdy*dtdz + dtdy*dsdz)
+                           + solDr[4]*metricTerms2ndDer[12] + solDs[4]*metricTerms2ndDer[13] + solDt[4]*metricTerms2ndDer[14];
+
+    sol2ndDerCart[0][1][2] = sol2ndDerCart[0][2][1];
+    sol2ndDerCart[1][1][2] = sol2ndDerCart[1][2][1];
+    sol2ndDerCart[2][1][2] = sol2ndDerCart[2][2][1];
+    sol2ndDerCart[3][1][2] = sol2ndDerCart[3][2][1];
+    sol2ndDerCart[4][1][2] = sol2ndDerCart[4][2][1];
+
+    sol2ndDerCart[0][2][2] = sol2ndDerDr[0]*drdz*drdz + sol2ndDerDs[5]*dsdz*dsdz + sol2ndDerDs[10]*dtdz*dtdz
+                           + (sol2ndDerDr[5]  + sol2ndDerDs[0])*drdz*dsdz + (sol2ndDerDr[10] + sol2ndDerDt[0])*drdz*dtdz
+                           + (sol2ndDerDs[10] + sol2ndDerDt[5])*dsdz*dtdz
+                           + solDr[0]*metricTerms2ndDer[15] + solDs[0]*metricTerms2ndDer[16] + solDt[0]*metricTerms2ndDer[17];
+    sol2ndDerCart[1][2][2] = sol2ndDerDr[1]*drdz*drdz + sol2ndDerDs[6]*dsdz*dsdz + sol2ndDerDs[11]*dtdz*dtdz
+                           + (sol2ndDerDr[6]  + sol2ndDerDs[1])*drdz*dsdz + (sol2ndDerDr[11] + sol2ndDerDt[1])*drdz*dtdz
+                           + (sol2ndDerDs[11] + sol2ndDerDt[6])*dsdz*dtdz
+                           + solDr[1]*metricTerms2ndDer[15] + solDs[1]*metricTerms2ndDer[16] + solDt[1]*metricTerms2ndDer[17];
+    sol2ndDerCart[2][2][2] = sol2ndDerDr[2]*drdz*drdz + sol2ndDerDs[7]*dsdz*dsdz + sol2ndDerDs[12]*dtdz*dtdz
+                           + (sol2ndDerDr[7]  + sol2ndDerDs[2])*drdz*dsdz + (sol2ndDerDr[12] + sol2ndDerDt[2])*drdz*dtdz
+                           + (sol2ndDerDs[12] + sol2ndDerDt[7])*dsdz*dtdz
+                           + solDr[2]*metricTerms2ndDer[15] + solDs[2]*metricTerms2ndDer[16] + solDt[2]*metricTerms2ndDer[17];
+    sol2ndDerCart[3][2][2] = sol2ndDerDr[3]*drdz*drdz + sol2ndDerDs[8]*dsdz*dsdz + sol2ndDerDs[13]*dtdz*dtdz
+                           + (sol2ndDerDr[8]  + sol2ndDerDs[3])*drdz*dsdz + (sol2ndDerDr[13] + sol2ndDerDt[3])*drdz*dtdz
+                           + (sol2ndDerDs[13] + sol2ndDerDt[8])*dsdz*dtdz
+                           + solDr[3]*metricTerms2ndDer[15] + solDs[3]*metricTerms2ndDer[16] + solDt[3]*metricTerms2ndDer[17];
+    sol2ndDerCart[4][2][2] = sol2ndDerDr[4]*drdz*drdz + sol2ndDerDs[9]*dsdz*dsdz + sol2ndDerDs[14]*dtdz*dtdz
+                           + (sol2ndDerDr[9]  + sol2ndDerDs[4])*drdz*dsdz + (sol2ndDerDr[14] + sol2ndDerDt[4])*drdz*dtdz
+                           + (sol2ndDerDs[14] + sol2ndDerDt[9])*dsdz*dtdz
+                           + solDr[4]*metricTerms2ndDer[15] + solDs[4]*metricTerms2ndDer[16] + solDt[4]*metricTerms2ndDer[17];
+
+    /*--- Compute the Cartesian gradients of the pressure, velocity components,
+          static energy and dynamic viscosity. ---*/
+    const su2double dpdx = Gamma_Minus_One*(solGradCart[4][0] + kinEnergy*solGradCart[0][0]
+                         -                  u*solGradCart[1][0] - v*solGradCart[2][0] - w*solGradCart[3][0]);
+    const su2double dpdy = Gamma_Minus_One*(solGradCart[3][1] + kinEnergy*solGradCart[0][1]
+                         -                  u*solGradCart[1][1] - v*solGradCart[2][1] - w*solGradCart[3][1]);
+    const su2double dpdz = Gamma_Minus_One*(solGradCart[3][2] + kinEnergy*solGradCart[0][2]
+                         -                  u*solGradCart[1][2] - v*solGradCart[2][2] - w*solGradCart[3][2]);
+
+    const su2double dudx = DensityInv*(solGradCart[1][0] - u*solGradCart[0][0]);
+    const su2double dudy = DensityInv*(solGradCart[1][1] - u*solGradCart[0][1]);
+    const su2double dudz = DensityInv*(solGradCart[1][2] - u*solGradCart[0][2]);
+
+    const su2double dvdx = DensityInv*(solGradCart[2][0] - v*solGradCart[0][0]);
+    const su2double dvdy = DensityInv*(solGradCart[2][1] - v*solGradCart[0][1]);
+    const su2double dvdz = DensityInv*(solGradCart[2][2] - v*solGradCart[0][2]);
+
+    const su2double dwdx = DensityInv*(solGradCart[3][0] - w*solGradCart[0][0]);
+    const su2double dwdy = DensityInv*(solGradCart[3][1] - w*solGradCart[0][1]);
+    const su2double dwdz = DensityInv*(solGradCart[3][2] - w*solGradCart[0][2]);
+
+    const su2double dedx = DensityInv*(solGradCart[4][0] - TotalEnergy*solGradCart[0][0])
+                         - u*dudx - v*dvdx - w*dwdx;
+    const su2double dedy = DensityInv*(solGradCart[4][1] - TotalEnergy*solGradCart[0][1])
+                         - u*dudy - v*dvdy - w*dwdy;
+    const su2double dedz = DensityInv*(solGradCart[4][2] - TotalEnergy*solGradCart[0][2])
+                         - u*dudz - v*dvdz - w*dwdz;
+
+    const su2double dViscLamdx = CvInv*dedx*dViscLamdT;
+    const su2double dViscLamdy = CvInv*dedy*dViscLamdT;
+    const su2double dViscLamdz = CvInv*dedz*dViscLamdT;
+
+    /*--- Compute the second derivatives of the velocity components. ---*/
+    const su2double d2udxx = DensityInv*(sol2ndDerCart[1][0][0] - u*sol2ndDerCart[0][0][0]
+                           +    2.0*DensityInv*solGradCart[0][0]*(u*solGradCart[0][0] - solGradCart[1][0]));
+    const su2double d2udyy = DensityInv*(sol2ndDerCart[1][1][1] - u*sol2ndDerCart[0][1][1]
+                           +    2.0*DensityInv*solGradCart[0][1]*(u*solGradCart[0][1] - solGradCart[1][1]));
+    const su2double d2udzz = DensityInv*(sol2ndDerCart[1][2][2] - u*sol2ndDerCart[0][2][2]
+                           +    2.0*DensityInv*solGradCart[0][2]*(u*solGradCart[0][2] - solGradCart[1][2]));
+    const su2double d2udxy = DensityInv*(sol2ndDerCart[1][0][1] - u*sol2ndDerCart[0][0][1]
+                           +       DensityInv*(solGradCart[0][0]*(u*solGradCart[0][1] - solGradCart[1][1])
+                           +                   solGradCart[0][1]*(u*solGradCart[0][0] - solGradCart[1][0])));
+    const su2double d2udxz = DensityInv*(sol2ndDerCart[1][0][2] - u*sol2ndDerCart[0][0][2]
+                           +       DensityInv*(solGradCart[0][0]*(u*solGradCart[0][2] - solGradCart[1][2])
+                           +                   solGradCart[0][2]*(u*solGradCart[0][0] - solGradCart[1][0])));
+    const su2double d2udyz = DensityInv*(sol2ndDerCart[1][1][2] - u*sol2ndDerCart[0][1][2]
+                           +       DensityInv*(solGradCart[0][1]*(u*solGradCart[0][2] - solGradCart[1][2])
+                           +                   solGradCart[0][2]*(u*solGradCart[0][1] - solGradCart[1][1])));
+
+    const su2double d2vdxx = DensityInv*(sol2ndDerCart[2][0][0] - v*sol2ndDerCart[0][0][0]
+                           +    2.0*DensityInv*solGradCart[0][0]*(v*solGradCart[0][0] - solGradCart[2][0]));
+    const su2double d2vdyy = DensityInv*(sol2ndDerCart[2][1][1] - v*sol2ndDerCart[0][1][1]
+                           +    2.0*DensityInv*solGradCart[0][1]*(v*solGradCart[0][1] - solGradCart[2][1]));
+    const su2double d2vdzz = DensityInv*(sol2ndDerCart[2][2][2] - v*sol2ndDerCart[0][2][2]
+                           +    2.0*DensityInv*solGradCart[0][2]*(v*solGradCart[0][2] - solGradCart[2][2]));
+    const su2double d2vdxy = DensityInv*(sol2ndDerCart[2][0][1] - v*sol2ndDerCart[0][0][1]
+                           +       DensityInv*(solGradCart[0][0]*(v*solGradCart[0][1] - solGradCart[2][1])
+                           +                   solGradCart[0][1]*(v*solGradCart[0][0] - solGradCart[2][0])));
+    const su2double d2vdxz = DensityInv*(sol2ndDerCart[2][0][2] - v*sol2ndDerCart[0][0][2]
+                           +       DensityInv*(solGradCart[0][0]*(v*solGradCart[0][2] - solGradCart[2][2])
+                           +                   solGradCart[0][2]*(v*solGradCart[0][0] - solGradCart[2][0])));
+    const su2double d2vdyz = DensityInv*(sol2ndDerCart[2][1][2] - v*sol2ndDerCart[0][1][2]
+                           +       DensityInv*(solGradCart[0][1]*(v*solGradCart[0][2] - solGradCart[2][2])
+                           +                   solGradCart[0][2]*(v*solGradCart[0][1] - solGradCart[2][1])));
+
+    const su2double d2wdxx = DensityInv*(sol2ndDerCart[3][0][0] - w*sol2ndDerCart[0][0][0]
+                           +    2.0*DensityInv*solGradCart[0][0]*(w*solGradCart[0][0] - solGradCart[3][0]));
+    const su2double d2wdyy = DensityInv*(sol2ndDerCart[3][1][1] - w*sol2ndDerCart[0][1][1]
+                           +    2.0*DensityInv*solGradCart[0][1]*(w*solGradCart[0][1] - solGradCart[3][1]));
+    const su2double d2wdzz = DensityInv*(sol2ndDerCart[3][2][2] - w*sol2ndDerCart[0][2][2]
+                           +    2.0*DensityInv*solGradCart[0][2]*(w*solGradCart[0][2] - solGradCart[3][2]));
+    const su2double d2wdxy = DensityInv*(sol2ndDerCart[3][0][1] - w*sol2ndDerCart[0][0][1]
+                           +       DensityInv*(solGradCart[0][0]*(w*solGradCart[0][1] - solGradCart[3][1])
+                           +                   solGradCart[0][1]*(w*solGradCart[0][0] - solGradCart[3][0])));
+    const su2double d2wdxz = DensityInv*(sol2ndDerCart[3][0][2] - w*sol2ndDerCart[0][0][2]
+                           +       DensityInv*(solGradCart[0][0]*(w*solGradCart[0][2] - solGradCart[3][2])
+                           +                   solGradCart[0][2]*(w*solGradCart[0][0] - solGradCart[3][0])));
+    const su2double d2wdyz = DensityInv*(sol2ndDerCart[3][1][2] - w*sol2ndDerCart[0][1][2]
+                           +       DensityInv*(solGradCart[0][1]*(w*solGradCart[0][2] - solGradCart[3][2])
+                           +                   solGradCart[0][2]*(w*solGradCart[0][1] - solGradCart[3][1])));
+
+    /*--- Compute the second derivatives of the static energy. Note that this
+          term appears in the heat flux and therefore only the pure second
+          derivatives are needed. Hence, the cross-derivatives are omitted. ---*/
+    const su2double d2edxx = DensityInv*(sol2ndDerCart[4][0][0] - TotalEnergy*sol2ndDerCart[0][0][0]
+                           +    2.0*DensityInv*solGradCart[0][0]*(TotalEnergy*solGradCart[0][0] - solGradCart[4][0]))
+                           -    u*d2udxx - dudx*dudx - v*d2vdxx - dvdx*dvdx - w*d2wdxx - dwdx*dwdx;
+    const su2double d2edyy = DensityInv*(sol2ndDerCart[4][1][1] - TotalEnergy*sol2ndDerCart[0][1][1]
+                           +    2.0*DensityInv*solGradCart[0][1]*(TotalEnergy*solGradCart[0][1] - solGradCart[4][1]))
+                           -    u*d2udyy - dudy*dudy - v*d2vdyy - dvdy*dvdy - w*d2wdyy - dwdy*dwdy;
+    const su2double d2edzz = DensityInv*(sol2ndDerCart[4][2][2] - TotalEnergy*sol2ndDerCart[0][2][2]
+                           +    2.0*DensityInv*solGradCart[0][2]*(TotalEnergy*solGradCart[0][2] - solGradCart[4][2]))
+                           -    u*d2udzz - dudz*dudz - v*d2vdzz - dvdz*dvdz - w*d2wdzz - dwdz*dwdz;
+
+    /*--- If an SGS model is used the eddy viscosity and its spatial
+          derivatives must be computed. ---*/
+    su2double ViscosityTurb = 0.0;
+    su2double dViscTurbdx = 0.0, dViscTurbdy = 0.0, dViscTurbdz = 0.0;
+
+    if( SGSModelUsed ) {
+      const su2double dist = elem->wallDistance[i];
+      ViscosityTurb = SGSModel->ComputeEddyViscosity_3D(sol[0], dudx, dudy, dudz,
+                                                        dvdx, dvdy, dvdz, dwdx,
+                                                        dwdy, dwdz, lenScale, dist);
+
+      SGSModel->ComputeGradEddyViscosity_3D(sol[0], solGradCart[0][0], solGradCart[0][1],
+                                            solGradCart[0][2], dudx, dudy, dudz, dvdx,
+                                            dvdy, dvdz, dwdx, dwdy, dwdz, d2udxx, d2udyy,
+                                            d2udzz, d2udxy, d2udxz, d2udyz, d2vdxx, d2vdyy,
+                                            d2vdzz, d2vdxy, d2vdxz, d2vdyz, d2wdxx, d2wdyy,
+                                            d2wdzz, d2wdxy, d2wdxz, d2wdyz, lenScale,
+                                            dist, dViscTurbdx, dViscTurbdy, dViscTurbdz);
+    }
+
+    /*--- Compute the total viscosity, the total heat conductivity and their
+          gradients. Note that the heat conductivity is divided by the Cv,
+          because gradients of internal energy are computed and not temperature. ---*/
+    const su2double Viscosity = ViscosityLam + ViscosityTurb;
+    const su2double kOverCv = ViscosityLam *factHeatFlux_Lam
+                            + ViscosityTurb*factHeatFlux_Turb;
+
+    const su2double dViscDx = dViscLamdx + dViscTurbdx;
+    const su2double dViscDy = dViscLamdy + dViscTurbdy;
+    const su2double dViscDz = dViscLamdz + dViscTurbdz;
+
+    const su2double dkOverCvdx = dViscLamdx *factHeatFlux_Lam
+                               + dViscTurbdx*factHeatFlux_Turb;
+    const su2double dkOverCvdy = dViscLamdy *factHeatFlux_Lam
+                               + dViscTurbdy*factHeatFlux_Turb;
+    const su2double dkOverCvdz = dViscLamdz *factHeatFlux_Lam
+                               + dViscTurbdz*factHeatFlux_Turb;
+
+    /* Abbreviations, which make it easier to compute the divergence term. */
+    const su2double abv1 = solGradCart[1][0] + solGradCart[2][1] + solGradCart[3][2];
+    const su2double abv2 = u*solGradCart[0][0] + v*solGradCart[0][1] + w*solGradCart[0][2];
+    const su2double abv3 = u*(solGradCart[4][0] + dpdx) + v*(solGradCart[4][1] + dpdy)
+                         + w*(solGradCart[4][2] + dpdz);
+    const su2double abv4 = dudx + dvdy + dwdz;
+
+    /*--- Set the pointer to store the divergence terms for this integration
+          point and compute these terms, multiplied by the integration weight
+          and Jacobian. ---*/
+    const su2double weightJac = weights[i]*Jac;
+    su2double *divFluxInt     = divFlux + 5*i;   /* nVar*i. */
+
+    divFluxInt[0] = weightJac* abv1;
+    divFluxInt[1] = weightJac*(dpdx + u*(abv1-abv2) - lambdaOverMu*abv4*dViscDx
+                  +            u*solGradCart[1][0] + v*solGradCart[1][1] + w*solGradCart[1][2]
+                  -            lambdaOverMu*Viscosity*(d2udxx + d2vdxy + d2wdxz)
+                  -            Viscosity*(2.0*d2udxx + d2udyy + d2vdxy + d2udzz + d2wdxz)
+                  -            2.0*dViscDx*dudx - dViscDy*(dudy+dvdx) - dViscDz*(dudz+dwdx));
+    divFluxInt[2] = weightJac*(dpdy + v*(abv1-abv2) - lambdaOverMu*abv4*dViscDy
+                  +            u*solGradCart[2][0] + v*solGradCart[2][1] + w*solGradCart[2][2]
+                  -            lambdaOverMu*Viscosity*(d2udxy + d2vdxy + d2wdyz)
+                  -            Viscosity*(d2udxy + d2vdxx + 2.0*d2vdyy + d2vdzz + d2wdyz)
+                  -            dViscDx*(dudy+dvdx) - 2.0*dViscDy*dvdy - dViscDz*(dvdz+dwdy));
+    divFluxInt[3] = weightJac*(dpdz + w*(abv1-abv2) - lambdaOverMu*abv4*dViscDz
+                  +            u*solGradCart[3][0] + v*solGradCart[3][1] + w*solGradCart[3][2]
+                  -            lambdaOverMu*Viscosity*(d2udxz + d2vdyz + d2wdzz)
+                  -            Viscosity*(d2udxz + d2wdxx + d2vdyz + d2wdyy + 2.0*d2wdzz)
+                  -            dViscDx*(dudz+dwdx) - dViscDy*(dvdz+dwdy) - 2.0*dViscDz*dwdz);
+    divFluxInt[4] = weightJac*(abv3 + Htot*(abv1 - abv2)
+                  -            abv4*lambdaOverMu*(Viscosity*abv4 + u*dViscDx + v*dViscDy + w*dViscDz)
+                  -            dkOverCvdx*dedx - dkOverCvdy*dedy - dkOverCvdz*dedz
+                  -            kOverCv*(d2edxx + d2edyy + d2edzz)
+                  -            (Viscosity*dudx + u*dViscDx)*2.0*dudx
+                  -            (Viscosity*dvdy + v*dViscDy)*2.0*dvdy
+                  -            (Viscosity*dwdz + w*dViscDz)*2.0*dwdz
+                  -            (Viscosity*dudy + u*dViscDy + Viscosity*dvdx + v*dViscDx)*(dudy + dvdx)
+                  -            (Viscosity*dudz + u*dViscDz + Viscosity*dwdx + w*dViscDx)*(dudz + dwdx)
+                  -            (Viscosity*dvdz + v*dViscDz + Viscosity*dwdy + w*dViscDy)*(dvdz + dwdy)
+                  -            Viscosity*u*(d2udxx+d2udyy+d2udzz + (1.0+lambdaOverMu)*(d2udxx+d2vdxy+d2wdxz))
+                  -            Viscosity*v*(d2vdxx+d2vdyy+d2vdzz + (1.0+lambdaOverMu)*(d2udxy+d2vdyy+d2wdyz))
+                  -            Viscosity*w*(d2wdxx+d2wdyy+d2wdzz + (1.0+lambdaOverMu)*(d2udxz+d2vdyz+d2wdzz)));
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3: Compute the residual in the DOFs, which is the matrix      ---*/
+  /*---         product of basisFunctionsIntTrans and divFlux.             ---*/
+  /*--------------------------------------------------------------------------*/
+
+  DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
+}
+
+void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
+                                          const unsigned long elemBeg,
+                                          const unsigned long elemEnd) {
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
     case NONE:
       break;
     case PERSSON:
-      Shock_Capturing_DG_Persson(geometry, solver_container, numerics, config, iMesh, iStep);
+      Shock_Capturing_DG_Persson(elemBeg, elemEnd);
       break;
   }
 
 }
-void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
+                                                  const unsigned long elemEnd) {
 
   /*--- Dummy variable for storing shock sensor value temporarily ---*/
   su2double sensorVal, sensorLowerBound, machNorm, machMax;
@@ -6289,9 +8969,9 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
   bool shockExist;
   unsigned short nDOFsPm1;       // Number of DOFs up to polynomial degree p-1
 
-  /*--- Loop over the owned volume elements to sense the shock. If shock exists,
+  /*--- Loop over the given range of elements to sense the shock. If shock exists,
         add artificial viscosity for DG FEM formulation to the residual.  ---*/
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
 
     /* Get the data from the corresponding standard element. */
     const unsigned short ind          = volElem[l].indStandardElement;
@@ -6336,7 +9016,9 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
     sensorLowerBound = 1.e15;
 
     /* Easier storage of the solution variables for this element. */
-    const su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+    const unsigned short timeLevel = volElem[l].timeLevel;
+    const su2double *solDOFs = VecWorkSolDOFs[timeLevel].data()
+                             + nVar*volElem[l].offsetDOFsSolThisTimeLevel;
 
     /* Temporary storage of mach number for DOFs in this element. */
     su2double *machSolDOFs = VecTmpMemory.data();
@@ -6408,18 +9090,13 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
     /*---------------------------------------------------------------------*/
     if (shockExist) {
       // Following if-else clause is purely empirical from NACA0012 case.
-      // Need to develop thorough method for general problems
-      if ( nPoly == 1) {
-        sensorLowerBound = -6.0;
-      }
-      else if ( nPoly == 2 ) {
-        sensorLowerBound = -12.0;
-      }
-      else if ( nPoly == 3 ) {
-        sensorLowerBound = -12.0;
-      }
-      else if ( nPoly == 4 ) {
-         sensorLowerBound = -17.0;
+      // Need to develop thorough method for general problems.
+      switch ( nPoly ) {
+        case 1:  sensorLowerBound =  -6.0; break;
+        case 2:  sensorLowerBound = -12.0; break;
+        case 3:  sensorLowerBound = -12.0; break;
+        case 4:  sensorLowerBound = -17.0; break;
+        default: sensorLowerBound = -17.0; break;
       }
 
       // Assign artificial viscosity based on shockSensorValue
@@ -6435,32 +9112,34 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
       volElem[l].shockArtificialViscosity = 0.0;
     }
   }
-
 }
 
-void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                       CConfig *config, unsigned short iMesh, unsigned short iStep) {
+void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
+                                       const unsigned long elemBeg,
+                                       const unsigned long elemEnd) {
 
-  /* Start the MPI communication of the solution in the halo elements. */
-  Initiate_MPI_Communication();
+  /*--- Determine whether body force term is present in configuration. ---*/
+  bool body_force = config->GetBody_Force();
+  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
 
   /*--- Set the pointers for the local arrays. ---*/
-  su2double tick = 0.0;
+  double tick = 0.0;
 
-  su2double *solAndGradInt = VecTmpMemory.data();
-  su2double *fluxes        = solAndGradInt + nIntegrationMax*nVar*(ctc::nDim+1);
+  su2double *sources       = VecTmpMemory.data();
+  su2double *solAndGradInt = sources       + nIntegrationMax*nVar;
+  su2double *fluxes        = solAndGradInt + nIntegrationMax*nVar*(nDim+1);
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
-  const unsigned short nMetricPerPoint = ctc::nDim*ctc::nDim + 1;
+  const unsigned short nMetricPerPoint = nDim*nDim + 1;
 
-  /*--- Loop over the owned volume elements to compute the contribution of the
-        volume integral in the DG FEM formulation to the residual.       ---*/
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+  /*--- Loop over the given element range to compute the contribution of the
+        volume integral in the DG FEM formulation to the residual. ---*/
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
 
     /* Get the data from the corresponding standard element. */
     const unsigned short ind             = volElem[l].indStandardElement;
@@ -6468,6 +9147,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     const unsigned short nDOFs           = volElem[l].nDOFsSol;
     const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
     const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
+    const su2double *matBasisIntTrans    = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
     const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
 
     unsigned short nPoly = standardElementsSol[ind].GetNPoly();
@@ -6483,7 +9163,9 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     /*------------------------------------------------------------------------*/
 
     /* Easier storage of the solution variables for this element. */
-    su2double *solDOFs = VecSolDOFs.data() + ctc::nVar*volElem[l].offsetDOFsSolLocal;
+    const unsigned short timeLevel = volElem[l].timeLevel;
+    const su2double *solDOFs = VecWorkSolDOFs[timeLevel].data()
+                             + nVar*volElem[l].offsetDOFsSolThisTimeLevel;
 
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
@@ -6500,11 +9182,11 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     /* Determine the offset between the solution variables and the r-derivatives,
        which is also the offset between the r- and s-derivatives and the offset
        between s- and t-derivatives. */
-    const unsigned short offDeriv = ctc::nVar*nInt;
+    const unsigned short offDeriv = nVar*nInt;
 
     /* Make a distinction between two and three space dimensions
         in order to have the most efficient code. */
-    switch( ctc::nDim ) {
+    switch( nDim ) {
 
       case 2: {
 
@@ -6537,7 +9219,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
 
           /* Easier storage of the location where the solution data of this
              integration point starts. */
-          const su2double *sol    = solAndGradInt + ctc::nVar*i;
+          const su2double *sol    = solAndGradInt + nVar*i;
           const su2double *dSolDr = sol    + offDeriv;
           const su2double *dSolDs = dSolDr + offDeriv;
 
@@ -6583,16 +9265,10 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
 
           /*--- If an SGS model is used the eddy viscosity must be computed. ---*/
           su2double ViscosityTurb = 0.0;
-          if( SGSModelUsed ) {
-            const su2double dist = volElem[l].wallDistance[i];
-            su2double velGrad[3][3];
-            velGrad[0][0] = dudx; velGrad[0][1] = dudy; velGrad[0][2] = 0.0;
-            velGrad[1][0] = dvdx; velGrad[1][1] = dvdy; velGrad[1][2] = 0.0;
-            velGrad[2][0] = 0.0;  velGrad[2][1] = 0.0;  velGrad[2][2] = 0.0;
-
-            ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
-                                                           lenScale, dist);
-          }
+          if( SGSModelUsed )
+            ViscosityTurb = SGSModel->ComputeEddyViscosity_2D(sol[0], dudx, dudy,
+                                                              dvdx, dvdy, lenScale,
+                                                              volElem[l].wallDistance[i]);
 
           /* Compute the total viscosity and heat conductivity. Note that the heat
              conductivity is divided by the Cv, because gradients of internal energy
@@ -6615,7 +9291,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
           const su2double qy = kOverCv*dStaticEnergyDy;
 
           /* Set the pointer for the fluxes in this integration point. */
-          su2double *flux = fluxes + i*ctc::nDim*ctc::nVar;
+          su2double *flux = fluxes + i*nDim*nVar;
 
           /*--- Fluxes in r-direction. */
           const su2double H     = TotalEnergy + rhoInv*Pressure;
@@ -6635,6 +9311,20 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
           flux[6] = rhoUs*v - tauxy*wDsdx + (Pressure - tauyy)*wDsdy;
           flux[7] = rhoUs*H - (u*tauxx + v*tauxy + qx)*wDsdx
                             - (u*tauxy + v*tauyy + qy)*wDsdy;
+
+          /*--- If needed, compute the body forces in this integration point.
+                Note that the source terms are multiplied with minus the
+                integration weight in order to be consistent with the
+                formulation of the residual. ---*/
+          if( body_force ) {
+            su2double *source         = sources + i*nVar;
+            const su2double weightJac = weights[i]*Jac;
+
+            source[0] =  0.0;
+            source[1] = -weightJac*body_force_vector[0];
+            source[2] = -weightJac*body_force_vector[1];
+            source[3] = -weightJac*(u*body_force_vector[0] + v*body_force_vector[1]);
+          }
         }
 
         break;
@@ -6685,7 +9375,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
 
           /* Easier storage of the location where the solution data of this
              integration point starts. */
-          const su2double *sol    = solAndGradInt + ctc::nVar*i;
+          const su2double *sol    = solAndGradInt + nVar*i;
           const su2double *dSolDr = sol    + offDeriv;
           const su2double *dSolDs = dSolDr + offDeriv;
           const su2double *dSolDt = dSolDs + offDeriv;
@@ -6749,16 +9439,11 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
 
           /*--- If an SGS model is used the eddy viscosity must be computed. ---*/
           su2double ViscosityTurb = 0.0;
-          if( SGSModelUsed ) {
-            const su2double dist = volElem[l].wallDistance[i];
-            su2double velGrad[3][3];
-            velGrad[0][0] = dudx; velGrad[0][1] = dudy; velGrad[0][2] = dudz;
-            velGrad[1][0] = dvdx; velGrad[1][1] = dvdy; velGrad[1][2] = dvdz;
-            velGrad[2][0] = dwdx; velGrad[2][1] = dwdy; velGrad[2][2] = dwdz;
-
-            ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
-                                                           lenScale, dist);
-          }
+          if( SGSModelUsed )
+            ViscosityTurb = SGSModel->ComputeEddyViscosity_3D(sol[0], dudx, dudy, dudz,
+                                                              dvdx, dvdy, dvdz, dwdx,
+                                                              dwdy, dwdz, lenScale,
+                                                              volElem[l].wallDistance[i]);
 
           /* Compute the total viscosity and heat conductivity. Note that the heat
              conductivity is divided by the Cv, because gradients of internal energy
@@ -6786,7 +9471,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
           const su2double qz = kOverCv*dStaticEnergyDz;
 
           /* Set the pointer for the fluxes in this integration point. */
-          su2double *flux = fluxes + i*ctc::nDim*ctc::nVar;
+          su2double *flux = fluxes + i*nDim*nVar;
 
           /*--- Fluxes in r-direction. */
           const su2double H     = TotalEnergy + rhoInv*Pressure;
@@ -6821,6 +9506,22 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
           flux[14] = rhoUt*H - (u*tauxx + v*tauxy + w*tauxz + qx)*wDtdx
                              - (u*tauxy + v*tauyy + w*tauyz + qy)*wDtdy
                              - (u*tauxz + v*tauyz + w*tauzz + qz)*wDtdz;
+
+          /*--- If needed, compute the body forces in this integration point.
+                Note that the source terms are multiplied with minus the
+                integration weight in order to be consistent with the
+                formulation of the residual. ---*/
+          if( body_force ) {
+            su2double *source         = sources + i*nVar;
+            const su2double weightJac = weights[i]*Jac;
+
+            source[0] =  0.0;
+            source[1] = -weightJac*body_force_vector[0];
+            source[2] = -weightJac*body_force_vector[1];
+            source[3] = -weightJac*body_force_vector[2];
+            source[4] = -weightJac*(u*body_force_vector[0] + v*body_force_vector[1]
+                      +             w*body_force_vector[2]);
+          }
         }
 
         break;
@@ -6842,21 +9543,35 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
 
+    /* Add the contribution from the source terms, if needed. Use solAndGradInt
+       as temporary storage for the matrix product. */
+    if( body_force ) {
+
+      /* Call the general function to carry out the matrix product. */
+      config->GEMM_Tick(&tick);
+      DenseMatrixProduct(nDOFs, nVar, nInt, matBasisIntTrans, sources, solAndGradInt);
+      config->GEMM_Tock(tick, "Volume_Residual3", nDOFs, nVar, nInt);
+
+      /* Add the residuals due to source terms to the volume residuals */
+      for(unsigned short i=0; i<(nDOFs*nVar); ++i)
+        res[i] += solAndGradInt[i];
+    }
   }
 }
 
-void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iStep,
-                                     const unsigned long indFaceBeg, const unsigned long indFaceEnd,
-                                     unsigned long &indResFaces) {
+void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
+                                     const unsigned long indFaceBeg,
+                                     const unsigned long indFaceEnd,
+                                     unsigned long       &indResFaces,
+                                     CNumerics           *numerics) {
 
   /* Determine whether or not the Cartesian gradients of the basis functions
      are stored. */
   const bool CartGradBasisFunctionsStored = config->GetStore_Cart_Grad_BasisFunctions_DGFEM();
 
   /*--- Set the pointers for the local arrays. ---*/
-  su2double tick = 0.0;
-  su2double tick2 = 0.0;
+  double tick = 0.0;
+  double tick2 = 0.0;
 
   unsigned int sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
@@ -6898,27 +9613,28 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
           fluxes in the integration points on the left side, i.e. side 0. ---*/
     const unsigned short ind          = matchingInternalFaces[l].indStandardElement;
     const unsigned short nInt         = standardMatchingFacesSol[ind].GetNIntegration();
-          unsigned short nDOFsElem    = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
     const su2double     *derBasisElem = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationSide0();
 
     /* Get the length scales of the adjacent elements. */
-    const su2double lenScale0 = volElem[matchingInternalFaces[l].elemID0].lenScale;
-    const su2double lenScale1 = volElem[matchingInternalFaces[l].elemID1].lenScale;
+    const unsigned long elemID0 = matchingInternalFaces[l].elemID0;
+    const unsigned long elemID1 = matchingInternalFaces[l].elemID1;
 
-    /* Compute the length scale for the LES of the element of side 0. */
-    unsigned short iind  = volElem[matchingInternalFaces[l].elemID0].indStandardElement;
-    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
-    if(nPoly == 0) nPoly = 1;
+    const su2double lenScale0 = volElem[elemID0].lenScale;
+    const su2double lenScale1 = volElem[elemID1].lenScale;
 
-    const su2double lenScale0_LES = lenScale0/nPoly;
+    /* Determine the time level of the face, which is the minimum
+       of the levels of the adjacent elements. */
+    const unsigned short timeLevelFace = min(volElem[elemID0].timeLevel,
+                                             volElem[elemID1].timeLevel);
 
     /* Call the general function to compute the viscous flux in normal
        direction for side 0. */
-    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, &volElem[elemID0], timeLevelFace, nInt,
+                          0.0, false, derBasisElem, solIntL,
                           matchingInternalFaces[l].DOFsSolElementSide0.data(),
                           matchingInternalFaces[l].metricCoorDerivFace0.data(),
                           matchingInternalFaces[l].metricNormalsFace.data(),
-                          matchingInternalFaces[l].wallDistance.data(), lenScale0_LES,
+                          matchingInternalFaces[l].wallDistance.data(),
                           gradSolInt, viscFluxes, viscosityIntL, kOverCvIntL);
 
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. The
@@ -6928,23 +9644,16 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Get the information from the standard face to compute the viscous
           fluxes in the integration points on the right side, i.e. side 1. ---*/
-    nDOFsElem    = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
     derBasisElem = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationSide1();
-
-    /* Compute the length scale for the LES of the element of side 1. */
-    iind  = volElem[matchingInternalFaces[l].elemID1].indStandardElement;
-    nPoly = standardElementsSol[iind].GetNPoly();
-    if(nPoly == 0) nPoly = 1;
-
-    const su2double lenScale1_LES = lenScale1/nPoly;
 
     /* Call the general function to compute the viscous flux in normal
        direction for side 1. */
-    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntR,
+    ViscousNormalFluxFace(config, &volElem[elemID1], timeLevelFace, nInt,
+                          0.0, false, derBasisElem, solIntR,
                           matchingInternalFaces[l].DOFsSolElementSide1.data(),
                           matchingInternalFaces[l].metricCoorDerivFace1.data(),
                           matchingInternalFaces[l].metricNormalsFace.data(),
-                          matchingInternalFaces[l].wallDistance.data(), lenScale1_LES,
+                          matchingInternalFaces[l].wallDistance.data(),
                           gradSolInt, viscFluxes, viscosityIntR, kOverCvIntR);
 
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. ---*/
@@ -6976,9 +9685,9 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
        integration point. */
     const su2double *weights = standardMatchingFacesSol[ind].GetWeightsIntegration();
     for(unsigned short i=0; i<nInt; ++i) {
-      su2double *flux = fluxes + i*ctc::nVar;
+      su2double *flux = fluxes + i*nVar;
 
-      for(unsigned short j=0; j<ctc::nVar; ++j)
+      for(unsigned short j=0; j<nVar; ++j)
         flux[j] *= weights[i];
     }
     config->Tock(tick, "ER_1_3", 4);
@@ -6991,7 +9700,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
     /* Easier storage of the position in the residual array for side 0 of
        this face and update the corresponding counter. */
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
-    su2double *resFace0 = VecResFaces.data() + indResFaces*ctc::nVar;
+    su2double *resFace0 = VecResFaces.data() + indResFaces*nVar;
     indResFaces        += nDOFsFace0;
 
     /* Get the correct form of the basis functions needed for the matrix
@@ -7054,10 +9763,10 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
       const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
 
       for(unsigned short i=0; i<nInt; ++i) {
-        su2double *flux        = fluxes + i*ctc::nVar*ctc::nDim;
+        su2double *flux        = fluxes + i*nVar*nDim;
         const su2double wTheta = -halfTheta*weights[i];
 
-        for(unsigned short j=0; j<(ctc::nVar*ctc::nDim); ++j)
+        for(unsigned short j=0; j<(nVar*nDim); ++j)
           flux[j] *= wTheta;
       }
       config->Tock(tick, "ER_1_5", 4);
@@ -7090,7 +9799,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
               in the integration points. ---*/
         unsigned int ii = 0;
         for(unsigned short j=0; j<nDOFsElem0; ++j) {
-          for(unsigned short i=0; i<nInt; ++i, ii+=ctc::nDim) {
+          for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
 
             /* Easier storage of the derivatives of the basis function w.r.t. the
                parametric coordinates, the location where to store the Cartesian
@@ -7098,16 +9807,16 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
                integration point. */
             const su2double *derParam    = derBasisElemTrans + ii;
             const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0.data()
-                                         + i*ctc::nDim*ctc::nDim;
+                                         + i*nDim*nDim;
                   su2double *derCar      = gradSolInt + ii;
 
             /*--- Loop over the dimensions to compute the Cartesian derivatives
                   of the basis functions. ---*/
-#pragma simd 
-            for(unsigned short k=0; k<ctc::nDim; ++k) {
+#pragma simd
+            for(unsigned short k=0; k<nDim; ++k) {
               derCar[k] = 0.0;
-              for(unsigned short l=0; l<ctc::nDim; ++l)
-                derCar[k] += derParam[l]*metricTerms[k+l*ctc::nDim];
+              for(unsigned short l=0; l<nDim; ++l)
+                derCar[k] += derParam[l]*metricTerms[k+l*nDim];
             }
           }
         }
@@ -7142,7 +9851,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
               integration points. Use gradSolInt for storage. ---*/
         unsigned int ii = 0;
         for(unsigned short j=0; j<nDOFsElem1; ++j) {
-          for(unsigned short i=0; i<nInt; ++i, ii+=ctc::nDim) {
+          for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
 
             /* Easier storage of the derivatives of the basis function w.r.t. the
                parametric coordinates, the location where to store the Cartesian
@@ -7150,16 +9859,16 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
                integration point. */
             const su2double *derParam    = derBasisElemTrans + ii;
             const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
-                                         + i*ctc::nDim*ctc::nDim;
+                                         + i*nDim*nDim;
                   su2double *derCar      = gradSolInt + ii;
 
             /*--- Loop over the dimensions to compute the Cartesian derivatives
                   of the basis functions. ---*/
 #pragma simd
-            for(unsigned short k=0; k<ctc::nDim; ++k) {
+            for(unsigned short k=0; k<nDim; ++k) {
               derCar[k] = 0.0;
-              for(unsigned short l=0; l<ctc::nDim; ++l)
-                derCar[k] += derParam[l]*metricTerms[k+l*ctc::nDim];
+              for(unsigned short l=0; l<nDim; ++l)
+                derCar[k] += derParam[l]*metricTerms[k+l*nDim];
             }
           }
         }
@@ -7186,32 +9895,51 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
   }
 }
 
-void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
-                                             const unsigned short nInt,
-                                             const unsigned short nDOFsElem,
-                                             const su2double      Wall_HeatFlux,
-                                             const bool           HeatFlux_Prescribed,
-                                             const su2double      *derBasisElem,
-                                             const su2double      *solInt,
-                                             const unsigned long  *DOFsElem,
-                                             const su2double      *metricCoorDerivFace,
-                                             const su2double      *metricNormalsFace,
-                                             const su2double      *wallDistanceInt,
-                                             const su2double      lenScale_LES,
-                                                   su2double      *gradSolInt,
-                                                   su2double      *viscNormFluxes,
-                                                   su2double      *viscosityInt,
-                                                   su2double      *kOverCvInt) {
+void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig                 *config,
+                                             const CVolumeElementFEM *adjVolElem,
+                                             const unsigned short    timeLevelFace,
+                                             const unsigned short    nInt,
+                                             const su2double         Wall_HeatFlux,
+                                             const bool              HeatFlux_Prescribed,
+                                             const su2double         *derBasisElem,
+                                             const su2double         *solInt,
+                                             const unsigned long     *DOFsElem,
+                                             const su2double         *metricCoorDerivFace,
+                                             const su2double         *metricNormalsFace,
+                                             const su2double         *wallDistanceInt,
+                                                   su2double         *gradSolInt,
+                                                   su2double         *viscNormFluxes,
+                                                   su2double         *viscosityInt,
+                                                   su2double         *kOverCvInt) {
 
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /* Constant factor present in the heat flux vector. Set it to zero if the heat
      flux is prescribed, such that no if statements are needed in the loop. */
-  const su2double factHeatFlux_Lam  = HeatFlux_Prescribed ? 0.0: Gamma/Prandtl_Lam;
-  const su2double factHeatFlux_Turb = HeatFlux_Prescribed ? 0.0: Gamma/Prandtl_Turb;
+  const su2double factHeatFlux_Lam  = HeatFlux_Prescribed ? su2double(0.0): Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = HeatFlux_Prescribed ? su2double(0.0): Gamma/Prandtl_Turb;
 
   /* Set the value of the prescribed heat flux for the same reason. */
-  const su2double HeatFlux = HeatFlux_Prescribed ? Wall_HeatFlux : 0.0;
+  const su2double HeatFlux = HeatFlux_Prescribed ? Wall_HeatFlux : su2double(0.0);
+
+  /* Determine the number of DOFs of the adjacent element and the offset that
+     must be applied to access the correct data for this element in the working
+     vector of the solution. If the element has the same time level as the face
+     offsetDOFsSolThisTimeLevel is used, otherwise offsetDOFsSolPrevTimeLevel
+     is the correct value. */
+  const unsigned short nDOFsElem = adjVolElem->nDOFsSol;
+  unsigned long offset;
+  if(adjVolElem->timeLevel == timeLevelFace)
+    offset = adjVolElem->offsetDOFsSolLocal - adjVolElem->offsetDOFsSolThisTimeLevel;
+  else
+    offset = adjVolElem->offsetDOFsSolLocal - adjVolElem->offsetDOFsSolPrevTimeLevel;
+
+  /* Compute the length scale for the LES of the adjacent element. */
+  const unsigned short iind  = adjVolElem->indStandardElement;
+  unsigned short       nPoly = standardElementsSol[iind].GetNPoly();
+  if(nPoly == 0) nPoly = 1;
+
+  const su2double lenScale_LES = adjVolElem->lenScale/nPoly;
 
   /* Set the pointer solElem to viscNormFluxes. This is just for readability, as the
      same memory can be used for the storage of the solution of the DOFs of
@@ -7221,11 +9949,12 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
   /*--- Store the solution of the DOFs of the adjacent element in contiguous
         memory such that the function DenseMatrixProduct can be used to compute
         the gradients solution variables in the integration points of the face. ---*/
+  const unsigned long nBytes = nVar*sizeof(su2double);
   for(unsigned short i=0; i<nDOFsElem; ++i) {
-    const su2double *solDOF = VecSolDOFs.data() + ctc::nVar*DOFsElem[i];
-    su2double       *sol    = solElem + ctc::nVar*i;
-    for(unsigned short j=0; j<ctc::nVar; ++j)
-      sol[j] = solDOF[j];
+    const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
+                            + nVar*(DOFsElem[i] - offset);
+    su2double       *sol    = solElem + nVar*i;
+    memcpy(sol, solDOF, nBytes);
   }
 
   /* Compute the gradients in the integration points. Call the general function to
@@ -7236,11 +9965,11 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
 
   /* Determine the offset between r- and -s-derivatives, which is also the
      offset between s- and t-derivatives. */
-  const unsigned short offDeriv = ctc::nVar*nInt;
+  const unsigned short offDeriv = nVar*nInt;
 
   /* Make a distinction between two and three space dimensions
      in order to have the most efficient code. */
-  switch( ctc::nDim ) {
+  switch( nDim ) {
 
     case 2: {
 
@@ -7252,9 +9981,9 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
            gradients in this integration point and the starting locations of
            the solution and the gradients, w.r.t. the parametric coordinates
            of this solution. */
-        const su2double *metricTerms = metricCoorDerivFace + i*ctc::nDim*ctc::nDim;
-        const su2double *sol         = solInt     + ctc::nVar*i;
-        const su2double *dSolDr      = gradSolInt + ctc::nVar*i;
+        const su2double *metricTerms = metricCoorDerivFace + i*nDim*nDim;
+        const su2double *sol         = solInt     + nVar*i;
+        const su2double *dSolDr      = gradSolInt + nVar*i;
         const su2double *dSolDs      = dSolDr     + offDeriv;
 
         /* Easier storage of the metric terms in this integration point. */
@@ -7280,8 +10009,8 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
         /*--- Call the function ViscousNormalFluxIntegrationPoint to compute the
               actual normal viscous flux. The viscosity and thermal conductivity
               are stored for later use. ---*/
-        const su2double *normal  = metricNormalsFace + i*(ctc::nDim+1);
-        su2double *normalFlux    = viscNormFluxes + i*ctc::nVar;
+        const su2double *normal  = metricNormalsFace + i*(nDim+1);
+        su2double *normalFlux    = viscNormFluxes + i*nVar;
         const su2double wallDist = wallDistanceInt ? wallDistanceInt[i] : 0.0;
 
         su2double Viscosity, kOverCv;
@@ -7309,9 +10038,9 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
            gradients in this integration point and the starting locations of
            the solution and the gradients, w.r.t. the parametric coordinates
            of this solution. */
-        const su2double *metricTerms = metricCoorDerivFace + i*ctc::nDim*ctc::nDim;
-        const su2double *sol         = solInt     + ctc::nVar*i;
-        const su2double *dSolDr      = gradSolInt + ctc::nVar*i;
+        const su2double *metricTerms = metricCoorDerivFace + i*nDim*nDim;
+        const su2double *sol         = solInt     + nVar*i;
+        const su2double *dSolDr      = gradSolInt + nVar*i;
         const su2double *dSolDs      = dSolDr     + offDeriv;
         const su2double *dSolDt      = dSolDs     + offDeriv;
 
@@ -7352,8 +10081,8 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
         /*--- Call the function ViscousNormalFluxIntegrationPoint to compute the
               actual normal viscous flux. The viscosity and thermal conductivity
               are stored for later use. ---*/
-        const su2double *normal  = metricNormalsFace + i*(ctc::nDim+1);
-        su2double *normalFlux    = viscNormFluxes + i*ctc::nVar;
+        const su2double *normal  = metricNormalsFace + i*(nDim+1);
+        su2double *normalFlux    = viscNormFluxes + i*nVar;
         const su2double wallDist = wallDistanceInt ? wallDistanceInt[i] : 0.0;
 
         su2double Viscosity, kOverCv;
@@ -7414,15 +10143,9 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol
 
   /*--- Compute the eddy viscosity, if needed. ---*/
   su2double ViscosityTurb = 0.0;
-  if( SGSModelUsed ) {
-    su2double velGrad[3][3];
-    velGrad[0][0] = dudx; velGrad[0][1] = dudy; velGrad[0][2] = 0.0;
-    velGrad[1][0] = dvdx; velGrad[1][1] = dvdy; velGrad[1][2] = 0.0;
-    velGrad[2][0] = 0.0;  velGrad[2][1] = 0.0;  velGrad[2][2] = 0.0;
-
-    ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
-                                                   lenScale_LES, wallDist);
-  }
+  if( SGSModelUsed )
+    ViscosityTurb = SGSModel->ComputeEddyViscosity_2D(sol[0], dudx, dudy, dvdx,
+                                                      dvdy, lenScale_LES, wallDist);
 
   /* Compute the total viscosity and heat conductivity. Note that the heat
      conductivity is divided by the Cv, because gradients of internal energy
@@ -7447,7 +10170,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol
   const su2double nx = normal[0]*normal[2];
   const su2double ny = normal[1]*normal[2];
 
-  /*--- Compute the viscous normal flux. Note that the energy flux get a 
+  /*--- Compute the viscous normal flux. Note that the energy flux get a
         contribution from both the prescribed and the computed heat flux.
         At least one of these terms is zero. ---*/
   normalFlux[0] = 0.0;
@@ -7495,10 +10218,10 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol
   const su2double dStaticEnergyDx = rhoInv*(solGradCart[4][0]
                                   -         TotalEnergy*solGradCart[0][0])
                                   - u*dudx - v*dvdx - w*dwdx;
-  const su2double dStaticEnergyDy = rhoInv*(solGradCart[4][1] 
+  const su2double dStaticEnergyDy = rhoInv*(solGradCart[4][1]
                                   -         TotalEnergy*solGradCart[0][1])
                                   - u*dudy - v*dvdy - w*dwdy;
-  const su2double dStaticEnergyDz = rhoInv*(solGradCart[4][2] 
+  const su2double dStaticEnergyDz = rhoInv*(solGradCart[4][2]
                                   -         TotalEnergy*solGradCart[0][2])
                                   - u*dudz - v*dvdz - w*dwdz;
 
@@ -7510,15 +10233,11 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol
 
   /*--- Compute the eddy viscosity, if needed. ---*/
   su2double ViscosityTurb = 0.0;
-  if( SGSModelUsed ) {
-    su2double velGrad[3][3];
-    velGrad[0][0] = dudx; velGrad[0][1] = dudy; velGrad[0][2] = dudz;
-    velGrad[1][0] = dvdx; velGrad[1][1] = dvdy; velGrad[1][2] = dvdz;
-    velGrad[2][0] = dwdx; velGrad[2][1] = dwdy; velGrad[2][2] = dwdz;
-
-    ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
-                                                   lenScale_LES, wallDist);
-  }
+  if( SGSModelUsed )
+    ViscosityTurb = SGSModel->ComputeEddyViscosity_3D(sol[0], dudx, dudy, dudz,
+                                                      dvdx, dvdy, dvdz, dwdx,
+                                                      dwdy, dwdz, lenScale_LES,
+                                                      wallDist);
 
   /* Compute the total viscosity and heat conductivity. Note that the heat
      conductivity is divided by the Cv, because gradients of internal energy
@@ -7549,7 +10268,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol
   const su2double ny = normal[1]*normal[3];
   const su2double nz = normal[2]*normal[3];
 
-  /*--- Compute the viscous normal flux. Note that the energy flux get a 
+  /*--- Compute the viscous normal flux. Note that the energy flux get a
         contribution from both the prescribed and the computed heat flux.
         At least one of these terms is zero. ---*/
   normalFlux[0] = 0.0;
@@ -7651,7 +10370,7 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
 
   /* Make a distinction between two and three space dimensions
      in order to have the most efficient code. */
-  switch( ctc::nDim ) {
+  switch( nDim ) {
 
     case 2: {
 
@@ -7660,10 +10379,10 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
       for(unsigned short i=0; i<nInt; ++i) {
 
         /* Easier storage of the variables for this integration point. */
-        const su2double *sol0   = solInt0 + ctc::nVar*i;
-        const su2double *sol1   = solInt1 + ctc::nVar*i;
-        const su2double *normal = metricNormalsFace + i*(ctc::nDim+1);
-        su2double       *flux   = symmFluxes + i*ctc::nDim*ctc::nVar;
+        const su2double *sol0   = solInt0 + nVar*i;
+        const su2double *sol1   = solInt1 + nVar*i;
+        const su2double *normal = metricNormalsFace + i*(nDim+1);
+        su2double       *flux   = symmFluxes + i*nDim*nVar;
 
         /* Determine the difference in conservative variables. Multiply these
            differences by the length of the normal vector to obtain the correct
@@ -7748,10 +10467,10 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
       for(unsigned short i=0; i<nInt; ++i) {
 
         /* Easier storage of the variables for this integration point. */
-        const su2double *sol0   = solInt0 + ctc::nVar*i;
-        const su2double *sol1   = solInt1 + ctc::nVar*i;
-        const su2double *normal = metricNormalsFace + i*(ctc::nDim+1);
-        su2double       *flux   = symmFluxes + i*ctc::nDim*ctc::nVar;
+        const su2double *sol0   = solInt0 + nVar*i;
+        const su2double *sol1   = solInt1 + nVar*i;
+        const su2double *normal = metricNormalsFace + i*(nDim+1);
+        su2double       *flux   = symmFluxes + i*nDim*nVar;
 
         /* Determine the difference in conservative variables. Multiply these
            differences by the length of the normal vector to obtain the correct
@@ -7848,7 +10567,12 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
   }
 }
 
-void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
+                                     const unsigned long      surfElemBeg,
+                                     const unsigned long      surfElemEnd,
+                                     const CSurfaceElementFEM *surfElem,
+                                     su2double                *resFaces,
+                                     CNumerics                *conv_numerics){
 
   /*--- Set the pointers for the local arrays. ---*/
   unsigned int sizeFluxes = nIntegrationMax*nDim;
@@ -7864,17 +10588,113 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
+
+    /* Compute the left states in the integration points of the face.
+       The array fluxes is used as temporary storage inside the function
+       LeftStatesIntegrationPointsBoundaryFace. */
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
+
+    /*--- Apply the inviscid wall boundary conditions to compute the right
+          state in the integration points. There are two options. Either the
+          normal velocity is negated or the normal velocity is set to zero.
+          Some experiments are needed to see which formulation gives better
+          results. ---*/
+    const unsigned short ind  = surfElem[l].indStandardElement;
+    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+    for(unsigned short i=0; i<nInt; ++i) {
+
+      /* Easier storage of the left and right solution and the normals
+         for this integration point. */
+      const su2double *UL      = solIntL + i*nVar;
+            su2double *UR      = solIntR + i*nVar;
+      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
+
+      /* Compute the normal component of the momentum variables. */
+      su2double rVn = 0.0;
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        rVn += UL[iDim+1]*normals[iDim];
+
+      /* If the normal velocity must be mirrored instead of set to zero,
+         the normal component that must be subtracted must be doubled. If the
+         normal velocity must be set to zero, simply comment this line. */
+      //rVn *= 2.0;
+
+      /* Set the right state. The initial value of the total energy is the
+         energy of the left state. */
+      UR[0]      = UL[0];
+      UR[nDim+1] = UL[nDim+1];
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        UR[iDim+1] = UL[iDim+1] - rVn*normals[iDim];
+
+      /*--- Actually, only the internal energy of UR is equal to UL. If the
+            kinetic energy differs for UL and UR, the difference must be
+            subtracted from the total energy of UR to obtain the correct
+            value. ---*/
+      su2double DensityInv = 1.0/UL[0];
+      su2double diffKin    = 0;
+      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+        const su2double velL = DensityInv*UL[iDim];
+        const su2double velR = DensityInv*UR[iDim];
+        diffKin += velL*velL - velR*velR;
+      }
+
+      UR[nDim+1] -= 0.5*UL[0]*diffKin;
+    }
+
+    /* Determine the time level of the boundary face, which is equal
+       to the time level of the adjacent element. */
+    const unsigned long  elemID    = surfElem[l].volElemID;
+    const unsigned short timeLevel = volElem[elemID].timeLevel;
+
+    /* Call the general function to compute the viscous flux in normal
+       direction for the face. */
+    const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
+                          0.0, false, derBasisElem, solIntL,
+                          surfElem[l].DOFsSolElement.data(),
+                          surfElem[l].metricCoorDerivFace.data(),
+                          surfElem[l].metricNormalsFace.data(),
+                          surfElem[l].wallDistance.data(),
+                          gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
+
+    /* The remainder of the contribution of this boundary face to the residual
+       is the same for all boundary conditions. Hence a generic function can
+       be used to carry out this task. */
+    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                solIntR, gradSolInt, fluxes, viscFluxes,
+                                viscosityInt, kOverCvInt, resFaces, indResFaces);
+  }
+}
+
+void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
+                                    const unsigned long      surfElemBeg,
+                                    const unsigned long      surfElemEnd,
+                                    const CSurfaceElementFEM *surfElem,
+                                    su2double                *resFaces,
+                                    CNumerics                *conv_numerics){
+
+  /*--- Set the pointers for the local arrays. ---*/
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
+
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+
+  su2double *solIntL      = VecTmpMemory.data();
+  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
+  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
+  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
+  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
+  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
+  su2double *viscFluxes   = fluxes       + sizeFluxes;
+
+  /*--- Loop over the given range of boundary faces. ---*/
+  unsigned long indResFaces = 0;
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        The array fluxes is used as temporary storage inside the function
@@ -7892,25 +10712,21 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         UR[j] = ConsVarFreeStream[j];
     }
 
-    /* Compute the length scale for the LES of the adjacent element. */
-    const unsigned long  elemID = surfElem[l].volElemID;
-    const unsigned short iind   = volElem[elemID].indStandardElement;
-
-    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
-    if(nPoly == 0) nPoly = 1;
-
-    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
+    /* Determine the time level of the boundary face, which is equal
+       to the time level of the adjacent element. */
+    const unsigned long  elemID    = surfElem[l].volElemID;
+    const unsigned short timeLevel = volElem[elemID].timeLevel;
 
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
-    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
-    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+    const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
+                          0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          surfElem[l].wallDistance.data(),
                           gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
@@ -7922,13 +10738,13 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   }
 }
 
-void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics,
-                                    CConfig *config,
-                                    unsigned short val_marker) {
-  su2double tick = 0.0;
+void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
+                                    const unsigned long      surfElemBeg,
+                                    const unsigned long      surfElemEnd,
+                                    const CSurfaceElementFEM *surfElem,
+                                    su2double                *resFaces,
+                                    CNumerics                *conv_numerics){
+  double tick = 0.0;
 
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
@@ -7936,10 +10752,10 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
 
   /*--- Set the pointers for the local arrays. ---*/
-  unsigned int sizeFluxes = nIntegrationMax*ctc::nDim;
-  sizeFluxes = ctc::nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned int sizeGradSolInt = nIntegrationMax*ctc::nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
@@ -7954,17 +10770,9 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
      the element and the fluxes to be computed. */
   su2double *solElem = fluxes;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
@@ -7985,21 +10793,32 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
 
     const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
+    /* Determine the time level of the boundary face, which is equal
+       to the time level of the adjacent element. */
+    const unsigned short timeLevel = volElem[elemID].timeLevel;
+
+    /* Determine the offset that must be applied to access the correct data for
+       the adjacent element in the working vector of the solution. This is a
+       boundary face, which has the same time level as the adjacent element. */
+    const unsigned long offset = volElem[elemID].offsetDOFsSolLocal
+                               - volElem[elemID].offsetDOFsSolThisTimeLevel;
+
     /* Easier storage of the wall distance array for this surface element. */
     const su2double *wallDistance = surfElem[l].wallDistance.data();
 
     /* Determine the offset between r- and -s-derivatives, which is also the
        offset between s- and t-derivatives. */
-    const unsigned short offDeriv = ctc::nVar*nInt;
+    const unsigned short offDeriv = nVar*nInt;
 
     /* Store the solution of the DOFs of the adjacent element in contiguous
        memory such that the function DenseMatrixProduct can be used to compute
        the gradients solution variables in the integration points of the face. */
+    const unsigned long nBytes = nVar*sizeof(su2double);
     for(unsigned short i=0; i<nDOFsElem; ++i) {
-      const su2double *solDOF = VecSolDOFs.data() + ctc::nVar*surfElem[l].DOFsSolElement[i];
-      su2double       *sol    = solElem + ctc::nVar*i;
-      for(unsigned short j=0; j<ctc::nVar; ++j)
-        sol[j] = solDOF[j];
+      const su2double *solDOF = VecWorkSolDOFs[timeLevel].data()
+                              + nVar*(surfElem[l].DOFsSolElement[i] - offset);
+      su2double       *sol    = solElem + nVar*i;
+      memcpy(sol, solDOF, nBytes);
     }
 
     /* Compute the left gradients in the integration points. Call the general
@@ -8010,7 +10829,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
 
     /* Make a distinction between two and three space dimensions
        in order to have the most efficient code. */
-    switch( ctc::nDim ) {
+    switch( nDim ) {
 
       case 2: {
 
@@ -8023,9 +10842,9 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
 
           /* Easier storage of the left and right solution and the normals
              for this integration point. */
-          const su2double *UL      = solIntL + i*ctc::nVar;
-                su2double *UR      = solIntR + i*ctc::nVar;
-          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(ctc::nDim+1);
+          const su2double *UL      = solIntL + i*nVar;
+                su2double *UR      = solIntR + i*nVar;
+          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
           /* Compute twice the normal component of the momentum variables. The
              factor 2 comes from the fact that the velocity must be mirrored. */
@@ -8042,8 +10861,8 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
           /* Easier storage of the metric terms and left gradients of this
              integration point. */
           const su2double *metricTerms = surfElem[l].metricCoorDerivFace.data()
-                                       + i*ctc::nDim*ctc::nDim;
-          const su2double *dULDr       = gradSolInt + ctc::nVar*i;
+                                       + i*nDim*nDim;
+          const su2double *dULDr       = gradSolInt + nVar*i;
           const su2double *dULDs       = dULDr + offDeriv;
 
           /* Easier storage of the metric terms in this integration point. */
@@ -8118,7 +10937,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
           viscosityInt[i] = Viscosity;
           kOverCvInt[i]   = kOverCv;
 
-          su2double *viscNormalFlux = viscFluxes + i*ctc::nVar;
+          su2double *viscNormalFlux = viscFluxes + i*nVar;
           viscNormalFlux[0] = 0.5*(viscFluxL[0] + viscFluxR[0]);
           viscNormalFlux[1] = 0.5*(viscFluxL[1] + viscFluxR[1]);
           viscNormalFlux[2] = 0.5*(viscFluxL[2] + viscFluxR[2]);
@@ -8141,9 +10960,9 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
 
           /* Easier storage of the left and right solution and the normals
              for this integration point. */
-          const su2double *UL      = solIntL + i*ctc::nVar;
-                su2double *UR      = solIntR + i*ctc::nVar;
-          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(ctc::nDim+1);
+          const su2double *UL      = solIntL + i*nVar;
+                su2double *UR      = solIntR + i*nVar;
+          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
           /* Compute twice the normal component of the momentum variables. The
              factor 2 comes from the fact that the velocity must be mirrored. */
@@ -8161,8 +10980,8 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
           /* Easier storage of the metric terms and left gradients of this
              integration point. */
           const su2double *metricTerms = surfElem[l].metricCoorDerivFace.data()
-                                       + i*ctc::nDim*ctc::nDim;
-          const su2double *dULDr       = gradSolInt + ctc::nVar*i;
+                                       + i*nDim*nDim;
+          const su2double *dULDr       = gradSolInt + nVar*i;
           const su2double *dULDs       = dULDr + offDeriv;
           const su2double *dULDt       = dULDs + offDeriv;
 
@@ -8265,7 +11084,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
           viscosityInt[i] = Viscosity;
           kOverCvInt[i]   = kOverCv;
 
-          su2double *viscNormalFlux = viscFluxes + i*ctc::nVar;
+          su2double *viscNormalFlux = viscFluxes + i*nVar;
           viscNormalFlux[0] = 0.5*(viscFluxL[0] + viscFluxR[0]);
           viscNormalFlux[1] = 0.5*(viscFluxL[1] + viscFluxR[1]);
           viscNormalFlux[2] = 0.5*(viscFluxL[2] + viscFluxR[2]);
@@ -8286,119 +11105,13 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
   }
 }
 
-void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-
-  /*--- Set the pointers for the local arrays. ---*/
-  unsigned int sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
-
-  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
-
-  su2double *solIntL      = VecTmpMemory.data();
-  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
-  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
-  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
-  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
-  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
-  su2double *viscFluxes   = fluxes       + sizeFluxes;
-
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
-  unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
-
-    /* Compute the left states in the integration points of the face.
-       The array fluxes is used as temporary storage inside the function
-       LeftStatesIntegrationPointsBoundaryFace. */
-    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
-
-    /* Compute the length scale for the LES of the adjacent element. */
-    const unsigned long  elemID = surfElem[l].volElemID;
-    const unsigned short iind   = volElem[elemID].indStandardElement;
-
-    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
-    if(nPoly == 0) nPoly = 1;
-
-    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
-
-    /*--- Apply the inviscid wall boundary conditions to compute the right
-          state in the integration points. There are two options. Either the
-          normal velocity is negated or the normal velocity is set to zero.
-          Some experiments are needed to see which formulation gives better
-          results. ---*/
-    const unsigned short ind  = surfElem[l].indStandardElement;
-    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-
-    for(unsigned short i=0; i<nInt; ++i) {
-
-      /* Easier storage of the left and right solution and the normals
-         for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
-
-      /* Compute the normal component of the momentum variables. */
-      su2double rVn = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        rVn += UL[iDim+1]*normals[iDim];
-
-      /* If the normal velocity must be mirrored instead of set to zero,
-         the normal component that must be subtracted must be doubled. If the
-         normal velocity must be set to zero, simply comment this line. */
-      //rVn *= 2.0;
-
-      /* Set the right state. The initial value of the total energy is the
-         energy of the left state. */
-      UR[0]      = UL[0];
-      UR[nDim+1] = UL[nDim+1];
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        UR[iDim+1] = UL[iDim+1] - rVn*normals[iDim];
-
-      /*--- Actually, only the internal energy of UR is equal to UL. If the
-            kinetic energy differs for UL and UR, the difference must be
-            subtracted from the total energy of UR to obtain the correct
-            value. ---*/
-      su2double DensityInv = 1.0/UL[0];
-      su2double diffKin    = 0;
-      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-        const su2double velL = DensityInv*UL[iDim];
-        const su2double velR = DensityInv*UR[iDim];
-        diffKin += velL*velL - velR*velR;
-      }
-
-      UR[nDim+1] -= 0.5*UL[0]*diffKin;
-    }
-
-    /* Call the general function to compute the viscous flux in normal
-       direction for the face. */
-    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
-    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
-
-    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
-                          surfElem[l].DOFsSolElement.data(),
-                          surfElem[l].metricCoorDerivFace.data(),
-                          surfElem[l].metricNormalsFace.data(),
-                          surfElem[l].wallDistance.data(), lenScale_LES,
-                          gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
-
-    /* The remainder of the contribution of this boundary face to the residual
-       is the same for all boundary conditions. Hence a generic function can
-       be used to carry out this task. */
-    ResidualViscousBoundaryFace(config, numerics, &surfElem[l], solIntL, solIntR,
-                                gradSolInt, fluxes, viscFluxes, viscosityInt,
-                                kOverCvInt, resFaces, indResFaces);
-  }
-}
-
-void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
+                                const unsigned long      surfElemBeg,
+                                const unsigned long      surfElemEnd,
+                                const CSurfaceElementFEM *surfElem,
+                                su2double                *resFaces,
+                                CNumerics                *conv_numerics,
+                                unsigned short           val_marker) {
 
   /*--- Retrieve the specified total conditions for this inlet. ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -8428,30 +11141,13 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
-
-    /* Compute the length scale for the LES of the adjacent element. */
-    const unsigned long  elemID = surfElem[l].volElemID;
-    const unsigned short iind   = volElem[elemID].indStandardElement;
-
-    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
-    if(nPoly == 0) nPoly = 1;
-
-    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /*--- Apply the subsonic inlet boundary conditions to compute the right
           state in the integration points. ---*/
@@ -8539,16 +11235,21 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         UR[iDim+1] = Density*Vel_Mag*Flow_Dir[iDim];
     }
 
+    /* Determine the time level of the boundary face, which is equal
+       to the time level of the adjacent element. */
+    const unsigned long  elemID    = surfElem[l].volElemID;
+    const unsigned short timeLevel = volElem[elemID].timeLevel;
+
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
-    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
-    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+    const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
+                          0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          surfElem[l].wallDistance.data(),
                           gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
@@ -8560,8 +11261,13 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   }
 }
 
-void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
+                                 const unsigned long      surfElemBeg,
+                                 const unsigned long      surfElemEnd,
+                                 const CSurfaceElementFEM *surfElem,
+                                 su2double                *resFaces,
+                                 CNumerics                *conv_numerics,
+                                 unsigned short           val_marker) {
 
   /*--- Retrieve the specified back pressure for this outlet.
         Nondimensionalize, if necessary. ---*/
@@ -8584,30 +11290,13 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
-
-    /* Compute the length scale for the LES of the adjacent element. */
-    const unsigned long  elemID = surfElem[l].volElemID;
-    const unsigned short iind   = volElem[elemID].indStandardElement;
-
-    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
-    if(nPoly == 0) nPoly = 1;
-
-    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /*--- Apply the subsonic inlet boundary conditions to compute the right
           state in the integration points. ---*/
@@ -8664,16 +11353,21 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       UR[nDim+1] = Pressure/Gamma_Minus_One + 0.5*Density*Velocity2;
     }
 
+    /* Determine the time level of the boundary face, which is equal
+       to the time level of the adjacent element. */
+    const unsigned long  elemID    = surfElem[l].volElemID;
+    const unsigned short timeLevel = volElem[elemID].timeLevel;
+
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
-    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
-    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+    const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
+                          0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          surfElem[l].wallDistance.data(),
                           gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
@@ -8685,7 +11379,13 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   }
 }
 
-void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
+                                        const unsigned long      surfElemBeg,
+                                        const unsigned long      surfElemEnd,
+                                        const CSurfaceElementFEM *surfElem,
+                                        su2double                *resFaces,
+                                        CNumerics                *conv_numerics,
+                                        unsigned short           val_marker) {
 
   /* Set the factor for the wall velocity. For factWallVel = 0, the right state
      contains the wall velocity. For factWallVel = 1.0, the velocity of the
@@ -8712,31 +11412,14 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
-
-    /* Compute the length scale for the LES of the adjacent element. */
-    const unsigned long  elemID = surfElem[l].volElemID;
-    const unsigned short iind   = volElem[elemID].indStandardElement;
-
-    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
-    if(nPoly == 0) nPoly = 1;
-
-    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /* Determine the number of integration points. */
     const unsigned short ind  = surfElem[l].indStandardElement;
@@ -8749,8 +11432,8 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
     for(unsigned short i=0; i<nInt; ++i) {
 
       /* Easier storage of the left and right solution for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
+      const su2double *UL = solIntL + i*nVar;
+            su2double *UR = solIntR + i*nVar;
 
       /* Set the right state. The initial value of the total energy is the
          energy of the left state. Also compute the difference in kinetic
@@ -8772,16 +11455,21 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
       UR[nDim+1] -= 0.5*UR[0]*diffKin;
     }
 
+    /* Determine the time level of the boundary face, which is equal
+       to the time level of the adjacent element. */
+    const unsigned long  elemID    = surfElem[l].volElemID;
+    const unsigned short timeLevel = volElem[elemID].timeLevel;
+
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
-    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
-    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+    const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(config, nInt, nDOFsElem, Wall_HeatFlux, true, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
+                          Wall_HeatFlux, true, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          surfElem[l].wallDistance.data(),
                           gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
@@ -8793,7 +11481,13 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
   }
 }
 
-void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
+                                          const unsigned long      surfElemBeg,
+                                          const unsigned long      surfElemEnd,
+                                          const CSurfaceElementFEM *surfElem,
+                                          su2double                *resFaces,
+                                          CNumerics                *conv_numerics,
+                                          unsigned short           val_marker) {
 
   /* Set the factor for the wall velocity. For factWallVel = 0, the right state
      contains the wall velocity. For factWallVel = 1.0, the velocity of the
@@ -8825,31 +11519,14 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
-
-    /* Compute the length scale for the LES of the adjacent element. */
-    const unsigned long  elemID = surfElem[l].volElemID;
-    const unsigned short iind   = volElem[elemID].indStandardElement;
-
-    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
-    if(nPoly == 0) nPoly = 1;
-
-    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /* Determine the number of integration points. */
     const unsigned short ind  = surfElem[l].indStandardElement;
@@ -8862,8 +11539,8 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
     for(unsigned short i=0; i<nInt; ++i) {
 
       /* Easier storage of the left and right solution for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
+      const su2double *UL = solIntL + i*nVar;
+            su2double *UR = solIntR + i*nVar;
 
       /* Set the right state for the density and the momentum variables of the
          right state. Compute twice the possible kinetic energy. */
@@ -8880,16 +11557,21 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
       UR[nDim+1] = UR[0]*(StaticEnergy + 0.5*kinEner);
     }
 
+    /* Determine the time level of the boundary face, which is equal
+       to the time level of the adjacent element. */
+    const unsigned long  elemID    = surfElem[l].volElemID;
+    const unsigned short timeLevel = volElem[elemID].timeLevel;
+
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
-    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
-    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+    const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
+                          0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          surfElem[l].wallDistance.data(),
                           gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
@@ -8901,8 +11583,12 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
   }
 }
 
-void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
+                                 const unsigned long      surfElemBeg,
+                                 const unsigned long      surfElemEnd,
+                                 const CSurfaceElementFEM *surfElem,
+                                 su2double                *resFaces,
+                                 CNumerics                *conv_numerics) {
 
 #ifdef CUSTOM_BC_NSUNITQUAD
   /* Get the flow angle, which is stored in the angle of attack and the
@@ -8928,31 +11614,14 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
-  /* Set the starting position in the vector for the face residuals for
-     this boundary marker. */
-  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker][0];
-
-  /* Easier storage of the boundary faces for this boundary marker. */
-  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
-  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
-
-  /*--- Loop over the boundary faces. ---*/
+  /*--- Loop over the given range of boundary faces. ---*/
   unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nSurfElem; ++l) {
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
 
     /* Compute the left states in the integration points of the face.
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
-
-    /* Compute the length scale for the LES of the adjacent element. */
-    const unsigned long  elemID = surfElem[l].volElemID;
-    const unsigned short iind   = volElem[elemID].indStandardElement;
-
-    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
-    if(nPoly == 0) nPoly = 1;
-
-    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /* Determine the number of integration points. */
     const unsigned short ind  = surfElem[l].indStandardElement;
@@ -9003,24 +11672,29 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
 #endif
     }
 
+    /* Determine the time level of the boundary face, which is equal
+       to the time level of the adjacent element. */
+    const unsigned long  elemID    = surfElem[l].volElemID;
+    const unsigned short timeLevel = volElem[elemID].timeLevel;
+
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
-    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
-    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+    const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
+                          0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          surfElem[l].wallDistance.data(),
                           gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
-    ResidualViscousBoundaryFace(config, numerics, &surfElem[l], solIntL, solIntR,
-                                gradSolInt, fluxes, viscFluxes, viscosityInt,
-                                kOverCvInt, resFaces, indResFaces);
+    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                solIntR, gradSolInt, fluxes, viscFluxes,
+                                viscosityInt, kOverCvInt, resFaces, indResFaces);
   }
 }
 
@@ -9038,12 +11712,12 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
-  su2double tick = 0.0;
+  double tick = 0.0;
 
   /* Determine whether or not the Cartesian gradients of the basis functions
      are stored. */
   const bool CartGradBasisFunctionsStored = config->GetStore_Cart_Grad_BasisFunctions_DGFEM();
-  
+
   /*--- Get the required information from the standard element. ---*/
   const unsigned short ind          = surfElem->indStandardElement;
   const unsigned short nInt         = standardBoundaryFacesSol[ind].GetNIntegration();
@@ -9154,7 +11828,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
             integration points. Use gradSolInt for storage. ---*/
       unsigned int ii = 0;
       for(unsigned short j=0; j<nDOFsElem; ++j) {
-        for(unsigned short i=0; i<nInt; ++i, ii+=ctc::nDim) {
+        for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
 
           /* Easier storage of the derivatives of the basis function w.r.t. the
              parametric coordinates, the location where to store the Cartesian
@@ -9162,15 +11836,15 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
              integration point. */
           const su2double *derParam    = derBasisElemTrans + ii;
           const su2double *metricTerms = surfElem->metricCoorDerivFace.data()
-                                       + i*ctc::nDim*ctc::nDim;
+                                       + i*nDim*nDim;
                 su2double *derCar      = gradSolInt + ii;
 
           /*--- Loop over the dimensions to compute the Cartesian derivatives
                 of the basis functions. ---*/
-          for(unsigned short k=0; k<ctc::nDim; ++k) {
+          for(unsigned short k=0; k<nDim; ++k) {
             derCar[k] = 0.0;
-            for(unsigned short l=0; l<ctc::nDim; ++l)
-              derCar[k] += derParam[l]*metricTerms[k+l*ctc::nDim];
+            for(unsigned short l=0; l<nDim; ++l)
+              derCar[k] += derParam[l]*metricTerms[k+l*nDim];
           }
         }
       }
@@ -9185,6 +11859,5 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsElem, nVar, nInt*nDim, cartGrad, fluxes, resElem);
     config->GEMM_Tock(tick, "ResidualViscousBoundaryFace2", nDOFsElem, nVar, nInt*nDim);
-
   }
 }
