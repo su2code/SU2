@@ -2984,6 +2984,13 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     numerics->SetCrossDiff(node[iPoint]->GetCrossDiff(),0.0);
     
+    /*--- Pass in relevant information from the hybridization ---*/
+
+    if (config->isHybrid_Turb_Model()) {
+      HybridMediator->SetupRANSNumerics(geometry, solver_container, numerics,
+                                        iPoint, iPoint);
+    }
+
     /*--- Compute the source term ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
