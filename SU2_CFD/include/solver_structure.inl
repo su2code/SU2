@@ -588,21 +588,21 @@ inline su2double CSolver::GetOneD_MassFlowRate(void) { return 0;}
 
 inline void CSolver::SetOneD_MassFlowRate(su2double MassFlowRate) { }
 
-inline su2double CSolver::GetOneD_FluxAvgPress(void) { return 0;}
+inline su2double CSolver::GetOneD_AvgPress(void) {return 0;}
 
-inline void CSolver::SetOneD_FluxAvgPress(su2double PressureRef) { }
+inline void CSolver::SetOneD_AvgPress(su2double Pressure1D) { }
 
-inline su2double CSolver::GetOneD_FluxAvgDensity(void) { return 0;}
+inline su2double CSolver::GetOneD_AvgDensity(void) {return 0;}
 
-inline void CSolver::SetOneD_FluxAvgDensity(su2double DensityRef) { }
+inline void CSolver::SetOneD_AvgDensity(su2double Density1D) { }
 
-inline su2double CSolver::GetOneD_FluxAvgVelocity(void) { return 0;}
+inline su2double CSolver::GetOneD_AvgVelocity(void) {return 0;}
 
-inline void CSolver::SetOneD_FluxAvgVelocity(su2double VelocityRef) { }
+inline void CSolver::SetOneD_AvgVelocity(su2double Velocity1D) { }
 
-inline su2double CSolver::GetOneD_FluxAvgEntalpy(void) { return 0;}
+inline su2double CSolver::GetOneD_AvgEnthalpy(void) {return 0;}
 
-inline void CSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) { }
+inline void CSolver::SetOneD_AvgEnthalpy(su2double Velocity1D) { }
 
 inline void CSolver::SetTotal_ComboObj(su2double ComboObj) {}
 
@@ -796,10 +796,14 @@ inline void CSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_c
 inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 							        unsigned short iMesh, unsigned long Iteration) { }	
 
-inline void CSolver:: CheckTimeSynchronization(CConfig         *config,
-                                               const su2double TimeSync,
-                                               su2double       &timeEvolved,
-                                               bool            &syncTimeReached) {}
+inline void CSolver::CheckTimeSynchronization(CConfig         *config,
+                                              const su2double TimeSync,
+                                              su2double       &timeEvolved,
+                                              bool            &syncTimeReached) {}
+
+inline void CSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
+                                        CNumerics **numerics, CConfig *config,
+                                        unsigned short iMesh) {}
 
 inline void CSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                CNumerics **numerics, CConfig *config,
@@ -1345,21 +1349,21 @@ inline su2double CEulerSolver::GetOneD_MassFlowRate(void) { return OneD_MassFlow
 
 inline void CEulerSolver::SetOneD_MassFlowRate(su2double MassFlowRate) { OneD_MassFlowRate = MassFlowRate; }
 
-inline su2double CEulerSolver::GetOneD_FluxAvgPress(void) { return OneD_PressureRef;}
+inline su2double CEulerSolver::GetOneD_AvgPress(void) {return OneD_Pressure1D;}
 
-inline void CEulerSolver::SetOneD_FluxAvgPress(su2double PressureRef) {OneD_PressureRef = PressureRef; }
+inline void CEulerSolver::SetOneD_AvgPress(su2double Pressure1D) {OneD_Pressure1D = Pressure1D; }
 
-inline su2double CEulerSolver::GetOneD_FluxAvgDensity(void) { return OneD_DensityRef;}
+inline su2double CEulerSolver::GetOneD_AvgDensity(void) {return OneD_Density1D;}
 
-inline void CEulerSolver::SetOneD_FluxAvgDensity(su2double DensityRef) {OneD_DensityRef = DensityRef; }
+inline void CEulerSolver::SetOneD_AvgDensity(su2double Density1D) {OneD_Density1D = Density1D; }
 
-inline su2double CEulerSolver::GetOneD_FluxAvgVelocity(void) { return OneD_VelocityRef;}
+inline su2double CEulerSolver::GetOneD_AvgVelocity(void) {return OneD_Velocity1D;}
 
-inline void CEulerSolver::SetOneD_FluxAvgVelocity(su2double VelocityRef) {OneD_VelocityRef = VelocityRef; }
+inline void CEulerSolver::SetOneD_AvgVelocity(su2double Velocity1D) {OneD_Velocity1D = Velocity1D; }
 
-inline su2double CEulerSolver::GetOneD_FluxAvgEntalpy(void) { return OneD_EnthalpyRef;}
+inline su2double CEulerSolver::GetOneD_AvgEnthalpy(void) {return OneD_Enthalpy1D;}
 
-inline void CEulerSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) {OneD_EnthalpyRef = EnthalpyRef; }
+inline void CEulerSolver::SetOneD_AvgEnthalpy(su2double Enthalpy1D) {OneD_Enthalpy1D = Enthalpy1D; }
 
 inline su2double CEulerSolver::GetAveragedDensity(unsigned short valMarker) { return AveragedDensity[valMarker];}
 
@@ -1656,6 +1660,22 @@ inline su2double CFEM_DG_EulerSolver::GetAllBound_CFz_Inv() { return AllBound_CF
 inline void CFEM_DG_EulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf = p_inf;}
 
 inline void CFEM_DG_EulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
+
+inline void CFEM_DG_EulerSolver::BC_HeatFlux_Wall(CConfig                  *config,
+                                                  const unsigned long      surfElemBeg,
+                                                  const unsigned long      surfElemEnd,
+                                                  const CSurfaceElementFEM *surfElem,
+                                                  su2double                *resFaces,
+                                                  CNumerics                *conv_numerics,
+                                                  unsigned short           val_marker) {}
+
+inline void CFEM_DG_EulerSolver::BC_Isothermal_Wall(CConfig                  *config,
+                                                    const unsigned long      surfElemBeg,
+                                                    const unsigned long      surfElemEnd,
+                                                    const CSurfaceElementFEM *surfElem,
+                                                    su2double                *resFaces,
+                                                    CNumerics                *conv_numerics,
+                                                    unsigned short           val_marker) {}
 
 inline su2double CFEM_DG_NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
@@ -2076,17 +2096,6 @@ inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long va
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
 
-inline void CSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver:: MultiplyResidualByInverseMassMatrix(CConfig    *config,
-                                                          const bool useADER) {}
 inline void CTurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component){ SlidingState[val_marker][val_vertex][val_state] = component; }
 
 inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return SlidingState[val_marker][val_vertex][val_state]; }

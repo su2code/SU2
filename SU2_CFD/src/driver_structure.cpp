@@ -46,7 +46,7 @@ CDriver::CDriver(char* confFile,
 
   unsigned short jZone, iSol;
   bool fem_solver = false;
-  su2double tick = 0.0;
+  double tick = 0.0;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -481,7 +481,7 @@ void CDriver::Postprocessing() {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
-  su2double tick = 0.0;
+  double tick = 0.0;
   config_container[ZONE_0]->Tick(&tick);
 
     /*--- Output some information to the console. ---*/
@@ -586,16 +586,6 @@ void CDriver::Postprocessing() {
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
-  if (config_container!= NULL) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone] != NULL) {
-        delete config_container[iZone];
-      }
-    }
-    delete [] config_container;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
-
   /*--- Deallocate output container ---*/
   if (output!= NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
@@ -626,6 +616,18 @@ void CDriver::Postprocessing() {
   // necessary variables have been made thread private for safety (tick/tock)!!
   config_container[ZONE_0]->SetProfilingCSV();
   config_container[ZONE_0]->GEMMProfilingCSV();
+
+  /*--- Deallocate config container ---*/
+  if (config_container!= NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone] != NULL) {
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+
   
   /*--- Exit the solver cleanly ---*/
 
@@ -2900,7 +2902,7 @@ void CDriver::StartSolver(){
 #endif
 
   int rank = MASTER_NODE;
-  su2double tick = 0.0;
+  double tick = 0.0;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
