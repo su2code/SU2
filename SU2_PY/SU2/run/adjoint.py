@@ -3,7 +3,7 @@
 ## \file adjoint.py
 #  \brief python package for running adjoint problems 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,8 +13,10 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -72,7 +74,11 @@ def adjoint( config ):
     konfig = copy.deepcopy(config)
     
     # setup problem    
-    konfig['MATH_PROBLEM']  = 'ADJOINT'
+    if konfig.get('GRADIENT_METHOD', 'CONTINUOUS_ADJOINT') == 'DISCRETE_ADJOINT':
+        konfig['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
+    else:
+        konfig['MATH_PROBLEM']  = 'CONTINUOUS_ADJOINT'
+
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_adjoint'
     
     # Run Solution
@@ -97,6 +103,8 @@ def adjoint( config ):
     
     # files out
     objective    = konfig['OBJECTIVE_FUNCTION']
+    if "," in objective:
+            objective="COMBO"
     adj_title    = 'ADJOINT_' + objective
     suffix       = su2io.get_adjointSuffix(objective)
     restart_name = konfig['RESTART_FLOW_FILENAME']

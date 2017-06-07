@@ -3,7 +3,7 @@
 ## \file design.py
 #  \brief python package for designs
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,8 +13,10 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -80,7 +82,7 @@ class Design(object):
             Fucntional Interface
             The following methods take an objective function name for input.
             func(func_name)                  - function of specified name
-            grad(func_name,method='ADJOINT') - gradient of specified name
+            grad(func_name,method='CONTINUOUS_ADJOINT') - gradient of specified name
     """
     
     def __init__(self, config, state=None, folder='DESIGNS/DSN_*'):
@@ -180,7 +182,7 @@ class Design(object):
         """ Evaluates SU2 Design Functions by Name """
         return self._eval(su2func,func_name)
     
-    def grad(self,func_name,method='ADJOINT'):
+    def grad(self,func_name,method='CONTINUOUS_ADJOINT'):
         """ Evaluates SU2 Design Gradients by Name """
         return self._eval(su2grad,func_name,method)
     
@@ -224,32 +226,72 @@ def obj_f(dvs,config,state=None):
     
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
-    n_obj = len( objectives )
-    assert n_obj == 1 , 'SU2 currently only supports one objective'
-    
-#    if objectives: print('Evaluate Objectives')
-    
+
     # evaluate each objective
     vals_out = []
+    func = 0.0
     for i_obj,this_obj in enumerate(objectives):
         scale = def_objs[this_obj]['SCALE']
         sign  = su2io.get_objectiveSign(this_obj)
-        
-        # Evaluate Objective Function
-#        sys.stdout.write('  %s... ' % this_obj.title())
-        func = su2func(this_obj,config,state)
-#        sys.stdout.write('done: %.6f\n' % func)
-        
-        # scaling and sign
-        func = func * sign * scale
-        
-        vals_out.append(func)
-    
+        # Evaluate Objective Function scaling and sign
+        # If default evaluate as normal, 
+        if def_objs[this_obj]['OBJTYPE']=='DEFAULT':
+            func += su2func(this_obj,config,state) * sign * scale
+        # otherwise evaluate the penalty function (OBJTYPE = '>','<', or '=')
+        else:
+            func += obj_p(config,state,this_obj,def_objs) * scale
+    vals_out.append(func)
     #: for each objective
-    
+    # If evaluating the combined function is desired, update it here.
+    # This is only used when OPT_COMBINE_OBJECTIVE = YES
+    if state.FUNCTIONS.has_key('COMBO'):
+        state['FUNCTIONS']['COMBO'] = func
+        
     return vals_out
 
 #: def obj_f()
+        
+def obj_p(config,state,this_obj,def_objs):
+    # Penalty function: square of the difference between value and limit
+    # This function is used when a constraint-type term is added to OPT_OBJECTIVE
+    # This code, and obj_dp, must be changed to use a non-quadratic penalty function
+    funcval = su2func(this_obj,config,state)
+    constraint = float(def_objs[this_obj]['VALUE'])
+              
+    if (def_objs[this_obj]['OBJTYPE']=='=' or \
+        (def_objs[this_obj]['OBJTYPE']=='>' and funcval < constraint) or \
+        (def_objs[this_obj]['OBJTYPE']=='<' and funcval > constraint )):
+        penalty = (constraint - funcval)**2.0
+    # If 'DEFAULT' objtype this returns the function value. 
+    else:
+        penalty = funcval
+    return penalty
+
+#: def obj_p()
+
+def obj_dp(config,state,this_obj,def_objs):
+    # Partial Derivative of Penalty function: square of the difference between value and limit
+    # This function is used when a constraint-type term is added to OPT_OBJECTIVE
+    # This code, and obj_p, must be changed to use a non-quadratic penalty function
+    funcval = su2func(this_obj,config,state)
+    constraint = float(def_objs[this_obj]['VALUE'])
+    
+
+    # Inequalities will be 0 or a positive value
+    if ((def_objs[this_obj]['OBJTYPE']=='>' and funcval < constraint)  or\
+         (def_objs[this_obj]['OBJTYPE']=='<' and funcval > constraint )):
+        dpenalty=2.0*abs(constraint - funcval)
+    # Equalities dp will be positive if value>constraint, negative if value<constraint
+    elif (def_objs[this_obj]['OBJTYPE']=='='):
+        dpenalty=2.0*(funcval -constraint)
+    # If 'DEFAULT' objtype, this will return 1.0
+    else:
+        dpenalty = 1.0
+    
+
+    return dpenalty
+
+#: def obj_dp()
 
 def obj_df(dvs,config,state=None):
     """ vals = SU2.eval.obj_df(dvs,config,state=None)
@@ -267,33 +309,74 @@ def obj_df(dvs,config,state=None):
     # unpack config and state
     config.unpack_dvs(dvs)
     state = su2io.State(state)
-    grad_method = config.get('GRADIENT_METHOD','ADJOINT')
+    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
-    def_objs = config['OPT_OBJECTIVE']
-    objectives = def_objs.keys()
-    n_obj = len( objectives )
-    assert n_obj == 1 , 'SU2 currently only supports one objective'
+    def_objs    = config['OPT_OBJECTIVE']
+    objectives  = def_objs.keys()
     
+    # Number of objective functionals
+    n_obj       = len( objectives )     
+    # Whether to calculate gradients one-by-one or all-at-once
+    combine_obj = (config['OPT_COMBINE_OBJECTIVE']=="YES") 
+     
     dv_scales = config['DEFINITION_DV']['SCALE']
-    
-#    if objectives: print('Evaluate Objective Gradients')
+    dv_size   = config['DEFINITION_DV']['SIZE']
     
     # evaluate each objective
     vals_out = []
-    for i_obj,this_obj in enumerate(objectives):
-        scale = def_objs[this_obj]['SCALE']
-        sign  = su2io.get_objectiveSign(this_obj)
+    if (combine_obj and n_obj>1):
+        # Evaluate objectives all-at-once; for adjoint methods this results in a 
+        # single, combined objective.
+        scale = [1.0]*n_obj
+        for i_obj,this_obj in enumerate(objectives):
+            scale[i_obj] = def_objs[this_obj]['SCALE']
+            if def_objs[this_obj]['OBJTYPE']== 'DEFAULT':
+                # Standard case
+                sign = su2io.get_objectiveSign(this_obj)
+                scale[i_obj]*=sign
+            else:
+                # For a penalty function, the term is scaled by the partial derivative
+                # d p(j) / dx = (dj / dx) * ( dp / dj)  
+                scale[i_obj]*=obj_dp(config, state, this_obj, def_objs)
+            
+        config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
         
-        # Evaluate Objective Gradient
-#        sys.stdout.write('  %s... ' % this_obj.title())
-        grad = su2grad(this_obj,grad_method,config,state)
-#        sys.stdout.write('done\n')
-        
-        # scaling and sign
-        for i_grd,dv_scl in enumerate(dv_scales):
-            grad[i_grd] = grad[i_grd] * sign * scale / dv_scl
-        
+        grad= su2grad(objectives,grad_method,config,state)
+        # scaling : obj scale  adn sign are accounted for in combo gradient, dv scale now applied
+        k = 0
+        for i_dv,dv_scl in enumerate(dv_scales):
+            for i_grd in range(dv_size[i_dv]):
+                grad[k] = grad[k] / dv_scl
+                k = k + 1
+
         vals_out.append(grad)
+    else:
+        # Evaluate objectives one-by-one
+        marker_monitored = config['MARKER_MONITORING']
+        for i_obj,this_obj in enumerate(objectives):
+            scale = def_objs[this_obj]['SCALE']
+            sign  = su2io.get_objectiveSign(this_obj)
+  
+            if n_obj>1 and len(marker_monitored)>1:
+                # For multiple objectives are evaluated one-by-one rather than combined
+                # MARKER_MONITORING should be updated to only include the marker for i_obj
+                # For single objectives, multiple markers can be used 
+                config['MARKER_MONITORING'] = marker_monitored[i_obj]
+
+            
+            # Evaluate Objective Gradient
+    #        sys.stdout.write('  %s... ' % this_obj.title())
+            grad = su2grad(this_obj,grad_method,config,state)
+    #        sys.stdout.write('done\n')
+            
+            # scaling and sign
+            k = 0
+            for i_dv,dv_scl in enumerate(dv_scales):
+                for i_grd in range(dv_size[i_dv]):
+                    grad[k] = grad[k] * sign * scale / dv_scl
+                    k = k + 1
+            
+            vals_out.append(grad)
     
     #: for each objective
     
@@ -363,13 +446,14 @@ def con_dceq(dvs,config,state=None):
     # unpack state and config
     config.unpack_dvs(dvs)
     state = su2io.State(state)
-    grad_method = config.get('GRADIENT_METHOD','ADJOINT')
+    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
     def_cons = config['OPT_CONSTRAINT']['EQUALITY']
     constraints = def_cons.keys()
     
     dv_scales = config['DEFINITION_DV']['SCALE']
-    
+    dv_size   = config['DEFINITION_DV']['SIZE']
+
 #    if constraints: sys.stdout.write('Evaluate Equality Constraint Gradients ...')
     
     # evaluate each constraint
@@ -384,9 +468,12 @@ def con_dceq(dvs,config,state=None):
 #        sys.stdout.write('done\n')
         
         # scaling
-        for i_grd,dv_scl in enumerate(dv_scales):
-            grad[i_grd] = grad[i_grd] * scale / dv_scl     
-        
+        k = 0
+        for i_dv,dv_scl in enumerate(dv_scales):
+            for i_grd in range(dv_size[i_dv]):
+                grad[k] = grad[k] * scale / dv_scl
+                k = k + 1
+
         vals_out.append(grad)
         
     #: for each constraint
@@ -461,13 +548,14 @@ def con_dcieq(dvs,config,state=None):
     # unpack state and config
     config.unpack_dvs(dvs)
     state = su2io.State(state)
-    grad_method = config.get('GRADIENT_METHOD','ADJOINT')
+    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
     def_cons = config['OPT_CONSTRAINT']['INEQUALITY']
     constraints = def_cons.keys()
     
     dv_scales = config['DEFINITION_DV']['SCALE']
-    
+    dv_size   = config['DEFINITION_DV']['SIZE']
+
 #    if constraints: sys.stdout.write('Evaluate Inequality Constraint Gradients')
     
     # evaluate each constraint
@@ -484,8 +572,11 @@ def con_dcieq(dvs,config,state=None):
 #        sys.stdout.write('done\n')
         
         # scaling and sign
-        for i_grd,dv_scl in enumerate(dv_scales):
-            grad[i_grd] = grad[i_grd] * sign * scale / dv_scl          
+        k = 0
+        for i_dv,dv_scl in enumerate(dv_scales):
+            for i_grd in range(dv_size[i_dv]):
+                grad[k] = grad[k] * sign * scale / dv_scl
+                k = k + 1
 
         vals_out.append(grad)
         

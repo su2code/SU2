@@ -1,9 +1,9 @@
 ## \file merge.py
 #  \brief python package for merging meshes
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 5.0.0 "Raven"
 #
-# Copyright (C) 2012-2015 SU2 Developers.
+# Copyright (C) 2012-2017 SU2 Developers.
 #
 # SU2 is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 import os, sys, shutil, copy
 from .. import io  as su2io
 from interface import SOL as SU2_SOL
+from interface import SOL_FSI as SU2_SOL_FSI
 
 # ----------------------------------------------------------------------
 #  Merge Mesh
@@ -61,12 +62,18 @@ def merge( config ):
     
     # special cases
     special_cases = su2io.get_specialCases(konfig)
+
+    # special cases
+    multizone_cases = su2io.get_multizone(konfig)
     
     # # MERGING # #
-    if 'WRT_UNSTEADY' in special_cases:
-        merge_unsteady(konfig)
+    if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
+        merge_multizone(konfig)
     else:
-        merge_solution(konfig)
+        if 'WRT_UNSTEADY' in special_cases:
+            merge_unsteady(konfig)
+        else:
+            merge_solution(konfig)
         
     # info out (empty)
     info = su2io.State()
@@ -93,6 +100,17 @@ def merge_solution( config ):
     """
     
     SU2_SOL( config )
+    
+    return
+
+#: merge_solution( config )
+
+def merge_multizone( config, begintime=0, endtime=None ):
+
+    if not endtime:
+        endtime = config.EXT_ITER
+    
+    SU2_SOL_FSI( config )
     
     return
 

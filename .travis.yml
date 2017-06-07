@@ -1,0 +1,74 @@
+# Continous Integration setup for SU2.
+# Tests on the develop branch in both serial and parallel.
+
+language: cpp
+
+compiler:
+    - g++
+
+notifications:
+    email:
+        recipients:
+            - su2code-dev@lists.stanford.edu
+  
+branches:
+    only:
+        - develop
+
+env:
+    global:
+        CXXFLAGS="-O3 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security"
+    matrix:
+        # Serial build and test
+        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
+          TEST_SCRIPT=serial_regression.py
+        # Parallel build and test
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
+          TEST_SCRIPT=parallel_regression.py
+        # Serial build and test for AD
+        - CXX="g++-4.7"
+          CC="gcc-4.7"
+          CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc-4.7 --with-cxx=g++-4.7 --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+          TEST_SCRIPT=serial_regression_AD.py
+        # Parallel build and test for AD:
+        - MPICH_CXX="g++-4.7"
+          MPICH_CC="gcc-4.7"
+          CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+          TEST_SCRIPT=parallel_regression_AD.py
+
+before_install:
+    # install the necessary packages
+    - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq python-numpy python-scipy python-pip mpich2 swig g++-4.7
+
+install:
+    - sudo pip install mpi4py
+    - echo $TRAVIS_BUILD_DIR
+    - echo $CONFIGURE_COMMAND
+    - $CONFIGURE_COMMAND
+    - make -j 4
+    - make install
+
+    # Add environmental variables according to the configure step
+    - export SU2_RUN=$TRAVIS_BUILD_DIR/bin
+    - export SU2_HOME=$TRAVIS_BUILD_DIR
+    - export PATH=$PATH:$SU2_RUN
+    - export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+
+before_script:
+    # Get the test cases
+    - git clone https://github.com/su2code/TestCases.git ./TestData
+    - cd TestData/
+    - git checkout develop
+    # Go back to SU2 root and copy the test data into the folder structure
+    - cd $TRAVIS_BUILD_DIR
+    - cp -R ./TestData/* ./TestCases/
+    # Enter the SU2/TestCases/ directory, which is now ready to run
+    - cd TestCases/
+
+script:
+    # run the tests
+    python $TEST_SCRIPT
+
+

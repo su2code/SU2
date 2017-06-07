@@ -3,7 +3,7 @@
 ## \file geometry.py
 #  \brief python package for running geometry analyses
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,8 +13,10 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -73,9 +75,11 @@ def geometry ( config , step = 1e-3 ):
     
     # unpack
     function_name = konfig['GEO_PARAM']
-    func_filename = 'of_func.dat'
-    grad_filename = 'of_grad.dat'
-    
+
+    func_filename  = konfig['VALUE_OBJFUNC_FILENAME']
+
+    grad_filename  = konfig['GRAD_OBJFUNC_FILENAME']
+
     # choose dv values 
     Definition_DV = konfig['DEFINITION_DV']
     n_DV          = len(Definition_DV['KIND'])

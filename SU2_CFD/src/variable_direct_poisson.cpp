@@ -2,7 +2,7 @@
  * \file variable_direct_poisson.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,32 +36,32 @@
 CPotentialVariable::CPotentialVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
-	Charge_Density = NULL;
+  Charge_Density = NULL;
   
 }
 
-CPotentialVariable::CPotentialVariable(double val_potential,
+CPotentialVariable::CPotentialVariable(su2double val_potential,
                                        unsigned short val_nDim,
                                        unsigned short val_nvar,
                                        CConfig *config) : CVariable(val_nDim,
                                                                     val_nvar,
                                                                     config) {
-	unsigned short iVar;
+  unsigned short iVar;
   
-	Residual_Old = new double [nVar];
-	Residual_Sum = new double [nVar];
+  Residual_Old = new su2double [nVar];
+  Residual_Sum = new su2double [nVar];
   
-	/*--- Initialization of variables ---*/
-	for (iVar = 0; iVar< nVar; iVar++) {
-		Solution[iVar] = val_potential;
-		Solution_Old[iVar] = val_potential;
-	}
-	Charge_Density = new double [2];
+  /*--- Initialization of variables ---*/
+  for (iVar = 0; iVar< nVar; iVar++) {
+    Solution[iVar] = val_potential;
+    Solution_Old[iVar] = val_potential;
+  }
+  Charge_Density = new su2double [2];
   
 }
 
 CPotentialVariable::~CPotentialVariable(void) {
   
-	if (Charge_Density != NULL) delete [] Charge_Density;
+  if (Charge_Density != NULL) delete [] Charge_Density;
   
 }

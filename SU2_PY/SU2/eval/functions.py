@@ -3,7 +3,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,8 +13,10 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -77,11 +79,18 @@ def function( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     
+    # check for multiple objectives
+    multi_objective = (type(func_name)==list)
+
+    # func_name_string is only used to check whether the function has already been evaluated. 
+    func_name_string = func_name
+    if multi_objective:   func_name_string = func_name[0]  
+
     # redundancy check
-    if not state['FUNCTIONS'].has_key(func_name):
-        
+    if not state['FUNCTIONS'].has_key(func_name_string):
+
         # Aerodynamics
-        if func_name == 'ALL' or func_name in su2io.optnames_aero:
+        if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
             aerodynamics( config, state )
             
         # Stability
@@ -96,12 +105,23 @@ def function( func_name, config, state=None ):
             raise Exception, 'unknown function name, %s' % func_name
         
     #: if not redundant
-    
+
     # prepare output
     if func_name == 'ALL':
         func_out = state['FUNCTIONS']
+    elif (multi_objective):
+        # If combine_objective is true, use the 'combo' output.
+        func_out = state['FUNCTIONS']['COMBO']
     else:
         func_out = state['FUNCTIONS'][func_name]
+
+    if config['OPT_OBJECTIVE'].has_key(func_name_string):
+        marker = config['OPT_OBJECTIVE'][func_name_string]['MARKER']
+        if su2io.per_surface_map.has_key(func_name_string):
+            name = su2io.per_surface_map[func_name_string]+'_'+marker
+            if state['FUNCTIONS'].has_key(name):
+                func_out = state['FUNCTIONS'][name]
+
     
     return copy.deepcopy(func_out)
 
@@ -241,14 +261,15 @@ def aerodynamics( config, state=None ):
             # heat flux files to push
             if 'TARGET_HEATFLUX' in info.FILES:
                 push.append(info.FILES['TARGET_HEATFLUX'])
-
+                
     #: with output redirection
-
+    su2io.update_persurface(config,state)
     # return output 
     funcs = su2util.ordered_bunch()
-    for key in su2io.optnames_aero:
+    for key in su2io.optnames_aero + su2io.grad_names_directdiff:
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
+            
     return funcs
 
 #: def aerodynamics()
@@ -431,7 +452,7 @@ def geometry( func_name, config, state=None ):
     # ----------------------------------------------------
     
     # does decomposition and deformation
-    info = update_mesh(config,state)
+    #info = update_mesh(config,state)
 
 
     # ----------------------------------------------------    

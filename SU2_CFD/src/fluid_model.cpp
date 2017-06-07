@@ -2,7 +2,7 @@
  * fluid_model.cpp
  * \brief Source of the main thermo-physical subroutines of the SU2 solvers.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 3.2.9 "eagle"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
+ *
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,50 +38,51 @@ CFluidModel::CFluidModel(void) {
 
   /*--- Attributes initialization ---*/
 
-	StaticEnergy = 0.0;
-	Entropy = 0.0;
-	Density = 0.0;
-	Pressure = 0.0;
-	SoundSpeed2 = 0.0;
-	Temperature = 0.0;
-	dPdrho_e = 0.0;
-	dPde_rho = 0.0;
-	dTdrho_e = 0.0;
-	dTde_rho = 0.0;
-	Cp       = 0.0;
+  StaticEnergy = 0.0;
+  Entropy = 0.0;
+  Density = 0.0;
+  Pressure = 0.0;
+  SoundSpeed2 = 0.0;
+  Temperature = 0.0;
+  dPdrho_e = 0.0;
+  dPde_rho = 0.0;
+  dTdrho_e = 0.0;
+  dTde_rho = 0.0;
+  Cp       = 0.0;
 
-	LaminarViscosity = NULL;
-	ThermalConductivity = NULL;
+  LaminarViscosity = NULL;
+  ThermalConductivity = NULL;
 
 }
 
 CFluidModel::~CFluidModel(void) {
-
-  }
+  if (LaminarViscosity!= NULL) delete LaminarViscosity;
+  if (ThermalConductivity!= NULL) delete ThermalConductivity;
+}
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
   
-	switch (config->GetKind_ViscosityModel()) {
-	case CONSTANT_VISCOSITY:
-		LaminarViscosity = new CConstantViscosity(config->GetMu_ConstantND());
-		break;
-	case SUTHERLAND:
-		LaminarViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
-		break;
-	}
+  switch (config->GetKind_ViscosityModel()) {
+  case CONSTANT_VISCOSITY:
+    LaminarViscosity = new CConstantViscosity(config->GetMu_ConstantND());
+    break;
+  case SUTHERLAND:
+    LaminarViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
+    break;
+  }
   
 }
 
 void CFluidModel::SetThermalConductivityModel (CConfig *config) {
   
-	switch (config->GetKind_ConductivityModel()) {
-	case CONSTANT_CONDUCTIVITY:
-		ThermalConductivity = new CConstantConductivity(config->GetKt_ConstantND());
-		break;
-	case CONSTANT_PRANDTL:
-		ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
-		break;
-	}
+  switch (config->GetKind_ConductivityModel()) {
+  case CONSTANT_CONDUCTIVITY:
+    ThermalConductivity = new CConstantConductivity(config->GetKt_ConstantND());
+    break;
+  case CONSTANT_PRANDTL:
+    ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
+    break;
+  }
   
 }
 

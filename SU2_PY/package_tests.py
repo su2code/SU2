@@ -12,8 +12,10 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -178,12 +180,12 @@ def level2():
         
         with SU2.io.redirect_folder(folder='JOB_001',link='mesh_NACA0012.su2'):
             func  = SU2.eval.func( 'LIFT', config, state )
-            grads = SU2.eval.grad( 'LIFT', 'ADJOINT', config, state )
+            grads = SU2.eval.grad( 'LIFT', 'CONTINUOUS_ADJOINT', config, state )
         
         with SU2.io.redirect_folder(folder='JOB_001',link='mesh_NACA0012.su2'):
             func  = SU2.eval.func( 'DRAG', config, state ) # will not run direct
-            grads = SU2.eval.grad( 'LIFT', 'ADJOINT', config, state ) # will not run adjoint
-            grads = SU2.eval.grad( 'DRAG', 'ADJOINT', config, state ) # will run adjoint
+            grads = SU2.eval.grad( 'LIFT', 'CONTINUOUS_ADJOINT', config, state ) # will not run adjoint
+            grads = SU2.eval.grad( 'DRAG', 'CONTINUOUS_ADJOINT', config, state ) # will run adjoint
     
     wait = 0
     
@@ -213,7 +215,7 @@ def level3():
         vals = design.con_cieq(dv_new)
         vals = design.con_dcieq(dv_new)
         vals = design.func('LIFT')
-        vals = design.grad('LIFT','ADJOINT')
+        vals = design.grad('LIFT','CONTINUOUS_ADJOINT')
         
         SU2.io.save_data('design.pkl',design)
         data = SU2.io.load_data('design.pkl')
@@ -283,7 +285,7 @@ def level5():
         cons['INEQUALITY']['MOMENT_Z'] = {'SIGN':'>','VALUE':0.034068,'SCALE':1e-2}
         
         def_dv = config.DEFINITION_DV
-        n_dv   = len(def_dv['KIND'])
+        n_dv   = sum(def_dv['KIND'])
         def_dv['SCALE'] = [1.e0]*n_dv
         
         config.OPT_OBJECTIVE  = obj

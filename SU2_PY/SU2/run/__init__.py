@@ -7,7 +7,8 @@ from interface import  \
     MSH               ,\
     DEF               ,\
     DOT               ,\
-    SOL               ;
+    SOL               ,\
+    SOL_FSI           ;
 
 from direct     import direct
 from adjoint    import adjoint
