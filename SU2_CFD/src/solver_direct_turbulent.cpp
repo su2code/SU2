@@ -2574,38 +2574,38 @@ void CTurbSASolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver
   unsigned short iDim, jDim, iVar, jVar, iNode;
   unsigned long iVertex, iPoint, jPoint, iPoint_Neighbor, counter;
   
-  double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
-  double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
-  double ProjGridVel, *GridVel, GridVel2, *Normal, Area, Pressure;
-  double total_viscosity, div_vel, Density, turb_ke, tau_vel[3], UnitNormal[3];
-  double **grad_primvar, tau[3][3];
+  su2double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
+  su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
+  su2double ProjGridVel, *GridVel, GridVel2, *Normal, Area, Pressure;
+  su2double total_viscosity, div_vel, Density, turb_ke, tau_vel[3], UnitNormal[3];
+  su2double **grad_primvar, tau[3][3];
   
-  double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
-  double T_Normal, P_Normal;
-  double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall, Tau_Wall_Old;
-  double *Coord, *Coord_Normal;
-  double diff, tol = 1e-10, Delta;
-  double U_Tau, U_Plus, Gam, Beta, Phi, Q, Y_Plus_White, Y_Plus;
-  double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
-  double Gas_Constant = config->GetGas_ConstantND();
-  double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  su2double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
+  su2double T_Normal, P_Normal;
+  su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall, Tau_Wall_Old;
+  su2double *Coord, *Coord_Normal;
+  su2double diff, tol = 1e-10, Delta;
+  su2double U_Tau, U_Plus, Gam, Beta, Phi, Q, Y_Plus_White, Y_Plus;
+  su2double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
+  su2double Gas_Constant = config->GetGas_ConstantND();
+  su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   
   /*--- Get the freestream velocity magnitude for non-dim. purposes ---*/
   
-  double *VelInf = config->GetVelocity_FreeStreamND();
+  su2double *VelInf = config->GetVelocity_FreeStreamND();
   VelInfMod = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     VelInfMod += VelInf[iDim];
   VelInfMod = sqrt(VelInfMod);
   
   /*--- Compute the recovery factor ---*/
-  // Double-check: laminar or turbulent Pr for this?
-  double Recovery = pow(config->GetPrandtl_Lam(),(1.0/3.0));
+  // su2double-check: laminar or turbulent Pr for this?
+  su2double Recovery = pow(config->GetPrandtl_Lam(),(1.0/3.0));
   
   /*--- Typical constants from boundary layer theory ---*/
   
-  double kappa = 0.4;
-  double B = 5.5;
+  su2double kappa = 0.4;
+  su2double B = 5.5;
   
   /*--- Identify the boundary by string name ---*/
   
@@ -2778,17 +2778,17 @@ void CTurbSASolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver
       
       /*--- Now compute the Eddy viscosity at the first point off of the wall ---*/
       
-      double Lam_Visc_Normal = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetLaminarViscosity();
-      double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+      su2double Lam_Visc_Normal = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetLaminarViscosity();
+      su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
       
-      double Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
+      su2double Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
                                         (1.0 + kappa*U_Plus
                                          + kappa*kappa*U_Plus*U_Plus/2.0)
                                         - Lam_Visc_Normal/Lam_Visc_Wall);
       
       /*--- Solve for the new value of nu_tilde given the eddy viscosity ---*/
       
-      double nu_til_old, nu_til_4, nu_til, cv1_3 = 7.1*7.1*7.1;
+      su2double nu_til_old, nu_til_4, nu_til, cv1_3 = 7.1*7.1*7.1;
       nu_til_old = node[iPoint]->GetSolution(0);
       counter = 0; diff = 1.0;
       
