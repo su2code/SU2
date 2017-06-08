@@ -615,11 +615,11 @@ void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CN
   switch(config->GetKind_Data_Riemann(Marker_Tag))
   {
   case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
-  	BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  	break;
+    BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
   case STATIC_PRESSURE:
-  	BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  	break;
+    BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
   }
 }
 
@@ -630,11 +630,11 @@ void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_containe
   switch(config->GetKind_Data_Riemann(Marker_Tag))
   {
   case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
-  	BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  	break;
+    BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
   case STATIC_PRESSURE:
-  	BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  	break;
+    BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
   }
 }
 
@@ -646,20 +646,15 @@ void CTurbSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contain
   switch(config->GetKind_Data_NRBC(Marker_Tag))
   {
   case TOTAL_CONDITIONS_PT:case TOTAL_CONDITIONS_PT_1D: case DENSITY_VELOCITY:
-  	BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  	break;
+    BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
   case MIXING_IN:
-  	if (config->GetBoolTurbMixingPlane()){
-  		BC_Inlet_MixingPlane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  	}
-  	else{
-  		BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  	}
-  	break;
+      BC_Inlet_MixingPlane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
 
   case STATIC_PRESSURE: case MIXING_OUT: case STATIC_PRESSURE_1D: case RADIAL_EQUILIBRIUM:
-  	BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  	break;
+    BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
   }
 }
 
@@ -2223,17 +2218,14 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
-  	switch(config->GetKind_Data_NRBC(Marker_Tag)){
-  	case MIXING_IN:
-  		extAverageNu = solver_container[FLOW_SOL]->GetExtAverageNu(val_marker, iSpan);
-  		break;
-  	}
+    extAverageNu = solver_container[FLOW_SOL]->GetExtAverageNu(val_marker, iSpan);
+
 
     /*--- Loop over all the vertices on this boundary marker ---*/
 
     for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
 
-    	/*--- find the node related to the vertex ---*/
+      /*--- find the node related to the vertex ---*/
       iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
 
       /*--- using the other vertex information for retrieving some information ---*/
@@ -2277,7 +2269,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+            geometry->node[iPoint]->GetGridVel());
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -3467,46 +3459,43 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
-  	switch(config->GetKind_Data_NRBC(Marker_Tag)){
-  	case MIXING_IN:
-  		extAverageKei = solver_container[FLOW_SOL]->GetExtAverageKei(val_marker, iSpan);
-  		extAverageOmega = solver_container[FLOW_SOL]->GetExtAverageOmega(val_marker, iSpan);
-  		break;
-  	}
+    extAverageKei = solver_container[FLOW_SOL]->GetExtAverageKei(val_marker, iSpan);
+    extAverageOmega = solver_container[FLOW_SOL]->GetExtAverageOmega(val_marker, iSpan);
 
-  	/*--- Loop over all the vertices on this boundary marker ---*/
 
-  	for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+    /*--- Loop over all the vertices on this boundary marker ---*/
 
-  		/*--- find the node related to the vertex ---*/
-  		iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
+    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
 
-  		/*--- using the other vertex information for retrieving some information ---*/
-  		oldVertex = geometry->turbovertex[val_marker][iSpan][iVertex]->GetOldVertex();
+      /*--- find the node related to the vertex ---*/
+      iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
 
-  		/*--- Index of the closest interior node ---*/
-  		Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
+      /*--- using the other vertex information for retrieving some information ---*/
+      oldVertex = geometry->turbovertex[val_marker][iSpan][iVertex]->GetOldVertex();
 
-  		/*--- Normal vector for this vertex (negate for outward convention) ---*/
+      /*--- Index of the closest interior node ---*/
+      Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
 
-  		geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-  		for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-  		/*--- Allocate the value at the inlet ---*/
-  		V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-  		/*--- Retrieve solution at the farfield boundary node ---*/
+      /*--- Allocate the value at the inlet ---*/
+      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
-  		V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      /*--- Retrieve solution at the farfield boundary node ---*/
 
-  		/*--- Set various quantities in the solver class ---*/
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
 
-  		conv_numerics->SetPrimitive(V_domain, V_inlet);
+      /*--- Set various quantities in the solver class ---*/
 
-  		/*--- Set the turbulent variable states (prescribed for an inflow) ---*/
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-      Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
 
       Solution_j[0]= extAverageKei;
       Solution_j[1]= extAverageOmega;
@@ -3517,8 +3506,8 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       conv_numerics->SetNormal(Normal);
 
       if (grid_movement)
-      conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+            geometry->node[iPoint]->GetGridVel());
 
       /*--- Compute the residual using an upwind scheme ---*/
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
