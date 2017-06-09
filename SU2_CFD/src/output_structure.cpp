@@ -15413,7 +15413,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         unsigned long nPointIDs = nPointIDs_proc_recv[iProc_recv[iProc]];
         for (unsigned long iNode_proc = 0; iNode_proc < nPointIDs; iNode_proc++) {
             for (unsigned short iVar =0 ; iVar < nVar; iVar++) {
-                Buffer_send_InterpSolution[iProc][iNode_proc+nVar+iVar] = 0.0;
+                Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] = 0.0;
             }
         }
     }
@@ -15426,7 +15426,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         Buffer_recv_InterpSolution[iProc] = new su2double[nPointIDs*nVar];
         for (unsigned long iNode_proc = 0; iNode_proc < nPointIDs; iNode_proc++) {
             for (unsigned short iVar =0 ; iVar < nVar; iVar++) {
-                Buffer_recv_InterpSolution[iProc][iNode_proc+nVar+iVar] = 0.0;
+                Buffer_recv_InterpSolution[iProc][iNode_proc*nVar+iVar] = 0.0;
             }
         }
     }
@@ -15455,7 +15455,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             Buffer_send_InterpSolution[iProc][iNode_proc*nVar+0] = probe_loc[0];
             Buffer_send_InterpSolution[iProc][iNode_proc*nVar+1] = probe_loc[1];
             
-            su2double dist_probe = sqrt((probe_loc[0]-geometry->node[pointID]->GetCoord(0))*(probe_loc[0]-geometry->node[pointID]->GetCoord(0)) + (probe_loc[1]-geometry->node[pointID]->GetCoord(1))*(probe_loc[1]-geometry->node[pointID]->GetCoord(1)));
+            su2double dist_probe = sqrt((probe_loc[0] - geometry->node[pointID]->GetCoord(0))*(probe_loc[0] - geometry->node[pointID]->GetCoord(0)) + (probe_loc[1] - geometry->node[pointID]->GetCoord(1))*(probe_loc[1] - geometry->node[pointID]->GetCoord(1)));
             if (dist_probe < 1e-12) {
                 //cout << "Rank " << rank << " LOCATECD probe with XCoord = " << probe_loc[0] << ", YCoord = " << probe_loc[1] << " intersects with reference mesh node number " << geometry->node[pointID]->GetGlobalIndex() << endl;
                 
@@ -15491,9 +15491,11 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                         //cout << "solver[1] for node = " <<  geometry->node[iPoint_loc]->GetGlobalIndex() << " = " << solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar) << endl;
                     /*if(iVar ==2)
                      cout << "Isopram[" << iNode << "] = " << isoparams[iNode] << endl;*/
+                    
                     Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] += solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar)*isoparams[iNode];
                 }
             }
+            
             /*for (unsigned short iVar = 0; iVar < nVar; iVar++)  {
                 cout << "Buffer_send_InterpSolution[" << iProc << "][" << iNode_proc << "][" << iVar << "] = " << Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] << endl;
             }*/
@@ -15604,7 +15606,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 cout << "Coords are x = " << geometry->node[pointID]->GetCoord(0) << ", y= " << geometry->node[pointID]->GetCoord(1) << endl;*/
                 
                 if (dist_probe < 1e-12) {
-                    cout << " LOCATECD!! Probe intersects with reference mesh node number " << geometry->node[pointID]->GetGlobalIndex() << endl;
+                    //cout << " LOCATECD!! Probe intersects with reference mesh node number " << geometry->node[pointID]->GetGlobalIndex() << endl;
                     
                     for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
                         solution_interp[iVar] = solver[FLOW_SOL]->node[pointID]->GetSolution(iVar);
