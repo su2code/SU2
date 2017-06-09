@@ -587,7 +587,7 @@ bool CGeometry::SegmentIntersectsSegment(su2double point0[2], su2double point1[2
     /* To be revisited later to correct it */
     if (dist0 < 1e-13 || dist1 < 1e-13)
     {
-        cout << " Probe on edge connecting nodes of mesh " << endl;
+        //cout << " Probe on edge connecting nodes of mesh " << endl;
         return false;
     }
     

@@ -456,7 +456,7 @@ int main(int argc, char *argv[]) {
       cout << "entering Solution interpolation " << endl;
 
       output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0]);
-      cout << "Writing volume solution for inteprolated mesh.. " << endl;
+      cout << "Writing volume solution for inteprolated mesh in rank.. " << rank << endl;
       output->SetBaselineResult_Files(solver_container_interp, geometry_container_interp, config_container_interp, 0, nZone);
     }
     
