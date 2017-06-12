@@ -987,7 +987,9 @@ inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Si
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
 
-inline bool CConfig::GetUpdate_Restart_Params(void) {	return Update_Restart_Params; }
+inline bool CConfig::GetWrt_Binary_Restart(void) {	return Wrt_Binary_Restart; }
+
+inline bool CConfig::GetRead_Binary_Restart(void) {	return Read_Binary_Restart; }
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
@@ -1252,6 +1254,10 @@ inline bool CConfig::Low_Mach_Correction(void) { return Low_Mach_Corr; }
 
 inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 
+inline bool CConfig::GetBody_Force(void) { return Body_Force; }
+
+inline su2double* CConfig::GetBody_Force_Vector(void) { return Body_Force_Vector; }
+
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 
 inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = val_smoothnumgrid; }
@@ -1316,7 +1322,7 @@ inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 
-inline bool CConfig::GetWrt_1D_Output(void) { return Wrt_1D_Output; }
+inline bool CConfig::GetWrt_1D_Output(void) { return (Kind_OneD != ONED_NONE); }
 
 inline vector<vector<su2double> > CConfig::GetAeroelastic_np1(unsigned short iMarker) { return Aeroelastic_np1[iMarker]; }
 
@@ -1423,6 +1429,8 @@ inline void CConfig::SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr)
 inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }
 
 inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Output_Verb; }
+
+inline unsigned short CConfig::GetKind_OneD(void) { return Kind_OneD; }
 
 inline unsigned short CConfig::GetnIterFSI(void) { return nIterFSI; }
 

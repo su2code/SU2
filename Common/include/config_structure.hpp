@@ -550,8 +550,10 @@ private:
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Update_Restart_Params,
+  Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
+  Read_Binary_Restart,	/*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
-  bool Update_Restart_Params;	/*!< \brief Read and write additional restart metadata for parameter updates.*/
   unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
   nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
@@ -649,9 +651,9 @@ private:
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
-  Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
-  Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
-  unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
+  Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
+  unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
+  Kind_OneD;        /*!< \brief Write one-dimensionalized output on specified markers. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
   ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
@@ -839,8 +841,11 @@ private:
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
   *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
-  *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
-  
+  *default_inc_crit,          /*!< \brief Default incremental criteria array for the COption class. */
+  *default_body_force;        /*!< \brief Default body force vector for the COption class. */
+  bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
+  su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
+
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -4057,10 +4062,16 @@ public:
   bool GetRestart(void);
 
   /*!
-   * \brief Flag controlling whether restart parameter metadata is written/read.
-   * \return Restart metadata updates, if <code>TRUE</code> then the code will read/write restart metadata for parameter updates.
+   * \brief Flag for whether binary SU2 native restart files are written.
+   * \return Flag for whether binary SU2 native restart files are written, if <code>TRUE</code> then the code will output binary restart files.
    */
-  bool GetUpdate_Restart_Params(void);
+  bool GetWrt_Binary_Restart(void);
+
+  /*!
+   * \brief Flag for whether binary SU2 native restart files are read.
+   * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
+   */
+  bool GetRead_Binary_Restart(void);
 
   /*!
    * \brief Provides the number of varaibles.
@@ -4719,7 +4730,19 @@ public:
    * \return <code>TRUE</code> if it uses the gravity force; otherwise <code>FALSE</code>.
    */
   bool GetGravityForce(void);
-  
+
+  /*!
+   * \brief Get information about the body force.
+   * \return <code>TRUE</code> if it uses a body force; otherwise <code>FALSE</code>.
+   */
+  bool GetBody_Force(void);
+
+  /*!
+   * \brief Get a pointer to the body force vector.
+   * \return A pointer to the body force vector.
+   */
+  su2double* GetBody_Force_Vector(void);
+
   /*!
    * \brief Get information about the rotational frame.
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
@@ -6658,6 +6681,13 @@ public:
    */
   unsigned short GetConsole_Output_Verb(void);
   
+  /*!
+   * \brief Get the kind of one-dimensionalization
+   * (area-averaged, mass flux averaged,etc).
+   * \return Kind of one-dimensionalization.
+   */
+  unsigned short GetKind_OneD(void);
+
   /*!
    *
    * \brief Get the direct differentation method.

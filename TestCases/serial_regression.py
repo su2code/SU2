@@ -149,6 +149,17 @@ def main():
     cylinder_lowmach.tol       = 0.00001
     test_list.append(cylinder_lowmach)
 
+    # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
+    poiseuille           = TestCase('poiseuille')
+    poiseuille.cfg_dir   = "navierstokes/poiseuille"
+    poiseuille.cfg_file  = "lam_poiseuille.cfg"
+    poiseuille.test_iter = 10
+    poiseuille.test_vals = [-12.272126, -3.335311, 0.000001, 2.351005] #last 4 columns
+    poiseuille.su2_exec  = "SU2_CFD"
+    poiseuille.timeout   = 1600
+    poiseuille.tol       = 0.00001
+    test_list.append(poiseuille)
+
     ##########################
     ### Compressible RANS  ###
     ##########################
@@ -207,7 +218,18 @@ def main():
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
     test_list.append(turb_naca0012_sa)
-    
+   
+    # NACA0012 (SA, FUN3D results for finest grid: CL=1.0983, CD=0.01242) with binary restart
+    turb_naca0012_sa_bin           = TestCase('turb_naca0012_sa_bin')
+    turb_naca0012_sa_bin.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sa_bin.cfg_file  = "turb_NACA0012_sa_binary.cfg"
+    turb_naca0012_sa_bin.test_iter = 10
+    turb_naca0012_sa_bin.test_vals = [-12.000763, -9.145363, 1.070528, 0.019417] #last 4 columns
+    turb_naca0012_sa_bin.su2_exec  = "SU2_CFD"
+    turb_naca0012_sa_bin.timeout   = 3200
+    turb_naca0012_sa_bin.tol       = 0.00001
+    test_list.append(turb_naca0012_sa_bin)
+ 
     # NACA0012 (SST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
     turb_naca0012_sst           = TestCase('turb_naca0012_sst')
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
@@ -318,12 +340,12 @@ def main():
     contadj_oneram6.tol       = 0.00001
     test_list.append(contadj_oneram6)
 
-    # Inviscid WEDGE: tests generalized adjoint
+    # Inviscid WEDGE: tests averaged outflow total pressure adjoint
     contadj_wedge             = TestCase('contadj_wedge')
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [2.780403, -3.223266, -1448300.000000, -0.000000] #last 4 columns
+    contadj_wedge.test_vals = [2.856008, -2.767216, 1.0029e+06, 1.3024e-13] #last 4 columns
     contadj_wedge.su2_exec  = "SU2_CFD"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
@@ -391,7 +413,18 @@ def main():
     contadj_rans_naca0012.timeout   = 1600
     contadj_rans_naca0012.tol       = 0.00001
     test_list.append(contadj_rans_naca0012)
-    
+   
+    # Adjoint turbulent NACA0012 with binary restarts
+    contadj_rans_naca0012_bin           = TestCase('contadj_rans_naca0012_bin')
+    contadj_rans_naca0012_bin.cfg_dir   = "cont_adj_rans/naca0012"
+    contadj_rans_naca0012_bin.cfg_file  = "turb_nasa_binary.cfg"
+    contadj_rans_naca0012_bin.test_iter = 100
+    contadj_rans_naca0012_bin.test_vals = [-0.814736,-5.726472,1.9169e+01,-4.6176e-07] #last 4 columns
+    contadj_rans_naca0012_bin.su2_exec  = "SU2_CFD"
+    contadj_rans_naca0012_bin.timeout   = 1600
+    contadj_rans_naca0012_bin.tol       = 0.00001
+    test_list.append(contadj_rans_naca0012_bin)
+ 
     # Adjoint turbulent RAE2822
     contadj_rans_rae2822           = TestCase('contadj_rans_rae2822')
     contadj_rans_rae2822.cfg_dir   = "cont_adj_rans/rae2822"
@@ -641,6 +674,17 @@ def main():
 #    pipe.tol       = 0.00001
 #    pipe.unsteady  = True
 #    test_list.append(pipe)
+
+    # Bars_SST_2D
+    bars_SST_2D           = TestCase('bars_SST_2D')
+    bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
+    bars_SST_2D.cfg_file  = "bars.cfg"
+    bars_SST_2D.test_iter = 13
+    bars_SST_2D.test_vals = [-2.324765, 0.916963, 0.001254, 0.093163] #last 4 columns
+    bars_SST_2D.su2_exec  = "SU2_CFD"
+    bars_SST_2D.timeout   = 1600
+    bars_SST_2D.tol       = 0.00001
+    test_list.append(bars_SST_2D)
 
     ##########################
     ### FEA - FSI          ###
@@ -903,16 +947,16 @@ def main():
     test_list.append(shape_opt_euler_py)
 
     # test continuous_adjoint.py, with multiple objectives
-    #contadj_multi_py            = TestCase('contadj_multi_py')
-    #contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
-    #contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
-    #contadj_multi_py.test_iter  = 10
-    #contadj_multi_py.su2_exec   = "continuous_adjoint.py"
-    #contadj_multi_py.timeout    = 1600
-    #contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
-    #contadj_multi_py.test_file  = "of_grad_combo.dat"
-    #pass_list.append(contadj_multi_py.run_filediff())
-    #test_list.append(contadj_multi_py)
+    contadj_multi_py            = TestCase('contadj_multi_py')
+    contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
+    contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+    contadj_multi_py.test_iter  = 10
+    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    contadj_multi_py.timeout    = 1600
+    contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
+    contadj_multi_py.test_file  = "of_grad_combo.dat"
+    pass_list.append(contadj_multi_py.run_filediff())
+    test_list.append(contadj_multi_py)
 
 
     ##########################

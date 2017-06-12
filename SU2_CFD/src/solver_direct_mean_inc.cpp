@@ -94,12 +94,14 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  bool metadata  = config->GetUpdate_Restart_Params();
   string filename = config->GetSolution_FlowFileName();
-  su2double AoA_, AoS_, BCThrust_;
-  string meta_filename;
-  string::size_type position;
-  unsigned long ExtIter_;
+  int Unst_RestartIter;
+  unsigned short iZone = config->GetiZone();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
   int rank = MASTER_NODE;
@@ -110,96 +112,34 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && metadata) {
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
 
-    meta_filename = "restart.meta";
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-    /*--- Open the restart file, throw an error if this fails. ---*/
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
 
-    restart_file.open(meta_filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no restart metadata file (" << meta_filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
+    /*--- Modify file name for a dual-time unsteady restart ---*/
 
-      string text_line;
-
-      /*--- Space for extra info (if any) ---*/
-
-      while (getline (restart_file, text_line)) {
-
-        /*--- Angle of attack ---*/
-
-        position = text_line.find ("AOA=",0);
-        if (position != string::npos) {
-          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-              cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
-            }
-            config->SetAoA(AoA_ + config->GetAoA_Offset());
-          }
-          else {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-          }
-        }
-
-        /*--- Sideslip angle ---*/
-
-        position = text_line.find ("SIDESLIP_ANGLE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-              cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
-            }
-            config->SetAoS(AoS_ + config->GetAoS_Offset());
-          }
-          else {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoS in the solution file." << endl;
-          }
-        }
-
-        /*--- BCThrust angle ---*/
-
-        position = text_line.find ("INITIAL_BCTHRUST=",0);
-        if (position != string::npos) {
-          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-            config->SetInitial_BCThrust(BCThrust_);
-          }
-          else {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-          }
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
-            config->SetExtIter_OffSet(ExtIter_);
-        }
-        
-      }
-      
-      /*--- Close the restart metadate file. ---*/
-      
-      restart_file.close();
-      
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
+
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Read and store the restart metadata. ---*/
+
+    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    
   }
 
   /*--- Basic array initialization ---*/
@@ -5552,7 +5492,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine, dull_val;
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -5574,7 +5514,16 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
+  int counter = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -5584,87 +5533,73 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
-  
-  /*--- Open the restart file, and throw an error if this fails. ---*/
-  
-  restart_file.open(restart_filename.data(), ios::in);
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
-  }
-  
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-  
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
-  
-  /*--- Read all lines in the restart file ---*/
-  
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-  /*--- The first line is the header ---*/
-  
-  getline (restart_file, text_line);
-  
-   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-     
-  getline (restart_file, text_line);
-     
-    istringstream point_line(text_line);
-    
-     /*--- Retrieve local index. If this node from the restart file lives
-      on the current processor, we will load and instantiate the vars. ---*/
-     
-     MI = Global2Local.find(iPoint_Global);
-     if (MI != Global2Local.end()) {
-       
-       iPoint_Local = Global2Local[iPoint_Global];
-       
-      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2];
-      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
-       iPoint_Global_Local++;
+      iPoint_Global_Local++;
 
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
-      
+
       if (grid_movement) {
-        
+
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
-        
+
         if (turb_model == SA || turb_model == SA_NEG) {
-          point_line >> dull_val;
+          index++;
         } else if (turb_model == SST) {
-          point_line >> dull_val >> dull_val;
+          index+=2;
         }
-        
+
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
         /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
-        
+
         su2double GridVel[3] = {0.0,0.0,0.0};
-        if (!steady_restart){
-            if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
-            else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+        if (!steady_restart) {
+
+          /*--- Rewind the index to retrieve the Coords. ---*/
+          index = counter*Restart_Vars[1];
+          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
+
+          /*--- Move the index forward to get the grid velocities. ---*/
+          index = counter*Restart_Vars[1] + skipVars + nVar;
+          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
           geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
         }
-        
       }
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
       
     }
   }
@@ -5691,10 +5626,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     MPI_Finalize();
 #endif
   }
-
-  /*--- Close the restart file ---*/
-  
-  restart_file.close();
   
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. We alo call the preprocessing routine
@@ -5754,6 +5685,12 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
   
   delete [] Coord;
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
   
 }
 
@@ -5799,11 +5736,13 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  bool metadata  = config->GetUpdate_Restart_Params();
-  string meta_filename;
-  su2double AoA_, AoS_, BCThrust_;
-  string::size_type position;
-  unsigned long ExtIter_;
+  int Unst_RestartIter;
+  unsigned short iZone = config->GetiZone();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
   
@@ -5812,99 +5751,37 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  /*--- Check for a restart file to check if there is a change in the angle of attack
+  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && metadata) {
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
 
-    meta_filename = "restart.meta";
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-    /*--- Open the restart file, throw an error if this fails. ---*/
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
 
-    restart_file.open(meta_filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no restart metadata file (" << meta_filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
+    /*--- Modify file name for a dual-time unsteady restart ---*/
 
-      string text_line;
-
-      /*--- Space for extra info (if any) ---*/
-
-      while (getline (restart_file, text_line)) {
-
-        /*--- Angle of attack ---*/
-
-        position = text_line.find ("AOA=",0);
-        if (position != string::npos) {
-          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-              cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
-            }
-            config->SetAoA(AoA_ + config->GetAoA_Offset());
-          }
-          else {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-          }
-        }
-
-        /*--- Sideslip angle ---*/
-
-        position = text_line.find ("SIDESLIP_ANGLE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-              cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
-            }
-            config->SetAoS(AoS_ + config->GetAoS_Offset());
-          }
-          else {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoS in the solution file." << endl;
-          }
-        }
-
-        /*--- BCThrust angle ---*/
-
-        position = text_line.find ("INITIAL_BCTHRUST=",0);
-        if (position != string::npos) {
-          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-            config->SetInitial_BCThrust(BCThrust_);
-          }
-          else {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-          }
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
-            config->SetExtIter_OffSet(ExtIter_);
-        }
-        
-      }
-      
-      /*--- Close the restart metadata file. ---*/
-      
-      restart_file.close();
-      
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
+
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Read and store the restart metadata. ---*/
+
+    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    
   }
 
   /*--- Array initialization ---*/

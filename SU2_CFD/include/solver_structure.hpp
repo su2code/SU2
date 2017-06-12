@@ -111,9 +111,14 @@ protected:
   
   su2double **Smatrix,  /*!< \brief Auxiliary structure for computing gradients by least-squares */
   **Cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  
+
+  int *Restart_Vars;       /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
+  int Restart_ExtIter;     /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
+  passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
-  
+
+  su2double ***SlidingState; /*!< \brief Sliding State variables. */
+
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -738,10 +743,11 @@ public:
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] numerics - Description of the numerical method.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -3142,49 +3148,49 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged pressure at a marker.(same as area averaged pressure)
+   * \ Get the one-dimensionalized pressure at a marker.(same as area averaged pressure)
    */
-  virtual su2double GetOneD_FluxAvgPress(void);
+  virtual su2double GetOneD_AvgPress(void);
   
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged pressure at a marker. (same as area averaged pressure)
+   * \ Set the one-dimensionalized pressure at a marker. (same as area averaged pressure)
    */
-  virtual void SetOneD_FluxAvgPress(su2double PressureRef);
+  virtual void SetOneD_AvgPress(su2double Pressure1D);
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged density at a marker. (\f$ = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
+   * \ Get the one-dimensionalized density at a marker. (\f$ = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
    */
-  virtual su2double GetOneD_FluxAvgDensity(void);
+  virtual su2double GetOneD_AvgDensity(void);
   
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged density at a marker.( \f$= (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
+   * \ Set the one-dimensionalized density at a marker.( \f$= (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
    */
-  virtual void SetOneD_FluxAvgDensity(su2double DensityRef);
+  virtual void SetOneD_AvgDensity(su2double Density1D);
   
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged velocity at a marker. = \f$ \sqrt ( \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
+   * \ Get the one-dimensionalized velocity at a marker. = \f$ \sqrt ( \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
    */
-  virtual su2double GetOneD_FluxAvgVelocity(void);
+  virtual su2double GetOneD_AvgVelocity(void);
   
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged velocity at a marker. = \f$ \sqrt (  \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
+   * \ Set the one-dimensionalized velocity at a marker. = \f$ \sqrt (  \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
    */
-  virtual void SetOneD_FluxAvgVelocity(su2double VelocityRef);
+  virtual void SetOneD_AvgVelocity(su2double Velocity1D);
   
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA )} \f$
+   * \ Get the one-dimensionalized enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA )} \f$
    */
-  virtual su2double GetOneD_FluxAvgEntalpy(void);
+  virtual su2double GetOneD_AvgEnthalpy(void);
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA ) }\f$
+   * \ Set the one-dimensionalized enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA ) }\f$
    */
-  virtual void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
+  virtual void SetOneD_AvgEnthalpy(su2double Enthalpy1D);
 
   /*!
    * \brief A virtual member.
@@ -3322,6 +3328,30 @@ public:
    */
   virtual void LoadRestart(CGeometry **geometry, CSolver ***solver,
                            CConfig *config, int val_iter, bool val_update_geo);
+
+  /*!
+   * \brief Read a native SU2 restart file in ASCII format.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, string val_filename);
+
+  /*!
+   * \brief Read a native SU2 restart file in binary format.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, string val_filename);
+
+  /*!
+   * \brief Read the metadata from a native SU2 restart file (ASCII or binary).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, string val_filename);
 
   /*!
    * \brief A virtual member.
@@ -3803,11 +3833,11 @@ protected:
   OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
   OneD_Mach, /*!< \brief area average Mach evaluated at an exit */
   OneD_Temp, /*!< \brief area average Temperature evaluated at an exit */
-  OneD_PressureRef, /*!< \brief area average Pressure evaluated at an exit */
+  OneD_Pressure1D, /*!< \brief area average Pressure evaluated at an exit */
   OneD_MassFlowRate, /*!< \brief Mass flow rate at an exit */
-  OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
-  OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
-  OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
+  OneD_Density1D, /*!< \brief one-dimensionalized density evaluated at an exit */
+  OneD_Enthalpy1D, /*!< \brief one-dimensionalized enthalpy evaluated at an exit */
+  OneD_Velocity1D, /*!< \brief one-dimensionalized velocity evaluated at an exit */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   AoA_Prev, /*!< \brief Old value of the AoA for fixed lift mode. */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
@@ -4342,10 +4372,11 @@ public:
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] numerics - Description of the numerical method.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
     
   /*!
    * \brief Impose the engine inflow boundary condition.
@@ -5940,44 +5971,44 @@ public:
   void SetOneD_MassFlowRate(su2double MassFlowRate);
   
   /*!
-   * \brief Get the flux averaged pressure at a marker.(same as area averaged pressure)
+   * \brief Get the one-dimensionalized pressure at a marker.(same as area averaged pressure)
    */
-  su2double GetOneD_FluxAvgPress(void);
+  su2double GetOneD_AvgPress(void);
   
   /*!
-   * \brief Set the flux averaged pressure at a marker. (same as area averaged pressure)
+   * \brief Set the one-dimensionalized pressure at a marker. (same as area averaged pressure)
    */
-  void SetOneD_FluxAvgPress(su2double PressureRef);
+  void SetOneD_AvgPress(su2double Pressure1D);
   
   /*!
-   * \brief Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+   * \brief Get the one-dimensionalized density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
    */
-  su2double GetOneD_FluxAvgDensity(void);
+  su2double GetOneD_AvgDensity(void);
   
   /*!
-   * \brief Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+   * \brief Set the one-dimensionalized density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
    */
-  void SetOneD_FluxAvgDensity(su2double DensityRef);
+  void SetOneD_AvgDensity(su2double Density1D);
   
   /*!
-   * \brief Get the flux averaged velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
+   * \brief Get the one-dimensionalized velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
    */
-  su2double GetOneD_FluxAvgVelocity(void);
+  su2double GetOneD_AvgVelocity(void);
   
   /*!
-   * \brief Set the flux averaged velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
+   * \brief Set the one-dimensionalized velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
    */
-  void SetOneD_FluxAvgVelocity(su2double VelocityRef);
+  void SetOneD_AvgVelocity(su2double Velocity1D);
   
   /*!
-   * \brief Get the flux averaged enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
+   * \brief Get the one-dimensionalized enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
    */
-  su2double GetOneD_FluxAvgEntalpy(void);
+  su2double GetOneD_AvgEnthalpy(void);
   
   /*!
-   * \brief Set the flux averaged enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
+   * \brief Set the one-dimensionalized enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
    */
-  void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
+  void SetOneD_AvgEnthalpy(su2double Enthalpy1D);
   
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -6020,7 +6051,7 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-  
+
  /*!
    * \brief Set the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
@@ -8181,7 +8212,8 @@ protected:
   *upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
-  
+  unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
+  *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
 public:
   
   /*!
@@ -8196,6 +8228,7 @@ public:
   
   /*!
    * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
    */
   CTurbSolver(CConfig *config);
   
@@ -8303,6 +8336,23 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
+ /*!
+  * \brief Get the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  */
+  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] component    - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+
 };
 
 /*!
@@ -8476,7 +8526,17 @@ public:
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
-  
+
+  /*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+
   /*!
    * \brief Impose the near-field boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8670,6 +8730,16 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
   
+ /*!
+  * \brief Impose the interface state across sliding meshes.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+
   /*!
    * \brief Get the constants for the SST model.
    * \return A pointer to an array containing a set of constants

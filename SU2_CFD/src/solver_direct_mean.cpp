@@ -163,18 +163,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
-  ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  bool metadata  = config->GetUpdate_Restart_Params();
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  su2double AoA_, AoS_, BCThrust_;
-  string meta_filename;
-  string::size_type position;
-  unsigned long ExtIter_;
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
+  int Unst_RestartIter;
+  unsigned short iZone = config->GetiZone();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  string filename_ = config->GetSolution_FlowFileName();
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -183,101 +184,39 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
-  
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && metadata) {
 
-    meta_filename = "restart.meta";
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
 
-    /*--- Open the restart file, throw an error if this fails. ---*/
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-    restart_file.open(meta_filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no restart metadata file (" << meta_filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
 
-      string text_line;
+    /*--- Modify file name for a dual-time unsteady restart ---*/
 
-      /*--- Space for extra info (if any) ---*/
-
-      while (getline (restart_file, text_line)) {
-
-        /*--- Angle of attack ---*/
-
-        position = text_line.find ("AOA=",0);
-        if (position != string::npos) {
-          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-              cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
-            }
-            config->SetAoA(AoA_ + config->GetAoA_Offset());
-          }
-          else {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-          }
-        }
-
-        /*--- Sideslip angle ---*/
-
-        position = text_line.find ("SIDESLIP_ANGLE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-              cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
-            }
-            config->SetAoS(AoS_ + config->GetAoS_Offset());
-          }
-          else {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoS in the solution file." << endl;
-          }
-        }
-
-        /*--- BCThrust angle ---*/
-
-        position = text_line.find ("INITIAL_BCTHRUST=",0);
-        if (position != string::npos) {
-          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-            config->SetInitial_BCThrust(BCThrust_);
-          }
-          else {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-          }
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
-            config->SetExtIter_OffSet(ExtIter_);
-        }
-        
-      }
-      
-      /*--- Close the restart meta file. ---*/
-      
-      restart_file.close();
-      
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
+
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Read and store the restart metadata. ---*/
+
+    Read_SU2_Restart_Metadata(geometry, config, filename_);
+
   }
 
   /*--- Array initialization ---*/
-  
+
   /*--- Basic array initialization ---*/
 
   CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
@@ -4844,18 +4783,41 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
   unsigned short iVar;
   unsigned long iPoint;
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool rotating_frame = config->GetRotating_Frame();
-  bool axisymmetric   = config->GetAxisymmetric();
-  bool gravity        = (config->GetGravityForce() == YES);
-  bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool windgust       = config->GetWind_Gust();
-  
+  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool rotating_frame   = config->GetRotating_Frame();
+  bool axisymmetric     = config->GetAxisymmetric();
+  bool gravity          = (config->GetGravityForce() == YES);
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool windgust         = config->GetWind_Gust();
+  bool body_force       = config->GetBody_Force();
+
   /*--- Initialize the source residual to zero ---*/
+
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-  
+
+  if (body_force) {
+
+    /*--- Loop over all points ---*/
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Load the conservative variables ---*/
+      numerics->SetConservative(node[iPoint]->GetSolution(),
+                                node[iPoint]->GetSolution());
+
+      /*--- Load the volume of the dual mesh cell ---*/
+      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Compute the rotating frame source residual ---*/
+      numerics->ComputeResidual(Residual, config);
+
+      /*--- Add the source residual to the total ---*/
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+    }
+  }
+
   if (rotating_frame) {
-    
+
     /*--- Loop over all points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
@@ -9889,7 +9851,7 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
       Total_ComboObj+=Weight_ObjFunc*OneD_TotalPress;
       break;
     case AVG_OUTLET_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*OneD_PressureRef;
+      Total_ComboObj+=Weight_ObjFunc*OneD_Pressure1D;
       break;
     case MASS_FLOW_RATE:
       Total_ComboObj+=Weight_ObjFunc*OneD_MassFlowRate;
@@ -12914,14 +12876,15 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
   
 }
 
-void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                          CConfig *config) {
   
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iDim, iVar, iMarker;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
+  bool viscous       = config->GetViscous();
   
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
@@ -12938,6 +12901,8 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
         if (geometry->node[iPoint]->GetDomain()) {
 
+          Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
           for (iVar = 0; iVar < nPrimVar; iVar++) {
             PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
             PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
@@ -12945,7 +12910,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
           /*--- Set primitive variables ---*/
 
-          numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+          conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
           
           if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ) {
           Secondary_i = node[iPoint]->GetSecondary();
@@ -12957,7 +12922,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             Secondary_j[0] = FluidModel->GetdPdrho_e();
             Secondary_j[1] = FluidModel->GetdPde_rho();  
 
-            numerics->SetSecondary(Secondary_i, Secondary_j);
+            conv_numerics->SetSecondary(Secondary_i, Secondary_j);
           }
 
           /*--- Set the normal vector ---*/
@@ -12966,20 +12931,52 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           for (iDim = 0; iDim < nDim; iDim++) 
             Normal[iDim] = -Normal[iDim];
 
-          numerics->SetNormal(Normal);
+          conv_numerics->SetNormal(Normal);
 
           if (grid_movement)
-            numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+            conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
           /*--- Compute the convective residual using an upwind scheme ---*/
 
-          numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
           /*--- Add Residuals and Jacobians ---*/
 
           LinSysRes.AddBlock(iPoint, Residual);
           if (implicit) 
             Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+          if (viscous) {
+
+            PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5);
+            PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6);
+
+            /*--- Set the normal vector and the coordinates ---*/
+
+            visc_numerics->SetNormal(Normal);
+            visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+            /*--- Primitive variables, and gradient ---*/
+
+            visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+            visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+            /*--- Turbulent kinetic energy ---*/
+
+            if (config->GetKind_Turb_Model() == SST)
+              visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
+            /*--- Compute and update residual ---*/
+
+            visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+            LinSysRes.SubtractBlock(iPoint, Residual);
+
+            /*--- Jacobian contribution for implicit integration ---*/
+
+            if (implicit)
+              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          }
         }
       }
     }
@@ -14178,12 +14175,12 @@ void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetr
 }
 
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
-  
+
   /*--- Restart the solution from file information ---*/
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine, dull_val;
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -14192,7 +14189,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
   string UnstExt, text_line;
   ifstream restart_file;
-  
+
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry[iZone]->GetnZone();
 
@@ -14201,104 +14198,97 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
-  
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+  int counter = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Skip coordinates ---*/
   
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
     restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
 
   /*--- Modify file name for an unsteady restart ---*/
-  
+
   if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
-  /*--- Open the restart file, and throw an error if this fails. ---*/
-  
-  restart_file.open(restart_filename.data(), ios::in);
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
-  }
-  
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-  
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
-  
-  /*--- Read all lines in the restart file ---*/
-  
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  /*--- The first line is the header ---*/
-  
-  getline (restart_file, text_line);
-  
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-    
-    getline (restart_file, text_line);
-    
-    istringstream point_line(text_line);
-    
+
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
-    
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
-      
-      iPoint_Local = Global2Local[iPoint_Global];
-      
-      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-      
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
 
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
-      
+
       if (grid_movement && val_update_geo) {
-        
+
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
-        
+
         if (turb_model == SA || turb_model == SA_NEG) {
-          point_line >> dull_val;
+          index++;
         } else if (turb_model == SST) {
-          point_line >> dull_val >> dull_val;
+          index+=2;
         }
-        
+
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
         /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
-        
+
         su2double GridVel[3] = {0.0,0.0,0.0};
         if (!steady_restart) {
-            if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
-            else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+
+          /*--- Rewind the index to retrieve the Coords. ---*/
+          index = counter*Restart_Vars[1];
+          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
+
+          /*--- Move the index forward to get the grid velocities. ---*/
+          index = counter*Restart_Vars[1] + skipVars + nVar;
+          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
           geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
         }
-        
       }
-      
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
     }
 
   }
@@ -14326,20 +14316,16 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 #endif
   }
 
-  /*--- Close the restart file ---*/
-  
-  restart_file.close();
-
   /*--- Communicate the loaded solution on the fine grid before we transfer
-   it down to the coarse levels. We alo call the preprocessing routine 
+   it down to the coarse levels. We alo call the preprocessing routine
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
-  
+
   solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
-  
+
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
@@ -14357,26 +14343,26 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }
-  
+
   /*--- Update the geometry for flows on dynamic meshes ---*/
-  
+
   if (grid_movement && val_update_geo) {
-    
+
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-    
+
     geometry[MESH_0]->Set_MPI_Coord(config);
     geometry[MESH_0]->Set_MPI_GridVel(config);
-    
+
     /*--- Recompute the edges and dual mesh control volumes in the
      domain and on the boundaries. ---*/
-    
+
     geometry[MESH_0]->SetCoord_CG();
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-    
+
     /*--- Update the multigrid structure after setting up the finest grid,
      including computing the grid velocities on the coarser levels. ---*/
-    
+
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       iMeshFine = iMesh-1;
       geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
@@ -14387,7 +14373,13 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   }
   
   delete [] Coord;
-  
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+
 }
 
 void CEulerSolver::SetFreeStream_Solution(CConfig *config) {
@@ -14435,12 +14427,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart    = (config->GetRestart() || config->GetRestart_Flow());
-  bool metadata   = config->GetUpdate_Restart_Params();
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  string meta_filename;
-  su2double AoA_, AoS_, BCThrust_;
-  string::size_type position;
-  unsigned long ExtIter_;
+  int Unst_RestartIter;
+  unsigned short iZone = config->GetiZone();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
@@ -14451,99 +14445,37 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- Check for a restart file to check if there is a change in the angle of attack
+  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && metadata) {
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
 
-    meta_filename = "restart.meta";
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-    /*--- Open the restart file, throw an error if this fails. ---*/
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
 
-    restart_file.open(meta_filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no restart metadata file (" << meta_filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
+    /*--- Modify file name for a dual-time unsteady restart ---*/
 
-      string text_line;
-
-      /*--- Space for extra info (if any) ---*/
-
-      while (getline (restart_file, text_line)) {
-
-        /*--- Angle of attack ---*/
-
-        position = text_line.find ("AOA=",0);
-        if (position != string::npos) {
-          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-              cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
-            }
-            config->SetAoA(AoA_ + config->GetAoA_Offset());
-          }
-          else {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-          }
-        }
-
-        /*--- Sideslip angle ---*/
-
-        position = text_line.find ("SIDESLIP_ANGLE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-              cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
-            }
-            config->SetAoS(AoS_ + config->GetAoS_Offset());
-          }
-          else {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoS in the solution file." << endl;
-          }
-        }
-
-        /*--- BCThrust angle ---*/
-
-        position = text_line.find ("INITIAL_BCTHRUST=",0);
-        if (position != string::npos) {
-          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-            config->SetInitial_BCThrust(BCThrust_);
-          }
-          else {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-          }
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
-            config->SetExtIter_OffSet(ExtIter_);
-        }
-        
-      }
-      
-      /*--- Close the restart metadata file. ---*/
-      
-      restart_file.close();
-      
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
+
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Read and store the restart metadata. ---*/
+
+    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    
   }
 
   /*--- Array initialization ---*/

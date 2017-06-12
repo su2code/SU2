@@ -62,12 +62,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   ifstream restart_file;
   string filename, AdjExt;
   su2double myArea_Monitored, Area, *Normal;
-  su2double dCD_dCL_, dCD_dCM_;
-  string::size_type position;
-  unsigned long ExtIter_;
 
   bool restart  = config->GetRestart();
-  bool metadata = config->GetUpdate_Restart_Params();
 
   bool axisymmetric = config->GetAxisymmetric();
   
@@ -300,65 +296,12 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CAdjEulerVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
 
-  if (restart && (iMesh == MESH_0) && metadata) {
+  /*--- Read the restart metadata. ---*/
 
-    /*--- Restart the solution from file information ---*/
-
-    filename = "restart_adj.meta";
-
-    restart_file.open(filename.data(), ios::in);
-
-    /*--- In case there is no file ---*/
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no adjoint restart metadata file (" << filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
-
-      while (getline (restart_file, text_line)) {
-
-
-        if (config->GetEval_dCD_dCX() == true) {
-
-          /*--- dCD_dCL coefficient ---*/
-
-          position = text_line.find ("DCD_DCL_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
-            config->SetdCD_dCL(dCD_dCL_);
-          }
-
-          /*--- dCD_dCM coefficient ---*/
-
-          position = text_line.find ("DCD_DCM_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
-            config->SetdCD_dCM(dCD_dCM_);
-          }
-
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          config->SetExtIter_OffSet(ExtIter_);
-        }
-
-      }
-      
-      /*--- Close the restart file ---*/
-      
-      restart_file.close();
-      
-    }
-    
+  if (restart && (iMesh == MESH_0)) {
+    mesh_filename = config->GetSolution_AdjFileName();
+    filename      = config->GetObjFunc_Extension(mesh_filename);
+    Read_SU2_Restart_Metadata(geometry, config, filename);
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
@@ -371,8 +314,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   myArea_Monitored = 0.0;
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED ||
-        config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
+    if (config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_OUTLET_PRESSURE) {
 
       Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
@@ -428,8 +370,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
             (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
             (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
-       if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-           (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+       if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+         factor = 1.0/Area_Monitored;
 
        Weight_ObjFunc = Weight_ObjFunc*factor;
        config->SetWeight_ObjFunc(iMarker_Monitoring, Weight_ObjFunc);
@@ -3420,8 +3362,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   (ObjFunc == MASS_FLOW_RATE) )
       factor = 1.0;
 
-    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-       (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)) factor = 1.0/Area_Monitored;
 
   }
 
@@ -5141,25 +5082,18 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Psi_outlet[iVar] = 0.0;
       }
 
-        if (Vn > SoundSpeed) {
-          /*--- Objective-dependent additions to energy term ---*/
-          Vn_Exit = Vn; /* Vn_Exit comes from Reiman conditions in subsonic case*/
-          Vn_rel = Vn_Exit-ProjGridVel;
-          /* Repeated term */
-          a1 = Gamma_Minus_One/(Vn_rel*Vn_rel-SoundSpeed*SoundSpeed);
+      if (Vn > SoundSpeed) {
+        /*--- Objective-dependent additions to energy term ---*/
+        Vn_Exit = Vn; /* Vn_Exit comes from Reiman conditions in subsonic case*/
+        Vn_rel = Vn_Exit-ProjGridVel;
+        /* Repeated term */
+        a1 = Gamma_Minus_One/(Vn_rel*Vn_rel-SoundSpeed*SoundSpeed);
 
-          switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
-          case OUTFLOW_GENERALIZED:
-            velocity_gradient = 0.0;
-            for (iDim=0; iDim<nDim; iDim++) velocity_gradient += UnitNormal[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
-            density_gradient = config->GetCoeff_ObjChainRule(0);
-            pressure_gradient = config->GetCoeff_ObjChainRule(4);
-            Psi_outlet[nDim+1]+=Weight_ObjFunc*(a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density));
-            break;
-          case AVG_TOTAL_PRESSURE:
-            /*--- Total Pressure term. NOTE: this is AREA averaged
-             * Additional terms are added later (as they are common between subsonic,
-             * supersonic equations) ---*/
+        switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
+        case AVG_TOTAL_PRESSURE:
+          /*--- Total Pressure term. NOTE: this is AREA averaged
+           * Additional terms are added later (as they are common between subsonic,
+           * supersonic equations) ---*/
           Velocity2  = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             Velocity2 += Velocity[iDim]*Velocity[iDim];
@@ -5170,12 +5104,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           for (iDim=0; iDim<nDim; iDim++)
             velocity_gradient+=a2*Gamma_Minus_One*Density/(Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
           pressure_gradient = a2*(-Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*pow(Pressure,2.0)))+pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/Gamma_Minus_One));
-            Psi_outlet[nDim+1]+=Weight_ObjFunc*a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
+          Psi_outlet[nDim+1]+=Weight_ObjFunc*a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
           break;
         case AVG_OUTLET_PRESSURE:
           /*Area averaged static pressure*/
           /*--- Note: further terms are NOT added later for this case, only energy term is modified ---*/
-            Psi_outlet[nDim+1]+=Weight_ObjFunc*(a1*Vn_Exit);
+          Psi_outlet[nDim+1]+=Weight_ObjFunc*(a1*Vn_Exit);
           break;
         default:
           break;
@@ -5234,19 +5168,6 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
       case MASS_FLOW_RATE:
         Psi_outlet[0]+=Weight_ObjFunc;
-        break;
-      case OUTFLOW_GENERALIZED:
-        density_gradient = config->GetCoeff_ObjChainRule(0);
-        pressure_gradient = config->GetCoeff_ObjChainRule(4);
-        velocity_gradient = 0.0;    /*Inside the option, this term is $\vec{v} \cdot \frac{dg}{d\vec{v}}$ */
-        for (iDim=0; iDim<nDim; iDim++)
-          velocity_gradient += Velocity[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
-        /*Pressure-fixed version*/
-        Psi_outlet[0]+=Weight_ObjFunc*(density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit);
-        for (iDim=0; iDim<nDim; iDim++) {
-          Psi_outlet[iDim+1]+=Weight_ObjFunc*(config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit);
-
-        }
         break;
       case AVG_TOTAL_PRESSURE:
         /*--- For total pressure objective function. NOTE: this is AREA averaged term---*/
@@ -5864,6 +5785,10 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -5874,63 +5799,41 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
-  /*--- Open the restart file, and throw an error if this fails. ---*/
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  restart_file.open(restart_filename.data(), ios::in);
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no adjoint restart file!! " << restart_filename.data() << "."<< endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
+  /*--- Load data from the restart into correct containers. ---*/
 
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-
-  /*--- Now fill array with the transform values only for local points ---*/
-
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
-
-  /*--- Read all lines in the restart file ---*/
-
+  int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-  /*--- The first line is the header ---*/
-
-  getline (restart_file, text_line);
-
   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-    getline (restart_file, text_line);
-
-    istringstream point_line(text_line);
-
+    
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
-      iPoint_Local = Global2Local[iPoint_Global];
+    if (iPoint_Local > -1) {
 
-      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
 
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
 
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
     }
   }
 
@@ -5956,10 +5859,6 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     MPI_Finalize();
 #endif
   }
-
-  /*--- Close the restart file ---*/
-
-  restart_file.close();
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. We also call the preprocessing routine
@@ -5990,6 +5889,12 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   delete [] Coord;
 
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+
 }
 
 CAdjNSSolver::CAdjNSSolver(void) : CAdjEulerSolver() { }
@@ -5998,11 +5903,8 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
-  su2double dCD_dCL_, dCD_dCM_;
   ifstream restart_file;
   string filename, AdjExt;
-  string::size_type position;
-  unsigned long ExtIter_;
 
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
@@ -6202,69 +6104,18 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CAdjNSVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
 
+  /*--- Read the restart metadata. ---*/
 
-  if (restart && (iMesh == MESH_0))  {
-
-    /*--- Restart the solution from file information ---*/
-
-    filename = "restart_adj.meta";
-
-    restart_file.open(filename.data(), ios::in);
-
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no adjoint restart metadata file (" << filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
-
-      while (getline (restart_file, text_line)) {
-
-        if (config->GetEval_dCD_dCX() ==  true) {
-
-          /*--- dCD_dCL coefficient ---*/
-
-          position = text_line.find ("DCD_DCL_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
-            config->SetdCD_dCL(dCD_dCL_);
-          }
-
-          /*--- dCD_dCM coefficient ---*/
-
-          position = text_line.find ("DCD_DCM_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjointsolution file: " << dCD_dCM_ << " ." << endl;
-            config->SetdCD_dCM(dCD_dCM_);
-          }
-
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          config->SetExtIter_OffSet(ExtIter_);
-        }
-
-      }
-
-      /*--- Close the restart file ---*/
-      restart_file.close();
-      
-    }
+  if (restart && (iMesh == MESH_0)) {
+    mesh_filename = config->GetSolution_AdjFileName();
+    filename      = config->GetObjFunc_Extension(mesh_filename);
+    Read_SU2_Restart_Metadata(geometry, config, filename);
   }
 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
    myArea_Monitored = 0.0;
    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-     if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED ||
-         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
+     if (config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
          config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_OUTLET_PRESSURE) {
 
        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
@@ -6321,8 +6172,8 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
              (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
              (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
-        if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-            (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+        if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+          factor = 1.0/Area_Monitored;
 
         Weight_ObjFunc = Weight_ObjFunc*factor;
         config->SetWeight_ObjFunc(iMarker_Monitoring, Weight_ObjFunc);
@@ -6692,8 +6543,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
         (ObjFunc == MASS_FLOW_RATE))
       factor = 1.0;
 
-    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-        (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+      factor = 1.0/Area_Monitored;
 
   }
 
