@@ -4297,7 +4297,7 @@ void  CSource2phase::ComputeResidual_HeatMassTransfer(su2double S, su2double h, 
 				val_Jacobian_i[iVar][jVar] = 0;
 			}
 		}
-
+		/*
 		for (iDim=0; iDim< nDim; iDim++) {
 			val_Jacobian_i[iDim+1][0] = -S * V_i[iDim + 1] / V_i[1] * Volume;
 			val_Jacobian_i[iDim+1][iDim+1] = S / V_i[1] * Volume;
@@ -4305,7 +4305,10 @@ void  CSource2phase::ComputeResidual_HeatMassTransfer(su2double S, su2double h, 
 
 		val_Jacobian_i[nDim+1][0] = -S * (h + 0.5*q_ij) / V_i[1] * Volume;
 		val_Jacobian_i[nDim+1][nDim+1] = S / V_i[1] * Volume;
+*/
 
 	}
+
+
 
 }

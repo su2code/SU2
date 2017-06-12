@@ -49,7 +49,7 @@ inline void CLiquidModel::SetPsat (su2double T) {}
 inline void CLiquidModel::SetLiquidDensity()    {}
 inline void CLiquidModel::SetTLiquid( su2double T, su2double Rcritical, su2double Radius)  {}
 inline void CLiquidModel::SetLiquidEnthalpy(su2double h_v) {}
-inline void CLiquidModel::SetSurfaceTension(su2double T)   {}
+inline void CLiquidModel::SetSurfaceTension(su2double T, su2double Rdroplet)   {}
 // inline void CLiquidModel::SetRadius(su2double *Two_Phase_Var) {}
 // inline void CLiquidModel::SetRCritical (su2double P, su2double T)  {}
 // inline void CLiquidModel::SetDensity_Mixture (su2double rho, su2double mom3)  {}

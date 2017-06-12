@@ -741,6 +741,7 @@ inline su2double* CNSVariable::GetVorticity(void) { return Vorticity; }
 
 inline su2double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
+
 inline void CNSVariable::SetLaminarViscosity(su2double laminarViscosity) {
   Primitive[nDim+5] = laminarViscosity;
 }

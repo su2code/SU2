@@ -3743,7 +3743,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
   
-  if (viscous) {
+  if (viscous || two_phase != NONE) {
     
     /*--- Constant viscosity model ---*/
     config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
@@ -3762,24 +3762,9 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     
   }
   
-  if (two_phase != NONE) {
 
-	    /*--- Constant viscosity model ---*/
-	    config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
-
-	    /*--- Sutherland's model ---*/
-
-	    config->SetMu_RefND(config->GetMu_RefND()/Viscosity_Ref);
-	    config->SetMu_SND(config->GetMu_SND()/config->GetTemperature_Ref());
-	    config->SetMu_Temperature_RefND(config->GetMu_Temperature_RefND()/config->GetTemperature_Ref());
-
-	    /* constant thermal conductivity model */
-	    config->SetKt_ConstantND(config->GetKt_ConstantND()/Conductivity_Ref);
-
-	    FluidModel->SetLaminarViscosityModel(config);
-	    FluidModel->SetThermalConductivityModel(config);
+  if (two_phase != NONE ) {
 	    FluidModel->SetLiquidPhaseModel(config);
-
   }
 
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
@@ -4384,6 +4369,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
     	node[iPoint]->SetLaminarViscosity(FluidModel->GetLaminarViscosity());
     	node[iPoint]->SetThermalConductivity(FluidModel->GetThermalConductivity());
     }
+
 
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
@@ -10735,7 +10721,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Retrieve the staic pressure for this boundary. ---*/
           Pressure_e = Pressure_i;
-          Pressure_e /= config->GetPressure_Ref();    /// is this ok?
           Density_e = Density_i;
 
           /*--- Compute the boundary state u_e ---*/
@@ -15560,6 +15545,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
     RightSol = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, FluidModel);
     node[iPoint]->SetSecondaryVar(FluidModel);
 
+
     if (!RightSol ) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
@@ -16466,11 +16452,11 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
       /*--- Convective contribution to the residual at the wall ---*/
       
       LinSysRes.AddBlock(iPoint, Res_Conv);
-      
+
       /*--- Viscous contribution to the residual at the wall ---*/
       
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
-      
+
       /*--- Enforce the no-slip boundary condition in a strong way by
        modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
       

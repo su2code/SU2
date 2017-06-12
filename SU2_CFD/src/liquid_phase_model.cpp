@@ -67,7 +67,7 @@ void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2do
 
 	if (Tsat > T) {
 
-		SetSurfaceTension(T);
+		SetSurfaceTension(T, Rdroplet);
 
 		SetTLiquid(T, Rcritical, Rdroplet);
 		SetLiquidDensity();
@@ -99,6 +99,11 @@ void CLiquidModel::SetRCritical(su2double P, su2double T) {
 		Rc = 2.0*sigma / (rho_l * dGibbs);
     }
 
+/*    if (Tsat > T) {
+		dGibbs = P * (Tsat - T) / Tsat;
+		Rc = 2.0*sigma / (rho_l * dGibbs);
+    }
+*/
     else { Rc = 0.0;}
 
 }
@@ -197,12 +202,23 @@ void CWater::SetPsat(su2double T) {
 
 }
 
-void CWater::SetSurfaceTension(su2double T) {
+void CWater::SetSurfaceTension(su2double T, su2double Rdroplet) {
 
     su2double  T_limited = min(T, Tstar);
 
 	sigma =  1.0 - T/Tstar;
 	sigma =  235.8e-3 * (0.375 + 0.625*(1.0-sigma)) * pow(sigma,1.256);
+
+    /*if (T < 373.15) sigma = 0.122 -0.17e-3*T;
+    else sigma = 0.138- 0.212e-3 * T;
+
+
+	sigma = sigma*0.87;
+    */
+
+
+	//if (Rdroplet > 0) sigma = sigma / (1 + 2e-10/Rdroplet);
+
 
 }
 

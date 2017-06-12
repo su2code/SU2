@@ -147,7 +147,7 @@ public:
 
     virtual void SetLiquidEnthalpy(su2double h_v);
 
-    virtual void SetSurfaceTension(su2double T);
+    virtual void SetSurfaceTension(su2double T, su2double Rdroplet);
 
 };
 
@@ -192,7 +192,7 @@ public:
 
   void SetLiquidEnthalpy(su2double h_v);
 
-  void SetSurfaceTension(su2double T);
+  void SetSurfaceTension(su2double T, su2double Rdroplet);
 
   
 };

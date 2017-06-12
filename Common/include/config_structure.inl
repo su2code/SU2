@@ -675,6 +675,8 @@ inline su2double* CConfig::GetCoeff_HeatCapacity(void) { return Coeff_HeatCapaci
 
 inline bool           CConfig::Get_ConstantGamma(void) { return Constant_Gamma; }
 
+inline bool           CConfig::Get_AutoReset_NegativeSol(void) { return AutoReset_NegativeSol; }
+
 inline unsigned short CConfig::GetKind_FreeStreamOption(void) { return Kind_FreeStreamOption; } 
 
 inline unsigned short CConfig::GetKind_InitOption(void) { return Kind_InitOption; }

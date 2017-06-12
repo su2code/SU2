@@ -197,12 +197,12 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
 			}
 		}
 
-/*		if (val_liquid_i[4] > T) {
+		if (val_liquid_i[4] > T) {
 			val_Jacobian_i[1][0] =      Growth_rate* Volume;
 			val_Jacobian_i[2][1] = 2.0* Growth_rate* Volume;
 			val_Jacobian_i[3][2] = 3.0* Growth_rate* Volume;
 		}
-*/
+
 	}
 }
 

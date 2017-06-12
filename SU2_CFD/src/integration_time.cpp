@@ -768,7 +768,15 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       break;
-          
+
+    case RUNTIME_2PHASE_SYS:
+
+          if (solver_container[FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(0) != 0)
+        	  (*monitor) = log10(solver_container[FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(0));
+          else
+        	  (*monitor) = -32;
+
+    break;
   }
   
 }
@@ -789,29 +797,29 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   /*--- Preprocessing ---*/
   
   solver_container[iZone][FinestMesh][SolContainer_Position]->Preprocessing(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh, 0, RunTime_EqSystem, false);
-  
+
   /*--- Set the old solution ---*/
   
   solver_container[iZone][FinestMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][FinestMesh]);
-  
+
   /*--- Time step evaluation ---*/
   
   solver_container[iZone][FinestMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh, 0);
   
   /*--- Space integration ---*/
-  
+
   Space_Integration(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], numerics_container[iZone][FinestMesh][SolContainer_Position],
                     config[iZone], FinestMesh, NO_RK_ITER, RunTime_EqSystem);
-  
+
   /*--- Time integration ---*/
   
   Time_Integration(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], NO_RK_ITER,
                    RunTime_EqSystem, Iteration);
-  
+
   /*--- Postprocessing ---*/
   
   solver_container[iZone][FinestMesh][SolContainer_Position]->Postprocessing(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh);
-  
+
   /*--- Compute adimensional parameters and the convergence monitor ---*/
   
   switch (RunTime_EqSystem) {
@@ -822,7 +830,6 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   }
   
   /*--- Convergence strategy ---*/
-  
   Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
   
   /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/

@@ -83,12 +83,10 @@ void CHeatCapacity_Dimensional::Set_Cv0(su2double T) {
 
     	Cp0 = 0;
 
-    	T_limited = min(T, T_Total);
+    	T_limited = T;//min(T, T_Total);
 
         for (i=0;i<5;i++)
            Cp0 += coeff_Cp0[i] * pow(T_limited, i);
-
-        cout << coeff_Cp0[0] << coeff_Cp0[1] << coeff_Cp0[2] << coeff_Cp0[3] << coeff_Cp0[4] << endl;
     }
 
     Cv0 = Cp0 - Gas_Constant;

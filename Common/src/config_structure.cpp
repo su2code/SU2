@@ -590,8 +590,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief GAMMA_VALUE  \n DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
 
-  /*!\brief GAMMA_VALUE  \n DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) \ingroup Config*/
+  /*!\brief CONSTANT_GAMMA  \n DESCRIPTION: if yes the gas is polytropic (constant gamma) \ingroup Config*/
   addBoolOption("CONSTANT_GAMMA", Constant_Gamma, true);
+
+  /*!\brief AUTORESET_NEGATIVE_SOL  \n DESCRIPTION: if true two phase solutions are forced to be positive \ingroup Config*/
+  addBoolOption("AUTORESET_NEGATIVE_SOL", AutoReset_NegativeSol, true);
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 

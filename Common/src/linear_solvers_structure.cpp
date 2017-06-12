@@ -142,6 +142,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<
   
   if (!Convergence) {
     if (rank == MASTER_NODE)
+    	cout << "linear solver structure" << endl;
       cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
 #ifndef HAVE_MPI
 		exit(EXIT_DIVERGENCE);
@@ -363,7 +364,7 @@ int rank = 0;
   w[0] -= b;
   
   su2double beta = w[0].norm();
-  
+
   if ( (beta < tol*norm0) || (beta < eps) ) {
     
     /*---  System is already solved ---*/

@@ -130,13 +130,13 @@ void CVanDerWaalsGas::SetTDState_Prho (su2double P, su2double rho ) {
 
 void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
 
-    su2double v, T, rho, f, fmid, rtb;
+    su2double v, T, rho, f, fmid, rtb, T_new;
     su2double x1,x2,xmid, dx, fx1, fx2;
-    su2double toll = 1e-5, FACTOR=0.2;
-    unsigned short count=0, NTRY=10, ITMAX=100;
+    su2double toll = 1e-8, FACTOR=0.2, error = 1;
+    unsigned short count=0, NTRY=10, ITMAX=100, count_T = 0;;
     su2double cons_s, cons_h;
 
-    T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
+   T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
     v =exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
     if (Zed<0.9999) {
       x1 = Zed*v;
@@ -210,6 +210,8 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
 //    T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
 //    count++;
 //  }while(abs(dv/v) > toll && count < nmax);
+
+
 }
 
 void CVanDerWaalsGas::SetEnergy_Prho (su2double P, su2double rho ) {
@@ -370,7 +372,7 @@ void CVanDerWaalsGas_Generic::SetTDState_PT (su2double P, su2double T ) {
 
 void CVanDerWaalsGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
-  su2double toll = 1e-5;
+  su2double toll = 1e-9;
   unsigned short count_T=0, ITMAX=1000;
   su2double Temperature_new, error = 1.0;
 
@@ -379,14 +381,14 @@ void CVanDerWaalsGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
   StaticEnergy = e;
   Cv    = Gas_Constant/(Gamma-1);
 
-  Temperature = abs((StaticEnergy + a*Density)/ Cv);
+  Temperature = fabs((StaticEnergy + a*Density)/ Cv);
 
   do{
 	Temperature_new = Temperature;
 
 	HeatCapacity->Set_Cv0 (Temperature_new);
 	Cv = HeatCapacity->Get_Cv0 ();
-	Temperature = abs((StaticEnergy + a*Density)/ Cv);
+	Temperature = fabs((StaticEnergy + a*Density)/ Cv);
 
 	error = abs(Temperature_new-Temperature)/Temperature_new;
 	count_T++;
@@ -429,7 +431,7 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 
     su2double v, T, rho, f, fmid, rtb, T_new, error;
     su2double x1,x2,xmid, dx, fx1, fx2;
-    su2double toll = 1e-5, FACTOR=0.2;
+    su2double toll = 1e-9, FACTOR=0.2;
     unsigned short count=0, count_T = 0, NTRY=100, ITMAX=100;
     su2double cons_s, cons_h;
 
@@ -447,10 +449,13 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 		count_T++;
 	  }while(error >toll && count_T < ITMAX);
 
+	T= T_new;
 
+	HeatCapacity->Set_Cv0 (T);
+	Cv = HeatCapacity->Get_Cv0 ();
+
+	v = exp((s - Cv*log(T)) / Gas_Constant)+ b;
 	rho = 1/v;
-	T= (h+ 2*a/v)/(Cv + Gas_Constant * v/(v-b));
-
 
 	StaticEnergy = T*Cv - a*rho;
 	SetTDState_rhoe(rho, StaticEnergy);
@@ -496,7 +501,7 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
 
   su2double T, rho, cons_P, cons_s, T_new, error, v, Tmid;
   su2double x1,x2, fx1, fx2,f, fmid, T1,T2, rtb, dx, xmid;
-  su2double toll = 1e-5, FACTOR=0.2;
+  su2double toll = 1e-9, FACTOR=0.2;
   unsigned short count=0, count_T = 0, NTRY=10, ITMAX=100;
 
 
@@ -513,6 +518,11 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
 	  error = abs(T - T_new)/T;
 	  count_T++;
 	}while(error >toll && count < ITMAX);
+
+  T = T_new;
+  HeatCapacity->Set_Cv0 (T);
+  Cv = HeatCapacity->Get_Cv0 ();
+  v =  exp((s - Cv*log(T))/Gas_Constant) + b;
 
   SetTDState_rhoT(1/v, T);
 

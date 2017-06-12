@@ -465,6 +465,7 @@ private:
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   bool Constant_Gamma;			/*!< \brief polytropic gas... . */
+  bool AutoReset_NegativeSol;         /*!< \brief constraint on 2phase solver: positive solution . */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -3002,9 +3003,15 @@ public:
    su2double* GetCoeff_HeatCapacity(void);
 
   /*!
-    * \brief Fluid name for heat capacity
+    * \brief constant gamma option for polytropic gas
     */
    bool Get_ConstantGamma(void);
+
+   /*!
+     * \brief constraints solutions to positive sign in 2phase solver
+     */
+    bool Get_AutoReset_NegativeSol(void);
+
 
   /*!
    * \brief free stream option to initialize the solution

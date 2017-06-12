@@ -809,7 +809,7 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
   su2double T, rho, v, cons_P, cons_s, fv, A, atanh, T_new, v_new;
   su2double error = 0, error_v = 0;
   su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
-  su2double toll = 1e-5, FACTOR=0.2;
+  su2double toll = 1e-9, FACTOR=0.2;
   unsigned short count=0, NTRY=10, ITMAX=100, count_T = 0, count_v = 0;
 
   T_new   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );

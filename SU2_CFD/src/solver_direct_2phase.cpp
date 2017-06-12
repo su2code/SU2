@@ -566,6 +566,8 @@ void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
   unsigned short iVar;
   unsigned long iPoint;
 
+  bool autoreset = config->Get_AutoReset_NegativeSol();
+
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
@@ -587,15 +589,16 @@ void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
       AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 
     }
-/*
-    Sol = node[iPoint]->GetSolution();
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-       Sol[iVar] = max(0.0, Sol[iVar]);
+    if (autoreset) {
+		Sol = node[iPoint]->GetSolution();
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+		   Sol[iVar] = max(0.0, Sol[iVar]);
+		}
+
+		node[iPoint]->SetSolution(Sol);
     }
-
-    node[iPoint]->SetSolution(Sol);
-*/
   }
 
   /*--- MPI solution ---*/
@@ -615,11 +618,12 @@ void C2phaseSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
   unsigned long iPoint, total_index;
   su2double Delta, Vol, density_old = 0.0, density = 0.0;
   su2double *Sol;
-  Sol = new su2double [4];
   
+
   bool adjoint = config->GetContinuous_Adjoint();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool autoreset = config->Get_AutoReset_NegativeSol();
   
   /*--- Set maximum residual to zero ---*/
   
@@ -679,25 +683,28 @@ void C2phaseSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
         	for (iVar = 0; iVar < nVar; iVar++) {
         		node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_2phase()*LinSysSol[iPoint*nVar+iVar]);
-
- /*       		if (LinSysRes[iPoint*nVar+iVar] == 0.0)
-        			Sol[iVar] = 0.0;
-        		else
-        			Sol[iVar] = node[iPoint]->GetSolution(iVar);
-*/
         	}
 
-//        	node[iPoint]-> SetSolution(Sol);
+        	if (autoreset) {
+				Sol = node[iPoint]->GetSolution();
+
+				for (iVar = 0; iVar < nVar; iVar++) {
+					Sol[iVar] = max(Sol[iVar], 0.0);
+				}
+
+				node[iPoint]-> SetSolution(Sol);
+        	}
+
        }
   }
   
 
-  delete [] Sol;
+
 
   
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
-  
+
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
   
@@ -1324,8 +1331,8 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
         if (limiter) {
 
-        	Sol_Left  = Two_phase_i[iVar] - Project_Grad_i;
-        	Sol_Right = Two_phase_j[iVar] - Project_Grad_j;
+        	Sol_Left  = max(Two_phase_i[iVar] - Project_Grad_i, 0.0);
+        	Sol_Right = max(Two_phase_j[iVar] - Project_Grad_j, 0.0);
 
         	if (config->GetKind_SlopeLimit_2phase() == MINMOD) {
 
@@ -1360,25 +1367,28 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
         	   Delta_Left = Two_phase_j[iVar]-Two_phase_i[iVar];
 
                Delta = Project_Grad_i*Delta_Left* (2*Project_Grad_i + Delta_Left);
-               Delta = Delta/(4*Project_Grad_i*Project_Grad_i+ Delta_Left*Delta_Left+1e-11);
+               Delta = Delta/(4*Project_Grad_i*Project_Grad_i+ Delta_Left*Delta_Left+1e-30);
 
                Solution_i[iVar] = Two_phase_i[iVar] + config->GetLimiterCoeff_2phase() * Delta;
 
-               Delta = Project_Grad_j*Delta_Left*(-2*Project_Grad_j + Delta_Left);
-               Delta = Delta/(4*Project_Grad_j*Project_Grad_j+Delta_Left*Delta_Left+1e-11);
+               Delta = - Project_Grad_j*Delta_Left*(-2*Project_Grad_j + Delta_Left);
+               Delta = Delta/(4*Project_Grad_j*Project_Grad_j+Delta_Left*Delta_Left+1e-30);
 
-               Solution_j[iVar] = Two_phase_j[iVar] + config->GetLimiterCoeff_2phase() * Delta;
+               Solution_j[iVar] = Two_phase_j[iVar] - config->GetLimiterCoeff_2phase() * Delta;
+
 
         	} else if (config->GetKind_SlopeLimit_2phase() == PUT) {
 
            		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
-           		Delta =  (2* Delta_Left* Delta_Right +1e-15)/(pow(Delta_Left,2) + pow(Delta_Right, 2)+1e-15);
+           		Delta =  (2* Delta_Left* Delta_Right +1e-30)/(pow(Delta_Left,2) + pow(Delta_Right, 2)+1e-30);
+           		Delta = 0.25 * Delta * ( (1-0.33*Delta) * Delta_Right + (1+0.33*Delta) * Delta_Left) ;
         		Solution_i[iVar] = Two_phase_i[iVar] + config->GetLimiterCoeff_2phase() * Delta;
 
         		Delta_Left = Sol_Right-Two_phase_j[iVar]; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
-        		Delta =  (2* Delta_Left* Delta_Right +1e-15)/(pow(Delta_Left,2) + pow(Delta_Right, 2)+1e-15);
+        		Delta =  (2* Delta_Left* Delta_Right +1e-30)/(pow(Delta_Left,2) + pow(Delta_Right, 2)+1e-30);
+        		Delta = 0.25 * Delta * ( (1-0.33*Delta) * Delta_Left + (1+0.33*Delta) * Delta_Right) ;
         		Solution_j[iVar] = Two_phase_j[iVar] - config->GetLimiterCoeff_2phase() * Delta;
 
 
@@ -1417,7 +1427,13 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
           Solution_i[iVar] = Two_phase_i[iVar] + Project_Grad_i;
           Solution_j[iVar] = Two_phase_j[iVar] + Project_Grad_j;
         }
+
+        Solution_i[iVar] = max(Solution_i[iVar], 0.0);
+        Solution_j[iVar] = max(Solution_j[iVar], 0.0);
+
       }
+
+
 
       numerics->Set2phaseVar(Solution_i, Solution_j);
     }
@@ -1527,28 +1543,32 @@ void C2phase_HillSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_
   
   unsigned long iPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  
+/*
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    //--- Check if the node belongs to the domain (i.e, not a halo node) ---
     if (geometry->node[iPoint]->GetDomain()) {
       
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+        }
 
-      /*--- Set the solution values and zero the residual ---*/
-      node[iPoint]->SetSolution_Old(Solution_j);
-      node[iPoint]->SetSolution(Solution_j);
-      LinSysRes.SetBlock_Zero(iPoint);
-      
-      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      //--- Set the solution values and zero the residual ---
+       node[iPoint]->SetSolution_Old(Solution_i);
+       node[iPoint]->SetSolution(Solution_i);
+
+//      LinSysRes.SetBlock_Zero(iPoint);
+
+      //--- Change rows of the Jacobian (includes 1 in the diagonal) ---
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
-      
+
     }
   }
-  
+*/
 }
 
 void C2phase_HillSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
@@ -1556,19 +1576,21 @@ void C2phase_HillSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solve
   
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  
+/*
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    //--- Check if the node belongs to the domain (i.e, not a halo node) ---
     if (geometry->node[iPoint]->GetDomain()) {
+
+      Solution_i = node[iPoint]-> GetSolution();
       
-      /*--- Set the solution values and zero the residual ---*/
-      node[iPoint]->SetSolution_Old(Solution_j);
-      node[iPoint]->SetSolution(Solution_j);
+      //--- Set the solution values and zero the residual ---
+      node[iPoint]->SetSolution_Old(Solution_i);
+      node[iPoint]->SetSolution(Solution_i);
       LinSysRes.SetBlock_Zero(iPoint);
       
-      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      //--- Change rows of the Jacobian (includes 1 in the diagonal) ---
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
@@ -1576,7 +1598,7 @@ void C2phase_HillSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solve
       
     }
   }
-  
+*/
 }
 
 void C2phase_HillSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {

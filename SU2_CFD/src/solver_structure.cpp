@@ -180,14 +180,15 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
 #ifndef HAVE_MPI
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    
+
     if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
+    	cout << "solver structure 1" << endl;
       cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
       exit(EXIT_FAILURE);
     }
 
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
-    
+
   }
   
 #else
@@ -216,8 +217,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++) {
     
     if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
-      
       if (rank == MASTER_NODE)
+    	  cout << "solver structure 2" << endl;
         cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
       
       MPI_Barrier(MPI_COMM_WORLD);
