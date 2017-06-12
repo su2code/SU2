@@ -353,6 +353,7 @@ private:
   unsigned long FSIIter;			/*!< \brief Current Fluid Structure Interaction sub-iteration number. */
   unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
   unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
+  unsigned long CHTWaitIter;    /*!< \brief Number of internal iterations before starting CHT coupling. */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
@@ -478,6 +479,7 @@ private:
   su2double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
   su2double Relaxation_Factor_Turb;		/*!< \brief Relaxation coefficient of the linear solver turbulence. */
   su2double Relaxation_Factor_AdjFlow;		/*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
+  su2double Relaxation_Factor_CHT;    /*!< \brief Relaxation coefficient of the CHT coupling. */
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
   unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
@@ -2522,6 +2524,12 @@ public:
   unsigned long GetIntIter(void);
   
   /*!
+   * \brief Get the number of iterations to wait before starting CHT coupling.
+   * \return Number of internal CHT wait iterations.
+   */
+  unsigned long GetCHTWaitIter(void);
+
+  /*!
    * \brief Get the frequency for writing the solution file.
    * \return It writes the solution file with this frequency.
    */
@@ -3160,6 +3168,12 @@ public:
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
   su2double GetRelaxation_Factor_Turb(void);
+
+  /*!
+   * \brief Get the relaxation coefficient of the CHT coupling.
+   * \return relaxation coefficient of the CHT coupling.
+   */
+  su2double GetRelaxation_Factor_CHT(void);
   
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.

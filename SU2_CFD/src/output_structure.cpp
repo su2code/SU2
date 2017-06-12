@@ -4581,7 +4581,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         if (heat) {
           for (iVar = 0; iVar < nVar_Heat; iVar++) {
-            residual_heat[iVar] = solver_container[val_iZone][MESH_0][HEAT_SOL]->GetRes_RMS(iVar);
+            residual_heat[iVar] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
           }
 
         }

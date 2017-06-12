@@ -1291,8 +1291,12 @@ public:
 
   virtual su2double GetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
 
-  virtual void SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double val_var);
+  virtual void SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var);
   
+  virtual su2double GetInterfaceVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
+
+  virtual void SetInterfaceVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -10539,9 +10543,18 @@ public:
  */
 class CHeatSolver : public CSolver {
 protected:
-  unsigned short nVarFlow, nMarker;
+  unsigned short nVarFlow, nMarker, CurrentMesh;
   su2double *Heat_Flux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux, *Primitive, *Primitive_Flow_i, *Primitive_Flow_j;
-  su2double ***ConjugateVar;
+  su2double ***ConjugateVar, ***InterfaceVar;
+
+  char cstr[200];
+  unsigned long InterfaceOutputCounter;
+  unsigned long InterfaceOutputNext = 10;
+  ofstream FluidInterfaceData_file;
+  ofstream SolidInterfaceData_file;
+  string FluidInterfaceFileName;
+  string SolidInterfaceFileName;
+
 public:
 
   /*!
@@ -10664,9 +10677,15 @@ public:
 
   void BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
 
+  void BC_ConjugateHFBased_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+
   su2double GetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
 
-  void SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double val_var);
+  void SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var);
+
+  su2double GetInterfaceVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
+
+  void SetInterfaceVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var);
 
   void Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 

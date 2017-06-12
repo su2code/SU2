@@ -678,7 +678,11 @@ inline su2double CSolver::GetPressureRatio(unsigned short inMarkerTP) { return 0
 
 inline su2double CSolver::GetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { }
 
-inline void CSolver::SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double val_var) { }
+inline void CSolver::SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
+
+inline su2double CSolver::GetInterfaceVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { }
+
+inline void CSolver::SetInterfaceVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
 
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
                    unsigned short val_marker) { }
@@ -1845,7 +1849,13 @@ inline su2double CHeatSolver::GetTotal_HeatFlux() { return Total_HeatFlux; }
 
 inline su2double CHeatSolver::GetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return ConjugateVar[val_marker][val_vertex][pos_var]; }
 
-inline void CHeatSolver::SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double val_var) { ConjugateVar[val_marker][val_vertex][pos_var] = val_var; }
+inline void CHeatSolver::SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
+  ConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*ConjugateVar[val_marker][val_vertex][pos_var]; }
+
+inline su2double CHeatSolver::GetInterfaceVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return InterfaceVar[val_marker][val_vertex][pos_var]; }
+
+inline void CHeatSolver::SetInterfaceVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
+  InterfaceVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*InterfaceVar[val_marker][val_vertex][pos_var]; }
 
 inline su2double CAdjIncEulerSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 

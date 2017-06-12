@@ -2534,7 +2534,7 @@ void CDriver::Interface_Preprocessing() {
       }
       else if ((heat_target && fluid_donor) || (fluid_target && heat_donor)) {
           nVarTransfer = 0;
-          nVar = 2;
+          nVar = 3;
         transfer_container[donorZone][targetZone] = new CTransfer_ConjugateHeatVars(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << " temperature and heat flux data. " << endl;
       }
@@ -4428,7 +4428,8 @@ CCHTDriver::CCHTDriver(char* confFile,
                                                           val_nZone,
                                                           val_nDim,
                                                           MPICommunicator) {
-  NextTransferIteration = 0;
+
+  NextTransferIteration = config_container[0]->GetCHTWaitIter();
 }
 
 CCHTDriver::~CCHTDriver(void) { }
@@ -4459,8 +4460,8 @@ void CCHTDriver::Run() {
             if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
               Transfer_Data(iZone, jZone);
 
-        cout << "     ---> Transferred temperature and heat flux data between fluid and solid zone successfully <---" << endl;
-        NextTransferIteration+=1000;
+        //cout << "     ---> Transferred temperature and heat flux data between fluid and solid zone successfully <---" << endl;
+        NextTransferIteration+=1;
 
       }
 

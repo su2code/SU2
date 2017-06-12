@@ -50,7 +50,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   
   const bool restart = (config[iZone]->GetRestart() || config[iZone]->GetRestart_Flow());
   const bool startup_multigrid = ((config[iZone]->GetRestart_Flow())     &&
-                                  (RunTime_EqSystem == RUNTIME_FLOW_SYS) &&
+                                  ((RunTime_EqSystem == RUNTIME_FLOW_SYS) || (RunTime_EqSystem == RUNTIME_HEAT_SYS)) &&
                                   (Iteration == 0));
   const bool direct = ((config[iZone]->GetKind_Solver() == EULER)                         ||
                        (config[iZone]->GetKind_Solver() == NAVIER_STOKES)                 ||

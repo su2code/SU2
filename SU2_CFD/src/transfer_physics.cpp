@@ -395,21 +395,27 @@ CTransfer_ConjugateHeatVars::~CTransfer_ConjugateHeatVars(void) {
 void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
                                                 unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  unsigned long PointNormal;
+  unsigned long iPoint, PointNormal;
   unsigned short nDim, iDim;
-  su2double *Coord, *Coord_Normal, *Normal, dist, Twall, dTdn, rho_cp_fluid, rho_cp_solid, thermal_diffusivity, heat_flux_density;
+  su2double *Coord, *Coord_Normal, *Normal, dist, Twall, dTdn, cp_fluid, rho_cp_solid, Prandtl_Lam, Prandtl_Turb,
+      eddy_viscosity, laminar_viscosity, thermal_diffusivity, thermal_conductivity, thermal_conductivityND,
+      heat_flux_density, HFBased_Factor;
 
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
   bool flow = (donor_config->GetKind_Solver() != HEAT_EQUATION);
 
   nDim = donor_geometry->GetnDim();
 
-  rho_cp_fluid = donor_config->GetSpecificHeat_Fluid()*donor_config->GetDensity_FreeStream();
+  cp_fluid = donor_config->GetSpecificHeat_Fluid();
   rho_cp_solid = donor_config->GetSpecificHeat_Solid()*donor_config->GetDensity_Solid();
+
+  Prandtl_Lam = donor_config->GetPrandtl_Lam();
+  Prandtl_Turb = donor_config->GetPrandtl_Turb();
+  laminar_viscosity = donor_config->GetViscosity_FreeStreamND();
 
   /*--- Retrieve temperature solution and set is as the first donor variable ---*/
   Twall = donor_solution->node[Point_Donor]->GetSolution(0);
-  if(!flow) cout << "Following temperature data will be transferred to fluid solver: " << Twall << endl;
+  //if(!flow) cout << "Following temperature data will be transferred to fluid solver: " << Twall << endl;
   Donor_Variable[0] = Twall;
 
   /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) and set it as second donor variable ---*/
@@ -425,16 +431,25 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   dTdn = (Twall - donor_solution->node[PointNormal]->GetSolution(0))/dist;
 
   if (flow) {
-    thermal_diffusivity = (donor_config->GetViscosity_FreeStreamND()/donor_config->GetPrandtl_Lam());
-    heat_flux_density = (thermal_diffusivity*dTdn)*rho_cp_fluid;
-    cout << "Following heat flux density data will be transferred to solid solver: " << heat_flux_density << endl;
+
+    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
+    eddy_viscosity = donor_solution->node[iPoint]->GetEddyViscosity();
+    thermal_conductivityND = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
+    thermal_conductivity = thermal_conductivityND*donor_config->GetViscosity_Ref()*cp_fluid;
+
+    heat_flux_density = thermal_conductivity*dTdn;
+    HFBased_Factor = thermal_conductivity/dist;
+    //cout << "Following HFBased_Factor data will be transferred to solid solver: " << HFBased_Factor << endl;
   }
   else {
     thermal_diffusivity = donor_config->GetThermalDiffusivity_Solid();
     heat_flux_density = (thermal_diffusivity*dTdn)*rho_cp_solid;
+    HFBased_Factor = thermal_diffusivity*rho_cp_solid/dist;
+    //cout << "Following HFBased_Factor data will be transferred to fluid solver: " << HFBased_Factor << endl;
   }
 
   Donor_Variable[1] = heat_flux_density;
+  Donor_Variable[2] = HFBased_Factor;
 }
 
 
@@ -442,7 +457,11 @@ void CTransfer_ConjugateHeatVars::SetTarget_Variable(CSolver *target_solution, C
                           CConfig *target_config, unsigned long Marker_Target,
                           unsigned long Vertex_Target, unsigned long Point_Target) {
 
-  target_solution->SetConjugateVariable(Marker_Target, Vertex_Target, 0, Target_Variable[0]);
+  //target_solution->SetConjugateVariable(Marker_Target, Vertex_Target, 0, target_config->GetRelaxation_Factor_CHT(), Target_Variable[0]);
   //cout << "SetTarget_Variable called with temperature value " << Target_Variable[0] << endl;
-  target_solution->SetConjugateVariable(Marker_Target, Vertex_Target, 1, Target_Variable[1]);
+  //target_solution->SetConjugateVariable(Marker_Target, Vertex_Target, 1, target_config->GetRelaxation_Factor_CHT(), Target_Variable[1]);
+
+  target_solution->SetConjugateVariable(Marker_Target, Vertex_Target, 0, 1.0, Target_Variable[0]);
+  target_solution->SetConjugateVariable(Marker_Target, Vertex_Target, 1, 1.0, Target_Variable[1]);
+  target_solution->SetConjugateVariable(Marker_Target, Vertex_Target, 2, 1.0, Target_Variable[2]);
 }

@@ -263,6 +263,8 @@ inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
 
+inline unsigned long CConfig::GetCHTWaitIter(void) { return CHTWaitIter; }
+
 inline long CConfig::GetDyn_RestartIter(void) { return Dyn_RestartIter; }
 
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
@@ -798,6 +800,8 @@ inline su2double CConfig::GetRelaxation_Factor_Flow(void) { return Relaxation_Fa
 inline su2double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation_Factor_AdjFlow; }
 
 inline su2double CConfig::GetRelaxation_Factor_Turb(void) { return Relaxation_Factor_Turb; }
+
+inline su2double CConfig::GetRelaxation_Factor_CHT(void) { return Relaxation_Factor_CHT; }
 
 inline su2double CConfig::GetRoe_Kappa(void) { return Roe_Kappa; }
 

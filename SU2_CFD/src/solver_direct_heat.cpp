@@ -77,6 +77,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   node = new CVariable*[nPoint];
   nMarker = config->GetnMarker_All();
 
+  CurrentMesh = iMesh;
   /*--- Define some auxiliar vector related with the residual ---*/
 
   Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
@@ -156,7 +157,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   /*--- Store the value of the temperature and the heat flux density at the boundaries,
    used for IO with a donor cell ---*/
-  unsigned short nConjVariables = 2;
+  unsigned short nConjVariables = 3;
 
   ConjugateVar = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -170,6 +171,25 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
       ConjugateVar[iMarker][iVertex][0] = 1.0;
     }
   }
+
+  unsigned short nInterfaceVariables = 1;
+
+  InterfaceVar = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    InterfaceVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+      InterfaceVar[iMarker][iVertex] = new su2double [nInterfaceVariables];
+      for (iVar = 0; iVar < nInterfaceVariables ; iVar++) {
+        InterfaceVar[iMarker][iVertex][iVar] = 0.0;
+      }
+      InterfaceVar[iMarker][iVertex][0] = 1.0;
+    }
+  }
+
+  FluidInterfaceFileName.assign("interface_data_fluid.dat");
+  SolidInterfaceFileName.assign("interface_data_solid.dat");
+  InterfaceOutputCounter = 0;
 
   /*--- Non-dimensionalization of heat equation */
   config->SetTemperature_Ref(config->GetTemperature_FreeStream());
