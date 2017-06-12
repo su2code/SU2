@@ -4272,7 +4272,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       thermal = true;
     }
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
+                      (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) ||  (config[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) );
     bool two_phase = ((config[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) || (config[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
                       (config[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES));
     bool adjoint = config[val_iZone]->GetContinuous_Adjoint() || config[val_iZone]->GetDiscrete_Adjoint();
@@ -5210,7 +5210,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout << "-------------------------------------------------------------------------" << endl;
             
             cout << endl << " IntIter" << " ExtIter";
-            cout <<  "     Res[Rho]" << "     Res[RhoE]" << "      Res[N]" << "      Res[y]" << endl;
+            cout <<  "     Res[Rho]" << "     Res[RhoE]" << "       Res[N]" << "         Res[y]" <<  "        CL(Total)" << "      CD(Total)" << endl;
             //            }
             //            else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
             
@@ -5332,6 +5332,69 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             break;
             
+			  case TWO_PHASE_RANS :
+
+            /*--- Visualize the maximum residual ---*/
+            iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
+
+            cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
+
+            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            if (config[val_iZone]->GetSystemMeasurements() == SI) {
+              cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
+              if (nDim == 3) cout << ", " << Coord[2];
+              cout <<   ")." << endl;
+            }
+            else {
+              cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
+              if (nDim == 3) cout << ", " << Coord[2]*12.0;
+              cout <<   ")." << endl;
+            }
+            cout <<"Maximum Omega " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOmega_Max() << ", maximum Strain Rate " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetStrainMag_Max() << "." << endl;
+
+            /*--- Print out the number of non-physical points and reconstructions ---*/
+            if (config[val_iZone]->GetNonphysical_Points() > 0)
+              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+            if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
+              cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
+
+            cout << "-------------------------------------------------------------------------" << endl;
+
+            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+            else cout << endl << " IntIter" << " ExtIter";
+            if (incompressible) cout << "   Res[Press]";
+            else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
+
+            cout << "      Res[N]";
+
+            switch (config[val_iZone]->GetKind_Turb_Model()) {
+              case SA:     cout << "       Res[nu]"; break;
+              case SA_NEG: cout << "       Res[nu]"; break;
+              case SST:     cout << "     Res[kine]" << "     Res[omega]"; break;
+            }
+
+            if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
+            else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
+            else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
+            else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
+            else if (turbo)
+              switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
+                case BLADE:
+                  cout << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
+                  break;
+                case STAGE: case TURBINE:
+                  cout << " TSEfficiency(%)" << " Outlet Pressure" << endl;
+                  break;
+                default:
+                  break;
+              }
+            else if (actuator_disk) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
+            else if (engine) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
+            else cout << "      CL(Total)" << "      CD(Total)" << endl;
+
+            break;
+
           case WAVE_EQUATION :
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
@@ -5547,7 +5610,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0].flush();
           }
           
-    if(DualTime_Iteration || !Unsteady) {
+          if(DualTime_Iteration || !Unsteady) {
           cout.precision(6);
           cout.setf(ios::fixed, ios::floatfield);
           
@@ -5603,7 +5666,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.unsetf(ios_base::floatfield);
           }
           cout << endl;
-    }
+          } break;
+
         case TWO_PHASE_EULER : case TWO_PHASE_NAVIER_STOKES:
 
           if (!DualTime_Iteration) {
@@ -5618,7 +5682,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0].flush();
           }
           
-    if(DualTime_Iteration || !Unsteady) {
+        if(DualTime_Iteration || !Unsteady) {
           cout.precision(6);
           cout.setf(ios::fixed, ios::floatfield);
 
@@ -5635,11 +5699,90 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
           cout.width(14); cout << log10(max(residual_2phase[0], 1e-40));
           cout.width(15); cout << log10(max(residual_2phase[3], 1e-40));
-
+          cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD));
           cout << endl;
-    }
+          }
       break;
+
+
+        case TWO_PHASE_RANS :
+
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << direct_coeff << flow_resid << two_phase_resid << turb_resid;
+            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
+            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
+            if (output_1d) ConvHist_file[0] << oneD_outputs;
+            if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
+            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
+            if (output_comboObj) ConvHist_file[0] << combo_obj;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
+          }
+
+
+          if(DualTime_Iteration || !Unsteady) {
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+
+          if (incompressible) cout.width(13);
+          else  cout.width(14);
+          cout << log10(residual_flow[0]);
+          //          else  cout.width(14),
+          //                 cout << log10(residual_flow[0]),
+          //                 cout.width(14);
+          //          if ( nDim==2 ) cout << log10(residual_flow[3]);
+          //          if ( nDim==3 ) cout << log10(residual_flow[4]);
+
+          cout.width(14); cout << log10(max(residual_2phase[0], 1e-40));
+
+          switch(nVar_Turb) {
+            case 1: cout.width(14);
+            cout << log10(residual_turbulent[0]);  break;
+            case 2: cout.width(14); cout << log10(residual_turbulent[0]);
+              cout.width(15); cout << log10(residual_turbulent[1]); break;
+          }
+
+          if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
+
+          if (rotating_frame && nDim == 3 ) {
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(15); cout << Total_CT; cout.width(15);
+            cout << Total_CQ;
+            cout.unsetf(ios_base::floatfield);
+          }
+          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); cout.width(15);
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout << Total_CNearFieldOF; }
+          else if (turbo) {
+            cout.setf(ios::scientific, ios::floatfield);
+            switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
+              case BLADE:
+                cout.width(15); cout << KineticEnergyLoss[0]*100.0;
+                cout.width(15); cout << abs((MassFlowIn[0] + MassFlowOut[0])/MassFlowIn[0])*100.0;
+                break;
+              case STAGE: case TURBINE:
+                cout.width(15); cout << TotalStaticEfficiency[0]*100.0;
+                cout.width(15); cout << PressureOut[0];
+                break;
+              default:
+                break;
+            }
+            cout.unsetf(ios_base::floatfield);
+          }
+          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
+
+          if (aeroelastic) {
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
+            cout.width(15); cout << aeroelastic_pitch[0];
+            cout.unsetf(ios_base::floatfield);
+          }
+          cout << endl;
+          }
+
           break;
+ //       break;
           
         case WAVE_EQUATION:
           
@@ -10481,6 +10624,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   
   stringstream varname;
   
+  cout << "I am in load_flocal_data " << endl;
+  getchar();
   /*--- Set the non-dimensionalization for coefficients. ---*/
   
   if (grid_movement) {
@@ -11057,7 +11202,6 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   }
 
 
-
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
 
@@ -11256,7 +11400,6 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
       }
     }
   }
-
 
   // add rho_liquid and nucleation rate for 2-phase simulations
 
