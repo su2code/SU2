@@ -778,6 +778,9 @@ inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_containe
 inline void CSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                       CConfig *config) { }
 
+inline void CSolver::BC_ConjugateHFBased_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                      CConfig *config) { }
+
 inline void CSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker) {}
 
 inline void CSolver::MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix) {}

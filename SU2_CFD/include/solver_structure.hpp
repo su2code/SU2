@@ -989,6 +989,16 @@ public:
   virtual void BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_ConjugateHFBased_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+
+  /*!
    * \brief It performs the average value along a boundary.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

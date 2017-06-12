@@ -1105,6 +1105,204 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
   }
 }
 
+
+void CHeatSolver::BC_ConjugateHFBased_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+
+  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned short iDim, iVar, iMarker;
+
+  bool flow          = (config->GetKind_Solver() != HEAT_EQUATION);
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  su2double *Coord_i, *Coord_j;
+  su2double Area, dist_ij, rho_cp, cp_fluid, thermal_conductivityND, thermal_conductivity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb,
+      laminar_viscosity, eddy_viscosity, Tthis, Tconjugate, Tinterface,
+      HF_FactorConjugate, HF_FactorThis, dTdn, HeatFluxDensity, HeatFluxValue;
+
+  su2double *Normal = new su2double[nDim];
+
+  Prandtl_Turb = config->GetPrandtl_Turb();
+  Prandtl_Lam = config->GetPrandtl_Lam();
+  laminar_viscosity = config->GetViscosity_FreeStreamND();
+  su2double rho_cp_solid = config->GetSpecificHeat_Solid()*config->GetDensity_Solid();
+  cp_fluid = config->GetSpecificHeat_Fluid();
+
+  if ((InterfaceOutputCounter == InterfaceOutputNext) && (!flow) ) {
+
+    strcpy(cstr, SolidInterfaceFileName.data());
+    SolidInterfaceData_file.open(cstr, ios::out | std::ios::trunc);
+    SolidInterfaceData_file.precision(15);
+    SolidInterfaceData_file << "TITLE = \"Temperature interface data of solid zone\"" << endl << "VARIABLES = " << "\"x\",\"y\",\"Interface_Temperature\"" << endl;
+    SolidInterfaceData_file.flush();
+  }
+  if ((InterfaceOutputCounter == InterfaceOutputNext) && (flow) ) {
+
+    strcpy(cstr, FluidInterfaceFileName.data());
+    FluidInterfaceData_file.open(cstr, ios::out | std::ios::trunc);
+    FluidInterfaceData_file.precision(15);
+    FluidInterfaceData_file << "TITLE = \"Temperature interface data of fluid zone\"" << endl << "VARIABLES = " << "\"x\",\"y\",\"Interface_Temperature\"" << endl;
+    FluidInterfaceData_file.flush();
+  }
+
+
+  char interface_data[1000];
+
+  /*--- We still have to distinguish between fluid and solid zones due to different thermal conductivities ---*/
+
+  if(flow) {
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (geometry->node[iPoint]->GetDomain()) {
+
+            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt (Area);
+
+            Coord_i = geometry->node[iPoint]->GetCoord();
+            Coord_j = geometry->node[Point_Normal]->GetCoord();
+            dist_ij = 0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+            dist_ij = sqrt(dist_ij);
+
+            eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+            thermal_conductivityND = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
+
+
+            /*--- Calculate the temperature at the interface with the help of conjugates variables ---*/
+
+            Tthis = node[Point_Normal]->GetSolution(0);
+            Tconjugate = GetConjugateVariable(iMarker, iVertex, 0);
+
+            HF_FactorThis = (thermal_conductivityND*config->GetViscosity_Ref()*cp_fluid)/dist_ij;
+
+            HF_FactorConjugate = GetConjugateVariable(iMarker, iVertex, 2);
+
+
+            Tinterface = (Tthis*HF_FactorThis + Tconjugate*HF_FactorConjugate)/(HF_FactorThis + HF_FactorConjugate);
+            //cout << "Calculated interface temperature (fluid): " << Tinterface << " (" << Tthis << "," << HF_FactorThis << ", " << Tconjugate << ", " << HF_FactorConjugate << ")" << endl;
+
+            SetInterfaceVariable(iMarker, iVertex, 0, config->GetRelaxation_Factor_CHT(), Tinterface);
+
+            /*--- Viscous contribution to the residual at the wall ---*/
+
+            dTdn = -(node[Point_Normal]->GetSolution(0) - GetInterfaceVariable(iMarker, iVertex, 0))/dist_ij;
+
+            HeatFluxDensity = thermal_conductivityND*dTdn;
+            HeatFluxValue = HeatFluxDensity * Area;
+
+            Res_Visc[0] = HeatFluxValue;
+
+            if(implicit) {
+
+              Jacobian_i[0][0] = -thermal_conductivity/dist_ij * Area;
+
+            }
+
+            LinSysRes.SubtractBlock(iPoint, Res_Visc);
+            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+            if(nDim == 2 && CurrentMesh == MESH_0 && InterfaceOutputCounter == InterfaceOutputNext) {
+
+              SPRINTF(interface_data,"%14.8e, %14.8e, %14.8e",Coord_i[0],Coord_i[1],Tinterface);
+              FluidInterfaceData_file << interface_data << endl;
+              FluidInterfaceData_file.flush();
+            }
+          }
+        }
+      }
+    }
+  }
+  else {
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (geometry->node[iPoint]->GetDomain()) {
+
+            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt (Area);
+
+            Coord_i = geometry->node[iPoint]->GetCoord();
+            Coord_j = geometry->node[Point_Normal]->GetCoord();
+            dist_ij = 0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+            dist_ij = sqrt(dist_ij);
+
+            thermal_diffusivity = config->GetThermalDiffusivity_Solid();
+            thermal_conductivity = thermal_diffusivity*rho_cp;
+
+            /*--- Calculate the temperature at the interface with the help of conjugates variables ---*/
+
+            Tthis = node[Point_Normal]->GetSolution(0);
+            Tconjugate = GetConjugateVariable(iMarker, iVertex, 0);
+
+            rho_cp = config->GetSpecificHeat_Solid()*config->GetDensity_Solid();
+            HF_FactorThis = thermal_diffusivity*rho_cp/dist_ij;
+            HF_FactorConjugate = GetConjugateVariable(iMarker, iVertex, 2);
+
+            Tinterface = (Tthis*HF_FactorThis + Tconjugate*HF_FactorConjugate)/(HF_FactorThis + HF_FactorConjugate);
+            //cout << "Calculated interface temperature (solid): " << Tinterface << " (" << Tthis << "," << HF_FactorThis << ", " << Tconjugate << ", " << HF_FactorConjugate << ")" << endl;
+
+            SetInterfaceVariable(iMarker, iVertex, 0, config->GetRelaxation_Factor_CHT(), Tinterface);
+
+            /*--- Viscous contribution to the residual at the wall ---*/
+
+            dTdn = -(node[Point_Normal]->GetSolution(0) - GetInterfaceVariable(iMarker, iVertex, 0))/dist_ij;
+
+            HeatFluxDensity = thermal_diffusivity*dTdn;
+            HeatFluxValue = HeatFluxDensity * Area;
+
+            Res_Visc[0] = HeatFluxValue;
+
+            if(implicit) {
+
+              Jacobian_i[0][0] = -thermal_conductivity/dist_ij * Area;
+
+            }
+
+            LinSysRes.SubtractBlock(iPoint, Res_Visc);
+            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+            if(nDim == 2 && CurrentMesh == MESH_0 && InterfaceOutputCounter == InterfaceOutputNext) {
+
+              SPRINTF(interface_data,"%14.8e, %14.8e, %14.8e",Coord_i[0],Coord_i[1],Tinterface);
+              SolidInterfaceData_file << interface_data << endl;
+              SolidInterfaceData_file.flush();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  FluidInterfaceData_file.close();
+  SolidInterfaceData_file.close();
+  if (InterfaceOutputCounter == InterfaceOutputNext) InterfaceOutputNext+=10;
+  InterfaceOutputCounter+=1;
+}
+
+
 void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned long iVertex, iPoint, iPointNormal;
