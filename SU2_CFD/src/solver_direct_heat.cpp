@@ -1607,14 +1607,15 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       else {
         Delta = Vol / node[iPoint]->GetDelta_Time();
         Jacobian.AddVal2Diag(iPoint, Delta);
-        local_Res_TruncError[iVar] = 0.0;
       }
 
     } else {
-
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      local_Res_TruncError[iVar] = 0.0;
+      Jacobian.SetVal2Diag(iPoint, 1.0);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar + iVar;
+        LinSysRes[total_index] = 0.0;
+        local_Res_TruncError[iVar] = 0.0;
+      }
     }
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
