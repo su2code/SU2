@@ -1171,7 +1171,6 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsi
   alfa_2        = constants[9];
   a1            = constants[7];
 
-  if (config->isHybrid_Turb_Model()) HybridParameter_i = new su2double[1];
 }
 
 CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
@@ -1226,6 +1225,13 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
     pk = max(pk,0.0);
     
+#ifndef NDEBUG
+  if (fabs(HybridParameter_i[0] - 1.0) > 1e-7) {
+    cout << "ERROR: Hybrid parameter was " << HybridParameter_i[0] << std::endl;
+    exit(EXIT_FAILURE);
+  }
+#endif
+
     if (config->isHybrid_Turb_Model()) pk = pk*HybridParameter_i[0];
 
     zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);

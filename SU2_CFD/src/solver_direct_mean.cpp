@@ -10482,6 +10482,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
+        /*--- Pass in relevant information from hybrid model ---*/
+
+        if (config->isHybrid_Turb_Model())
+          HybridMediator->SetupResolvedFlowNumerics(geometry, solver_container,
+                                                    visc_numerics, iPoint, iPoint);
+
         /*--- Compute and update viscous residual ---*/
         
         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -16023,9 +16029,9 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
                                      solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     
     /*--- Pass in relevant information from hybrid model ---*/
-
-    HybridMediator->SetupResolvedFlowNumerics(geometry, solver_container,
-                                              numerics, iPoint, jPoint);
+    if (config->isHybrid_Turb_Model())
+      HybridMediator->SetupResolvedFlowNumerics(geometry, solver_container,
+                                                numerics, iPoint, jPoint);
 
     /*--- Compute and update residual ---*/
     

@@ -3429,6 +3429,14 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual,
              Eddy_Viscosity_Anisotropy_j[iDim][jDim]);
       }
     }
+
+#ifndef NDEBUG
+  if (fabs(HybridParameter_i[0] - 1.0) > 1e-7) {
+    cout << "ERROR: Hybrid parameter was " << HybridParameter_i[0] << std::endl;
+    exit(EXIT_FAILURE);
+  }
+#endif
+
   } else {
     Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   }

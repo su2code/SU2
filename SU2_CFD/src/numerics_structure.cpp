@@ -133,6 +133,13 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   l = new su2double [nDim];
   m = new su2double [nDim];
+
+  // XXX: The number of hybrid parameters is hardcoded here.
+  if (config->isHybrid_Turb_Model()) {
+    HybridParameter_i = new su2double[1]; HybridParameter_j = new su2double[1];
+  } else {
+    HybridParameter_i = NULL; HybridParameter_j = NULL;
+  }
 }
 
 CNumerics::~CNumerics(void) {
@@ -178,6 +185,8 @@ CNumerics::~CNumerics(void) {
   if (l != NULL) delete [] l;
   if (m != NULL) delete [] m;
 
+  if (HybridParameter_i != NULL) delete [] HybridParameter_i;
+  if (HybridParameter_j != NULL) delete [] HybridParameter_j;
 }
 
 void CNumerics::GetInviscidFlux(su2double val_density, su2double *val_velocity,

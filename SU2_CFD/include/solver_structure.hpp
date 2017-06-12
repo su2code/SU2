@@ -3898,6 +3898,9 @@ protected:
 
   su2double ***SlidingState;
 
+
+  CAbstract_Hybrid_Mediator *HybridMediator; /*!< \brief A mediator object for a hybrid RANS/LES model. */
+
 public:
   
   
@@ -5988,6 +5991,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief Add a hybrid mediator object to manage the RANS/LES hybrid model
+   * \param[in] hybrid_mediator - The mediator object
+   */
+  void AddHybridMediator(CAbstract_Hybrid_Mediator *hybrid_mediator);
 };
 
   
@@ -7370,7 +7379,6 @@ private:
   AllBound_MaxHF_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
   CHybrid_Visc_Anisotropy* hybrid_anisotropy; /*!< \brief A model for the eddy viscosity anisotropy */
-  CAbstract_Hybrid_Mediator *HybridMediator; /*!< \brief A mediator object for a hybrid RANS/LES model. */
 
 public:
   
@@ -7711,13 +7719,6 @@ public:
    * \return Value of the Omega_Max
    */
   void SetOmega_Max(su2double val_omega_max);
-  
-
-  /*!
-   * \brief Add a hybrid mediator object to manage the RANS/LES hybrid model
-   * \param[in] hybrid_mediator - The mediator object
-   */
-  void AddHybridMediator(CAbstract_Hybrid_Mediator *hybrid_mediator);
 };
 
 /*!
@@ -8888,6 +8889,18 @@ class CHybridSolver: public CSolver {
                       unsigned short val_marker);
 
    /*!
+    * \brief Impose the far-field boundary condition using characteristics.
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] solver_container - Container vector with all the solutions.
+    * \param[in] conv_numerics - Description of the numerical method.
+    * \param[in] visc_numerics - Description of the numerical method.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+    */
+   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                     CConfig *config, unsigned short val_marker);
+
+   /*!
     * \brief Update the solution using an implicit solver.
     * \param[in] geometry - Geometrical definition of the problem.
     * \param[in] solver_container - Container vector with all the solutions.
@@ -9118,6 +9131,8 @@ public:
    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                   CConfig *config, unsigned short val_marker, bool inlet_surface);
+
+
 
   /*!
    * \brief Set the solution using the Freestream values.

@@ -577,14 +577,59 @@ void CHybridConvSolver::Source_Residual(CGeometry *geometry,
 
 void CHybridSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  /*--- Convective fluxes across symmetry plane are equal to zero. ---*/
+  unsigned long iPoint, iVertex;
+  unsigned short iVar;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Get the velocity vector ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution[iVar] = 1.0;
+
+      node[iPoint]->SetSolution_Old(Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
+
+      /*--- includes 1 in the diagonal ---*/
+
+      Jacobian.DeleteValsRowi(iPoint);
+    }
+  }
 
 }
 
 void CHybridSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  /*--- Convective fluxes across euler wall are equal to zero. ---*/
+  unsigned long iPoint, iVertex;
+  unsigned short iVar;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Get the velocity vector ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution[iVar] = 1.0;
+
+      node[iPoint]->SetSolution_Old(Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
+
+      /*--- includes 1 in the diagonal ---*/
+
+      Jacobian.DeleteValsRowi(iPoint);
+    }
+  }
+
 
 }
 
@@ -642,7 +687,8 @@ void CHybridSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
   /*--- Solve or smooth the linear system ---*/
 
   CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  // XXX: Removed for testing purposes
+  // system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   /*--- Update solution (system written in terms of increments) ---*/
 
@@ -650,10 +696,9 @@ void CHybridSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
     /*--- Update and clip hybrid solution ---*/
 
-    switch (config->GetKind_Hybrid_Blending()) {
-    // FIXME: Update with Jacobian information
-
-    }
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        node[iPoint]->AddSolution(0, 1.0);
+      }
   }
 
 
@@ -872,6 +917,8 @@ void CHybridSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
 }
 
 
+
+//FIXME: This needs to be updated...
 void CHybridSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
 
   /*--- Restart the solution from file information ---*/
@@ -1003,7 +1050,9 @@ void CHybridSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 
 }
 
-CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CHybridSolver(), alpha_Inf(1.0) {
+CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config,
+                                     unsigned short iMesh)
+: CHybridSolver(), alpha_Inf(1.0) {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
   su2double Density_Inf, Viscosity_Inf, dull_val;
@@ -1217,8 +1266,8 @@ CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config, unsig
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
         }
 
-        /*--- Instantiate the solution at this node, note that the eddy viscosity should be recomputed ---*/
-        node[iPoint_Local] = new CHybridConvVariable(Solution[0], nDim, nVar, config);
+        /*--- Instantiate the solution at this node  ---*/
+        node[iPoint_Local] = new CHybridConvVariable(alpha_Inf, nDim, nVar, config);
         iPoint_Global_Local++;
       }
 
@@ -1251,7 +1300,7 @@ CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config, unsig
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CHybridConvVariable(Solution[0], nDim, nVar, config);
+      node[iPoint] = new CHybridConvVariable(alpha_Inf, nDim, nVar, config);
     }
 
     /*--- Close the restart file ---*/
@@ -1317,7 +1366,7 @@ void CHybridConvSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_c
       /*--- Get the velocity vector ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = 0.0;
+        Solution[iVar] = alpha_Inf;
 
       node[iPoint]->SetSolution_Old(Solution);
       LinSysRes.SetBlock_Zero(iPoint);
@@ -1343,13 +1392,14 @@ void CHybridConvSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver
     if (geometry->node[iPoint]->GetDomain()) {
 
       /*--- Get the velocity vector ---*/
+
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = 0.0;
+        Solution[iVar] = alpha_Inf;
 
       node[iPoint]->SetSolution_Old(Solution);
       LinSysRes.SetBlock_Zero(iPoint);
 
-      /*--- Includes 1 in the diagonal ---*/
+      /*--- includes 1 in the diagonal ---*/
 
       Jacobian.DeleteValsRowi(iPoint);
     }
@@ -1393,7 +1443,7 @@ void CHybridConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
       /*--- Set hybrid parameter at the wall, and at infinity ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+        Solution_i[iVar] = 1.0; //node[iPoint]->GetSolution(iVar);
       Solution_j[0] = alpha_Inf;
       conv_numerics->SetHybridParameter(Solution_i, Solution_j);
 
@@ -1728,6 +1778,35 @@ void CHybridConvSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_
 
   BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics,
              config,  val_marker, false);
+
+}
+
+
+void CHybridSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                     CConfig *config, unsigned short val_marker) {
+  unsigned long iPoint, iVertex;
+  unsigned short iVar;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Get the velocity vector ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution[iVar] = 1.0;
+
+      node[iPoint]->SetSolution_Old(Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
+
+      /*--- includes 1 in the diagonal ---*/
+
+      Jacobian.DeleteValsRowi(iPoint);
+    }
+  }
 
 }
 

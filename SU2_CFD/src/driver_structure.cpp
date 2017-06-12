@@ -989,7 +989,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
 
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, template_solver, transition, disc_adj;
+      heat, template_solver, transition, disc_adj, hybrid;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1020,6 +1020,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
 
   }
+  hybrid = config->isHybrid_Turb_Model();
 
   /*--- Allocate solution for a template problem ---*/
   if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
@@ -1029,6 +1030,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (ns) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
   if (turbulent) integration_container[TURB_SOL] = new CSingleGridIntegration(config);
   if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
+  if (hybrid) integration_container[HYBRID_SOL] = new CSingleGridIntegration(config);
   if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
@@ -1169,6 +1171,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
   }
+  hybrid = config->isHybrid_Turb_Model();
   
   /*--- Number of variables for the template ---*/
   
@@ -1503,6 +1506,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       exit(EXIT_FAILURE);
     }
 
+		/*--- Check if the combination of hybridization and RANS model are valid ---*/
     // TODO: Add in KE model (plus any other supported models)
     if (hybrid && false) {
       cout << "Specified RANS model has not been implemented for hybrid RANS/LES." << endl;
@@ -1513,11 +1517,11 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
-          // XXX: Allow convection (there's no dummy upwinding convection class)
-          numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Turb, config);
+          // Allow convection (there's no dummy upwinding convection class)
+          numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
           break;
         case CONVECTIVE:
-          numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Turb, config);
+          numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
           break;
         default:
           cout << "Convective numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
@@ -1534,14 +1538,15 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
-          numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
+          numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Hybrid, config);
           break;
         case CONVECTIVE:
-          numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_HybridConv(nDim, nVar_Turb, config);
+          numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_HybridConv(nDim, nVar_Hybrid, config);
           break;
         default:
           cout << "Source numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
       }
+      numerics_container[iMGlevel][HYBRID_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Hybrid, config);
     }
 
     /*--- Definition of the boundary condition method ---*/
@@ -1549,10 +1554,10 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
           // XXX: Allow convection (there's no dummy upwinding convection class)
-          numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Turb, config);
+          numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
           break;
         case CONVECTIVE:
-          numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Turb, config);
+          numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
           break;
         default:
           cout << "Boundary numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);

@@ -546,6 +546,15 @@ void CMeanFlowIteration::Iterate(COutput *output,
     
   }
   
+  if (config_container[val_iZone]->isHybrid_Turb_Model()) {
+
+    /*--- Solve the transport model for the hybrid parameter ---*/
+
+    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_HYBRID_SYS, ExtIter);
+    integration_container[val_iZone][HYBRID_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                       config_container, RUNTIME_HYBRID_SYS, IntIter, val_iZone);
+  }
+
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
   
   if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
@@ -612,6 +621,13 @@ void CMeanFlowIteration::Update(COutput *output,
       integration_container[val_iZone][TRANS_SOL]->SetConvergence(false);
     }
     
+    /*--- Update dual time solver for the hybrid parameter  equation ---*/
+
+    if (config_container[val_iZone]->isHybrid_Turb_Model()) {
+      integration_container[val_iZone][HYBRID_SOL]->SetDualTime_Solver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0][HYBRID_SOL], config_container[val_iZone], MESH_0);
+      integration_container[val_iZone][HYBRID_SOL]->SetConvergence(false);
+    }
+
     /*--- Verify convergence criteria (based on total time) ---*/
     
     Physical_dt = config_container[val_iZone]->GetDelta_UnstTime();
