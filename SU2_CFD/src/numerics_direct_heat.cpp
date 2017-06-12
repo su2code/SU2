@@ -233,3 +233,28 @@ void CAvgGradCorrected_Heat::ComputeResidual(su2double *val_residual, su2double 
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
 }
+
+CSourceHeating::CSourceHeating(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+}
+
+CSourceHeating::~CSourceHeating(void) { }
+
+void CSourceHeating::ComputeResidual(su2double *val_residual, CConfig *config) {
+  unsigned short iVar;
+  su2double external_heat = config->GetExternalHeating();
+  su2double rho_cp = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
+
+  bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
+
+  external_heat = external_heat/rho_cp;
+
+  if(!flow) {
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      val_residual[iVar] = 0.0;
+
+    val_residual[0] = Volume * external_heat;
+  }
+
+}

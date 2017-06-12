@@ -423,10 +423,6 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 }
 
 
-
-
-void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {  }
-
 void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
   su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
@@ -588,6 +584,29 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 }
 
+void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
+
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  /*--- Initialize the source residual to zero ---*/
+  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Load the volume of the dual mesh cell ---*/
+
+    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+    /*--- Compute the rotating frame source residual ---*/
+
+    numerics->ComputeResidual(Residual, config);
+
+    /*--- Add the source residual to the total ---*/
+
+    LinSysRes.AddBlock(iPoint, Residual);
+  }
+}
 
 void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {

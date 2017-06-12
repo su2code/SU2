@@ -4787,6 +4787,38 @@ public:
 };
 
 /*!
+ * \class CSourceHeating
+ * \brief Class for a source term due to external heating.
+ * \ingroup SourceDiscr
+ * \author O. Burghardt
+ * \version 5.0.0 "Raven"
+ */
+class CSourceHeating : public CNumerics {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceHeating(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceHeating(void);
+
+  /*!
+   * \brief Residual of the wind gust source term.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, CConfig *config);
+};
+
+/*!
  * \class CSource_Template
  * \brief Dummy class.
  * \ingroup SourceDiscr

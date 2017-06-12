@@ -379,6 +379,8 @@ inline su2double CConfig::GetSpecificHeat_Solid(void) { return Specific_Heat_Sol
 
 inline su2double CConfig::GetThermalConductivity_Solid(void) { return Thermal_Conductivity_Solid; }
 
+inline su2double CConfig::GetExternalHeating(void) { return External_Heating; }
+
 inline su2double CConfig::GetLength_Ref(void) { return Length_Ref; }
 
 inline su2double CConfig::GetPressure_Ref(void) { return Pressure_Ref; }
