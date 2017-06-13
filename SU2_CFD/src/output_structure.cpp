@@ -2029,6 +2029,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                          ( config->GetKind_Solver() == ADJ_NAVIER_STOKES ) ||
                          ( config->GetKind_Solver() == ADJ_RANS          )   );
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool hybrid = (config->isHybrid_Turb_Model());
   
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
@@ -2060,7 +2061,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   switch (Kind_Solver) {
     case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
-    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if (transition) ThirdIndex=TRANS_SOL; else ThirdIndex = NONE; break;
+    case RANS :
+      FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL;
+      if (transition) ThirdIndex=TRANS_SOL;
+      else if (hybrid) ThirdIndex=HYBRID_SOL;
+      else ThirdIndex = NONE;
+      break;
     case POISSON_EQUATION: FirstIndex = POISSON_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case WAVE_EQUATION: FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case HEAT_EQUATION: FirstIndex = HEAT_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;

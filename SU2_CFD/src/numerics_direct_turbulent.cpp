@@ -1226,9 +1226,11 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     pk = max(pk,0.0);
     
 #ifndef NDEBUG
-  if (fabs(HybridParameter_i[0] - 1.0) > 1e-7) {
-    cout << "ERROR: Hybrid parameter was " << HybridParameter_i[0] << std::endl;
-    exit(EXIT_FAILURE);
+  if (config->isHybrid_Turb_Model()) {
+    if (fabs(HybridParameter_i[0] - 1.0) > 1e-7) {
+      cout << "ERROR: Hybrid parameter was " << HybridParameter_i[0] << std::endl;
+      exit(EXIT_FAILURE);
+    }
   }
 #endif
 

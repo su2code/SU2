@@ -12146,6 +12146,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
+        /*--- Pass in relevant information from hybrid model ---*/
+        if (config->isHybrid_Turb_Model())
+          HybridMediator->SetupResolvedFlowNumerics(geometry, solver_container,
+                                                    visc_numerics, iPoint, iPoint);
+
         /*--- Compute and update residual ---*/
         
         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);

@@ -813,11 +813,8 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][TURB_SOL] = new CTurbSSTSolver(geometry[iMGlevel], config, iMGlevel);
       }
 
-      if (hybrid) solver_container[iMGlevel][TURB_SOL]->AddHybridMediator(hybrid_mediator);
-      solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
-
       if (hybrid) {
+        solver_container[iMGlevel][TURB_SOL]->AddHybridMediator(hybrid_mediator);
         switch (config->GetKind_Hybrid_Blending()) {
           case RANS_ONLY: // Only the source numerics object is different.
             solver_container[iMGlevel][HYBRID_SOL] = new CHybridConvSolver(geometry[iMGlevel], config, iMGlevel);

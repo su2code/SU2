@@ -3456,14 +3456,29 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual,
 
   /*--- Get projected flux tensor ---*/
 
+   su2double* temp_Proj_Flux_Tensor = new su2double[nVar];
   if (hasAnisoEddyViscosity) {
     GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal,
                        Mean_Laminar_Viscosity, Mean_Aniso_Eddy_Viscosity);
+    for (iVar = 0; iVar < nVar; iVar++)
+      temp_Proj_Flux_Tensor[iVar] = Proj_Flux_Tensor[iVar];
   } else {
     GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal,
                        Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   }
-
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      if (fabs(temp_Proj_Flux_Tensor[iVar] - Proj_Flux_Tensor[iVar]) > 1e-7) {
+//        cout << "ERROR! The isotropic flux was not equal to the anisotropic flux!" << endl;
+//        cout << "  At iVar: " << iVar << endl;
+//        cout << "  Isotropic Value:   " << Proj_Flux_Tensor[iVar] << endl;
+//        cout << "  Anisotropic value: " << temp_Proj_Flux_Tensor[iVar] << endl;
+//        cout << "  Difference:        " << temp_Proj_Flux_Tensor[iVar] - Proj_Flux_Tensor[iVar] << endl;
+//        GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal,
+//                           Mean_Laminar_Viscosity, Mean_Aniso_Eddy_Viscosity);
+//        GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal,
+//                           Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+//      }
+//    }
 
   /*--- Update viscous residual ---*/
 

@@ -133,13 +133,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   l = new su2double [nDim];
   m = new su2double [nDim];
-
-  // XXX: The number of hybrid parameters is hardcoded here.
-  if (config->isHybrid_Turb_Model()) {
-    HybridParameter_i = new su2double[1]; HybridParameter_j = new su2double[1];
-  } else {
-    HybridParameter_i = NULL; HybridParameter_j = NULL;
-  }
 }
 
 CNumerics::~CNumerics(void) {
@@ -184,9 +177,6 @@ CNumerics::~CNumerics(void) {
 
   if (l != NULL) delete [] l;
   if (m != NULL) delete [] m;
-
-  if (HybridParameter_i != NULL) delete [] HybridParameter_i;
-  if (HybridParameter_j != NULL) delete [] HybridParameter_j;
 }
 
 void CNumerics::GetInviscidFlux(su2double val_density, su2double *val_velocity,
@@ -1710,7 +1700,7 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
     /*--- Trace of the anisotropic eddy viscosity ---*/
     trace_eddy_viscosity = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-      trace_eddy_viscosity += val_eddy_viscosity[iDim][jDim];
+      trace_eddy_viscosity += val_eddy_viscosity[iDim][iDim];
 
     Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
     heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam
@@ -1780,6 +1770,13 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
       for (iDim = 0; iDim < nDim; iDim++)
         Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
     }
+
+    for (iDim  = 0; iDim < nDim; iDim++)
+      delete [] G[iDim];
+    delete [] G;
+    for (iDim  = 0; iDim < nDim; iDim++)
+      delete [] total_viscosity[iDim];
+    delete [] total_viscosity;
   }
 
 void CNumerics::GetViscousProjFlux(su2double *val_primvar,
