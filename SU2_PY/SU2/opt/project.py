@@ -111,6 +111,21 @@ class Project(object):
         # setup config
         config = copy.deepcopy(config)
         
+        # data_dict creation does not preserve the ordering of the config file.
+        # This section ensures that the order of markers and objectives match 
+        # It is only needed when more than one objective is used.
+        def_objs = config['OPT_OBJECTIVE']
+        if len(def_objs)>1:
+            objectives = def_objs.keys()
+            marker_monitoring = []
+            weights = []
+            for i_obj, this_obj in enumerate(objectives):
+                marker_monitoring+=[def_objs[this_obj]['MARKER']]
+                weights+=[str(def_objs[this_obj]['SCALE'])]
+            config['MARKER_MONITORING'] = marker_monitoring
+            config['OBJECTIVE_WEIGHT'] = ",".join(weights)
+            config['OBJECTIVE_FUNCTION'] = ",".join(objectives)
+        
         # setup state
         if state is None:
             state = su2io.State()
@@ -118,8 +133,7 @@ class Project(object):
             state  = copy.deepcopy(state)
             state  = su2io.State(state)
         state.find_files(config)
-        if 'OUTFLOW_GENERALIZED' in config.OPT_OBJECTIVE:
-            state.FILES['DownstreamFunction'] = 'downstream_function.py'
+
         if 'MESH' not in state.FILES:
             raise Exception , 'Could not find mesh file: %s' % config.MESH_FILENAME
         
@@ -266,7 +280,6 @@ class Project(object):
         """
          # local konfig
         konfig = copy.deepcopy(config)
-        
         # find closest design
         closest,delta = self.closest_design(konfig)
         # found existing design
