@@ -1781,7 +1781,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       Delta = (ln_max/sqrt(3.0)) * f_kh_lim;*/
       
       Delta = (ln_max/sqrt(3.0)) * f_kh;
-      if (f_d < 0.99){
+      if (f_d < 0.999){
         Delta = delta_ddes;
       }
       
