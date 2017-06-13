@@ -123,7 +123,8 @@ private:
   SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
   AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
   SubsonicEngine,			/*!< \brief Engine intake subsonic region. */
-  Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
+  Frozen_Visc_Cont,			/*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
+  Frozen_Visc_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric; /*!< \brief Flag for axisymmetric calculations */
@@ -3646,11 +3647,18 @@ public:
   
   /*!
    * \brief Provides information about the way in which the turbulence will be treated by the
-   *        adjoint method.
+   *        cont. adjoint method.
    * \return <code>FALSE</code> means that the adjoint turbulence equations will be used.
    */
-  bool GetFrozen_Visc(void);
+  bool GetFrozen_Visc_Cont(void);
   
+  /*!
+   * \brief Provides information about the way in which the turbulence will be treated by the
+   *        disc. adjoint method.
+   * \return <code>FALSE</code> means that the adjoint turbulence equations will be used.
+   */
+  bool GetFrozen_Visc_Disc(void);
+
   /*!
    * \brief Viscous limiter mean flow.
    * \return <code>FALSE</code> means no viscous limiter turb equations.
