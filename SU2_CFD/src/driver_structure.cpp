@@ -771,10 +771,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -979,7 +979,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
@@ -1075,7 +1075,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
@@ -1132,7 +1132,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
@@ -1214,7 +1214,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -1897,7 +1897,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -3817,7 +3817,7 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
       solver_container[iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][iMesh], config_container[iZone]);
     }
-    if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc()) {
+    if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
@@ -3855,7 +3855,7 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     //if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
     if (rank == MASTER_NODE ) {
       cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
-      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc()) {
+      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
         cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
       }
     }

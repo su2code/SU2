@@ -614,7 +614,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   unsigned long iPoint, total_index;
   su2double Delta, Vol, density_old = 0.0, density = 0.0;
   
-  bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc());
+  bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
