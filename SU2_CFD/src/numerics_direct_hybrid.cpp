@@ -58,12 +58,12 @@ void CUpwSca_HybridConv::ComputeResidual(su2double *val_residual, su2double **va
 
   q_ij = 0.0;
 
-#ifndef NDEBUG
-  if (HybridParameter_i[0] - 1.0 > 1e-7) {
-    cout << "ERROR: Hybrid parameter was not 1.0!!!" << std::endl;
-    exit(EXIT_FAILURE);
-  }
-#endif
+//#ifndef NDEBUG
+//  if (HybridParameter_i[0] - 1.0 > 1e-7) {
+//    cout << "ERROR: Hybrid parameter was not 1.0!!!" << std::endl;
+//    exit(EXIT_FAILURE);
+//  }
+//#endif
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);

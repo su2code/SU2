@@ -426,7 +426,7 @@ void CDriver::Postprocessing() {
   }
   delete [] integration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIntegration container." << endl;
-  
+
   if (hybrid_mediator != NULL) {
     delete hybrid_mediator;
   }
@@ -976,6 +976,9 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     if (fem) {
       delete solver_container[iMGlevel][FEA_SOL];
     }
+    if (hybrid) {
+      delete solver_container[iMGlevel][HYBRID_SOL];
+    }
     
     delete [] solver_container[iMGlevel];
   }
@@ -1045,7 +1048,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
 void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, template_solver, transition, disc_adj;
+      heat, template_solver, transition, disc_adj, hybrid;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1076,6 +1079,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
 
   }
+  hybrid = config->isHybrid_Turb_Model();
 
   /*--- DeAllocate solution for a template problem ---*/
   if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
@@ -1088,6 +1092,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
   if (wave) delete integration_container[WAVE_SOL];
   if (heat) delete integration_container[HEAT_SOL];
   if (fem) delete integration_container[FEA_SOL];
+  if (hybrid) delete integration_container[HYBRID_SOL];
 
   /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];

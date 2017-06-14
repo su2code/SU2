@@ -479,6 +479,8 @@ CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2doub
       Eddy_Visc_Anisotropy = new su2double*[nDim];
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         Eddy_Visc_Anisotropy[iDim] = new su2double[nDim];
+    } else {
+      Eddy_Visc_Anisotropy = NULL;
     }
 }
 
@@ -495,6 +497,8 @@ CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
       Eddy_Visc_Anisotropy = new su2double*[nDim];
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         Eddy_Visc_Anisotropy[iDim] = new su2double[nDim];
+    } else {
+      Eddy_Visc_Anisotropy = NULL;
     }
 }
 

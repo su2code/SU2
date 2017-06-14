@@ -241,9 +241,12 @@ void CHybrid_Mediator::CalculateApproxStructFunc(su2double** ResolutionTensor,
 
 
 CHybrid_Dummy_Mediator::CHybrid_Dummy_Mediator(int nDim, CConfig* config) : nDim(nDim) {
+  dummy_alpha = new su2double[1];
+  dummy_alpha[0] = 1.0;
 }
 
 CHybrid_Dummy_Mediator::~CHybrid_Dummy_Mediator() {
+  delete [] dummy_alpha;
 }
 
 void CHybrid_Dummy_Mediator::SetupRANSNumerics(CGeometry* geometry,
@@ -254,7 +257,7 @@ void CHybrid_Dummy_Mediator::SetupRANSNumerics(CGeometry* geometry,
   su2double* alpha =
       solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
   // TODO: Check what other source term functions do for Set/Get
-  rans_numerics->SetHybridParameter(alpha, alpha);
+  rans_numerics->SetHybridParameter(dummy_alpha, dummy_alpha);
 }
 
 void CHybrid_Dummy_Mediator::SetupHybridParamSolver(CGeometry* geometry,
@@ -285,7 +288,7 @@ void CHybrid_Dummy_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
 
   su2double* alpha_i = solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
   su2double* alpha_j = solver_container[HYBRID_SOL]->node[jPoint]->GetSolution();
-  visc_numerics->SetHybridParameter(alpha_i, alpha_j);
+  visc_numerics->SetHybridParameter(dummy_alpha, dummy_alpha);
 
   /*--- Pass the stress anisotropy tensor to the resolved flow ---*/
 

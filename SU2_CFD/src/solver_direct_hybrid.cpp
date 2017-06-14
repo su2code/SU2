@@ -577,37 +577,17 @@ void CHybridConvSolver::Source_Residual(CGeometry *geometry,
 
 void CHybridSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iPoint, iVertex;
-  unsigned short iVar;
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-
-    if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- Get the velocity vector ---*/
-
-      for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = 1.0;
-
-      node[iPoint]->SetSolution_Old(Solution);
-      LinSysRes.SetBlock_Zero(iPoint);
-
-      /*--- includes 1 in the diagonal ---*/
-
-      Jacobian.DeleteValsRowi(iPoint);
-    }
-  }
+  /*--- Convective fluxes across symmetry plane are equal to zero. ---*/
 
 }
 
-void CHybridSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
+void CHybridConvSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
   unsigned short iVar;
+
+  /*--- The hybrid parameter should be 1.0 at the wall ---*/
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -687,8 +667,7 @@ void CHybridSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
   /*--- Solve or smooth the linear system ---*/
 
   CSysSolve system;
-  // XXX: Removed for testing purposes
-  // system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   /*--- Update solution (system written in terms of increments) ---*/
 
@@ -697,7 +676,7 @@ void CHybridSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
     /*--- Update and clip hybrid solution ---*/
 
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        node[iPoint]->AddSolution(0, 1.0);
+        node[iPoint]->AddSolution(0, LinSysSol[iPoint]);
       }
   }
 
@@ -1410,10 +1389,10 @@ void CHybridConvSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver
 void CHybridConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
-  unsigned short iVar, iDim;
   su2double *Normal, *V_infty, *V_domain;
+  unsigned short iVar, iDim;
 
-  bool grid_movement  = config->GetGrid_Movement();
+  bool grid_movement = config->GetGrid_Movement();
 
   Normal = new su2double[nDim];
 
@@ -1433,26 +1412,28 @@ void CHybridConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
 
-      /*--- Grid Movement ---*/
-
-      if (grid_movement)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
-      /*--- Set hybrid parameter at the wall, and at infinity ---*/
+      /*--- Set turbulent variable at the wall, and at infinity ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution_i[iVar] = 1.0; //node[iPoint]->GetSolution(iVar);
+        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+
       Solution_j[0] = alpha_Inf;
+
       conv_numerics->SetHybridParameter(Solution_i, Solution_j);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++)
-        Normal[iDim] = -Normal[iDim];
+      Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
+
+      /*--- Grid Movement ---*/
+
+      if (grid_movement)
+      conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
       /*--- Compute residuals and Jacobians ---*/
 
@@ -1781,35 +1762,6 @@ void CHybridConvSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_
 
 }
 
-
-void CHybridSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                     CConfig *config, unsigned short val_marker) {
-  unsigned long iPoint, iVertex;
-  unsigned short iVar;
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-
-    if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- Get the velocity vector ---*/
-
-      for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = 1.0;
-
-      node[iPoint]->SetSolution_Old(Solution);
-      LinSysRes.SetBlock_Zero(iPoint);
-
-      /*--- includes 1 in the diagonal ---*/
-
-      Jacobian.DeleteValsRowi(iPoint);
-    }
-  }
-
-}
-
 void CHybridConvSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                CConfig *config, unsigned short val_marker, bool inlet_surface) {
 
@@ -1932,12 +1884,14 @@ void CHybridConvSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_contain
 
 void CHybridConvSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                           CConfig *config, unsigned short val_marker) {
-  //FIXME: BC_Interface_Boundary not yet finished for hybrid parameter solver
+  cout << "ERROR: Interface boundary conditions are not implemented for the hybrid parameter solver!" << endl;
+  exit(EXIT_FAILURE);
 }
 
 void CHybridConvSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                           CConfig *config, unsigned short val_marker) {
-  //FIXME: BC_Interface_Boundary not yet finished for hybrid parameter solver
+  cout << "ERROR: Near-field boundary conditions are not implemented for the hybrid parameter solver!" << endl;
+  exit(EXIT_FAILURE);
 }
 
 void CHybridConvSolver::SetFreeStream_Solution(CConfig *config) {

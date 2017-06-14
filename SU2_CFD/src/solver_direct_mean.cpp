@@ -1131,6 +1131,12 @@ CEulerSolver::~CEulerSolver(void) {
   unsigned short iVar, iMarker;
   unsigned long iVertex;
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  if (rank == MASTER_NODE) cout << "Entering CEulerSolver Destructor...";
+
   /*--- Array deallocation ---*/
 
   if (CD_Inv != NULL)         delete [] CD_Inv;
@@ -1367,6 +1373,8 @@ CEulerSolver::~CEulerSolver(void) {
   if (NormalMachOut         != NULL) delete [] NormalMachOut;
   if (VelocityOutIs         != NULL) delete [] VelocityOutIs;
   
+  if (rank == MASTER_NODE) cout << "finished!" << endl;
+
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -15555,6 +15563,12 @@ CNSSolver::~CNSSolver(void) {
   unsigned short iMarker, iDim;
   unsigned long iVertex;
   
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  if (rank == MASTER_NODE) cout << "Entering CNSSolver Destructor...";
+
   if (CD_Visc != NULL)          delete [] CD_Visc;
   if (CL_Visc != NULL)          delete [] CL_Visc;
   if (CSF_Visc != NULL)         delete [] CSF_Visc;
@@ -15619,6 +15633,8 @@ CNSSolver::~CNSSolver(void) {
     }
     delete [] Inlet_FlowDir;
   }
+
+  if (rank == MASTER_NODE) cout << "finished!" << endl;
 
   // FIXME: if (hybrid_anisotropy != NULL) delete hybrid_anisotropy;
 }
