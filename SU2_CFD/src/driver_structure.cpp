@@ -429,8 +429,8 @@ void CDriver::Postprocessing() {
 
   if (hybrid_mediator != NULL) {
     delete hybrid_mediator;
+    if (rank == MASTER_NODE) cout << "Deleted Hybrid RANS/LES mediator." << endl;
   }
-  if (rank == MASTER_NODE) cout << "Deleted Hybrid RANS/LES mediator." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     Solver_Postprocessing(solver_container[iZone],

@@ -1996,7 +1996,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Lam = 0, iVar_MachMean = 0,
   iVar_ViscCoeffs = 0, iVar_HeatCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
   iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0,
-  iVar_FEA_Extra = 0, iVar_SensDim = 0;
+  iVar_FEA_Extra = 0, iVar_SensDim = 0, iVar_Eddy_Anisotropy = 0;
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
@@ -2031,7 +2031,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool hybrid = (config->isHybrid_Turb_Model());
   
-  unsigned short iDim;
+  unsigned short iDim, jDim;
   unsigned short nDim = geometry->GetnDim();
   su2double RefAreaCoeff = config->GetRefAreaCoeff();
   su2double Gamma = config->GetGamma();
@@ -2127,6 +2127,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_Eddy = nVar_Total; nVar_Total += 1;
     }
     
+    if (hybrid) {
+      iVar_Eddy_Anisotropy = nVar_Total; nVar_Total += 9;
+    }
+
     /*--- Add Sharp edges to the restart file ---*/
     
     if (config->GetWrt_SharpEdges()) {
@@ -2868,6 +2872,62 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       
     }
     
+    /*--- Communicate the Eddy Viscosity Anisotropy ---*/
+
+    if (hybrid) {
+      iVar = iVar_Eddy_Anisotropy;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+
+          /*--- Loop over this partition to collect the current variable ---*/
+
+          jPoint = 0;
+          for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+            /*--- Check for halos & write only if requested ---*/
+
+            if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+              /*--- Load buffers with the pressure and mach variables. ---*/
+
+              Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscAnisotropy(iDim, jDim);
+
+              jPoint++;
+            }
+          }
+
+          /*--- Gather the data on the master node. ---*/
+
+    #ifdef HAVE_MPI
+          SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    #else
+          for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+    #endif
+
+          /*--- The master node unpacks and sorts this variable by global index ---*/
+
+          if (rank == MASTER_NODE) {
+            jPoint = 0;
+            for (iProcessor = 0; iProcessor < size; iProcessor++) {
+              for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+                /*--- Get global index, then loop over each variable and store ---*/
+
+                iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+                Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+                jPoint++;
+              }
+
+              /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+              jPoint = (iProcessor+1)*nBuffer_Scalar;
+            }
+          }
+          iVar++;
+        }
+      }
+    }
+
     /*--- Communicate the Sharp Edges ---*/
     
     if (config->GetWrt_SharpEdges()) {
@@ -3683,6 +3743,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool grid_movement = config->GetGrid_Movement();
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool hybrid = (config->isHybrid_Turb_Model());
   ofstream restart_file;
   string filename;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
@@ -3784,6 +3845,29 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
         restart_file << "\t\"<greek>m</greek><sub>t</sub>\"";
     }
     
+    if (hybrid) {
+      if (config->GetOutput_FileFormat() == PARAVIEW) {
+        restart_file << "\t\"Eddy_Visc_Anisotropy_11\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_12\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_13\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_21\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_22\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_23\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_31\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_32\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_33\"";
+      } else
+        restart_file << "\t\"a<sub>11</sub>\"";
+        restart_file << "\t\"a<sub>12</sub>\"";
+        restart_file << "\t\"a<sub>13</sub>\"";
+        restart_file << "\t\"a<sub>21</sub>\"";
+        restart_file << "\t\"a<sub>22</sub>\"";
+        restart_file << "\t\"a<sub>23</sub>\"";
+        restart_file << "\t\"a<sub>31</sub>\"";
+        restart_file << "\t\"a<sub>32</sub>\"";
+        restart_file << "\t\"a<sub>33</sub>\"";
+    }
+
     if (config->GetWrt_SharpEdges()) {
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         restart_file << "\t\"Sharp_Edge_Dist\"";
@@ -10230,7 +10314,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
 
 void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
   
-  unsigned short iDim;
+  unsigned short iDim, jDim;
   unsigned short Kind_Solver = config->GetKind_Solver();
   unsigned short nDim = geometry->GetnDim();
   
@@ -10459,26 +10543,29 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       
     }
 
+    if (hybrid) {
+      nVar_Par += 9;
+      Variable_Names.push_back("Eddy_Visc_Aniso_11");
+      Variable_Names.push_back("Eddy_Visc_Aniso_12");
+      Variable_Names.push_back("Eddy_Visc_Aniso_13");
+      Variable_Names.push_back("Eddy_Visc_Aniso_21");
+      Variable_Names.push_back("Eddy_Visc_Aniso_22");
+      Variable_Names.push_back("Eddy_Visc_Aniso_23");
+      Variable_Names.push_back("Eddy_Visc_Aniso_31");
+      Variable_Names.push_back("Eddy_Visc_Aniso_32");
+      Variable_Names.push_back("Eddy_Visc_Aniso_33");
+    }
+
     /*--- Add the distance to the nearest sharp edge if requested. ---*/
     
     if (config->GetWrt_SharpEdges()) {
       nVar_Par += 1;
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
-    
-    /*--- Add the hybrid parameter ---*/
 
-    if (hybrid) {
-      nVar_Par += 1; Variable_Names.push_back("Hybrid_Param");
-    }
+    /*--- Add the hybrid parameters ---*/
 
-    /*--- Add the resolution adequacy ---*/
-
-    // FIXME: Add resolution adequacy
-
-    /*--- Add the viscosity anisotropy ---*/
-
-    // FIXME: Add the viscosity anisotropy
+    // TODO: Add the resolution adequacy
 
     /*--- New variables get registered here before the end of the loop. ---*/
     
@@ -10686,6 +10773,16 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
         }
         
+        if (hybrid) {
+          su2double** eddy_visc_anisotropy = solver[FLOW_SOL]->node[iPoint]->GetEddyViscAnisotropy();
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (jDim = 0; jDim < nDim; jDim++) {
+              Local_Data[jPoint][iVar] = eddy_visc_anisotropy[iDim][jDim];
+              iVar++;
+            }
+          }
+        }
+
         /*--- Load data for the distance to the nearest sharp edge. ---*/
         
         if (config->GetWrt_SharpEdges()) {
@@ -10694,15 +10791,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         /*--- Load the hybrid parameter ---*/
 
-        if (hybrid) {
-          Local_Data[jPoint][iVar] =
-              solver[HYBRID_SOL]->node[iPoint]->GetPrimitive(0);
-          iVar++;
-        }
-
         // FIXME Add resolution adequacy
-
-        // FIXME Add eddy viscosity anisotropy
 
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/

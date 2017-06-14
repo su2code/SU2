@@ -1131,12 +1131,6 @@ CEulerSolver::~CEulerSolver(void) {
   unsigned short iVar, iMarker;
   unsigned long iVertex;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  if (rank == MASTER_NODE) cout << "Entering CEulerSolver Destructor...";
-
   /*--- Array deallocation ---*/
 
   if (CD_Inv != NULL)         delete [] CD_Inv;
@@ -1372,8 +1366,6 @@ CEulerSolver::~CEulerSolver(void) {
   if (NormalMachIn          != NULL) delete [] NormalMachIn;
   if (NormalMachOut         != NULL) delete [] NormalMachOut;
   if (VelocityOutIs         != NULL) delete [] VelocityOutIs;
-  
-  if (rank == MASTER_NODE) cout << "finished!" << endl;
 
 }
 
@@ -14572,6 +14564,8 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
   
+  hybrid_anisotropy = NULL;
+
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
@@ -15562,12 +15556,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 CNSSolver::~CNSSolver(void) {
   unsigned short iMarker, iDim;
   unsigned long iVertex;
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  if (rank == MASTER_NODE) cout << "Entering CNSSolver Destructor...";
 
   if (CD_Visc != NULL)          delete [] CD_Visc;
   if (CL_Visc != NULL)          delete [] CL_Visc;
@@ -15634,9 +15622,7 @@ CNSSolver::~CNSSolver(void) {
     delete [] Inlet_FlowDir;
   }
 
-  if (rank == MASTER_NODE) cout << "finished!" << endl;
-
-  // FIXME: if (hybrid_anisotropy != NULL) delete hybrid_anisotropy;
+  if (hybrid_anisotropy != NULL) delete hybrid_anisotropy;
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {

@@ -838,6 +838,13 @@ public:
    */
   virtual su2double** GetEddyViscAnisotropy(void);
 
+  /**
+   * \brief A virtual member
+   * \return A component of the normalized anisotropy tensor for the eddy viscosity.
+   */
+  virtual su2double GetEddyViscAnisotropy(unsigned short iDim,
+                                          unsigned short jDim);
+
   /*!
    * \brief A virtual member.
    * \return Value of turbulent timescale
@@ -3429,6 +3436,11 @@ public:
    * \brief Get the normalized anisotropy of the eddy viscosity
    */
   su2double** GetEddyViscAnisotropy();
+
+  /*!
+   * \brief Get a component of the normalized anisotropy of the eddy viscosity
+   */
+  su2double GetEddyViscAnisotropy(unsigned short iDim, unsigned short jDim);
 
   /*!
    * \brief Get the specific heat at constant P of the flow.

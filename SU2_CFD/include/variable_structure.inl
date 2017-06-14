@@ -259,6 +259,11 @@ inline su2double CVariable::GetResolutionAdequacy(void) {return 1; }
 
 inline su2double** CVariable::GetEddyViscAnisotropy(void) { return NULL; }
 
+inline su2double CVariable::GetEddyViscAnisotropy(unsigned short iDim,
+                                                  unsigned short jDim) {
+  return (iDim == jDim);
+}
+
 inline void CVariable::SetGammaEff(void) { }
 
 inline void CVariable::SetGammaSep(su2double gamma_sep) { }
@@ -1198,4 +1203,11 @@ inline void CNSVariable::SetEddyViscAnisotropy(su2double** val_anisotropy) {
         Eddy_Visc_Anisotropy[iDim][jDim] = val_anisotropy[iDim][jDim];
 }
 
-inline su2double** CNSVariable::GetEddyViscAnisotropy() { return Eddy_Visc_Anisotropy; }
+inline su2double** CNSVariable::GetEddyViscAnisotropy() {
+  return Eddy_Visc_Anisotropy;
+}
+
+inline su2double CNSVariable::GetEddyViscAnisotropy(unsigned short iDim,
+                                                    unsigned short jDim) {
+  return Eddy_Visc_Anisotropy[iDim][jDim];
+}

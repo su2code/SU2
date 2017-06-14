@@ -50,6 +50,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   bool adjoint = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool hybrid = config->isHybrid_Turb_Model();
 
   char cstr[200], buffer[50];
   string filename, fieldname;
@@ -694,6 +695,26 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     }
     
+    if (hybrid) {
+      Paraview_File << "\nTENSORS Eddy_Viscosity_Anisotropy float\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (!surf_sol || LocalIndex[iPoint+1] != 0) {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          for (int iDim = 0; iDim < 3; iDim++) {
+            for (int jDim = 0; jDim < 3; jDim++) {
+              Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+              VarCounter++;
+            }
+            Paraview_File << endl;
+          }
+          Paraview_File << endl;
+          VarCounter -= 9;
+        }
+      }
+      VarCounter += 9;
+    }
+
     if (( Kind_Solver == ADJ_EULER         ) ||
         ( Kind_Solver == ADJ_NAVIER_STOKES ) ||
         ( Kind_Solver == ADJ_RANS          ) ||
@@ -913,7 +934,10 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   Paraview_File.close();
   
-  if (surf_sol) delete [] LocalIndex;
+  if (surf_sol) {
+    delete [] LocalIndex;
+    delete [] SurfacePoint;
+  }
   
 }
 

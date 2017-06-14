@@ -44,7 +44,6 @@ CPrimalGrid::CPrimalGrid(void) {
 	Coord_FaceElems_CG = NULL;
   GlobalIndex = 0;
 	ResolutionTensor = NULL;
-  
 }
 
 CPrimalGrid::~CPrimalGrid() {
@@ -52,8 +51,6 @@ CPrimalGrid::~CPrimalGrid() {
 	if (Nodes != NULL) delete[] Nodes;
 	if (Coord_CG != NULL) delete[] Coord_CG;
   if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
-  if (ResolutionTensor != NULL) delete[] ResolutionTensor;
-   
 }
 
 void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
@@ -626,6 +623,8 @@ CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
 	for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
 		Neighbor_Elements[iNeighbor_Elements]=-1;
 	}
+
+	ResolutionTensor = NULL;
   
 }
 
@@ -636,6 +635,12 @@ CHexahedron::~CHexahedron() {
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
   
+  if (ResolutionTensor != NULL) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      delete [] ResolutionTensor[iDim];
+    }
+    delete [] ResolutionTensor;
+  }
 }
 
 void CHexahedron::Change_Orientation(void) {
@@ -778,6 +783,8 @@ void CHexahedron::SetResolutionTensor(su2double** val_coord) {
     }
   }
 
+  delete [] paired_faces;
+
 
 };
 
@@ -881,6 +888,7 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
 	unsigned short iDim, iFace, iNeighbor_Elements;
 
 	/*--- Allocate CG coordinates ---*/
+
 	nDim = 3;
 	Coord_CG = new su2double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -893,6 +901,7 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
 	}
 	
 	/*--- Allocate and define face structure of the element ---*/
+
 	Nodes = new unsigned long[nNodes];
 	Nodes[0] = val_point_0;
 	Nodes[1] = val_point_1;
@@ -901,6 +910,7 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
 	Nodes[4] = val_point_4;
 	
 	/*--- Allocate and define neighbor elements to a element ---*/
+
 	nNeighbor_Elements = nFaces;
 	Neighbor_Elements = new long[nNeighbor_Elements];
 	for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {

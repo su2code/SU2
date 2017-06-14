@@ -3456,12 +3456,9 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual,
 
   /*--- Get projected flux tensor ---*/
 
-   su2double* temp_Proj_Flux_Tensor = new su2double[nVar];
   if (hasAnisoEddyViscosity) {
     GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal,
                        Mean_Laminar_Viscosity, Mean_Aniso_Eddy_Viscosity);
-    for (iVar = 0; iVar < nVar; iVar++)
-      temp_Proj_Flux_Tensor[iVar] = Proj_Flux_Tensor[iVar];
   } else {
     GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal,
                        Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);

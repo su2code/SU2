@@ -1680,13 +1680,22 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
 }
 
 void CNumerics::GetViscousProjFlux(su2double *val_primvar,
-               su2double **val_gradprimvar, su2double val_turb_ke,
-               su2double *val_normal,
-               su2double val_laminar_viscosity,
-               su2double **val_eddy_viscosity) {
+                                   su2double **val_gradprimvar,
+                                   su2double val_turb_ke,
+                                   su2double *val_normal,
+                                   su2double val_laminar_viscosity,
+                                   su2double **val_eddy_viscosity) {
     unsigned short iVar, iDim, jDim, kDim, lDim;
     su2double** total_viscosity, **G;
     su2double heat_flux_factor, div_vel, Cp, Density, trace_eddy_viscosity;
+
+    // TODO: Add 2D option, mostly for testing
+    if (nDim == 2) {
+      cout << "ERROR: The anisotropic eddy viscosity has not been implemented for 2D!" << endl;
+      cout << "In file: " << __FILE__ << endl;
+      cout << "At line: " << __LINE__ << endl;
+      exit(EXIT_FAILURE);
+    }
 
     Density = val_primvar[nDim+2];
     total_viscosity = new su2double*[nDim];
