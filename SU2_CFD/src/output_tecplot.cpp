@@ -1371,6 +1371,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
   string buffer, variables;
   stringstream file;
   bool first_zone = true;
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   unsigned short dims = geometry->GetnDim();
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
@@ -1397,7 +1398,11 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
   if (!wrote_base_file) {
     
     file.str(string());
-    buffer = config->GetFlow_FileName();
+
+    if (adjoint)
+      buffer = config->GetAdj_FileName();
+    else buffer = config->GetFlow_FileName();
+
     if (config->GetKind_SU2() == SU2_DOT) {
       buffer = config->GetVolSens_FileName();
     }

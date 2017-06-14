@@ -2319,6 +2319,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		if (rank == MASTER_NODE) {
 
       /*--- External iteration. ---*/
+
       disp = (nVar_Buf*sizeof(int) + var_buf[1]*CGNS_STRING_SIZE*sizeof(char) +
               var_buf[1]*var_buf[2]*sizeof(passivedouble));
       MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);

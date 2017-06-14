@@ -52,12 +52,6 @@ parser.add_option("-s", "--scale", dest="scale", default=1.0,
                   help="scale factor for the bump functions", metavar="SCALE")
 parser.add_option("-d", "--dimension", dest="dimension", default=3.0,
                   help="dimension of the problem", metavar="DIMENSION")
-parser.add_option("-x", "--xMovement", dest="xMove", default=0.0,
-                  help="movement in x direction", metavar="XMOVEMENT")
-parser.add_option("-y", "--yMovement", dest="yMove", default=0.0,
-                  help="movement in y direction", metavar="YMOVEMENT")
-parser.add_option("-z", "--zMovement", dest="zMove", default=0.0,
-                  help="movement in z direction", metavar="ZMOVEMENT")
 
 (options, args)=parser.parse_args()
 
@@ -70,9 +64,6 @@ options.marker = str(options.marker)
 options.axis = str(options.axis)
 options.scale  = float(options.scale)
 options.dim  = int(options.dimension)
-options.xMove = float(options.xMove)
-options.yMove = float(options.yMove)
-options.zMove = float(options.zMove)
 
 if options.dim == 3:
   
@@ -120,7 +111,7 @@ if options.dim == 3:
       for iIndex in range(options.iOrder):
         iVariable = iVariable + 1
         dvList = dvList + "( 7, " + str(options.scale) + " | " + options.marker + " | "
-        dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", " + str(kIndex) + ", " + str(options.xMove) +", " + str(options.yMove) + ", " + str(options.zMove) + " )"
+        dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", " + str(kIndex) + ", 0.0, 0.0, 1.0 )"
         if iVariable < (options.iOrder*(options.jOrder)*options.kOrder):
           dvList = dvList + "; "
 

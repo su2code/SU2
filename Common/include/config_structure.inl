@@ -1338,6 +1338,8 @@ inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
 inline bool CConfig::GetWrt_Limiters(void) { return Wrt_Limiters; }
 
+inline bool CConfig::GetWrt_Surface(void) { return Wrt_Surface; }
+
 inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }

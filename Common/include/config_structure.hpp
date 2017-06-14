@@ -667,6 +667,7 @@ private:
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
   Wrt_Residuals,              /*!< \brief Write residuals to solution file */
+  Wrt_Surface,                /*!< \brief Write solution at each surface */
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
@@ -2592,6 +2593,13 @@ public:
    */
   bool GetWrt_Limiters(void);
   
+
+  /*!
+   * \brief Write solution at each surface.
+   * \return <code>TRUE</code> means that the solution at each surface will be written.
+   */
+  bool GetWrt_Surface(void);
+
   /*!
    * \brief Get information about writing residuals to volume solution file.
    * \return <code>TRUE</code> means that residuals will be written to the solution file.

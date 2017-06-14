@@ -3974,7 +3974,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool output_1d = config->GetWrt_1D_Output();
   bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
   bool output_comboObj = (config->GetnObj() > 1);
-  bool output_per_surface = (config->GetnMarker_Monitoring() > 1);
+  bool output_per_surface = config->GetWrt_Surface();
   
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -4251,7 +4251,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool turbo = config[val_iZone]->GetBoolTurboPerf();
     string inMarker_Tag, outMarker_Tag;
     
-    bool output_per_surface = (config[val_iZone]->GetnMarker_Monitoring() > 1);
+    bool output_per_surface = config[val_iZone]->GetWrt_Surface();
     
 
     unsigned short direct_diff = config[val_iZone]->GetDirectDiff();
@@ -5804,10 +5804,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
   bool grid_movement      = config[val_iZone]->GetGrid_Movement();
   bool gravity            = config[val_iZone]->GetGravityForce();
   bool turbulent          = config[val_iZone]->GetKind_Solver() == RANS;
-	unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
-	unsigned short Kind_Regime = config[val_iZone]->GetKind_Regime();
-	unsigned short Kind_Turb_Model = config[val_iZone]->GetKind_Turb_Model();
-	unsigned short Ref_NonDim = config[val_iZone]->GetRef_NonDim();
+  bool fixed_cl           = config[val_iZone]->GetFixed_CL_Mode();
+  unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
+  unsigned short Kind_Regime = config[val_iZone]->GetKind_Regime();
+  unsigned short Kind_Turb_Model = config[val_iZone]->GetKind_Turb_Model();
+  unsigned short Ref_NonDim = config[val_iZone]->GetRef_NonDim();
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -6202,6 +6203,12 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
           (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS))
       	Breakdown_file << "Reynolds number: " << config[val_iZone]->GetReynolds() <<"."<< "\n";
+    }
+
+    if (fixed_cl) {
+    	Breakdown_file << "Simulation at a cte. CL: " << config[val_iZone]->GetTarget_CL() << ".\n";
+    	Breakdown_file << "Approx. Delta CL / Delta AoA: " << config[val_iZone]->GetdCL_dAlpha() << " (1/deg).\n";
+    	Breakdown_file << "Approx. Delta CD / Delta CL: " << config[val_iZone]->GetdOF_dCL() << ".\n";
     }
 
     if (Ref_NonDim == DIMENSIONAL) { Breakdown_file << "Dimensional simulation." << "\n"; }
@@ -7394,12 +7401,13 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  
+
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-  
+
+
   unsigned short iZone;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -7408,6 +7416,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     
     bool Low_MemoryOutput = config[iZone]->GetLow_MemoryOutput();
     bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
+    if (config[iZone]->GetKind_SU2() == SU2_DOT) Wrt_Vol == false;
     bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     
     /*--- Get the file output format ---*/
