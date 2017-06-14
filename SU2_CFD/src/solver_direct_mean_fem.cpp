@@ -663,11 +663,12 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   /* Check if the exact Jacobian of the spatial discretization must be
      determined. If so, the color of each DOF must be determined. */
   if( config->GetJacobian_Spatial_Discretization_Only() ) {
-    vector<unsigned long> nDOFsPerRank, nNeighborsLocalDOFs, neighborsLocalDOFs;
+    vector<unsigned long>          nDOFsPerRank;
+    vector<vector<unsigned long> > neighborsLocalDOFs;
 
-    DetermineGraphDOFs(config, nDOFsPerRank, nNeighborsLocalDOFs, neighborsLocalDOFs);
-    //DetermineColorDOFs(nDOFsPerRank, nNeighborsLocalDOFs, neighborsLocalDOFs,
-    //                   nGlobalColors, colorLocalDOFs);
+    DetermineGraphDOFs(DGGeometry, config);
+    //ColorGraph(nDOFsPerRank, nonZeroEntriesJacobian,
+    //           nGlobalColors, colorLocalDOFs);
     cout << "Colors of the DOFs must be determined." << endl;
     exit(1);
   }
@@ -1324,6 +1325,333 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     cout << endl;
 
   }
+}
+
+void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
+                                             CConfig        *config) {
+
+  /*-------------------------------------------------------------------*/
+  /* Step 1: Determine the number of owned DOFs per rank in cumulative */
+  /*         storage format.                                           */
+  /*********************************************************************/
+
+  /*--- Gather the number of DOFs from all ranks. */
+  int rank = MASTER_NODE, nRanks = 1;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
+#endif
+
+  nDOFsPerRank.resize(nRanks+1);
+  nDOFsPerRank[0] = 0;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allgather(&nDOFsLocOwned, 1, MPI_UNSIGNED_LONG, &nDOFsPerRank[1], 1,
+                     MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+  nDOFsPerRank[1] = nDOFsLocOwned;
+#endif
+
+  /*--- Put nDOFsPerRank in cumulative storage format. ---*/
+  for(int i=0; i<nRanks; ++i)
+    nDOFsPerRank[i+1] += nDOFsPerRank[i];
+
+  /*-------------------------------------------------------------------*/
+  /* Step 2: Determine the global numbering of the DOFs, especially    */
+  /*         of the externals.                                         */
+  /*********************************************************************/
+
+  /* Determine the global values of the locally owned DOFs. */
+  vector<unsigned long> DOFsGlobalID(nDOFsLocTot);
+  for(unsigned long i=0; i<nDOFsLocOwned; ++i)
+    DOFsGlobalID[i] = nDOFsPerRank[rank] + i;
+
+  /*--- Get the communication information from DG_Geometry. Note that for a
+        FEM DG discretization the communication entities of FEMGeometry contain
+        the volume elements. ---*/
+  const vector<int>                    &ranksSend    = FEMGeometry->GetRanksSend();
+  const vector<int>                    &ranksRecv    = FEMGeometry->GetRanksRecv();
+  const vector<vector<unsigned long> > &elementsSend = FEMGeometry->GetEntitiesSend();
+  const vector<vector<unsigned long> > &elementsRecv = FEMGeometry->GetEntitiesRecv();
+
+#ifdef HAVE_MPI
+
+  /* Parallel implementation. Allocate the memory for the send buffers and
+     loop over the number of ranks to which I have to send data. Note that
+     self communication is not excluded here, because efficiency is not
+     really important for this function. */
+  vector<vector<unsigned long> > sendBuf;
+  sendBuf.resize(ranksSend.size());
+
+  vector<MPI_Request> sendReqs(ranksSend.size());
+
+  for(unsigned i=0; i<ranksSend.size(); ++i) {
+
+    /* Fill the send buffer for this rank. */
+    for(unsigned long j=0; j<elementsSend[i].size(); ++j) {
+      const unsigned long jj = elementsSend[i][j];
+      for(unsigned short k=0; k<volElem[jj].nDOFsSol; ++k) {
+        const unsigned long kk = volElem[jj].offsetDOFsSolLocal + k;
+        sendBuf[i].push_back(DOFsGlobalID[kk]);
+      }
+    }
+
+    /* Send the data using non-blocking sends to avoid deadlock. */
+    int dest = ranksSend[i];
+    SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_UNSIGNED_LONG,
+                   dest, dest, MPI_COMM_WORLD, &sendReqs[i]);
+  }
+
+  /* Create a map of the receive rank  to the index in ranksRecv. */
+  map<int,int> rankToIndRecvBuf;
+  for(int i=0; i<(int) ranksRecv.size(); ++i)
+    rankToIndRecvBuf[ranksRecv[i]] = i;
+
+  /* Loop over the number of ranks from which I receive data. */
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+
+    /* Block until a message arrives and determine the source and size
+       of the message. */
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    /* Allocate the memory for the receive buffer, receive the message
+       and determine the actual index of this rank in ranksRecv. */
+    vector<unsigned long> recvBuf(sizeMess);
+    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                  source, rank, MPI_COMM_WORLD, &status);
+
+    map<int,int>::const_iterator MI = rankToIndRecvBuf.find(source);
+    source = MI->second;
+
+    /* Loop over the receive elements and copy the data for its DOFs in
+       DOFsGlobalID. */
+    unsigned long ii = 0;
+    for(unsigned long j=0; j<elementsRecv[source].size(); ++j) {
+      const unsigned long jj = elementsRecv[source][j];
+      for(unsigned short k=0; k<volElem[jj].nDOFsSol; ++k, ++ii) {
+        const unsigned long kk = volElem[jj].offsetDOFsSolLocal + k;
+        DOFsGlobalID[kk] = recvBuf[ii];
+      }
+    }
+  }
+
+  /* Complete the non-blocking sends. */
+  SU2_MPI::Waitall(ranksSend.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
+
+  /* Wild cards have been used in the communication,
+     so synchronize the ranks to avoid problems.    */
+  MPI_Barrier(MPI_COMM_WORLD);
+
+#else
+
+  /*--- Sequential implementation. Halo's may be present due to periodic
+        boundary conditions. A loop over the receiving ranks is carried out
+        to cover both situations, i.e. halo's present and halo's not present. ---*/
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+    for(unsigned long j=0; j<elementsRecv[i].size(); ++j) {
+      const unsigned long elemR = elementsRecv[i][j];
+      const unsigned long elemS = elementsSend[i][j];
+
+      for(unsigned short k=0; k<volElem[elemR].nDOFsSol; ++k) {
+        const unsigned long kR = volElem[elemR].offsetDOFsSolLocal + k;
+        const unsigned long kS = volElem[elemS].offsetDOFsSolLocal + k;
+
+        DOFsGlobalID[kR] = DOFsGlobalID[kS];
+      }
+    }
+  }
+
+#endif
+
+  /*-------------------------------------------------------------------*/
+  /* Step 3: Determine the entries of the graph for the locally stored */
+  /*         data. Note that this data must also be determined for the */
+  /*         halo DOFs, because the faces between partitions are       */
+  /*         stored only once.                                         */
+  /*********************************************************************/
+
+  /* Allocate the memory for the first index of nonZeroEntriesJacobian.
+     During the construction of this data, also the halo DOFs are needed,
+     hence it is allocate for all DOFs stored on this rank. */
+  nonZeroEntriesJacobian.resize(nDOFsLocTot);
+
+  /* The residual of the DOFs of a volume element depends on all the
+     DOFs of that volume element. Set these dependencies. Only needed
+     for the owned elements. */
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+      const unsigned long jj = volElem[i].offsetDOFsSolLocal + j;
+      for(unsigned short k=0; k<volElem[i].nDOFsSol; ++k) {
+        const unsigned long kk = volElem[i].offsetDOFsSolLocal + k;
+        nonZeroEntriesJacobian[jj].push_back(DOFsGlobalID[kk]);
+      }
+    }
+  }
+
+  /* Loop over the internal matching faces to set the dependencies of the
+     DOFs w.r.t. the DOFs of the neighbors. It is assumed that the residual
+     of the DOFs depends on all the DOFs of the neighboring elements. This
+     is always correct for the Navier-Stokes equations. For the Euler equations
+     in combination with a lumped mass matrix, this is a conservative
+     estimate. However, it is also correct when the full mass matrix is used.
+     Therefore, this assumption is used here. */
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+  for(unsigned long i=0; i<nMatchingInternalFacesWithHaloElem[nTimeLevels]; ++i) {
+
+    /* Easier storage of the elements on both sides. */
+    const unsigned long elem0 = matchingInternalFaces[i].elemID0;
+    const unsigned long elem1 = matchingInternalFaces[i].elemID1;
+
+    /* Double loop over the DOFs of both elements and set the dependencies
+       accordingly. */
+    for(unsigned short j=0; j<volElem[elem0].nDOFsSol; ++j) {
+      const unsigned long jj = volElem[elem0].offsetDOFsSolLocal + j;
+      for(unsigned short k=0; k<volElem[elem1].nDOFsSol; ++k) {
+        const unsigned long kk = volElem[elem1].offsetDOFsSolLocal + k;
+
+        nonZeroEntriesJacobian[jj].push_back(DOFsGlobalID[kk]);
+        nonZeroEntriesJacobian[kk].push_back(DOFsGlobalID[jj]);
+      }
+    }
+  }
+
+  /*-------------------------------------------------------------------*/
+  /* Step 4: Carry out the communication for the halo DOFs, such that  */
+  /*         all the graph information is obtained for the owned DOFs. */
+  /*********************************************************************/
+
+#ifdef HAVE_MPI
+
+  /* Parallel implementation. Allocate the memory for the inverse send buffers
+     and loop over the number of ranks to which I have to send data for the
+     inverse communication pattern. Note that self communication is not
+     excluded here, because efficiency is not really important for this function. */
+  vector<vector<unsigned long> > invSendBuf;
+  invSendBuf.resize(ranksRecv.size());
+
+  vector<MPI_Request> invSendReqs(ranksRecv.size());
+
+  for(unsigned i=0; i<ranksRecv.size(); ++i) {
+
+    /* Fill the inverse send buffer for this rank. */
+    for(unsigned long j=0; j<elementsRecv[i].size(); ++j) {
+      const unsigned long jj = elementsRecv[i][j];
+      for(unsigned short k=0; k<volElem[jj].nDOFsSol; ++k) {
+        const unsigned long kk = volElem[jj].offsetDOFsSolLocal + k;
+        invSendBuf[i].push_back(nonZeroEntriesJacobian[kk].size());
+        invSendBuf[i].insert(invSendBuf[i].end(),
+                             nonZeroEntriesJacobian[kk].begin(),
+                             nonZeroEntriesJacobian[kk].end());
+      }
+    }
+
+    /* Send the data using non-blocking sends to avoid deadlock. */
+    int dest = ranksRecv[i];
+    SU2_MPI::Isend(invSendBuf[i].data(), invSendBuf[i].size(), MPI_UNSIGNED_LONG,
+                   dest, dest+1, MPI_COMM_WORLD, &invSendReqs[i]);
+  }
+
+  /* Create a map of the inverse receive (i.e. the original send) rank
+     to the index in ranksSend. */
+  map<int,int> rankToIndSendBuf;
+  for(int i=0; i<(int) ranksSend.size(); ++i)
+    rankToIndSendBuf[ranksSend[i]] = i;
+
+  /* Loop over the number of ranks from which I receive data
+     in the inverse communication. */
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
+
+    /* Block until a message arrives and determine the source and size
+       of the message. */
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    /* Allocate the memory for the receive buffer, receive the message
+       and determine the actual index of this rank in ranksSend. */
+    vector<unsigned long> recvBuf(sizeMess);
+    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                  source, rank+1, MPI_COMM_WORLD, &status);
+
+    map<int,int>::const_iterator MI = rankToIndSendBuf.find(source);
+    source = MI->second;
+
+    /* Loop over the elements for which the data was just received. */
+    int ii = 0;
+    for(unsigned long j=0; j<elementsSend[source].size(); ++j) {
+      const unsigned long jj = elementsSend[source][j];
+
+      for(unsigned short k=0; k<volElem[jj].nDOFsSol; ++k) {
+        const unsigned long kk       = volElem[jj].offsetDOFsSolLocal + k;
+        const unsigned long nEntries = recvBuf[ii++];
+
+        nonZeroEntriesJacobian[kk].insert(nonZeroEntriesJacobian[kk].end(),
+                                          recvBuf.data() + ii,
+                                          recvBuf.data() + ii + nEntries);
+        ii += nEntries;
+      }
+    }
+  }
+
+  /* Complete the non-blocking sends. */
+  SU2_MPI::Waitall(ranksRecv.size(), invSendReqs.data(), MPI_STATUSES_IGNORE);
+
+  /* Wild cards have been used in the communication,
+     so synchronize the ranks to avoid problems.    */
+  MPI_Barrier(MPI_COMM_WORLD);
+
+#else
+  /*--- Sequential implementation. Just add the data of the halo DOFs
+        to the corresponding owned DOFs. Note that only when periodic
+        boundary conditions are present, something will happen. ---*/
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
+    for(unsigned long j=0; j<elementsSend[i].size(); ++j) {
+      const unsigned long elemR = elementsRecv[i][j];
+      const unsigned long elemS = elementsSend[i][j];
+
+      for(unsigned short k=0; k<volElem[elemR].nDOFsSol; ++k) {
+        const unsigned long kR = volElem[elemR].offsetDOFsSolLocal + k;
+        const unsigned long kS = volElem[elemS].offsetDOFsSolLocal + k;
+
+        nonZeroEntriesJacobian[kS].insert(nonZeroEntriesJacobian[kS].end(),
+                                          nonZeroEntriesJacobian[kR].begin(),
+                                          nonZeroEntriesJacobian[kR].end());
+      }
+    }
+  }
+
+#endif
+
+  /*-------------------------------------------------------------------*/
+  /* Step 5: Sort the entries of nonZeroEntriesJacobian in increasing  */
+  /*         order and remove possible double entries (caused by       */
+  /*         periodic boundaries under certain circumstances). Delete  */
+  /*         the memory of the halo data, because it is not needed     */
+  /*         anymore.                                                  */
+  /*********************************************************************/
+
+  /* Loop over the locally owned DOFs and remove the possible double
+     entries. This is accomplished by first sorting the data followed
+     by the removal of duplicate entries using the unique function. */
+  for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+    sort(nonZeroEntriesJacobian[i].begin(), nonZeroEntriesJacobian[i].end());
+    vector<unsigned long>::iterator lastEntry;
+    lastEntry = unique(nonZeroEntriesJacobian[i].begin(), nonZeroEntriesJacobian[i].end());
+    nonZeroEntriesJacobian[i].erase(lastEntry, nonZeroEntriesJacobian[i].end());
+  }
+
+  /* Delete the memory of the halo data. To make sure that the memory
+     is physically deleted, use the swap function. */
+  for(unsigned long i=nDOFsLocOwned; i<nDOFsLocTot; ++i)
+    vector<unsigned long>().swap(nonZeroEntriesJacobian[i]);
 }
 
 void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
