@@ -10623,9 +10623,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   int *Local_Halo = NULL;
   
   stringstream varname;
-  
-  cout << "I am in load_flocal_data " << endl;
-  getchar();
+
   /*--- Set the non-dimensionalization for coefficients. ---*/
   
   if (grid_movement) {
