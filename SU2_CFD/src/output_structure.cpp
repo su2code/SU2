@@ -10371,7 +10371,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
-  
+  bool heat = config->GetHeat_Inc();
+
   int *Local_Halo = NULL;
   
   stringstream varname;
@@ -10769,7 +10770,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
         }
         if (incompressible) {
-          Local_Data[jPoint][iVar] = 0.0; iVar++;
+          if (heat) {
+            Local_Data[jPoint][iVar] = solver[HEAT_SOL]->node[iPoint]->GetSolution(0); iVar++;
+          }
+          else {
+            Local_Data[jPoint][iVar] = 0.0; iVar++;
+          }
           Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; iVar++;
           Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
           sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity()*config->GetDensity_Ref())); iVar++;
