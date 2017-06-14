@@ -7893,266 +7893,318 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
 }
 
 void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
-		CConfig *config, unsigned long iExtIter) {
-
-	short iSection, nSection;
-	unsigned long iVertex, iPoint, Trailing_Point;
-	su2double *Plane_P0, *Plane_Normal, *CPressure,
-			Force[3], ForceInviscid[3], MomentInviscid[3] =
-					{ 0.0, 0.0, 0.0 }, MomentDist[3] = { 0.0, 0.0, 0.0 }, RefDensity,
-			RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
-			Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin,
-			RefLength, Alpha, Beta, CD_Inv, CL_Inv, CMy_Inv, Xcoord_LeadingEdge = 0.0,
-			Ycoord_LeadingEdge = 0.0, Zcoord_LeadingEdge = 0.0,
-			TrailingEdge, MaxDistance, Distance, Chord, Aux;
-
-	su2double B, Y, C_L, C_L0, Elliptic_Spanload;
-
-	vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
-			CPressure_Airfoil;
-	string Marker_Tag, Slice_Filename, Slice_Ext;
-	ofstream Cp_File;
-	unsigned short iDim;
-
-	bool grid_movement = config->GetGrid_Movement();
-
-	Plane_P0 = new su2double[3];
-	Plane_Normal = new su2double[3];
-	CPressure = new su2double[geometry->GetnPoint()];
-
-	/*--- Compute some reference quantities and necessary values ---*/
-
-	RefDensity = solver_container->GetDensity_Inf();
-	RefPressure = solver_container->GetPressure_Inf();
-	RefArea = config->GetRefArea();
-	Velocity_Inf = solver_container->GetVelocity_Inf();
-	Gamma = config->GetGamma();
-	Origin = config->GetRefOriginMoment(0);
-	RefLength = config->GetRefLength();
-	Alpha = config->GetAoA() * PI_NUMBER / 180.0;
-	Beta = config->GetAoS() * PI_NUMBER / 180.0;
-
-	if (grid_movement) {
-		Gas_Constant = config->GetGas_ConstantND();
-		Mach2Vel = sqrt(
-				Gamma * Gas_Constant * config->GetTemperature_FreeStreamND());
-		Mach_Motion = config->GetMach_Motion();
-		RefVel2 = (Mach_Motion * Mach2Vel) * (Mach_Motion * Mach2Vel);
-	} else {
-		RefVel2 = 0.0;
-		for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-			RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-	}
-	factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
-
-	int rank = MASTER_NODE;
-
+                               CConfig *config, unsigned long iExtIter) {
+  
+  short iSection, nSection;
+  unsigned long iVertex, iPoint, Trailing_Point;
+  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *CPressure,
+  Force[3], ForceInviscid[3], MomentInviscid[3] =
+  { 0.0, 0.0, 0.0 }, MomentDist[3] = { 0.0, 0.0, 0.0 }, RefDensity,
+  RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
+  Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin,
+  RefLength, Alpha, Beta, CD_Inv, CL_Inv, CMy_Inv,
+  Xcoord_LeadingEdge = 0.0, Ycoord_LeadingEdge = 0.0, Zcoord_LeadingEdge = 0.0,
+  Xcoord_TrailingEdge = 0.0, Ycoord_TrailingEdge = 0.0, Zcoord_TrailingEdge = 0.0,
+  Xcoord_LeadingEdge_ = 0.0, Ycoord_LeadingEdge_ = 0.0, Zcoord_LeadingEdge_ = 0.0,
+  Xcoord_TrailingEdge_ = 0.0, Ycoord_TrailingEdge_ = 0.0, Zcoord_TrailingEdge_ = 0.0,
+  MaxDistance, Distance, Chord, Aux, Dihedral_Leading, Dihedral_Trailing, Dihedral;
+  
+  su2double B, Y, C_L, C_L0, Elliptic_Spanload;
+  
+  vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+  CPressure_Airfoil;
+  vector<su2double> Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
+  CPressure_Airfoil_;
+  string Marker_Tag, Slice_Filename, Slice_Ext;
+  ofstream Cp_File;
+  unsigned short iDim;
+  
+  bool grid_movement = config->GetGrid_Movement();
+  
+  Plane_P0 = new su2double[3];
+  Plane_P0_ = new su2double[3];
+  Plane_Normal = new su2double[3];
+  CPressure = new su2double[geometry->GetnPoint()];
+  
+  /*--- Compute some reference quantities and necessary values ---*/
+  
+  RefDensity = solver_container->GetDensity_Inf();
+  RefPressure = solver_container->GetPressure_Inf();
+  RefArea = config->GetRefArea();
+  Velocity_Inf = solver_container->GetVelocity_Inf();
+  Gamma = config->GetGamma();
+  Origin = config->GetRefOriginMoment(0);
+  RefLength = config->GetRefLength();
+  Alpha = config->GetAoA() * PI_NUMBER / 180.0;
+  Beta = config->GetAoS() * PI_NUMBER / 180.0;
+  
+  if (grid_movement) {
+    Gas_Constant = config->GetGas_ConstantND();
+    Mach2Vel = sqrt(
+                    Gamma * Gas_Constant * config->GetTemperature_FreeStreamND());
+    Mach_Motion = config->GetMach_Motion();
+    RefVel2 = (Mach_Motion * Mach2Vel) * (Mach_Motion * Mach2Vel);
+  } else {
+    RefVel2 = 0.0;
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+      RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
+  }
+  factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
+  
+  int rank = MASTER_NODE;
+  
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-	if (geometry->GetnDim() == 3) {
-
-		/*--- Copy the pressure to an auxiliar structure ---*/
-
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-				CPressure[iPoint] = (solver_container->node[iPoint]->GetPressure()
-						- RefPressure) * factor * RefArea;
-		}
-
-		nSection = config->GetnLocationStations();
-
-		for (iSection = 0; iSection < nSection; iSection++) {
-
-			/*--- Read the values from the config file ---*/
-
-			Plane_Normal[0] = 0.0; Plane_P0[0] = 0.0;
-			Plane_Normal[1] = 0.0; Plane_P0[1] = 0.0;
-			Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
-
-		   if (config->GetGeo_Description() == FUSELAGE) {
+  
+  if (geometry->GetnDim() == 3) {
+    
+    /*--- Copy the pressure to an auxiliar structure ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      CPressure[iPoint] = (solver_container->node[iPoint]->GetPressure()
+                           - RefPressure) * factor * RefArea;
+    }
+    
+    nSection = config->GetnLocationStations();
+    
+    for (iSection = 0; iSection < nSection; iSection++) {
+      
+      /*--- Read the values from the config file ---*/
+      
+      Plane_Normal[0] = 0.0; Plane_P0[0] = 0.0;
+      Plane_Normal[1] = 0.0; Plane_P0[1] = 0.0;
+      Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
+      
+      if (config->GetGeo_Description() == FUSELAGE) {
 		      Plane_Normal[0] = 1.0;
 		      Plane_P0[0] = config->GetLocationStations(iSection);
-		   }
+      }
+      
+      if (config->GetGeo_Description() == WING) {
+        Plane_Normal[1] = 1.0;
+        Plane_P0[1] = config->GetLocationStations(iSection);
+      }
+      
+      /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
+      
+      geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6,
+                                       1E6, CPressure, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+                                       CPressure_Airfoil, true, config);
+      
+      if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
+        cout << "Please check the config file, the section (" << Plane_P0[0] <<", " << Plane_P0[1] <<", " << Plane_P0[2] << ") has not been detected." << endl;
+      }
+      
+      
+      /*--- Compute dihedral using a step in the value ---*/
+      
+      Plane_P0_[0] = 0.0; Plane_P0_[1] = 0.0; Plane_P0_[2] = 0.0;
 
-		   if (config->GetGeo_Description() == WING) {
-		     Plane_Normal[1] = 1.0;
-		     Plane_P0[1] = config->GetLocationStations(iSection);
-		   }
-
-			/*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
-
-			geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6,
-					1E6, CPressure, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
-					CPressure_Airfoil, true, config);
-
-			if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
-				cout << "Please check the config file, the section (" << Plane_P0[0] <<", " << Plane_P0[1] <<", " << Plane_P0[2] << ") has not been detected." << endl;
-			}
-
-			/*--- Output the pressure on each section (tecplot format) ---*/
-
-			if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() != 0)) {
-
-				/*--- Find leading and trailing edge ---*/
-
-				Xcoord_LeadingEdge = 1E6; TrailingEdge = -1E6;
-				for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-					if (Xcoord_Airfoil[iVertex] < Xcoord_LeadingEdge) {
-						Xcoord_LeadingEdge = Xcoord_Airfoil[iVertex];
-						Ycoord_LeadingEdge = Ycoord_Airfoil[iVertex];
-						Zcoord_LeadingEdge = Zcoord_Airfoil[iVertex];
-					}
-					if (Xcoord_Airfoil[iVertex] > TrailingEdge) {TrailingEdge = Xcoord_Airfoil[iVertex];}
-				}
-
-				Chord = (TrailingEdge-Xcoord_LeadingEdge);
-
-				/*--- Write Cp at each section (tecplot format) ---*/
-
-				ofstream Cp_File;
-				if (iSection == 0) {
-					Cp_File.open("cp_sections.dat", ios::out);
-					Cp_File << "TITLE = \"Airfoil sections\"" << endl;
-					Cp_File << "VARIABLES = \"x/c\",\"C<sub>p</sub>\",\"x\",\"y\",\"z\",\"y/c\",\"z/c\"" << endl;
-				} else
-					Cp_File.open("cp_sections.dat", ios::app);
-
-
-				if (config->GetGeo_Description() == FUSELAGE) {
-					if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[0] << " m\", I= "
-							<< Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-
-					if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[0]*12.0 << " in\", I= "
-							<< Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-				}
-
-				if (config->GetGeo_Description() == WING) {
-					if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
-							<< Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-
-					if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[1]*12.0 << " in\", I= "
-							<< Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-				}
-
-        /*--- Coordinates and pressure value ---*/
-
-				if (config->GetSystemMeasurements() == SI) {
-					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-						Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
-								<< " " << Xcoord_Airfoil[iVertex] << " " << Ycoord_Airfoil[iVertex] << " " << Zcoord_Airfoil[iVertex]
-								<< " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
-					}
-				}
-				if (config->GetSystemMeasurements() == US) {
-					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-						Cp_File <<  (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord  << " " << CPressure_Airfoil[iVertex]
-								<< " " << Xcoord_Airfoil[iVertex] * 12.0 << " " << Ycoord_Airfoil[iVertex] * 12.0 << " " << Zcoord_Airfoil[iVertex] * 12.0
-								<< " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
-					}
-				}
-
-				Cp_File.close();
-
-//				/*--- Write Cp at each section (n3d format) ---*/
-//
-//				ofstream n3d_File;
-//
-//				if (iSection == 0) n3d_File.open("cp_sections.n3d", ios::out);
-//				else n3d_File.open("cp_sections.n3d", ios::app);
-//
-//				/*--- Coordinates and pressure value ---*/
-//
-//				if (config->GetSystemMeasurements() == SI) {
-//					n3d_File << setprecision(4);
-//					n3d_File << fixed;
-//					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-//						n3d_File << setw(10) << Xcoord_Airfoil[iVertex] << setw(10) << Ycoord_Airfoil[iVertex]
-//						<< setw(10) << Zcoord_Airfoil[iVertex];
-//						if (iVertex==0) {
-//							if (iSection == 0) n3d_File << "2 ";
-//							else n3d_File << "1 ";
-//						}
-//						else n3d_File << "0 ";
-//						n3d_File << setw(10) << CPressure_Airfoil[iVertex] << endl;
-//					}
-//				}
-//				if (config->GetSystemMeasurements() == US) {
-//					n3d_File << setprecision(4);
-//					n3d_File << fixed;
-//					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-//						n3d_File << setw(10) <<  Xcoord_Airfoil[iVertex] * 12.0 << setw(10) << Ycoord_Airfoil[iVertex] * 12.0
-//								<< setw(10) << Zcoord_Airfoil[iVertex] * 12.0;
-//						if (iVertex==0) {
-//							if (iSection == 0) n3d_File << "2 ";
-//							else n3d_File << "1 ";
-//						}
-//						else n3d_File << "0 ";
-//						n3d_File << setw(10) << CPressure_Airfoil[iVertex] << endl;
-//					}
-//				}
-//
-//				n3d_File.close();
-
-				/*--- Compute load distribution ---*/
-
-				ForceInviscid[0] = 0.0; ForceInviscid[1] = 0.0; ForceInviscid[2] = 0.0; MomentInviscid[1] = 0.0;
-
-				for (iVertex = 0; iVertex < Xcoord_Airfoil.size() - 1; iVertex++) {
-
-					NDPressure = 0.5 * (CPressure_Airfoil[iVertex] + CPressure_Airfoil[iVertex + 1]);
-
-					Force[0] = -(Zcoord_Airfoil[iVertex + 1] - Zcoord_Airfoil[iVertex]) * NDPressure;
-					Force[1] = 0.0;
-					Force[2] = (Xcoord_Airfoil[iVertex + 1] - Xcoord_Airfoil[iVertex]) * NDPressure;
-
-					ForceInviscid[0] += Force[0];
-					ForceInviscid[1] += Force[1];
-					ForceInviscid[2] += Force[2];
-
-					MomentDist[0] = 0.5 	* (Xcoord_Airfoil[iVertex] + Xcoord_Airfoil[iVertex + 1]) - Origin[0];
-					MomentDist[1] = 0.5 * (Ycoord_Airfoil[iVertex] + Ycoord_Airfoil[iVertex + 1]) - Origin[1];
-					MomentDist[2] = 0.5 	* (Zcoord_Airfoil[iVertex] + Zcoord_Airfoil[iVertex + 1]) - Origin[3];
-
-					MomentInviscid[1] += (Force[0] * MomentDist[2] - Force[2] * MomentDist[0]) / RefLength;
-
-				}
-
-				/*--- Compute local chord, for the nondimensionalization  ---*/
-
-			  MaxDistance = 0.0; Trailing_Point = 0;
-
-			  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-
-			    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
-			                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
-			                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
-
-			    if (MaxDistance < Distance) { MaxDistance = Distance; }
-
-			  }
-
-			  Chord = MaxDistance;
-
-				CL_Inv = fabs( -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha))/ Chord;
-				CD_Inv = fabs( ForceInviscid[0] * cos(Alpha) * cos(Beta) + ForceInviscid[1] * sin(Beta) + ForceInviscid[2] * sin(Alpha) * cos(Beta)) / Chord;
-				CMy_Inv = MomentInviscid[1]/ Chord;
-
-				/*--- Compute sectional lift at the root ---*/
-
-				B                  = 2.0*config->GetSemiSpan();
-			  RefArea            = config->GetRefArea();
-				C_L                = solver_container->GetTotal_CL();
-				C_L0               = 8.0*C_L*RefArea/(B*PI_NUMBER);
-				Y                  = Ycoord_Airfoil[0];
-				Aux                = Y/(0.5*B);
-				Elliptic_Spanload  = (C_L0 / RefLength) * sqrt(fabs(1.0-Aux*Aux));
+      if (config->GetGeo_Description() == FUSELAGE) {
+		      if (iSection == 0) Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
+        else Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
+      }
+      
+      if (config->GetGeo_Description() == WING) {
+        if (iSection == 0) Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
+        else Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
+      }
+      
+      geometry->ComputeAirfoil_Section(Plane_P0_, Plane_Normal, -1E6,
+                                       1E6, CPressure, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
+                                       CPressure_Airfoil_, true, config);
+      
+      /*--- Output the pressure on each section (tecplot format) ---*/
+      
+      if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() != 0)) {
         
-
-				/*--- Write load distribution ---*/
-
-				ofstream Load_File;
-				if (iSection == 0) {
+        /*--- Find leading and trailing edge ---*/
+        
+        Xcoord_LeadingEdge = 1E6; Xcoord_TrailingEdge = -1E6;
+        for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+          if (Xcoord_Airfoil[iVertex] < Xcoord_LeadingEdge) {
+            Xcoord_LeadingEdge = Xcoord_Airfoil[iVertex];
+            Ycoord_LeadingEdge = Ycoord_Airfoil[iVertex];
+            Zcoord_LeadingEdge = Zcoord_Airfoil[iVertex];
+          }
+          if (Xcoord_Airfoil[iVertex] > Xcoord_TrailingEdge) {Xcoord_TrailingEdge = Xcoord_Airfoil[iVertex];}
+        }
+        
+        Chord = (Xcoord_TrailingEdge-Xcoord_LeadingEdge);
+        
+        /*--- Compute dihedral ---*/
+        
+        Xcoord_LeadingEdge_ = 1E6; Xcoord_TrailingEdge_ = -1E6;
+        for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+          if (Xcoord_Airfoil[iVertex] < Xcoord_LeadingEdge) {
+            Xcoord_LeadingEdge_ = Xcoord_Airfoil_[iVertex];
+            Ycoord_LeadingEdge_ = Ycoord_Airfoil_[iVertex];
+            Zcoord_LeadingEdge_ = Zcoord_Airfoil_[iVertex];
+          }
+          if (Xcoord_Airfoil_[iVertex] > Xcoord_TrailingEdge_) {
+            Xcoord_TrailingEdge_ = Xcoord_Airfoil_[iVertex];
+            Ycoord_TrailingEdge_ = Xcoord_Airfoil_[iVertex];
+            Zcoord_TrailingEdge_ = Xcoord_Airfoil_[iVertex];
+          }
+        }
+        
+        if (iSection == 0) {
+          Dihedral_Leading = atan((Zcoord_LeadingEdge_ - Zcoord_LeadingEdge) / (Ycoord_LeadingEdge_ - Ycoord_LeadingEdge))*180/PI_NUMBER;
+          Dihedral_Trailing = atan((Zcoord_TrailingEdge_ - Zcoord_TrailingEdge) / (Ycoord_TrailingEdge_ - Ycoord_TrailingEdge))*180/PI_NUMBER;
+          Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
+        }
+        else {
+          Dihedral_Leading = atan((Zcoord_LeadingEdge - Zcoord_LeadingEdge_) / (Ycoord_LeadingEdge - Ycoord_LeadingEdge_))*180/PI_NUMBER;
+          Dihedral_Trailing = atan((Zcoord_TrailingEdge - Zcoord_TrailingEdge_) / (Ycoord_TrailingEdge - Ycoord_TrailingEdge_))*180/PI_NUMBER;
+          Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
+        }
+        
+        /*--- Write Cp at each section (tecplot format) ---*/
+        
+        ofstream Cp_File;
+        if (iSection == 0) {
+          Cp_File.open("cp_sections.dat", ios::out);
+          Cp_File << "TITLE = \"Airfoil sections\"" << endl;
+          Cp_File << "VARIABLES = \"x/c\",\"C<sub>p</sub>\",\"x\",\"y\",\"z\",\"y/c\",\"z/c\",\"Dihedral(deg)\"" << endl;
+        } else
+          Cp_File.open("cp_sections.dat", ios::app);
+        
+        
+        if (config->GetGeo_Description() == FUSELAGE) {
+          if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[0] << " m\", I= "
+            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+          
+          if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[0]*12.0 << " in\", I= "
+            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+        }
+        
+        if (config->GetGeo_Description() == WING) {
+          if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
+            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+          
+          if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[1]*12.0 << " in\", I= "
+            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+        }
+        
+        /*--- Coordinates and pressure value ---*/
+        
+        if (config->GetSystemMeasurements() == SI) {
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
+            << " " << Xcoord_Airfoil[iVertex] << " " << Ycoord_Airfoil[iVertex] << " " << Zcoord_Airfoil[iVertex]
+            << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << " " << Dihedral << "\n";
+          }
+        }
+        if (config->GetSystemMeasurements() == US) {
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            Cp_File <<  (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord  << " " << CPressure_Airfoil[iVertex]
+            << " " << Xcoord_Airfoil[iVertex] * 12.0 << " " << Ycoord_Airfoil[iVertex] * 12.0 << " " << Zcoord_Airfoil[iVertex] * 12.0
+            << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << " " << Dihedral << "\n";
+          }
+        }
+        
+        Cp_File.close();
+        
+        //				/*--- Write Cp at each section (n3d format) ---*/
+        //
+        //				ofstream n3d_File;
+        //
+        //				if (iSection == 0) n3d_File.open("cp_sections.n3d", ios::out);
+        //				else n3d_File.open("cp_sections.n3d", ios::app);
+        //
+        //				/*--- Coordinates and pressure value ---*/
+        //
+        //				if (config->GetSystemMeasurements() == SI) {
+        //					n3d_File << setprecision(4);
+        //					n3d_File << fixed;
+        //					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        //						n3d_File << setw(10) << Xcoord_Airfoil[iVertex] << setw(10) << Ycoord_Airfoil[iVertex]
+        //						<< setw(10) << Zcoord_Airfoil[iVertex];
+        //						if (iVertex==0) {
+        //							if (iSection == 0) n3d_File << "2 ";
+        //							else n3d_File << "1 ";
+        //						}
+        //						else n3d_File << "0 ";
+        //						n3d_File << setw(10) << CPressure_Airfoil[iVertex] << endl;
+        //					}
+        //				}
+        //				if (config->GetSystemMeasurements() == US) {
+        //					n3d_File << setprecision(4);
+        //					n3d_File << fixed;
+        //					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        //						n3d_File << setw(10) <<  Xcoord_Airfoil[iVertex] * 12.0 << setw(10) << Ycoord_Airfoil[iVertex] * 12.0
+        //								<< setw(10) << Zcoord_Airfoil[iVertex] * 12.0;
+        //						if (iVertex==0) {
+        //							if (iSection == 0) n3d_File << "2 ";
+        //							else n3d_File << "1 ";
+        //						}
+        //						else n3d_File << "0 ";
+        //						n3d_File << setw(10) << CPressure_Airfoil[iVertex] << endl;
+        //					}
+        //				}
+        //
+        //				n3d_File.close();
+        
+        /*--- Compute load distribution ---*/
+        
+        ForceInviscid[0] = 0.0; ForceInviscid[1] = 0.0; ForceInviscid[2] = 0.0; MomentInviscid[1] = 0.0;
+        
+        for (iVertex = 0; iVertex < Xcoord_Airfoil.size() - 1; iVertex++) {
+          
+          NDPressure = 0.5 * (CPressure_Airfoil[iVertex] + CPressure_Airfoil[iVertex + 1]);
+          
+          Force[0] = -(Zcoord_Airfoil[iVertex + 1] - Zcoord_Airfoil[iVertex]) * NDPressure;
+          Force[1] = 0.0;
+          Force[2] = (Xcoord_Airfoil[iVertex + 1] - Xcoord_Airfoil[iVertex]) * NDPressure;
+          
+          ForceInviscid[0] += Force[0];
+          ForceInviscid[1] += Force[1];
+          ForceInviscid[2] += Force[2];
+          
+          MomentDist[0] = 0.5 	* (Xcoord_Airfoil[iVertex] + Xcoord_Airfoil[iVertex + 1]) - Origin[0];
+          MomentDist[1] = 0.5 * (Ycoord_Airfoil[iVertex] + Ycoord_Airfoil[iVertex + 1]) - Origin[1];
+          MomentDist[2] = 0.5 	* (Zcoord_Airfoil[iVertex] + Zcoord_Airfoil[iVertex + 1]) - Origin[3];
+          
+          MomentInviscid[1] += (Force[0] * MomentDist[2] - Force[2] * MomentDist[0]) / RefLength;
+          
+        }
+        
+        /*--- Compute local chord, for the nondimensionalization  ---*/
+        
+        MaxDistance = 0.0; Trailing_Point = 0;
+        
+        for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+          
+          Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                          pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                          pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+          
+          if (MaxDistance < Distance) { MaxDistance = Distance; }
+          
+        }
+        
+        Chord = MaxDistance;
+        
+        CL_Inv = fabs( -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha))/ Chord;
+        CD_Inv = fabs( ForceInviscid[0] * cos(Alpha) * cos(Beta) + ForceInviscid[1] * sin(Beta) + ForceInviscid[2] * sin(Alpha) * cos(Beta)) / Chord;
+        CMy_Inv = MomentInviscid[1]/ Chord;
+        
+        /*--- Compute sectional lift at the root ---*/
+        
+        B                  = 2.0*config->GetSemiSpan();
+        RefArea            = config->GetRefArea();
+        C_L                = solver_container->GetTotal_CL();
+        C_L0               = 8.0*C_L*RefArea/(B*PI_NUMBER);
+        Y                  = Ycoord_Airfoil[0];
+        Aux                = Y/(0.5*B);
+        Elliptic_Spanload  = (C_L0 / RefLength) * sqrt(fabs(1.0-Aux*Aux));
+        
+        
+        /*--- Write load distribution ---*/
+        
+        ofstream Load_File;
+        if (iSection == 0) {
           
           if (config->GetOutput_FileFormat() == PARAVIEW) {
             Load_File.open("load_distribution.csv", ios::out);
@@ -8171,26 +8223,27 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
         
         
         /*--- CL and spanload ---*/
-
+        
         if (config->GetOutput_FileFormat() == PARAVIEW)
           Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLength <<", " << Elliptic_Spanload   << endl;
         else
           Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << " " << CL_Inv  << " " << Chord*CL_Inv / RefLength <<" " << Elliptic_Spanload   << endl;
-
-				Load_File.close();
-
-			}
-
-		}
-
-	}
-
-	/*--- Delete dynamically allocated memory ---*/
-
-	delete[] Plane_P0;
-	delete[] Plane_Normal;
-	delete[] CPressure;
-
+        
+        Load_File.close();
+        
+      }
+      
+    }
+    
+  }
+  
+  /*--- Delete dynamically allocated memory ---*/
+  
+  delete[] Plane_P0;
+  delete[] Plane_P0_;
+  delete[] Plane_Normal;
+  delete[] CPressure;
+  
 }
 
 void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
