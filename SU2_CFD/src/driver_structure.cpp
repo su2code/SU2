@@ -35,7 +35,7 @@
 #include "../include/definition_structure.hpp"
 
 #ifdef VTUNEPROF
-#include "../include/ittnotify.h"
+#include <ittnotify.h>
 #endif
 
 CDriver::CDriver(char* confFile,

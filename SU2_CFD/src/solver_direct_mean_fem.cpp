@@ -4760,6 +4760,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
         /* 3D simulation. Loop over the integration points to compute
            the fluxes. */
+//#pragma simd
         for(unsigned short i=0; i<nInt; ++i) {
 
           /* Easier storage of the metric terms in this integration point. */
