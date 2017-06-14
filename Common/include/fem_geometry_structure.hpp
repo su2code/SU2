@@ -190,7 +190,7 @@ public:
                                      to the standard element is considered constant. */
 
   int rankOriginal;            /*!< \brief The rank where the original volume is stored. For
-                                    the original volume, this is simply the current rank. */
+                                    the owned volumes, this is simply the current rank. */
 
   short periodIndexToDonor;    /*!< \brief The index of the periodic transformation to the donor
                                     element. Only for halo elements. A -1 indicates no periodic

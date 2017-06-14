@@ -12001,6 +12001,11 @@ protected:
   bool symmetrizingTermsPresent;    /*!< \brief Whether or not symmetrizing terms are present in the
                                                 discretization. */
 
+  vector<unsigned long> nDOFsPerRank;                    /*!< \brief Number of DOFs per rank in
+                                                                     cumulative storage format. */
+  vector<vector<unsigned long> > nonZeroEntriesJacobian; /*!< \brief The ID's of the DOFs for the
+                                                                     non-zero entries of the Jacobian
+                                                                     for the locally owned DOFs. */
 private:
 
 #ifdef HAVE_MPI
@@ -13052,17 +13057,12 @@ private:
 
   /*!
    * \brief Function, which computes the graph of the spatial discretization
-            for all the DOFs.
-   * \param[in]  config              - Definition of the particular problem.
-   * \param[out] nDOFsPerRank        - Number of DOFs per rank, cumulative storage format.
-   * \param[out] nNeighborsLocalDOFs - Number of neighbors in the graph for the
-                                       local DOFs, cumulative storage format.
-   * \param[out] neighborsLocalDOFs  - The actual neighboring DOFs in global numbering.
+            for the locally owned DOFs.
+   * \param[in] DGGeometry - Geometrical definition of the DG problem.
+   * \param[in] config     - Definition of the particular problem.
    */
-  void DetermineGraphDOFs(CConfig               *config,
-                          vector<unsigned long> &nDOFsPerRank,
-                          vector<unsigned long> &nNeighborsLocalDOFs,
-                          vector<unsigned long> &neighborsLocalDOFs);
+  void DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
+                          CConfig        *config);
 
   /*!
    * \brief Function, which sets up the list of tasks to be carried out in the
