@@ -1759,21 +1759,7 @@ public:
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
   virtual su2double GetCL_Visc(unsigned short val_marker);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetCMz_Inv(unsigned short val_marker);
-  
-  /*!
-   * \brief Get the non dimensional z moment coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetCMz_Visc(unsigned short val_marker);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1847,6 +1833,27 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPx(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPy(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPz(unsigned short val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
    */
   virtual su2double GetSurface_CL_Inv(unsigned short val_marker);
@@ -1914,6 +1921,27 @@ public:
    */
   virtual su2double GetSurface_CMz_Inv(unsigned short val_marker);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPx_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPy_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPz_Inv(unsigned short val_marker);
+
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1987,6 +2015,27 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPx_Visc(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPy_Visc(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPz_Visc(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
    */
   virtual su2double GetSurface_CL_Mnt(unsigned short val_marker);
@@ -2054,6 +2103,27 @@ public:
    */
   virtual su2double GetSurface_CMz_Mnt(unsigned short val_marker);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPx_Mnt(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPy_Mnt(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_CoPz_Mnt(unsigned short val_marker);
+
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2466,6 +2536,24 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of the moment x coefficient (inviscid + viscous contribution).
+   */
+  virtual su2double GetTotal_CoPx(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the moment y coefficient (inviscid + viscous contribution).
+   */
+  virtual su2double GetTotal_CoPy(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the moment y coefficient (inviscid + viscous contribution).
+   */
+  virtual su2double GetTotal_CoPz(void);
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the force x coefficient (inviscid + viscous contribution).
    */
   virtual su2double GetTotal_CFx(void);
@@ -2539,6 +2627,23 @@ public:
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
+  virtual su2double GetAllBound_CoPx_Inv(void);
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPy_Inv(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPz_Inv(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
   virtual su2double GetAllBound_CFx_Inv(void);
   
   /*!
@@ -2599,6 +2704,24 @@ public:
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
+  virtual su2double GetAllBound_CoPx_Visc(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPy_Visc(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPz_Visc(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
   virtual su2double GetAllBound_CFx_Visc(void);
   
   /*!
@@ -2654,6 +2777,24 @@ public:
    */
   virtual su2double GetAllBound_CMz_Mnt(void);
   
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPx_Mnt(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPy_Mnt(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPz_Mnt(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
@@ -3704,6 +3845,9 @@ protected:
   *CMx_Inv,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
   *CMy_Inv,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
   *CMz_Inv,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPx_Inv,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPy_Inv,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPz_Inv,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
   *CFx_Inv,      /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
   *CFy_Inv,      /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
   *CFz_Inv,      /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
@@ -3717,6 +3861,9 @@ protected:
   *Surface_CMx_Inv,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMy_Inv,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMz_Inv,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
+  *Surface_CoPx_Inv,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
+  *Surface_CoPy_Inv,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
+  *Surface_CoPz_Inv,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
   *CEff_Inv,        /*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
   *CMerit_Inv,        /*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
   *CT_Inv,      /*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
@@ -3729,6 +3876,9 @@ protected:
   *CMx_Mnt,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
   *CMy_Mnt,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
   *CMz_Mnt,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPx_Mnt,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPy_Mnt,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPz_Mnt,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
   *CFx_Mnt,      /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
   *CFy_Mnt,      /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
   *CFz_Mnt,      /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
@@ -3742,6 +3892,9 @@ protected:
   *Surface_CMx_Mnt,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMy_Mnt,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMz_Mnt,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
+  *Surface_CoPx_Mnt,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
+  *Surface_CoPy_Mnt,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
+  *Surface_CoPz_Mnt,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
   *CEff_Mnt,        /*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
   *CMerit_Mnt,        /*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
   *CT_Mnt,      /*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
@@ -3785,6 +3938,9 @@ protected:
   AllBound_CMx_Inv,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CMy_Inv,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CMz_Inv,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPx_Inv,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPy_Inv,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPz_Inv,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CFx_Inv,      /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CFy_Inv,      /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CFz_Inv,      /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
@@ -3802,6 +3958,9 @@ protected:
    AllBound_CMx_Mnt,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CMy_Mnt,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CMz_Mnt,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CoPx_Mnt,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CoPy_Mnt,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CoPz_Mnt,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CFx_Mnt,      /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CFy_Mnt,      /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CFz_Mnt,      /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
@@ -3847,6 +4006,9 @@ protected:
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
   Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
   Total_CMz,      /*!< \brief Total z moment coefficient for all the boundaries. */
+  Total_CoPx,      /*!< \brief Total x moment coefficient for all the boundaries. */
+  Total_CoPy,      /*!< \brief Total y moment coefficient for all the boundaries. */
+  Total_CoPz,      /*!< \brief Total z moment coefficient for all the boundaries. */
   Total_CFx,      /*!< \brief Total x force coefficient for all the boundaries. */
   Total_CFy,      /*!< \brief Total y force coefficient for all the boundaries. */
   Total_CFz,      /*!< \brief Total z force coefficient for all the boundaries. */
@@ -3872,6 +4034,9 @@ protected:
   *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
   *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
   *Surface_CMz,            /*!< \brief z Moment coefficient for each monitoring surface. */
+  *Surface_CoPx,            /*!< \brief x Moment coefficient for each monitoring surface. */
+  *Surface_CoPy,            /*!< \brief y Moment coefficient for each monitoring surface. */
+  *Surface_CoPz,            /*!< \brief z Moment coefficient for each monitoring surface. */
   *Surface_HF_Visc,            /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;         /*!< \brief Maximum heat flux for each monitored surface. */
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
@@ -4971,14 +5136,7 @@ public:
    * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
   su2double GetCL_Inv(unsigned short val_marker);
-  
-  /*!
-   * \brief Provide the non dimensional z moment coefficient (inviscid contribution).
-   * \param val_marker Surface where the coefficient is going to be computed.
-   * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
-   */
-  su2double GetCMz_Inv(unsigned short val_marker);
-  
+
   /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -5050,6 +5208,27 @@ public:
   su2double GetSurface_CMz(unsigned short val_marker);
   
   /*!
+   * \brief Provide the non dimensional x moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPx(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional y moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPy(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional z moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPz(unsigned short val_marker);
+
+  /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
@@ -5120,6 +5299,27 @@ public:
   su2double GetSurface_CMz_Inv(unsigned short val_marker);
   
   /*!
+   * \brief Provide the non dimensional x moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPx_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional y moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPy_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional z moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPz_Inv(unsigned short val_marker);
+
+  /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
@@ -5189,6 +5389,27 @@ public:
    */
   su2double GetSurface_CMz_Mnt(unsigned short val_marker);
   
+  /*!
+   * \brief Provide the non dimensional x moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPx_Mnt(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional y moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPy_Mnt(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional z moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPz_Mnt(unsigned short val_marker);
+
   /*!
    * \brief Provide the non dimensional drag coefficient (inviscid contribution).
    * \param val_marker Surface where the coeficient is going to be computed.
@@ -5458,6 +5679,24 @@ public:
   su2double GetTotal_CMz(void);
   
   /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.
+   * \return Value of the moment x coefficient (inviscid + viscous contribution).
+   */
+  su2double GetTotal_CoPx(void);
+  
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional y moment coefficient.
+   * \return Value of the moment y coefficient (inviscid + viscous contribution).
+   */
+  su2double GetTotal_CoPy(void);
+  
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional z moment coefficient.
+   * \return Value of the moment z coefficient (inviscid + viscous contribution).
+   */
+  su2double GetTotal_CoPz(void);
+
+  /*!
    * \brief Provide the total (inviscid + viscous) non dimensional x force coefficient.
    * \return Value of the force x coefficient (inviscid + viscous contribution).
    */
@@ -5689,6 +5928,24 @@ public:
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
+  su2double GetAllBound_CoPx_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPy_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPz_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
   su2double GetAllBound_CFx_Inv(void);
   
   /*!
@@ -5745,6 +6002,24 @@ public:
    */
   su2double GetAllBound_CMz_Mnt(void);
   
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPx_Mnt(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPy_Mnt(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPz_Mnt(void);
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
@@ -6701,14 +6976,7 @@ public:
    * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
   su2double GetCLift_Inv(unsigned short val_marker);
-  
-  /*!
-   * \brief Provide the non dimensional z moment coefficient (inviscid contribution).
-   * \param val_marker Surface where the coefficient is going to be computed.
-   * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
-   */
-  su2double GetCMz_Inv(unsigned short val_marker);
-  
+
   /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -6778,7 +7046,7 @@ public:
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CMz(unsigned short val_marker);
-  
+ 
   /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -6918,6 +7186,7 @@ public:
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CMz_Mnt(unsigned short val_marker);
+
   /*!
    * \brief Provide the non dimensional drag coefficient (inviscid contribution).
    * \param val_marker Surface where the coeficient is going to be computed.
@@ -7425,6 +7694,9 @@ private:
   *CMx_Visc,      /*!< \brief Moment x coefficient (viscous contribution) for each boundary. */
   *CMy_Visc,      /*!< \brief Moment y coefficient (viscous contribution) for each boundary. */
   *CMz_Visc,      /*!< \brief Moment z coefficient (viscous contribution) for each boundary. */
+  *CoPx_Visc,      /*!< \brief Moment x coefficient (viscous contribution) for each boundary. */
+  *CoPy_Visc,      /*!< \brief Moment y coefficient (viscous contribution) for each boundary. */
+  *CoPz_Visc,      /*!< \brief Moment z coefficient (viscous contribution) for each boundary. */
   *CFx_Visc,      /*!< \brief Force x coefficient (viscous contribution) for each boundary. */
   *CFy_Visc,      /*!< \brief Force y coefficient (viscous contribution) for each boundary. */
   *CFz_Visc,      /*!< \brief Force z coefficient (viscous contribution) for each boundary. */
@@ -7438,6 +7710,9 @@ private:
   *Surface_CMx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CMy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CoPx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CoPy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CoPz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
   *CEff_Visc,      /*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
   *CMerit_Visc,      /*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
   *CT_Visc,    /*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
@@ -7453,6 +7728,9 @@ private:
   AllBound_CMx_Visc,      /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CMy_Visc,      /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CMz_Visc,      /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPx_Visc,      /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPy_Visc,      /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPz_Visc,      /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CEff_Visc,      /*!< \brief Efficient coefficient (Viscous contribution) for all the boundaries. */
   AllBound_CFx_Visc,      /*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CFy_Visc,      /*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
@@ -7554,6 +7832,27 @@ public:
   su2double GetSurface_CMz_Visc(unsigned short val_marker);
   
   /*!
+   * \brief Provide the non dimensional x moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPx_Visc(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional y moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPy_Visc(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional z moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_CoPz_Visc(unsigned short val_marker);
+
+  /*!
    * \brief Get the inviscid contribution to the lift coefficient.
    * \return Value of the lift coefficient (inviscid contribution).
    */
@@ -7595,6 +7894,24 @@ public:
    */
   su2double GetAllBound_CMz_Visc(void);
   
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPx_Visc(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPy_Visc(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPz_Visc(void);
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
@@ -7706,14 +8023,7 @@ public:
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
   su2double GetCL_Visc(unsigned short val_marker);
-  
-  /*!
-   * \brief Get the non dimensional z moment coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  su2double GetCMz_Visc(unsigned short val_marker);
-  
+
   /*!
    * \brief Get the non dimensional sideforce coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -7989,10 +8299,10 @@ public:
    */
   su2double GetAllBound_CMy_Visc(void);
 
-/*!
+  /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
- */
+   */
   su2double GetAllBound_CMz_Visc(void);
   
   /*!
@@ -8080,14 +8390,7 @@ public:
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
   su2double GetCL_Visc(unsigned short val_marker);
-  
-  /*!
-   * \brief Get the non dimensional z moment coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  su2double GetCMz_Visc(unsigned short val_marker);
-  
+
   /*!
    * \brief Get the non dimensional sideforce coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.

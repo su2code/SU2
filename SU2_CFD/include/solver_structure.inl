@@ -132,8 +132,6 @@ inline void CSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) { 
 
 inline void CSolver::SetDistance(CGeometry *geometry, CConfig *config) { };
 
-inline su2double CSolver::GetCMz_Inv(unsigned short val_marker) { return 0; }
-
 inline su2double CSolver::GetCD_Inv(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetCL_Inv(unsigned short val_marker) { return 0; }
@@ -158,6 +156,12 @@ inline su2double CSolver::GetSurface_CMy(unsigned short val_marker) { return 0; 
 
 inline su2double CSolver::GetSurface_CMz(unsigned short val_marker) { return 0; }
 
+inline su2double CSolver::GetSurface_CoPx(unsigned short val_marker) { return 0; }
+
+inline su2double CSolver::GetSurface_CoPy(unsigned short val_marker) { return 0; }
+
+inline su2double CSolver::GetSurface_CoPz(unsigned short val_marker) { return 0; }
+
 inline su2double CSolver::GetSurface_CL_Inv(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetSurface_CD_Inv(unsigned short val_marker) { return 0; }
@@ -177,6 +181,12 @@ inline su2double CSolver::GetSurface_CMx_Inv(unsigned short val_marker) { return
 inline su2double CSolver::GetSurface_CMy_Inv(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetSurface_CMz_Inv(unsigned short val_marker) { return 0; }
+
+inline su2double CSolver::GetSurface_CoPx_Inv(unsigned short val_marker) { return 0; }
+
+inline su2double CSolver::GetSurface_CoPy_Inv(unsigned short val_marker) { return 0; }
+
+inline su2double CSolver::GetSurface_CoPz_Inv(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetSurface_CL_Visc(unsigned short val_marker) { return 0; }
 
@@ -198,6 +208,12 @@ inline su2double CSolver::GetSurface_CMy_Visc(unsigned short val_marker) { retur
 
 inline su2double CSolver::GetSurface_CMz_Visc(unsigned short val_marker) { return 0; }
 
+inline su2double CSolver::GetSurface_CoPx_Visc(unsigned short val_marker) { return 0; }
+
+inline su2double CSolver::GetSurface_CoPy_Visc(unsigned short val_marker) { return 0; }
+
+inline su2double CSolver::GetSurface_CoPz_Visc(unsigned short val_marker) { return 0; }
+
 inline su2double CSolver::GetSurface_CL_Mnt(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetSurface_CD_Mnt(unsigned short val_marker) { return 0; }
@@ -218,6 +234,12 @@ inline su2double CSolver::GetSurface_CMy_Mnt(unsigned short val_marker) { return
 
 inline su2double CSolver::GetSurface_CMz_Mnt(unsigned short val_marker) { return 0; }
 
+inline su2double CSolver::GetSurface_CoPx_Mnt(unsigned short val_marker) { return 0; }
+
+inline su2double CSolver::GetSurface_CoPy_Mnt(unsigned short val_marker) { return 0; }
+
+inline su2double CSolver::GetSurface_CoPz_Mnt(unsigned short val_marker) { return 0; }
+
 inline su2double CSolver::GetEngineInflow_MassFlow(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetEngineExhaust_MassFlow(unsigned short val_marker) { return 0; }
@@ -236,8 +258,6 @@ inline su2double CSolver::GetSurface_MaxHF_Visc(unsigned short val_marker) { ret
 
 inline su2double CSolver::GetCL_Visc(unsigned short val_marker) { return 0; }
 
-inline su2double CSolver::GetCMz_Visc(unsigned short val_marker) { return 0; }
-
 inline su2double CSolver::GetCSF_Visc(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetCD_Visc(unsigned short val_marker) { return 0; }
@@ -255,6 +275,12 @@ inline su2double CSolver::GetAllBound_CMx_Inv() { return 0; }
 inline su2double CSolver::GetAllBound_CMy_Inv() { return 0; }
 
 inline su2double CSolver::GetAllBound_CMz_Inv() { return 0; }
+
+inline su2double CSolver::GetAllBound_CoPx_Inv() { return 0; }
+
+inline su2double CSolver::GetAllBound_CoPy_Inv() { return 0; }
+
+inline su2double CSolver::GetAllBound_CoPz_Inv() { return 0; }
 
 inline su2double CSolver::GetAllBound_CFx_Inv() { return 0; }
 
@@ -276,6 +302,12 @@ inline su2double CSolver::GetAllBound_CMy_Mnt() { return 0; }
 
 inline su2double CSolver::GetAllBound_CMz_Mnt() { return 0; }
 
+inline su2double CSolver::GetAllBound_CoPx_Mnt() { return 0; }
+
+inline su2double CSolver::GetAllBound_CoPy_Mnt() { return 0; }
+
+inline su2double CSolver::GetAllBound_CoPz_Mnt() { return 0; }
+
 inline su2double CSolver::GetAllBound_CFx_Mnt() { return 0; }
 
 inline su2double CSolver::GetAllBound_CFy_Mnt() { return 0; }
@@ -295,6 +327,12 @@ inline su2double CSolver::GetAllBound_CMx_Visc() { return 0; }
 inline su2double CSolver::GetAllBound_CMy_Visc() { return 0; }
 
 inline su2double CSolver::GetAllBound_CMz_Visc() { return 0; }
+
+inline su2double CSolver::GetAllBound_CoPx_Visc() { return 0; }
+
+inline su2double CSolver::GetAllBound_CoPy_Visc() { return 0; }
+
+inline su2double CSolver::GetAllBound_CoPz_Visc() { return 0; }
 
 inline su2double CSolver::GetAllBound_CFx_Visc() { return 0; }
 
@@ -343,6 +381,12 @@ inline su2double CSolver::GetTotal_CMx() { return 0; }
 inline su2double CSolver::GetTotal_CMy() { return 0; }
 
 inline su2double CSolver::GetTotal_CMz() { return 0; }
+
+inline su2double CSolver::GetTotal_CoPx() { return 0; }
+
+inline su2double CSolver::GetTotal_CoPy() { return 0; }
+
+inline su2double CSolver::GetTotal_CoPz() { return 0; }
 
 inline su2double CSolver::GetTotal_CFx() { return 0; }
 
@@ -1056,8 +1100,6 @@ inline void CEulerSolver::SetInlet_FlowDir(unsigned short val_marker, unsigned l
 
 inline su2double CEulerSolver::GetCL_Inv(unsigned short val_marker) { return CL_Inv[val_marker]; }
 
-inline su2double CEulerSolver::GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
-
 inline su2double CEulerSolver::GetCD_Inv(unsigned short val_marker) { return CD_Inv[val_marker]; }
 
 inline su2double CEulerSolver::GetSurface_CL(unsigned short val_marker) { return Surface_CL[val_marker]; }
@@ -1080,6 +1122,12 @@ inline su2double CEulerSolver::GetSurface_CMy(unsigned short val_marker) { retur
 
 inline su2double CEulerSolver::GetSurface_CMz(unsigned short val_marker) { return Surface_CMz[val_marker]; }
 
+inline su2double CEulerSolver::GetSurface_CoPx(unsigned short val_marker) { return Surface_CoPx[val_marker]; }
+
+inline su2double CEulerSolver::GetSurface_CoPy(unsigned short val_marker) { return Surface_CoPy[val_marker]; }
+
+inline su2double CEulerSolver::GetSurface_CoPz(unsigned short val_marker) { return Surface_CoPz[val_marker]; }
+
 inline su2double CEulerSolver::GetSurface_CL_Inv(unsigned short val_marker) { return Surface_CL_Inv[val_marker]; }
 
 inline su2double CEulerSolver::GetSurface_CD_Inv(unsigned short val_marker) { return Surface_CD_Inv[val_marker]; }
@@ -1100,6 +1148,12 @@ inline su2double CEulerSolver::GetSurface_CMy_Inv(unsigned short val_marker) { r
 
 inline su2double CEulerSolver::GetSurface_CMz_Inv(unsigned short val_marker) { return Surface_CMz_Inv[val_marker]; }
 
+inline su2double CEulerSolver::GetSurface_CoPx_Inv(unsigned short val_marker) { return Surface_CoPx_Inv[val_marker]; }
+
+inline su2double CEulerSolver::GetSurface_CoPy_Inv(unsigned short val_marker) { return Surface_CoPy_Inv[val_marker]; }
+
+inline su2double CEulerSolver::GetSurface_CoPz_Inv(unsigned short val_marker) { return Surface_CoPz_Inv[val_marker]; }
+
 inline su2double CEulerSolver::GetSurface_CL_Mnt(unsigned short val_marker) { return Surface_CL_Mnt[val_marker]; }
 
 inline su2double CEulerSolver::GetSurface_CD_Mnt(unsigned short val_marker) { return Surface_CD_Mnt[val_marker]; }
@@ -1119,6 +1173,12 @@ inline su2double CEulerSolver::GetSurface_CMx_Mnt(unsigned short val_marker) { r
 inline su2double CEulerSolver::GetSurface_CMy_Mnt(unsigned short val_marker) { return Surface_CMy_Mnt[val_marker]; }
 
 inline su2double CEulerSolver::GetSurface_CMz_Mnt(unsigned short val_marker) { return Surface_CMz_Mnt[val_marker]; }
+
+inline su2double CEulerSolver::GetSurface_CoPx_Mnt(unsigned short val_marker) { return Surface_CoPx_Mnt[val_marker]; }
+
+inline su2double CEulerSolver::GetSurface_CoPy_Mnt(unsigned short val_marker) { return Surface_CoPy_Mnt[val_marker]; }
+
+inline su2double CEulerSolver::GetSurface_CoPz_Mnt(unsigned short val_marker) { return Surface_CoPz_Mnt[val_marker]; }
 
 inline su2double CEulerSolver::GetEngineInflow_MassFlow(unsigned short val_marker) { return EngineInflow_MassFlow[val_marker]; }
 
@@ -1173,6 +1233,12 @@ inline su2double CEulerSolver::GetTotal_CMx() { return Total_CMx; }
 inline su2double CEulerSolver::GetTotal_CMy() { return Total_CMy; }
 
 inline su2double CEulerSolver::GetTotal_CMz() { return Total_CMz; }
+
+inline su2double CEulerSolver::GetTotal_CoPx() { return Total_CoPx; }
+
+inline su2double CEulerSolver::GetTotal_CoPy() { return Total_CoPy; }
+
+inline su2double CEulerSolver::GetTotal_CoPz() { return Total_CoPz; }
 
 inline su2double CEulerSolver::GetTotal_CFx() { return Total_CFx; }
 
@@ -1280,6 +1346,12 @@ inline su2double CEulerSolver::GetAllBound_CMy_Inv() { return AllBound_CMy_Inv; 
 
 inline su2double CEulerSolver::GetAllBound_CMz_Inv() { return AllBound_CMz_Inv; }
 
+inline su2double CEulerSolver::GetAllBound_CoPx_Inv() { return AllBound_CoPx_Inv; }
+
+inline su2double CEulerSolver::GetAllBound_CoPy_Inv() { return AllBound_CoPy_Inv; }
+
+inline su2double CEulerSolver::GetAllBound_CoPz_Inv() { return AllBound_CoPz_Inv; }
+
 inline su2double CEulerSolver::GetAllBound_CFx_Inv() { return AllBound_CFx_Inv; }
 
 inline su2double CEulerSolver::GetAllBound_CFy_Inv() { return AllBound_CFy_Inv; }
@@ -1299,6 +1371,12 @@ inline su2double CEulerSolver::GetAllBound_CMx_Mnt() { return AllBound_CMx_Mnt; 
 inline su2double CEulerSolver::GetAllBound_CMy_Mnt() { return AllBound_CMy_Mnt; }
 
 inline su2double CEulerSolver::GetAllBound_CMz_Mnt() { return AllBound_CMz_Mnt; }
+
+inline su2double CEulerSolver::GetAllBound_CoPx_Mnt() { return AllBound_CoPx_Mnt; }
+
+inline su2double CEulerSolver::GetAllBound_CoPy_Mnt() { return AllBound_CoPy_Mnt; }
+
+inline su2double CEulerSolver::GetAllBound_CoPz_Mnt() { return AllBound_CoPz_Mnt; }
 
 inline su2double CEulerSolver::GetAllBound_CFx_Mnt() { return AllBound_CFx_Mnt; }
 
@@ -1447,8 +1525,6 @@ inline su2double CNSSolver::GetSurface_MaxHF_Visc(unsigned short val_marker) { r
 
 inline su2double CNSSolver::GetCL_Visc(unsigned short val_marker) { return CL_Visc[val_marker]; }
 
-inline su2double CNSSolver::GetCMz_Visc(unsigned short val_marker) { return CMz_Visc[val_marker]; }
-
 inline su2double CNSSolver::GetCSF_Visc(unsigned short val_marker) { return CSF_Visc[val_marker]; }
 
 inline su2double CNSSolver::GetCD_Visc(unsigned short val_marker) { return CD_Visc[val_marker]; }
@@ -1466,6 +1542,12 @@ inline su2double CNSSolver::GetAllBound_CMx_Visc() { return AllBound_CMx_Visc; }
 inline su2double CNSSolver::GetAllBound_CMy_Visc() { return AllBound_CMy_Visc; }
 
 inline su2double CNSSolver::GetAllBound_CMz_Visc() { return AllBound_CMz_Visc; }
+
+inline su2double CNSSolver::GetAllBound_CoPx_Visc() { return AllBound_CoPx_Visc; }
+
+inline su2double CNSSolver::GetAllBound_CoPy_Visc() { return AllBound_CoPy_Visc; }
+
+inline su2double CNSSolver::GetAllBound_CoPz_Visc() { return AllBound_CoPz_Visc; }
 
 inline su2double CNSSolver::GetAllBound_CFx_Visc() { return AllBound_CFx_Visc; }
 
@@ -1492,6 +1574,12 @@ inline su2double CNSSolver::GetSurface_CMx_Visc(unsigned short val_marker) { ret
 inline su2double CNSSolver::GetSurface_CMy_Visc(unsigned short val_marker) { return Surface_CMy_Visc[val_marker]; }
 
 inline su2double CNSSolver::GetSurface_CMz_Visc(unsigned short val_marker) { return Surface_CMz_Visc[val_marker]; }
+
+inline su2double CNSSolver::GetSurface_CoPx_Visc(unsigned short val_marker) { return Surface_CoPx_Visc[val_marker]; }
+
+inline su2double CNSSolver::GetSurface_CoPy_Visc(unsigned short val_marker) { return Surface_CoPy_Visc[val_marker]; }
+
+inline su2double CNSSolver::GetSurface_CoPz_Visc(unsigned short val_marker) { return Surface_CoPz_Visc[val_marker]; }
 
 inline su2double CNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_dim][val_vertex]; }
 
@@ -1569,8 +1657,6 @@ inline su2double CIncEulerSolver::GetCPressureTarget(unsigned short val_marker, 
 inline void CIncEulerSolver::SetCPressureTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_pressure) { CPressureTarget[val_marker][val_vertex] = val_pressure; }
 
 inline su2double *CIncEulerSolver::GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) { return CharacPrimVar[val_marker][val_vertex]; }
-
-inline su2double CIncEulerSolver::GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
 
 inline su2double CIncEulerSolver::GetCD_Inv(unsigned short val_marker) { return CD_Inv[val_marker]; }
 
@@ -1771,8 +1857,6 @@ inline su2double CIncNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 inline su2double CIncNSSolver::GetTke_Inf(void) { return Tke_Inf; }
 
 inline su2double CIncNSSolver::GetCL_Visc(unsigned short val_marker) { return CL_Visc[val_marker]; }
-
-inline su2double CIncNSSolver::GetCMz_Visc(unsigned short val_marker) { return CMz_Visc[val_marker]; }
 
 inline su2double CIncNSSolver::GetCSF_Visc(unsigned short val_marker) { return CSF_Visc[val_marker]; }
 

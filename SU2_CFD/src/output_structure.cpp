@@ -5829,6 +5829,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0,
         Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
+        Total_CoPx = 0.0, Total_CoPy = 0.0, Total_CoPz = 0.0,
         Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Inv_CLift = 0.0,
         Inv_CDrag = 0.0, Inv_CSideForce = 0.0, Inv_CMx = 0.0, Inv_CMy = 0.0,
         Inv_CMz = 0.0, Inv_CEff = 0.0, Inv_CFx = 0.0, Inv_CFy = 0.0, Inv_CFz =
@@ -5925,6 +5926,21 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
     Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
     
+    if (nDim == 2) {
+      Total_CoPx =solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPx() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
+      Total_CoPy = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPy() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+      Total_CoPz = 0.0;
+    }
+    if (nDim == 3) {
+      Total_CoPx = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPx() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
+      Total_CoPz = 0.0;
+      Total_CoPz = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPz() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+    }
+    if (config[ZONE_0]->GetSystemMeasurements() == US) { Total_CoPx /= 12.0; Total_CoPy /= 12.0; Total_CoPz /= 12.0; }
+    Total_CoPx += config[ZONE_0]->GetRefOriginMoment(0)[0];
+    Total_CoPy += config[ZONE_0]->GetRefOriginMoment(0)[1];
+    Total_CoPz += config[ZONE_0]->GetRefOriginMoment(0)[2];
+
     /*--- Flow inviscid solution coefficients ---*/
     
     Inv_CLift =
@@ -6061,7 +6077,6 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Surface_CFz_Inv[iMarker_Monitoring] =
       solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz_Inv(
                                                                             iMarker_Monitoring);
-      
       Surface_CL_Visc[iMarker_Monitoring] =
       solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL_Visc(
                                                                             iMarker_Monitoring);
@@ -6521,6 +6536,10 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
 
     Breakdown_file << "NOTE: Multiply forces by the non-dimensional factor: " << Factor << ", and the reference factor: " << Ref  << "\n";
     Breakdown_file << "to obtain the dimensional force."  << "\n" << "\n";
+
+    if (compressible) {
+      Breakdown_file << "Center of Pressure: ("  << Total_CoPx <<", "<< Total_CoPy <<", "<< Total_CoPz <<")."  << "\n" << "\n";
+    }
 
     Breakdown_file << "Total CL:    ";
     Breakdown_file.width(11);
@@ -7416,7 +7435,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     
     bool Low_MemoryOutput = config[iZone]->GetLow_MemoryOutput();
     bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-    if (config[iZone]->GetKind_SU2() == SU2_DOT) Wrt_Vol == false;
+    if (config[iZone]->GetKind_SU2() == SU2_DOT) { Wrt_Vol = false; }
     bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     
     /*--- Get the file output format ---*/
