@@ -122,6 +122,12 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   if( compressible ) nVar = nDim + 2;
   else               nVar = nDim + 1;
 
+  /*--- Determine the rank of this processor and the total number of ranks. */
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
         geometrical information for the FEM DG solver. ---*/
   CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
@@ -661,16 +667,32 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   }
 
   /* Check if the exact Jacobian of the spatial discretization must be
-     determined. If so, the color of each DOF must be determined. */
+     determined. If so, the color of each DOF must be determined, which
+     is converted to the DOFs for each color. */
   if( config->GetJacobian_Spatial_Discretization_Only() ) {
-    vector<unsigned long>          nDOFsPerRank;
-    vector<vector<unsigned long> > neighborsLocalDOFs;
 
+    /* Write a message that the graph coloring is performed. */
+    if(rank == MASTER_NODE)
+      cout << "Creating the vertex colors of the graph. " << std::endl;
+
+    /* Determine the graph of the stencil of every local DOF. */
     DetermineGraphDOFs(DGGeometry, config);
-    //ColorGraph(nDOFsPerRank, nonZeroEntriesJacobian,
-    //           nGlobalColors, colorLocalDOFs);
-    cout << "Colors of the DOFs must be determined." << endl;
-    exit(1);
+
+    /* Carry out the vertex coloring of the graph. */
+    int nGlobalColors;
+    vector<int> colorLocalDOFs;
+    GraphVertexColoring(nDOFsPerRank, nonZeroEntriesJacobian,
+                        nGlobalColors, colorLocalDOFs);
+
+    /* Determine the local DOFs for each color. */
+    localDOFsPerColor.resize(nGlobalColors);
+    for(unsigned long i=0; i<nDOFsLocOwned; ++i)
+      localDOFsPerColor[colorLocalDOFs[i]].push_back(i);
+
+    /* Write a message that the all volume DOFs have been colored. */
+    if(rank == MASTER_NODE)
+      cout << "There are " << nGlobalColors
+           << " present in the graph." << std::endl;
   }
 
   /* Set up the persistent communication for the conservative variables and

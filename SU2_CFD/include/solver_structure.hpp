@@ -62,6 +62,7 @@
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/dense_matrix_product.hpp"
+#include "../../Common/include/graph_vertex_coloring.hpp"
 
 using namespace std;
 
@@ -12006,6 +12007,7 @@ protected:
   vector<vector<unsigned long> > nonZeroEntriesJacobian; /*!< \brief The ID's of the DOFs for the
                                                                      non-zero entries of the Jacobian
                                                                      for the locally owned DOFs. */
+  vector<vector<unsigned long> > localDOFsPerColor;      /*!< \brief The local DOFs for every color. */
 private:
 
 #ifdef HAVE_MPI
