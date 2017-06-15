@@ -57,9 +57,7 @@ su2double** CHybrid_Visc_Anisotropy::GetViscAnisotropy() {
 
 CHybrid_Isotropic_Visc::CHybrid_Isotropic_Visc(unsigned short nDim)
 : CHybrid_Visc_Anisotropy(nDim) {
-  eddy_visc_anisotropy = new su2double*[nDim];
   for (unsigned short iDim=0; iDim < nDim; iDim++) {
-    eddy_visc_anisotropy[iDim] = new su2double[nDim];
     for (unsigned short jDim=0; jDim < nDim; jDim++) {
       eddy_visc_anisotropy[iDim][jDim] = (su2double)(iDim == jDim);
     }
@@ -123,8 +121,8 @@ void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
                                          unsigned short jPoint) {
   su2double* alpha =
       solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
-  // TODO: Check what other source term functions do for Set/Get
-  rans_numerics->SetHybridParameter(alpha, alpha);
+  /*--- Since this is a source term, we don't need a second point ---*/
+  rans_numerics->SetHybridParameter(alpha, 0.0);
 }
 
 void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,

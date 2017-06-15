@@ -2229,6 +2229,10 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 
   }
 
+  for (iDim = 0; iDim < nDim; iDim++)
+    delete [] total_viscosity[iDim];
+  delete [] total_viscosity;
+
 }
 
 void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,

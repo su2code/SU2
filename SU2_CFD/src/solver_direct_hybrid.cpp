@@ -1051,7 +1051,7 @@ CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  /*--- Dimension of the problem --> dependent of the turbulent model ---*/
+  /*--- Dimension of the problem --> dependent on the hybrid model ---*/
 
   nVar = 1;
   nPoint = geometry->GetnPoint();
@@ -1307,7 +1307,7 @@ void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Initialize the residual vector ---*/
 
-    LinSysRes.SetBlock_Zero(iPoint);  // FIXME: Conditional jump or move depends on uninitialised value(s)
+    LinSysRes.SetBlock_Zero(iPoint);
 
   }
 
@@ -1317,7 +1317,7 @@ void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Initialize the Jacobian matrices ---*/
 
-  Jacobian.SetValZero(); // FIXME: Conditional jump or move depends on uninitialised value(s)
+  Jacobian.SetValZero();
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);

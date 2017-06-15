@@ -3362,15 +3362,6 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar,
   Mean_GradPrimVar = new su2double* [nDim+1];
   for (iVar = 0; iVar < nDim+1; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
-  
-  if (hasAnisoEddyViscosity) {
-    Eddy_Viscosity_Anisotropy_i = new su2double*[nDim];
-    Eddy_Viscosity_Anisotropy_j = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Eddy_Viscosity_Anisotropy_i[iDim] = new su2double[nDim];
-      Eddy_Viscosity_Anisotropy_j[iDim] = new su2double[nDim];
-    }
-  }
 
 }
 
@@ -3513,8 +3504,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual,
     }
   }
 
-  // Both conditions are required to avoid segfaults
-  if (Mean_Eddy_Viscosity != NULL && hasAnisoEddyViscosity) {
+  if (Mean_Aniso_Eddy_Viscosity != NULL) {
     for (iDim = 0; iDim < nDim; iDim++) {
       delete[] Mean_Aniso_Eddy_Viscosity[iDim];
     }

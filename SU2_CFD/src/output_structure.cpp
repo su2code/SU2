@@ -10791,7 +10791,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         /*--- Load the hybrid parameter ---*/
 
-        // FIXME Add resolution adequacy
+        // TODO Add resolution adequacy
 
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/

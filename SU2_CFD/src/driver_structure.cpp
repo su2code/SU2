@@ -819,12 +819,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
           case RANS_ONLY: // Only the source numerics object is different.
             solver_container[iMGlevel][HYBRID_SOL] = new CHybridConvSolver(geometry[iMGlevel], config, iMGlevel);
             solver_container[iMGlevel][HYBRID_SOL]->AddHybridMediator(hybrid_mediator);
-            solver_container[iMGlevel][HYBRID_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
             break;
           case CONVECTIVE:
             solver_container[iMGlevel][HYBRID_SOL] = new CHybridConvSolver(geometry[iMGlevel], config, iMGlevel);
             solver_container[iMGlevel][HYBRID_SOL]->AddHybridMediator(hybrid_mediator);
-            solver_container[iMGlevel][HYBRID_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
             break;
         }
       }
@@ -1184,7 +1182,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (euler)        nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   if (ns)           nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   if (turbulent)    nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
-  // TODO: Check that solver returns the correct number of variables
   if (hybrid)       nVar_Hybrid = solver_container[MESH_0][HYBRID_SOL]->GetnVar();
   if (transition)   nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
   if (poisson)      nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();

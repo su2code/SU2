@@ -153,12 +153,18 @@ int main() {
   // Teardown
   //---------------------------------------------------------------------------
   delete test_config;
-//  for (int iVar = 0; iVar < nVar; iVar++) {
-//    delete [] Proj_Jac_Tensor_i[iVar];
-//    delete [] Proj_Jac_Tensor_j[iVar];
-//  }
-//  delete [] Proj_Jac_Tensor_i;
-//  delete [] Proj_Jac_Tensor_j;
+  for (int iVar = 0; iVar < nVar; iVar++) {
+    delete [] Proj_Jac_Tensor_i[iVar];
+    delete [] Proj_Jac_Tensor_j[iVar];
+  }
+  delete [] Proj_Jac_Tensor_i;
+  delete [] Proj_Jac_Tensor_j;
+
+  delete [] Proj_Visc_Flux;
+
+  for (int iDim = 0; iDim < nDim; iDim++)
+    delete [] eddy_viscosity[iDim];
+  delete [] eddy_viscosity;
 
 #ifdef HAVE_MPI
   MPI_Finalize();
