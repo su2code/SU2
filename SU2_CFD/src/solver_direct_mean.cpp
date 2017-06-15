@@ -11626,13 +11626,15 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   complex<su2double> I, c2ks, c2js, c3ks, c3js, c4ks, c4js, cOutks, cOutjs, Beta_inf;
   I = complex<su2double>(0.0,1.0);
 
-  /*--- Compute coeff for under relaxation of Avg and Fourier Coefficient---*/
-  extrarelfacAvg  = config->GetExtraRelFacNRBC(0);
-  spanPercent     = config->GetExtraRelFacNRBC(1);
-  Turbo_Flag      = config->GetMarker_All_TurbomachineryFlag(val_marker);
-  SpanWiseValues  = geometry->GetSpanWiseValue(Turbo_Flag);
-  deltaSpan       = SpanWiseValues[nSpanWiseSections-1]*spanPercent;
-  coeffrelfacAvg  = (relfacAvgCfg - extrarelfacAvg)/deltaSpan;
+  /*--- Compute coeff for under relaxation of Avg and Fourier Coefficient for hub and shroud---*/
+  if (nDim == 3){
+    extrarelfacAvg  = config->GetExtraRelFacNRBC(0);
+    spanPercent     = config->GetExtraRelFacNRBC(1);
+    Turbo_Flag      = config->GetMarker_All_TurbomachineryFlag(val_marker);
+    SpanWiseValues  = geometry->GetSpanWiseValue(Turbo_Flag);
+    deltaSpan       = SpanWiseValues[nSpanWiseSections-1]*spanPercent;
+    coeffrelfacAvg  = (relfacAvgCfg - extrarelfacAvg)/deltaSpan;
+  }
 
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
     /*--- Compute under relaxation for the Hub and Shroud Avg and Fourier Coefficient---*/
