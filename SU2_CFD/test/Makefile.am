@@ -37,6 +37,7 @@ check_PROGRAMS  =
 check_PROGRAMS += aniso_viscous_flux_inc
 check_PROGRAMS += aniso_viscous_flux
 check_PROGRAMS += aniso_viscous_jacobian
+check_PROGRAMS += aniso_viscous_jacobian_compare
 check_PROGRAMS += aniso_viscous_residual_test
 
 # Eventually these will likely be required
@@ -54,16 +55,18 @@ LDADD += $(top_builddir)/SU2_CFD/obj/libSU2Core.a
 LDADD += @su2_externals_LIBS@
 
 # Test sources
-aniso_viscous_flux_inc_SOURCES        = aniso_viscous_flux_inc.cpp
-aniso_viscous_flux_SOURCES            = aniso_viscous_flux.cpp
-aniso_viscous_jacobian_SOURCES        = aniso_viscous_jacobian.cpp
-aniso_viscous_residual_test_SOURCES   = aniso_viscous_residual_test.cpp
+aniso_viscous_flux_inc_SOURCES         = aniso_viscous_flux_inc.cpp
+aniso_viscous_flux_SOURCES             = aniso_viscous_flux.cpp
+aniso_viscous_jacobian_SOURCES         = aniso_viscous_jacobian.cpp
+aniso_viscous_jacobian_compare_SOURCES = aniso_viscous_jacobian_compare.cpp
+aniso_viscous_residual_test_SOURCES    = aniso_viscous_residual_test.cpp
 
 # Tests to be run
 TESTS  =
 TESTS += aniso_viscous_flux_inc
 TESTS += aniso_viscous_flux
 TESTS += aniso_viscous_jacobian
+TESTS += aniso_viscous_jacobian_compare
 TESTS += aniso_viscous_residual_test
 
 # Any of above we expect to fail?

@@ -1,7 +1,7 @@
 /*!
- * \file aniso_viscous_flux.cpp
- * \brief checks whether the viscous projected flux is computed correctly for
- *        anisotropic eddy viscosities in compressible flow.
+ * \file aniso_viscous_jacobian.cpp
+ * \brief checks whether the viscous projected jacobian is computed correctly
+ *        for anisotropic eddy viscosities in compressible flow.
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  *

@@ -122,7 +122,7 @@ void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
   su2double* alpha =
       solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
   /*--- Since this is a source term, we don't need a second point ---*/
-  rans_numerics->SetHybridParameter(alpha, 0.0);
+  rans_numerics->SetHybridParameter(alpha, NULL);
 }
 
 void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
