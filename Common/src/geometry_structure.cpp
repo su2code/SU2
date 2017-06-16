@@ -12542,8 +12542,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     vector<unsigned long>::iterator low;
     low = lower_bound(facePointsProc.begin(), facePointsProc.end(),
                       localFacesComm[i].cornerPoints[0]);
-    unsigned long rankFace = low - facePointsProc.begin() -1;
-    if(*low == localFacesComm[i].cornerPoints[0]) ++rankFace;
+    unsigned long rankFace = low - facePointsProc.begin();
+    if(*low > localFacesComm[i].cornerPoints[0]) --rankFace;
 
     ++nFacesComm[rankFace];
     localFacesComm[i].elemID1 = rankFace;
@@ -13767,8 +13767,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
             const unsigned long *low;
             low = lower_bound(starting_node, starting_node+size, FI->elemID1);
 
-            rankElem = low - starting_node -1;
-            if(*low == FI->elemID1) ++rankElem;
+            rankElem = low - starting_node;
+            if(*low > FI->elemID1) --rankElem;
           }
 
           /* Set the corresponding index of recvFromRank to 1. */
@@ -13811,8 +13811,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
             const unsigned long *low;
             low = lower_bound(starting_node, starting_node+size, FI->elemID1);
 
-            rankElem = low - starting_node -1;
-            if(*low == FI->elemID1) ++rankElem;
+            rankElem = low - starting_node;
+            if(*low > FI->elemID1) --rankElem;
           }
 
           map<int,int>::const_iterator MRI = mapRankToIndRecv.find(rankElem);

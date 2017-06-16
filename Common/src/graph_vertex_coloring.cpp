@@ -31,25 +31,26 @@
 
 #include "../include/graph_vertex_coloring.hpp"
 
-void GraphVertexColoring(const vector<unsigned long>          &nVerticePerRank,
+void GraphVertexColoring(const vector<unsigned long>          &nVerticesPerRank,
                          const vector<vector<unsigned long> > &neighborVertices,
                          int                                  &nGlobalColors,
                          vector<int>                          &colorLocalVertices) {
 
   /* Determine the number of ranks and the current rank. */
-  int nRank = SINGLE_NODE;
-  int rank  = MASTER_NODE;
+  int nRank  = SINGLE_NODE;
+  int myRank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
   MPI_Comm_size(MPI_COMM_WORLD, &nRank);
 #endif
 
-  /*--------------------------------------------------------------------*/
-  /* Step 1: Determine the lower and higher numbered ranks to which the */
-  /*         vertices of this rank are connected.                       */
-  /*--------------------------------------------------------------------*/
-
+  /*--------------------------------------------------------------------------*/
+  /* Step 1: Gather all the data of the graph on the master rank, because the */
+  /*         greedy algorithm used here is a sequential algorithm. Moreover   */
+  /*         the algorithm requires the neighbors of neighbors, which is      */
+  /*         difficult to implement in an efficient way in parallel.          */
+  /****************************************************************************/
 
   cout << "GraphVertexColoring not implemented yet" << endl;
   exit(1);

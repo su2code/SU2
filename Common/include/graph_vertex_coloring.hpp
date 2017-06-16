@@ -34,7 +34,7 @@
 #pragma once
 
 #include "./mpi_structure.hpp"
-#include <vector>
+#include "option_structure.hpp"
 
 using namespace std;
 
@@ -51,7 +51,7 @@ using namespace std;
  * \param[out] nGlobalColors      - Global number of colors in the graph.
  * \param[out] colorLocalVertices - The color of the local vertices of the graph.
  */
-void GraphVertexColoring(const vector<unsigned long>          &nVerticePerRank,
+void GraphVertexColoring(const vector<unsigned long>          &nVerticesPerRank,
                          const vector<vector<unsigned long> > &neighborVertices,
-		         int                                  &nGlobalColors,
-			 vector<int>                          &colorLocalVertices);
+		                     int                                  &nGlobalColors,
+			                   vector<int>                          &colorLocalVertices);
