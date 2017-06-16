@@ -961,6 +961,18 @@ inline su2double CSolver::GetPressureOut(unsigned short inMarkerTP, unsigned sho
 
 inline su2double* CSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return NULL;}
 
+inline su2double CSolver::GetKeiIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
+inline su2double CSolver::GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
+inline su2double CSolver::GetNuIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
+inline su2double CSolver::GetKeiOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
+inline su2double CSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
+inline su2double CSolver::GetNuOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
 inline void CSolver::SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline void CSolver::SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
@@ -972,6 +984,18 @@ inline void CSolver::SetDensityOut(su2double value, unsigned short inMarkerTP, u
 inline void CSolver::SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline void CSolver::SetTurboVelocityOut(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){ }
+
+inline void CSolver::SetKeiIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+
+inline void CSolver::SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+
+inline void CSolver::SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+
+inline void CSolver::SetKeiOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+
+inline void CSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+
+inline void CSolver::SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline void CSolver::SetFreeStream_TurboSolution(CConfig *config){ }
 
@@ -1360,6 +1384,18 @@ inline su2double  CEulerSolver::GetPressureOut(unsigned short inMarkerTP, unsign
 
 inline su2double* CEulerSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityOut[inMarkerTP][valSpan];}
 
+inline su2double CEulerSolver::GetKeiIn(unsigned short inMarkerTP, unsigned short valSpan){return KeiIn[inMarkerTP][valSpan];}
+
+inline su2double CEulerSolver::GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan){return OmegaIn[inMarkerTP][valSpan];}
+
+inline su2double CEulerSolver::GetNuIn(unsigned short inMarkerTP, unsigned short valSpan){return NuIn[inMarkerTP][valSpan];}
+
+inline su2double CEulerSolver::GetKeiOut(unsigned short inMarkerTP, unsigned short valSpan){return KeiOut[inMarkerTP][valSpan];}
+
+inline su2double CEulerSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan){return OmegaOut[inMarkerTP][valSpan];}
+
+inline su2double CEulerSolver::GetNuOut(unsigned short inMarkerTP, unsigned short valSpan){return NuOut[inMarkerTP][valSpan];}
+
 inline void CEulerSolver::SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){DensityIn[inMarkerTP][valSpan] = value;}
 
 inline void CEulerSolver::SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){PressureIn[inMarkerTP][valSpan] = value;}
@@ -1381,6 +1417,18 @@ inline void CEulerSolver::SetTurboVelocityOut(su2double *value, unsigned short i
   for(iDim = 0; iDim < nDim; iDim++)
     TurboVelocityOut[inMarkerTP][valSpan][iDim] = value[iDim];
 }
+
+inline void CEulerSolver::SetKeiIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KeiIn[inMarkerTP][valSpan] = value;}
+
+inline void CEulerSolver::SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){OmegaIn[inMarkerTP][valSpan] = value;}
+
+inline void CEulerSolver::SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){NuIn[inMarkerTP][valSpan] = value;}
+
+inline void CEulerSolver::SetKeiOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KeiOut[inMarkerTP][valSpan] = value;}
+
+inline void CEulerSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){OmegaOut[inMarkerTP][valSpan] = value;}
+
+inline void CEulerSolver::SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){NuOut[inMarkerTP][valSpan] = value;}
 
 inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short kind_turb) {
 

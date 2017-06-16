@@ -3503,6 +3503,48 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetKeiIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetNuIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetKeiOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetNuOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
@@ -3542,6 +3584,48 @@ public:
    * \param[in] inMarkerTP - turboperformance marker.
    */
   virtual void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetKeiIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetKeiOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief A virtual member.
@@ -3852,36 +3936,46 @@ protected:
   unsigned short nMarkerTurboPerf;  /*!< \brief Number of turbo performance. */
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
+
+  /*--- Turbomachinery Solver Variables ---*/
   su2double *** AverageFlux,
-		***SpanTotalFlux,
-	   ***AverageVelocity,
-		 ***AverageTurboVelocity,
-		 ***OldAverageTurboVelocity,
-		 ***ExtAverageTurboVelocity,
-		  **AveragePressure,
-			**OldAveragePressure,
-			**RadialEquilibriumPressure,
-		  **ExtAveragePressure,
-		  **AverageDensity,
-			**OldAverageDensity,
-		  **ExtAverageDensity,
-			**AverageNu,
-			**AverageKei,
-			**AverageOmega,
-			**ExtAverageNu,
-			**ExtAverageKei,
-			**ExtAverageOmega;
-  
+  ***SpanTotalFlux,
+  ***AverageVelocity,
+  ***AverageTurboVelocity,
+  ***OldAverageTurboVelocity,
+  ***ExtAverageTurboVelocity,
+  **AveragePressure,
+  **OldAveragePressure,
+  **RadialEquilibriumPressure,
+  **ExtAveragePressure,
+  **AverageDensity,
+  **OldAverageDensity,
+  **ExtAverageDensity,
+  **AverageNu,
+  **AverageKei,
+  **AverageOmega,
+  **ExtAverageNu,
+  **ExtAverageKei,
+  **ExtAverageOmega;
+
   su2double **DensityIn,
-      **PressureIn,
-      ***TurboVelocityIn,
-      **DensityOut,
-      **PressureOut,
-      ***TurboVelocityOut;
+  **PressureIn,
+  ***TurboVelocityIn,
+  **DensityOut,
+  **PressureOut,
+  ***TurboVelocityOut,
+  **KeiIn,
+  **OmegaIn,
+  **NuIn,
+  **KeiOut,
+  **OmegaOut,
+  **NuOut;
   
   complex<su2double> ***CkInflow,
-										 ***CkOutflow1,
-										 ***CkOutflow2;
+  ***CkOutflow1,
+  ***CkOutflow2;
+
+ /*--- End of Turbomachinery Solver Variables ---*/
 
   /* Sliding meshes variables */
 
@@ -5944,6 +6038,48 @@ public:
   su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
+   * \brief Provide the inlet turbulent kei to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetKeiIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the inlet turbulent omega to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the inlet turbulent nu to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetNuIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet turbulent kei to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetKeiOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet turbulent omega to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet turbulent nu to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetNuOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
    * \brief Set inlet density.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
@@ -5984,6 +6120,44 @@ public:
    * \param[in] inMarkerTP - turboperformance marker.
    */
   void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set inlet turbulent kei.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetKeiIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  /*!
+   * \brief Set inlet turbulent omega.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  /*!
+   * \brief Set inlet turbulent Nu.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set outlet turbulent kei.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetKeiOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  /*!
+   * \brief Set Outlet turbulent omega.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  /*!
+   * \brief Set outlet turbulent Nu.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
 
 };
 

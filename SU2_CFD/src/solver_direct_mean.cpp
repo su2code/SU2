@@ -1207,6 +1207,12 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   DensityOut                    = new su2double*[nMarkerTurboPerf];
   PressureOut                   = new su2double*[nMarkerTurboPerf];
   TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
+  KeiIn                         = new su2double*[nMarkerTurboPerf];
+  OmegaIn                       = new su2double*[nMarkerTurboPerf];
+  NuIn                          = new su2double*[nMarkerTurboPerf];
+  KeiOut                        = new su2double*[nMarkerTurboPerf];
+  OmegaOut                      = new su2double*[nMarkerTurboPerf];
+  NuOut                         = new su2double*[nMarkerTurboPerf];
 
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
     DensityIn[iMarker]          = new su2double [nSpanMax + 1];
@@ -1215,6 +1221,13 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     DensityOut[iMarker]         = new su2double [nSpanMax + 1];
     PressureOut[iMarker]        = new su2double [nSpanMax + 1];
     TurboVelocityOut[iMarker]   = new su2double*[nSpanMax + 1];
+    KeiIn[iMarker]              = new su2double [nSpanMax + 1];
+    OmegaIn[iMarker]            = new su2double [nSpanMax + 1];
+    NuIn[iMarker]               = new su2double [nSpanMax + 1];
+    KeiOut[iMarker]             = new su2double [nSpanMax + 1];
+    OmegaOut[iMarker]           = new su2double [nSpanMax + 1];
+    NuOut[iMarker]              = new su2double [nSpanMax + 1];
+
 
 
     for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
@@ -1224,6 +1237,12 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       DensityOut[iMarker][iSpan]         = 0.0;
       PressureOut[iMarker][iSpan]        = 0.0;
       TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
+      KeiIn[iMarker][iSpan]              = 0.0;
+      OmegaIn[iMarker][iSpan]            = 0.0;
+      NuIn[iMarker][iSpan]               = 0.0;
+      KeiOut[iMarker][iSpan]             = 0.0;
+      OmegaOut[iMarker][iSpan]           = 0.0;
+      NuOut[iMarker][iSpan]              = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++){
         TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
@@ -15972,7 +15991,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
   int markerTP;
   su2double     densityIn, pressureIn, normalVelocityIn, tangVelocityIn, radialVelocityIn;
   su2double     densityOut, pressureOut, normalVelocityOut, tangVelocityOut, radialVelocityOut;
-
+  su2double     keiIn, omegaIn, nuIn, keiOut, omegaOut, nuOut;
   //TODO (turbo) implement interpolation so that Inflow and Outflow spanwise section can be different
 
   for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
@@ -15983,8 +16002,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
     int *TotMarkerTP;
 
-    n1          = 6;
-    n2          = 6;
+    n1          = 8;
+    n2          = 8;
     n1t         = n1*size;
     n2t         = n2*size;
     TurbPerfIn  = new su2double[n1];
@@ -16022,6 +16041,9 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             if (nDim ==3){
               radialVelocityIn  = TurboVelocityIn[iMarkerTP -1][iSpan][2];
             }
+            keiIn               = KeiIn[iMarkerTP -1][iSpan];
+            omegaIn             = OmegaIn[iMarkerTP -1][iSpan];
+            nuIn                = NuIn[iMarkerTP -1][iSpan];
 
 
 #ifdef HAVE_MPI
@@ -16030,6 +16052,9 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfIn[2]  = normalVelocityIn;
             TurbPerfIn[3]  = tangVelocityIn;
             TurbPerfIn[4]  = radialVelocityIn;
+            TurbPerfIn[5]  = keiIn;
+            TurbPerfIn[6]  = omegaIn;
+            TurbPerfIn[7]  = nuIn;
 #endif
           }
 
@@ -16040,8 +16065,11 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             normalVelocityOut    = TurboVelocityOut[iMarkerTP -1][iSpan][0];
             tangVelocityOut      = TurboVelocityOut[iMarkerTP -1][iSpan][1];
             if (nDim ==3){
-              radialVelocityOut   = TurboVelocityOut[iMarkerTP -1][iSpan][2];
+              radialVelocityOut  = TurboVelocityOut[iMarkerTP -1][iSpan][2];
             }
+            keiOut               = KeiOut[iMarkerTP -1][iSpan];
+            omegaOut             = OmegaOut[iMarkerTP -1][iSpan];
+            nuOut                = NuOut[iMarkerTP -1][iSpan];
 
 
 
@@ -16051,6 +16079,9 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfOut[2]  = normalVelocityOut;
             TurbPerfOut[3]  = tangVelocityOut;
             TurbPerfOut[4]  = radialVelocityOut;
+            TurbPerfOut[5]  = keiOut;
+            TurbPerfOut[6]  = omegaOut;
+            TurbPerfOut[7]  = nuOut;
 #endif
           }
         }
@@ -16090,6 +16121,12 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
           tangVelocityIn   = TotTurbPerfIn[n1*i+3];
           radialVelocityIn = 0.0;
           radialVelocityIn = TotTurbPerfIn[n1*i+4];
+          keiIn            = 0.0;
+          keiIn            = TotTurbPerfIn[n1*i+5];
+          omegaIn          = 0.0;
+          omegaIn          = TotTurbPerfIn[n1*i+6];
+          nuIn             = 0.0;
+          nuIn             = TotTurbPerfIn[n1*i+7];
 
           markerTP               = -1;
           markerTP               = TotMarkerTP[i];
@@ -16106,6 +16143,12 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
           tangVelocityOut   = TotTurbPerfOut[n1*i+3];
           radialVelocityOut = 0.0;
           radialVelocityOut = TotTurbPerfOut[n1*i+4];
+          keiOut            = 0.0;
+          keiOut            = TotTurbPerfOut[n1*i+5];
+          omegaOut          = 0.0;
+          omegaOut          = TotTurbPerfOut[n1*i+6];
+          nuOut             = 0.0;
+          nuOut             = TotTurbPerfOut[n1*i+7];
         }
       }
 
@@ -16116,19 +16159,26 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
 
     if (rank == MASTER_NODE){
       /*----Quantities needed for computing the turbomachinery performance -----*/
-      DensityIn         [markerTP -1][iSpan]      = densityIn;
-      PressureIn        [markerTP -1][iSpan]      = pressureIn;
-      TurboVelocityIn   [markerTP -1][iSpan][0]   = normalVelocityIn;
-      TurboVelocityIn   [markerTP -1][iSpan][1]   = tangVelocityIn;
+      DensityIn[markerTP -1][iSpan]              = densityIn;
+      PressureIn[markerTP -1][iSpan]             = pressureIn;
+      TurboVelocityIn[markerTP -1][iSpan][0]     = normalVelocityIn;
+      TurboVelocityIn[markerTP -1][iSpan][1]     = tangVelocityIn;
       if (nDim == 3)
-        TurboVelocityIn   [markerTP -1][iSpan][2]   = radialVelocityIn;
+        TurboVelocityIn[markerTP -1][iSpan][2]   = radialVelocityIn;
+      KeiIn[markerTP -1][iSpan]                  = keiIn;
+      OmegaIn[markerTP -1][iSpan]                = omegaIn;
+      NuIn[markerTP -1][iSpan]                   = nuIn;
 
-      DensityOut        [markerTP -1][iSpan]      = densityOut;
-      PressureOut       [markerTP -1][iSpan]      = pressureOut;
-      TurboVelocityOut  [markerTP -1][iSpan][0]   = normalVelocityOut;
-      TurboVelocityOut  [markerTP -1][iSpan][1]   = tangVelocityOut;
+      DensityOut[markerTP -1][iSpan]             = densityOut;
+      PressureOut[markerTP -1][iSpan]            = pressureOut;
+      TurboVelocityOut[markerTP -1][iSpan][0]    = normalVelocityOut;
+      TurboVelocityOut[markerTP -1][iSpan][1]    = tangVelocityOut;
       if (nDim == 3)
-        TurboVelocityOut  [markerTP -1][iSpan][2]   = radialVelocityOut;
+        TurboVelocityOut[markerTP -1][iSpan][2]  = radialVelocityOut;
+      KeiOut[markerTP -1][iSpan]                 = keiOut;
+      OmegaOut[markerTP -1][iSpan]               = omegaOut;
+      NuOut[markerTP -1][iSpan]                  = nuOut;
+
     }
   }
 }
