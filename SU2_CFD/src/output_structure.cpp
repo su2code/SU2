@@ -2076,7 +2076,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
   if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
   nVar_Consv = nVar_First + nVar_Second + nVar_Third;
-    cout << "********------------ nvar_consv in merge solution = " << nVar_Consv << endl;
+
   nVar_Total = nVar_Consv;
   
   if (!config->GetLow_MemoryOutput()) {
@@ -3886,6 +3886,250 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
 
   restart_file.close();
 
+}
+
+void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+    
+    /*--- Local variables ---*/
+    
+    unsigned short nZone = geometry->GetnZone();
+    unsigned short Kind_Solver  = config->GetKind_Solver();
+    unsigned short iVar=0, iDim, nDim = geometry->GetnDim();
+    unsigned long iPoint, iExtIter = config->GetExtIter();
+    bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
+    ofstream restart_file;
+    ofstream meta_file;
+    string filename, meta_filename;
+    bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+    bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+    
+    unsigned short FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
+    unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
+    
+    bool grid_movement  = (config->GetGrid_Movement());
+    bool transition     = (config->GetKind_Trans_Model() == LM);
+    bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+    
+    /*--- Prepare send buffers for the conservative variables. Need to
+     find the total number of conservative variables and also the
+     index for their particular solution container. ---*/
+    
+    switch (Kind_Solver) {
+        case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+        case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if (transition) ThirdIndex=TRANS_SOL; else ThirdIndex = NONE; break;
+        case POISSON_EQUATION: FirstIndex = POISSON_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+        case WAVE_EQUATION: FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+        case HEAT_EQUATION: FirstIndex = HEAT_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+        case FEM_ELASTICITY: FirstIndex = FEA_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+        case ADJ_EULER : case ADJ_NAVIER_STOKES : FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+        case ADJ_RANS : FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
+        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+        case DISC_ADJ_RANS: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
+        default: SecondIndex = NONE; ThirdIndex = NONE; break;
+    }
+    
+    nVar_First = solver[FirstIndex]->GetnVar();
+    if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
+    if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
+    nVar_Consv = nVar_First + nVar_Second + nVar_Third;
+    //nVar_Total = nVar_Consv;
+    cout << "%%%%%%%%%%%%% nVar_Consv in SetBaselineRestart = " << nVar_Consv << endl;
+    /*--- Retrieve filename from config ---*/
+    
+    if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
+        filename = config->GetRestart_AdjFileName();
+        filename = config->GetObjFunc_Extension(filename);
+    } else if (fem) {
+        filename = config->GetRestart_FEMFileName();
+    } else {
+        filename = config->GetRestart_FlowFileName();
+    }
+    
+    /*--- Append the zone number if multizone problems ---*/
+    if (nZone > 1)
+        filename= config->GetMultizone_FileName(filename, val_iZone);
+    
+    /*--- Unsteady problems require an iteration number to be appended. ---*/
+    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+        filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
+    } else if (config->GetWrt_Unsteady()) {
+        filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    } else if ((fem) && (config->GetWrt_Dynamic())) {
+        filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    }
+    
+    /*--- Open the restart file and write the solution. ---*/
+    
+    restart_file.open(filename.c_str(), ios::out);
+    restart_file.precision(15);
+    
+    /*--- Write the header line based on the particular solver ----*/
+    
+    restart_file << "\"PointID\"";
+    
+    /*--- Mesh coordinates are always written to the restart first ---*/
+    
+    if (nDim == 2) {
+        restart_file << "\t\"x\"\t\"y\"";
+    } else {
+        restart_file << "\t\"x\"\t\"y\"\t\"z\"";
+    }
+    
+    for (iVar = 0; iVar < nVar_Consv; iVar++) {
+        if ( Kind_Solver == FEM_ELASTICITY )
+            restart_file << "\t\"Displacement_" << iVar+1<<"\"";
+        else
+            restart_file << "\t\"Conservative_" << iVar+1<<"\"";
+    }
+    
+    if (!config->GetLow_MemoryOutput()) {
+        
+        if (config->GetWrt_Limiters()) {
+            for (iVar = 0; iVar < nVar_Consv; iVar++) {
+                restart_file << "\t\"Limiter_" << iVar+1<<"\"";
+            }
+        }
+        if (config->GetWrt_Residuals()) {
+            for (iVar = 0; iVar < nVar_Consv; iVar++) {
+                restart_file << "\t\"Residual_" << iVar+1<<"\"";
+            }
+        }
+        
+        /*--- Mesh velocities for dynamic mesh cases ---*/
+        
+        if (grid_movement && !fem) {
+            if (nDim == 2) {
+                restart_file << "\t\"Grid_Velx\"\t\"Grid_Vely\"";
+            } else {
+                restart_file << "\t\"Grid_Velx\"\t\"Grid_Vely\"\t\"Grid_Velz\"";
+            }
+        }
+        
+        if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+            if (config->GetOutput_FileFormat() == PARAVIEW) {
+                restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"Pressure_Coefficient\"\t\"Mach\"";
+            } else
+                restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"C<sub>p</sub>\"\t\"Mach\"";
+        }
+        
+        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+            if (config->GetOutput_FileFormat() == PARAVIEW) {
+                if (nDim == 2) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Heat_Flux\"\t\"Y_Plus\"";
+                if (nDim == 3) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Skin_Friction_Coefficient_Z\"\t\"Heat_Flux\"\t\"Y_Plus\"";
+            } else {
+                if (nDim == 2) restart_file << "\t\"<greek>m</greek>\"\t\"C<sub>f</sub>_x\"\t\"C<sub>f</sub>_y\"\t\"h\"\t\"y<sup>+</sup>\"";
+                if (nDim == 3) restart_file << "\t\"<greek>m</greek>\"\t\"C<sub>f</sub>_x\"\t\"C<sub>f</sub>_y\"\t\"C<sub>f</sub>_z\"\t\"h\"\t\"y<sup>+</sup>\"";
+            }
+        }
+        
+        if (Kind_Solver == RANS) {
+            if (config->GetOutput_FileFormat() == PARAVIEW) {
+                restart_file << "\t\"Eddy_Viscosity\"";
+            } else
+                restart_file << "\t\"<greek>m</greek><sub>t</sub>\"";
+        }
+        
+        if (config->GetWrt_SharpEdges()) {
+            if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+                restart_file << "\t\"Sharp_Edge_Dist\"";
+            }
+        }
+        
+        if (Kind_Solver == POISSON_EQUATION) {
+            for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+                restart_file << "\t\"poissonField_" << iDim+1 << "\"";
+        }
+        
+        if ((Kind_Solver == ADJ_EULER              ) ||
+            (Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+            (Kind_Solver == ADJ_RANS               )   ) {
+            restart_file << "\t\"Surface_Sensitivity\"\t\"Solution_Sensor\"";
+        }
+        if (( Kind_Solver == DISC_ADJ_EULER              ) ||
+            ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
+            ( Kind_Solver == DISC_ADJ_RANS               )) {
+            restart_file << "\t\"Surface_Sensitivity\"\t\"Sensitivity_x\"\t\"Sensitivity_y\"";
+            if (geometry->GetnDim() == 3) {
+                restart_file << "\t\"Sensitivity_z\"";
+            }
+        }
+        
+        if (Kind_Solver == FEM_ELASTICITY) {
+            if (!dynamic_fem) {
+                if (geometry->GetnDim() == 2)
+                    restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Von_Mises_Stress\"";
+                if (geometry->GetnDim() == 3)
+                    restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Szz\"\t\"Sxz\"\t\"Syz\"\t\"Von_Mises_Stress\"";
+            }
+            else if (dynamic_fem) {
+                if (geometry->GetnDim() == 2) {
+                    restart_file << "\t\"Velocity_1\"\t\"Velocity_2\"\t\"Acceleration_1\"\t\"Acceleration_2\"";
+                    restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Von_Mises_Stress\"";
+                }
+                if (geometry->GetnDim() == 3) {
+                    restart_file << "\t\"Velocity_1\"\t\"Velocity_2\"\t\"Velocity_3\"\t\"Acceleration_1\"\t\"Acceleration_2\"\t\"Acceleration_3\"";
+                    restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Szz\"\t\"Sxz\"\t\"Syz\"\t\"Von_Mises_Stress\"";
+                }
+            }
+        }
+        
+        
+        if (config->GetExtraOutput()) {
+            string *headings = NULL;
+            //if (Kind_Solver == RANS) {
+            headings = solver[TURB_SOL]->OutputHeadingNames;
+            //}
+            
+            for (iVar = 0; iVar < nVar_Extra; iVar++) {
+                if (headings == NULL) {
+                    restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
+                } else {
+                    restart_file << "\t\""<< headings[iVar] <<"\"";
+                }
+            }
+        }
+    }
+    
+    restart_file << "\n";
+    /*--- Write the restart file ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+        
+        /*--- Index of the point ---*/
+        restart_file << iPoint << "\t";
+        
+        /*--- Write the grid coordinates first if it is not called by SU2_SOL(for interpolated mesh solution to write restarts)---*/
+        if (!(config->GetKind_SU2() == SU2_SOL)) {
+            for (iDim = 0; iDim < nDim; iDim++) {
+                restart_file << scientific << Coords[iDim][iPoint] << "\t";
+            }
+        }
+        
+        /*--- Loop over the variables and write the values to file ---*/
+        for (iVar = 0; iVar < nVar_Total; iVar++) {
+            restart_file << scientific << Data[iVar][iPoint] << "\t";
+        }
+        //cout << "Set Vars done " << endl;
+        restart_file << "\n";
+    }
+    
+    /*--- Write the general header and flow conditions ----*/
+    
+    if (dual_time)
+        restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
+    else
+        restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+    restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+    restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+    restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+    restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+    if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+    
+    /*--- Close the data portion of the restart file. ---*/
+    
+    restart_file.close();
+    
 }
 
 void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
@@ -7352,7 +7596,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           
         /* For interpolation of solution from one mesh to another */
         cout << "Writing SU2 native restart file." << endl;
-        SetRestart(config[iZone], geometry[iZone], solver, iZone);
+        SetBaselineRestart(config[iZone], geometry[iZone], solver, iZone);
           
         if (Wrt_Vol) {
           
@@ -15210,7 +15454,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     
     su2_adtPointsOnlyClass NodesADT(nDim, nPoint_noHalo, Coord_bound.data(), PointIDs.data());
     
-    cout << "Done forming the adt tree by rank " << rank << endl;
 #ifdef HAVE_MPI
     
     send_req1 = new MPI_Request[size]; recv_req1 = new MPI_Request[size];
@@ -15518,14 +15761,12 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         }
         
     }
-   
-    cout << " %%%%%%%%%%%%%%%% Finished solver interp with MPI " << endl;
     
     /* Deleting the memory */
     delete [] send_req1; delete [] recv_req1;
     delete [] send_req2; delete [] recv_req2;
     delete [] send_req3; delete [] recv_req3;
-    cout << "Deleted mpi requests" << endl;
+    
     if(Buffer_send_InterpSolution != NULL) {
         for (int iProc=0; iProc < nProcs_recv; iProc++) {
             unsigned long nPointIDs = nPointIDs_proc_recv[iProc_recv[iProc]];
@@ -15533,7 +15774,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         }
     }
     delete Buffer_send_InterpSolution;
-    cout << "Deleted buffer sen for solver interp " << endl;
     if (Buffer_recv_InterpSolution != NULL) {
         for (int iProc=0; iProc < nProcs_send; iProc++) {
             cout << "iProc = " << iProc << endl;
@@ -15542,7 +15782,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         }
     }
     delete Buffer_recv_InterpSolution;
-    cout << "Deleted buffer recv for solver interp " << endl;
 #else
 
     /* Serial code */
@@ -15572,13 +15811,8 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             
             if (rank == rankID)
             {
-                /*cout << "Nearest node distance for probe located at (" << probe_loc[0] << ", " << probe_loc[1] << ") = " << dist_probe << endl;
-                cout << "The point is " << geometry->node[pointID]->GetGlobalIndex() << " and local index = " << pointID << " in rank " << rankID << endl;
-                cout << "Coords are x = " << geometry->node[pointID]->GetCoord(0) << ", y= " << geometry->node[pointID]->GetCoord(1) << endl;*/
                 
                 if (dist_probe < 1e-12) {
-                    //cout << " LOCATECD!! Probe intersects with reference mesh node number " << geometry->node[pointID]->GetGlobalIndex() << endl;
-                    
                     for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
                         solution_interp[iVar] = solver[FLOW_SOL]->node[pointID]->GetSolution(iVar);
                     }
@@ -15586,18 +15820,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 else {
                     /* local element number inside which the probe is located */
                     probe_elem = FindProbeLocElement_fromNearestNode(geometry, pointID, probe_loc);
-                
-                    /* Linear interpolation of solution of the vertices of the probe_elem */
-                    /*unsigned short nNodes_elem = geometry->elem[probe_elem]->GetnNodes();
-                    
-                    for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
-                        unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
-                        for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
-                            if (iVar == 2)
-                                cout << "solver[1] for node = " <<  geometry->node[iPoint_loc]->GetGlobalIndex() << " = " << solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar) << endl;
-                            solution_interp[iVar] += solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar)/nNodes_elem;
-                        }
-                    }*/
                     
                     for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
                         unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
@@ -15659,8 +15881,6 @@ unsigned long COutput::FindProbeLocElement_fromNearestNode(CGeometry *geometry,
     if(!Inside){
         /* Point not found in the elements containing the nearest edge */
         /* Search the next tier neighbours */
-        cout << "Probe point not found in the elements containing the nearest edge." << endl;
-        cout << "Checking the elements of the points connected to nearest edge " << endl;
         unsigned short nPoint_node =geometry->node[pointID]->GetnPoint();
         /* Neighbouring points of the nearest edge */
         for ( unsigned short iPoint = 0; iPoint < nPoint_node; iPoint++) {
