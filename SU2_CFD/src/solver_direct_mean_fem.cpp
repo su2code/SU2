@@ -1508,9 +1508,10 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
   for(unsigned long i=0; i<nVolElemOwned; ++i) {
     for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
       const unsigned long jj = volElem[i].offsetDOFsSolLocal + j;
-      for(unsigned short k=0; k<volElem[i].nDOFsSol; ++k) {
+      for(unsigned short k=(j+1); k<volElem[i].nDOFsSol; ++k) {
         const unsigned long kk = volElem[i].offsetDOFsSolLocal + k;
         nonZeroEntriesJacobian[jj].push_back(DOFsGlobalID[kk]);
+        nonZeroEntriesJacobian[kk].push_back(DOFsGlobalID[jj]);
       }
     }
   }

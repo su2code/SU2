@@ -993,8 +993,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     vector<unsigned long>::iterator low;
     low = lower_bound(nElemPerRankOr.begin(), nElemPerRankOr.end(),
                       haloElements[i].long0);
-    unsigned long rankHalo = low - nElemPerRankOr.begin() -1;
-    if(*low == haloElements[i].long0) ++rankHalo;
+    unsigned long rankHalo = low - nElemPerRankOr.begin();
+    if(*low > haloElements[i].long0) --rankHalo;
 
     sendToRank[rankHalo] = 1;
   }
@@ -1027,8 +1027,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     vector<unsigned long>::iterator low;
     low = lower_bound(nElemPerRankOr.begin(), nElemPerRankOr.end(),
                       haloElements[i].long0);
-    unsigned long ind = low - nElemPerRankOr.begin() -1;
-    if(*low == haloElements[i].long0) ++ind;
+    unsigned long ind = low - nElemPerRankOr.begin();
+    if(*low > haloElements[i].long0) --ind;
 
     /* Convert this rank to the index in the send buffer. */
     MI = rankToIndCommBuf.find(ind);
