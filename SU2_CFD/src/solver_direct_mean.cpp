@@ -15443,9 +15443,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   TotalMassOmega  += Area*(Density*TurboVelocity[0] )*Omega;
                   TotalMassNu    += Area*(Density*TurboVelocity[0] )*Nu;
 
-                  TotalAreaKei    += Area*Kei;
-                  TotalAreaOmega  += Area*Omega;
-                  TotalAreaNu     += Area*Nu;
 
                 }
               }
@@ -15529,10 +15526,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                     TotalMassKei    += Area*(Density*TurboVelocity[0] )*Kei;
                     TotalMassOmega  += Area*(Density*TurboVelocity[0] )*Omega;
                     TotalMassNu    += Area*(Density*TurboVelocity[0] )*Nu;
-
-                    TotalAreaKei    += Area*Kei;
-                    TotalAreaOmega  += Area*Omega;
-                    TotalAreaNu     += Area*Nu;
 
                   }
                 }
