@@ -3451,7 +3451,10 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   unsigned long iPoint = 0, jPoint = 0;
   
   nVar_Total = config->fields.size() - 1;
-  
+    
+    // ****** Hardocidng for now
+    //nVar_Total = 10;
+    cout << "nVar_Total in MergeBaselineSolution ********** = " << nVar_Total << endl;
   /*--- Merge the solution either in serial or parallel. ---*/
   
 #ifndef HAVE_MPI
@@ -15267,19 +15270,11 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         cout << "After doing MPI_Send nPointIDs_proc_send[" << iRank << "]= " << nPointIDs_proc_send[iRank] << " in rank " << rank  << endl;
     }
     
-    /*for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        cout << " Geometry container in rank " << rank << ", local_point =  " << iPoint << ", Global point number = " << geometry->node[iPoint]->GetGlobalIndex() << ", XCoord = " << geometry->node[iPoint]->GetCoord(0) << ", YCoord= " << geometry->node[iPoint]->GetCoord(1) << endl;
-    }*/
-    
     for (unsigned int iRank=0; iRank < size;iRank++) {
         SU2_MPI::Isend(&nPointIDs_proc_send[iRank], 1, MPI_UNSIGNED_LONG, iRank, rank + 1, MPI_COMM_WORLD,&(send_req1[iRank]));
         SU2_MPI::Irecv(&nPointIDs_proc_recv[iRank], 1, MPI_UNSIGNED_LONG, iRank, iRank+1, MPI_COMM_WORLD,&(recv_req1[iRank]));
     }
     
-    
-    /*SU2_MPI::Wait(&send_req0,&status);
-    SU2_MPI::Wait(&recv_req0,&status);
-    MPI_Barrier(MPI_COMM_WORLD);*/
     int number = size;
     for (int ii = 0; ii < number; ii++) {
         SU2_MPI::Waitany(number, send_req1, &ind, &status);
@@ -15352,11 +15347,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         SU2_MPI::Irecv(&(Buffer_recv_Ycoord[iProc][0]), nPointIDs_proc_recv[iProc_recv[iProc]], MPI_DOUBLE, iProc_recv[iProc], iProc_recv[iProc]+1+2*size, MPI_COMM_WORLD,&(recv_req3[iProc]));
     }
  
-    
-    /*SU2_MPI::Wait(&send_req1,&status); SU2_MPI::Wait(&recv_req1,&status);
-    SU2_MPI::Wait(&send_req2,&status); SU2_MPI::Wait(&recv_req2,&status);
-    SU2_MPI::Wait(&send_req3,&status); SU2_MPI::Wait(&recv_req3,&status);
-    MPI_Barrier(MPI_COMM_WORLD);*/
     number = nProcs_send;
     for (int ii = 0; ii < number; ii++) {
         SU2_MPI::Waitany(number, send_req1, &ind, &status);
@@ -15487,11 +15477,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
                 unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
                 for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
-                    //if (iVar == 2)
-                        //cout << "solver[1] for node = " <<  geometry->node[iPoint_loc]->GetGlobalIndex() << " = " << solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar) << endl;
-                    /*if(iVar ==2)
-                     cout << "Isopram[" << iNode << "] = " << isoparams[iNode] << endl;*/
-                    
                     Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] += solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar)*isoparams[iNode];
                 }
             }
@@ -15503,20 +15488,8 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
 
         /* Loop over all point IDS for a proc ended above, hence send the full interp soln to the corresponding proc */
         SU2_MPI::Isend(&(Buffer_send_InterpSolution[iProc][0]), nPointIDs_proc_recv[iProc_recv[iProc]]*nVar, MPI_DOUBLE, iProc_recv[iProc], rank +1 , MPI_COMM_WORLD,&(send_req1[iProc]));
-        //,&(send_req1[iProc])
         cout << " NUmber of variables being sent = " << nPointIDs_proc_recv[iProc_recv[iProc]]*nVar << " from rank " << rank << " to rank " << iProc_recv[iProc] << " with tag " << rank +1 << endl;
     }
-    
-   
-    /* Code testing for container sends */
-    /*unsigned long nPointIDs = 20,icount = 0;
-    for (unsigned long iNode_proc = 0; iNode_proc < nPointIDs; iNode_proc++ ) {
-        for (unsigned short iVar = 0; iVar < nVar; iVar++)  {
-            cout << " CODE TEST - " << *(&(Buffer_send_InterpSolution[0][0]) + icount) << endl;
-            icount += 1;
-        }
-    }*/
- 
     
     number = nProcs_recv;
     for (int ii = 0; ii < number; ii++) {
@@ -15528,7 +15501,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         SU2_MPI::Waitany(number, recv_req1, &ind, &status);
     }
     
-    cout << " %%%%%%%%%%%%%%%% About to set up solver interp with MPI in rank " << rank << endl;
     MPI_Barrier(MPI_COMM_WORLD);
     for (int iProc=0; iProc < nProcs_send; iProc++) {
         /* Allocate the interpolated solution received to their corresponding locations in its solver_interp container */
@@ -15536,7 +15508,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         int iRank = iProc_send[iProc];
         /* nPointIDs - number of points sent to the rank iRank from current proc */
         unsigned long nPointIDs = nPointIDs_proc_send[iProc_send[iProc]];
-        cout << "nPointiDS in setting oslver interp = " << nPointIDs << endl;
         for (unsigned long iNode_proc = 0; iNode_proc < nPointIDs; iNode_proc++) {
             /* interpmesh_Point - corresponding local node number of the point sent to iRank */
             unsigned long interpmesh_Point = InterpMeshNodesDist[iRank][iNode_proc];
@@ -15661,7 +15632,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     
     if(probe_loc != NULL) delete [] probe_loc;
     if(X_donor != NULL) delete [] X_donor;
-    //delete isoparam_container;
 }
 
 unsigned long COutput::FindProbeLocElement_fromNearestNode(CGeometry *geometry,
@@ -15678,19 +15648,13 @@ unsigned long COutput::FindProbeLocElement_fromNearestNode(CGeometry *geometry,
     
     for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
         jElem = geometry->node[pointID]->GetElem(iElem);
-        //cout << "The elements containing point " << geometry->node[pointID]->GetGlobalIndex() <<  " are " << jElem << endl;
         /*--- Determine whether the probe point is inside the element ---*/
         Inside = IsPointInsideElement(geometry, probe_loc,jElem);
         if (Inside) {
-            //cout << "Probe is inside element " << jElem << endl;
             probe_elem = jElem;
             break;
         }
     }
-    //if (Inside)
-        //cout << " ******* Done looking for point - LOCATED in ELEMENT " << probe_elem << endl;
-    //else
-        //cout << " ********** Done searching tier 1 neighbors - CELL NOT LOCATED, Searching tier 2 neighbors now!!" << endl;
     
     if(!Inside){
         /* Point not found in the elements containing the nearest edge */
@@ -15698,7 +15662,6 @@ unsigned long COutput::FindProbeLocElement_fromNearestNode(CGeometry *geometry,
         cout << "Probe point not found in the elements containing the nearest edge." << endl;
         cout << "Checking the elements of the points connected to nearest edge " << endl;
         unsigned short nPoint_node =geometry->node[pointID]->GetnPoint();
-        cout << " Number of neighbors to the nearest edge are " << nPoint_node << endl;
         /* Neighbouring points of the nearest edge */
         for ( unsigned short iPoint = 0; iPoint < nPoint_node; iPoint++) {
             unsigned long jPoint = geometry->node[pointID]->GetPoint(iPoint);
@@ -15708,7 +15671,6 @@ unsigned long COutput::FindProbeLocElement_fromNearestNode(CGeometry *geometry,
                 /*--- Determine whether the probe point is inside the element ---*/
                 Inside = IsPointInsideElement(geometry, probe_loc,jElem);
                 if (Inside) {
-                    //cout << "CELL LOCATED!!!! Probe is inside tier 1 nieghbour element " << jElem << endl;
                     probe_elem = jElem;
                     break;
                 }
@@ -15730,20 +15692,13 @@ bool COutput::IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,uns
     unsigned short nDim = geometry->GetnDim();
     unsigned short iNode, nNodes_elem, count=0;
     
-    //geometry->SetPoint_Connectivity();
-    //geometry->SetElement_Connectivity();
-    
     nNodes_elem = geometry->elem[jElem]->GetnNodes();
-    //cout << "nNodes in element " << jElem << " are " << nNodes_elem << endl;
     su2double **Coord_elem = new su2double*[nNodes_elem];
     /* Coordinates of CG of the element */
     su2double Elem_CG[nDim];
     
-    //cout << "Probe loca xcoord = " << probe_loc[0] << ", yloc = " << probe_loc[1] << endl;
-    
     for (iNode = 0; iNode < nNodes_elem; iNode++){
         iPoint = geometry->elem[jElem]->GetNode(iNode);
-        //cout << "iPoint for element " << jElem << " is " << geometry->node[iPoint]->GetGlobalIndex() << " with xcoord = " << geometry->node[iPoint]->GetCoord(0) << endl;
         Coord_elem[iNode] = new su2double[nDim];
         
         for (unsigned short iDim =0; iDim < nDim; iDim++){
@@ -15752,7 +15707,6 @@ bool COutput::IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,uns
             Coord_elem[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
             Elem_CG[iDim] += Coord_elem[iNode][iDim]/nNodes_elem;
         }
-        //cout << "coord[0] = " << Coord_elem[iNode][0] << ", coord[1] = " << Coord_elem[iNode][1] << endl;
     }
     
     /* Determine if segment connecting the probe and element CG intersects any of the edges(2D)/plane(3D) containing the element */
@@ -15792,24 +15746,6 @@ void COutput::Isoparameters(unsigned short nDim, unsigned short nDonor,
     //cout << "Inside isoparameters method in the inteprolator class " << endl;
     short iDonor,iDim,k; // indices
     su2double tmp, tmp2;
-    
-    /*su2double *x     = new su2double[nDim+1];
-    su2double *x_tmp = new su2double[nDim+1];
-    su2double *Q     = new su2double[nDonor*nDonor];
-    su2double *R     = new su2double[nDonor*nDonor];
-    su2double *A     = new su2double[nDim+1*nDonor];
-    su2double *A2    = NULL;
-    su2double *x2    = new su2double[nDim+1];
-    
-    bool *test  = new bool[nDim+1];
-    bool *testi = new bool[nDim+1];*/
-    
-    /*for (iDim=0; iDim < nDim; iDim++) {
-        for (iDonor=0; iDonor < nDonor; iDonor++) {
-            cout << "X[" << iDim << "][" << iDonor << "]= " << X[iDim*nDonor+iDonor] << endl;
-         }
-        cout << "xj[" << iDim << "] = " << xj[iDim] << endl;
-    }*/
     su2double x[nDim+1];
     su2double x_tmp[nDim+1];
     su2double Q[nDonor*nDonor];
@@ -15987,11 +15923,6 @@ void COutput::Isoparameters(unsigned short nDim, unsigned short nDonor,
         }
     }*/
     
-    /*delete [] x;
-    delete [] x_tmp;
-    delete [] Q;
-    delete [] R;
-    delete [] A;*/
     if (A2 != NULL) delete [] A2;
     /*delete [] x2;
     

@@ -43,7 +43,8 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-
+  su2double StartTime_interp = 0.0, StopTime_interp = 0.0;
+  
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
@@ -91,7 +92,7 @@ int main(int argc, char *argv[]) {
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
     solver_container_interp[iZone]   = NULL;
-    config_container_interp[iZone]       = NULL;
+    config_container_interp[iZone]   = NULL;
     geometry_container_interp[iZone] = NULL;
   }
 
@@ -338,16 +339,52 @@ int main(int argc, char *argv[]) {
                                                                                   iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                                                   iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
                   solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
-                  solver_container_interp[iZone] = new CBaselineSolver(geometry_container_interp[iZone], config_container_interp[iZone]);
+                    
                   SolutionInstantiated[iZone] = true;
+                    
+                    /* For IUnterpoalted solution */
+                    solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+                    
+                    solver_container_interp[iZone] = new CBaselineSolver(geometry_container_interp[iZone], config_container_interp[iZone],solver_container[iZone]->GetnVar(),config_container[iZone]->fields);
+                    
                 }
+                  
                   solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
-                  //solver_container_interp[iZone]->LoadRestart(geometry_container_interp, &solver_container_interp, config_container_interp[iZone], SU2_TYPE::Int(MESH_0), true);
+                  
               }
 
               if (rank == MASTER_NODE)
                 cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
               output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iExtIter, nZone);
+                
+                
+#ifdef HAVE_MPI
+                {
+                    StartTime_interp = MPI_Wtime();
+                }
+#else
+                StartTime_interp = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#endif
+                
+                output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0]);
+                
+#ifdef HAVE_MPI
+                {
+                    StopTime_interp = MPI_Wtime();
+                }
+#else
+                StopTime_interp = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#endif
+                
+                su2double  UsedTime_interp = StopTime_interp - StartTime_interp;
+                //if (rank == MASTER_NODE) {
+                cout << "entering Solution interpolation for unsteady simulation " << endl;
+                cout << " TIME TAKEN FOR SOLUTION INTERPOLATION = " << UsedTime_interp << " seconds by rank " << rank << "on " << size << " cores." << endl;
+                //}
+                
+                cout << "Writing volume solution for inteprolated mesh in rank.. " << rank << endl;
+                output->SetBaselineResult_Files(solver_container_interp, geometry_container_interp, config_container_interp, iExtIter, nZone);
+                
             }
 
         iExtIter++;
@@ -454,8 +491,34 @@ int main(int argc, char *argv[]) {
       output->SetBaselineResult_Files(solver_container, geometry_container, config_container, 0, nZone);
         
       cout << "entering Solution interpolation " << endl;
-
+        
+        
+        
+#ifdef HAVE_MPI
+    {
+        //MPI_Barrier(MPI_COMM_WORLD);
+        StartTime_interp = MPI_Wtime();
+    }
+#else
+        StartTime_interp = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#endif
+        
       output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0]);
+
+#ifdef HAVE_MPI
+    {
+        //MPI_Barrier(MPI_COMM_WORLD);
+        StopTime_interp = MPI_Wtime();
+    }
+#else
+        StopTime_interp = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#endif
+      
+      su2double  UsedTime_interp = StopTime_interp - StartTime_interp;
+        //if (rank == MASTER_NODE) {
+            cout << " TIME TAKEN FOR SOLUTION INTERPOLATION = " << UsedTime_interp << " seconds by rank " << rank << "on " << size << " cores." << endl;
+        //}
+      
       cout << "Writing volume solution for inteprolated mesh in rank.. " << rank << endl;
       output->SetBaselineResult_Files(solver_container_interp, geometry_container_interp, config_container_interp, 0, nZone);
     }

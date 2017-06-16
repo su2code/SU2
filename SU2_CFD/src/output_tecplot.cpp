@@ -125,6 +125,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
      variables with the appropriate string tags stored in the config class. ---*/
     Tecplot_File << "VARIABLES = ";
     nVar_Total = config->fields.size() - 1;
+      
+      // Hardcoding for now ------
+      //nVar_Total = 10;
+      cout << "nVar_Total in SetTecplotASCII = " << nVar_Total << endl;
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
       Tecplot_File << config->fields[iField];
     }
