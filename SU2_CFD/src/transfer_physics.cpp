@@ -444,12 +444,22 @@ void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, C
   unsigned short iSpan;
 
   for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){
+    /*--- trnasfer inviscid quantities ---*/
     target_solution->SetDensityIn(donor_solution->GetDensityIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetPressureIn(donor_solution->GetPressureIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetTurboVelocityIn(donor_solution->GetTurboVelocityIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetDensityOut(donor_solution->GetDensityOut(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetPressureOut(donor_solution->GetPressureOut(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetTurboVelocityOut(donor_solution->GetTurboVelocityOut(donorZone, iSpan), donorZone, iSpan);
+
+    /*--- transfer turbulent quantities ---*/
+    target_solution->SetKeiIn(donor_solution->GetKeiIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetOmegaIn(donor_solution->GetOmegaIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetNuIn(donor_solution->GetNuIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetKeiOut(donor_solution->GetKeiOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetOmegaOut(donor_solution->GetOmegaOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetNuOut(donor_solution->GetNuOut(donorZone, iSpan), donorZone, iSpan);
+
   }
 }
 
