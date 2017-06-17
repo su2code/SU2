@@ -1435,9 +1435,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Scale the line search in the optimizer */
   addDoubleOption("OPT_RELAX_FACTOR", Opt_RelaxFactor, 1.0);
 
-  /* DESCRIPTION: Scale the line search in the optimizer */
-  addDoubleOption("OPT_GRADIENT_FACTOR", Opt_GradFactor, 1.0);
-
   /* DESCRIPTION: Bound the line search in the optimizer */
   addDoubleOption("OPT_LINE_SEARCH_BOUND", Opt_LineSearch_Bound, 1E6);
 
@@ -1804,6 +1801,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Flag specifying if the mesh was decomposed */
   addPythonOption("DECOMPOSED");
+
+  /* DESCRIPTION: Optimization gradient factor */
+  addPythonOption("OPT_GRADIENT_FACTOR");
+  
+  /* DESCRIPTION: Constratint push factor */
+  addPythonOption("OPT_PUSH_FACTOR");
 
   /* DESCRIPTION: Upper bound for the optimizer */
   addPythonOption("OPT_BOUND_UPPER");
@@ -2272,7 +2275,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Kind_SU2 != SU2_DEF) {
   	Opt_RelaxFactor = 1.0;
-  	Opt_GradFactor = 1.0;
   }
 
   /*--- If it is not specified, set the mesh motion mach number

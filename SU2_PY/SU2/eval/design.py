@@ -413,13 +413,14 @@ def con_ceq(dvs,config,state=None):
     for i_obj,this_con in enumerate(constraints):
         scale = def_cons[this_con]['SCALE']
         relax = float(config['OPT_GRADIENT_FACTOR'])
+        push  = float(config['OPT_PUSH_FACTOR'])
         value = def_cons[this_con]['VALUE']
         
         # Evaluate Constraint Function
         func = su2func(this_con,config,state)
         
         # scaling and centering
-        func = (func - value) * scale * relax
+        func = (func - value) * scale * relax * push
         
         vals_out.append(func)
         
@@ -506,6 +507,7 @@ def con_cieq(dvs,config,state=None):
     for i_obj,this_con in enumerate(constraints):
         scale = def_cons[this_con]['SCALE']
         relax = float(config['OPT_GRADIENT_FACTOR'])
+        push = float(config['OPT_PUSH_FACTOR'])
         value = def_cons[this_con]['VALUE']
         sign  = def_cons[this_con]['SIGN']
         sign  = su2io.get_constraintSign(sign)
@@ -514,7 +516,7 @@ def con_cieq(dvs,config,state=None):
         func = su2func(this_con,config,state)
         
         # scaling and centering
-        func = (func - value) * scale * sign * relax
+        func = (func - value) * scale * sign * relax * push
         
         vals_out.append(func)
     

@@ -5936,10 +5936,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Total_CoPz = 0.0;
       Total_CoPz = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPz() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
     }
-    if (config[ZONE_0]->GetSystemMeasurements() == US) { Total_CoPx /= 12.0; Total_CoPy /= 12.0; Total_CoPz /= 12.0; }
     Total_CoPx += config[ZONE_0]->GetRefOriginMoment(0)[0];
     Total_CoPy += config[ZONE_0]->GetRefOriginMoment(0)[1];
     Total_CoPz += config[ZONE_0]->GetRefOriginMoment(0)[2];
+
+    if (config[ZONE_0]->GetSystemMeasurements() == US) { Total_CoPx *= 12.0; Total_CoPy *= 12.0; Total_CoPz *= 12.0; }
 
     /*--- Flow inviscid solution coefficients ---*/
     

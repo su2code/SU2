@@ -1414,10 +1414,6 @@ inline su2double CConfig::GetOpt_RelaxFactor(void) {return Opt_RelaxFactor; }
 
 inline void CConfig::SetOpt_RelaxFactor(su2double val_scale) {Opt_RelaxFactor = val_scale; }
 
-inline su2double CConfig::GetOpt_GradFactor(void) {return Opt_GradFactor; }
-
-inline void CConfig::SetOpt_GradFactor(su2double val_scale) {Opt_GradFactor = val_scale; }
-
 inline long CConfig::GetVisualize_CV(void) { return Visualize_CV; }
 
 inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }

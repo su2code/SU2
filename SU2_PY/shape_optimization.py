@@ -124,7 +124,8 @@ def shape_optimization( filename                           ,
     bound_upper   = float ( config.OPT_BOUND_UPPER )                   # variable to be scaled by line search scale
     bound_lower   = float ( config.OPT_BOUND_LOWER )                   # variable bound to be scaled by the line search
     accel_factor  = float ( config.OPT_RELAX_FACTOR )                  # line search scale
-    relax_factor  = float ( config.OPT_GRADIENT_FACTOR )                  # objective function and gradient scale
+    relax_factor  = float ( config.OPT_GRADIENT_FACTOR )               # objective function and gradient scale
+    push_factor   = float ( config.OPT_PUSH_FACTOR )                   # constraint scale
     def_dv        = config.DEFINITION_DV                               # complete definition of the desing variable
     n_dv          = sum(def_dv['SIZE'])                                # number of design variables
     accu          = float ( config.OPT_ACCURACY ) * relax_factor       # optimizer accuracy
