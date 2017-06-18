@@ -2053,8 +2053,11 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
   su2double RefLength  = config->GetRefLength();
   su2double *RefOriginMoment = config->GetRefOriginMoment(0);
-  su2double dOF_dCL          = config->GetdOF_dCL();
-  su2double dOF_dCM          = config->GetdOF_dCM();
+  su2double dCD_dCL          = config->GetdCD_dCL();
+  su2double dCMx_dCL         = config->GetdCMx_dCL();
+  su2double dCMy_dCL         = config->GetdCMy_dCL();
+  su2double dCMz_dCL         = config->GetdCMz_dCL();
+  su2double dCD_dCMy         = config->GetdCD_dCMy();
   bool Fixed_CL              = config->GetFixed_CL_Mode();
   bool Fixed_CM              = config->GetFixed_CM_Mode();
 
@@ -2121,8 +2124,8 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               
               /*--- Modification to run at a fixed CL and CM value ---*/
               
-              if (Fixed_CL) { ForceProj_Vector[0] += dOF_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= dOF_dCL*Weight_ObjFunc*cos(Alpha); }
-              if (Fixed_CM) { ForceProj_Vector[0] -= dOF_dCM*Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += dOF_dCM*Weight_ObjFunc*(x - x_origin)/RefLength; }
+              if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
+              if (Fixed_CM) { ForceProj_Vector[0] -= dCD_dCMy*Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += dCD_dCMy*Weight_ObjFunc*(x - x_origin)/RefLength; }
 
             }
             if (nDim == 3) {
@@ -2133,8 +2136,8 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               
               /*--- Modification to run at a fixed CL value ---*/
               
-              if (Fixed_CL) { ForceProj_Vector[0] += dOF_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dOF_dCL*Weight_ObjFunc*cos(Alpha); }
-              if (Fixed_CM) { ForceProj_Vector[0] += dOF_dCM*Weight_ObjFunc*(z - z_origin)/RefLength; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] -= dOF_dCM*Weight_ObjFunc*(x - x_origin)/RefLength; }
+              if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
+              if (Fixed_CM) { ForceProj_Vector[0] += dCD_dCMy*Weight_ObjFunc*(z - z_origin)/RefLength; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] -= dCD_dCMy*Weight_ObjFunc*(x - x_origin)/RefLength; }
               
             }
             break;
@@ -2158,15 +2161,54 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) {  ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += -Weight_ObjFunc*(z - z_origin)/RefLength; ForceProj_Vector[2] += Weight_ObjFunc*(y - y_origin)/RefLength; }
+            if (nDim == 3) {
+              
+              ForceProj_Vector[0] += 0.0;
+              ForceProj_Vector[1] += -Weight_ObjFunc*(z - z_origin)/RefLength;
+              ForceProj_Vector[2] += Weight_ObjFunc*(y - y_origin)/RefLength;
+            
+              /*--- Modification to run at a fixed CL value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCMx_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCMx_dCL*Weight_ObjFunc*cos(Alpha); }
+            
+            }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(z - z_origin)/RefLength; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += -Weight_ObjFunc*(x - x_origin)/RefLength;}
+            if (nDim == 3) {
+              
+              ForceProj_Vector[0] += Weight_ObjFunc*(z - z_origin)/RefLength;
+              ForceProj_Vector[1] += 0.0;
+              ForceProj_Vector[2] += -Weight_ObjFunc*(x - x_origin)/RefLength;
+            
+              /*--- Modification to run at a fixed CL value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCMy_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCMy_dCL*Weight_ObjFunc*cos(Alpha); }
+
+            }
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLength; }
-            if (nDim == 3) { ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLength; ForceProj_Vector[2] += 0; }
+            if (nDim == 2) {
+              
+              ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLength;
+              ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLength;
+            
+              /*--- Modification to run at a fixed CL and CM value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCMz_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= dCMz_dCL*Weight_ObjFunc*cos(Alpha); }
+
+            }
+            if (nDim == 3) {
+              
+              ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLength;
+              ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLength;
+              ForceProj_Vector[2] += 0;
+            
+              /*--- Modification to run at a fixed CL value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCMz_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCMz_dCL*Weight_ObjFunc*cos(Alpha); }
+
+            }
             break;
           case EFFICIENCY :
             if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] += Weight_ObjFunc*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
@@ -3978,8 +4020,12 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     
     /*--- Retrieve the old ACoeff ---*/
     
-    ACoeff_old = config->GetdOF_dCL();
-    
+    if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT) ACoeff_old = config->GetdCD_dCL();
+    else if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT) ACoeff_old = config->GetdCMx_dCL();
+    else if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) ACoeff_old = config->GetdCMy_dCL();
+    else if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) ACoeff_old = config->GetdCMz_dCL();
+    else ACoeff_old = 0.0;
+
     /*--- Estimate the increment in the A coeff, (note that the slope is negative, a decrease in
      *   the CL derivative requires an increase in the A coeff ---*/
     
@@ -3990,11 +4036,23 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     /*--- Compute a new value for the A coeff based on the fine mesh only (radians)---*/
     
     if (iMesh == MESH_0) { ACoeff = ACoeff_old + ACoeff_inc; }
-    else { ACoeff = config->GetdOF_dCL(); }
+    else {
+      if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT) ACoeff = config->GetdCD_dCL();
+      else if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT) ACoeff = config->GetdCMx_dCL();
+      else if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) ACoeff = config->GetdCMy_dCL();
+      else if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) ACoeff = config->GetdCMz_dCL();
+      else ACoeff = 0.0;
+    }
     
     /*--- Only the fine mesh stores the updated values for ACoeff in config ---*/
     
-    if (iMesh == MESH_0) config->SetdOF_dCL(ACoeff);
+    if (iMesh == MESH_0) {
+      if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)  config->SetdCD_dCL(ACoeff);
+      else if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT) config->SetdCMx_dCL(ACoeff);
+      else if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) config->SetdCMy_dCL(ACoeff);
+      else if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) config->SetdCMz_dCL(ACoeff);
+      else { config->SetdCD_dCL(0.0); config->SetdCMx_dCL(0.0); config->SetdCMy_dCL(0.0); config->SetdCMz_dCL(0.0); }
+    }
     
     /*--- Compute the adjoint boundary condition ---*/
     
@@ -4010,7 +4068,11 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     cout.setf(ios::fixed, ios::floatfield);
     cout << endl << "-------------------------- Adjoint Fixed CL Mode -------------------------" << endl;
     cout << "Target dCL/dAlpha: 0.0 (1/deg), current dCL/dAlpha: " << Total_Sens_AoA*PI_NUMBER/180;
-    cout << " (1/deg), current dCD/dCL: " << config->GetdOF_dCL() <<" "<< endl;
+    if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)  cout << " (1/deg), current dCD/dCL: " << config->GetdCD_dCL() <<" "<< endl;
+    else if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT) cout << " (1/deg), current dCMx/dCL: " << config->GetdCMx_dCL() <<" "<< endl;
+    else if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) cout << " (1/deg), current dCMy/dCL: " << config->GetdCMy_dCL() <<" "<< endl;
+    else if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) cout << " (1/deg), current dCMz/dCL: " << config->GetdCMz_dCL() <<" "<< endl;
+    else cout << endl;
     cout << "-------------------------------------------------------------------------" << endl << endl;
   }
   

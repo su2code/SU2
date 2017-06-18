@@ -291,8 +291,8 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     switch (config->GetKind_ObjFunc()) {
     case DRAG_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CD();
-      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdOF_dCL() * direct_solver->GetTotal_CL();
-      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdOF_dCM() * direct_solver->GetTotal_CMy();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
+      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCMy() * direct_solver->GetTotal_CMy();
       break;
     case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CL();
@@ -308,7 +308,6 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       break;
     case ELLIPTIC_SPANLOAD:
       ObjFunc_Value = direct_solver->GetTotal_EllipticDiff();
-      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdOF_dCL() * direct_solver->GetTotal_CL();
       break;
     case MAX_SECTIONAL_CL:
       ObjFunc_Value = direct_solver->GetTotal_MaxSecCL();
@@ -321,12 +320,15 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       break;
     case MOMENT_X_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CMx();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCMx_dCL() * direct_solver->GetTotal_CL();
       break;
     case MOMENT_Y_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CMy();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCMy_dCL() * direct_solver->GetTotal_CL();
       break;
     case MOMENT_Z_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CMz();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCMz_dCL() * direct_solver->GetTotal_CL();
       break;
     case EQUIVALENT_AREA:
       ObjFunc_Value = direct_solver->GetTotal_CEquivArea();

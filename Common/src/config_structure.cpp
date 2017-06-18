@@ -1157,9 +1157,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */
-  addDoubleOption("DOF_DCL_VALUE", dOF_dCL, 0.0);
+  addDoubleOption("DCD_DCL_VALUE", dCD_dCL, 0.0);
   /* DESCRIPTION: parameter for the definition of a complex objective function */
-  addDoubleOption("DOF_DCM_VALUE", dOF_dCM, 0.0);
+  addDoubleOption("DCMX_DCL_VALUE", dCMx_dCL, 0.0);
+  /* DESCRIPTION: parameter for the definition of a complex objective function */
+  addDoubleOption("DCMY_DCL_VALUE", dCMy_dCL, 0.0);
+  /* DESCRIPTION: parameter for the definition of a complex objective function */
+  addDoubleOption("DCMZ_DCL_VALUE", dCMz_dCL, 0.0);
+
+  /* DESCRIPTION: parameter for the definition of a complex objective function */
+  addDoubleOption("DCD_DCMY_VALUE", dCD_dCMy, 0.0);
 
   default_obj_coeff[0]=0.0; default_obj_coeff[1]=0.0; default_obj_coeff[2]=0.0;
   default_obj_coeff[3]=0.0;  default_obj_coeff[4]=0.0;
@@ -4181,39 +4188,45 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
-        case DRAG_COEFFICIENT: cout << "CD objective function";
-          if (Fixed_CL_Mode) { cout << " using fixed CL mode, dCD/dCL = " << dOF_dCL << "." << endl; }
-          else if (Fixed_CM_Mode) { cout << " using fixed CM mode, dCD/dCM = " << dOF_dCM << "." << endl; }
-          else { cout << "." << endl; }
+        case DRAG_COEFFICIENT:           cout << "CD objective function";
+          if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCD/dCL = " << dCD_dCL << "." << endl; }
+          else if (Fixed_CM_Mode) {      cout << " using fixed CMy mode, dCD/dCMy = " << dCD_dCMy << "." << endl; }
+          else {                         cout << "." << endl; }
           break;
-        case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
-        case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
-        case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
-        case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
-        case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
-        case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
-        case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
-        case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
-        case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-        case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-        case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
-        case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
-        case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
-        case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
-        case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
-        case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
-        case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
-        case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
-        case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
-        case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
-        case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
-        case AERO_DRAG_COEFFICIENT:   cout << "Aero CD objective function." << endl; break;
-        case RADIAL_DISTORTION:       cout << "Radial distortion objective function." << endl; break;
-        case CIRCUMFERENTIAL_DISTORTION:   cout << "Circumferential distortion objective function." << endl; break;
+        case LIFT_COEFFICIENT:           cout << "CL objective function." << endl; break;
+        case MOMENT_X_COEFFICIENT:       cout << "CMx objective function" << endl;
+          if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCMx/dCL = " << dCMx_dCL << "." << endl; }
+          else {                         cout << "." << endl; }
+          break;
+        case MOMENT_Y_COEFFICIENT:       cout << "CMy objective function" << endl;
+          if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCMy/dCL = " << dCMy_dCL << "." << endl; }
+          else {                         cout << "." << endl; }
+          break;
+        case MOMENT_Z_COEFFICIENT:       cout << "CMz objective function" << endl;
+          if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCMz/dCL = " << dCMz_dCL << "." << endl; }
+          else {                         cout << "." << endl; }
+          break;
+        case INVERSE_DESIGN_PRESSURE:    cout << "Inverse design (Cp) objective function." << endl; break;
+        case INVERSE_DESIGN_HEATFLUX:    cout << "Inverse design (Heat Flux) objective function." << endl; break;
+        case SIDEFORCE_COEFFICIENT:      cout << "Side force objective function." << endl; break;
+        case EFFICIENCY:                 cout << "CL/CD objective function." << endl; break;
+        case EQUIVALENT_AREA:            cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+        case NEARFIELD_PRESSURE:         cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+        case FORCE_X_COEFFICIENT:        cout << "X-force objective function." << endl; break;
+        case FORCE_Y_COEFFICIENT:        cout << "Y-force objective function." << endl; break;
+        case FORCE_Z_COEFFICIENT:        cout << "Z-force objective function." << endl; break;
+        case THRUST_COEFFICIENT:         cout << "Thrust objective function." << endl; break;
+        case TORQUE_COEFFICIENT:         cout << "Torque efficiency objective function." << endl; break;
+        case TOTAL_HEATFLUX:             cout << "Total heat flux objective function." << endl; break;
+        case MAXIMUM_HEATFLUX:           cout << "Maximum heat flux objective function." << endl; break;
+        case FIGURE_OF_MERIT:            cout << "Rotor Figure of Merit objective function." << endl; break;
+        case AVG_TOTAL_PRESSURE:         cout << "Average total objective pressure." << endl; break;
+        case AVG_OUTLET_PRESSURE:        cout << "Average static objective pressure." << endl; break;
+        case MASS_FLOW_RATE:             cout << "Mass flow rate objective function." << endl; break;
+        case AERO_DRAG_COEFFICIENT:      cout << "Aero CD objective function." << endl; break;
+        case RADIAL_DISTORTION:          cout << "Radial distortion objective function." << endl; break;
+        case CIRCUMFERENTIAL_DISTORTION: cout << "Circumferential distortion objective function." << endl; break;
         case ELLIPTIC_SPANLOAD:          cout << "Elliptic spanload objective function";
-          if (Fixed_CL_Mode) { cout << " using fixed CL mode, dSpanLoad/dCL = " << dOF_dCL << "." << endl; }
-          else { cout << "." << endl; }
-          break;
         case MAX_SECTIONAL_CL:           cout << "Maximum sectional CL objective function." << endl; break;
       }
 		}

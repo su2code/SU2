@@ -2198,8 +2198,11 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 	su2double AoA_ = config->GetAoA();
 	su2double AoS_ = config->GetAoS();
 	su2double BCThrust_ = config->GetInitial_BCThrust();
-	su2double dOF_dCL_ = config->GetdOF_dCL();
-	su2double dOF_dCM_ = config->GetdOF_dCM();
+	su2double dCD_dCL_ = config->GetdCD_dCL();
+ su2double dCMx_dCL_ = config->GetdCMx_dCL();
+ su2double dCMy_dCL_ = config->GetdCMy_dCL();
+ su2double dCMz_dCL_ = config->GetdCMz_dCL();
+	su2double dCD_dCMy_ = config->GetdCD_dCMy();
 	string::size_type position;
 	unsigned long ExtIter_ = 0;
 	ifstream restart_file;
@@ -2217,8 +2220,8 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		int nVar_Buf = 5;
 		int var_buf[5];
 		int Restart_Iter = 0;
-		passivedouble Restart_Meta_Passive[5] = {0.0,0.0,0.0,0.0,0.0};
-		su2double Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+		passivedouble Restart_Meta_Passive[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+		su2double Restart_Meta[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 
 #ifndef HAVE_MPI
 
@@ -2259,7 +2262,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		/*--- Read the metadata. ---*/
 
-		fread(Restart_Meta_Passive, 5, sizeof(passivedouble), fhw);
+		fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
 
 		/*--- Close the file. ---*/
 
@@ -2328,7 +2331,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
       disp = (nVar_Buf*sizeof(int) + var_buf[1]*CGNS_STRING_SIZE*sizeof(char) +
               var_buf[1]*var_buf[2]*sizeof(passivedouble) + 1*sizeof(int));
-      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
 		}
 
@@ -2339,10 +2342,10 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		/*--- Copy to a su2double structure (because of the SU2_MPI::Bcast
               doesn't work with passive data)---*/
 
-		for (unsigned short iVar = 0; iVar < 5; iVar++)
+		for (unsigned short iVar = 0; iVar < 8; iVar++)
 			Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
 
-		SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		/*--- All ranks close the file after writing. ---*/
 
@@ -2356,7 +2359,10 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		AoA_      = Restart_Meta[0];
 		AoS_      = Restart_Meta[1];
 		BCThrust_ = Restart_Meta[2];
-		dOF_dCL_  = Restart_Meta[3];
+		dCD_dCL_  = Restart_Meta[3];
+  dCMx_dCL_  = Restart_Meta[4];
+  dCMy_dCL_  = Restart_Meta[5];
+  dCMz_dCL_  = Restart_Meta[6];
 
 	} else {
 
@@ -2508,19 +2514,40 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 					if (config->GetEval_dOF_dCX() == true) {
 
-						/*--- dOF_dCL coefficient ---*/
+						/*--- dCD_dCL coefficient ---*/
 
-						position = text_line.find ("DOF_DCL_VALUE=",0);
-						if (position != string::npos) {
-							text_line.erase (0,14); dOF_dCL_ = atof(text_line.c_str());
+       position = text_line.find ("DCD_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+       }
+       
+       /*--- dCMx_dCL coefficient ---*/
+       
+       position = text_line.find ("DCMX_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
+       }
+       
+       /*--- dCMy_dCL coefficient ---*/
+       
+       position = text_line.find ("DCMY_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
+       }
+       
+       /*--- dCMz_dCL coefficient ---*/
+       
+       position = text_line.find ("DCMZ_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+       }
+       /*--- dCD_dCMy coefficient ---*/
+       
+       position = text_line.find ("DCD_DCMY_VALUE=",0);
+       if (position != string::npos) {
+							text_line.erase (0,15); dCD_dCMy_ = atof(text_line.c_str());
 						}
-
-						/*--- dOF_dCM coefficient ---*/
-
-						position = text_line.find ("DOF_DCM_VALUE=",0);
-						if (position != string::npos) {
-							text_line.erase (0,14); dOF_dCM_ = atof(text_line.c_str());
-						}
+       
 					}
 
 				}
@@ -2591,14 +2618,39 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 			if (config->GetEval_dOF_dCX() == false) {
 
 				if (config->GetDiscard_InFiles() == false) {
-					if ((config->GetdOF_dCL() != dOF_dCL_) &&  (rank == MASTER_NODE))
-						cout <<"WARNING: SU2 will use the dOF/dCL provided in the direct solution file: " << dOF_dCL_ << "." << endl;
-					config->SetdOF_dCL(dOF_dCL_);
+
+      if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCD/dCL provided in the direct solution file: " << dCD_dCL_ << "." << endl;
+      config->SetdCD_dCL(dCD_dCL_);
+      
+      if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCMx/dCL provided in the direct solution file: " << dCMx_dCL_ << "." << endl;
+      config->SetdCMx_dCL(dCMx_dCL_);
+      
+      if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCMy/dCL provided in the direct solution file: " << dCMy_dCL_ << "." << endl;
+      config->SetdCMy_dCL(dCMy_dCL_);
+      
+      if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCMz/dCL provided in the direct solution file: " << dCMz_dCL_ << "." << endl;
+      config->SetdCMz_dCL(dCMz_dCL_);
+
 				}
 				else {
-					if ((config->GetdOF_dCL() != dOF_dCL_) &&  (rank == MASTER_NODE))
-						cout <<"WARNING: Discarding the dOF/dCL in the direct solution file." << endl;
-				}
+      
+      if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCD/dCL in the direct solution file." << endl;
+      
+      if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCMx/dCL in the direct solution file." << endl;
+      
+      if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCMy/dCL in the direct solution file." << endl;
+      
+      if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
+      
+    }
 
 			}
 
@@ -2618,17 +2670,30 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 			if (config->GetRestart()) {
 
-				/*--- dOF_dCL coefficient ---*/
-
-				if ((config->GetdOF_dCL() != dOF_dCL_) &&  (rank == MASTER_NODE))
-					cout <<"WARNING: SU2 will use the dCD/dCL provided in\nthe adjoint solution file: " << dOF_dCL_ << " ." << endl;
-				config->SetdOF_dCL(dOF_dCL_);
-
-				/*--- dOF_dCM coefficient ---*/
-
-				if ((config->GetdOF_dCM() != dOF_dCM_) &&  (rank == MASTER_NODE))
-					cout <<"WARNING: SU2 will use the dCD/dCM provided in\nthe adjoint solution file: " << dOF_dCM_ << " ." << endl;
-				config->SetdOF_dCM(dOF_dCM_);
+     /*--- dCD_dCL coefficient ---*/
+     
+     if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+     config->SetdCD_dCL(dCD_dCL_);
+     
+     /*--- dCMx_dCL coefficient ---*/
+     
+     if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCMx/dCL provided in\nthe adjoint solution file: " << dCMx_dCL_ << " ." << endl;
+     config->SetdCMx_dCL(dCMx_dCL_);
+     
+     /*--- dCMy_dCL coefficient ---*/
+     
+     if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCMy/dCL provided in\nthe adjoint solution file: " << dCMy_dCL_ << " ." << endl;
+     config->SetdCMy_dCL(dCMy_dCL_);
+     
+     /*--- dCMz_dCL coefficient ---*/
+     
+     if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCMz/dCL provided in\nthe adjoint solution file: " << dCMz_dCL_ << " ." << endl;
+     config->SetdCMz_dCL(dCMz_dCL_);
+     
 			}
 
 

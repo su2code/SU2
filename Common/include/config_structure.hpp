@@ -139,8 +139,11 @@ private:
   Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
   su2double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
   su2double WeightCd; /*!< \brief Weight of the drag coefficient. */
-  su2double dOF_dCL; /*!< \brief Weight of the drag coefficient. */
-  su2double dOF_dCM; /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCMx_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCMy_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCMz_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCMy; /*!< \brief Weight of the drag coefficient. */
   su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
   su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
   su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
@@ -4986,7 +4989,7 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  su2double GetdOF_dCM(void);
+  su2double GetdCD_dCMy(void);
   
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -4998,14 +5001,50 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  su2double GetdOF_dCL(void);
+  su2double GetdCD_dCL(void);
 
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  void SetdOF_dCL(su2double val_dcd_dcl);
+  void SetdCD_dCL(su2double val_dcd_dcl);
+
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCMx_dCL(void);
   
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCMx_dCL(su2double val_dcmx_dcl);
+
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCMy_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCMy_dCL(su2double val_dcmy_dcl);
+
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCMz_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCMz_dCL(su2double val_dcmz_dcl);
+
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
@@ -5022,7 +5061,7 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  void SetdOF_dCM(su2double val_dcd_dcm);
+  void SetdCD_dCMy(su2double val_dcd_dcmy);
   
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.

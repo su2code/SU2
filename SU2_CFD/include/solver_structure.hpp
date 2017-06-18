@@ -4004,8 +4004,11 @@ protected:
   Total_Custom,        /*!< \brief Total IDC coefficient for all the boundaries. */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
+  Total_CMx_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
+  Total_CMy_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_CMz,      /*!< \brief Total z moment coefficient for all the boundaries. */
+  Total_CMz_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_CoPx,      /*!< \brief Total x moment coefficient for all the boundaries. */
   Total_CoPy,      /*!< \brief Total y moment coefficient for all the boundaries. */
   Total_CoPz,      /*!< \brief Total z moment coefficient for all the boundaries. */
@@ -6476,15 +6479,18 @@ protected:
   OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
   OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
   AoA_Prev, /*!< \brief Old value of the AoA for fixed lift mode. */
-  Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
-  Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_CL,    /*!< \brief Total lift coefficient for all the boundaries. */
+  Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
+  Total_CMx_Prev,      /*!< \brief Total x moment coefficient for all the boundaries. */
   Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
+  Total_CMy_Prev,      /*!< \brief Total y moment coefficient for all the boundaries. */
   Total_CMz,      /*!< \brief Total z moment coefficient for all the boundaries. */
+  Total_CMz_Prev,      /*!< \brief Total z moment coefficient for all the boundaries. */
   Total_CFx,      /*!< \brief Total x force coefficient for all the boundaries. */
   Total_CFy,      /*!< \brief Total y force coefficient for all the boundaries. */
   Total_CFz,      /*!< \brief Total z force coefficient for all the boundaries. */

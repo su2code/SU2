@@ -1240,17 +1240,29 @@ inline su2double CConfig::GetPosition_Plane(void) { return Position_Plane; }
 
 inline su2double CConfig::GetWeightCd(void) { return WeightCd; }
 
-inline su2double CConfig::GetdOF_dCL(void) { return dOF_dCL; }
+inline su2double CConfig::GetdCD_dCL(void) { return dCD_dCL; }
 
-inline void CConfig::SetdOF_dCL(su2double val_dcd_dcl) { dOF_dCL = val_dcd_dcl; }
+inline su2double CConfig::GetdCMx_dCL(void) { return dCMx_dCL; }
+
+inline su2double CConfig::GetdCMy_dCL(void) { return dCMy_dCL; }
+
+inline su2double CConfig::GetdCMz_dCL(void) { return dCMz_dCL; }
+
+inline void CConfig::SetdCD_dCL(su2double val_dcd_dcl) { dCD_dCL = val_dcd_dcl; }
+
+inline void CConfig::SetdCMx_dCL(su2double val_dcmx_dcl) { dCMx_dCL = val_dcmx_dcl; }
+
+inline void CConfig::SetdCMy_dCL(su2double val_dcmy_dcl) { dCMy_dCL = val_dcmy_dcl; }
+
+inline void CConfig::SetdCMz_dCL(su2double val_dcmz_dcl) { dCMz_dCL = val_dcmz_dcl; }
 
 inline void CConfig::SetdCL_dAlpha(su2double val_dcl_dalpha) { dCL_dAlpha = val_dcl_dalpha; }
 
 inline void CConfig::SetdCM_diH(su2double val_dcm_dhi) { dCM_diH = val_dcm_dhi; }
 
-inline su2double CConfig::GetdOF_dCM(void) { return dOF_dCM; }
+inline su2double CConfig::GetdCD_dCMy(void) { return dCD_dCMy; }
 
-inline void CConfig::SetdOF_dCM(su2double val_dcd_dcm) { dOF_dCM = val_dcd_dcm; }
+inline void CConfig::SetdCD_dCMy(su2double val_dcd_dcmy) { dCD_dCMy = val_dcd_dcmy; }
 
 inline su2double CConfig::GetCL_Target(void) { return CL_Target; }
 

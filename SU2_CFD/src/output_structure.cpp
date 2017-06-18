@@ -3876,7 +3876,10 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
   restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
   restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-  restart_file <<"DOF_DCL_VALUE= " << config->GetdOF_dCL() << endl;
+  restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+  restart_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
+  restart_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
+  restart_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
   if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
 
   /*--- Close the data portion of the restart file. ---*/
@@ -5927,13 +5930,13 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
     
     if (nDim == 2) {
-      Total_CoPx =solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPx() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
+      Total_CoPx = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPx() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
       Total_CoPy = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPy() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
       Total_CoPz = 0.0;
     }
     if (nDim == 3) {
       Total_CoPx = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPx() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
-      Total_CoPz = 0.0;
+      Total_CoPy = 0.0;
       Total_CoPz = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPz() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
     }
     Total_CoPx += config[ZONE_0]->GetRefOriginMoment(0)[0];
@@ -6222,9 +6225,12 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     }
 
     if (fixed_cl) {
-    	Breakdown_file << "Simulation at a cte. CL: " << config[val_iZone]->GetTarget_CL() << ".\n";
-    	Breakdown_file << "Approx. Delta CL / Delta AoA: " << config[val_iZone]->GetdCL_dAlpha() << " (1/deg).\n";
-    	Breakdown_file << "Approx. Delta CD / Delta CL: " << config[val_iZone]->GetdOF_dCL() << ".\n";
+      Breakdown_file << "Simulation at a cte. CL: " << config[val_iZone]->GetTarget_CL() << ".\n";
+      Breakdown_file << "Approx. Delta CL / Delta AoA: " << config[val_iZone]->GetdCL_dAlpha() << " (1/deg).\n";
+      Breakdown_file << "Approx. Delta CD / Delta CL: " << config[val_iZone]->GetdCD_dCL() << ".\n";
+      Breakdown_file << "Approx. Delta CMx / Delta CL: " << config[val_iZone]->GetdCMx_dCL() << ".\n";
+      Breakdown_file << "Approx. Delta CMy / Delta CL: " << config[val_iZone]->GetdCMy_dCL() << ".\n";
+      Breakdown_file << "Approx. Delta CMz / Delta CL: " << config[val_iZone]->GetdCMz_dCL() << ".\n";
     }
 
     if (Ref_NonDim == DIMENSIONAL) { Breakdown_file << "Dimensional simulation." << "\n"; }
@@ -15147,7 +15153,10 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
     restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
     restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-    restart_file <<"DOF_DCL_VALUE= " << config->GetdOF_dCL() << endl;
+    restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+    restart_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
+    restart_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
+    restart_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
     if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
   }
 
@@ -15306,11 +15315,14 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   else
     Restart_ExtIter = (int)config->GetExtIter() + (int)config->GetExtIter_OffSet() + 1;
 
-  passivedouble Restart_Metadata[5] = {
+  passivedouble Restart_Metadata[8] = {
     SU2_TYPE::GetValue(config->GetAoA() - config->GetAoA_Offset()),
     SU2_TYPE::GetValue(config->GetAoS() - config->GetAoS_Offset()),
     SU2_TYPE::GetValue(config->GetInitial_BCThrust()),
-    SU2_TYPE::GetValue(config->GetdOF_dCL()),
+    SU2_TYPE::GetValue(config->GetdCD_dCL()),
+    SU2_TYPE::GetValue(config->GetdCMx_dCL()),
+    SU2_TYPE::GetValue(config->GetdCMy_dCL()),
+    SU2_TYPE::GetValue(config->GetdCMz_dCL()),
     0.0
   };
 
@@ -15351,7 +15363,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- Write the metadata. ---*/
 
-  fwrite(Restart_Metadata, 5, sizeof(passivedouble), fhw);
+  fwrite(Restart_Metadata, 8, sizeof(passivedouble), fhw);
 
   /*--- Close the file. ---*/
 
@@ -15455,7 +15467,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
     disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
             nVar_Par*nTotalPoint*sizeof(passivedouble) + 1*sizeof(int));
-    MPI_File_write_at(fhw, disp, Restart_Metadata, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+    MPI_File_write_at(fhw, disp, Restart_Metadata, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
   }
 

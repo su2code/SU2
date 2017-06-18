@@ -13245,8 +13245,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     int *Restart_Vars = new int[5];
     passivedouble *Restart_Data = NULL;
     int Restart_Iter = 0;
-    passivedouble Restart_Meta_Passive[5] = {0.0,0.0,0.0,0.0,0.0};
-    su2double Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+    passivedouble Restart_Meta_Passive[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    su2double Restart_Meta[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 
 #ifndef HAVE_MPI
 
@@ -13310,7 +13310,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Read the metadata. ---*/
 
-    fread(Restart_Meta_Passive, 5, sizeof(passivedouble), fhw);
+    fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
     
     /*--- Close the file. ---*/
 
@@ -13471,7 +13471,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
       disp = (nRestart_Vars*sizeof(int) + nFields*CGNS_STRING_SIZE*sizeof(char) +
               nFields*Restart_Vars[2]*sizeof(passivedouble) + 1*sizeof(int));
-      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
     }
 
@@ -13482,10 +13482,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Copy to a su2double structure (because of the SU2_MPI::Bcast
               doesn't work with passive data)---*/
 
-    for (unsigned short iVar = 0; iVar < 5; iVar++)
+    for (unsigned short iVar = 0; iVar < 8; iVar++)
       Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
 
-    SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
     /*--- All ranks close the file after writing. ---*/
     

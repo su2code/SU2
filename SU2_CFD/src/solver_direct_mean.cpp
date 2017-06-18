@@ -723,6 +723,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_NetCThrust = 0.0; Total_NetCThrust_Prev = 0.0; Total_BCThrust_Prev = 0.0;
   Total_Power = 0.0;      AoA_Prev           = 0.0;
   Total_CL_Prev = 0.0;    Total_CD_Prev      = 0.0;
+  Total_CMx_Prev      = 0.0; Total_CMy_Prev      = 0.0; Total_CMz_Prev      = 0.0;
   Total_AeroCD = 0.0;     Total_IDR   = 0.0;    Total_IDC   = 0.0;
 
   /*--- Read farfield conditions ---*/
@@ -5455,7 +5456,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           if (nDim == 3) {
             CD_Inv[iMarker]      =  ForceInviscid[0]*cos(Alpha)*cos(Beta) + ForceInviscid[1]*sin(Beta) + ForceInviscid[2]*sin(Alpha)*cos(Beta);
             CL_Inv[iMarker]      = -ForceInviscid[0]*sin(Alpha) + ForceInviscid[2]*cos(Alpha);
-            CSF_Inv[iMarker] = -ForceInviscid[0]*sin(Beta)*cos(Alpha) + ForceInviscid[1]*cos(Beta) - ForceInviscid[2]*sin(Beta)*sin(Alpha);
+            CSF_Inv[iMarker]     = -ForceInviscid[0]*sin(Beta)*cos(Alpha) + ForceInviscid[1]*cos(Beta) - ForceInviscid[2]*sin(Beta)*sin(Alpha);
             CEff_Inv[iMarker]       = CL_Inv[iMarker] / (CD_Inv[iMarker] + EPS);
             CMx_Inv[iMarker]        = MomentInviscid[0];
             CMy_Inv[iMarker]        = MomentInviscid[1];
@@ -10116,7 +10117,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
   su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3], AoA_inc = 0.0, Vel_Infty_Mag, Delta_AoA, Old_AoA,
-  dCL_dAlpha_, dOF_dCL_;
+  dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
   
   unsigned short iDim;
   
@@ -10259,6 +10260,9 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   	if (config->GetnExtIter()-Iter_dCL_dAlpha_Half == ExtIter) {
       Total_CD_Prev = Total_CD;
       Total_CL_Prev = Total_CL;
+      Total_CMx_Prev = Total_CMx;
+      Total_CMy_Prev = Total_CMy;
+      Total_CMz_Prev = Total_CMz;
   		AoA_inc = -1.0/(18000*PI_NUMBER);
 
   	}
@@ -10332,17 +10336,27 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   if ((config->GetnExtIter()-1 == ExtIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
 
   		dCL_dAlpha_ = -(Total_CL-Total_CL_Prev)/0.01;
-  		dOF_dCL_ = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
+  		dCD_dCL_    = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
+  		dCMx_dCL_   = (Total_CMx-Total_CMx_Prev)/(Total_CL-Total_CL_Prev);
+  		dCMy_dCL_   = (Total_CMy-Total_CMy_Prev)/(Total_CL-Total_CL_Prev);
+  		dCMz_dCL_   = (Total_CMz-Total_CMz_Prev)/(Total_CL-Total_CL_Prev);
 
   		/*--- Set the value of the  dOF/dCL in the config file ---*/
 
-  		config->SetdOF_dCL(dOF_dCL_);
+  		config->SetdCD_dCL(dCD_dCL_);
+  		config->SetdCMx_dCL(dCMx_dCL_);
+  		config->SetdCMy_dCL(dCMy_dCL_);
+  		config->SetdCMz_dCL(dCMz_dCL_);
+
   		config->SetdCL_dAlpha(dCL_dAlpha_);
 
     if (rank == MASTER_NODE) {
   		cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
   		cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
-  		cout << "Approx. Delta CD / Delta CL: " << dOF_dCL_ << ". " << endl;
+  		cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
+    cout << "Approx. Delta CMx / Delta CL: " << dCMx_dCL_ << ". " << endl;
+    cout << "Approx. Delta CMy / Delta CL: " << dCMy_dCL_ << ". " << endl;
+    cout << "Approx. Delta CMz / Delta CL: " << dCMz_dCL_ << ". " << endl;
   		cout << "-------------------------------------------------------------------------" << endl << endl;
   	}
 
@@ -15546,6 +15560,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_CpDiff     = 0.0;   Total_HeatFluxDiff = 0.0;    Total_BCThrust_Prev = 0.0;
   Total_NetCThrust = 0.0;   Total_NetCThrust_Prev = 0.0; Total_CL_Prev = 0.0;
   Total_Power      = 0.0;   AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
+  Total_CMx_Prev   = 0.0;   Total_CMy_Prev      = 0.0;   Total_CMz_Prev      = 0.0;
   Total_AeroCD     = 0.0;    Total_IDR   = 0.0; Total_IDC           = 0.0;
 
   /*--- Read farfield conditions from config ---*/
