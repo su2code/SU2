@@ -13798,21 +13798,24 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
   }
   
   n = Xcoord.size();
-  zp1 = (Zcoord[1]-Zcoord[0])/(Xcoord[1]-Xcoord[0]);
-  zpn = (Zcoord[n-1]-Zcoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
-  Z2coord.resize(n+1);
-  SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
-  
-  /*--- Compute the thickness (we add a fabs because we can not guarantee the
-   right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
-  
-  MaxThickness_Value = 0.0;
-  for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
-    if (Zcoord_Normal[iVertex] < 0.0) {
-      Thickness = fabs(Zcoord_Airfoil_[iVertex] - GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]));
-      if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; }
+  if (n > 1) {
+    zp1 = (Zcoord[1]-Zcoord[0])/(Xcoord[1]-Xcoord[0]);
+    zpn = (Zcoord[n-1]-Zcoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
+    Z2coord.resize(n+1);
+    SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
+    
+    /*--- Compute the thickness (we add a fabs because we can not guarantee the
+     right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
+    
+    MaxThickness_Value = 0.0;
+    for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+      if (Zcoord_Normal[iVertex] < 0.0) {
+        Thickness = fabs(Zcoord_Airfoil_[iVertex] - GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]));
+        if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; }
+      }
     }
   }
+  else { MaxThickness_Value = 0.0; }
 
   return MaxThickness_Value;
   
@@ -13828,7 +13831,7 @@ su2double CPhysicalGeometry::Compute_Dihedral(su2double *LeadingEdge_im1, su2dou
 
   Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
 
-  return Dihedral;
+  return Dihedral_Trailing;
 
 }
 
@@ -13870,7 +13873,7 @@ su2double CPhysicalGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2do
 
   Curvature = 0.5*(Curvature_Leading + Curvature_Trailing);
 
-  return Curvature;
+  return Curvature_Trailing;
 
 }
 
@@ -14170,32 +14173,40 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
   }
   
   n_Upper = Xcoord_Upper.size();
-  zp1 = (Zcoord_Upper[1]-Zcoord_Upper[0])/(Xcoord_Upper[1]-Xcoord_Upper[0]);
-  zpn = (Zcoord_Upper[n_Upper-1]-Zcoord_Upper[n_Upper-2])/(Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2]);
-  Z2coord_Upper.resize(n_Upper+1);
-  SetSpline(Xcoord_Upper, Zcoord_Upper, n_Upper, zp1, zpn, Z2coord_Upper);
+  if (n_Upper > 1) {
+    zp1 = (Zcoord_Upper[1]-Zcoord_Upper[0])/(Xcoord_Upper[1]-Xcoord_Upper[0]);
+    zpn = (Zcoord_Upper[n_Upper-1]-Zcoord_Upper[n_Upper-2])/(Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2]);
+    Z2coord_Upper.resize(n_Upper+1);
+    SetSpline(Xcoord_Upper, Zcoord_Upper, n_Upper, zp1, zpn, Z2coord_Upper);
+  }
   
   n_Lower = Xcoord_Lower.size();
-  zp1 = (Zcoord_Lower[1]-Zcoord_Lower[0])/(Xcoord_Lower[1]-Xcoord_Lower[0]);
-  zpn = (Zcoord_Lower[n_Lower-1]-Zcoord_Lower[n_Lower-2])/(Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2]);
-  Z2coord_Lower.resize(n_Lower+1);
-  SetSpline(Xcoord_Lower, Zcoord_Lower, n_Lower, zp1, zpn, Z2coord_Lower);
+  if (n_Lower > 1) {
+    zp1 = (Zcoord_Lower[1]-Zcoord_Lower[0])/(Xcoord_Lower[1]-Xcoord_Lower[0]);
+    zpn = (Zcoord_Lower[n_Lower-1]-Zcoord_Lower[n_Lower-2])/(Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2]);
+    Z2coord_Lower.resize(n_Lower+1);
+    SetSpline(Xcoord_Lower, Zcoord_Lower, n_Lower, zp1, zpn, Z2coord_Lower);
+  }
   
-  
-  Thickness_Location = - Chord*(1.0-Location);
-  
-  Zcoord_Up = GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location);
-  Zcoord_Down = GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location);
-
-  YLoc_ = Thickness_Location;
-  ZLoc_ = 0.5*(Zcoord_Up + Zcoord_Down);
-  
-  ZLoc = sin(-AoA*PI_NUMBER/180.0)*YLoc_ + cos(-AoA*PI_NUMBER/180.0)*ZLoc_ + Zcoord_Trailing;
-
-  /*--- Compute the thickness (we add a fabs because we can not guarantee the
-   right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
-
-  Thickness_Value = fabs(Zcoord_Up - Zcoord_Down);
+  if ((n_Upper > 1) && (n_Lower > 1)) {
+    
+    Thickness_Location = - Chord*(1.0-Location);
+    
+    Zcoord_Up = GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location);
+    Zcoord_Down = GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location);
+    
+    YLoc_ = Thickness_Location;
+    ZLoc_ = 0.5*(Zcoord_Up + Zcoord_Down);
+    
+    ZLoc = sin(-AoA*PI_NUMBER/180.0)*YLoc_ + cos(-AoA*PI_NUMBER/180.0)*ZLoc_ + Zcoord_Trailing;
+    
+    /*--- Compute the thickness (we add a fabs because we can not guarantee the
+     right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
+    
+    Thickness_Value = fabs(Zcoord_Up - Zcoord_Down);
+    
+  }
+  else { Thickness_Value = 0.0; }
 
   return Thickness_Value;
   
@@ -14524,7 +14535,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
         Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        MaxThickness[iPlane]= Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        MaxThickness[iPlane] = Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
         Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 

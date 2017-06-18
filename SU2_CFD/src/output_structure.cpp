@@ -8004,17 +8004,17 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
       }
       
       
-      /*--- Compute dihedral using a step in the value ---*/
+      /*--- Compute dihedral using a step in the station value ---*/
       
       Plane_P0_[0] = 0.0; Plane_P0_[1] = 0.0; Plane_P0_[2] = 0.0;
 
       if (config->GetGeo_Description() == FUSELAGE) {
 		      if (iSection == 0) Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
-        else Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
+        else Plane_P0_[0] = config->GetLocationStations(iSection) - 0.01;
       }
       
       if (config->GetGeo_Description() == WING) {
-        if (iSection == 0) Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
+        if (iSection == 0) Plane_P0_[1] = config->GetLocationStations(iSection) + 0.01;
         else Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
       }
       
@@ -8035,7 +8035,11 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
             Ycoord_LeadingEdge = Ycoord_Airfoil[iVertex];
             Zcoord_LeadingEdge = Zcoord_Airfoil[iVertex];
           }
-          if (Xcoord_Airfoil[iVertex] > Xcoord_TrailingEdge) {Xcoord_TrailingEdge = Xcoord_Airfoil[iVertex];}
+          if (Xcoord_Airfoil[iVertex] > Xcoord_TrailingEdge) {
+            Xcoord_TrailingEdge = Xcoord_Airfoil[iVertex];
+            Ycoord_TrailingEdge = Ycoord_Airfoil[iVertex];
+            Zcoord_TrailingEdge = Zcoord_Airfoil[iVertex];
+          }
         }
         
         Chord = (Xcoord_TrailingEdge-Xcoord_LeadingEdge);
@@ -8044,15 +8048,15 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
         
         Xcoord_LeadingEdge_ = 1E6; Xcoord_TrailingEdge_ = -1E6;
         for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
-          if (Xcoord_Airfoil[iVertex] < Xcoord_LeadingEdge) {
+          if (Xcoord_Airfoil_[iVertex] < Xcoord_LeadingEdge_) {
             Xcoord_LeadingEdge_ = Xcoord_Airfoil_[iVertex];
             Ycoord_LeadingEdge_ = Ycoord_Airfoil_[iVertex];
             Zcoord_LeadingEdge_ = Zcoord_Airfoil_[iVertex];
           }
           if (Xcoord_Airfoil_[iVertex] > Xcoord_TrailingEdge_) {
             Xcoord_TrailingEdge_ = Xcoord_Airfoil_[iVertex];
-            Ycoord_TrailingEdge_ = Xcoord_Airfoil_[iVertex];
-            Zcoord_TrailingEdge_ = Xcoord_Airfoil_[iVertex];
+            Ycoord_TrailingEdge_ = Ycoord_Airfoil_[iVertex];
+            Zcoord_TrailingEdge_ = Zcoord_Airfoil_[iVertex];
           }
         }
         
@@ -8073,7 +8077,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
         if (iSection == 0) {
           Cp_File.open("cp_sections.dat", ios::out);
           Cp_File << "TITLE = \"Airfoil sections\"" << endl;
-          Cp_File << "VARIABLES = \"x/c\",\"C<sub>p</sub>\",\"x\",\"y\",\"z\",\"y/c\",\"z/c\",\"Dihedral(deg)\"" << endl;
+          Cp_File << "VARIABLES = \"x/c\",\"C<sub>p</sub>\",\"x\",\"y\",\"z\",\"y/c\",\"z/c\"" << endl;
         } else
           Cp_File.open("cp_sections.dat", ios::app);
         
@@ -8100,14 +8104,14 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
           for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
             Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
             << " " << Xcoord_Airfoil[iVertex] << " " << Ycoord_Airfoil[iVertex] << " " << Zcoord_Airfoil[iVertex]
-            << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << " " << Dihedral << "\n";
+            << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
           }
         }
         if (config->GetSystemMeasurements() == US) {
           for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
             Cp_File <<  (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord  << " " << CPressure_Airfoil[iVertex]
             << " " << Xcoord_Airfoil[iVertex] * 12.0 << " " << Ycoord_Airfoil[iVertex] * 12.0 << " " << Zcoord_Airfoil[iVertex] * 12.0
-            << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << " " << Dihedral << "\n";
+            << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
           }
         }
         
@@ -8193,8 +8197,8 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
         
         Chord = MaxDistance;
         
-        CL_Inv = fabs( -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha))/ Chord;
-        CD_Inv = fabs( ForceInviscid[0] * cos(Alpha) * cos(Beta) + ForceInviscid[1] * sin(Beta) + ForceInviscid[2] * sin(Alpha) * cos(Beta)) / Chord;
+        CL_Inv = cos(Dihedral_Trailing * PI_NUMBER / 180.0) * fabs( -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha) )/ Chord;
+        CD_Inv = cos(Dihedral_Trailing * PI_NUMBER / 180.0) * fabs( ForceInviscid[0] * cos(Alpha) * cos(Beta) + ForceInviscid[1] * sin(Beta) + ForceInviscid[2] * sin(Alpha) * cos(Beta)) / Chord;
         CMy_Inv = MomentInviscid[1]/ Chord;
         
         /*--- Compute sectional lift at the root ---*/

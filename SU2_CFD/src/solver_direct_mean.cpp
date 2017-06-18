@@ -7462,18 +7462,23 @@ void CEulerSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config
   
   short iSection, nSection;
   unsigned long iVertex, iPoint, Trailing_Point;
-  su2double *Plane_P0, *Plane_Normal, *CPressure, Max_SecCL = 0.0,
+  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *CPressure, Max_SecCL = 0.0,
   Force[3], ForceInviscid[3], RefDensity,
   RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
   Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin,
-  RefLength, Alpha, Beta, CL_Inv, Xcoord_LeadingEdge = 0.0,
-  Ycoord_LeadingEdge = 0.0, Zcoord_LeadingEdge = 0.0,
-  TrailingEdge, MaxDistance, Distance, Chord, Aux;
+  RefLength, Alpha, Beta, CL_Inv,
+  Xcoord_LeadingEdge = 0.0, Ycoord_LeadingEdge = 0.0, Zcoord_LeadingEdge = 0.0,
+  Xcoord_TrailingEdge = 0.0, Ycoord_TrailingEdge = 0.0, Zcoord_TrailingEdge = 0.0,
+  Xcoord_LeadingEdge_ = 0.0, Ycoord_LeadingEdge_ = 0.0, Zcoord_LeadingEdge_ = 0.0,
+  Xcoord_TrailingEdge_ = 0.0, Ycoord_TrailingEdge_ = 0.0, Zcoord_TrailingEdge_ = 0.0,
+  MaxDistance, Distance, Chord, Aux, Dihedral_Leading, Dihedral_Trailing, Dihedral;
   
   su2double B, Y, C_L, C_L0, Elliptic_Spanload, Spanload, Diff_Spanload = 0.0;
   
   vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
   CPressure_Airfoil;
+  vector<su2double> Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
+  CPressure_Airfoil_;
   string Marker_Tag, Slice_Filename, Slice_Ext;
   ofstream Cp_File;
   unsigned short iDim;
@@ -7484,6 +7489,7 @@ void CEulerSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config
   if (Evaluate_SpanLoad) {
     
     Plane_P0 = new su2double[3];
+    Plane_P0_ = new su2double[3];
     Plane_Normal = new su2double[3];
     CPressure = new su2double[geometry->GetnPoint()];
     
@@ -7536,15 +7542,15 @@ void CEulerSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config
         Plane_Normal[1] = 0.0; Plane_P0[1] = 0.0;
         Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
         
-				if (config->GetGeo_Description() == FUSELAGE) {
-					Plane_Normal[0] = 1.0;
-					Plane_P0[0] = config->GetLocationStations(iSection);
-				}
-
-				if (config->GetGeo_Description() == WING) {
-					Plane_Normal[1] = 1.0;
-					Plane_P0[1] = config->GetLocationStations(iSection);
-				}
+        if (config->GetGeo_Description() == FUSELAGE) {
+          Plane_Normal[0] = 1.0;
+          Plane_P0[0] = config->GetLocationStations(iSection);
+        }
+        
+        if (config->GetGeo_Description() == WING) {
+          Plane_Normal[1] = 1.0;
+          Plane_P0[1] = config->GetLocationStations(iSection);
+        }
         
         /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
         
@@ -7553,27 +7559,76 @@ void CEulerSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config
                                          CPressure_Airfoil, true, config);
         
         if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
-					cout << "Please check the config file, the station (" << Plane_P0[0] << ", " << Plane_P0[1] << ", " << Plane_P0[2] << ") has not been detected." << endl;
+          cout << "Please check the config file, the station (" << Plane_P0[0] << ", " << Plane_P0[1] << ", " << Plane_P0[2] << ") has not been detected." << endl;
         }
         
+        /*--- Compute dihedral using a step in the station value ---*/
+        
+        Plane_P0_[0] = 0.0; Plane_P0_[1] = 0.0; Plane_P0_[2] = 0.0;
+        
+        if (config->GetGeo_Description() == FUSELAGE) {
+          if (iSection == 0) Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
+          else Plane_P0_[0] = config->GetLocationStations(iSection) - 0.01;
+        }
+        
+        if (config->GetGeo_Description() == WING) {
+          if (iSection == 0) Plane_P0_[1] = config->GetLocationStations(iSection) + 0.01;
+          else Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
+        }
+        
+        geometry->ComputeAirfoil_Section(Plane_P0_, Plane_Normal, -1E6,
+                                         1E6, CPressure, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
+                                         CPressure_Airfoil_, true, config);
+
         /*--- Output the pressure on each section (tecplot format) ---*/
         
         if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() != 0)) {
           
           /*--- Find leading and trailing edge ---*/
           
-          Xcoord_LeadingEdge = 1E6; TrailingEdge = -1E6;
+          Xcoord_LeadingEdge = 1E6; Xcoord_TrailingEdge = -1E6;
           for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
             if (Xcoord_Airfoil[iVertex] < Xcoord_LeadingEdge) {
               Xcoord_LeadingEdge = Xcoord_Airfoil[iVertex];
               Ycoord_LeadingEdge = Ycoord_Airfoil[iVertex];
               Zcoord_LeadingEdge = Zcoord_Airfoil[iVertex];
             }
-            if (Xcoord_Airfoil[iVertex] > TrailingEdge) { TrailingEdge = Xcoord_Airfoil[iVertex]; }
+            if (Xcoord_Airfoil[iVertex] > Xcoord_TrailingEdge) {
+              Xcoord_TrailingEdge = Xcoord_Airfoil[iVertex];
+              Ycoord_TrailingEdge = Ycoord_Airfoil[iVertex];
+              Zcoord_TrailingEdge = Zcoord_Airfoil[iVertex];
+            }
           }
           
-          Chord = (TrailingEdge-Xcoord_LeadingEdge);
+          Chord = (Xcoord_TrailingEdge-Xcoord_LeadingEdge);
           
+          /*--- Compute dihedral ---*/
+          
+          Xcoord_LeadingEdge_ = 1E6; Xcoord_TrailingEdge_ = -1E6;
+          for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+            if (Xcoord_Airfoil_[iVertex] < Xcoord_LeadingEdge_) {
+              Xcoord_LeadingEdge_ = Xcoord_Airfoil_[iVertex];
+              Ycoord_LeadingEdge_ = Ycoord_Airfoil_[iVertex];
+              Zcoord_LeadingEdge_ = Zcoord_Airfoil_[iVertex];
+            }
+            if (Xcoord_Airfoil_[iVertex] > Xcoord_TrailingEdge_) {
+              Xcoord_TrailingEdge_ = Xcoord_Airfoil_[iVertex];
+              Ycoord_TrailingEdge_ = Ycoord_Airfoil_[iVertex];
+              Zcoord_TrailingEdge_ = Zcoord_Airfoil_[iVertex];
+            }
+          }
+          
+          if (iSection == 0) {
+            Dihedral_Leading = atan((Zcoord_LeadingEdge_ - Zcoord_LeadingEdge) / (Ycoord_LeadingEdge_ - Ycoord_LeadingEdge))*180/PI_NUMBER;
+            Dihedral_Trailing = atan((Zcoord_TrailingEdge_ - Zcoord_TrailingEdge) / (Ycoord_TrailingEdge_ - Ycoord_TrailingEdge))*180/PI_NUMBER;
+            Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
+          }
+          else {
+            Dihedral_Leading = atan((Zcoord_LeadingEdge - Zcoord_LeadingEdge_) / (Ycoord_LeadingEdge - Ycoord_LeadingEdge_))*180/PI_NUMBER;
+            Dihedral_Trailing = atan((Zcoord_TrailingEdge - Zcoord_TrailingEdge_) / (Ycoord_TrailingEdge - Ycoord_TrailingEdge_))*180/PI_NUMBER;
+            Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
+          }
+
           /*--- Compute load distribution ---*/
           
           ForceInviscid[0] = 0.0; ForceInviscid[1] = 0.0; ForceInviscid[2] = 0.0;
@@ -7608,7 +7663,7 @@ void CEulerSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config
           
           Chord = MaxDistance;
           
-          CL_Inv = fabs( -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha))/ Chord;
+          CL_Inv = cos(Dihedral_Trailing * PI_NUMBER / 180.0) * fabs( -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha))/ Chord;
           
           /*--- Compute sectional lift at the root ---*/
           
@@ -7637,12 +7692,13 @@ void CEulerSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config
     /*--- Delete dynamically allocated memory ---*/
     
     delete[] Plane_P0;
+    delete[] Plane_P0_;
     delete[] Plane_Normal;
     delete[] CPressure;
     
     SetTotal_EllipticDiff(Diff_Spanload);
     SetTotal_MaxSecCL(Max_SecCL);
-
+    
   }
   
 }
