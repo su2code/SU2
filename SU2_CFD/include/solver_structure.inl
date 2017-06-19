@@ -927,13 +927,13 @@ inline su2double* CSolver::GetAverageTurboVelocity(unsigned short valMarker, uns
 
 inline su2double CSolver::GetAverageNu(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
-inline su2double CSolver::GetAverageKei(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+inline su2double CSolver::GetAverageKine(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
 inline su2double CSolver::GetAverageOmega(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
 inline su2double CSolver::GetExtAverageNu(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
-inline su2double CSolver::GetExtAverageKei(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+inline su2double CSolver::GetExtAverageKine(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
 inline su2double CSolver::GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
@@ -945,7 +945,7 @@ inline void CSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsign
 
 inline void CSolver::SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu){ }
 
-inline void CSolver::SetExtAverageKei(unsigned short valMarker, unsigned short valSpan, su2double valKei){ }
+inline void CSolver::SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine){ }
 
 inline void CSolver::SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega){ }
 
@@ -961,13 +961,13 @@ inline su2double CSolver::GetPressureOut(unsigned short inMarkerTP, unsigned sho
 
 inline su2double* CSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return NULL;}
 
-inline su2double CSolver::GetKeiIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetKineIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
 inline su2double CSolver::GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
 inline su2double CSolver::GetNuIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
-inline su2double CSolver::GetKeiOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetKineOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
 inline su2double CSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
@@ -985,13 +985,13 @@ inline void CSolver::SetPressureOut(su2double value, unsigned short inMarkerTP, 
 
 inline void CSolver::SetTurboVelocityOut(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
-inline void CSolver::SetKeiIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline void CSolver::SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline void CSolver::SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
-inline void CSolver::SetKeiOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline void CSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
@@ -1350,13 +1350,13 @@ inline su2double* CEulerSolver::GetAverageTurboVelocity(unsigned short valMarker
 
 inline su2double CEulerSolver::GetAverageNu(unsigned short valMarker, unsigned short valSpan){return AverageNu[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetAverageKei(unsigned short valMarker, unsigned short valSpan){return AverageKei[valMarker][valSpan];}
+inline su2double CEulerSolver::GetAverageKine(unsigned short valMarker, unsigned short valSpan){return AverageKine[valMarker][valSpan];}
 
 inline su2double CEulerSolver::GetAverageOmega(unsigned short valMarker, unsigned short valSpan){return AverageOmega[valMarker][valSpan];}
 
 inline su2double CEulerSolver::GetExtAverageNu(unsigned short valMarker, unsigned short valSpan){return ExtAverageNu[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetExtAverageKei(unsigned short valMarker, unsigned short valSpan){return ExtAverageKei[valMarker][valSpan];}
+inline su2double CEulerSolver::GetExtAverageKine(unsigned short valMarker, unsigned short valSpan){return ExtAverageKine[valMarker][valSpan];}
 
 inline su2double CEulerSolver::GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan){return ExtAverageOmega[valMarker][valSpan];}
 
@@ -1368,7 +1368,7 @@ inline void CEulerSolver::SetExtAverageTurboVelocity(unsigned short valMarker, u
 
 inline void CEulerSolver::SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu){ExtAverageNu[valMarker][valSpan] = valNu;}
 
-inline void CEulerSolver::SetExtAverageKei(unsigned short valMarker, unsigned short valSpan, su2double valKei){ExtAverageKei[valMarker][valSpan] = valKei;}
+inline void CEulerSolver::SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine){ExtAverageKine[valMarker][valSpan] = valKine;}
 
 inline void CEulerSolver::SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega){ExtAverageOmega[valMarker][valSpan] = valOmega;}
 
@@ -1384,13 +1384,13 @@ inline su2double  CEulerSolver::GetPressureOut(unsigned short inMarkerTP, unsign
 
 inline su2double* CEulerSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityOut[inMarkerTP][valSpan];}
 
-inline su2double CEulerSolver::GetKeiIn(unsigned short inMarkerTP, unsigned short valSpan){return KeiIn[inMarkerTP][valSpan];}
+inline su2double CEulerSolver::GetKineIn(unsigned short inMarkerTP, unsigned short valSpan){return KineIn[inMarkerTP][valSpan];}
 
 inline su2double CEulerSolver::GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan){return OmegaIn[inMarkerTP][valSpan];}
 
 inline su2double CEulerSolver::GetNuIn(unsigned short inMarkerTP, unsigned short valSpan){return NuIn[inMarkerTP][valSpan];}
 
-inline su2double CEulerSolver::GetKeiOut(unsigned short inMarkerTP, unsigned short valSpan){return KeiOut[inMarkerTP][valSpan];}
+inline su2double CEulerSolver::GetKineOut(unsigned short inMarkerTP, unsigned short valSpan){return KineOut[inMarkerTP][valSpan];}
 
 inline su2double CEulerSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan){return OmegaOut[inMarkerTP][valSpan];}
 
@@ -1418,13 +1418,13 @@ inline void CEulerSolver::SetTurboVelocityOut(su2double *value, unsigned short i
     TurboVelocityOut[inMarkerTP][valSpan][iDim] = value[iDim];
 }
 
-inline void CEulerSolver::SetKeiIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KeiIn[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KineIn[inMarkerTP][valSpan] = value;}
 
 inline void CEulerSolver::SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){OmegaIn[inMarkerTP][valSpan] = value;}
 
 inline void CEulerSolver::SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){NuIn[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetKeiOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KeiOut[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KineOut[inMarkerTP][valSpan] = value;}
 
 inline void CEulerSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){OmegaOut[inMarkerTP][valSpan] = value;}
 
