@@ -173,7 +173,13 @@ class COutput {
         **TotalPressureIn,
         **TotalPressureOut,
         **TotalTemperatureOut,
-        **EnthalpyIn;
+        **EnthalpyIn,
+        **TurbIntensityIn,
+        **Turb2LamViscRatioIn,
+        **TurbIntensityOut,
+        **Turb2LamViscRatioOut,
+        **NuFactorIn,
+        **NuFactorOut;
 
 protected:
 

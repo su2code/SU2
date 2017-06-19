@@ -170,6 +170,12 @@ COutput::COutput(CConfig *config) {
   	TotalPressureOut              = new su2double*[nMarkerTurboPerf];
   	TotalTemperatureOut           = new su2double*[nMarkerTurboPerf];
   	EnthalpyIn                    = new su2double*[nMarkerTurboPerf];
+  TurbIntensityIn               = new su2double*[nMarkerTurboPerf];
+  Turb2LamViscRatioIn           = new su2double*[nMarkerTurboPerf];
+  TurbIntensityOut              = new su2double*[nMarkerTurboPerf];
+  Turb2LamViscRatioOut          = new su2double*[nMarkerTurboPerf];
+  NuFactorIn                    = new su2double*[nMarkerTurboPerf];
+  NuFactorOut                   = new su2double*[nMarkerTurboPerf];
 
   	for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
   		TotalStaticEfficiency   [iMarker] = new su2double [nSpanWiseSections + 1];
@@ -215,7 +221,12 @@ COutput::COutput(CConfig *config) {
   		TotalPressureOut        [iMarker] = new su2double [nSpanWiseSections + 1];
   		TotalTemperatureOut     [iMarker] = new su2double [nSpanWiseSections + 1];
   		EnthalpyIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-
+  TurbIntensityIn         [iMarker] = new su2double [nSpanWiseSections + 1];
+  Turb2LamViscRatioIn     [iMarker] = new su2double [nSpanWiseSections + 1];
+  TurbIntensityOut        [iMarker] = new su2double [nSpanWiseSections + 1];
+  Turb2LamViscRatioOut    [iMarker] = new su2double [nSpanWiseSections + 1];
+  NuFactorIn              [iMarker] = new su2double [nSpanWiseSections + 1];
+  NuFactorOut             [iMarker] = new su2double [nSpanWiseSections + 1];
 
 
   		for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
@@ -263,6 +274,12 @@ COutput::COutput(CConfig *config) {
   			TotalPressureOut        [iMarker][iSpan] = 0.0;
   			TotalTemperatureOut     [iMarker][iSpan] = 0.0;
   			EnthalpyIn              [iMarker][iSpan] = 0.0;
+  TurbIntensityIn         [iMarker][iSpan] = 0.0;
+  Turb2LamViscRatioIn     [iMarker][iSpan] = 0.0;
+  TurbIntensityOut        [iMarker][iSpan] = 0.0;
+  Turb2LamViscRatioOut    [iMarker][iSpan] = 0.0;
+  NuFactorIn              [iMarker][iSpan] = 0.0;
+  NuFactorOut             [iMarker][iSpan] = 0.0;
   			MachIn           [iMarker][iSpan]           = new su2double[4];
   			MachOut          [iMarker][iSpan]           = new su2double[4];
   			TurboVelocityIn  [iMarker][iSpan]           = new su2double[4];
@@ -10183,6 +10200,9 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
   unsigned short iMarker_Monitoring;
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config->GetnZone();
+  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
+  bool menter_sst       = (config->GetKind_Turb_Model() == SST);
 
   unsigned short nBladesRow, nStages;
   unsigned short iStage;
@@ -10216,6 +10236,30 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
       cout.width(25); cout << abs((AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
       cout << endl;
       cout << endl;
+      if(turbulent){
+        if(menter_sst){
+          cout << "  Inlet TurbIntensity" << "         Inlet TurbIntensity BC" << "            err(%)" <<  endl;
+          cout.width(25); cout << TurbIntensityIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << config->GetTurbulenceIntensity_FreeStream();
+          cout.width(25); cout << abs((TurbIntensityIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - config->GetTurbulenceIntensity_FreeStream())/config->GetTurbulenceIntensity_FreeStream())*100.0;
+          cout << endl;
+          cout << endl;
+          cout << "  Inlet Turb2LamRatio" << "         Inlet Turb2LamRatio BC" << "            err(%)" <<  endl;
+          cout.width(25); cout << Turb2LamViscRatioIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << config->GetTurb2LamViscRatio_FreeStream();
+          cout.width(25); cout << abs((Turb2LamViscRatioIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - config->GetTurb2LamViscRatio_FreeStream())/config->GetTurb2LamViscRatio_FreeStream())*100.0;
+          cout << endl;
+          cout << endl;
+        }
+        else{
+          cout << "  Inlet Nu Factor" << "         Inlet Nu Factor BC" << "            err(%)" <<  endl;
+          cout.width(25); cout << NuFactorIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << config->GetNuFactor_FreeStream();
+          cout.width(25); cout << abs((NuFactorIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - config->GetNuFactor_FreeStream())/config->GetNuFactor_FreeStream())*100.0;
+          cout << endl;
+          cout << endl;
+        }
+      }
     }
     if(iMarker_Monitoring == config->GetnMarker_Turbomachinery() -1 ){
       // if BC outlet
@@ -10325,6 +10369,28 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
       cout.width(25); cout << EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
       cout.width(25); cout << EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
       cout.width(25); cout << abs((EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
+      if(turbulent){
+        cout << endl;
+        cout << endl;
+        if(menter_sst){
+          cout << "     Outlet TurbIntensity " << "    Inlet TurbIntensity" << "              err(%)" <<  endl;
+          cout.width(25); cout << TurbIntensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << TurbIntensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)];
+          cout.width(25); cout << abs((TurbIntensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - TurbIntensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/TurbIntensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
+          cout << endl;
+          cout << endl;
+          cout << "     Outlet Turb2LamRatio " << "    Inlet Turb2LamRatio" << "              err(%)" <<  endl;
+          cout.width(25); cout << Turb2LamViscRatioOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << Turb2LamViscRatioIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)];
+          cout.width(25); cout << abs((Turb2LamViscRatioIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - Turb2LamViscRatioOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/Turb2LamViscRatioIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
+        }
+        else{
+          cout << "     Outlet Nu Factor " << "    Inlet Nu Factor" << "              err(%)" <<  endl;
+          cout.width(25); cout << NuFactorOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << NuFactorIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)];
+          cout.width(25); cout << abs((NuFactorIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - NuFactorOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/NuFactorIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
+        }
+      }
       cout << endl;
       cout << endl << "-------------------------------------------------------------------------" << endl;
       cout << endl;

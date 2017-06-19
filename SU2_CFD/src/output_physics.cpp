@@ -44,6 +44,10 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
   su2double area, absVel2, soundSpeed, mach, tangVel, tangVel2, *relVel, relVel2;
   su2double relPressureIn, relPressureOut, enthalpyOutIs, relVelOutIs2;
   relVel = new su2double[nDim];
+  su2double muLam, kine, omega, nu;
+  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
+  bool menter_sst       = (config->GetKind_Turb_Model() == SST);
 
   unsigned short nBladesRow, nStages;
 
@@ -127,7 +131,24 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       }
       MachIn[iMarkerTP][iSpan][nDim]            = sqrt(mach);
 
-
+      /*--- Compute Turbulent Inflow quantities ---*/
+      if(turbulent){
+        FluidModel->SetTDState_Prho(PressureIn[iMarkerTP][iSpan], DensityIn[iMarkerTP][iSpan]);
+        muLam  = FluidModel->GetLaminarViscosity();
+        if(menter_sst){
+          kine   = solver_container->GetKeiIn(iMarkerTP, iSpan);
+          omega  = solver_container->GetOmegaIn(iMarkerTP, iSpan);
+          TurbIntensityIn[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
+          Turb2LamViscRatioIn[iMarkerTP][iSpan] = DensityIn[iMarkerTP][iSpan]*kine/(muLam*omega);
+        }
+        else{
+          nu = solver_container->GetNuIn(iMarkerTP, iSpan);
+          NuFactorIn[iMarkerTP][iSpan]          = nu*DensityIn[iMarkerTP][iSpan]/muLam;
+          if (config->GetKind_Trans_Model() == BC) {
+            NuFactorIn[iMarkerTP][iSpan]        = nu*DensityIn[iMarkerTP][iSpan]/muLam/0.005;
+          }
+        }
+      }
 
       /*--- OUTFLOW ---*/
       /*--- Retrieve Outflow primitive quantities ---*/
@@ -196,7 +217,24 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       }
       MachOut[iMarkerTP][iSpan][nDim]            = sqrt(mach);
 
-
+      /*--- Compute Turbulent Inflow quantities ---*/
+      if(turbulent){
+        FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
+        muLam  = FluidModel->GetLaminarViscosity();
+        if(menter_sst){
+          kine   = solver_container->GetKeiIn(iMarkerTP, iSpan);
+          omega  = solver_container->GetOmegaIn(iMarkerTP, iSpan);
+          TurbIntensityOut[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
+          Turb2LamViscRatioOut[iMarkerTP][iSpan] = DensityOut[iMarkerTP][iSpan]*kine/(muLam*omega);
+        }
+        else{
+          nu = solver_container->GetNuIn(iMarkerTP, iSpan);
+          NuFactorOut[iMarkerTP][iSpan]          = nu*DensityOut[iMarkerTP][iSpan]/muLam;
+          if (config->GetKind_Trans_Model() == BC) {
+            NuFactorOut[iMarkerTP][iSpan]        = nu*DensityOut[iMarkerTP][iSpan]/muLam/0.005;
+          }
+        }
+      }
 
       /*--- TURBO-PERFORMANCE---*/
       EntropyGen[iMarkerTP][iSpan]				 = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
