@@ -3189,7 +3189,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     evaluate the derivatives with respect to a change in the AoA and CL ---*/
 
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
-  	if ((Fixed_CL_Mode)|| (Fixed_CM_Mode)) {
+  	if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
+    ConvCriteria = RESIDUAL;
   		nExtIter += Iter_dCL_dAlpha;
   		OrderMagResidual = 24;
   		MinLogResidual = -24;

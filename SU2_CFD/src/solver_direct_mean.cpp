@@ -10334,15 +10334,17 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   		config->SetdCL_dAlpha(dCL_dAlpha_);
 
     if (rank == MASTER_NODE) {
-  		cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-  		cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
-  		cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
-    cout << "Approx. Delta CMx / Delta CL: " << dCMx_dCL_ << ". " << endl;
-    cout << "Approx. Delta CMy / Delta CL: " << dCMy_dCL_ << ". " << endl;
-    cout << "Approx. Delta CMz / Delta CL: " << dCMz_dCL_ << ". " << endl;
-  		cout << "-------------------------------------------------------------------------" << endl << endl;
-  	}
-
+      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+      cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
+      cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
+      if (nDim == 3 ) {
+        cout << "Approx. Delta CMx / Delta CL: " << dCMx_dCL_ << ". " << endl;
+        cout << "Approx. Delta CMy / Delta CL: " << dCMy_dCL_ << ". " << endl;
+      }
+      cout << "Approx. Delta CMz / Delta CL: " << dCMz_dCL_ << ". " << endl;
+      cout << "-------------------------------------------------------------------------" << endl << endl;
+    }
+    
   }
 
 }
