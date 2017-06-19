@@ -138,11 +138,8 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
         if(menter_sst){
           kine   = solver_container->GetKeiIn(iMarkerTP, iSpan);
           omega  = solver_container->GetOmegaIn(iMarkerTP, iSpan);
-          TurbIntensityIn[iMarkerTP][iSpan]     =  kine;
-//          TurbIntensityIn[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
-//          Turb2LamViscRatioIn[iMarkerTP][iSpan] = DensityIn[iMarkerTP][iSpan]*kine/(muLam*omega);
-          Turb2LamViscRatioIn[iMarkerTP][iSpan] = omega;
-
+          TurbIntensityIn[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
+          Turb2LamViscRatioIn[iMarkerTP][iSpan] = DensityIn[iMarkerTP][iSpan]*kine/(muLam*omega);
         }
         else{
           nu = solver_container->GetNuIn(iMarkerTP, iSpan);
@@ -220,20 +217,19 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       }
       MachOut[iMarkerTP][iSpan][nDim]            = sqrt(mach);
 
-      /*--- Compute Turbulent Inflow quantities ---*/
+      /*--- Compute Turbulent Outflow quantities ---*/
       if(turbulent){
         FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
         muLam  = FluidModel->GetLaminarViscosity();
         if(menter_sst){
-          kine   = solver_container->GetKeiIn(iMarkerTP, iSpan);
-          omega  = solver_container->GetOmegaIn(iMarkerTP, iSpan);
-//          TurbIntensityOut[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
-//          Turb2LamViscRatioOut[iMarkerTP][iSpan] = DensityOut[iMarkerTP][iSpan]*kine/(muLam*omega);
-          TurbIntensityOut[iMarkerTP][iSpan]     = kine;
-          Turb2LamViscRatioOut[iMarkerTP][iSpan] = omega;
+          kine   = solver_container->GetKeiOut(iMarkerTP, iSpan);
+          omega  = solver_container->GetOmegaOut(iMarkerTP, iSpan);
+          TurbIntensityOut[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
+          Turb2LamViscRatioOut[iMarkerTP][iSpan] = DensityOut[iMarkerTP][iSpan]*kine/(muLam*omega);
+
         }
         else{
-          nu = solver_container->GetNuIn(iMarkerTP, iSpan);
+          nu = solver_container->GetNuOut(iMarkerTP, iSpan);
           NuFactorOut[iMarkerTP][iSpan]          = nu*DensityOut[iMarkerTP][iSpan]/muLam;
           if (config->GetKind_Trans_Model() == BC) {
             NuFactorOut[iMarkerTP][iSpan]        = nu*DensityOut[iMarkerTP][iSpan]/muLam/0.005;
