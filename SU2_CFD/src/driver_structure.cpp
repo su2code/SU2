@@ -2660,7 +2660,7 @@ void CDriver::InitStaticMeshMovement(){
       /*--- Set the translational velocity on all grid levels. ---*/
 
       for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-        geometry_container[iZone][iMGlevel]->SetTranslationalVelocity(config_container[iZone]);
+        geometry_container[iZone][iMGlevel]->SetTranslationalVelocity(config_container[iZone], iZone, true);
 
 
 

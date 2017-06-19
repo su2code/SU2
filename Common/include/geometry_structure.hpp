@@ -688,7 +688,7 @@ virtual void SetShroudVelocity(CConfig *config);
  * \brief A virtual member.
  * \param[in] config - Definition of the particular problem.
  */
-virtual void SetTranslationalVelocity(CConfig *config);
+virtual void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
     
 	/*!
 	 * \brief A virtual member.
@@ -1518,7 +1518,7 @@ void SetShroudVelocity(CConfig *config);
  * \brief Set the translational velocity at each node.
  * \param[in] config - Definition of the particular problem.
  */
-void SetTranslationalVelocity(CConfig *config);
+void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
 	/*! 
 	 * \brief Set the grid velocity via finite differencing at each node.
@@ -2106,7 +2106,7 @@ void SetShroudVelocity(CConfig *config);
  * \brief Set the translational velocity at each grid point on a coarse mesh.
  * \param[in] config - Definition of the particular problem.
  */
-void SetTranslationalVelocity(CConfig *config);
+void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
 	/*!
 	 * \brief Set the grid velocity at each node in the coarse mesh level.
