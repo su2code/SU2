@@ -5939,10 +5939,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Total_CoPy = 0.0;
       Total_CoPz = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPz() / solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
     }
-    Total_CoPx += config[ZONE_0]->GetRefOriginMoment(0)[0];
-    Total_CoPy += config[ZONE_0]->GetRefOriginMoment(0)[1];
-    Total_CoPz += config[ZONE_0]->GetRefOriginMoment(0)[2];
-
+    
     if (config[ZONE_0]->GetSystemMeasurements() == US) { Total_CoPx *= 12.0; Total_CoPy *= 12.0; Total_CoPz *= 12.0; }
 
     /*--- Flow inviscid solution coefficients ---*/
@@ -6535,6 +6532,28 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << "\n" << "\n" <<"Forces breakdown:" << "\n" << "\n";
 
+    if (compressible) {
+
+      if (nDim == 3) {
+        su2double m = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz()/solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+        su2double term = (Total_CoPz/m)-Total_CoPx;
+        
+        if (term > 0) Breakdown_file << "Center of Pressure: X="  << 1/m <<"Z-"<< term << "." << "\n\n";
+        else Breakdown_file << "Center of Pressure: X="  << 1/m <<"Z+"<< fabs(term);
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n\n";
+        else Breakdown_file << " in." << "\n\n";
+      }
+      else {
+        su2double m = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy()/solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+        su2double term = (Total_CoPy/m)-Total_CoPx;
+        if (term > 0) Breakdown_file << "Center of Pressure: X="  << 1/m <<"Y-"<< term << "." << "\n\n";
+        else Breakdown_file << "Center of Pressure: X="  << 1/m <<"Y+"<< fabs(term);
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n\n";
+        else Breakdown_file << " in." << "\n\n";
+      }
+      
+    }
+
     su2double RefDensity  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
     su2double RefArea     = config[val_iZone]->GetRefArea();
     su2double RefVel = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetModVelocity_Inf();
@@ -6543,10 +6562,6 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
 
     Breakdown_file << "NOTE: Multiply forces by the non-dimensional factor: " << Factor << ", and the reference factor: " << Ref  << "\n";
     Breakdown_file << "to obtain the dimensional force."  << "\n" << "\n";
-
-    if (compressible) {
-      Breakdown_file << "Center of Pressure: ("  << Total_CoPx <<", "<< Total_CoPy <<", "<< Total_CoPz <<")."  << "\n" << "\n";
-    }
 
     Breakdown_file << "Total CL:    ";
     Breakdown_file.width(11);
