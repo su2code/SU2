@@ -544,6 +544,18 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  virtual void ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
+                                      CNumerics **numerics, CConfig *config,
+                                      unsigned short iMesh, unsigned short RunTime_EqSystem);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
@@ -12007,7 +12019,10 @@ protected:
   vector<vector<unsigned long> > nonZeroEntriesJacobian; /*!< \brief The ID's of the DOFs for the
                                                                      non-zero entries of the Jacobian
                                                                      for the locally owned DOFs. */
-  vector<vector<unsigned long> > localDOFsPerColor;      /*!< \brief The local DOFs for every color. */
+
+  int nGlobalColors;              /*!< \brief Number of global colors for the Jacobian computation. */
+  vector<int> colorLocalDOFs;     /*!< \brief The color of the local DOFs, including halo DOFs. */
+
 private:
 
 #ifdef HAVE_MPI
@@ -12230,6 +12245,18 @@ public:
   void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                  CNumerics **numerics, CConfig *config,
                                  unsigned short iMesh, unsigned short RunTime_EqSystem);
+
+  /*!
+   * \brief Function, which controls the computation of the spatial Jacobian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
+                              CNumerics **numerics, CConfig *config,
+                              unsigned short iMesh, unsigned short RunTime_EqSystem);
 
   /*!
    * \brief Function, which determines the values of the tolerances in
@@ -13065,6 +13092,12 @@ private:
    */
   void DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
                           CConfig        *config);
+
+  /*!
+   * \brief Function, which exchanges the color of the DOFs.
+   * \param[in] DGGeometry - Geometrical definition of the DG problem.
+   */
+  void ExchangeColorDOFs(const CMeshFEM *FEMGeometry);
 
   /*!
    * \brief Function, which sets up the list of tasks to be carried out in the

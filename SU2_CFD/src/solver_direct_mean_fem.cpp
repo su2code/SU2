@@ -679,20 +679,17 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     DetermineGraphDOFs(DGGeometry, config);
 
     /* Carry out the vertex coloring of the graph. */
-    int nGlobalColors;
-    vector<int> colorLocalDOFs;
     GraphVertexColoring(nDOFsPerRank, nonZeroEntriesJacobian,
                         nGlobalColors, colorLocalDOFs);
 
-    /* Determine the local DOFs for each color. */
-    localDOFsPerColor.resize(nGlobalColors);
-    for(unsigned long i=0; i<nDOFsLocOwned; ++i)
-      localDOFsPerColor[colorLocalDOFs[i]].push_back(i);
+    /* Exchange the data for the colors for the halo DOFs. */
+    ExchangeColorDOFs(DGGeometry);
 
     /* Write a message that the all volume DOFs have been colored. */
     if(rank == MASTER_NODE)
       cout << "There are " << nGlobalColors
-           << " present in the graph." << std::endl;
+           << " colors present in the graph for " << nDOFsPerRank.back()
+           << " DOFs." << std::endl;
   }
 
   /* Set up the persistent communication for the conservative variables and
@@ -1400,8 +1397,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
   /* Parallel implementation. Allocate the memory for the send buffers and
      loop over the number of ranks to which I have to send data. Note that
-     self communication is not excluded here, because efficiency is not
-     really important for this function. */
+     self communication is not excluded here. */
   vector<vector<unsigned long> > sendBuf;
   sendBuf.resize(ranksSend.size());
 
@@ -1424,7 +1420,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
                    dest, dest, MPI_COMM_WORLD, &sendReqs[i]);
   }
 
-  /* Create a map of the receive rank  to the index in ranksRecv. */
+  /* Create a map of the receive rank to the index in ranksRecv. */
   map<int,int> rankToIndRecvBuf;
   for(int i=0; i<(int) ranksRecv.size(); ++i)
     rankToIndRecvBuf[ranksRecv[i]] = i;
@@ -1490,6 +1486,12 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
 #endif
 
+  /* Store the global ID of the first DOF of each element in volElem. */
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    const unsigned long ii = volElem[i].offsetDOFsSolLocal;
+    volElem[i].offsetDOFsSolGraph = DOFsGlobalID[ii];
+  }
+
   /*-------------------------------------------------------------------*/
   /* Step 3: Determine the entries of the graph for the locally stored */
   /*         data. Note that this data must also be determined for the */
@@ -1508,10 +1510,9 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
   for(unsigned long i=0; i<nVolElemOwned; ++i) {
     for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
       const unsigned long jj = volElem[i].offsetDOFsSolLocal + j;
-      for(unsigned short k=(j+1); k<volElem[i].nDOFsSol; ++k) {
+      for(unsigned short k=0; k<volElem[i].nDOFsSol; ++k) {
         const unsigned long kk = volElem[i].offsetDOFsSolLocal + k;
         nonZeroEntriesJacobian[jj].push_back(DOFsGlobalID[kk]);
-        nonZeroEntriesJacobian[kk].push_back(DOFsGlobalID[jj]);
       }
     }
   }
@@ -1677,10 +1678,128 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     vector<unsigned long>().swap(nonZeroEntriesJacobian[i]);
 }
 
+void CFEM_DG_EulerSolver::ExchangeColorDOFs(const CMeshFEM *FEMGeometry) {
+
+  /* Resize the vector colorLocalDOFs such that the halo DOFs can be
+     stored as well. */
+  colorLocalDOFs.resize(nDOFsLocTot);
+
+#ifdef HAVE_MPI
+
+  /*--- Parallel implementation. Get the communication information from
+        FEMGeometry. Note that for a FEM DG discretization the communication
+        entities of FEMGeometry contain the volume elements. ---*/
+  const vector<int>                    &ranksSend    = FEMGeometry->GetRanksSend();
+  const vector<int>                    &ranksRecv    = FEMGeometry->GetRanksRecv();
+  const vector<vector<unsigned long> > &elementsSend = FEMGeometry->GetEntitiesSend();
+  const vector<vector<unsigned long> > &elementsRecv = FEMGeometry->GetEntitiesRecv();
+
+  /* Determine the rank of this processor. */
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  /* Allocate the memory for the send buffers and loop over the number of ranks
+     to which I have to send data. Note that self communication is not excluded. */
+  vector<vector<int> > sendBuf;
+  sendBuf.resize(ranksSend.size());
+
+  vector<MPI_Request> sendReqs(ranksSend.size());
+
+  for(unsigned i=0; i<ranksSend.size(); ++i) {
+
+    /* Fill the send buffer for this rank. */
+    for(unsigned long j=0; j<elementsSend[i].size(); ++j) {
+      const unsigned long jj = elementsSend[i][j];
+      for(unsigned short k=0; k<volElem[jj].nDOFsSol; ++k) {
+        const unsigned long kk = volElem[jj].offsetDOFsSolLocal + k;
+        sendBuf[i].push_back(colorLocalDOFs[kk]);
+      }
+    }
+
+    /* Send the data using non-blocking sends to avoid deadlock. */
+    int dest = ranksSend[i];
+    SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_INT,
+                   dest, dest, MPI_COMM_WORLD, &sendReqs[i]);
+  }
+
+  /* Create a map of the receive rank to the index in ranksRecv. */
+  map<int,int> rankToIndRecvBuf;
+  for(int i=0; i<(int) ranksRecv.size(); ++i)
+    rankToIndRecvBuf[ranksRecv[i]] = i;
+
+  /* Loop over the number of ranks from which I receive data. */
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+
+    /* Block until a message arrives and determine the source and size
+       of the message. */
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    MPI_Get_count(&status, MPI_INT, &sizeMess);
+
+    /* Allocate the memory for the receive buffer, receive the message
+       and determine the actual index of this rank in ranksRecv. */
+    vector<int> recvBuf(sizeMess);
+    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_INT,
+                  source, rank, MPI_COMM_WORLD, &status);
+
+    map<int,int>::const_iterator MI = rankToIndRecvBuf.find(source);
+    source = MI->second;
+
+    /* Loop over the receive elements and copy the data for its DOFs in
+       colorLocalDOFs. */
+    unsigned long ii = 0;
+    for(unsigned long j=0; j<elementsRecv[source].size(); ++j) {
+      const unsigned long jj = elementsRecv[source][j];
+      for(unsigned short k=0; k<volElem[jj].nDOFsSol; ++k, ++ii) {
+        const unsigned long kk = volElem[jj].offsetDOFsSolLocal + k;
+        colorLocalDOFs[kk] = recvBuf[ii];
+      }
+    }
+  }
+
+  /* Complete the non-blocking sends. */
+  SU2_MPI::Waitall(ranksSend.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
+
+  /* Wild cards have been used in the communication,
+     so synchronize the ranks to avoid problems.    */
+  MPI_Barrier(MPI_COMM_WORLD);
+
+#else
+
+  /*--- Sequential implementation. Get the communication information from
+        FEMGeometry. Note that for a FEM DG discretization the communication
+        entities of FEMGeometry contain the volume elements. ---*/
+  const vector<vector<unsigned long> > &elementsSend = FEMGeometry->GetEntitiesSend();
+  const vector<vector<unsigned long> > &elementsRecv = FEMGeometry->GetEntitiesRecv();
+
+  /*--- Halo's may be present due to periodic boundary conditions. A loop over
+        the receiving ranks is carried out to cover both situations, i.e.
+        halo's present and halo's not present. ---*/
+  for(unsigned long i=0; i<elementsRecv.size(); ++i) {
+    for(unsigned long j=0; j<elementsRecv[i].size(); ++j) {
+      const unsigned long elemR = elementsRecv[i][j];
+      const unsigned long elemS = elementsSend[i][j];
+
+      for(unsigned short k=0; k<volElem[elemR].nDOFsSol; ++k) {
+        const unsigned long kR = volElem[elemR].offsetDOFsSolLocal + k;
+        const unsigned long kS = volElem[elemS].offsetDOFsSolLocal + k;
+
+        colorLocalDOFs[kR] = colorLocalDOFs[kS];
+      }
+    }
+  }
+#endif
+}
+
 void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
-  /* Check whether an ADER space-time step must be carried out. */
-  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
+  /* Check whether an ADER space-time step must be carried out.
+     When only a spatial Jacobian this is false per definition.  */
+  if( (config->GetKind_TimeIntScheme_Flow() == ADER_DG) &&
+     !(config->GetJacobian_Spatial_Discretization_Only()) ) {
 
     /*------------------------------------------------------------------------*/
     /* ADER time integration with local time stepping. There are 2^(M-1)      */
@@ -3201,6 +3320,79 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
 
 void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                       unsigned short iMesh) { }
+
+void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
+                                                 CNumerics **numerics, CConfig *config,
+                                                 unsigned short iMesh, unsigned short RunTime_EqSystem) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Preparation phase. Determine the DOFs for each color and   ---*/
+  /*---         the mapping from the colors to the entries in the Jacobian ---*/
+  /*---         matrix for every locally owned DOF.                        ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Determine the local DOFs for each color, including the halo DOFs. */
+  vector<vector<unsigned long> > localDOFsPerColor(nGlobalColors, vector<unsigned long>(0));
+
+  for(unsigned long i=0; i<nDOFsLocTot; ++i)
+    localDOFsPerColor[colorLocalDOFs[i]].push_back(i);
+
+  /*--- Create the map from the global index in the matrix to the color.
+        A loop over the elements must be carried out for this, because the
+        elements store the offset used in the index numbering of the matrix. ---*/
+  map<unsigned long, int> graphIndToColor;
+
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+      const unsigned long jj = volElem[i].offsetDOFsSolGraph + j;
+      const unsigned long kk = volElem[i].offsetDOFsSolLocal + j;
+      graphIndToColor[jj] = colorLocalDOFs[kk];
+    }
+  }
+
+  /* For each locally owned DOF it must be determined which matrix entry is
+     computed for which color. This is stored in the vector
+     colorToIndEntriesJacobian, which is initialized to -1 to indicate that
+     the color does not have a matrix entity . */
+  vector<int> colorToIndEntriesJacobian(nDOFsLocOwned*nGlobalColors, -1);
+
+  /* Loop over the local DOFs. */
+  for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+
+    /* Set the pointer colorToInd in the vector colorToIndEntriesJacobian
+       where the data for this DOF will be stored. */
+    int *colorToInd = colorToIndEntriesJacobian.data() + i*nGlobalColors;
+
+    /* Loop over the non-zero entries for this DOF and store the mapping
+       in colorToInd. */
+    for(unsigned long j=0; j<nonZeroEntriesJacobian[i].size(); ++j) {
+      const unsigned long jj = nonZeroEntriesJacobian[i][j];
+      colorToInd[colorLocalDOFs[jj]] = j;
+    }
+  }
+
+  /* Determine the number of non-zeros in the Jacobian matrix for the owned
+     DOFs in cumulative storage format. */
+  vector<unsigned long> nNonZeroEntries(nDOFsLocOwned+1);
+
+  nNonZeroEntries[0] = 0;
+  for(unsigned i=0; i<nDOFsLocOwned; ++i)
+    nNonZeroEntries[i+1] = nNonZeroEntries[i] + nonZeroEntriesJacobian[i].size();
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Computation of the actual Jacobian by looping over the     ---*/
+  /*---         of colors and disturbing the appropriate DOFs for each     ---*/
+  /*---         color. Note that for each color an additional loop over    ---*/
+  /*---         the number of variables is needed to create the Jacobian.  ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Allocate the memory for local part of the Jacobian. Note that passivedouble
+     must be used for the Jacobian matrix. */
+  vector<passivedouble> Jacobian(nVar*nVar*nNonZeroEntries[nDOFsLocOwned]);
+
+  cout << "CFEM_DG_EulerSolver::ComputeSpatialJacobian: Not implemented yet" << endl;
+  exit(1);
+}
 
 void CFEM_DG_EulerSolver::Set_OldSolution(CGeometry *geometry) {
 
