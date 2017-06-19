@@ -12147,6 +12147,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
         /*--- Pass in relevant information from hybrid model ---*/
+
         if (config->isHybrid_Turb_Model())
           HybridMediator->SetupResolvedFlowNumerics(geometry, solver_container,
                                                     visc_numerics, iPoint, iPoint);
@@ -12322,6 +12323,13 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         visc_numerics->SetPrimitive(V_domain, V_outlet);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
+        /*--- Pass in relevant information from hybrid model ---*/
+
+        if (config->isHybrid_Turb_Model())
+          HybridMediator->SetupResolvedFlowNumerics(geometry, solver_container,
+                                                    visc_numerics, iPoint, iPoint);
+
+
         /*--- Turbulent kinetic energy ---*/
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));

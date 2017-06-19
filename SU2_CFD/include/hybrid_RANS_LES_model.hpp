@@ -86,11 +86,27 @@ class CHybrid_Visc_Anisotropy{
    */
   su2double** GetViscAnisotropy();
 
-  // TODO: These defy the Liskov substitution principle.  They should be removed
-  // from the abstract class somehow
+  /**
+   * \brief Sets a rank-2 tensor used in the anisotropy model.
+   *
+   * In the SGS anisotropy, this is the approximate structure function. This is
+   * left abstract, in order to allow different possible tensors for different
+   * implementations.
+   *
+   * \param[in] val_tensor
+   */
+  virtual void SetTensor(su2double** val_tensor) = 0;
 
-  virtual void SetApproxStructFunc(su2double** val_approx_struct_func) = 0;
-  virtual void SetResolutionAdequacy(su2double val_r_k) = 0;
+  /**
+   * \brief Sets a scalar used in the anisotropy model.
+   *
+   * In the SGS anisotropy, this is the resolution inadequacy.  This is left
+   * abstract, in order to allow different possible scalars for different
+   * implementations.
+   *
+   * @param val_scalar
+   */
+  virtual void SetScalar(su2double val_scalar) = 0;
 };
 
 /*!
@@ -110,8 +126,17 @@ class CHybrid_Isotropic_Visc : public CHybrid_Visc_Anisotropy {
    */
   void CalculateViscAnisotropy();
   
-  void SetApproxStructFunc(su2double** val_approx_struct_func) {}
-  void SetResolutionAdequacy(su2double val_r_k) {}
+  /**
+   * \brief This method does nothing. No tensors are needed.
+   * \param val_tensor - This value is not used.
+   */
+  void SetTensor(su2double** val_tensor) {}
+
+  /**
+   * \brief This method does nothing. No scalars are needed.
+   * \param val_scalar
+   */
+  void SetScalar(su2double val_scalar) {}
 };
 
 /*!
@@ -130,8 +155,17 @@ class CHybrid_Aniso_Q : public CHybrid_Visc_Anisotropy {
  public:
   CHybrid_Aniso_Q(unsigned short nDim);
   
-  void SetApproxStructFunc(su2double** val_approx_struct_func);
-  void SetResolutionAdequacy(su2double val_r_k);
+  /**
+   * \brief Sets the approximate structure function.
+   * \param val_approx_struct_func
+   */
+  void SetTensor(su2double** val_approx_struct_func);
+
+  /**
+   * \brief Sets the resolution adequacy parameter
+   * \param val_r_k
+   */
+  void SetScalar(su2double val_r_k);
 
   /**
    * \brief Tells the hybrid model to calculate the turbulent stress anisotropy.
@@ -246,7 +280,7 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
  protected:
 
   unsigned short nDim;
-  const su2double C_F; /*!> \brief Model constant relating the structure function to the unresolved turbulent kinetic energy  */
+  const su2double C_sf; /*!> \brief Model constant relating the structure function to the unresolved turbulent kinetic energy  */
   su2double **Q,
   **ResolutionTensor,
   **PrimVar_Grad_i,

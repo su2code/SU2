@@ -87,19 +87,21 @@ void CHybrid_Aniso_Q::CalculateViscAnisotropy() {
 }
 
 inline su2double CHybrid_Aniso_Q::CalculateIsotropyWeight(su2double r_k) {
-  return 1.0 - fmin(1.0/r_k, 1.0);
+  return 1.0 - fmin(double(1.0/r_k), 1.0);
 }
 
-inline void CHybrid_Aniso_Q::SetApproxStructFunc(su2double** val_approx_struct_func) {
+inline void CHybrid_Aniso_Q::SetTensor(su2double** val_approx_struct_func) {
   Qstar = val_approx_struct_func;
 }
 
-inline void CHybrid_Aniso_Q::SetResolutionAdequacy(su2double val_r_k) {
+inline void CHybrid_Aniso_Q::SetScalar(su2double val_r_k) {
   resolution_adequacy = val_r_k;
 }
 
+
+
 CHybrid_Mediator::CHybrid_Mediator(int nDim, CConfig* config)
- : nDim(nDim), C_F(config->Get_Hybrid_Model_Const()) {
+ : nDim(nDim), C_sf(config->Get_Hybrid_Model_Const()) {
 
   /*--- Allocate the approximate structure function (used in calcs) ---*/
 
@@ -126,26 +128,27 @@ void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
 }
 
 void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
-                                           CSolver **solver_container,
-                                           unsigned short iPoint) {
+                                              CSolver **solver_container,
+                                              unsigned short iPoint) {
 
   /*--- Calculate and store the resolution adequacy parameter ---*/
 
   su2double** ResolutionTensor = geometry->node[iPoint]->GetResolutionTensor();
   su2double** PrimVar_Grad =
       solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-  su2double v2_ = solver_container[TURB_SOL]->node[iPoint]->GetPrimitive(2);
+  // su2double min_resolved  = solver_container[TURB_SOL]->node[iPoint]->GetPrimitive(2);
+  su2double min_resolved = TWO3*solver_container[TURB_SOL]->node[iPoint]->GetPrimitive(2);
 
   CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Q);
-  su2double r_k = CalculateRk(Q, v2_);
+  su2double r_k = CalculateRk(Q, min_resolved);
   solver_container[HYBRID_SOL]->node[iPoint]->SetResolutionAdequacy(r_k);
 }
 
 void CHybrid_Mediator::SetupHybridParamNumerics(CGeometry* geometry,
-                                             CSolver **solver_container,
-                                             CNumerics *hybrid_param_numerics,
-                                             unsigned short iPoint,
-                                             unsigned short jPoint) {
+                                                CSolver **solver_container,
+                                                CNumerics *hybrid_param_numerics,
+                                                unsigned short iPoint,
+                                                unsigned short jPoint) {
 
   /*--- Find and store turbulent length and timescales ---*/
 
@@ -168,7 +171,7 @@ void CHybrid_Mediator::SetupHybridParamNumerics(CGeometry* geometry,
 
   /*--- Pass resolution adequacy into the numerics object ---*/
 
-  su2double r_k = solver_container[HYBRID_SOL]->node[iPoint]->GetSolution(0);
+  su2double r_k = solver_container[HYBRID_SOL]->node[iPoint]->GetResolutionAdequacy();
   hybrid_param_numerics->SetResolutionAdequacy(r_k);
 }
 
@@ -179,17 +182,16 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
 
   /*--- Find Approximate Structure Function ---*/
 
-  // FIXME: Difference between Q* and Q?
   su2double** ResolutionTensor = geometry->node[iPoint]->GetResolutionTensor();
   su2double** PrimVar_Grad =
         solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
   CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Q);
-  hybrid_anisotropy->SetApproxStructFunc(Q);
+  hybrid_anisotropy->SetTensor(Q);
 
   /*--- Retrieve and pass along the resolution adequacy parameter ---*/
 
   su2double r_k = solver_container[HYBRID_SOL]->node[iPoint]->GetResolutionAdequacy();
-  hybrid_anisotropy->SetResolutionAdequacy(r_k);
+  hybrid_anisotropy->SetScalar(r_k);
 }
 
 void CHybrid_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
@@ -200,8 +202,8 @@ void CHybrid_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
 
   /*--- Pass alpha to the resolved flow ---*/
 
-  su2double* alpha_i = solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
-  su2double* alpha_j = solver_container[HYBRID_SOL]->node[jPoint]->GetSolution();
+  su2double* alpha_i = solver_container[HYBRID_SOL]->node[iPoint]->GetPrimitive();
+  su2double* alpha_j = solver_container[HYBRID_SOL]->node[jPoint]->GetPrimitive();
   visc_numerics->SetHybridParameter(alpha_i, alpha_j);
 
   /*--- Pass the stress anisotropy tensor to the resolved flow ---*/
@@ -211,9 +213,12 @@ void CHybrid_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
   visc_numerics->SetEddyViscAnisotropy(aniso_i, aniso_j);
 }
 
-su2double CHybrid_Mediator::CalculateRk(su2double** Q, su2double v2) {
-  // TODO: Update this with new model.
-  return 1.0;
+su2double CHybrid_Mediator::CalculateRk(su2double** Q,
+                                        su2double min_resolved) {
+  // TODO: Implement function here to find max eigienvalue of Q.
+  su2double max_eigenvalue_Q = 1.0;
+  su2double max_unresolved = C_sf*TWO3*max_eigenvalue_Q;
+  return max_unresolved / min_resolved;
 }
 
 void CHybrid_Mediator::CalculateApproxStructFunc(su2double** ResolutionTensor,
@@ -231,14 +236,16 @@ void CHybrid_Mediator::CalculateApproxStructFunc(su2double** ResolutionTensor,
         for (lDim = 0; lDim < nDim; lDim++)
           for (mDim = 0; mDim < nDim; mDim++)
             Q[iDim][jDim] += ResolutionTensor[iDim][mDim]*
-            PrimVar_Grad[mDim+1][kDim]*
-            PrimVar_Grad[lDim+1][kDim]*
-            ResolutionTensor[lDim][jDim];
+                             PrimVar_Grad[mDim+1][kDim]*
+                             PrimVar_Grad[lDim+1][kDim]*
+                             ResolutionTensor[lDim][jDim];
 }
 
 
 
 CHybrid_Dummy_Mediator::CHybrid_Dummy_Mediator(int nDim, CConfig* config) : nDim(nDim) {
+
+  /*--- Set the default value of the hybrid parameter ---*/
   dummy_alpha = new su2double[1];
   dummy_alpha[0] = 1.0;
 }
@@ -252,9 +259,9 @@ void CHybrid_Dummy_Mediator::SetupRANSNumerics(CGeometry* geometry,
                                          CNumerics* rans_numerics,
                                          unsigned short iPoint,
                                          unsigned short jPoint) {
+  // This next line is just here for testing purposes.
   su2double* alpha =
       solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
-  // TODO: Check what other source term functions do for Set/Get
   rans_numerics->SetHybridParameter(dummy_alpha, dummy_alpha);
 }
 
@@ -284,6 +291,7 @@ void CHybrid_Dummy_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
 
   /*--- Pass alpha to the resolved flow ---*/
 
+  // This next two lines are just here for testing purposes.
   su2double* alpha_i = solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
   su2double* alpha_j = solver_container[HYBRID_SOL]->node[jPoint]->GetSolution();
   visc_numerics->SetHybridParameter(dummy_alpha, dummy_alpha);

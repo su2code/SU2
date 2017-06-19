@@ -1996,7 +1996,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Lam = 0, iVar_MachMean = 0,
   iVar_ViscCoeffs = 0, iVar_HeatCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
   iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0,
-  iVar_FEA_Extra = 0, iVar_SensDim = 0, iVar_Eddy_Anisotropy = 0;
+  iVar_FEA_Extra = 0, iVar_SensDim = 0, iVar_Eddy_Anisotropy = 0,
+  iVar_Extra_Hybrid_Vars = 0;
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
@@ -2121,14 +2122,26 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       nVar_Total += 2;
     }
     
-    /*--- Add Eddy Viscosity to the restart file ---*/
+    /*--- Add Eddy Viscosity to the output ---*/
     
     if (Kind_Solver == RANS) {
       iVar_Eddy = nVar_Total; nVar_Total += 1;
     }
     
+    /*--- Add extra hybrid variables to the output ---*/
+
     if (hybrid) {
       iVar_Eddy_Anisotropy = nVar_Total; nVar_Total += 9;
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // No extra variables
+          break;
+        case CONVECTIVE:
+          iVar_Extra_Hybrid_Vars = nVar_Total; nVar_Total++;
+          break;
+        default:
+          cout << "WARNING: Could not find appropriate output for the hybrid model." << endl;
+      }
     }
 
     /*--- Add Sharp edges to the restart file ---*/
@@ -2926,6 +2939,57 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           iVar++;
         }
       }
+    }
+
+    /*--- Communicate the Extra Variables for Hybrid RANS/LES ---*/
+    // This will need to be changed if more variables are needed.
+    if (Kind_Solver == RANS) {
+
+      /*--- Loop over this partition to collect the current variable ---*/
+
+      jPoint = 0;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+        /*--- Check for halos & write only if requested ---*/
+
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+          /*--- Load buffers with the pressure and mach variables. ---*/
+
+          Buffer_Send_Var[jPoint] = solver[HYBRID_SOL]->node[iPoint]->GetResolutionAdequacy();
+
+          jPoint++;
+        }
+      }
+
+      /*--- Gather the data on the master node. ---*/
+
+#ifdef HAVE_MPI
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
+
+      /*--- The master node unpacks and sorts this variable by global index ---*/
+
+      if (rank == MASTER_NODE) {
+        jPoint = 0; iVar = iVar_Extra_Hybrid_Vars;
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
+          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+            /*--- Get global index, then loop over each variable and store ---*/
+
+            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+            Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+            jPoint++;
+          }
+
+          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+          jPoint = (iProcessor+1)*nBuffer_Scalar;
+        }
+      }
+
     }
 
     /*--- Communicate the Sharp Edges ---*/

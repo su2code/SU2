@@ -897,7 +897,6 @@ void CHybridSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
 
 
 
-//FIXME: This needs to be updated...
 void CHybridSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
 
   /*--- Restart the solution from file information ---*/
@@ -1345,7 +1344,7 @@ void CHybridConvSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_c
       /*--- Get the velocity vector ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = alpha_Inf;
+        Solution[iVar] = alpha_Inf; // alpha_Inf = 1.0
 
       node[iPoint]->SetSolution_Old(Solution);
       LinSysRes.SetBlock_Zero(iPoint);
@@ -1373,7 +1372,7 @@ void CHybridConvSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver
       /*--- Get the velocity vector ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = alpha_Inf;
+        Solution[iVar] = alpha_Inf; // alpha_Inf = 1.0
 
       node[iPoint]->SetSolution_Old(Solution);
       LinSysRes.SetBlock_Zero(iPoint);

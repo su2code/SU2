@@ -50,6 +50,19 @@
 
 using namespace std;
 
+#ifdef HAVE_MPI
+inline void BREAK(const char* filename, int linenum) {
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == 0)
+    printf("%s\t%6d\n", filename, linenum);
+}
+#else
+inline void BREAK(const char* filename, int linenum) {
+  printf("%s\t%6d\n", filename, linenum);
+}
+#endif
+
 /*!
  * \class CNumerics
  * \brief Class for defining the numerical methods.
