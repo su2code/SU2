@@ -642,7 +642,7 @@ def main():
     # Channel_2D
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
-    channel_2D.cfg_file  = "channel_2D_SM.cfg"
+    channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 4
     channel_2D.test_vals = [-1.656896, 4.263158, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
@@ -654,7 +654,7 @@ def main():
     # Channel_3D
     channel_3D           = TestCase('channel_3D')
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
-    channel_3D.cfg_file  = "channel_3D_SM.cfg"
+    channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 1
     channel_3D.test_vals = [-1.899946, 4.032882, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "SU2_CFD"
@@ -678,7 +678,7 @@ def main():
     # Rotating cylinders
     rotating_cylinders           = TestCase('rotating_cylinders')
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
-    rotating_cylinders.cfg_file  = "rot_cylinders_SM.cfg"
+    rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
     rotating_cylinders.test_vals = [-1.253451, 4.531335, 0.000000, 0.000000] #last 4 columns
     rotating_cylinders.su2_exec  = "SU2_CFD"
@@ -690,7 +690,7 @@ def main():
     # Supersonic vortex shedding
     supersonic_vortex_shedding           = TestCase('supersonic_vortex_shedding')
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
-    supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_SM.cfg"
+    supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
     supersonic_vortex_shedding.test_vals = [-1.122916, 4.606248, 0.000000, 0.000000] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "SU2_CFD"

@@ -12905,7 +12905,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   su2double *PrimVar_j = new su2double[nPrimVar];
   su2double *tmp_residual = new su2double[nVar];
   
-  su2double coeff;
+  su2double weight;
   su2double P_static, rho_static;
    
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -12918,9 +12918,13 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
         if (geometry->node[iPoint]->GetDomain()) {
 
           nDonorVertex = GetnSlidingStates(iMarker, iVertex);
+          
+          /*--- Initialize Residual, this will serve to accumulate the average ---*/
 
           for (iVar = 0; iVar < nVar; iVar++)
             Residual[iVar] = 0.0;
+
+          /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
           for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
 
@@ -12930,8 +12934,10 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
               PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
               PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
             }
+            
+            /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
 
-            coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+            weight = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
 
             /*--- Set primitive variables ---*/
 
@@ -12965,8 +12971,10 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
             conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
 
+            /*--- Accumulate the residuals to compute the average ---*/
+            
             for (iVar = 0; iVar < nVar; iVar++)
-              Residual[iVar] += coeff*tmp_residual[iVar];
+              Residual[iVar] += weight*tmp_residual[iVar];
 
           }
 
@@ -12978,14 +12986,20 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
           if (viscous) {
             
+            /*--- Initialize Residual, this will serve to accumulate the average ---*/
+            
             for (iVar = 0; iVar < nVar; iVar++)
               Residual[iVar] = 0.0;
+              
+            /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
             
             for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
               PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5, jVertex); 
               PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6, jVertex); 
 
-              coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+              /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+              
+              weight = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
               
               /*--- Set the normal vector and the coordinates ---*/
 
@@ -13006,8 +13020,10 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
               visc_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
               
+              /*--- Accumulate the residuals to compute the average ---*/
+              
               for (iVar = 0; iVar < nVar; iVar++)
-                Residual[iVar] += coeff*tmp_residual[iVar];
+                Residual[iVar] += weight*tmp_residual[iVar];
             }
           
             LinSysRes.SubtractBlock(iPoint, Residual);
