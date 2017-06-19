@@ -138,8 +138,11 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
         if(menter_sst){
           kine   = solver_container->GetKeiIn(iMarkerTP, iSpan);
           omega  = solver_container->GetOmegaIn(iMarkerTP, iSpan);
-          TurbIntensityIn[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
-          Turb2LamViscRatioIn[iMarkerTP][iSpan] = DensityIn[iMarkerTP][iSpan]*kine/(muLam*omega);
+          TurbIntensityIn[iMarkerTP][iSpan]     =  kine;
+//          TurbIntensityIn[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
+//          Turb2LamViscRatioIn[iMarkerTP][iSpan] = DensityIn[iMarkerTP][iSpan]*kine/(muLam*omega);
+          Turb2LamViscRatioIn[iMarkerTP][iSpan] = omega;
+
         }
         else{
           nu = solver_container->GetNuIn(iMarkerTP, iSpan);
@@ -224,8 +227,10 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
         if(menter_sst){
           kine   = solver_container->GetKeiIn(iMarkerTP, iSpan);
           omega  = solver_container->GetOmegaIn(iMarkerTP, iSpan);
-          TurbIntensityOut[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
-          Turb2LamViscRatioOut[iMarkerTP][iSpan] = DensityOut[iMarkerTP][iSpan]*kine/(muLam*omega);
+//          TurbIntensityOut[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
+//          Turb2LamViscRatioOut[iMarkerTP][iSpan] = DensityOut[iMarkerTP][iSpan]*kine/(muLam*omega);
+          TurbIntensityOut[iMarkerTP][iSpan]     = kine;
+          Turb2LamViscRatioOut[iMarkerTP][iSpan] = omega;
         }
         else{
           nu = solver_container->GetNuIn(iMarkerTP, iSpan);

@@ -16173,7 +16173,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
 
 #endif
 
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE && markerTP > -1){
       /*----Quantities needed for computing the turbomachinery performance -----*/
       DensityIn[markerTP -1][iSpan]              = densityIn;
       PressureIn[markerTP -1][iSpan]             = pressureIn;
