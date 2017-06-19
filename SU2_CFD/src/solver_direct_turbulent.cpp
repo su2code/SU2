@@ -3448,7 +3448,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
   unsigned long  oldVertex, iPoint, Point_Normal;
   long iVertex;
   su2double *V_inlet, *V_domain, *Normal;
-  su2double extAverageKei, extAverageOmega;
+  su2double extAverageKine, extAverageOmega;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
 
   Normal = new su2double[nDim];
@@ -3459,7 +3459,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
-    extAverageKei = solver_container[FLOW_SOL]->GetExtAverageKei(val_marker, iSpan);
+    extAverageKine = solver_container[FLOW_SOL]->GetExtAverageKine(val_marker, iSpan);
     extAverageOmega = solver_container[FLOW_SOL]->GetExtAverageOmega(val_marker, iSpan);
 
 
@@ -3497,7 +3497,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       for (iVar = 0; iVar < nVar; iVar++)
         Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
 
-      Solution_j[0]= extAverageKei;
+      Solution_j[0]= extAverageKine;
       Solution_j[1]= extAverageOmega;
 
       conv_numerics->SetTurbVar(Solution_i, Solution_j);

@@ -1567,9 +1567,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   unsigned short iSpan, nSpanDonor, nSpanTarget;
   int Marker_Donor = -1, Marker_Target = -1;
   su2double *avgPressureDonor = NULL, *avgDensityDonor = NULL, *avgNormalVelDonor = NULL,
-      *avgTangVelDonor = NULL, *avg3DVelDonor = NULL, *avgNuDonor = NULL, *avgOmegaDonor = NULL, *avgKeiDonor = NULL;
+      *avgTangVelDonor = NULL, *avg3DVelDonor = NULL, *avgNuDonor = NULL, *avgOmegaDonor = NULL, *avgKineDonor = NULL;
   su2double *avgPressureTarget = NULL, *avgDensityTarget = NULL, *avgNormalVelTarget = NULL,
-      *avg3DVelTarget = NULL, *avgTangVelTarget = NULL, *avgNuTarget = NULL, *avgOmegaTarget = NULL, *avgKeiTarget = NULL;
+      *avg3DVelTarget = NULL, *avgTangVelTarget = NULL, *avgNuTarget = NULL, *avgOmegaTarget = NULL, *avgKineTarget = NULL;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE, iSize;
 
@@ -1577,7 +1577,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL, *BuffAvg3DVelDonor = NULL,
-      *BuffAvgTangVelDonor = NULL, *BuffAvgNuDonor = NULL, *BuffAvgKeiDonor = NULL, *BuffAvgOmegaDonor = NULL;
+      *BuffAvgTangVelDonor = NULL, *BuffAvgNuDonor = NULL, *BuffAvgKineDonor = NULL, *BuffAvgOmegaDonor = NULL;
   int nSpanSize, *BuffMarkerDonor;
 #endif
 
@@ -1597,7 +1597,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   avgTangVelDonor   		   =  new su2double[nSpanDonor];
   avg3DVelDonor						 =  new su2double[nSpanDonor];
   avgNuDonor        		   =  new su2double[nSpanDonor];
-  avgKeiDonor   		       =  new su2double[nSpanDonor];
+  avgKineDonor   		       =  new su2double[nSpanDonor];
   avgOmegaDonor						 =  new su2double[nSpanDonor];
 
   for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
@@ -1607,7 +1607,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     avgTangVelDonor[iSpan]   			= -1.0;
     avg3DVelDonor[iSpan]   			  = -1.0;
     avgNuDonor[iSpan]        		  = -1.0;
-    avgKeiDonor[iSpan]   		      = -1.0;
+    avgKineDonor[iSpan]   		      = -1.0;
     avgOmegaDonor[iSpan]					= -1.0;
   }
 
@@ -1617,7 +1617,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   avgTangVelTarget   				=  new su2double[nSpanTarget];
   avg3DVelTarget						=  new su2double[nSpanTarget];
   avgNuTarget        		    =  new su2double[nSpanTarget];
-  avgKeiTarget   		        =  new su2double[nSpanTarget];
+  avgKineTarget   		        =  new su2double[nSpanTarget];
   avgOmegaTarget						=  new su2double[nSpanTarget];
 
 
@@ -1628,7 +1628,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     avgTangVelTarget[iSpan]        = -1.0;
     avg3DVelTarget[iSpan]     		 = -1.0;
     avgNuTarget[iSpan]        		 = -1.0;
-    avgKeiTarget[iSpan]   		     = -1.0;
+    avgKineTarget[iSpan]   		     = -1.0;
     avgOmegaTarget[iSpan]					 = -1.0;
   }
 
@@ -1673,7 +1673,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
       avgTangVelDonor[iSpan]   			= Donor_Variable[3];
       avg3DVelDonor[iSpan]				  = Donor_Variable[4];
       avgNuDonor[iSpan]        		  = Donor_Variable[5];
-      avgKeiDonor[iSpan]   		      = Donor_Variable[6];
+      avgKineDonor[iSpan]   		      = Donor_Variable[6];
       avgOmegaDonor[iSpan]				  = Donor_Variable[7];
     }
   }
@@ -1687,7 +1687,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   BuffAvgTangVelDonor        = new su2double[nSpanSize];
   BuffAvg3DVelDonor          = new su2double[nSpanSize];
   BuffAvgNuDonor  				   = new su2double[nSpanSize];
-  BuffAvgKeiDonor        		 = new su2double[nSpanSize];
+  BuffAvgKineDonor        		 = new su2double[nSpanSize];
   BuffAvgOmegaDonor          = new su2double[nSpanSize];
   BuffMarkerDonor						 = new int[size];
 
@@ -1698,7 +1698,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     BuffAvgTangVelDonor[iSpan]        = -1.0;
     BuffAvg3DVelDonor[iSpan]          = -1.0;
     BuffAvgNuDonor[iSpan]             = -1.0;
-    BuffAvgKeiDonor[iSpan]            = -1.0;
+    BuffAvgKineDonor[iSpan]            = -1.0;
     BuffAvgOmegaDonor[iSpan]          = -1.0;
   }
 
@@ -1712,7 +1712,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   SU2_MPI::Allgather(avgTangVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTangVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
   SU2_MPI::Allgather(avg3DVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvg3DVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
   SU2_MPI::Allgather(avgNuDonor, nSpanDonor , MPI_DOUBLE, BuffAvgNuDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(avgKeiDonor, nSpanDonor , MPI_DOUBLE, BuffAvgKeiDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(avgKineDonor, nSpanDonor , MPI_DOUBLE, BuffAvgKineDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
   SU2_MPI::Allgather(avgOmegaDonor, nSpanDonor , MPI_DOUBLE, BuffAvgOmegaDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
   SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
 
@@ -1725,7 +1725,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     avgTangVelDonor[iSpan]        = -1.0;
     avg3DVelDonor[iSpan]          = -1.0;
     avgNuDonor[iSpan]             = -1.0;
-    avgKeiDonor[iSpan]            = -1.0;
+    avgKineDonor[iSpan]            = -1.0;
     avgOmegaDonor[iSpan]          = -1.0;
   }
 
@@ -1741,7 +1741,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
         avgTangVelDonor[iSpan]        = BuffAvgTangVelDonor[nSpanDonor*iSize + iSpan];
         avg3DVelDonor[iSpan]          = BuffAvg3DVelDonor[nSpanDonor*iSize + iSpan];
         avgNuDonor[iSpan]             = BuffAvgNuDonor[nSpanDonor*iSize + iSpan];
-        avgKeiDonor[iSpan]            = BuffAvgKeiDonor[nSpanDonor*iSize + iSpan];
+        avgKineDonor[iSpan]            = BuffAvgKineDonor[nSpanDonor*iSize + iSpan];
         avgOmegaDonor[iSpan]          = BuffAvgOmegaDonor[nSpanDonor*iSize + iSpan];
       }
       Marker_Donor = BuffMarkerDonor[iSize];
@@ -1754,7 +1754,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   delete [] BuffAvgTangVelDonor;
   delete [] BuffAvg3DVelDonor;
   delete [] BuffAvgNuDonor;
-  delete [] BuffAvgKeiDonor;
+  delete [] BuffAvgKineDonor;
   delete [] BuffAvgOmegaDonor;
   delete [] BuffMarkerDonor;
 
@@ -1798,8 +1798,8 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
       avg3DVelTarget[iSpan]           += avg3DVelDonor[SpanLevelDonor[iSpan]];
       avgNuTarget[iSpan]               = SpanValueCoeffTarget[iSpan]*(avgNuDonor[SpanLevelDonor[iSpan] + 1] - avgNuDonor[SpanLevelDonor[iSpan]]);
       avgNuTarget[iSpan]              += avgNuDonor[SpanLevelDonor[iSpan]];
-      avgKeiTarget[iSpan]              = SpanValueCoeffTarget[iSpan]*(avgKeiDonor[SpanLevelDonor[iSpan] + 1] - avgKeiDonor[SpanLevelDonor[iSpan]]);
-      avgKeiTarget[iSpan]             += avgKeiDonor[SpanLevelDonor[iSpan]];
+      avgKineTarget[iSpan]              = SpanValueCoeffTarget[iSpan]*(avgKineDonor[SpanLevelDonor[iSpan] + 1] - avgKineDonor[SpanLevelDonor[iSpan]]);
+      avgKineTarget[iSpan]             += avgKineDonor[SpanLevelDonor[iSpan]];
       avgOmegaTarget[iSpan]            = SpanValueCoeffTarget[iSpan]*(avgOmegaDonor[SpanLevelDonor[iSpan] + 1] - avgOmegaDonor[SpanLevelDonor[iSpan] ]);
       avgOmegaTarget[iSpan]           += avgOmegaDonor[SpanLevelDonor[iSpan]];
     }
@@ -1812,7 +1812,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     avgTangVelTarget[0]        = avgTangVelDonor[0];
     avg3DVelTarget[0]          = avg3DVelDonor[0];
     avgNuTarget[0]             = avgNuDonor[0];
-    avgKeiTarget[0]            = avgKeiDonor[0];
+    avgKineTarget[0]            = avgKineDonor[0];
     avgOmegaTarget[0]          = avgOmegaDonor[0];
 
     /*--- transfer values at the shroud ---*/
@@ -1822,7 +1822,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     avgTangVelTarget[nSpanTarget - 2]        = avgTangVelDonor[nSpanDonor - 2];
     avg3DVelTarget[nSpanTarget - 2]          = avg3DVelDonor[nSpanDonor - 2];
     avgNuTarget[nSpanTarget - 2]             = avgNuDonor[nSpanDonor - 2];
-    avgKeiTarget[nSpanTarget - 2]            = avgKeiDonor[nSpanDonor - 2];
+    avgKineTarget[nSpanTarget - 2]            = avgKineDonor[nSpanDonor - 2];
     avgOmegaTarget[nSpanTarget - 2]          = avgOmegaDonor[nSpanDonor - 2];
 
     /*--- transfer 1D values ---*/
@@ -1832,7 +1832,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     avgTangVelTarget[nSpanTarget - 1]        = avgTangVelDonor[nSpanDonor - 1];
     avg3DVelTarget[nSpanTarget - 1]          = avg3DVelDonor[nSpanDonor - 1];
     avgNuTarget[nSpanTarget - 1]             = avgNuDonor[nSpanDonor - 1];
-    avgKeiTarget[nSpanTarget - 1]            = avgKeiDonor[nSpanDonor - 1];
+    avgKineTarget[nSpanTarget - 1]            = avgKineDonor[nSpanDonor - 1];
     avgOmegaTarget[nSpanTarget - 1]          = avgOmegaDonor[nSpanDonor - 1];
 
 
@@ -1845,7 +1845,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
       Target_Variable[3] = avgTangVelTarget[iSpan];
       Target_Variable[4] = avg3DVelTarget[iSpan];
       Target_Variable[5] = avgNuTarget[iSpan];
-      Target_Variable[6] = avgKeiTarget[iSpan];
+      Target_Variable[6] = avgKineTarget[iSpan];
       Target_Variable[7] = avgOmegaTarget[iSpan];
 
 
@@ -1859,7 +1859,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   delete [] avgTangVelDonor;
   delete [] avg3DVelDonor;
   delete [] avgNuDonor;
-  delete [] avgKeiDonor;
+  delete [] avgKineDonor;
   delete [] avgOmegaDonor;
 
 
@@ -1869,7 +1869,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   delete [] avgTangVelTarget;
   delete [] avg3DVelTarget;
   delete [] avgNuTarget;
-  delete [] avgKeiTarget;
+  delete [] avgKineTarget;
   delete [] avgOmegaTarget;
 
 

@@ -403,7 +403,7 @@ void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, 
 
   if(turbulent){
     Donor_Variable[5] = donor_solution->GetAverageNu(Marker_Donor, iSpan);
-    Donor_Variable[6] = donor_solution->GetAverageKei(Marker_Donor, iSpan);
+    Donor_Variable[6] = donor_solution->GetAverageKine(Marker_Donor, iSpan);
     Donor_Variable[7] = donor_solution->GetAverageOmega(Marker_Donor, iSpan);
   }
   else{
@@ -434,7 +434,7 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 
   if(turbulent){
     target_solution->SetExtAverageNu(Marker_Target, iSpan, Target_Variable[5]);
-    target_solution->SetExtAverageKei(Marker_Target, iSpan, Target_Variable[6]);
+    target_solution->SetExtAverageKine(Marker_Target, iSpan, Target_Variable[6]);
     target_solution->SetExtAverageOmega(Marker_Target, iSpan,  Target_Variable[7]);
   }
 
@@ -453,10 +453,10 @@ void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, C
     target_solution->SetTurboVelocityOut(donor_solution->GetTurboVelocityOut(donorZone, iSpan), donorZone, iSpan);
 
     /*--- transfer turbulent quantities ---*/
-    target_solution->SetKeiIn(donor_solution->GetKeiIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetKineIn(donor_solution->GetKineIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetOmegaIn(donor_solution->GetOmegaIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetNuIn(donor_solution->GetNuIn(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetKeiOut(donor_solution->GetKeiOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetKineOut(donor_solution->GetKineOut(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetOmegaOut(donor_solution->GetOmegaOut(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetNuOut(donor_solution->GetNuOut(donorZone, iSpan), donorZone, iSpan);
 

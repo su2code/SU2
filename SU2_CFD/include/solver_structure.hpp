@@ -3384,9 +3384,9 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - bound marker.
-   * \return Value of the Average Kei on the surface <i>val_marker</i>.
+   * \return Value of the Average Kine on the surface <i>val_marker</i>.
    */
-  virtual su2double GetAverageKei(unsigned short valMarker, unsigned short iSpan);
+  virtual su2double GetAverageKine(unsigned short valMarker, unsigned short iSpan);
 
   /*!
    * \brief A virtual member.
@@ -3405,9 +3405,9 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - bound marker.
-   * \return Value of the Average Kei on the surface <i>val_marker</i>.
+   * \return Value of the Average Kine on the surface <i>val_marker</i>.
    */
-  virtual su2double GetExtAverageKei(unsigned short valMarker, unsigned short iSpan);
+  virtual su2double GetExtAverageKine(unsigned short valMarker, unsigned short iSpan);
 
   /*!
    * \brief A virtual member.
@@ -3448,9 +3448,9 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - bound marker.
-   * \return Value of the Average Kei on the surface <i>val_marker</i>.
+   * \return Value of the Average Kine on the surface <i>val_marker</i>.
    */
-  virtual void SetExtAverageKei(unsigned short valMarker, unsigned short valSpan, su2double valKei);
+  virtual void SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine);
 
   /*!
    * \brief A virtual member.
@@ -3506,7 +3506,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  virtual su2double GetKeiIn(unsigned short inMarkerTP, unsigned short valSpan);
+  virtual su2double GetKineIn(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief A virtual member.
@@ -3527,7 +3527,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  virtual su2double GetKeiOut(unsigned short inMarkerTP, unsigned short valSpan);
+  virtual su2double GetKineOut(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief A virtual member.
@@ -3590,7 +3590,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  virtual void SetKeiIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  virtual void SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief A virtual member.
@@ -3611,7 +3611,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  virtual void SetKeiOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  virtual void SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief A virtual member.
@@ -3952,10 +3952,10 @@ protected:
   **OldAverageDensity,
   **ExtAverageDensity,
   **AverageNu,
-  **AverageKei,
+  **AverageKine,
   **AverageOmega,
   **ExtAverageNu,
-  **ExtAverageKei,
+  **ExtAverageKine,
   **ExtAverageOmega;
 
   su2double **DensityIn,
@@ -3964,10 +3964,10 @@ protected:
   **DensityOut,
   **PressureOut,
   ***TurboVelocityOut,
-  **KeiIn,
+  **KineIn,
   **OmegaIn,
   **NuIn,
-  **KeiOut,
+  **KineOut,
   **OmegaOut,
   **NuOut;
   
@@ -5916,9 +5916,9 @@ public:
   /*!
    * \brief Provide the average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
-   * \return Value of the Average turbulent Kei on the surface <i>val_marker</i>.
+   * \return Value of the Average turbulent Kine on the surface <i>val_marker</i>.
    */
-  su2double GetAverageKei(unsigned short valMarker, unsigned short valSpan);
+  su2double GetAverageKine(unsigned short valMarker, unsigned short valSpan);
 
   /*!
    * \brief Provide the average density at the boundary of interest.
@@ -5937,9 +5937,9 @@ public:
   /*!
    * \brief Provide the average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
-   * \return Value of the Average turbulent Kei on the surface <i>val_marker</i>.
+   * \return Value of the Average turbulent Kine on the surface <i>val_marker</i>.
    */
-  su2double GetExtAverageKei(unsigned short valMarker, unsigned short valSpan);
+  su2double GetExtAverageKine(unsigned short valMarker, unsigned short valSpan);
 
   /*!
    * \brief Provide the average density at the boundary of interest.
@@ -5980,12 +5980,12 @@ public:
   void SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu);
 
   /*!
-   * \brief Set the external average turbulent Kei at the boundary of interest.
+   * \brief Set the external average turbulent Kine at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \param[in] val_Span   - value of the Span.
-   * \param[in] valKei - value to set.
+   * \param[in] valKine - value to set.
    */
-  void SetExtAverageKei(unsigned short valMarker, unsigned short valSpan, su2double valKei);
+  void SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine);
 
   /*!
    * \brief Set the external average turbulent Omega at the boundary of interest.
@@ -6042,7 +6042,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  su2double GetKeiIn(unsigned short inMarkerTP, unsigned short valSpan);
+  su2double GetKineIn(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief Provide the inlet turbulent omega to check convergence of conservative mixing-plane.
@@ -6063,7 +6063,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  su2double GetKeiOut(unsigned short inMarkerTP, unsigned short valSpan);
+  su2double GetKineOut(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief Provide the outlet turbulent omega to check convergence of conservative mixing-plane.
@@ -6126,7 +6126,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  void SetKeiIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  void SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
   /*!
    * \brief Set inlet turbulent omega.
    * \param[in] value      - turboperformance value to set.
@@ -6145,7 +6145,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  void SetKeiOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  void SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
   /*!
    * \brief Set Outlet turbulent omega.
    * \param[in] value      - turboperformance value to set.

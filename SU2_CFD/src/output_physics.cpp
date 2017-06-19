@@ -136,7 +136,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
         FluidModel->SetTDState_Prho(PressureIn[iMarkerTP][iSpan], DensityIn[iMarkerTP][iSpan]);
         muLam  = FluidModel->GetLaminarViscosity();
         if(menter_sst){
-          kine   = solver_container->GetKeiIn(iMarkerTP, iSpan);
+          kine   = solver_container->GetKineIn(iMarkerTP, iSpan);
           omega  = solver_container->GetOmegaIn(iMarkerTP, iSpan);
           TurbIntensityIn[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
           Turb2LamViscRatioIn[iMarkerTP][iSpan] = DensityIn[iMarkerTP][iSpan]*kine/(muLam*omega);
@@ -222,7 +222,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
         FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
         muLam  = FluidModel->GetLaminarViscosity();
         if(menter_sst){
-          kine   = solver_container->GetKeiOut(iMarkerTP, iSpan);
+          kine   = solver_container->GetKineOut(iMarkerTP, iSpan);
           omega  = solver_container->GetOmegaOut(iMarkerTP, iSpan);
           TurbIntensityOut[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
           Turb2LamViscRatioOut[iMarkerTP][iSpan] = DensityOut[iMarkerTP][iSpan]*kine/(muLam*omega);
