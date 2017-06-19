@@ -10252,7 +10252,7 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
           cout << endl;
         }
         else{
-          cout << "     Inlet Nu Factor" << "      Inlet Nu Factor BC" << "            err(%)" <<  endl;
+          cout << "     Inlet Nu Factor" << "          Inlet Nu Factor BC" << "          err(%)" <<  endl;
           cout.width(25); cout << NuFactorIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
           cout.width(25); cout << config->GetNuFactor_FreeStream();
           cout.width(25); cout << abs((NuFactorIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - config->GetNuFactor_FreeStream())/config->GetNuFactor_FreeStream())*100.0;
