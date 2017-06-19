@@ -10946,14 +10946,13 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
                 }
                 break;
               case AXIAL:
-                if ( nDim == 3){
-                  AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                if (marker_flag == INFLOW && nDim == 2){
+                  AverageTangGridVel[iMarker][iSpan]= -AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1] + AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
                 }
                 else{
-                  cout << "Tang grid velocity AXIAL 2D NOT IMPLEMENTED YET"<<endl;
-                  exit(EXIT_FAILURE);
+                  AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
                 }
-                break;
+                  break;
               case CENTRIPETAL_AXIAL:
                 if (marker_flag == OUTFLOW){
                   AverageTangGridVel[iMarker][iSpan]= (AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
@@ -13401,7 +13400,7 @@ void CPhysicalGeometry::SetShroudVelocity(CConfig *config) {
   }
 }
 
-void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
+void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {
   
   unsigned short iDim;
   unsigned long iPoint;
@@ -13414,13 +13413,13 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
   
   /*--- Get the translational velocity vector from config ---*/
   
-  xDot[0] = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
-  xDot[1] = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
-  xDot[2] = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  xDot[0] = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
+  xDot[1] = config->GetTranslation_Rate_Y(val_iZone)/config->GetVelocity_Ref();
+  xDot[2] = config->GetTranslation_Rate_Z(val_iZone)/config->GetVelocity_Ref();
   
   /*--- Print some information to the console ---*/
   
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && print) {
     cout << " Non-dim. translational velocity: (" << xDot[0] << ", " << xDot[1];
     cout << ", " << xDot[2] << ")." << endl;
   }
@@ -16985,7 +16984,7 @@ void CMultiGridGeometry::SetShroudVelocity(CConfig *config) {
   }
 }
 
-void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config) {
+void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {
   
   unsigned iDim;
   unsigned long iPoint_Coarse;
@@ -16993,9 +16992,9 @@ void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config) {
   
   /*--- Get the translational velocity vector from config ---*/
   
-  xDot[0]   = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
-  xDot[1]   = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
-  xDot[2]   = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  xDot[0]   = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
+  xDot[1]   = config->GetTranslation_Rate_Y(val_iZone)/config->GetVelocity_Ref();
+  xDot[2]   = config->GetTranslation_Rate_Z(val_iZone)/config->GetVelocity_Ref();
   
   /*--- Loop over all nodes and set the translational velocity ---*/
   

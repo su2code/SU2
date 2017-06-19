@@ -89,7 +89,7 @@ inline void CGeometry::SetRotationalVelocity(CConfig *config, unsigned short val
 
 inline void CGeometry::SetShroudVelocity(CConfig *config){ }
 
-inline void CGeometry::SetTranslationalVelocity(CConfig *config) { }
+inline void CGeometry::SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print) { }
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
