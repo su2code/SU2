@@ -518,7 +518,7 @@ void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_El
 
   Normal[0] += Dim_Normal[0]; 
   Normal[1] += Dim_Normal[1];
-
+//cout << Normal[0] << "  " << Normal[1] << endl;
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
 
@@ -617,10 +617,32 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
   AD::SetPreaccIn(val_coord_Elem_CG, nDim);
   AD::SetPreaccIn(val_coord_Edge_CG, nDim);
   AD::SetPreaccIn(Normal, nDim);
+  
+  unsigned long iDim;
+/*  
+cout << "New" << endl;  
+for (iDim = 0; iDim < nDim; iDim++)
+  cout << val_coord_Edge_CG[iDim] << "  ";
+cout << endl;       
 
-  Normal[0] += val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
+for (iDim = 0; iDim < nDim; iDim++)
+  cout << val_coord_Elem_CG[iDim] << "  ";
+cout << endl; 
+*/
+  Normal[0] +=  val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
   Normal[1] -= (val_coord_Elem_CG[0]-val_coord_Edge_CG[0]);
+/*  
+for (iDim = 0; iDim < nDim; iDim++)
+  cout << Normal[iDim] << "  ";
+cout << endl; 
+*/
 
+su2double m;
+for (iDim = 0; iDim < nDim; iDim++)
+  m += Normal[iDim];
+if (m == 0) getchar();    
+    
+    
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
  
