@@ -3367,7 +3367,13 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
        in colorToInd. */
     for(unsigned long j=0; j<nonZeroEntriesJacobian[i].size(); ++j) {
       const unsigned long jj = nonZeroEntriesJacobian[i][j];
-      colorToInd[colorLocalDOFs[jj]] = j;
+      map<unsigned long, int>::const_iterator MI = graphIndToColor.find(jj);
+      if(MI == graphIndToColor.end()) {
+        cout << "Nonzero Jacobian entry not found in graphIndToColor." << endl
+             << "This should not happen." << endl;
+        exit(1);
+      }
+      colorToInd[MI->second] = j;
     }
   }
 
