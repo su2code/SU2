@@ -138,34 +138,60 @@ void CPrimalGrid::GramSchmidt(std::vector<std::vector<su2double> > &w,
   unsigned short iDim, jDim;
   const unsigned short nDim = w.size();
 
-  /*-- Set the first basis vector to the first input vector --*/
+  vector<su2double> magnitude;
+  for (iDim =0; iDim < nDim; iDim++) {
+    magnitude.push_back(inline_magnitude(w[iDim]));
+  }
+
+  su2double max = magnitude[0], min = magnitude[0];
+  unsigned short maxloc = 0, minloc = 0, medianloc=0;
+  for (iDim = 1; iDim < nDim; iDim++) {
+    if (magnitude[iDim] > max) {
+      max = magnitude[iDim]; maxloc = iDim;
+    } else if (magnitude[iDim] <= min) {
+      min = magnitude[iDim]; minloc = iDim;
+    }
+  }
+  if (nDim == 3) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      if (iDim != maxloc && iDim != minloc) {
+        medianloc = iDim; break;
+      }
+    }
+  } else {
+    medianloc = minloc;
+  }
+
+  /*-- Set the largest basis vector to the first input vector --*/
   for (iDim = 0; iDim < nDim; ++iDim) {
-    v[0][iDim] = w[0][iDim];
+    v[maxloc][iDim] = w[maxloc][iDim];
   }
 
   if (nDim > 1) {
     /*-- Compute the next orthogonal vector --*/
     for (iDim = 0; iDim < nDim; ++iDim) {
-      v[1][iDim] = w[1][iDim] -
-          inline_dot_prod(w[1],v[0])/inline_dot_prod(v[0],v[0])*v[0][iDim];
+      v[medianloc][iDim] = w[medianloc][iDim] -
+          inline_dot_prod(w[medianloc],v[maxloc])/
+          inline_dot_prod(v[maxloc],v[maxloc])*v[maxloc][iDim];
     }
   }
 
   if (nDim > 2) {
     /*-- Compute the next orthogonal vector --*/
     for (iDim = 0; iDim < nDim; ++iDim) {
-      v[2][iDim] = w[2][iDim] -
-          inline_dot_prod(w[2],v[0])/inline_dot_prod(v[0],v[0])*v[0][iDim] -
-          inline_dot_prod(w[2],v[1])/inline_dot_prod(v[1],v[1])*v[1][iDim];
+      v[minloc][iDim] = w[minloc][iDim] -
+          inline_dot_prod(w[minloc],v[maxloc])/
+          inline_dot_prod(v[maxloc],v[maxloc])*v[maxloc][iDim] -
+          inline_dot_prod(w[minloc],v[medianloc])/
+          inline_dot_prod(v[medianloc],v[medianloc])*v[medianloc][iDim];
     }
   }
 
   /*-- Normalize results of the Gram-Schmidt --*/
-  su2double mag;
   for (iDim = 0; iDim < nDim; ++iDim) {
-    mag = inline_magnitude(v[iDim]);
+    magnitude[iDim] = inline_magnitude(v[iDim]);
     for (jDim = 0; jDim < nDim; ++jDim) {
-      v[iDim][jDim] /= mag;
+      v[iDim][jDim] /= magnitude[iDim];
     }
   }
 }

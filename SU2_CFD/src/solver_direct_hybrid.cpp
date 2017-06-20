@@ -1516,11 +1516,6 @@ void CHybridConvSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-      /*--- Subtract residual, and update Jacobians ---*/
-
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-
     }
   }
 
@@ -1594,11 +1589,6 @@ void CHybridConvSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
 
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-      /*--- Subtract residual, and update Jacobians ---*/
-
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-
     }
   }
 
@@ -1659,11 +1649,6 @@ void CHybridConvSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_c
       /*--- Jacobian contribution for implicit integration ---*/
 
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-      /*--- Subtract residual, and update Jacobians ---*/
-
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
     }
   }
@@ -1730,11 +1715,6 @@ void CHybridConvSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_
       /*--- Jacobian contribution for implicit integration ---*/
 
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-      /*--- Subtract residual, and update Jacobians ---*/
-
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
     }
   }
@@ -1864,11 +1844,6 @@ void CHybridConvSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_contain
         /*--- Jacobian contribution for implicit integration ---*/
 
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-        /*--- Subtract residual, and update Jacobians ---*/
-
-        //        LinSysRes.SubtractBlock(iPoint, Residual);
-        //        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
       }
     }
