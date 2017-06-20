@@ -649,13 +649,13 @@ void CTurbSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contain
     BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     break;
   case MIXING_IN:
-  	if (config->GetBoolTurbMixingPlane()){
-  		BC_Inlet_MixingPlane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  	}
-  	else{
-  		BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  	}
-  	break;
+    if (config->GetBoolTurbMixingPlane()){
+      BC_Inlet_MixingPlane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    }
+    else{
+      BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    }
+    break;
 
   case STATIC_PRESSURE: case MIXING_OUT: case STATIC_PRESSURE_1D: case RADIAL_EQUILIBRIUM:
     BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
