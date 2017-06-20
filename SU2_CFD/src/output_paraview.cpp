@@ -713,6 +713,23 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
         }
       }
       VarCounter += 9;
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // No extra variables
+          break;
+        case CONVECTIVE:
+          // Add resolution adequacy.
+          Paraview_File << "\nSCALARS Resolution_Adequacy float 1\n";
+          Paraview_File << "LOOKUP_TABLE default\n";
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+            if (!surf_sol || LocalIndex[iPoint+1] != 0) {
+                Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+            }
+          }
+          VarCounter++;
+          break;
+      }
     }
 
     if (( Kind_Solver == ADJ_EULER         ) ||

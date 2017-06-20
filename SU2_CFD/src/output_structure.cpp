@@ -2131,12 +2131,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     /*--- Add extra hybrid variables to the output ---*/
 
     if (hybrid) {
+      // Add the eddy viscosity anisotropy (a rank 3 tensor)
       iVar_Eddy_Anisotropy = nVar_Total; nVar_Total += 9;
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
           // No extra variables
           break;
         case CONVECTIVE:
+          // Add resolution adequacy.
           iVar_Extra_Hybrid_Vars = nVar_Total; nVar_Total++;
           break;
         default:
@@ -3920,7 +3922,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
         restart_file << "\t\"Eddy_Visc_Anisotropy_31\"";
         restart_file << "\t\"Eddy_Visc_Anisotropy_32\"";
         restart_file << "\t\"Eddy_Visc_Anisotropy_33\"";
-      } else
+      } else {
         restart_file << "\t\"a<sub>11</sub>\"";
         restart_file << "\t\"a<sub>12</sub>\"";
         restart_file << "\t\"a<sub>13</sub>\"";
@@ -3930,7 +3932,23 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
         restart_file << "\t\"a<sub>31</sub>\"";
         restart_file << "\t\"a<sub>32</sub>\"";
         restart_file << "\t\"a<sub>33</sub>\"";
+      }
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // No extra variables
+          break;
+        case CONVECTIVE:
+          // Add resolution adequacy.
+          if (config->GetOutput_FileFormat() == PARAVIEW)
+            restart_file << "\t\"Resolution_Adequacy\"";
+          else
+            restart_file << "\t\"r<sub>k</sub>\"";
+          break;
+        default:
+          cout << "WARNING: Could not find appropriate output for the hybrid model." << endl;
+      }
     }
+
 
     if (config->GetWrt_SharpEdges()) {
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
@@ -10618,6 +10636,15 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Eddy_Visc_Aniso_31");
       Variable_Names.push_back("Eddy_Visc_Aniso_32");
       Variable_Names.push_back("Eddy_Visc_Aniso_33");
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // No extra variables
+          break;
+        case CONVECTIVE:
+          // Add resolution adequacy.
+          Variable_Names.push_back("Resolution_Adequacy"); nVar_Par++;
+          break;
+      }
     }
 
     /*--- Add the distance to the nearest sharp edge if requested. ---*/
@@ -10627,9 +10654,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
 
-    /*--- Add the hybrid parameters ---*/
-
-    // TODO: Add the resolution adequacy
 
     /*--- New variables get registered here before the end of the loop. ---*/
     
@@ -10837,6 +10861,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
         }
         
+        /*--- Load data for a hybrid RANS/LES model. ---*/
         if (hybrid) {
           su2double** eddy_visc_anisotropy = solver[FLOW_SOL]->node[iPoint]->GetEddyViscAnisotropy();
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -10845,6 +10870,16 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
               iVar++;
             }
           }
+          switch (config->GetKind_Hybrid_Blending()) {
+            case RANS_ONLY:
+              // No extra variables
+              break;
+            case CONVECTIVE:
+              // Add resolution adequacy.
+              Local_Data[jPoint][iVar] = solver[HYBRID_SOL]->node[iPoint]->GetResolutionAdequacy();
+              iVar++;
+              break;
+          }
         }
 
         /*--- Load data for the distance to the nearest sharp edge. ---*/
@@ -10852,10 +10887,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (config->GetWrt_SharpEdges()) {
           Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
         }
-        
-        /*--- Load the hybrid parameter ---*/
-
-        // TODO Add resolution adequacy
 
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
