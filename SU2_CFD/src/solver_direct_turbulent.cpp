@@ -2225,7 +2225,6 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
     extAverageNu = solver_container[FLOW_SOL]->GetExtAverageNu(val_marker, iSpan);
 
-
     /*--- Loop over all the vertices on this boundary marker ---*/
 
     for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
@@ -2241,11 +2240,11 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      geometry->vertex[val_marker][oldVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Allocate the value at the inlet ---*/
-      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, oldVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
@@ -3483,11 +3482,11 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      geometry->vertex[val_marker][oldVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Allocate the value at the inlet ---*/
-      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, oldVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
