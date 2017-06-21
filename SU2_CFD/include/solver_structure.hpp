@@ -44,6 +44,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iostream>
+#include <set>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -1345,7 +1346,7 @@ public:
    * \return Value of the Average Tangent Velocity on the surface <i>val_marker</i>.
    */
   virtual su2double GetAveragedTangVelocity(unsigned short valMarker);
-  
+
   /*!
    * \brief Get the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
@@ -1384,7 +1385,7 @@ public:
    * \param[in] value      - number of outer states
    */
   virtual void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
-    
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4061,7 +4062,7 @@ protected:
   *Surface_CMz,            /*!< \brief z Moment coefficient for each monitoring surface. */
   *Surface_HF_Visc,            /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;         /*!< \brief Maximum heat flux for each monitored surface. */
-  
+
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -6228,7 +6229,7 @@ public:
    * \param[in] val_vertex   - vertex index
    */
   void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
-      
+
   /*!
    * \brief Set the outer state for fluid interface nodes.
    * \param[in] val_marker   - marker index
@@ -6253,7 +6254,7 @@ public:
    * \param[in] val_vertex - vertex index
    */
   int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
-    
+
   /*!
    * \brief Set the initial condition for the Euler Equations.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8396,7 +8397,7 @@ protected:
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
   unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
   *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
-  
+
   /* Sliding meshes variables */
 
   su2double ****SlidingState;
@@ -8538,7 +8539,7 @@ public:
    * \param[in] val_vertex   - vertex index
    */
   void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
-      
+
   /*!
    * \brief Set the outer state for fluid interface nodes.
    * \param[in] val_marker   - marker index
@@ -12095,8 +12096,14 @@ protected:
                                                                      for the locally owned DOFs. */
 
   int nGlobalColors;              /*!< \brief Number of global colors for the Jacobian computation. */
-  vector<int> colorLocalDOFs;     /*!< \brief The color of the local DOFs, including halo DOFs. */
 
+  vector<vector<unsigned long> > localDOFsPerColor;   /*!< \brief Double vector, which contains for every
+                                                                  color the local DOFs. */
+  vector<vector<int> > colorToIndEntriesJacobian;     /*!< \brief Double vector, which contains for every
+                                                                  local DOF the mapping from the color to the
+                                                                  entry in the Jacobian. A -1 indicates that
+                                                                  the color does not contribute to the Jacobian
+                                                                  of the DOF. */
 private:
 
 #ifdef HAVE_MPI
@@ -13168,10 +13175,13 @@ private:
                           CConfig        *config);
 
   /*!
-   * \brief Function, which exchanges the color of the DOFs.
-   * \param[in] DGGeometry - Geometrical definition of the DG problem.
+   * \brief Function, which determines the meta data needed for the computation
+            of the Jacobian of the spatial residual.
+   * \param[in] DGGeometry     - Geometrical definition of the DG problem.
+   * \param[in] colorLocalDOFs - Color of the locally stored DOFs.
    */
-  void ExchangeColorDOFs(const CMeshFEM *FEMGeometry);
+  void MetaDataJacobianComputation(const CMeshFEM    *FEMGeometry,
+                                   const vector<int> &colorLocalDOFs);
 
   /*!
    * \brief Function, which sets up the list of tasks to be carried out in the

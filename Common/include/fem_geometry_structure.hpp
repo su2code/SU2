@@ -214,8 +214,6 @@ public:
   unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
   unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
   unsigned long offsetDOFsSolLocal;  /*!< \brief Local offset of the solution DOFs of this element. */
-  unsigned long offsetDOFsSolGraph;  /*!< \brief Offset of the solution DOFs of this element in the
-                                                 graph of the global Jacobian matrix. */
 
   unsigned long offsetDOFsSolThisTimeLevel; /*!< \brief Local offset of the solution DOFs of this element
                                                         in the working vector of the time level of the element.
