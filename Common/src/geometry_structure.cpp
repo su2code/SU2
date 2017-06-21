@@ -34,6 +34,8 @@
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
 #include <iomanip>
+#include <sys/types.h>
+#include <sys/stat.h>
 /*--- Epsilon definition ---*/
 
 #define EPSILON 0.000001
@@ -10569,11 +10571,24 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 #endif
 
   if (rank == MASTER_NODE){
+    if (marker_flag == INFLOW && val_iZone ==0){
+      std::string sPath = "TURBOMACHINERY";
+      mode_t nMode = 0733; // UNIX style permissions
+      int nError = 0;
+#if defined(_WIN32)
+      nError = _mkdir(sPath.c_str()); // can be used on Windows
+#else
+      nError = mkdir(sPath.c_str(),nMode); // can be used on non-Windows
+#endif
+      if (nError != 0) {
+        cout << "TURBOMACHINERY folder creation failed." <<endl;
+      }
+    }
     if (marker_flag == INFLOW){
-      multizone_filename = "spanwise_division_inflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow.dat";
     }
     else{
-      multizone_filename = "spanwise_division_outflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow.dat";
     }
     char buffer[50];
 
