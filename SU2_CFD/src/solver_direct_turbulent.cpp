@@ -630,7 +630,7 @@ void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_containe
   switch(config->GetKind_Data_Riemann(Marker_Tag))
   {
   case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
-    BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    BC_Inlet_Turbo(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     break;
   case STATIC_PRESSURE:
     BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
@@ -646,14 +646,14 @@ void CTurbSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contain
   switch(config->GetKind_Data_NRBC(Marker_Tag))
   {
   case TOTAL_CONDITIONS_PT:case TOTAL_CONDITIONS_PT_1D: case DENSITY_VELOCITY:
-    BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    BC_Inlet_Turbo(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     break;
   case MIXING_IN:
     if (config->GetBoolTurbMixingPlane()){
       BC_Inlet_MixingPlane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     }
     else{
-      BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+      BC_Inlet_Turbo(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     }
     break;
 
@@ -2315,6 +2315,123 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
 }
 
+void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  unsigned short iDim, iSpan;
+  unsigned long  oldVertex, iPoint, Point_Normal;
+  long iVertex;
+  su2double *V_inlet, *V_domain, *Normal;
+
+  su2double rho, pressure, muLam, Factor_nu_Inf, nu_tilde;
+  Normal = new su2double[nDim];
+
+  bool grid_movement  = config->GetGrid_Movement();
+  unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
+  CFluidModel *FluidModel;
+
+  FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+  Factor_nu_Inf = config->GetNuFactor_FreeStream();
+
+
+  /*--- Loop over all the spans on this boundary marker ---*/
+  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
+    rho       = solver_container[FLOW_SOL]->GetAverageDensity(val_marker, iSpan);
+    pressure  = solver_container[FLOW_SOL]->GetAveragePressure(val_marker, iSpan);
+
+    FluidModel->SetTDState_Prho(pressure, rho);
+    muLam = FluidModel->GetLaminarViscosity();
+
+    nu_tilde  = Factor_nu_Inf*muLam/rho;
+
+
+    /*--- Loop over all the vertices on this boundary marker ---*/
+    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+
+      /*--- find the node related to the vertex ---*/
+      iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
+
+      /*--- using the other vertex information for retrieving some information ---*/
+      oldVertex = geometry->turbovertex[val_marker][iSpan][iVertex]->GetOldVertex();
+
+      /*--- Index of the closest interior node ---*/
+      Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
+
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+
+      geometry->vertex[val_marker][oldVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+      /*--- Allocate the value at the inlet ---*/
+      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, oldVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+
+      /*--- Set various quantities in the solver class ---*/
+
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
+
+      Solution_i[0] = node[iPoint]->GetSolution(0);
+      Solution_j[0] =  nu_tilde;
+
+      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+
+      /*--- Set various other quantities in the conv_numerics class ---*/
+
+      conv_numerics->SetNormal(Normal);
+
+      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+
+      /*--- Set various other quantities in the conv_numerics class ---*/
+
+      conv_numerics->SetNormal(Normal);
+
+      if (grid_movement)
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+            geometry->node[iPoint]->GetGridVel());
+
+      /*--- Compute the residual using an upwind scheme ---*/
+
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+      /*--- Viscous contribution ---*/
+
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      visc_numerics->SetNormal(Normal);
+
+      /*--- Conservative variables w/o reconstruction ---*/
+
+      visc_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+
+      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+      /*--- Compute residual, and Jacobians ---*/
+
+      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+      /*--- Subtract residual, and update Jacobians ---*/
+
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+  delete[] Normal;
+
+}
 
 void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                           CConfig *config, unsigned short val_marker) {
@@ -3548,6 +3665,136 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
   delete[] Normal;
 
 }
+
+void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                              unsigned short val_marker) {
+
+  unsigned short iVar, iSpan, iDim;
+  unsigned long  oldVertex, iPoint, Point_Normal;
+  long iVertex;
+  su2double *V_inlet, *V_domain, *Normal;
+  unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
+
+  /*--- Quantities for computing the  kine and omega to impose at the inlet boundary. ---*/
+  su2double rho, pressure, *Vel, VelMag, muLam, Intensity, viscRatio, kine_b, omega_b, kine;
+  CFluidModel *FluidModel;
+
+  FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+  Intensity = config->GetTurbulenceIntensity_FreeStream();
+  viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+
+  Normal = new su2double[nDim];
+  Vel = new su2double[nDim];
+
+  bool grid_movement  = config->GetGrid_Movement();
+
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+
+  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
+
+    /*--- Compute the inflow kine and omega using the span wise averge quntities---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      Vel[iDim] = solver_container[FLOW_SOL]->GetAverageTurboVelocity(val_marker, iSpan)[iDim];
+
+    rho       = solver_container[FLOW_SOL]->GetAverageDensity(val_marker, iSpan);
+    pressure  = solver_container[FLOW_SOL]->GetAveragePressure(val_marker, iSpan);
+    kine      = solver_container[FLOW_SOL]->GetAverageKine(val_marker, iSpan);
+
+    FluidModel->SetTDState_Prho(pressure, rho);
+    muLam = FluidModel->GetLaminarViscosity();
+
+    VelMag = 0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      VelMag += Vel[iDim]*Vel[iDim];
+    VelMag = sqrt(VelMag);
+
+    kine_b  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
+    omega_b = rho*kine/(muLam*viscRatio);
+
+    /*--- Loop over all the vertices on this boundary marker ---*/
+    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+
+      /*--- find the node related to the vertex ---*/
+      iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
+
+      /*--- using the other vertex information for retrieving some information ---*/
+      oldVertex = geometry->turbovertex[val_marker][iSpan][iVertex]->GetOldVertex();
+
+      /*--- Index of the closest interior node ---*/
+      Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
+
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+
+      geometry->vertex[val_marker][oldVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+      /*--- Allocate the value at the inlet ---*/
+      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, oldVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+
+      /*--- Set various quantities in the solver class ---*/
+
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+
+      /*--- Set the turbulent variable states. Use average span-wise values
+             values for the turbulent state at the inflow. ---*/
+
+      Solution_j[0]= kine_b;
+      Solution_j[1]= omega_b;
+
+      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+
+      /*--- Set various other quantities in the solver class ---*/
+      conv_numerics->SetNormal(Normal);
+
+      if (grid_movement)
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+            geometry->node[iPoint]->GetGridVel());
+
+      /*--- Compute the residual using an upwind scheme ---*/
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+      /*--- Viscous contribution ---*/
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      visc_numerics->SetNormal(Normal);
+
+      /*--- Conservative variables w/o reconstruction ---*/
+      visc_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+      /*--- Menter's first blending function ---*/
+      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+
+      /*--- Compute residual, and Jacobians ---*/
+      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+      /*--- Subtract residual, and update Jacobians ---*/
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+  delete[] Normal;
+  delete[] Vel;
+
+}
+
 
 void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
     CNumerics *visc_numerics, CConfig *config){
