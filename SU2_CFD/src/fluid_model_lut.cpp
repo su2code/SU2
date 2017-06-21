@@ -117,9 +117,9 @@ CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const &x_samples,
 				//Determine what y value the edge takes in the middle of the band
 				Y_Values_of_Edge_Within_Band_And_Index[b][k].first =
 						Y_Limits_of_Edges[i][0]
-								+ (Y_Limits_of_Edges[i][1] - Y_Limits_of_Edges[i][0])
-										/ (X_Limits_of_Edges[i][1] - X_Limits_of_Edges[i][0])
-										* ((x_low + x_hi) / 2.0 - X_Limits_of_Edges[i][0]);
+																 + (Y_Limits_of_Edges[i][1] - Y_Limits_of_Edges[i][0])
+																 / (X_Limits_of_Edges[i][1] - X_Limits_of_Edges[i][0])
+																 * ((x_low + x_hi) / 2.0 - X_Limits_of_Edges[i][0]);
 				//k counts the number of edges which have been found to intersect with the band
 				k++;
 			}
@@ -138,7 +138,7 @@ CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const &x_samples,
 	LowerI = 0;
 
 	su2double duration = ((su2double) clock() - (su2double) build_start)
-			/ ((su2double) CLOCKS_PER_SEC);
+					/ ((su2double) CLOCKS_PER_SEC);
 	if (rank == MASTER_NODE)
 		cout << duration << " seconds\n";
 }
@@ -168,6 +168,7 @@ void CTrapezoidalMap::Find_Containing_Simplex(su2double x, su2double y) {
 void CTrapezoidalMap::Search_Bands_For(su2double x) {
 	su2double x_middle, x_lower, x_upper;
 
+	//TODO Add error when point is outside and break! The loop is not robust.
 	do {
 		middleI = (UpperI + LowerI) / 2;
 		x_middle = Unique_X_Bands[middleI];
@@ -229,11 +230,13 @@ void CTrapezoidalMap::Search_Band_For_Edge(su2double x, su2double y) {
 }
 
 CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
-		CFluidModel() {
+				CFluidModel() {
 	LUT_Debug_Mode = false;
 	rank = MASTER_NODE;
-	CurrentZone = 1;
-	nInterpPoints = 6;
+	//TODO this has to be generalize for multi-zone
+	su2double SinglePhaseZone = 0;
+	CurrentZone= SinglePhaseZone;
+	nInterpPoints = 3;
 	CurrentPoints.resize(nInterpPoints, 0);
 	LUT_Debug_Mode = config->GetLUT_Debug_Mode();
 	Interpolation_Matrix.resize(nInterpPoints,
@@ -274,16 +277,16 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 	if (rank == MASTER_NODE) {
 		// Give the user some information on the size of the table
 		cout << "Number of stations  in zone 0: " << nTable_Zone_Stations[0]
-				<< endl;
+																																			<< endl;
 		cout << "Number of triangles in zone 0: " << nTable_Zone_Triangles[0]
-				<< endl;
+																																			 << endl;
 		cout << "Number of stations  in zone 1: " << nTable_Zone_Stations[1]
-				<< endl;
+																																			<< endl;
 		cout << "Number of triangles in zone 1: " << nTable_Zone_Triangles[1]
-				<< endl;
+																																			 << endl;
 		cout
-				<< "Detecting all unique edges and setting edge to face connectivity..."
-				<< endl;
+		<< "Detecting all unique edges and setting edge to face connectivity..."
+		<< endl;
 	}
 	Get_Unique_Edges();
 	if (rank == MASTER_NODE) {
@@ -347,11 +350,11 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 	if (rank == MASTER_NODE) {
 		cout << "Building trapezoidal map for PT (in vapor region only)..." << endl;
 	}
-	PT_map[1] = CTrapezoidalMap(ThermoTables_Pressure[1],
-			ThermoTables_Temperature[1], Table_Zone_Edges[1],
-			Table_Edge_To_Face_Connectivity[1]);
+	PT_map[0] = CTrapezoidalMap(ThermoTables_Pressure[0],
+			ThermoTables_Temperature[0], Table_Zone_Edges[0],
+			Table_Edge_To_Face_Connectivity[0]);
 	;
-	PT_map[0] = PT_map[1];
+	PT_map[1] = PT_map[0];
 
 	if (rank == MASTER_NODE) {
 		cout << "Print LUT errors? (LUT_Debug_Mode):  " << LUT_Debug_Mode << endl;
@@ -368,12 +371,12 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 }
 
 CLookUpTable::~CLookUpTable(void) {
-// Using vectors so no need to deallocate
+	// Using vectors so no need to deallocate
 	delete KD_tree;
 }
 
 void CLookUpTable::Get_Unique_Edges() {
-//Import all potential edges into a vector (assumes only triangles are used)
+	//Import all potential edges into a vector (assumes only triangles are used)
 	//Run through both zones of the lutmesh.tec (2 zones assumed)
 	for (unsigned int j = 0; j < 2; j++) {
 		Table_Zone_Edges[j].resize(3 * nTable_Zone_Triangles[j], vector<unsigned long>(3, 0));
@@ -427,7 +430,7 @@ void CLookUpTable::Get_Unique_Edges() {
 			//Then skip the next edge and increment k_temp by 2 ...
 			if ((Table_Zone_Edges[j][k_temp][0] == Table_Zone_Edges[j][k_temp + 1][0])
 					and (Table_Zone_Edges[j][k_temp][1]
-							== Table_Zone_Edges[j][k_temp + 1][1])) {
+																					 == Table_Zone_Edges[j][k_temp + 1][1])) {
 				//...and add the face the k_temp+1 edge is associated with to
 				//the list of faces that the k_final edge is connected to
 				//(Only edges on the periphery of the thermotable will
@@ -522,12 +525,12 @@ void CLookUpTable::Compute_Interpolation_Coefficients() {
 		query[1] += ThermoTables_Pressure[CurrentZone][Points_in_Triangle[2]];
 		query[1] /= 3;
 		if (nInterpPoints>3){
-		//If more than 3 points are required, than search the tree for the closet points
-		KD_tree->Determine_N_NearestNodes(nInterpPoints, query.data(),
-				best_dist.data(), result_IDs.data(), result_ranks.data());
-		//Set the found points as the current points
-		CurrentPoints = result_IDs;
-		Interpolation_Points[CurrentZone][i] = result_IDs;
+			//If more than 3 points are required, than search the tree for the closet points
+			KD_tree->Determine_N_NearestNodes(nInterpPoints, query.data(),
+					best_dist.data(), result_IDs.data(), result_ranks.data());
+			//Set the found points as the current points
+			CurrentPoints = result_IDs;
+			Interpolation_Points[CurrentZone][i] = result_IDs;
 		}
 		else if (nInterpPoints==3)
 		{
@@ -625,7 +628,7 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 			Prho_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(P, rho);
 
-//Interpolate the fluid properties
+	//Interpolate the fluid properties
 	Pressure = P;
 	Density = rho;
 	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
@@ -663,7 +666,7 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 			hs_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(h, s);
 
-//Interpolate the fluid properties
+	//Interpolate the fluid properties
 	Enthalpy = h;
 	Entropy = s;
 	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
@@ -688,7 +691,7 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 			Ps_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(P, s);
 
-//Interpolate the fluid properties
+	//Interpolate the fluid properties
 	Entropy = s;
 	Pressure = P;
 	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
@@ -713,7 +716,7 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 			rhoT_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(rho, T);
 
-//Interpolate the fluid properties
+	//Interpolate the fluid properties
 	Temperature = T;
 	Density = rho;
 	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
@@ -808,35 +811,35 @@ vector<su2double> CLookUpTable::Evaluate_Interpolation_Vector(su2double x,
 	interpolation_vector[0] = 1;
 	interpolation_vector[1] = x;
 	interpolation_vector[2] = y;
-	interpolation_vector[3] = x * y;
-//	interpolation_vector[4] = x * y * y;
-//	interpolation_vector[5] = x * y * y * y;
-//	interpolation_vector[6] = x * x;
-//	interpolation_vector[7] = x * x * y;
-//	interpolation_vector[8] = x * x * y * y;
-//	interpolation_vector[9] = x * x * y * y * y;
-//	interpolation_vector[10] = y * y;
-//	interpolation_vector[11] = x * x * x;
-//	interpolation_vector[12] = x * x * x * y;
-//	interpolation_vector[13] = x * x * x * y * y;
-//	interpolation_vector[14] = x * x * x * y * y * y;
-//	interpolation_vector[15] = y * y * y;
+//	interpolation_vector[3] = x * y;
+	//	interpolation_vector[4] = x * y * y;
+	//	interpolation_vector[5] = x * y * y * y;
+	//	interpolation_vector[6] = x * x;
+	//	interpolation_vector[7] = x * x * y;
+	//	interpolation_vector[8] = x * x * y * y;
+	//	interpolation_vector[9] = x * x * y * y * y;
+	//	interpolation_vector[10] = y * y;
+	//	interpolation_vector[11] = x * x * x;
+	//	interpolation_vector[12] = x * x * x * y;
+	//	interpolation_vector[13] = x * x * x * y * y;
+	//	interpolation_vector[14] = x * x * x * y * y * y;
+	//	interpolation_vector[15] = y * y * y;
 
-//interpolation_vector[4] = x * x;
-//	interpolation_vector[5] = y * y;
-	interpolation_vector[4] = log(y);
-	interpolation_vector[5] = log(x);
-//	interpolation_vector[8] = log(x + y);
+	//interpolation_vector[4] = x * x;
+	//	interpolation_vector[5] = y * y;
+//	interpolation_vector[4] = log(y);
+//	interpolation_vector[5] = log(x);
+	//	interpolation_vector[8] = log(x + y);
 
-//	interpolation_vector[8] = exp(x);
-//	interpolation_vector[9] = exp(y);
-//	interpolation_vector[8] = log(y);
-//	interpolation_vector[10] = exp(x);
-//	interpolation_vector[11] = exp(y);
-//	interpolation_vector[12] = exp(x * y);
-//	interpolation_vector[13] = exp(-x);
-//	interpolation_vector[14] = exp(-y);
-//	interpolation_vector[15] = exp(x * y);
+	//	interpolation_vector[8] = exp(x);
+	//	interpolation_vector[9] = exp(y);
+	//	interpolation_vector[8] = log(y);
+	//	interpolation_vector[10] = exp(x);
+	//	interpolation_vector[11] = exp(y);
+	//	interpolation_vector[12] = exp(x * y);
+	//	interpolation_vector[13] = exp(-x);
+	//	interpolation_vector[14] = exp(-y);
+	//	interpolation_vector[15] = exp(x * y);
 
 	return interpolation_vector;
 }
@@ -851,11 +854,11 @@ vector<vector<double> > CLookUpTable::Interpolation_Matrix_Prepare_And_Invert(
 		Interpolation_Matrix[i] = Evaluate_Interpolation_Vector(x, y);
 	}
 
-//Invert the Interpolation matrix using Gaussian elimination with pivoting
+	//Invert the Interpolation matrix using Gaussian elimination with pivoting
 	Gaussian_Inverse(nInterpPoints);
 	su2double d;
 
-//Transpose the inverse
+	//Transpose the inverse
 	for (int i = 0; i < (nInterpPoints - 1); i++) {
 		for (int j = i + 1; j < nInterpPoints; j++) {
 			d = Interpolation_Matrix_Inverse[i][j];
@@ -891,8 +894,8 @@ su2double CLookUpTable::Interpolate_Function2D(
 }
 
 void CLookUpTable::RecordState(char* file) {
-//Record the state of the fluid model to a file for
-//verificaiton purposes
+	//Record the state of the fluid model to a file for
+	//verificaiton purposes
 	fstream fs;
 	fs.open(file, fstream::app);
 	fs.precision(17);
@@ -910,18 +913,18 @@ void CLookUpTable::RecordState(char* file) {
 	fs << dTde_rho << ", ";
 	fs << Cp << ", ";
 	fs << Mu << ", ";
-//fs << dmudrho_T << ", ";
-//fs << dmudT_rho << ", ";
+	//fs << dmudrho_T << ", ";
+	//fs << dmudT_rho << ", ";
 	fs << Kt << " ";
-//fs << dktdrho_T << ", ";
-//fs << dktdT_rho << ", ";
+	//fs << dktdrho_T << ", ";
+	//fs << dktdT_rho << ", ";
 	fs << "\n";
 	fs.close();
 }
 
 void CLookUpTable::LookUpTable_Print_To_File(char* filename) {
-//Print the current table zone a file such that the mesh can be plotted
-//externally (for verification purposes)
+	//Print the current table zone a file such that the mesh can be plotted
+	//externally (for verification purposes)
 	int i = CurrentZone;
 	for (int j = 0; j < nTable_Zone_Stations[i]; j++) {
 		Temperature = ThermoTables_Temperature[i][j];
@@ -956,7 +959,7 @@ void CLookUpTable::LookUpTable_Load_TEC(std::string filename) {
 		exit(EXIT_FAILURE);
 	}
 	zone_scanned = 0;
-//Go through all lines in the table file.
+	//Go through all lines in the table file.
 	getline(table, line);	//Skip the header
 	while (getline(table, line)) {
 		found = line.find("ZONE");
@@ -1001,8 +1004,8 @@ void CLookUpTable::LookUpTable_Load_TEC(std::string filename) {
 				getline(table, line);
 				istringstream in(line);
 				in >> Table_Zone_Triangles[zone_scanned][j][0]
-						>> Table_Zone_Triangles[zone_scanned][j][1]
-						>> Table_Zone_Triangles[zone_scanned][j][2];
+																										>> Table_Zone_Triangles[zone_scanned][j][1]
+																																														 >> Table_Zone_Triangles[zone_scanned][j][2];
 				//Triangles in .tec file are indexed from 1
 				//In cpp it is more convenient to start with 0.
 				Table_Zone_Triangles[zone_scanned][j][0]--;
@@ -1015,7 +1018,7 @@ void CLookUpTable::LookUpTable_Load_TEC(std::string filename) {
 	}
 
 	table.close();
-//NonDimensionalise
+	//NonDimensionalise
 	NonDimensionalise_Table_Values();
 }
 
@@ -1046,16 +1049,16 @@ void CLookUpTable::LookUpTable_Malloc(unsigned int Index_of_Zone) {
 			nTable_Zone_Stations[Index_of_Zone], 0);
 	ThermoTables_Mu[Index_of_Zone] = vector<su2double>(
 			nTable_Zone_Stations[Index_of_Zone], 0);
-//ThermoTables_dmudrho_T[Index_of_Zone] = vector< su2double >(
-//	nTable_Zone_Stations[Index_of_Zone], 0);
-//ThermoTables_dmudT_rho[Index_of_Zone] = vector< su2double >(
-//	nTable_Zone_Stations[Index_of_Zone], 0);
+	//ThermoTables_dmudrho_T[Index_of_Zone] = vector< su2double >(
+	//	nTable_Zone_Stations[Index_of_Zone], 0);
+	//ThermoTables_dmudT_rho[Index_of_Zone] = vector< su2double >(
+	//	nTable_Zone_Stations[Index_of_Zone], 0);
 	ThermoTables_Kt[Index_of_Zone] = vector<su2double>(
 			nTable_Zone_Stations[Index_of_Zone], 0);
-//ThermoTables_dktdrho_T[Index_of_Zone] = vector< su2double >(
-//		nTable_Zone_Stations[Index_of_Zone], 0);
-//ThermoTables_dktdT_rho[Index_of_Zone] = vector< su2double >(
-//		nTable_Zone_Stations[Index_of_Zone], 0);
+	//ThermoTables_dktdrho_T[Index_of_Zone] = vector< su2double >(
+	//		nTable_Zone_Stations[Index_of_Zone], 0);
+	//ThermoTables_dktdT_rho[Index_of_Zone] = vector< su2double >(
+	//		nTable_Zone_Stations[Index_of_Zone], 0);
 	Table_Zone_Triangles[Index_of_Zone] = vector<vector<unsigned long> >(
 			nTable_Zone_Triangles[Index_of_Zone]);
 	for (int j = 0; j < nTable_Zone_Triangles[Index_of_Zone]; j++) {
