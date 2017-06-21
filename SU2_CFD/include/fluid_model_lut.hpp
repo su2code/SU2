@@ -62,7 +62,7 @@ using namespace std;
 class CTrapezoidalMap {
 protected:
 	int rank;
-	unsigned int UpperI, LowerI, middleI, LowerJ, UpperJ, middleJ;
+	unsigned int UpperI, LowerI, MiddleI, LowerJ, UpperJ, MiddleJ;
 	unsigned int UpperEdge, LowerEdge;
 	vector<unsigned int> CurrentFace;
 	//The unique values of x which exist in the data
@@ -75,6 +75,7 @@ protected:
 	vector<vector<unsigned long> > Edge_To_Face_Connectivity;
 public:
 	CTrapezoidalMap();
+	~CTrapezoidalMap(void);
 	CTrapezoidalMap(vector<su2double> const &x_samples,
 			vector<su2double> const &y_samples,
 			vector<vector<unsigned long> > const &unique_edges,

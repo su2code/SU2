@@ -924,7 +924,7 @@ CEulerSolver::~CEulerSolver(void) {
   if (Cauchy_Serie != NULL)
     delete [] Cauchy_Serie;
   */
-  //if (FluidModel!=NULL) delete FluidModel;
+  if (FluidModel!=NULL) delete FluidModel;
 
 }
 

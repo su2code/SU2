@@ -48,11 +48,22 @@
 using namespace std;
 
 CTrapezoidalMap::CTrapezoidalMap() {
+
+	UpperEdge = 0;  LowerEdge = 0;
+	LowerI    = 0;  UpperI    = 0;  MiddleI   = 0;
+	LowerJ    = 0;  UpperJ    = 0; 	MiddleJ  = 0;
+	rank = MASTER_NODE;
+
 }
+CTrapezoidalMap::~CTrapezoidalMap(void) {}
 CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const &x_samples,
 		vector<su2double> const &y_samples,
 		vector<vector<unsigned long> > const &unique_edges,
 		vector<vector<unsigned long> > const &edge_to_face_connectivity) {
+
+	UpperEdge = 0;  LowerEdge = 0;
+	LowerI    = 0;  UpperI    = 0;  MiddleI   = 0;
+	LowerJ    = 0;  UpperJ    = 0; 	MiddleJ  = 0;
 	rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
@@ -170,8 +181,8 @@ void CTrapezoidalMap::Search_Bands_For(su2double x) {
 
 	//TODO Add error when point is outside and break! The loop is not robust.
 	do {
-		middleI = (UpperI + LowerI) / 2;
-		x_middle = Unique_X_Bands[middleI];
+		MiddleI = (UpperI + LowerI) / 2;
+		x_middle = Unique_X_Bands[MiddleI];
 		x_lower = Unique_X_Bands[LowerI];
 		x_upper = Unique_X_Bands[UpperI];
 		//Step used for restarting the search on the low end
@@ -184,11 +195,11 @@ void CTrapezoidalMap::Search_Bands_For(su2double x) {
 			UpperI = (UpperI + (Unique_X_Bands.size() - 1)) / 2;
 			//After the restart is cleared, do the normal binary search
 		} else if (x < x_middle) {
-			UpperI = middleI;
+			UpperI = MiddleI;
 		} else if (x > x_middle) {
-			LowerI = middleI;
+			LowerI = MiddleI;
 		} else if (x_middle == x) {
-			LowerI = middleI;
+			LowerI = MiddleI;
 			UpperI = LowerI + 1;
 			break;
 		}
@@ -204,10 +215,10 @@ void CTrapezoidalMap::Search_Band_For_Edge(su2double x, su2double y) {
 	LowerJ = 0;
 
 	while (UpperJ - LowerJ > 1) {
-		middleJ = (UpperJ + LowerJ) / 2;
+		MiddleJ= (UpperJ + LowerJ) / 2;
 		//Select the edge associated with the current x band (LowerI)
-		//Search for the RunEdge in the middleJ direction (second value is index of edge)
-		RunEdge = Y_Values_of_Edge_Within_Band_And_Index[LowerI][middleJ].second;
+		//Search for the RunEdge in the MiddleJdirection (second value is index of edge)
+		RunEdge = Y_Values_of_Edge_Within_Band_And_Index[LowerI][MiddleJ].second;
 		y00 = Y_Limits_of_Edges[RunEdge][0];
 		y10 = Y_Limits_of_Edges[RunEdge][1];
 		x00 = X_Limits_of_Edges[RunEdge][0];
@@ -215,11 +226,11 @@ void CTrapezoidalMap::Search_Band_For_Edge(su2double x, su2double y) {
 		//The search variable in j should be interpolated in i as well
 		RunVal = y00 + (y10 - y00) / (x10 - x00) * (x - x00);
 		if (RunVal > y) {
-			UpperJ = middleJ;
+			UpperJ = MiddleJ;
 		} else if (RunVal < y) {
-			LowerJ = middleJ;
+			LowerJ = MiddleJ;
 		} else if (RunVal == y) {
-			LowerJ = middleJ;
+			LowerJ = MiddleJ;
 			UpperJ = LowerJ + 1;
 			break;
 		}
