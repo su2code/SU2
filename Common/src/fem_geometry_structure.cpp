@@ -250,7 +250,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- Determine a mapping from the global point ID to the local index
         of the points.            ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
-  for(unsigned i=0; i<geometry->GetnPoint(); ++i)
+  for(unsigned long i=0; i<geometry->GetnPoint(); ++i)
     globalPointIDToLocalInd[geometry->node[i]->GetGlobalIndex()] = i;
 
   /*----------------------------------------------------------------------------*/
