@@ -3738,6 +3738,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
           case SA_E_COMP:   cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
         }
+        if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
+        cout << "Hybrid RANS/LES: ";
+        switch (Kind_HybridRANSLES){
+          case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;
+          case SA_DES:  cout << "Detached Eddy Simulation (DES97) " << endl; break;
+          case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
+          case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
+          case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+        }
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
@@ -4180,9 +4189,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (Kind_Upwind_Flow == HLLC)	cout << "HLLC solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == SW)	cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == MSW)	cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-              if (Kind_Upwind_Flow == CUSP)	cout << "CUSP solver for the flow inviscid terms."<< endl;
-              if (Kind_Upwind_Flow == L2ROE) cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
-              if (Kind_Upwind_Flow == LMROE) cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == CUSP)	cout << "CUSP solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == L2ROE) cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == LMROE) cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
         switch (SpatialOrder_Flow) {
           case FIRST_ORDER: cout << "First order integration." << endl; break;
           case SECOND_ORDER: cout << "Second order integration." << endl; break;
@@ -4201,6 +4210,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                     
             }
             break;
+        }
+        switch (Kind_RoeLowDiss) {
+          case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
+          case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
+          case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
+          case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
+          case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
         }
 			}
 
