@@ -667,7 +667,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_nZone - iZone index.
 	 */
-  void SpanwiseFile(CGeometry ***geometry, CSolver ****solver_container, CConfig **config, unsigned short val_iZone);
+  void WriteSpanWiseValuesFiles(CGeometry ***geometry, CConfig **config, unsigned short val_iZone);
 
   /*!
    * \brief Give the Entropy Generation performance parameters for turbomachinery.
