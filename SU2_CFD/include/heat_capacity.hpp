@@ -59,7 +59,7 @@ using namespace std;
  */
 class CHeatCapacity {
 
-protected: su2double Gas_Constant, Gas_ConstantND, Cv0, Gamma, *coeff_Cp0, Tref;
+protected: su2double Gas_Constant, Gas_ConstantND, Cv0, Gamma, *coeff_Cp0, Tref, T_Total;
            bool Constant_Gamma;
 CConfig *config;
 

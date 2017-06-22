@@ -46,6 +46,8 @@ CHeatCapacity::CHeatCapacity(CConfig *config) {
 
 	coeff_Cp0      = config->GetCoeff_HeatCapacity();
 
+	T_Total  = config->GetRiemann_Var2(config->GetMarker_All_TagBound(1));
+
 }
 
 CHeatCapacity::~CHeatCapacity(void) {
