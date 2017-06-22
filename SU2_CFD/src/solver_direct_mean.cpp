@@ -15983,8 +15983,9 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         for (iDim = 0; iDim < nDim; iDim++)
           GradTemperature -= Grad_Temp[iDim]*UnitNormal[iDim];
 
-        Cp = node[iPoint]-> GetPrimitive(nDim + 8);//(Gamma / Gamma_Minus_One) * Gas_Constant; //
-        thermal_conductivity = node[iPoint]-> GetPrimitive(nDim + 7);//Cp * Viscosity/Prandtl_Lam; //
+        Cp = node[iPoint]->GetPrimitive(nDim+8);//(Gamma / Gamma_Minus_One) * Gas_Constant;
+        thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
+
         HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature;
         HF_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
         MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);

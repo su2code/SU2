@@ -455,6 +455,7 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 	Cv = HeatCapacity->Get_Cv0 ();
 
 	v = exp((s - Cv*log(T)) / Gas_Constant)+ b;
+
 	rho = 1/v;
 
 	StaticEnergy = T*Cv - a*rho;

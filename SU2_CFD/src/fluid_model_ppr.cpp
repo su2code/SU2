@@ -528,10 +528,9 @@ su2double CPengRobinson_Generic::T_v_h(su2double v, su2double h) {
 
 }
 
+
 su2double CPengRobinson_Generic::T_P_rho(su2double P, su2double rho) {
-  su2double A, B, C, T, vb1, vb2, T_new;
-  su2double error = 1, toll = 1e-5;
-  unsigned int count_T = 0, ITMAX = 1000;
+  su2double A, B, C, T, vb1, vb2;
 
   vb1 = (1/rho -b);
   vb2 = (1/rho/rho + 2*b/rho - b*b);
@@ -590,9 +589,6 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
     if (count_T == ITMAX) cout << "Too many iterations in rho_e call" << endl;
 
-//    cout << Density << " " << StaticEnergy << endl;
-//    getchar();
-
 
     Temperature = Temperature_new;
 	HeatCapacity->Set_Cv0(Temperature);
@@ -614,6 +610,7 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
     if 	(Gamma > 4 ) {
 //    	cout << "Warning: Gamma value greater than 4, switch to CONSTANT_GAMMA" << endl;
  //   	cout << "Ideal gas correction implemented, Cp = Cv + R" << endl;
+
     	Cp = Cv + Gas_Constant;
     	Gamma = Cp/Cv;
     	Gamma_Minus_One = Gamma - 1;
@@ -621,13 +618,13 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
     }
 
     if 	( Gamma < 1) {
-//   	cout << "Warning: Gamma value lower than 1, switch to CONSTANT_GAMMA" << endl;
-//    	cout << "Ideal gas correction implemented, Cp = Cv + R" << endl;
+
     	Cp = Cv + Gas_Constant;
     	Gamma = Cp/Cv;
     	Gamma_Minus_One = Gamma - 1;
-//		getchar();
+
     }
+
 
 //    cout << Gamma << endl;
 //    getchar();
@@ -722,12 +719,10 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
   su2double error=1, error_v = 1, T_new, v_new;
   unsigned short countrtb=0, NTRY=20, ITMAX=100, count_T=0, count_v = 0;
 
-//  cout << "enthalpy "<< h << " " << s << endl;
-//  getchar();
 
   Cp = Gamma*Gas_Constant /(Gamma - 1);
   T_new = abs(h)/Cp;
-//getchar();
+
 	  do{
 		T = T_new;
 		HeatCapacity->Set_Cv0 (T);
@@ -751,8 +746,7 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
 
 		error = abs(T - T_new)/T;
 		count_T++;
-//		cout << "checkhs-it" << Cv0 << " " << T << " "<< v << " " << Cv <<  endl;
-//		getchar();
+
 	  }while(error >toll && count_T < ITMAX);
 
    SetTDState_rhoT(1/v_new, T_new);
@@ -760,14 +754,13 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
    cons_h= abs((StaticEnergy + Pressure/Density -h)/h);
    cons_s= abs((Entropy-s)/s);
 
-//	cout << "consist." << cons_s << " " << cons_h << endl;
-//	getchar();
 
    if(cons_h >1e-3 || cons_s >1e-3) {
      cout<< "TD consistency not verified in hs call"<< endl;
    }
 
 }
+
 
 
 void CPengRobinson_Generic::SetEnergy_Prho (su2double P, su2double rho) {
@@ -826,11 +819,13 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
   su2double T, rho, v, cons_P, cons_s, fv, A, atanh, T_new, v_new;
   su2double error = 0, error_v = 0;
   su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
+
   su2double toll = 1e-9, FACTOR=0.2;
+
   unsigned short count=0, NTRY=10, ITMAX=100, count_T = 0, count_v = 0;
 
   T_new   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
-//getchar();
+
 	  do{
 		T = T_new;
 		HeatCapacity->Set_Cv0 (T);
@@ -842,6 +837,7 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
 			Set_Cv(T,v);
 			atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
 			v_new = (s - Cv*log(T) + a*sqrt(alpha2(T)) *k*atanh/(b*sqrt2*sqrt(T*TstarCrit)))/Gas_Constant;
+
 			v_new = exp(v_new) + b;
 			error_v = abs(v - v_new)/v;
 			count_v++;
@@ -853,9 +849,11 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
 
 		T_new = T_P_rho(P, 1/v);
 
+
 		error = abs(T - T_new)/T;
 		count_T++;
 	  }while(error >toll && count_T < ITMAX);
+
 
    SetTDState_rhoT(1/v, T);
 

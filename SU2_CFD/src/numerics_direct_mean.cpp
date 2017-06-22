@@ -88,6 +88,7 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   Density_i = V_i[nDim+2];                        Density_j = V_j[nDim+2];
   Enthalpy_i = V_i[nDim+3];                       Enthalpy_j = V_j[nDim+3];
   SoundSpeed_i = V_i[nDim+4];                     SoundSpeed_j = V_j[nDim+4];
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;   Energy_j = Enthalpy_j - Pressure_j/Density_j;
   
   sq_vel_i = 0.0; sq_vel_j = 0.0;
@@ -115,6 +116,9 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
   MeanEnergy = 0.5*(Energy_i+Energy_j);
   
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
+
   /*--- Get projected flux tensor ---*/
   
   GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
@@ -279,6 +283,7 @@ void CCentJST_KE_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   Density_i = V_i[nDim+2];                        Density_j = V_j[nDim+2];
   Enthalpy_i = V_i[nDim+3];                       Enthalpy_j = V_j[nDim+3];
   SoundSpeed_i = V_i[nDim+4];                     SoundSpeed_j = V_j[nDim+4];
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;   Energy_j = Enthalpy_j - Pressure_j/Density_j;
 
   sq_vel_i = 0.0; sq_vel_j = 0.0;
@@ -305,6 +310,9 @@ void CCentJST_KE_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   for (iDim = 0; iDim < nDim; iDim++)
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
   MeanEnergy = 0.5*(Energy_i+Energy_j);
+
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
 
   /*--- Get projected flux tensor ---*/
 
@@ -461,6 +469,10 @@ void CCentLax_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   SoundSpeed_i = V_i[nDim+4];                     SoundSpeed_j = V_j[nDim+4];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;   Energy_j = Enthalpy_j - Pressure_j/Density_j;
   
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
+
   sq_vel_i = 0.0; sq_vel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
@@ -636,6 +648,10 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   Enthalpy_i = V_i[nDim+3];                       Enthalpy_j = V_j[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;   Energy_j = Enthalpy_j - Pressure_j/Density_j;
 
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
+
   sq_vel_i = 0.0; sq_vel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
@@ -644,8 +660,8 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     sq_vel_j += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
   }
   
-  SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel_i));
-  SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel_j));
+  SoundSpeed_i = V_i[nDim+4];//sqrt(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel_i));
+  SoundSpeed_j = V_j[nDim+4];//sqrt(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel_j));
 
   /*-- Face area ---*/
   
@@ -845,7 +861,7 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel)));
+  SoundSpeed_i = V_i[nDim+4];//sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel)));
   
   /*--- Primitive variables at point j ---*/
   sq_vel = 0.0;
@@ -857,7 +873,11 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel)));
+  SoundSpeed_j = V_j[nDim+4];//sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel)));
+
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
   
   /*--- Projected velocities ---*/
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -1030,8 +1050,12 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   Energy_i = Enthalpy_i - Pressure_i / Density_i;
   Energy_j = Enthalpy_j - Pressure_j / Density_j;
 
-  SoundSpeed_i = sqrt( (Enthalpy_i - 0.5 * sq_vel_i) * Gamma_Minus_One );
-  SoundSpeed_j = sqrt( (Enthalpy_j - 0.5 * sq_vel_j) * Gamma_Minus_One );
+  SoundSpeed_i = V_i[nDim+4];//sqrt( (Enthalpy_i - 0.5 * sq_vel_i) * Gamma_Minus_One );
+  SoundSpeed_j = V_j[nDim+4];//sqrt( (Enthalpy_j - 0.5 * sq_vel_j) * Gamma_Minus_One );
+
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
    
   /*--- Projected velocities ---*/
   
@@ -1562,6 +1586,10 @@ void CUpwGeneralHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **
     ProjVelocity_j += Velocity_j[iDim] * UnitNormal[iDim];
   }
   
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
+
 
   /*--- Projected Grid Velocity ---*/
 
@@ -2413,7 +2441,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
+  SoundSpeed_i = V_i[nDim+4];//sqrt(fabs(Pressure_i*Gamma/Density_i));
   
   /*--- Primitive variables at point j ---*/
   
@@ -2423,7 +2451,11 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
+  SoundSpeed_j = V_j[nDim+4];//sqrt(fabs(Pressure_j*Gamma/Density_j));
+
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
   
   /*--- Recompute conservative variables ---*/
   
@@ -2683,6 +2715,10 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
   Kappa_j = S_j[1]/Density_j;
   Chi_j = S_j[0] - Kappa_j*StaticEnergy_j;
   SoundSpeed_j = sqrt(Chi_j + StaticEnthalpy_j*Kappa_j);
+
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
 
   /*--- Recompute conservative variables ---*/
 
@@ -3020,6 +3056,10 @@ void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
   P_i = V_i[nDim+1];
   P_j = V_j[nDim+1];
   
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
+
   /*--- Calculate supporting quantities ---*/
   
   sqvel_i   = 0.0; sqvel_j   = 0.0;
@@ -3204,7 +3244,7 @@ void CUpwTurkel_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
+  SoundSpeed_i = V_i[nDim+4];//sqrt(fabs(Pressure_i*Gamma/Density_i));
 
   /*--- Primitive variables at point j ---*/
   
@@ -3214,7 +3254,11 @@ void CUpwTurkel_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
+  SoundSpeed_j = V_j[nDim+4];//sqrt(fabs(Pressure_j*Gamma/Density_j));
+
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
 
   /*--- Recompute conservative variables ---*/
   
@@ -3393,6 +3437,10 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
   
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
+
   /*--- Laminar and Eddy viscosity ---*/
   
   Laminar_Viscosity_i = V_i[nDim+5]; Laminar_Viscosity_j = V_j[nDim+5];
@@ -3500,6 +3548,10 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
   Eddy_Viscosity_i = V_i[nDim+6];       Eddy_Viscosity_j = V_j[nDim+6];
   Thermal_Conductivity_i = V_i[nDim+7]; Thermal_Conductivity_j = V_j[nDim+7];
   Cp_i = V_i[nDim+8]; Cp_j = V_j[nDim+8];
+
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
 
   /*--- Mean secondary variables ---*/
   for (iVar = 0; iVar < 2; iVar++) {
@@ -3623,6 +3675,9 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
   
   Laminar_Viscosity_i = V_i[nDim+5]; Laminar_Viscosity_j = V_j[nDim+5];
   Eddy_Viscosity_i = V_i[nDim+6]; Eddy_Viscosity_j = V_j[nDim+6];
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
   
   /*--- Mean Viscosities and turbulent kinetic energy ---*/
   
@@ -3891,6 +3946,10 @@ void CGeneralAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2
   Thermal_Conductivity_i = V_i[nDim+7]; Thermal_Conductivity_j = V_j[nDim+7];
   Cp_i = V_i[nDim+8]; Cp_j = V_j[nDim+8];
   
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
+
   for (iVar = 0; iVar < nDim+4; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
@@ -4126,6 +4185,10 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
   if (Coord_i[1] > 0.0) yinv = 1.0/Coord_i[1];
   else yinv = 0.0;
   
+  Gamma_i = V_i[nDim+9];                          Gamma_j = V_j[nDim+9];
+  Gamma = 0.5*(Gamma_i+Gamma_j);
+  Gamma_Minus_One = Gamma - 1;
+
   if (compressible) {
     sq_vel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {

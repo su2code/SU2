@@ -114,6 +114,8 @@ public:
   LambdaComb_j;      /*!< \brief Spectral radius at point j. */
   su2double SoundSpeed_i,  /*!< \brief Sound speed at point i. */
   SoundSpeed_j;      /*!< \brief Sound speed at point j. */
+  su2double Gamma_i,  /*!< \brief gamma at point i. */
+  Gamma_j;      /*!< \brief gamma at point j. */
   su2double Enthalpy_i,  /*!< \brief Enthalpy at point i. */
   Enthalpy_j;      /*!< \brief Enthalpy at point j. */
   su2double dist_i,  /*!< \brief Distance of point i to the nearest wall. */
