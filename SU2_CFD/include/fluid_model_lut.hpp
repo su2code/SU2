@@ -80,7 +80,7 @@ public:
 			vector<su2double> const &y_samples,
 			vector<vector<unsigned long> > const &unique_edges,
 			vector<vector<unsigned long> > const &edge_to_face_connectivity);
-	void Find_Containing_Simplex(su2double x, su2double y);
+	void Search_Simplexes(su2double x, su2double y);
 	void Search_Bands_For(su2double x);
 	void Search_Band_For_Edge(su2double x, su2double y);
 
@@ -248,13 +248,18 @@ public:
 	vector<vector<double> > Interpolation_Matrix_Prepare_And_Invert(vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y);
 	void Calculate_Query_Specific_Coefficients(su2double x, su2double y);
 
-	su2double Interpolate_Function2D(vector< su2double > *ThermoTables_Z);
+	/*!
+	 * \brief Calculate interpolation coefficients
+	 * \param[in] interpolant_var - the name of the variable to be interpolated e.g Density
+	 */
+	vector<su2double> CalculateWeight(vector< su2double > *ThermoTables_X, vector< su2double > *ThermoTables_Y, su2double x, su2double y );
+
+	su2double Interpolate_Function2D(vector< su2double > *ThermoTables_Z, vector< su2double > Weights  );
 
 	/*!
 	 * \brief Use the interpolation coefficients to interpolate a given thermodynamic variable property. (Must calculate the interpolation coefficients first)
 	 * \param[in] interpolant_var - the name of the variable to be interpolated e.g Density
 	 */
-
 	vector<su2double> Evaluate_Interpolation_Vector(su2double x, su2double y);
 
 	/*!

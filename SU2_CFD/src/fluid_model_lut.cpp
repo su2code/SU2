@@ -154,7 +154,7 @@ CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const &x_samples,
 		cout << duration << " seconds\n";
 }
 
-void CTrapezoidalMap::Find_Containing_Simplex(su2double x, su2double y) {
+void CTrapezoidalMap::Search_Simplexes(su2double x, su2double y) {
 	//Find the x band in which the current x value sits
 	Search_Bands_For(x);
 	//Within that band find edges between which the points rests
@@ -576,7 +576,7 @@ void CLookUpTable::Compute_Interpolation_Coefficients() {
 void CLookUpTable::Get_Bounding_Simplex_From_TrapezoidalMap(
 		CTrapezoidalMap *t_map, su2double x, su2double y) {
 
-	t_map[CurrentZone].Find_Containing_Simplex(x, y);
+	t_map[CurrentZone].Search_Simplexes(x, y);
 	CurrentFace = t_map[CurrentZone].getCurrentFace();
 	CurrentPoints = Interpolation_Points[CurrentZone][CurrentFace];
 
@@ -589,21 +589,24 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 			Rhoe_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(rho, e);
 
+	vector<su2double> Weights;
+	Weights = CalculateWeight(ThermoTables_Density, ThermoTables_StaticEnergy, rho, e);
+
 	//Interpolate the fluid properties
 	StaticEnergy = e;
 	Density = rho;
-	Entropy = Interpolate_Function2D(ThermoTables_Entropy);
-	Pressure = Interpolate_Function2D(ThermoTables_Pressure);
-	Enthalpy = Interpolate_Function2D(ThermoTables_Enthalpy);
-	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2);
-	Temperature = Interpolate_Function2D(ThermoTables_Temperature);
-	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e);
-	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho);
-	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e);
-	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho);
-	Cp = Interpolate_Function2D(ThermoTables_Cp);
-	//Mu = Interpolate_Function2D(ThermoTables_Mu);
-	//Kt = Interpolate_Function2D(ThermoTables_Kt);
+	Entropy = Interpolate_Function2D(ThermoTables_Entropy, Weights);
+	Pressure = Interpolate_Function2D(ThermoTables_Pressure, Weights);
+	Enthalpy = Interpolate_Function2D(ThermoTables_Enthalpy, Weights);
+	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2, Weights);
+	Temperature = Interpolate_Function2D(ThermoTables_Temperature, Weights);
+	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e, Weights);
+	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho, Weights);
+	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e, Weights);
+	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho, Weights);
+	Cp = Interpolate_Function2D(ThermoTables_Cp, Weights);
+	//Mu = Interpolate_Function2D(ThermoTables_Mu, Weights);
+	//Kt = Interpolate_Function2D(ThermoTables_Kt, Weights);
 
 }
 
@@ -614,21 +617,24 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 			PT_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(P, T);
 
+	vector<su2double> Weights;
+	Weights = CalculateWeight(ThermoTables_Pressure, ThermoTables_Temperature, P, T);
+
 	//Interpolate the fluid properties
 	Pressure = P;
-	Density = Interpolate_Function2D(ThermoTables_Density);
-	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
-	Enthalpy = Interpolate_Function2D(ThermoTables_Enthalpy);
-	Entropy = Interpolate_Function2D(ThermoTables_Entropy);
-	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2);
+	Density = Interpolate_Function2D(ThermoTables_Density, Weights);
+	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy, Weights);
+	Enthalpy = Interpolate_Function2D(ThermoTables_Enthalpy, Weights);
+	Entropy = Interpolate_Function2D(ThermoTables_Entropy, Weights);
+	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2, Weights);
 	Temperature = T;
-	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e);
-	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho);
-	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e);
-	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho);
-	Cp = Interpolate_Function2D(ThermoTables_Cp);
-	//Mu = Interpolate_Function2D(ThermoTables_Mu);
-	//Kt = Interpolate_Function2D(ThermoTables_Kt);
+	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e, Weights);
+	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho, Weights);
+	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e, Weights);
+	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho, Weights);
+	Cp = Interpolate_Function2D(ThermoTables_Cp, Weights);
+	//Mu = Interpolate_Function2D(ThermoTables_Mu, Weights);
+	//Kt = Interpolate_Function2D(ThermoTables_Kt, Weights);
 
 }
 
@@ -639,19 +645,22 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 			Prho_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(P, rho);
 
+	vector<su2double> Weights;
+	Weights = CalculateWeight(ThermoTables_Pressure, ThermoTables_Density, P, rho);
+
 	//Interpolate the fluid properties
 	Pressure = P;
 	Density = rho;
-	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
-	Enthalpy = Interpolate_Function2D(ThermoTables_Enthalpy);
-	Entropy = Interpolate_Function2D(ThermoTables_Entropy);
-	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2);
-	Temperature = Interpolate_Function2D(ThermoTables_Temperature);
-	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e);
-	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho);
-	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e);
-	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho);
-	Cp = Interpolate_Function2D(ThermoTables_Cp);
+	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy, Weights);
+	Enthalpy = Interpolate_Function2D(ThermoTables_Enthalpy, Weights);
+	Entropy = Interpolate_Function2D(ThermoTables_Entropy, Weights);
+	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2, Weights);
+	Temperature = Interpolate_Function2D(ThermoTables_Temperature, Weights);
+	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e, Weights);
+	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho, Weights);
+	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e, Weights);
+	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho, Weights);
+	Cp = Interpolate_Function2D(ThermoTables_Cp, Weights);
 	//Mu = Interpolate_Function2D(ThermoTables_Mu);
 	//Kt = Interpolate_Function2D(ThermoTables_Kt);
 
@@ -664,7 +673,10 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 			Prho_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(P, rho);
 
-	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
+	vector<su2double> Weights;
+	Weights = CalculateWeight(ThermoTables_Pressure, ThermoTables_Density, P, rho);
+
+	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy, Weights);
 	Pressure = P;
 	Density = rho;
 
@@ -677,19 +689,22 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 			hs_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(h, s);
 
+	vector<su2double> Weights;
+	Weights = CalculateWeight(ThermoTables_Enthalpy, ThermoTables_Entropy, h, s);
+
 	//Interpolate the fluid properties
 	Enthalpy = h;
 	Entropy = s;
-	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
-	Pressure = Interpolate_Function2D(ThermoTables_Pressure);
-	Density = Interpolate_Function2D(ThermoTables_Density);
-	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2);
-	Temperature = Interpolate_Function2D(ThermoTables_Temperature);
-	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e);
-	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho);
-	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e);
-	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho);
-	Cp = Interpolate_Function2D(ThermoTables_Cp);
+	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy, Weights);
+	Pressure = Interpolate_Function2D(ThermoTables_Pressure, Weights);
+	Density = Interpolate_Function2D(ThermoTables_Density, Weights);
+	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2, Weights);
+	Temperature = Interpolate_Function2D(ThermoTables_Temperature, Weights);
+	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e, Weights);
+	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho, Weights);
+	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e, Weights);
+	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho, Weights);
+	Cp = Interpolate_Function2D(ThermoTables_Cp, Weights);
 	//Mu = Interpolate_Function2D(ThermoTables_Mu);
 	//Kt = Interpolate_Function2D(ThermoTables_Kt);
 
@@ -702,19 +717,22 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 			Ps_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(P, s);
 
+	vector<su2double> Weights;
+	Weights = CalculateWeight(ThermoTables_Pressure, ThermoTables_Entropy, P, s);
+
 	//Interpolate the fluid properties
 	Entropy = s;
 	Pressure = P;
-	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
-	Enthalpy = Interpolate_Function2D(ThermoTables_Enthalpy);
-	Density = Interpolate_Function2D(ThermoTables_Density);
-	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2);
-	Temperature = Interpolate_Function2D(ThermoTables_Temperature);
-	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e);
-	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho);
-	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e);
-	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho);
-	Cp = Interpolate_Function2D(ThermoTables_Cp);
+	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy, Weights);
+	Enthalpy = Interpolate_Function2D(ThermoTables_Enthalpy, Weights);
+	Density = Interpolate_Function2D(ThermoTables_Density, Weights);
+	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2, Weights);
+	Temperature = Interpolate_Function2D(ThermoTables_Temperature, Weights);
+	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e, Weights);
+	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho, Weights);
+	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e, Weights);
+	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho, Weights);
+	Cp = Interpolate_Function2D(ThermoTables_Cp, Weights);
 	//Mu = Interpolate_Function2D(ThermoTables_Mu);
 	//Kt = Interpolate_Function2D(ThermoTables_Kt);
 
@@ -727,21 +745,24 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 			rhoT_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
 	Calculate_Query_Specific_Coefficients(rho, T);
 
+	vector<su2double> Weights;
+	Weights = CalculateWeight(ThermoTables_Density, ThermoTables_Temperature, rho, T);
+
 	//Interpolate the fluid properties
 	Temperature = T;
 	Density = rho;
-	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
-	Enthalpy = Interpolate_Function2D(ThermoTables_Enthalpy);
-	Entropy = Interpolate_Function2D(ThermoTables_Entropy);
-	Pressure = Interpolate_Function2D(ThermoTables_Pressure);
-	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2);
-	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e);
-	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho);
-	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e);
-	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho);
-	Cp = Interpolate_Function2D(ThermoTables_Cp);
-	//Mu = Interpolate_Function2D(ThermoTables_Mu);
-	//Kt = Interpolate_Function2D(ThermoTables_Kt);
+	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy, Weights);
+	Enthalpy = Interpolate_Function2D(ThermoTables_Enthalpy, Weights);
+	Entropy = Interpolate_Function2D(ThermoTables_Entropy, Weights);
+	Pressure = Interpolate_Function2D(ThermoTables_Pressure, Weights);
+	SoundSpeed2 = Interpolate_Function2D(ThermoTables_SoundSpeed2, Weights);
+	dPdrho_e = Interpolate_Function2D(ThermoTables_dPdrho_e, Weights);
+	dPde_rho = Interpolate_Function2D(ThermoTables_dPde_rho, Weights);
+	dTdrho_e = Interpolate_Function2D(ThermoTables_dTdrho_e, Weights);
+	dTde_rho = Interpolate_Function2D(ThermoTables_dTde_rho, Weights);
+	Cp = Interpolate_Function2D(ThermoTables_Cp, Weights);
+	//Mu = Interpolate_Function2D(ThermoTables_Mu, Weights);
+	//Kt = Interpolate_Function2D(ThermoTables_Kt, Weights);
 
 }
 
@@ -822,10 +843,10 @@ vector<su2double> CLookUpTable::Evaluate_Interpolation_Vector(su2double x,
 	interpolation_vector[0] = 1;
 	interpolation_vector[1] = x;
 	interpolation_vector[2] = y;
-//	interpolation_vector[3] = x * y;
+	//  interpolation_vector[3] = x * y;
 	//	interpolation_vector[4] = x * y * y;
 	//	interpolation_vector[5] = x * y * y * y;
-	//	interpolation_vector[6] = x * x;
+  //  interpolation_vector[6] = x * x;
 	//	interpolation_vector[7] = x * x * y;
 	//	interpolation_vector[8] = x * x * y * y;
 	//	interpolation_vector[9] = x * x * y * y * y;
@@ -894,13 +915,56 @@ void CLookUpTable::Calculate_Query_Specific_Coefficients(su2double x,
 	}
 
 }
+
+vector<su2double> CLookUpTable::CalculateWeight(
+		vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y, su2double x, su2double y) {
+
+  // Shepard interpolation exponent
+  su2double p = 1;
+
+	vector<su2double>weight;
+	weight.reserve(nInterpPoints);
+  su2double x2, y2;
+
+	for (int i = 0; i < nInterpPoints; ++i) {
+		x2 = pow((x - ThermoTables_X[CurrentZone][CurrentPoints[i]]),2);
+		x2 /= x*x;
+		y2 = pow((y - ThermoTables_Y[CurrentZone][CurrentPoints[i]]),2);
+		y2 /= y*y;
+		weight.push_back(1/pow(sqrt(x2+y2),p));
+	}
+	return weight;
+}
+
 su2double CLookUpTable::Interpolate_Function2D(
-		vector<su2double> *ThermoTables_Z) {
-	su2double result = 0;
+		vector<su2double> *ThermoTables_Z,vector<su2double> Weights ) {
+
+	su2double result = 0.;
+	su2double result_shepard = 0.;
+  su2double weight_sum = 0.;
+
 	for (int i = 0; i < nInterpPoints; i++) {
 		su2double z = ThermoTables_Z[CurrentZone][CurrentPoints[i]];
 		result += Query_Specific_Interpolation_Coefficients[i] * z;
 	}
+
+	for (int i = 0; i < nInterpPoints; i++) {
+		su2double z = ThermoTables_Z[CurrentZone][CurrentPoints[i]];
+		result_shepard += Weights[i] * z;
+		weight_sum += Weights[i];
+	}
+
+	result_shepard /= weight_sum;
+//	cout << "Weights : " << Weights[0] << " " << Weights[1] << "  " << Weights[2] << endl;
+//	cout << "Weights : " << ThermoTables_Z[CurrentZone][CurrentPoints[0]] << "  "  << ThermoTables_Z[CurrentZone][CurrentPoints[1]]<< "  " << ThermoTables_Z[CurrentZone][CurrentPoints[2]] << endl;
+//	cout << "Result  : " << result << endl;
+//	cout << "ResultS : " << result_shepard << endl;
+//	cout << " =================== " << endl;
+//	cout << "Diff    : " << (result - result_shepard)*100/result << endl;
+//	cout << " =================== " << endl;
+
+
+//	return result_shepard;
 	return result;
 }
 
