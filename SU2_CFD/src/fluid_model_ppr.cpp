@@ -820,8 +820,8 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
 		do {
 			v = v_new;
 			Set_Cv(T,v);
-			atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
-			v_new = (s - Cv*log(T) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)))/Gas_Constant;
+			fv = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
+			v_new = (s - Cv*log(T) + a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)))/Gas_Constant;
 			v_new = exp(v_new) + b;
 			error_v = abs(v - v_new)/v;
 			count_v++;
