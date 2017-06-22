@@ -4892,7 +4892,9 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool windgust         = config->GetWind_Gust();
   bool body_force       = config->GetBody_Force();
-  unsigned short two_phase        = config->GetKind_2phase_Model();
+  unsigned short two_phase        = (config->GetKind_Solver()== TWO_PHASE_EULER ||
+		                             config->GetKind_Solver()== TWO_PHASE_NAVIER_STOKES ||
+									 config->GetKind_Solver()== TWO_PHASE_RANS);
 
   su2double S, h, R, Y;
 
@@ -5045,7 +5047,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     }
   }
 
- if (two_phase != NONE) {
+ if (two_phase) {
 
     /*--- Loop over all points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -10716,7 +10718,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           }
           Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
           break;
-          
+
         case SUPERSONIC_OUTFLOW:
 
           /*--- Retrieve the staic pressure for this boundary. ---*/
@@ -10785,18 +10787,23 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       }
       
       /*--- Compute the boundary state u_b using characteristics ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-      {
-        u_b[iVar] = u_i[iVar];
-        
-        for (jVar = 0; jVar < nVar; jVar++)
-        {
-          if (Lambda_i[jVar] < 0)
-          {
-            u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
-            
-          }
-        }
+      if (config->GetKind_Data_Riemann(Marker_Tag) != SUPERSONIC_OUTFLOW) {
+		  for (iVar = 0; iVar < nVar; iVar++)
+		  {
+			u_b[iVar] = u_i[iVar];
+
+			for (jVar = 0; jVar < nVar; jVar++)
+			{
+			  if (Lambda_i[jVar] < 0)
+			  {
+				u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
+
+			  }
+			}
+		  }
+	  } else {
+		  for (iVar = 0; iVar < nVar; iVar++)
+		  			u_b[iVar] = node[iPoint]->GetSolution(iVar);
       }
       
       
