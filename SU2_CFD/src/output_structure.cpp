@@ -10515,7 +10515,11 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
       myfile.width(30); myfile << TotalEnthalpyIn      [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref();
       myfile.width(30); myfile << DensityIn            [val_iZone][iSpan]*config[ZONE_0]->GetDensity_Ref();
       myfile.width(30); myfile << EntropyIn            [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
-      myfile.width(30); myfile << TurbIntensityIn      [val_iZone][iSpan];
+      if(TurbIntensityIn[val_iZone][iSpan] > 1.0){
+        myfile.width(30); myfile << TurbIntensityIn      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
+      }else{
+        myfile.width(30); myfile << TurbIntensityIn      [val_iZone][iSpan];
+      }
       myfile.width(30); myfile << Turb2LamViscRatioIn  [val_iZone][iSpan];
       myfile.width(30); myfile << NuFactorIn           [val_iZone][iSpan];
       myfile << endl;
@@ -10568,7 +10572,11 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
       myfile.width(30); myfile << TotalEnthalpyOut      [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref();
       myfile.width(30); myfile << DensityOut            [val_iZone][iSpan]*config[ZONE_0]->GetDensity_Ref();
       myfile.width(30); myfile << EntropyOut            [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
-      myfile.width(30); myfile << TurbIntensityOut      [val_iZone][iSpan];
+      if(TurbIntensityOut[val_iZone][iSpan] > 1.0){
+        myfile.width(30); myfile << TurbIntensityOut      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
+      }else{
+        myfile.width(30); myfile << TurbIntensityOut      [val_iZone][iSpan];
+      }
       myfile.width(30); myfile << Turb2LamViscRatioOut  [val_iZone][iSpan];
       myfile.width(30); myfile << NuFactorOut           [val_iZone][iSpan];
       myfile << endl;
