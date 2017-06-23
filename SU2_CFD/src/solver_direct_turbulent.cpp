@@ -1352,7 +1352,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   
   unsigned long iPoint;
   unsigned long ExtIter      = config->GetExtIter();
-  bool limiter_flow          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_turb          = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -1373,7 +1373,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
 
-  if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
+  if (limiter_turb) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
 
 }
 
@@ -2835,7 +2835,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   unsigned long iPoint;
 
   unsigned long ExtIter      = config->GetExtIter();
-  bool limiter_flow          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_turb          = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -2856,7 +2856,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
   
-  if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
+  if (limiter_turb) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
 
 }
 
