@@ -10490,17 +10490,17 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
 
     myfile.width(30); myfile << "\"SpanWise Value[m]\"";
     myfile.width(15); myfile << "\"iSpan\"";
-    myfile.width(30); myfile << "\"PressureIn[Pa]\"";
-    myfile.width(30); myfile << "\"TotalPressureIn[Pa]\"";
-    myfile.width(30); myfile << "\"TemperatureIn[K]\"";
-    myfile.width(30); myfile << "\"TotalTemperatureIn[K]\"";
-    myfile.width(30); myfile << "\"EnthalpyIn[J]\"";
-    myfile.width(30); myfile << "\"TotalEnthalpyIn[J]\"";
-    myfile.width(30); myfile << "\"DensityIn[kg/m3]\"";
-    myfile.width(30); myfile << "\"EntropyIn[J/K]\"";
-    myfile.width(30); myfile << "\"TurbIntensityIn[-]\"";
-    myfile.width(30); myfile << "\"Turb2LamViscRatioIn[-]\"";
-    myfile.width(30); myfile << "\"NuFactorIn[-]\"";
+    myfile.width(30); myfile << "\"Pressure[Pa]\"";
+    myfile.width(30); myfile << "\"TotalPressure[Pa]\"";
+    myfile.width(30); myfile << "\"Temperature[K]\"";
+    myfile.width(30); myfile << "\"TotalTemperature[K]\"";
+    myfile.width(30); myfile << "\"Enthalpy[J]\"";
+    myfile.width(30); myfile << "\"TotalEnthalpy[J]\"";
+    myfile.width(30); myfile << "\"Density[kg/m3]\"";
+    myfile.width(30); myfile << "\"Entropy[J/K]\"";
+    myfile.width(30); myfile << "\"TurbIntensity[-]\"";
+    myfile.width(30); myfile << "\"Turb2LamViscRatio[-]\"";
+    myfile.width(30); myfile << "\"NuFactor[-]\"";
     myfile << endl;
 
     for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
@@ -10542,17 +10542,17 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
 
     myfile.width(30); myfile << "\"SpanWise Value[m]\"";
     myfile.width(15); myfile << "\"iSpan\"";
-    myfile.width(30); myfile << "\"PressureOut[Pa]\"";
-    myfile.width(30); myfile << "\"TotalPressureOut[Pa]\"";
-    myfile.width(30); myfile << "\"TemperatureOut[K]\"";
-    myfile.width(30); myfile << "\"TotalTemperatureOut[K]\"";
-    myfile.width(30); myfile << "\"EnthalpyOut[J]\"";
-    myfile.width(30); myfile << "\"TotalEnthalpyOut[J]\"";
-    myfile.width(30); myfile << "\"DensityOut[kg/m3]\"";
-    myfile.width(30); myfile << "\"EntropyOut[J/K]\"";
-    myfile.width(30); myfile << "\"TurbIntensityOut[-]\"";
-    myfile.width(30); myfile << "\"Turb2LamViscRatioOut[-]\"";
-    myfile.width(30); myfile << "\"NuFactorOut[-]\"";
+    myfile.width(30); myfile << "\"Pressure[Pa]\"";
+    myfile.width(30); myfile << "\"TotalPressure[Pa]\"";
+    myfile.width(30); myfile << "\"Temperature[K]\"";
+    myfile.width(30); myfile << "\"TotalTemperature[K]\"";
+    myfile.width(30); myfile << "\"Enthalpy[J]\"";
+    myfile.width(30); myfile << "\"TotalEnthalpy[J]\"";
+    myfile.width(30); myfile << "\"Density[kg/m3]\"";
+    myfile.width(30); myfile << "\"Entropy[J/K]\"";
+    myfile.width(30); myfile << "\"TurbIntensity[-]\"";
+    myfile.width(30); myfile << "\"Turb2LamViscRatio[-]\"";
+    myfile.width(30); myfile << "\"NuFactor[-]\"";
     myfile << endl;
 
 
@@ -10971,7 +10971,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     
     /*--- write span-wise value for turbomachinery ---*/
     if(config[ZONE_0]->GetBoolTurbomachinery()){
-      if (rank == MASTER_NODE) cout << "Write SpanWise Values Files"<<endl;
+      if (rank == MASTER_NODE) cout << "Writing span-wise values file."<<endl;
       WriteSpanWiseValuesFiles(geometry, config, iZone);
     }
 
