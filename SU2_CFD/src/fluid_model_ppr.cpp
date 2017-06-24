@@ -589,14 +589,13 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
     if (count_T == ITMAX) cout << "Too many iterations in rho_e call" << endl;
 
-
     Temperature = Temperature_new;
 	HeatCapacity->Set_Cv0(Temperature);
 	Cv0 = HeatCapacity->Get_Cv0();
 	Set_Cv( Temperature, 1/rho);
 
-//    cout << Cv0 << " " << Cv << endl;
-//    getchar();
+
+
 
     a2T = alpha2(Temperature);
 
@@ -626,16 +625,13 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
     }
 
 
-//    cout << Gamma << endl;
-//    getchar();
-
     Entropy = Cv*log(Temperature) + Gas_Constant*log(B) - a*sqrt(a2T) *k*fv/(b*sqrt2*sqrt(Temperature*TstarCrit));
 
     DpDd_T =  ( Temperature*Gas_Constant /(B*B    ) - 2*a*a2T*(1/rho + b) /( A*A ) ) /(rho2);
 
     DpDT_d = Gas_Constant /B + a*k / A * sqrt( a2T/(Temperature*TstarCrit) );
 
-    der = Cv + ( a*k*(k+1)*fv ) / ( 2*b*sqrt(2*Temperature*TstarCrit) );
+    der = Cv + ( a *k*(k+1)*fv ) / ( 2*b*sqrt(2*Temperature*TstarCrit) );
 
     dPde_rho = DpDT_d/der;
 
@@ -705,6 +701,7 @@ void CPengRobinson_Generic::SetTDState_Prho (su2double P, su2double rho ) {
 
   SetEnergy_Prho(P, rho);
 
+
   SetTDState_rhoe(rho, StaticEnergy);
 
 }
@@ -720,8 +717,8 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
   unsigned short countrtb=0, NTRY=20, ITMAX=100, count_T=0, count_v = 0;
 
 
-  Cp = Gamma*Gas_Constant /(Gamma - 1);
-  T_new = abs(h)/Cp;
+  Cp = Gamma*Gas_Constant/(Gamma-1);
+  T_new = TstarCrit;//abs(h)/Cp;
 
 	  do{
 		T = T_new;
@@ -753,6 +750,7 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
 
    cons_h= abs((StaticEnergy + Pressure/Density -h)/h);
    cons_s= abs((Entropy-s)/s);
+
 
 
    if(cons_h >1e-3 || cons_s >1e-3) {
@@ -824,7 +822,7 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
 
   unsigned short count=0, NTRY=10, ITMAX=100, count_T = 0, count_v = 0;
 
-  T_new   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+  T_new   = TstarCrit;//exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
 
 	  do{
 		T = T_new;
@@ -854,8 +852,8 @@ void CPengRobinson_Generic::SetTDState_Ps (su2double P, su2double s) {
 		count_T++;
 	  }while(error >toll && count_T < ITMAX);
 
-
    SetTDState_rhoT(1/v, T);
+
 
   cons_P= abs((Pressure -P)/P);
   cons_s= abs((Entropy-s)/s);

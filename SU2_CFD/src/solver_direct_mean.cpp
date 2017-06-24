@@ -4808,7 +4808,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
 
     /*--- Update residual value ---*/
-    
     LinSysRes.AddBlock(iPoint, Res_Conv);
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
 
@@ -4899,7 +4898,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   su2double S, h, R, Y;
 
   /*--- Initialize the source residual to zero ---*/
-
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
   if (body_force) {
@@ -4948,7 +4946,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   }
   
   if (axisymmetric) {
-    
     /*--- Zero out Jacobian structure ---*/
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar ++)
@@ -4981,7 +4978,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   }
   
   if (gravity) {
-    
+
     /*--- loop over points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
@@ -5002,7 +4999,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   }
   
   if (harmonic_balance) {
-    
     su2double Volume, Source;
     
     /*--- loop over points ---*/
@@ -5022,9 +5018,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       
     }
   }
-  
+
   if (windgust) {
-    
     /*--- Loop over all points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -5076,6 +5071,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     }
 
   }
+
 
 }
 
@@ -10025,7 +10021,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
+
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
@@ -10158,6 +10154,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 
       }
     }
+
   }
   
   delete [] Normal;
@@ -10460,7 +10457,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity;
   Normal = new su2double[nDim];
   su2double ext_flow_angle;
-  
+
   Velocity_i = new su2double[nDim];
   Velocity_b = new su2double[nDim];
   Velocity_e = new su2double[nDim];
@@ -10480,12 +10477,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     P_Tensor[iVar] = new su2double[nVar];
     invP_Tensor[iVar] = new su2double[nVar];
   }
-  
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     V_boundary= GetCharacPrimVar(val_marker, iVertex);
-    
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
@@ -10537,7 +10533,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
       
       /*--- Build the external state u_e from boundary data and internal node ---*/
-      
       switch(config->GetKind_Data_Riemann(Marker_Tag))
       {
           //TODO(turbo), generilize for 3D case
@@ -10719,21 +10714,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
           break;
 
-        case SUPERSONIC_OUTFLOW:
-
-          /*--- Retrieve the staic pressure for this boundary. ---*/
-          Pressure_e = Pressure_i;
-          Density_e = Density_i;
-
-          /*--- Compute the boundary state u_e ---*/
-          FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-          Velocity2_e = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity_e[iDim] = Velocity_i[iDim];
-            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-          }
-          Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-          break;
 
         default:
           cout << "Warning! Invalid Riemann input!" << endl;
@@ -10742,7 +10722,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
           
       }
-      
       /*--- Compute P (matrix of right eigenvectors) ---*/
       conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
       
@@ -10785,9 +10764,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
         
       }
-      
+
       /*--- Compute the boundary state u_b using characteristics ---*/
-      if (config->GetKind_Data_Riemann(Marker_Tag) != SUPERSONIC_OUTFLOW) {
 		  for (iVar = 0; iVar < nVar; iVar++)
 		  {
 			u_b[iVar] = u_i[iVar];
@@ -10801,10 +10779,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 			  }
 			}
 		  }
-	  } else {
-		  for (iVar = 0; iVar < nVar; iVar++)
-		  			u_b[iVar] = node[iPoint]->GetSolution(iVar);
-      }
       
       
       /*--- Compute the thermodynamic state in u_b ---*/
@@ -10823,10 +10797,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
       Kappa_b = FluidModel->GetdPde_rho() / Density_b;
       Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
-      
+
       /*--- Compute the residuals ---*/
       conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);
-      
+
       /*--- Residual contribution due to grid motion ---*/
       if (grid_movement) {
         gridVel = geometry->node[iPoint]->GetGridVel();
@@ -10873,7 +10847,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Compute flux Jacobian in state b ---*/
         conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
-        
         /*--- Jacobian contribution due to grid motion ---*/
         if (grid_movement)
         {
@@ -10912,7 +10885,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Update residual value ---*/
       LinSysRes.AddBlock(iPoint, Residual);
-      
+
+
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
@@ -13026,9 +13000,9 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, unsigned short val_marker) {
   
   /*--- Call the Euler residual ---*/
-  
+
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
-  
+
 }
 
 void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
@@ -15807,7 +15781,8 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     LinSysRes.AddBlock(jPoint, Res_Visc);
     
     /*--- Implicit part ---*/
-    
+
+
     if (implicit) {
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);

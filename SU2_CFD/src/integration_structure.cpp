@@ -82,14 +82,12 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
   
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
-  
   if (dual_time)
     solver_container[MainSolver]->SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
-  
+
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config);
-
   /*--- Weak boundary conditions ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -144,6 +142,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
           solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], NULL, config, iMarker);
         else if (MainSolver == TWO_PHASE_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == STATIC_PRESSURE)
           solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], NULL, config, iMarker);
+
         break;
       case FAR_FIELD:
         solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);

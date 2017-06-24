@@ -317,7 +317,7 @@ CVanDerWaalsGas_Generic::CVanDerWaalsGas_Generic(su2double gamma, su2double R, s
   a = 27.0/64.0*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
   b = 1.0/8.0*Gas_Constant*Tstar/Pstar;
   Zed = 1.0;
-
+  TstarCrit = Tstar;
 }
 
 
@@ -437,7 +437,7 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
 
 
     Cp = Gamma*Gas_Constant /(Gamma - 1);
-    T_new = abs(h)/Cp;
+    T_new = TstarCrit;//abs(h)/Cp;
 
 	  do{
 		T = T_new;
@@ -506,7 +506,7 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
   unsigned short count=0, count_T = 0, NTRY=10, ITMAX=100;
 
 
-  T_new   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+  T_new   = TstarCrit;//exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
 
   do{
 	  T = T_new;
