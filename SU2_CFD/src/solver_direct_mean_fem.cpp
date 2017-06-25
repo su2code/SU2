@@ -1789,7 +1789,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess); 
+    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     /* Allocate the memory for the receive buffer as well as for the
        return send buffer. Receive the message afterwards. */
@@ -3523,7 +3523,7 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 
     }
   }
-  
+
   /*--------------------------------------------------------------------------*/
   /*--- Step 2: The writing of the Jacobian in Block Compressed Row        ---*/
   /*---         Storage to file.                                           ---*/
@@ -3532,12 +3532,50 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
   /* Write a message that the Jacobian is written to file. */
   if(rank == MASTER_NODE) {
     cout << endl;
-    cout << "Writing the Jacobian Block Compressed Row Storage." << endl;
-    cout << endl << flush;
+    cout << "Writing the Jacobian Block Compressed Row Storage." << flush;
   }
 
+#ifdef HAVE_MPI
+  /* Parallel mode. The parallel IO functionality is used to Write
+     the Jacobian matrix. */
   cout << "CFEM_DG_EulerSolver::ComputeSpatialJacobian: Not implemented yet" << endl;
   exit(1);
+
+#else
+  /* Sequential mode. The entire file is written by one rank,
+     Open the file for writing. */
+  FILE *fJac = fopen("Jacobian_DG.bin", "wb");
+  if( !fJac) {
+    cout << "Could not open the file Jacobian_DG for binary writing." << endl;
+    exit(1);
+  }
+
+  /* Write the number of DOFs (Block rows in the matrix), the number of
+     variables (the dimension of each block) and the number of neighboring
+     blocks per DOF in cumulative storage format. */
+  fwrite(&nDOFsPerRank[1], 1, sizeof(unsigned long), fJac);
+  fwrite(&nVar, 1, sizeof(unsigned short), fJac);
+  fwrite(nNonZeroEntries.data(), nNonZeroEntries.size(),
+         sizeof(unsigned long), fJac);
+
+  /* Write the block column indices of the neighboring blocks. */
+  for(unsigned long i=0; i<nDOFsLocOwned; ++i)
+    fwrite(nonZeroEntriesJacobian[i].data(), nonZeroEntriesJacobian[i].size(),
+           sizeof(unsigned long), fJac);
+
+  /* Write the actual matrix elements. */
+  fwrite(Jacobian.data(), Jacobian.size(), sizeof(passivedouble), fJac);
+
+  /* Close the file again. */
+  fclose(fJac);
+
+#endif
+
+  /* Write a message that the writing is done.. */
+  if(rank == MASTER_NODE) {
+    cout << " Done." << endl;
+    cout << endl << flush;
+  }
 }
 
 void CFEM_DG_EulerSolver::Set_OldSolution(CGeometry *geometry) {
