@@ -5239,28 +5239,29 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
 
 void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
-  /* Find out whether or not the full mass matrix is needed. This is only the
-     case for time accurate simulations. For steady simulations only a lumped
-     version is needed in order to be dimensionally consistent. Moreover, for
-     implicit time integration schemes the mass matrix itself is needed, while
-     for explicit time integration schemes the inverse of the mass matrix is
-     much more convenient. Furthermore, for ADER-DG both the mass matrix
-     and its inverse is needed. Note that for the DG_FEM the mass matrix is
-     local to the elements. Finally, when the non-aliased predictor is used
+  /* Find out whether or not the full, inverse of the full and the lumped mass
+     matrices are needed. In principle always the full mass matrix is used,
+     unless the user explicitly indices to use the lumped mass matrix for
+     steady and dual time stepping. Furthermore, for ADER-DG both the mass
+     matrix and its inverse are needed. Note that for the DG_FEM the mass matrix
+     is local to the elements. Finally, when the non-aliased predictor is used
      for ADER-DG for the Navier-Stokes equations, the derivatives of the
      metric terms are needed for the computation of the 2nd derivatives. */
-  bool FullMassMatrix, FullInverseMassMatrix, LumpedMassMatrix;
-  bool DerMetricTerms = false;
+  const bool UseLumpedMassMatrix = config->GetUse_Lumped_MassMatrix_DGFEM();
+
+  bool FullMassMatrix   = false, FullInverseMassMatrix = false;
+  bool LumpedMassMatrix = false, DerMetricTerms = false;
+
   if(config->GetUnsteady_Simulation() == STEADY ||
      config->GetUnsteady_Simulation() == ROTATIONAL_FRAME) {
-    FullMassMatrix   = FullInverseMassMatrix = false;
-    LumpedMassMatrix = true;
+    if( UseLumpedMassMatrix) LumpedMassMatrix      = true;
+    else                     FullInverseMassMatrix = true;
   }
   else if(config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
           config->GetUnsteady_Simulation() == DT_STEPPING_2ND ||
           config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    FullMassMatrix        = LumpedMassMatrix = true;
-    FullInverseMassMatrix = false;
+    if( UseLumpedMassMatrix ) FullMassMatrix = LumpedMassMatrix = true;
+    else                      FullInverseMassMatrix = true;
   }
   else {
 
