@@ -632,7 +632,8 @@ private:
   SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-  VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  VolSens_FileName,			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  Hybrid_Const_FileName;                /*!< \brief Input file for the hybrid RANS/LES constants. */
   bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
@@ -4260,6 +4261,12 @@ public:
    */
   string GetVolSens_FileName(void);
   
+  /*!
+   * \brief Get the name of the file with the hybrid RANS/LES constants.
+   * \return Name of the file with the hybrid RANS/LES constants.
+   */
+  string GetHybrid_Const_FileName(void);
+
   /*!
    * \brief Augment the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.

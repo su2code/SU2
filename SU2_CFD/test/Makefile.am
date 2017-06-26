@@ -39,6 +39,7 @@ check_PROGRAMS += aniso_viscous_flux
 check_PROGRAMS += aniso_viscous_jacobian
 check_PROGRAMS += aniso_viscous_jacobian_compare
 check_PROGRAMS += aniso_viscous_residual_test
+check_PROGRAMS += load_hybrid_constants_test
 
 # Eventually these will likely be required
 AM_CPPFLAGS =
@@ -60,6 +61,7 @@ aniso_viscous_flux_SOURCES             = aniso_viscous_flux.cpp
 aniso_viscous_jacobian_SOURCES         = aniso_viscous_jacobian.cpp
 aniso_viscous_jacobian_compare_SOURCES = aniso_viscous_jacobian_compare.cpp
 aniso_viscous_residual_test_SOURCES    = aniso_viscous_residual_test.cpp
+load_hybrid_constants_test_SOURCES     = load_hybrid_constants_test.cpp
 
 # Tests to be run
 TESTS  =
@@ -68,6 +70,7 @@ TESTS += aniso_viscous_flux
 TESTS += aniso_viscous_jacobian
 TESTS += aniso_viscous_jacobian_compare
 TESTS += aniso_viscous_residual_test
+TESTS += load_hybrid_constants_test
 
 # Any of above we expect to fail?
 #XFAIL_TESTS =

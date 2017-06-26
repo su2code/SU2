@@ -105,7 +105,12 @@ public:
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
   su2double Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
   Eddy_Viscosity_j;      /*!< \brief Eddy viscosity at point j. */
-  // FIXME: Could these be moved to derived classes?
+  /*--- Although some of these pertain to the turbulence, the hybridization
+   * in a RANS/LES framework requires variables to be used in various solvers
+   * (i.e. the eddy viscosity anisotropy is created by the turbulence, but
+   * affects the resolved flow). Rather than repeat the same code multiple
+   * times, the respective variables, getters and setters are stored in the
+   * base class. ---*/
   su2double** Eddy_Viscosity_Anisotropy_i;  /*!< \brief Normalized anisotropy tensor for the eddy viscosity at point i. */
   su2double** Eddy_Viscosity_Anisotropy_j;  /*!< \brief Normalized anisotropy tensor for the eddy viscosity at point j. */
   su2double** Resolution_Tensor_i;  /*!< \brief Resolution tensor at point i. */

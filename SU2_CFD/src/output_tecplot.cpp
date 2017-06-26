@@ -3151,7 +3151,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
           break;
         case CONVECTIVE:
           // Add resolution adequacy.
-          variables << "Resolution_Adequacy "; *nVar += 1;
+          variables << "Resolution_Adequacy "; *NVar += 1;
           break;
       }
     }

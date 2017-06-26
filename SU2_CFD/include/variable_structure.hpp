@@ -3813,7 +3813,9 @@ protected:
   beta_star;
   su2double F1,    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   F2,            /*!< \brief Menter blending function for stress limiter. */
-  CDkw;           /*!< \brief Cross-diffusion. */
+  CDkw,           /*!< \brief Cross-diffusion. */
+  T,              /*!< \brief Turbulent timescale */
+  L;              /*!< \brief Turbulent lengthscale */
   
 public:
   /*!
@@ -3861,6 +3863,18 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   su2double GetCrossDiff(void);
+
+  /**
+   * \brief Get the large-eddy timescale of the turbulence
+   * \return The large-eddy timescale of the turbulence.
+   */
+  su2double GetTurbTimescale(void);
+
+  /**
+   * \brief Get the large-eddy lengthscale of the turbulence
+   * \return The large-eddy lengthscale of the turbulence
+   */
+  su2double GetTurbLengthscale(void);
 };
 
 /*!

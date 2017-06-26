@@ -5025,11 +5025,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               SPRINTF(massflow_outputs,", %12.10f", Total_Mdot);
             }
             
-            /*--- Hybrid RANS/LES model hybrid parameter residual ---*/
-            if (hybrid) {
-              SPRINTF (hybrid_resid, ", %12.10f", log10(residual_hybrid[0]));
-            }
-            
             /*--- Transition residual ---*/
             if (transition) {
               SPRINTF (trans_resid, ", %12.10f, %12.10f", log10(residual_transition[0]), log10(residual_transition[1]));

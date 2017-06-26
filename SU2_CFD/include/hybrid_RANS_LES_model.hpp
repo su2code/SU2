@@ -286,6 +286,7 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   **PrimVar_Grad_i,
   **PrimVar_Grad_j;
   su2double r_k;
+  std::vector<std::vector<su2double> > constants;
 
   /*!
    * \brief Calculates the resolution inadequacy parameter
@@ -301,9 +302,23 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
    * \param[in] PrimVar_Grad - Gradients of the primitive flow variables
    * \param[out] Q - The approximate 2nd order structure function tensor
    */
-  void CalculateApproxStructFunc(su2double** ResolutionTensor,
+  template <class T>
+  void CalculateApproxStructFunc(T ResolutionTensor,
                                  su2double** PrimVar_Grad,
                                  su2double** Q);
+
+  vector<vector<su2double> > LoadConstants(string filename);
+
+  vector<su2double> GetFunctions_G(vector<su2double> eig_values_M);
+
+  vector<su2double> GetEigValues_G(vector<su2double> eig_values_M);
+
+  vector<su2double> GetEigValues_Mtilde(vector<su2double> eig_values_M);
+
+  vector<vector<su2double> > BuildMtilde(su2double** M);
+
+  void SolveEigen(su2double** M, vector<su2double> eigvalues,
+                  vector<vector<su2double> > eigvectors);
 
  public:
 
@@ -312,7 +327,7 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
    * \param[in] nDim - The number of dimensions of the problem
    * \param[in] CConfig - The configuration for the current zone
    */
-  CHybrid_Mediator(int nDim, CConfig* config);
+  CHybrid_Mediator(int nDim, CConfig* config, string filename="");
 
   /**
    * \brief Destructor for the hybrid mediator object.
@@ -388,6 +403,12 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
                              CNumerics* visc_numerics,
                              unsigned short iPoint,
                              unsigned short jPoint);
+
+  /**
+   * \brief Returns the constants for the numerical fit for the resolution tensor.
+   * \return Constants for the numerical fit for the resolution tensor.
+   */
+  vector<vector<su2double> > GetConstants();
 };
 
 /*!
@@ -484,4 +505,27 @@ class CHybrid_Dummy_Mediator : public CAbstract_Hybrid_Mediator {
                              unsigned short iPoint,
                              unsigned short jPoint);
 };
+
+// Template definitions:
+
+template <class T>
+void CHybrid_Mediator::CalculateApproxStructFunc(T ResolutionTensor,
+                                                 su2double** PrimVar_Grad,
+                                                 su2double** Q) {
+  unsigned int iDim, jDim, kDim, lDim, mDim;
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    for (jDim = 0; jDim < nDim; jDim++)
+      Q[iDim][jDim] = 0.0;
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    for (jDim = 0; jDim < nDim; jDim++)
+      for (kDim = 0; kDim < nDim; kDim++)
+        for (lDim = 0; lDim < nDim; lDim++)
+          for (mDim = 0; mDim < nDim; mDim++)
+            Q[iDim][jDim] += ResolutionTensor[iDim][mDim]*
+                             PrimVar_Grad[mDim+1][kDim]*
+                             PrimVar_Grad[lDim+1][kDim]*
+                             ResolutionTensor[lDim][jDim];
+}
 
