@@ -707,6 +707,14 @@ public:
    */
   void SetCart2Sphe_CornerPoints(CConfig *config);
 
+  void SetCart2Sphe(su2double* coord, CConfig *config);
+
+  void SetCart2Cyl(su2double* coord, CConfig *config);
+
+  void SetSphe2Cart(su2double* coord, CConfig *config);
+
+  void SetCyl2Cart(su2double* coord, CConfig *config);
+
   /*!
    * \brief Set the cartesian coords of a point in R^3 and convert them to the parametric coords of
    *        our parametrization of a paralellepiped.

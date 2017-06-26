@@ -481,6 +481,7 @@ private:
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
   *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
+  unsigned short FFD_Longitudinal_Axis; /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
   Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
@@ -1356,6 +1357,12 @@ public:
    */
   su2double GetFFD_Axis(unsigned short val_var);
   
+  /*!
+   * \brief Get the longitudinal axis for cylindrical coordinates.
+   * \return The  longitudinal axis.
+   */
+  unsigned short GetFFD_Longitudinal_Axis();
+
   /*!
    * \brief Get the value of the bulk modulus.
    * \return Value of the bulk modulus.

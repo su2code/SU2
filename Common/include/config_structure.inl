@@ -337,6 +337,8 @@ inline su2double CConfig::GetSection_WingBounds(unsigned short val_var) { return
 
 inline su2double CConfig::GetFFD_Axis(unsigned short val_var) { return FFD_Axis[val_var]; }
 
+inline unsigned short CConfig::GetFFD_Longitudinal_Axis(){return FFD_Longitudinal_Axis;}
+
 inline su2double CConfig::GetBulk_Modulus(void) { return Bulk_Modulus; }
 
 inline su2double CConfig::GetArtComp_Factor(void) { return ArtComp_Factor; }

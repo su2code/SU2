@@ -1680,6 +1680,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_ffd_axis[0] = 0.0; default_ffd_axis[1] = 0.0; default_ffd_axis[2] =0.0;
   addDoubleArrayOption("FFD_AXIS", 3, FFD_Axis, default_ffd_axis);
 
+  addEnumOption("FFD_LONGITUDINAL_AXIS", FFD_Longitudinal_Axis, Axis_Stations_Map, Z_AXIS);
+
   /* DESCRIPTION: Number of total iterations in the FFD point inversion */
   addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 500);
 
