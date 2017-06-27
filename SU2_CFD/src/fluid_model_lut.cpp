@@ -592,6 +592,7 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	vector<su2double> Weights;
 	Weights = CalculateWeight(ThermoTables_Density, ThermoTables_StaticEnergy, rho, e);
 
+//	cout << " ========RHO_E " << endl;
 	//Interpolate the fluid properties
 	StaticEnergy = e;
 	Density = rho;
@@ -620,6 +621,7 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 	vector<su2double> Weights;
 	Weights = CalculateWeight(ThermoTables_Pressure, ThermoTables_Temperature, P, T);
 
+//	cout << " ========P_T " << endl;
 	//Interpolate the fluid properties
 	Pressure = P;
 	Density = Interpolate_Function2D(ThermoTables_Density, Weights);
@@ -648,6 +650,7 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 	vector<su2double> Weights;
 	Weights = CalculateWeight(ThermoTables_Pressure, ThermoTables_Density, P, rho);
 
+//	cout << " ========P_RHO " << endl;
 	//Interpolate the fluid properties
 	Pressure = P;
 	Density = rho;
@@ -676,6 +679,7 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 	vector<su2double> Weights;
 	Weights = CalculateWeight(ThermoTables_Pressure, ThermoTables_Density, P, rho);
 
+//	cout << " ========P_RHO " << endl;
 	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy, Weights);
 	Pressure = P;
 	Density = rho;
@@ -692,6 +696,7 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	vector<su2double> Weights;
 	Weights = CalculateWeight(ThermoTables_Enthalpy, ThermoTables_Entropy, h, s);
 
+//	cout << " ========H_S " << endl;
 	//Interpolate the fluid properties
 	Enthalpy = h;
 	Entropy = s;
@@ -720,6 +725,7 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 	vector<su2double> Weights;
 	Weights = CalculateWeight(ThermoTables_Pressure, ThermoTables_Entropy, P, s);
 
+//	cout << " ========P_S " << endl;
 	//Interpolate the fluid properties
 	Entropy = s;
 	Pressure = P;
@@ -748,6 +754,7 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 	vector<su2double> Weights;
 	Weights = CalculateWeight(ThermoTables_Density, ThermoTables_Temperature, rho, T);
 
+//	cout << " ========RHO_T " << endl;
 	//Interpolate the fluid properties
 	Temperature = T;
 	Density = rho;
@@ -843,35 +850,35 @@ vector<su2double> CLookUpTable::Evaluate_Interpolation_Vector(su2double x,
 	interpolation_vector[0] = 1;
 	interpolation_vector[1] = x;
 	interpolation_vector[2] = y;
-	//  interpolation_vector[3] = x * y;
-	//	interpolation_vector[4] = x * y * y;
-	//	interpolation_vector[5] = x * y * y * y;
-  //  interpolation_vector[6] = x * x;
-	//	interpolation_vector[7] = x * x * y;
-	//	interpolation_vector[8] = x * x * y * y;
-	//	interpolation_vector[9] = x * x * y * y * y;
-	//	interpolation_vector[10] = y * y;
-	//	interpolation_vector[11] = x * x * x;
-	//	interpolation_vector[12] = x * x * x * y;
-	//	interpolation_vector[13] = x * x * x * y * y;
-	//	interpolation_vector[14] = x * x * x * y * y * y;
-	//	interpolation_vector[15] = y * y * y;
+//	interpolation_vector[3] = x * y;
+//	interpolation_vector[4] = x * y * y;
+//	interpolation_vector[5] = x * y * y * y;
+//	interpolation_vector[6] = x * x;
+//	interpolation_vector[7] = x * x * y;
+//	interpolation_vector[8] = x * x * y * y;
+//	interpolation_vector[9] = x * x * y * y * y;
+//	interpolation_vector[10] = y * y;
+//	interpolation_vector[11] = x * x * x;
+//	interpolation_vector[12] = x * x * x * y;
+//	interpolation_vector[13] = x * x * x * y * y;
+//	interpolation_vector[14] = x * x * x * y * y * y;
+//	interpolation_vector[15] = y * y * y;
 
-	//interpolation_vector[4] = x * x;
-	//	interpolation_vector[5] = y * y;
+//  interpolation_vector[4] = x * x;
+//	interpolation_vector[5] = y * y;
 //	interpolation_vector[4] = log(y);
 //	interpolation_vector[5] = log(x);
-	//	interpolation_vector[8] = log(x + y);
+//	interpolation_vector[8] = log(x + y);
 
-	//	interpolation_vector[8] = exp(x);
-	//	interpolation_vector[9] = exp(y);
-	//	interpolation_vector[8] = log(y);
-	//	interpolation_vector[10] = exp(x);
-	//	interpolation_vector[11] = exp(y);
-	//	interpolation_vector[12] = exp(x * y);
-	//	interpolation_vector[13] = exp(-x);
-	//	interpolation_vector[14] = exp(-y);
-	//	interpolation_vector[15] = exp(x * y);
+//	interpolation_vector[8] = exp(x);
+//	interpolation_vector[9] = exp(y);
+//	interpolation_vector[8] = log(y);
+//	interpolation_vector[10] = exp(x);
+//	interpolation_vector[11] = exp(y);
+//	interpolation_vector[12] = exp(x * y);
+//	interpolation_vector[13] = exp(-x);
+//	interpolation_vector[14] = exp(-y);
+//	interpolation_vector[15] = exp(x * y);
 
 	return interpolation_vector;
 }
@@ -921,10 +928,8 @@ vector<su2double> CLookUpTable::CalculateWeight(
 
   // Shepard interpolation exponent
   su2double p = 1;
-
-	vector<su2double>weight;
-	weight.reserve(nInterpPoints);
   su2double x2, y2;
+	vector<su2double>weight; weight.reserve(nInterpPoints);
 
 	for (int i = 0; i < nInterpPoints; ++i) {
 		x2 = pow((x - ThermoTables_X[CurrentZone][CurrentPoints[i]]),2);
@@ -942,30 +947,33 @@ su2double CLookUpTable::Interpolate_Function2D(
 	su2double result = 0.;
 	su2double result_shepard = 0.;
   su2double weight_sum = 0.;
+  su2double z = 0.;
 
 	for (int i = 0; i < nInterpPoints; i++) {
-		su2double z = ThermoTables_Z[CurrentZone][CurrentPoints[i]];
+		z = ThermoTables_Z[CurrentZone][CurrentPoints[i]];
 		result += Query_Specific_Interpolation_Coefficients[i] * z;
 	}
 
 	for (int i = 0; i < nInterpPoints; i++) {
-		su2double z = ThermoTables_Z[CurrentZone][CurrentPoints[i]];
+		z = ThermoTables_Z[CurrentZone][CurrentPoints[i]];
 		result_shepard += Weights[i] * z;
 		weight_sum += Weights[i];
 	}
-
 	result_shepard /= weight_sum;
-//	cout << "Weights : " << Weights[0] << " " << Weights[1] << "  " << Weights[2] << endl;
-//	cout << "Weights : " << ThermoTables_Z[CurrentZone][CurrentPoints[0]] << "  "  << ThermoTables_Z[CurrentZone][CurrentPoints[1]]<< "  " << ThermoTables_Z[CurrentZone][CurrentPoints[2]] << endl;
-//	cout << "Result  : " << result << endl;
-//	cout << "ResultS : " << result_shepard << endl;
-//	cout << " =================== " << endl;
-//	cout << "Diff    : " << (result - result_shepard)*100/result << endl;
-//	cout << " =================== " << endl;
+
+	//	cout << "Weights : " << Weights[0] << " " << Weights[1] << "  " << Weights[2] << endl;
+	//	cout << "Weights : " << ThermoTables_Z[CurrentZone][CurrentPoints[0]] << "  "  << ThermoTables_Z[CurrentZone][CurrentPoints[1]]<< "  " << ThermoTables_Z[CurrentZone][CurrentPoints[2]] << endl;
+	//	cout << "Result  : " << result << endl;
+	//	cout << "ResultS : " << result_shepard << endl;
+	//	if  (((result - result_shepard)*100/result)>1) {
+	//		cout << " =================== " << endl;
+	//		cout << "Diff    : " << (result - result_shepard)*100/result << endl;
+	//		cout << " =================== " << endl;
+	//	}
 
 
 //	return result_shepard;
-	return result;
+		return result;
 }
 
 void CLookUpTable::RecordState(char* file) {
