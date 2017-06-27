@@ -12933,17 +12933,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   unsigned short skipVar = nDim, skipMult = 1;
 
-  if (wrt_residuals) { skipMult = 2; }
   if (incompressible) { skipVar += skipMult*(nDim+1); }
   if (compressible)   { skipVar += skipMult*(nDim+2); }
   if (sst)            { skipVar += skipMult*2;}
   if (sa)             { skipVar += skipMult*1;}
   if (grid_movement)  { skipVar += nDim;}
-  
-  /*--- Sensitivity in normal direction ---*/
-  
-  skipVar += 1;
-  
+
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
   
