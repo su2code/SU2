@@ -20,6 +20,8 @@ using namespace std;
 
 class SUBoom{
 public:
+  unsigned int n_prof;
+
   /*---Flight variables---*/
   su2double flt_h;
   su2double flt_M;
@@ -123,6 +125,8 @@ public:
   su2double matchr(int i, int j, su2double h_L, su2double r0);
   su2double *ClipLambdaZeroSegment(su2double fvec[], int &M);
 };
+void MergeSort(su2double x[], su2double p[], int l, int r);
+void merge(su2double x[], su2double p[], int l, int m, int r);
 void QuickSort(su2double x[], su2double p[], int l, int r);
 su2double *derivs(su2double x, int m, su2double y[], SUBoom::RayData data);
 su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data);
