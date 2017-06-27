@@ -12680,13 +12680,13 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
                         facesRecv[j]);
       if(facesRecv[j].elemID0 == low->elemID0) {
         sendBufFace[ii+5] = low->elemID1;
-        sendBufFace[ii+6] = facesRecv[j].nPolySol1;
+        sendBufFace[ii+6] = low->nPolySol1;
         sendBufFace[ii+7] = low->nDOFsElem1;
         sendBufFace[ii+8] = low->elemType1;
       }
       else {
         sendBufFace[ii+5] = low->elemID0;
-        sendBufFace[ii+6] = facesRecv[j].nPolySol0;
+        sendBufFace[ii+6] = low->nPolySol0;
         sendBufFace[ii+7] = low->nDOFsElem0;
         sendBufFace[ii+8] = low->elemType0;
       }

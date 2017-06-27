@@ -1325,7 +1325,8 @@ void FEMStandardElementBaseClass::Vandermonde2D_Triangle(unsigned short         
         su2double b = s[k];
 
         /*--- Determine the value of the current basis function in this point. ---*/
-        su2double tmp = pow((1.0-b),i);
+        su2double tmp = 1.0;
+        if( i ) tmp = pow((1.0-b),i);
         V[ii] = sqrt(2.0)*tmp*NormJacobi(i,0,0,a)*NormJacobi(j,2*i+1,0,b);
       }
     }
@@ -1383,12 +1384,15 @@ void FEMStandardElementBaseClass::GradVandermonde2D_Triangle(unsigned short     
         VDs[ii] = VDr[ii];
         if(i > 0)
         {
-          su2double tmp = pow((1.0-b), (i-1));
-          VDr[ii]       = 2.0*tmp*VDr[ii];
-          VDs[ii]       = (a+1.0)*tmp*VDs[ii] - i*tmp*sqrt(2.0)*fa*gb;
+          su2double tmp = 1.0;
+          if( i-1 ) tmp = pow((1.0-b), (i-1));
+
+          VDr[ii] = 2.0*tmp*VDr[ii];
+          VDs[ii] = (a+1.0)*tmp*VDs[ii] - i*tmp*sqrt(2.0)*fa*gb;
         }
 
-        su2double tmp = pow((1.0-b), i);
+        su2double tmp = 1.0;
+        if( i ) tmp = pow((1.0-b), i);
         VDs[ii] += sqrt(2.0)*fa*dgb*tmp;
       }
     }
@@ -1507,8 +1511,12 @@ void FEMStandardElementBaseClass::Vandermonde3D_Tetrahedron(unsigned short      
           su2double c = t[l];
 
           /*--- Determine the value of the current basis function in this point. ---*/
-          su2double tmpb = pow((1.0-b),i);
-          su2double tmpc = pow((1.0-c),i+j);
+          su2double tmpb = 1.0;
+          if( i )   tmpb = pow((1.0-b),i);
+
+          su2double tmpc = 1.0;
+          if( i+j ) tmpc = pow((1.0-c),i+j);
+
           V[ii] = sqrt(8.0)*tmpb*tmpc*NormJacobi(i,0,0,a)*NormJacobi(j,2*i+1,0,b)
                 * NormJacobi(k,2*(i+j+1),0,c);
         }
@@ -1577,8 +1585,12 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Tetrahedron(unsigned short  
                 dadr. Note that the implementation is such that all possible singularities are
                 divided out of the expression.                                  ---*/
           VDr[ii] = sqrt(8.0)*dfa*gb*hc;
-          if(i   > 0) VDr[ii] *= 4.0*pow((1.0-b), (i-1));
-          if(i+j > 0) VDr[ii] *=     pow((1.0-c), (i+j-1));
+          if(i > 0) {
+            VDr[ii] *= 4.0;
+            if(i > 1 ) VDr[ii] *= pow((1.0-b), (i-1));
+          }
+
+          if(i+j > 1) VDr[ii] *= pow((1.0-c), (i+j-1));
 
           /*--- Compute the derivative of the basis function w.r.t. s. As s is present in both
                 the parameters a and b, both variables must be taken into account when the
@@ -1586,9 +1598,19 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Tetrahedron(unsigned short  
                 singularities are divided out of the expression. The first part is the derivative
                 of the basis function w.r.t. b multiplied by dbds. This value is stored, because
                 it is needed later on to compute the derivative w.r.t. t.       ---*/
-          VDs[ii] = dgb*pow((1.0-b), i);
-          if(i   > 0) VDs[ii] -= i*gb*pow((1.0-b), (i-1));
-          if(i+j > 0) VDs[ii] *= 2.0*sqrt(8.0)*fa*hc*pow((1.0-c), (i+j-1));
+          VDs[ii] = dgb;
+          if( i ) VDs[ii] *= pow((1.0-b), i);
+
+          if(i > 0) {
+            su2double tmp = i*gb;
+            if(i > 1) tmp *= pow((1.0-b), (i-1));
+            VDs[ii] -= tmp;
+          }
+
+          if(i+j > 0) {
+            VDs[ii] *= 2.0*sqrt(8.0)*fa*hc;
+            if(i+j > 1) VDs[ii] *= pow((1.0-c), (i+j-1));
+          }
 
           su2double dPsidbXdbds = VDs[ii];
 
@@ -1601,9 +1623,16 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Tetrahedron(unsigned short  
                 the implementation is such that all possible singularities are divided out of the
                 expression. The first part is the derivative of the basis function w.r.t. c,
                 which is equal to t.                                     ---*/
-          VDt[ii] = dhc*pow((1.0-c), (i+j));
-          if(i+j > 0) VDt[ii] -= (i+j)*hc*pow((1.0-c), (i+j-1));
-          VDt[ii] *= sqrt(8.0)*fa*gb*pow((1.0-b), i);
+          VDt[ii] = dhc;
+          if(i+j > 0) VDt[ii] *= pow((1.0-c), (i+j));
+
+          if(i+j > 0) {
+            VDt[ii] -= (i+j)*hc;
+            if(i+j > 1) VDt[ii] *= pow((1.0-c), (i+j-1));
+          }
+
+          VDt[ii] *= sqrt(8.0)*fa*gb;
+          if( i) VDt[i] *= pow((1.0-b), i);
 
           /*--- Add the contribution from the derivative of the basis function w.r.t. a multiplied
                 by dadt and the derivative w.r.t. b multiplied by dbdt.           ---*/
@@ -1658,7 +1687,9 @@ void FEMStandardElementBaseClass::Vandermonde3D_Pyramid(unsigned short          
           su2double c = t[l];
 
           /*--- Determine the value of the current basis function in this point. ---*/
-          su2double tmpt = pow(tmp,muij);
+          su2double tmpt = 1.0;
+          if( muij ) tmpt = pow(tmp,muij);
+
           V[ii] = tmpt*NormJacobi(i,0,0,a)*NormJacobi(j,0,0,b)
                 * NormJacobi(k,2*(muij+1),0,c);
         }
@@ -1732,7 +1763,7 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Pyramid(unsigned short      
                 singularities are divided out of the expression.  ---*/
           VDr[ii] = dfa*gb*hc;
           VDs[ii] = fa*dgb*hc;
-          if(muij > 0)
+          if(muij > 1)
           {
             su2double tmpt = pow(tmp, (muij-1));
             VDr[ii] *= tmpt;
@@ -1746,8 +1777,15 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Pyramid(unsigned short      
                 divided out of the expression.
                 The first part is the derivative of the basis function w.r.t. c,
                 which is equal to t.       --*/
-          VDt[ii] = dhc*pow(tmp, muij);
-          if(muij > 0) VDt[ii] -= 0.5*muij*hc*pow(tmp, (muij-1));
+          VDt[ii] = dhc;
+          if(muij > 0) VDt[ii] *= pow(tmp, muij);
+
+          if(muij > 0) {
+            su2double tmpt = 0.5*muij*hc;
+            if(muij > 1) tmpt *= pow(tmp, (muij-1));
+            VDt[ii] -= tmpt;
+          }
+
           VDt[ii] *= fa*gb;
 
           /*--- Add the contribution from the derivative of the basis function
@@ -1801,7 +1839,9 @@ void FEMStandardElementBaseClass::Vandermonde3D_Prism(unsigned short          nP
           su2double b = s[l];
 
           /*--- Determine the value of the current basis function in this point. ---*/
-          su2double tmp = pow((1.0-b),i);
+          su2double tmp = 1.0;
+          if( i ) tmp = pow((1.0-b),i);
+
           V[ii] = sqrt(2.0)*tmp*NormJacobi(i,0,0,a)*NormJacobi(j,2*i+1,0,b)
                 * NormJacobi(k,0,0,t[l]);
         }
@@ -1867,12 +1907,16 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Prism(unsigned short        
           VDs[ii] = VDr[ii];
           if(i > 0)
           {
-            su2double tmp = pow((1.0-b), (i-1));
-            VDr[ii]       = 2.0*tmp*VDr[ii];
-            VDs[ii]       = (a+1.0)*tmp*VDs[ii] - i*tmp*sqrt(2.0)*fa*gb;
+            su2double tmp = 1.0;
+            if(i > 1) tmp = pow((1.0-b), (i-1));
+
+            VDr[ii] = 2.0*tmp*VDr[ii];
+            VDs[ii] = (a+1.0)*tmp*VDs[ii] - i*tmp*sqrt(2.0)*fa*gb;
           }
 
-          su2double tmp = pow((1.0-b), i);
+          su2double tmp = 1.0;
+          if(i > 0) tmp = pow((1.0-b), i);
+
           VDs[ii] += sqrt(2.0)*fa*dgb*tmp;
 
           /*--- Multiply VDr and VDs with the contribution from the structured
