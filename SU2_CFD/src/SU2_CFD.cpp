@@ -38,6 +38,9 @@
 #include "libxsmm.h"
 #endif
 
+/* Include file, needed for the runtime NaN catching. */
+//#include <fenv.h>
+
 using namespace std;
 
 int main(int argc, char *argv[]) {
@@ -57,6 +60,9 @@ int main(int argc, char *argv[]) {
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
+  // feenableexcept(FE_INVALID | FE_OVERFLOW);
 
   /*--- Initialize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM
