@@ -4905,10 +4905,10 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
 
 void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
 
-  unsigned long iProcessor;
   unsigned short NODES_PER_ELEMENT;
-  unsigned long nElem_Total = 0, Global_Index;
 
+  unsigned long iProcessor;
+  unsigned long nElem_Total = 0, Global_Index;
   unsigned long *Conn_Elem  = NULL;
   unsigned long *ID_Elems   = NULL;
 
@@ -4922,10 +4922,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
   int ind;
 #endif
 
-  /*--- Store the local number of this element type and the number of nodes
-   per this element type. In serial, this will be the total number of this
-   element type in the entire mesh. In parallel, it is the number on only
-   the current partition. ---*/
+  /*--- Store the number of nodes per this element type. ---*/
 
   switch (Elem_Type) {
     case TRIANGLE:
@@ -4953,8 +4950,9 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
 
   /*--- Prepare a mapping for local to global element index. ---*/
 
-  map<unsigned long,unsigned long> Local2GlobalElem;
+  map<unsigned long, unsigned long> Local2GlobalElem;
   map<unsigned long, unsigned long>::iterator MI;
+
   for (unsigned long ii=0; ii <geometry->GetGlobal_nElem(); ii++) {
     MI = geometry->Global_to_Local_Elem.find(ii);
     if (MI != geometry->Global_to_Local_Elem.end()) {
@@ -5028,8 +5026,8 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
     nElem_Recv[ii+1] += nElem_Recv[ii];
   }
 
-  /*--- Allocate memory to hold the connectivity that we are
-   sending. ---*/
+  /*--- Allocate memory to hold the connectivity and element IDs
+   that we are sending. ---*/
 
   unsigned long *connSend = NULL;
   connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
@@ -5065,7 +5063,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
 
         iProcessor = Color_List[Global_Index];
 
-        /*--- Load connectivity into the buffer for sending ---*/
+        /*--- Load connectivity and IDs into the buffer for sending ---*/
 
         if (nElem_Flag[iProcessor] != ii) {
 
@@ -5073,15 +5071,11 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
           unsigned long nn = index[iProcessor];
           unsigned long mm = idIndex[iProcessor];
 
-          /*--- Load the connectivity values. ---*/
+          /*--- Load the connectivity values. Note that elements are already
+          stored directly based on their global index for the nodes.---*/
 
           for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
-
-            /*--- Note that elements are already stored directly based on
-             their global index for the nodes. ---*/
-
             connSend[nn] = geometry->elem[ii]->GetNode(kk); nn++;
-
           }
 
           /*--- Global ID for this element. ---*/
@@ -5103,7 +5097,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
   delete [] index;
   delete [] idIndex;
 
-  /*--- Allocate the memory that we need for receiving the conn
+  /*--- Allocate the memory that we need for receiving the
    values and then cue up the non-blocking receives. Note that
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
@@ -5118,7 +5112,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
 
 #ifdef HAVE_MPI
   /*--- We need double the number of messages to send both the conn.
-   and the flags for the halo cells. ---*/
+   and the element IDs. ---*/
 
   send_req = new MPI_Request[2*nSends];
   recv_req = new MPI_Request[2*nRecvs];
@@ -5155,7 +5149,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
     }
   }
 
-  /*--- Repeat the process to communicate the halo flags. ---*/
+  /*--- Repeat the process to communicate the element IDs. ---*/
 
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
@@ -5171,7 +5165,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
     }
   }
 
-  /*--- Launch the non-blocking sends of the halo flags. ---*/
+  /*--- Launch the non-blocking sends of the element IDs. ---*/
 
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
@@ -5217,11 +5211,12 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
   delete [] recv_req;
 #endif
 
-  /*--- Store the connectivity for this rank in the proper data
-   structure. It will be loaded into the geometry objects in a later step. ---*/
+  /*--- Store the connectivity for this rank in the proper structure
+   It will be loaded into the geometry objects in a later step. ---*/
 
   if (nElem_Recv[size] > 0)
     Conn_Elem = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
+
   int count = 0; nElem_Total = 0;
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
     nElem_Total++;
@@ -5235,11 +5230,12 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
 
   if (nElem_Recv[size] > 0)
     ID_Elems = new unsigned long[nElem_Recv[size]];
+
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
       ID_Elems[ii] = idRecv[ii];
   }
 
-  /*--- Store the particular global element count in the class data,
+  /*--- Store the particular element count, IDs, & conn. in the class data,
    and set the class data pointer to the connectivity array. ---*/
 
   switch (Elem_Type) {
@@ -5373,7 +5369,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
 
-  /*--- Prepare to send colors. First check how many
+  /*--- Prepare to send colors, ids, and coords. First check how many
    messages we will be sending and receiving. Here we also put
    the counters into cumulative storage format to make the
    communications simpler. ---*/
@@ -5406,7 +5402,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   for (int ii = 0; ii < nDim*nPoint_Send[size]; ii++)
     coordSend[ii] = 0;
 
-  /*--- Create an index variable to keep track of our index
+  /*--- Create index variables to keep track of our index
    positions as we load up the send buffer. ---*/
 
   unsigned long *index = new unsigned long[size];
@@ -5415,7 +5411,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   unsigned long *coordIndex = new unsigned long[size];
   for (int ii=0; ii < size; ii++) coordIndex[ii] = nDim*nPoint_Send[ii];
 
-  /*--- Now load up our buffers with the Global IDs and colors. ---*/
+  /*--- Now load up our buffers with the colors, ids, and coords. ---*/
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     for (iNeighbor = 0; iNeighbor < Neighbors[iPoint].size(); iNeighbor++) {
@@ -5429,7 +5425,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
       iProcessor = Color_List[jPoint];
 
       /*--- If we have not visited this node yet, increment our
-       counters and load up the global ID and color. ---*/
+       counters and load up the colors, ids, and coords. ---*/
 
       if (nPoint_Flag[iProcessor] != (int)iPoint) {
 
@@ -5459,7 +5455,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   delete [] index;
   delete [] coordIndex;
 
-  /*--- Allocate the memory that we need for receiving the conn
+  /*--- Allocate the memory that we need for receiving the
    values and then cue up the non-blocking receives. Note that
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
@@ -5478,8 +5474,8 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
     coordRecv[ii] = 0;
 
 #ifdef HAVE_MPI
+  /*--- We need to triple the messages for colors, ids, and coords. ---*/
 
-  /*--- We need to triple the messages for IDs, colors, and coordinates. ---*/
   send_req = new MPI_Request[3*nSends];
   recv_req = new MPI_Request[3*nRecvs];
 
@@ -5561,7 +5557,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
     }
   }
 
-  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  /*--- Launch the non-blocking sends of the coordinates. ---*/
 
   iMessage = 2*nSends;
   for (int ii=0; ii<size; ii++) {
