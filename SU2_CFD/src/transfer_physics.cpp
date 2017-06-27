@@ -385,14 +385,16 @@ void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CG
                           CConfig *target_config, unsigned long Marker_Target,
                           unsigned long Vertex_Target, unsigned long Point_Target) {
 
-  unsigned short iVar, nTargetVar;
+  unsigned short iVar, iDonorVertex, nTargetVar;
   nTargetVar = target_solution->GetnPrimVar();
-
   /*--- Set the Sliding solution with the value of the Target Variable ---*/
 
-  for (iVar = 0; iVar < nTargetVar; iVar++)
-    target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, Target_Variable[iVar]);
+  iDonorVertex = target_solution->GetnSlidingStates(Marker_Target, Vertex_Target);
 
+  for (iVar = 0; iVar < nTargetVar+1; iVar++)
+    target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, iDonorVertex, Target_Variable[iVar]);
+
+  target_solution->SetnSlidingStates( Marker_Target, Vertex_Target, iDonorVertex + 1 );
 }
 
 CTransfer_ConjugateHeatVars::CTransfer_ConjugateHeatVars(void) : CTransfer() {

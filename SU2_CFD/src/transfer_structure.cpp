@@ -49,8 +49,12 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
   
   Physical_Constants = new su2double[val_nConst];
   Donor_Variable     = new su2double[val_nVar];
-  Target_Variable    = new su2double[val_nVar];
   
+  if( config->GetFSI_Simulation() )
+    Target_Variable = new su2double[val_nVar];
+  else
+    Target_Variable = new su2double[val_nVar+1];
+    
   nVar = val_nVar;
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -98,8 +102,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  int *Buffer_Recv_mark=NULL, iRank;
-  
+  int *Buffer_Recv_mark = NULL, iRank;
+
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[size];
 #endif
@@ -116,7 +120,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerInt     = (donor_config->GetMarker_n_FSIinterface())/2;
+  nMarkerInt     = (donor_config->GetMarker_n_ZoneInterface())/2;
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
   
@@ -142,8 +146,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     /*--- On the donor side ---*/
     
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-      if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerDonor) equals the index we are looping at ---*/
+      if ( donor_config->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
@@ -153,8 +157,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     /*--- On the target side ---*/
     
     for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( target_config->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( target_config->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
@@ -214,6 +218,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;                               // Retrieve total number of vertices on Donor marker
     Buffer_Send_nVertexTarget[0] = nLocalVertexTarget;                             // Retrieve total number of vertices on Target marker
+
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     if (rank == MASTER_NODE) Buffer_Recv_nVertexTarget = new unsigned long[size];  // Allocate memory to receive how many vertices are on each rank on the fluid side
 #ifdef HAVE_MPI
@@ -459,7 +464,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   }
   
   #ifdef HAVE_MPI
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL) 
     delete [] Buffer_Recv_mark;
   #endif
   
@@ -492,7 +497,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  int *Buffer_Recv_mark=NULL, iRank;
+  int *Buffer_Recv_mark = NULL, iRank;
   
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[size];
@@ -513,7 +518,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerInt     = ( donor_config->GetMarker_n_FSIinterface() ) / 2;
+  nMarkerInt     = ( donor_config->GetMarker_n_ZoneInterface() ) / 2;
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
   
@@ -531,8 +536,8 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor = NULL;
     
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-      if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerDonor) equals the index we are looping at ---*/
+      if ( donor_config->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
@@ -542,8 +547,8 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     /*--- On the target side we only have to identify the marker; then we'll loop over it and retrieve from the fluid points ---*/
     
     for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( target_config->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( target_config->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
         /*--- Store the identifier for the fluid marker ---*/
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -607,6 +612,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     }
 
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;                               // Retrieve total number of vertices on Donor marker
+
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
 
 #ifdef HAVE_MPI
@@ -777,7 +783,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   }
   
   #ifdef HAVE_MPI
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL) 
     delete [] Buffer_Recv_mark;
   #endif
   
@@ -811,8 +817,8 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  int *Buffer_Recv_mark=NULL, iRank;
-  
+  int *Buffer_Recv_mark = NULL, iRank;
+
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[size];
 #endif
@@ -832,7 +838,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerInt     = (donor_config->GetMarker_n_FSIinterface())/2;
+  nMarkerInt     = (donor_config->GetMarker_n_ZoneInterface())/2;
   nMarkerTarget  = target_config->GetnMarker_All();
   nMarkerDonor   = donor_config->GetnMarker_All();
   
@@ -856,8 +862,8 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     /*--- On the donor side ---*/
     
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-      if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerDonor) equals the index we are looping at ---*/
+      if ( donor_config->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
         /*--- Store the identifier for the structural marker ---*/
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -868,8 +874,8 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     /*--- On the target side we only have to identify the marker; then we'll loop over it and retrieve from the donor points ---*/
     
     for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( target_config->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( target_config->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
         /*--- Store the identifier for the fluid marker ---*/
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -933,6 +939,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     }
     
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;                   // Retrieve total number of vertices on Donor marker
+
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
 #ifdef HAVE_MPI
@@ -1053,7 +1060,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     long indexPoint_iVertex, Point_Target_Check=0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
-    
+
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
       
@@ -1068,9 +1075,19 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
         if (target_geometry->node[Point_Target]->GetDomain()) {
           TotalVertexDonor++;
           nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
+          Point_Target_Check = -1;
           
-          /*--- As we will be adding data, we need to set the variable to 0 ---*/
-          for (iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] = 0.0;
+          if(!fsi){
+                target_solution->SetnSlidingStates(Marker_Target, iVertex, nDonorPoints); // This is to allocate
+                target_solution->SetSlidingStateStructure(Marker_Target, iVertex);
+                target_solution->SetnSlidingStates(Marker_Target, iVertex, 0); // Reset counter to 0
+          }
+          else{
+                /*--- As we will be adding data, we need to set the variable to 0 ---*/
+                for (iVar = 0; iVar < nVar; iVar++) 
+                    Target_Variable[iVar] = 0.0;
+          }
+          
           
           /*--- For the number of donor points ---*/
           for (iDonorPoint = 0; iDonorPoint < nDonorPoints; iDonorPoint++) {
@@ -1088,15 +1105,22 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
 
             if (Point_Target_Check < 0 && fsi) {
-              cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-              exit(EXIT_FAILURE);
+                cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
+                exit(EXIT_FAILURE);
             }
-
-            for (iVar = 0; iVar < nVar; iVar++)
-              Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+            else{
+                for (iVar = 0; iVar < nVar; iVar++)
+                    Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
+                    
+                Target_Variable[nVar] = donorCoeff;
+                
+                //for (iVar = 0; iVar < nVar+1; iVar++) cout << Target_Variable[iVar] << "  "; cout << endl; getchar();
+                 
+                SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);  
+            }
           }
 
-          if (Point_Target_Check >= 0)
+          if (Point_Target_Check >= 0 && fsi)
             SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
         }
         
@@ -1118,7 +1142,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   }
   
   #ifdef HAVE_MPI
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL) 
     delete [] Buffer_Recv_mark;
   #endif
 }
@@ -1150,7 +1174,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   int rank = MASTER_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  int *Buffer_Recv_mark=NULL, iRank;
+  int *Buffer_Recv_mark = NULL, iRank;
   
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[size];
@@ -1168,7 +1192,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerInt     = (donor_config->GetMarker_n_FSIinterface())/2;
+  nMarkerInt     = (donor_config->GetMarker_n_ZoneInterface())/2;
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
   
@@ -1194,8 +1218,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     /*--- On the donor side ---*/
     
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-      if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerDonor) equals the index we are looping at ---*/
+      if ( donor_config->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
         /*--- Store the identifier for the structural marker ---*/
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -1206,8 +1230,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     /*--- On the target side we only have to identify the marker; then we'll loop over it and retrieve from the donor points ---*/
     
     for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( target_config->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( target_config->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
         /*--- Store the identifier for the fluid marker ---*/
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -1361,6 +1385,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
           /*--- As we will be adding data, we need to set the variable to 0 ---*/
           for (iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] = 0.0;
           
+          Point_Target_Check = -1;
+          
           /*--- For the number of donor points ---*/
           for (iDonorPoint = 0; iDonorPoint < nDonorPoints; iDonorPoint++) {
             
@@ -1404,7 +1430,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   }
 
   #ifdef HAVE_MPI
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL) 
     delete [] Buffer_Recv_mark;
   #endif
   
