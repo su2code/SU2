@@ -4,5 +4,5 @@
         ignore = dirty
 [submodule "externals/codi"]
 	path = externals/codi
-	url = https://github.com/scisompkl/CoDiPack
+	url = https://github.com/scicompkl/CoDiPack
 	ignore = dirty
