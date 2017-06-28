@@ -40,12 +40,13 @@ check_PROGRAMS += aniso_viscous_jacobian
 check_PROGRAMS += aniso_viscous_jacobian_compare
 check_PROGRAMS += aniso_viscous_residual_test
 check_PROGRAMS += load_hybrid_constants_test
+check_PROGRAMS += eigensolver_test
 
 # Eventually these will likely be required
 AM_CPPFLAGS =
-AM_CPPFLAGS += -I$(top_srcdir)/Common/include
+AM_CPPFLAGS += -I$(top_srcdir)/Common/include 
 AM_CPPFLAGS += -I$(top_srcdir)/SU2_CFD/include
-AM_CPPFLAGS += @su2_externals_INCLUDES@
+AM_CPPFLAGS += @su2_externals_INCLUDES@ @LAPACK_CXX@
 
 #AM_LDFLAGS = 
 #LIBS = 
@@ -53,7 +54,7 @@ AM_CPPFLAGS += @su2_externals_INCLUDES@
 LDADD  =
 LDADD += $(top_builddir)/Common/lib/libSU2.a
 LDADD += $(top_builddir)/SU2_CFD/obj/libSU2Core.a
-LDADD += @su2_externals_LIBS@
+LDADD += @su2_externals_LIBS@ @LAPACK_LD@
 
 # Test sources
 aniso_viscous_flux_inc_SOURCES         = aniso_viscous_flux_inc.cpp
@@ -62,6 +63,7 @@ aniso_viscous_jacobian_SOURCES         = aniso_viscous_jacobian.cpp
 aniso_viscous_jacobian_compare_SOURCES = aniso_viscous_jacobian_compare.cpp
 aniso_viscous_residual_test_SOURCES    = aniso_viscous_residual_test.cpp
 load_hybrid_constants_test_SOURCES     = load_hybrid_constants_test.cpp
+eigensolver_test_SOURCES               = eigensolver_test.cpp
 
 # Tests to be run
 TESTS  =
@@ -71,6 +73,7 @@ TESTS += aniso_viscous_jacobian
 TESTS += aniso_viscous_jacobian_compare
 TESTS += aniso_viscous_residual_test
 TESTS += load_hybrid_constants_test
+TESTS += eigensolver_test
 
 # Any of above we expect to fail?
 #XFAIL_TESTS =

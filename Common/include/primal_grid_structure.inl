@@ -80,6 +80,10 @@ inline void CPrimalGrid::SetNode(unsigned short val_node, unsigned long val_poin
 
 inline su2double** CPrimalGrid::GetResolutionTensor(void) { return ResolutionTensor; }
 
+inline su2double** CPrimalGrid::GetResolutionVectors(void) { return ResolutionVectors; }
+
+inline su2double* CPrimalGrid::GetResolutionValues(void) { return ResolutionValues; }
+
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 
 inline unsigned long CVertexMPI::GetNode(unsigned short val_node) { return Nodes[val_node]; }

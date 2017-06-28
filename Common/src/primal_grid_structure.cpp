@@ -44,13 +44,25 @@ CPrimalGrid::CPrimalGrid(void) {
 	Coord_FaceElems_CG = NULL;
   GlobalIndex = 0;
 	ResolutionTensor = NULL;
+	ResolutionValues = NULL;
+	ResolutionVectors = NULL;
 }
 
 CPrimalGrid::~CPrimalGrid() {
+  unsigned short iDim;
 
 	if (Nodes != NULL) delete[] Nodes;
 	if (Coord_CG != NULL) delete[] Coord_CG;
   if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
+  if (ResolutionValues != NULL) delete[] ResolutionValues;
+  if (ResolutionVectors != NULL) {
+    for (iDim = 0; iDim < nDim; iDim++) delete [] ResolutionVectors[iDim];
+    delete [] ResolutionVectors;
+  }
+  if (ResolutionTensor != NULL) {
+    for (iDim = 0; iDim < nDim; iDim++) delete [] ResolutionTensor[iDim];
+    delete [] ResolutionTensor;
+  }
 }
 
 void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
@@ -97,8 +109,11 @@ void CPrimalGrid::SetResolutionTensor(su2double** val_coord) {
 
   /*--- Allocate Resolution Tensor ---*/
   ResolutionTensor = new su2double* [nDim];
+  ResolutionValues = new su2double[nDim];
+  ResolutionVectors = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     ResolutionTensor[iDim] = new su2double [nDim];
+    ResolutionVectors[iDim] = new su2double[nDim];
     for (jDim = 0; jDim < nDim; ++jDim) {
       ResolutionTensor[iDim][jDim] = 0.0;
     }
@@ -126,6 +141,14 @@ void CPrimalGrid::SetResolutionTensor(su2double** val_coord) {
     for (jDim = 0; jDim < nDim; jDim++) {
       if (iDim == jDim) ResolutionTensor[iDim][jDim] =
           coord_max[iDim] - coord_min[iDim];
+    }
+  }
+
+  /*--- Record calculation values in values and vectors ---*/
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    ResolutionValues[iDim] = coord_max[iDim] - coord_min[iDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      ResolutionVectors[iDim][jDim] = (iDim == jDim);
     }
   }
 
@@ -433,10 +456,14 @@ void CQuadrilateral::SetResolutionTensor(su2double **val_coord) {
 
   /*-- Allocate ResolutionTensor --*/
   ResolutionTensor = new su2double* [nDim];
+  ResolutionValues = new su2double[nDim];
+  ResolutionVectors = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     ResolutionTensor[iDim] = new su2double [nDim];
+    ResolutionVectors[iDim] = new su2double [nDim];
     for (jDim = 0; jDim < nDim; ++jDim) {
       ResolutionTensor[iDim][jDim] = 0.0;
+      ResolutionVectors[iDim][jDim] = 0.0;
     }
   }
 
@@ -518,6 +545,14 @@ void CQuadrilateral::SetResolutionTensor(su2double **val_coord) {
               eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
         }
       }
+    }
+  }
+
+  /*--- Record calculation values in values and vectors ---*/
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    ResolutionValues[iDim] = eigvalues[iDim][iDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      ResolutionVectors[iDim][jDim] = eigvecs[iDim][jDim];
     }
   }
 
@@ -649,8 +684,6 @@ CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
 	for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
 		Neighbor_Elements[iNeighbor_Elements]=-1;
 	}
-
-	ResolutionTensor = NULL;
   
 }
 
@@ -660,13 +693,6 @@ CHexahedron::~CHexahedron() {
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
-  
-  if (ResolutionTensor != NULL) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      delete [] ResolutionTensor[iDim];
-    }
-    delete [] ResolutionTensor;
-  }
 }
 
 void CHexahedron::Change_Orientation(void) {
@@ -704,8 +730,11 @@ void CHexahedron::SetResolutionTensor(su2double** val_coord) {
 
   /*-- Allocate ResolutionTensor --*/
   ResolutionTensor = new su2double* [nDim];
+  ResolutionValues = new su2double[nDim];
+  ResolutionVectors = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     ResolutionTensor[iDim] = new su2double [nDim];
+    ResolutionVectors[iDim] = new su2double[nDim];
     for (jDim = 0; jDim < nDim; ++jDim) {
       ResolutionTensor[iDim][jDim] = 0.0;
     }
@@ -806,6 +835,14 @@ void CHexahedron::SetResolutionTensor(su2double** val_coord) {
               *eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
         }
       }
+    }
+  }
+
+  /*--- Record calculation values in values and vectors ---*/
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    ResolutionValues[iDim] = eigvalues[iDim][iDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      ResolutionVectors[iDim][jDim] = eigvecs[iDim][jDim];
     }
   }
 

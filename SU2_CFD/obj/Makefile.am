@@ -183,6 +183,13 @@ su2_cfd_cxx_flags += @ZLIB_CXX@
 su2_cfd_ldadd += @ZLIB_LD@
 # endif
 
+# if BUILD_LAPACK
+libSU2Core_cxx_flags += @LAPACK_CXX@
+libSU2Core_libadd += @LAPACK_LD@
+su2_cfd_cxx_flags += @LAPACK_CXX@
+su2_cfd_ldadd += @LAPACK_LD@
+# endif
+
 if BUILD_NORMAL
 libSU2Core_a_SOURCES = $(libSU2Core_sources)
 libSU2Core_a_CXXFLAGS = $(libSU2Core_cxx_flags)

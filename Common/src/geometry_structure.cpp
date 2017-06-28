@@ -9601,6 +9601,7 @@ void CGeometry::SetResolutionTensor(void) {
   unsigned long elem_poin;
   su2double temp_value;
   su2double** temp_tensor;
+  su2double* temp_vector;
   su2double **Coord;
 
   /*--- Compute the resolution tensor for primal mesh elements ---*/
@@ -9638,6 +9639,30 @@ void CGeometry::SetResolutionTensor(void) {
           temp_value = temp_tensor[iDim][jDim] / (node[iPoint]->GetnElem());
           node[iPoint]->AddResolutionTensor(iDim, jDim, temp_value);
         }
+      }
+    }
+  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      iElem_global = node[iPoint]->GetElem(iElem);
+      temp_tensor = elem[iElem_global]->GetResolutionVectors();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          temp_value = temp_tensor[iDim][jDim] / (node[iPoint]->GetnElem());
+          node[iPoint]->AddResolutionVector(iDim, jDim, temp_value);
+        }
+      }
+    }
+  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      iElem_global = node[iPoint]->GetElem(iElem);
+      temp_vector = elem[iElem_global]->GetResolutionValues();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        temp_value = temp_vector[iDim] / (node[iPoint]->GetnElem());
+        node[iPoint]->AddResolutionValue(iDim, temp_value);
       }
     }
   }

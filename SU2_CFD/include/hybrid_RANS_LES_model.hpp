@@ -317,9 +317,6 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
 
   vector<vector<su2double> > BuildMtilde(su2double** M);
 
-  void SolveEigen(su2double** M, vector<su2double> eigvalues,
-                  vector<vector<su2double> > eigvectors);
-
  public:
 
   /**
@@ -409,6 +406,10 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
    * \return Constants for the numerical fit for the resolution tensor.
    */
   vector<vector<su2double> > GetConstants();
+
+
+  void SolveEigen(su2double** M, vector<su2double> eigvalues,
+                  vector<vector<su2double> > eigvectors);
 };
 
 /*!

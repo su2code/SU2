@@ -34,6 +34,10 @@
 #include "../include/hybrid_RANS_LES_model.hpp"
 #include "../include/numerics_structure.hpp"
 #include "../include/solver_structure.hpp"
+#ifdef HAVE_LAPACK
+#include "mkl_lapacke.h"
+#endif
+
 
 CHybrid_Visc_Anisotropy::CHybrid_Visc_Anisotropy(unsigned short nDim)
     : nDim(nDim) {
@@ -111,9 +115,11 @@ CHybrid_Mediator::CHybrid_Mediator(int nDim, CConfig* config, string filename)
 
   /*--- Load the constants for mapping M to M-tilde ---*/
 
-  if (filename == "") filename = config->GetHybrid_Const_FileName();
-  constants.resize(nDim, std::vector<su2double>(15));
-  constants = LoadConstants(filename);
+  if (filename == "") {
+    cout << "WARNING: No file given for hybrid RANS/LES constants." << endl;
+  } else {
+    constants = LoadConstants(filename);
+  }
 }
 
 CHybrid_Mediator::~CHybrid_Mediator() {
@@ -220,8 +226,11 @@ void CHybrid_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
 
 su2double CHybrid_Mediator::CalculateRk(su2double** Q,
                                         su2double min_resolved) {
-  // TODO: Implement function here to find max eigienvalue of Q.
-  su2double max_eigenvalue_Q = 1.0;
+  vector<su2double> eigvalues_Q;
+  vector<vector<su2double> > eigvectors_Q;
+  SolveEigen(Q, eigvalues_Q, eigvectors_Q);
+  su2double max_eigenvalue_Q = *max_element(eigvalues_Q.begin(),
+                                            eigvalues_Q.end());
   su2double max_unresolved = C_sf*TWO3*max_eigenvalue_Q;
   return max_unresolved / min_resolved;
 }
@@ -311,10 +320,12 @@ vector<su2double> CHybrid_Mediator::GetEigValues_G(vector<su2double> eigvalues_M
 }
 
 vector<vector<su2double> > CHybrid_Mediator::BuildMtilde(su2double** M) {
+
+#ifdef HAVE_LAPACK
   /*--- Get the grid based resolution tensor and its eigensystem ---*/
   vector<su2double> eigvalues_M(3);
   vector<vector<su2double> > eigvectors_M(3, vector<su2double>(3));
-  SolveEigen(ResolutionTensor, eigvalues_M, eigvectors_M);
+  SolveEigen(M, eigvalues_M, eigvectors_M);
 
   /*--- Solve for the modified resolution tensor  ---*/
   vector<su2double> eigvalues_Mtilde = GetEigValues_Mtilde(eigvalues_M);
@@ -323,7 +334,7 @@ vector<vector<su2double> > CHybrid_Mediator::BuildMtilde(su2double** M) {
     D[iDim][iDim] = eigvalues_Mtilde[iDim];
   }
 
-  /* --- Assuming modifed resolution tensor is aligned with the resolution
+  /* --- Assuming modified resolution tensor is aligned with the resolution
    * tensor, fill in the values ---*/
   vector<vector<su2double> > Mtilde(3, vector<su2double>(3));
   for (int iDim = 0; iDim < nDim; iDim++) {
@@ -338,6 +349,11 @@ vector<vector<su2double> > CHybrid_Mediator::BuildMtilde(su2double** M) {
     }
   }
   return Mtilde;
+#else
+  cout << "Eigensolver without LAPACK not implemented; please use LAPACK." << endl;
+  exit(EXIT_FAILURE);
+#endif
+
 }
 
 vector<su2double> CHybrid_Mediator::GetEigValues_Mtilde(vector<su2double> eigvalues_M) {
@@ -366,7 +382,42 @@ vector<su2double> CHybrid_Mediator::GetEigValues_Mtilde(vector<su2double> eigval
 void CHybrid_Mediator::SolveEigen(su2double** M,
                                   vector<su2double> eigvalues,
                                   vector<vector<su2double> > eigvectors) {
-  // FIXME: Fill in this wrapper for eigenvalue calculations
+#ifdef HAVE_LAPACK
+  unsigned short iDim, jDim;
+  int lda=nDim, ldvl=nDim, ldvr=nDim;
+  int info, lwork;
+  su2double wkopt;
+  su2double* work;
+  su2double wr[nDim], wi[nDim], vl[ldvl*nDim], vr[ldvr*nDim];
+  su2double mat[nDim*nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim< nDim; jDim++) {
+      mat[iDim*nDim+jDim] = M[iDim][jDim];
+    }
+  }
+
+  /*--- Call LAPACK routines ---*/
+  info = LAPACKE_dgeev(LAPACK_ROW_MAJOR, 'N', 'V', nDim, mat, lda, wr, wi, vl, ldvl, vr, ldvr);
+  if (info != 0) {
+    cout << "ERROR: The solver failed to compute eigenvalues." << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- Rewrite arrays to eigenvalues/vectors output ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    eigvalues[iDim] = wr[iDim];
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      eigvectors[iDim][jDim] = vr[iDim*nDim+jDim];
+    }
+  }
+#else
+  cout << "Eigensolver without LAPACK not implemented; please use LAPACK." << endl;
+  exit(EXIT_FAILURE);
+#endif
+
 }
 
 vector<vector<su2double> > CHybrid_Mediator::GetConstants() {

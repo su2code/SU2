@@ -173,6 +173,8 @@ private:
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
   su2double** ResolutionTensor;       /*!< \brief A rank-2 tensor representing separation distances across the CV */
   su2double*** ResolutionTensorGradient; /*!< \brief A rank-3 tensor representing gradients in the resolution. */
+  su2double* ResolutionValues;        /*! < \brief The approximate cell resolution in the three "principal directions" */
+  su2double** ResolutionVectors;      /*! < \brief An orthogonal set of "principal directions" for the cell-to-cell spacings */
 
 public:
 	
@@ -797,6 +799,15 @@ public:
    *         distances across the cell in the global coordinates.
    */
   su2double*** GetResolutionGradient();
+
+  void AddResolutionValue(unsigned short iDim, su2double scalar_value);
+
+  void AddResolutionVector(unsigned short iDim, unsigned short jDim,
+                                   su2double scalar_value);
+
+  su2double* GetResolutionValues(void);
+
+  su2double** GetResolutionVectors(void);
 };
 
 /*! 
