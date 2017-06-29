@@ -9619,6 +9619,12 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
     nSpanWiseSections[marker_flag-1] = 1;
     //TODO (turbo) make it more genral
     if(marker_flag == OUTFLOW)	config->SetnSpanWiseSections(1);
+
+    /*---Initilize the vector of span-wise values that will be ordered ---*/
+    SpanWiseValue[marker_flag -1] = new su2double[1];
+    for (iSpan = 0; iSpan < 1; iSpan++){
+      SpanWiseValue[marker_flag -1][iSpan] = 0;
+    }
   }
   else{
     if(SpanWise_Kind == AUTOMATIC){
