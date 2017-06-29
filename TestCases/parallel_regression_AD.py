@@ -111,7 +111,7 @@ def main():
     discadj_trans_stator.su2_exec  = "parallel_computation.py -f"
     discadj_trans_stator.timeout   = 1600
     discadj_trans_stator.tol       = 0.00001
-    discadj_trans_stator.append(discadj_trans_stator)
+    test_list.append(discadj_trans_stator)
     
     ######################################
     ### RUN TESTS                      ###
