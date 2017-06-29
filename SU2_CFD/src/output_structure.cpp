@@ -10782,13 +10782,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Pressure");
     }
     
-    nVar_Par += 3;
+    nVar_Par += 4;
     Variable_Names.push_back("Temperature");
 		if (config->GetOutput_FileFormat() == PARAVIEW){
 			Variable_Names.push_back("Pressure_Coefficient");
 		} else {
 			Variable_Names.push_back("C<sub>p</sub>");
 		}
+	Variable_Names.push_back("Gamma");
     Variable_Names.push_back("Mach");
     
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
@@ -11008,12 +11009,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); iVar++;
           Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; iVar++;
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPrimitive(nDim+9); iVar++;
           Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
           solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
         }
         if (incompressible) {
           Local_Data[jPoint][iVar] = 0.0; iVar++;
           Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; iVar++;
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPrimitive(nDim+9); iVar++;
           Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
           sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity()*config->GetDensity_Ref())); iVar++;
         }

@@ -10712,6 +10712,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
           }
           Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+
           break;
 
 
@@ -10722,6 +10723,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
           
       }
+
       /*--- Compute P (matrix of right eigenvectors) ---*/
       conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
       
@@ -10766,21 +10768,22 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       }
 
       /*--- Compute the boundary state u_b using characteristics ---*/
-		  for (iVar = 0; iVar < nVar; iVar++)
-		  {
-			u_b[iVar] = u_i[iVar];
 
-			for (jVar = 0; jVar < nVar; jVar++)
-			{
-			  if (Lambda_i[jVar] < 0)
-			  {
-				u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
+      for (iVar = 0; iVar < nVar; iVar++)
+      {
+        u_b[iVar] = u_i[iVar];
+        
+        for (jVar = 0; jVar < nVar; jVar++)
+        {
+          if (Lambda_i[jVar] < 0)
+          {
+            u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
+            
+          }
+        }
+      }
 
-			  }
-			}
-		  }
-      
-      
+
       /*--- Compute the thermodynamic state in u_b ---*/
       Density_b = u_b[0];
       Velocity2_b = 0;

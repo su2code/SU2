@@ -317,7 +317,9 @@ CVanDerWaalsGas_Generic::CVanDerWaalsGas_Generic(su2double gamma, su2double R, s
   a = 27.0/64.0*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
   b = 1.0/8.0*Gas_Constant*Tstar/Pstar;
   Zed = 1.0;
+
   TstarCrit = Tstar;
+
 }
 
 
@@ -379,7 +381,8 @@ void CVanDerWaalsGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
   Density = rho;
   StaticEnergy = e;
-  Cv    = Gas_Constant/(Gamma-1);
+  HeatCapacity->Set_Cv0 (TstarCrit);
+  Cv    = HeatCapacity->Get_Cv0 ();
 
   Temperature = fabs((StaticEnergy + a*Density)/ Cv);
 
@@ -397,6 +400,7 @@ void CVanDerWaalsGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
   while(error > toll && count_T<ITMAX);
 
+
   if (count_T==ITMAX) {
 	 cout <<"Too many iterations for T in e-rho call" << endl;
   }
@@ -406,7 +410,7 @@ void CVanDerWaalsGas_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
   SetGamma_Trho ();
 
-  if (Gamma > 3 || Gamma < 1) {
+  if (Gamma > 6 || Gamma < 1) {
 	  cout << "Warning: Gamma value " << Gamma << ", check function SetGamma_Trho()" << endl;
 	  cout << "Ideal gas correction adopted, Cp = Cv + R" << endl;
 	  Cp = Cv + Gas_Constant;
@@ -436,25 +440,29 @@ void CVanDerWaalsGas_Generic::SetTDState_hs (su2double h, su2double s ) {
     su2double cons_s, cons_h;
 
 
-    Cp = Gamma*Gas_Constant /(Gamma - 1);
-    T_new = TstarCrit;//abs(h)/Cp;
+    HeatCapacity->Set_Cv0 (TstarCrit);
+    Cp = HeatCapacity->Get_Cv0 ();
+    T_new = abs(h)/Cp;
+
 
 	  do{
 		T = T_new;
 		HeatCapacity->Set_Cv0 (T);
 		Cv = HeatCapacity->Get_Cv0 ();
+
 		v = exp((s - Cv*log(T)) / Gas_Constant)+ b ;
-		T_new = (h+ 2*a/v)/(Cv + Gas_Constant * v/(v-b));
+
+		T_new = 0.9*T + 0.1*(h+ 2*a/v)/(Cv + Gas_Constant * v/(v-b));
+
 		error = abs(T - T_new)/T;
 		count_T++;
 	  }while(error >toll && count_T < ITMAX);
-
-	T= T_new;
 
 	HeatCapacity->Set_Cv0 (T);
 	Cv = HeatCapacity->Get_Cv0 ();
 
 	v = exp((s - Cv*log(T)) / Gas_Constant)+ b;
+
 
 	rho = 1/v;
 
@@ -506,7 +514,8 @@ void CVanDerWaalsGas_Generic::SetTDState_Ps (su2double P, su2double s) {
   unsigned short count=0, count_T = 0, NTRY=10, ITMAX=100;
 
 
-  T_new   = TstarCrit;//exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+  T_new   = TstarCrit; //exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+
 
   do{
 	  T = T_new;

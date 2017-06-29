@@ -449,6 +449,8 @@ bool CEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
   check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
   check_temp = SetTemperature(FluidModel->GetTemperature());
   
+  SetGamma (FluidModel->GetGamma());
+
   /*--- Check that the solution has a physical meaning ---*/
   
   if (check_dens || check_press || check_sos || check_temp) {
@@ -470,6 +472,7 @@ bool CEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
     SetPressure(FluidModel->GetPressure());
     SetSoundSpeed(FluidModel->GetSoundSpeed2());
     SetTemperature(FluidModel->GetTemperature());
+
 
     RightVol = false;
     
@@ -696,9 +699,9 @@ bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel
   /*--- Set specific heat ---*/
 
   SetSpecificHeatCp(FluidModel->GetCp());
-  
 
   SetGamma (FluidModel->GetGamma());
+
 
 
   return RightVol;

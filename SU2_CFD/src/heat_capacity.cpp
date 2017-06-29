@@ -47,6 +47,7 @@ CHeatCapacity::CHeatCapacity(CConfig *config) {
 	coeff_Cp0      = config->GetCoeff_HeatCapacity();
 
 	T_Total        = config->GetRiemann_Var2(config->GetMarker_All_TagBound(1));
+
 }
 
 CHeatCapacity::~CHeatCapacity(void) {
@@ -122,16 +123,11 @@ void CHeatCapacity_Dimensionless::Set_Cv0(su2double T) {
     } else {
         Cp0 = 0;
 
-    	T_limited = min(T*Tref, 600.0);
+        T_limited = T*Tref;
 
         for (i=0;i<5;i++) {
            Cp0 += coeff_Cp0[i] * pow(T_limited, i);
         }
-
-        // temporary limitation imposed between gamma values of 6 and 1.0001
-/*        if (Cp0 < coeff_Cp0[0] || Cp0 > 1.001*Gas_Constant/0.001)
-        	Cp0 = Gamma*Gas_Constant/(Gamma-1);
-*/
     }
 
     Cp0 = Cp0 / Gas_Constant * Gas_ConstantND;
