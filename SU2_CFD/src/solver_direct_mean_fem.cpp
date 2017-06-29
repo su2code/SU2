@@ -680,7 +680,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
     /* Carry out the vertex coloring of the graph. */
     vector<int> colorLocalDOFs;
-    GraphVertexColoring(nDOFsPerRank, nonZeroEntriesJacobian,
+    GraphVertexColoring(config, nDOFsPerRank, nonZeroEntriesJacobian,
                         nGlobalColors, colorLocalDOFs);
 
     /* Write a message that the all volume DOFs have been colored. */

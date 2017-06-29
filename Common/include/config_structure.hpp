@@ -453,7 +453,8 @@ private:
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
   Kind_FEM,			/*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,			/*!< \brief Finite element scheme for the flow equations. */
-  Kind_FEM_DG_Shock, /*!< \brief Shock capturing method for the FEM DG solver. */
+  Kind_FEM_DG_Shock,      /*!< \brief Shock capturing method for the FEM DG solver. */
+  Kind_Matrix_Coloring,   /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
@@ -3592,6 +3593,14 @@ public:
    * \return Kind of shock capturing method in FEM DG solver.
    */
   unsigned short GetKind_FEM_DG_Shock(void);
+
+  /*!
+   * \brief Get the kind of matrix coloring used for the sparse Jacobian computation.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of matrix coloring used.
+   */
+  unsigned short GetKind_Matrix_Coloring(void);
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
