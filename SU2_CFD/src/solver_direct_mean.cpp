@@ -10497,6 +10497,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
 
           FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+
           Density_e = FluidModel->GetDensity();
           StaticEnergy_e = FluidModel->GetStaticEnergy();
           Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
@@ -10638,6 +10639,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
           }
           Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+
           break;
           
         default:
@@ -10646,7 +10648,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           break;
           
       }
-      
+
       /*--- Compute P (matrix of right eigenvectors) ---*/
       conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
       
@@ -10704,8 +10706,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           }
         }
       }
-      
-      
+
+
+
       /*--- Compute the thermodynamic state in u_b ---*/
       Density_b = u_b[0];
       Velocity2_b = 0;

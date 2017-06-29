@@ -570,6 +570,7 @@ protected:
   su2double
       a, b, Zed;             /*!< \brief Parameters for the Dimensionless Equation. */
   su2double Cv, Cv0, Cp, Cp0; /* brief auxiliary variables for gamma evaluation*/
+  su2double TstarCrit;
 
 public:
 
