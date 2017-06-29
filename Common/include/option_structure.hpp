@@ -619,7 +619,7 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
  */
 enum ENUM_FEM {
   NO_FEM = 0,    /*!< \brief No finite element scheme is used. */
-  DG = 1,            /*!< \brief Discontinuous Galerkin numerical method. */
+  DG = 1             /*!< \brief Discontinuous Galerkin numerical method. */
 };
 static const map<string, ENUM_FEM> FEM_Map = CCreateMap<string, ENUM_FEM>
 ("NONE", NO_FEM)
@@ -630,11 +630,22 @@ static const map<string, ENUM_FEM> FEM_Map = CCreateMap<string, ENUM_FEM>
  */
 enum ENUM_SHOCK_CAPTURING_DG {
   NO_SHOCK_CAPTURING = 0,            /*!< \brief Shock capturing is not used. */
-  PERSSON = 1,                       /*!< \brief Per-Olof Persson's sub-cell shock capturing method. */
+  PERSSON = 1                        /*!< \brief Per-Olof Persson's sub-cell shock capturing method. */
 };
 static const map<string, ENUM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = CCreateMap<string, ENUM_SHOCK_CAPTURING_DG>
 ("NONE", NO_SHOCK_CAPTURING)
 ("PERSSON", PERSSON);
+
+/*!
+ * \brief types of matrix coloring to compute a sparse Jacobian matrix.
+ */
+enum ENUM_MATRIX_COLORING {
+  GREEDY_COLORING = 0,            /*!< \brief Greedy type of algorithm for the coloring. */
+  NATURAL_COLORING = 1            /*!< \brief One color for every DOF, very slow. Only to be used for debugging. */
+};
+static const map<string, ENUM_MATRIX_COLORING> MatrixColoring_Map = CCreateMap<string, ENUM_MATRIX_COLORING>
+("GREEDY_COLORING", GREEDY_COLORING)
+("NATURAL_COLORING", NATURAL_COLORING);
 
 /*!
  * \brief Spatial numerical order integration

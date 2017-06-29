@@ -35,6 +35,7 @@
 
 #include "./mpi_structure.hpp"
 #include "option_structure.hpp"
+#include "config_structure.hpp"
 #include <cstring>
 
 using namespace std;
@@ -45,6 +46,7 @@ using namespace std;
 
 /*!
  * \brief Function, which determines the colors for the vertices of the given graph.
+ * \param[in]  config             - Definition of the particular problem.
  * \param[in]  nVerticesPerRank   - Number of vertices of the graph per MPI-rank,
                                     cumulative storage format.
  * \param[in]  entriesVertices    - The entries in the graph of the local vertices
@@ -52,7 +54,8 @@ using namespace std;
  * \param[out] nGlobalColors      - Global number of colors in the graph.
  * \param[out] colorLocalVertices - The color of the local vertices of the graph.
  */
-void GraphVertexColoring(const vector<unsigned long>          &nVerticesPerRank,
+void GraphVertexColoring(CConfig                              *config,
+                         const vector<unsigned long>          &nVerticesPerRank,
                          const vector<vector<unsigned long> > &entriesVertices,
-		                     int                                  &nGlobalColors,
-			                   vector<int>                          &colorLocalVertices);
+                         int                                  &nGlobalColors,
+                         vector<int>                          &colorLocalVertices);
