@@ -571,6 +571,32 @@ def main():
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
     test_list.append(edge_PPR)
+    
+    ######################################
+    ### Turbomachinery                 ###
+    ######################################	
+
+    # Jones APU Turbocharger
+    Jones_tc           = TestCase('Jones_tc')
+    Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc.cfg_file  = "Jones.cfg"
+    Jones_tc.test_iter = 29
+    Jones_tc.test_vals = [-5.563844, -0.197626, 9.203914e+01, 7.085155e-01] #last 4 columns
+    Jones_tc.su2_exec  = "parallel_computation.py -f"
+    Jones_tc.timeout   = 1600
+    Jones_tc.tol       = 0.00001
+    test_list.append(Jones_tc)
+
+    # 2D axial stage
+    axial_stage2D           = TestCase('axial_stage2D')
+    axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
+    axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
+    axial_stage2D.test_iter = 100
+    axial_stage2D.test_vals = [-1.534374, 6.555997, 7.559178e+01, 7.911872e-01] #last 4 columns
+    axial_stage2D.su2_exec  = "parallel_computation.py -f"
+    axial_stage2D.timeout   = 1600
+    axial_stage2D.tol       = 0.00001
+    test_list.append(axial_stage2D)
 
     ######################################
     ### Sliding Mesh                   ###
