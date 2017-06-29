@@ -148,22 +148,31 @@ class CHybrid_Isotropic_Visc : public CHybrid_Visc_Anisotropy {
  */
 class CHybrid_Aniso_Q : public CHybrid_Visc_Anisotropy {
  protected:
-  su2double** Qstar;
-  su2double   Qstar_norm;
-  su2double   resolution_adequacy;
+  su2double** Qstar; /// \brief The approximate two-point structure function at the grid resolution
+  su2double   resolution_adequacy; /// \brief A measure of the ability of the grid to resolve LES
+  /***
+   * \brief Calculates a weight for RANS (vs. LES)
+   * @param r_k - The resolution adequacy
+   * @return The weight given to an isotropic, RANS style eddy viscosity
+   */
   su2double CalculateIsotropyWeight(su2double r_k);
+
  public:
+  /**
+   * \brief Constructor for the anisotropy model.
+   * \param[in] nDim - The number of dimensions (2D or 3D)
+   */
   CHybrid_Aniso_Q(unsigned short nDim);
   
   /**
    * \brief Sets the approximate structure function.
-   * \param val_approx_struct_func
+   * \param[in] val_approx_struct_func
    */
   void SetTensor(su2double** val_approx_struct_func);
 
   /**
    * \brief Sets the resolution adequacy parameter
-   * \param val_r_k
+   * \param[in] val_r_k
    */
   void SetScalar(su2double val_r_k);
 
@@ -292,7 +301,7 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
    * \brief Calculates the resolution inadequacy parameter
    * \param[in] Q - The approximate 2nd order structure function
    * \param[in] v2 - The v2 value from Durbin's k-eps-v2-f model
-   * @return The resolution inadequacy parameter
+   * \return The resolution inadequacy parameter
    */
   su2double CalculateRk(su2double** Q, su2double v2);
 
@@ -307,14 +316,35 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
                                  su2double** PrimVar_Grad,
                                  su2double** Q);
 
+  /*!
+   * \brief Loads the model fit constants from *.dat files
+   * \param[in] filename - The base name for the files (e.g. [filename]0.dat)
+   * \return The 3 sets of constants pulled from the files.
+   */
   vector<vector<su2double> > LoadConstants(string filename);
 
-  vector<su2double> GetFunctions_G(vector<su2double> eig_values_M);
-
+  /*!
+   * \brief Transforms eigenvalues of the resolution tensor to eigenvalues of
+   *        the gradient-gradient tensor.
+   * \param[in] eig_values_M - Eigenvalues of the resolution tensor.
+   * \return The eigenvalues of the gradient-gradient tensor.
+   */
   vector<su2double> GetEigValues_G(vector<su2double> eig_values_M);
 
+  /*!
+   * \brief Calculates the eigenvalues of a modified resolution tensor.
+   * \param eig_values_M - Eigenvalues of the grid-based resolution tensor.
+   * \return Eigenvalues of a new tensor, based on the resolution tensor, that
+   *         corrects for the effects of anisotropic filtering.
+   */
   vector<su2double> GetEigValues_Mtilde(vector<su2double> eig_values_M);
 
+  /*!
+   * \brief Builds a modified resolution tensor.
+   * \param M - The grid-based resolution tensor, without modification
+   * \return A new tensor, based on the resolution tensor, that corrects
+   *         for the effects of anisotropic filtering.
+   */
   vector<vector<su2double> > BuildMtilde(su2double** M);
 
  public:
@@ -408,8 +438,8 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   vector<vector<su2double> > GetConstants();
 
 
-  void SolveEigen(su2double** M, vector<su2double> eigvalues,
-                  vector<vector<su2double> > eigvectors);
+  void SolveEigen(su2double** M, vector<su2double> &eigvalues,
+                  vector<vector<su2double> > &eigvectors);
 };
 
 /*!
@@ -507,8 +537,18 @@ class CHybrid_Dummy_Mediator : public CAbstract_Hybrid_Mediator {
                              unsigned short jPoint);
 };
 
-// Template definitions:
+/*--- Template definitions:
+ * These must be placed with the template declarations.  They can be kept here
+ * or moved to an *.inl file that is included in this header. ---*/
 
+/**
+ * \brief Uses a resolution tensor and a gradient-gradient tensor to build an
+ *        approximate two-point structure function tensor
+ * \param[in] ResolutionTensor - A tensor representing cell-cell distances
+ * \param[in] PrimVar_Grad - The gradient in the resolved velocity field.
+ * \param[out] Q - An approximate resolution-scale two-point second-order
+ *                 structure function.
+ */
 template <class T>
 void CHybrid_Mediator::CalculateApproxStructFunc(T ResolutionTensor,
                                                  su2double** PrimVar_Grad,

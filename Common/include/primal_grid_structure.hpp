@@ -297,8 +297,18 @@ public:
    */
   su2double** GetResolutionTensor(void);
 
+  /*!
+   * \brief Gets the set of values for the resolution tensor.
+   * \return The cell-to-cell distances along the "principal directions" of the
+   *         current cell.
+   */
   su2double* GetResolutionValues(void);
 
+  /**
+   * \brief Gets the set of vectors for the resolution tensor.
+   * \return Vectors representing the "principal directions" for the
+   * cell-to-cell separations.
+   */
   su2double** GetResolutionVectors(void);
 };
 

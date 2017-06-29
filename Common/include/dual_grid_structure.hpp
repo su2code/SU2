@@ -800,13 +800,42 @@ public:
    */
   su2double*** GetResolutionGradient();
 
+  /*!
+   * \brief Adds to the existing set of values for the resolution tensor.
+   *
+   * These values can be thought of as cell-to-cell distances along the
+   * "principal directions".
+   *
+   * \param[in] iDim - The first array index of the entry to be added.
+   * \param[in] scalar_value - The value to be added.
+   */
   void AddResolutionValue(unsigned short iDim, su2double scalar_value);
 
+  /*!
+   * \brief Adds to the existing set of vectors for the resolution tensor.
+   *
+   * These vectors can be thought of as "principal directions" for the
+   * cell-to-cell separations.
+   *
+   * \param[in] iDim - The first array index of the entry to be added.
+   * \param[in] jDim - The second array index of the entry to be added.
+   * \param[in] scalar_value - The value to be added.
+   */
   void AddResolutionVector(unsigned short iDim, unsigned short jDim,
                                    su2double scalar_value);
 
+  /*!
+   * \brief Gets the set of values for the resolution tensor.
+   * \return The cell-to-cell distances along the "principal directions" of the
+   *         current cell.
+   */
   su2double* GetResolutionValues(void);
 
+  /**
+   * \brief Gets the set of vectors for the resolution tensor.
+   * \return Vectors representing the "principal directions" for the
+   * cell-to-cell separations.
+   */
   su2double** GetResolutionVectors(void);
 };
 

@@ -119,6 +119,26 @@ int main() {
     if (return_flag != 0) break;
   }
 
+  // Check the eigenvalues
+  for (int iDim = 0; iDim < nDim; iDim++) {
+      if (abs(expected_values[iDim] - eigvalues[iDim]) > tol) {
+        cout << "ERROR: Eigenvalues were not calculated correctly." << endl;
+        cout << "    Calculated:" << endl;
+        cout << "    [";
+        cout << eigvalues[0] << ", ";
+        cout << eigvalues[1] << ", ";
+        cout << eigvalues[2] << "]" << endl;
+        cout << "    Expected:" << endl;
+        cout << "    [";
+        cout << expected_values[0] << ", ";
+        cout << expected_values[1] << ", ";
+        cout << expected_values[2] << "]" << endl;
+        return_flag = 1;
+        break;
+    }
+    if (return_flag != 0) break;
+  }
+
   /**-------------------------------------------------------------------------
    * TEARDOWN
    *

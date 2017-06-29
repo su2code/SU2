@@ -77,21 +77,22 @@ CHybrid_Aniso_Q::CHybrid_Aniso_Q(unsigned short nDim)
 
 void CHybrid_Aniso_Q::CalculateViscAnisotropy() {
   su2double w_RANS = CalculateIsotropyWeight(resolution_adequacy);
-
-  Qstar_norm = (Qstar[0][0] + Qstar[1][1] + Qstar[2][2])/3.0;
+  su2double w_LES = (1.0 - w_RANS);
 
   unsigned short iDim, jDim;
+
+  // Qstar is already normalized.
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       eddy_visc_anisotropy[iDim][jDim] = w_RANS*double(iDim == jDim);
-      eddy_visc_anisotropy[iDim][jDim] += (1.0-w_RANS)*sqrt(3)*
-          Qstar[iDim][jDim]/Qstar_norm;
+      eddy_visc_anisotropy[iDim][jDim] += w_LES*sqrt(nDim)*
+                                          Qstar[iDim][jDim];
     }
   }
 }
 
 inline su2double CHybrid_Aniso_Q::CalculateIsotropyWeight(su2double r_k) {
-  return 1.0 - fmin(double(1.0/r_k), 1.0);
+  return 1.0 - min(1.0/r_k, su2double(1.0));
 }
 
 inline void CHybrid_Aniso_Q::SetTensor(su2double** val_approx_struct_func) {
@@ -190,13 +191,38 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
                                              CSolver **solver_container,
                                              CHybrid_Visc_Anisotropy* hybrid_anisotropy,
                                              unsigned short iPoint) {
+  unsigned int iDim, jDim, kDim, lDim;
 
   /*--- Find Approximate Structure Function ---*/
 
   su2double** ResolutionTensor = geometry->node[iPoint]->GetResolutionTensor();
   su2double** PrimVar_Grad =
         solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+  /*--- Use the grid-based resolution tensor, not the anisotropy-correcting
+   * resolution tensor ---*/
   CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Q);
+
+  /*--- Take Q^(1/2) and then normalize by max eigenvalue ---*/
+  vector<su2double> eigvalues_Q;
+  vector<vector<su2double> > eigvectors_Q;
+  SolveEigen(Q, eigvalues_Q, eigvectors_Q);
+  vector<vector<su2double> > D(3, vector<su2double>(3));
+  for (iDim=0; iDim < nDim; iDim++) {
+    eigvalues_Q[iDim] = sqrt(eigvalues_Q[iDim]);
+    D[iDim][iDim] = eigvalues_Q[iDim];
+  }
+  su2double max_eigvalue = *min_element(eigvalues_Q.begin(), eigvalues_Q.end());
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    for (int jDim = 0; jDim < nDim; jDim++) {
+      Q[iDim][jDim] = 0.0;
+      for (int kDim = 0; kDim < nDim; kDim++) {
+        for (int lDim = 0; lDim < nDim; lDim++) {
+          Q[iDim][jDim] += eigvectors_Q[kDim][iDim] * D[kDim][lDim] *
+                           eigvectors_Q[lDim][jDim] / max_eigvalue;
+        }
+      }
+    }
+  }
   hybrid_anisotropy->SetTensor(Q);
 
   /*--- Retrieve and pass along the resolution adequacy parameter ---*/
@@ -259,24 +285,24 @@ vector<vector<su2double> > CHybrid_Mediator::LoadConstants(string filename) {
   return output;
 };
 
-vector<su2double> CHybrid_Mediator::GetFunctions_G(vector<su2double> eigvalues_M) {
-  su2double delta = *min_element(eigvalues_M.begin(), eigvalues_M.end());
+vector<su2double> CHybrid_Mediator::GetEigValues_G(vector<su2double> eigvalues_M) {
+  su2double dnorm = *min_element(eigvalues_M.begin(), eigvalues_M.end());
 
   /*--- Normalize eigenvalues ---*/
   su2double a, b;
-  if (eigvalues_M[0] == delta) {
-    a = eigvalues_M[1]/delta;
-    b = eigvalues_M[2]/delta;
-  } else if (eigvalues_M[1] == delta) {
-    a = eigvalues_M[0]/delta;
-    b = eigvalues_M[2]/delta;
+  if (eigvalues_M[0] == dnorm) {
+    a = eigvalues_M[1]/dnorm;
+    b = eigvalues_M[2]/dnorm;
+  } else if (eigvalues_M[1] == dnorm) {
+    a = eigvalues_M[0]/dnorm;
+    b = eigvalues_M[2]/dnorm;
   } else {
-    a = eigvalues_M[0]/delta;
-    b = eigvalues_M[1]/delta;
+    a = eigvalues_M[0]/dnorm;
+    b = eigvalues_M[1]/dnorm;
   }
 
   /*--- Convert to cylindrical coordinates ---*/
-  su2double r = sqrt(a*a+b*b);
+  su2double r = sqrt(a*a + b*b);
   su2double theta = acos(max(a,b)/r);
 
   /*--- Convert to more convenient log coordinates ---*/
@@ -300,20 +326,13 @@ vector<su2double> CHybrid_Mediator::GetFunctions_G(vector<su2double> eigvalues_M
     g[iDim] += constants[iDim][12]*x*x*y*y;
     g[iDim] += constants[iDim][13]*x*y*y*y;
     g[iDim] += constants[iDim][14]*y*y*y*y;
-    g[iDim] = exp(g[iDim]); // FIXME: Is this correct?
   }
-
-  return g;
-}
-
-vector<su2double> CHybrid_Mediator::GetEigValues_G(vector<su2double> eigvalues_M) {
-  vector<su2double> g = GetFunctions_G(eigvalues_M);
 
   vector<su2double> eigvalues_G(3);
   for (int iDim = 0; iDim < nDim; iDim++) {
-    // FIXME: Eigenvalues should be normalized???
-    eigvalues_G[iDim] = g[0] + g[1]*eigvalues_M[iDim] +
-                        g[2]*pow(eigvalues_M[iDim],2);
+    eigvalues_G[iDim] = g[0] + g[1]*log(eigvalues_M[iDim]/dnorm) +
+                        g[2]*pow(log(eigvalues_M[iDim]/dnorm),2);
+    eigvalues_G[iDim] = exp(eigvalues_G[iDim]);
   }
 
   return eigvalues_G;
@@ -325,6 +344,8 @@ vector<vector<su2double> > CHybrid_Mediator::BuildMtilde(su2double** M) {
   /*--- Get the grid based resolution tensor and its eigensystem ---*/
   vector<su2double> eigvalues_M(3);
   vector<vector<su2double> > eigvectors_M(3, vector<su2double>(3));
+  /*--- NOTE: Since we're using averages across cells, averages of eigenvalues
+   * are not equal to the eigenvalues of the average tensor. ---*/
   SolveEigen(M, eigvalues_M, eigvectors_M);
 
   /*--- Solve for the modified resolution tensor  ---*/
@@ -380,15 +401,14 @@ vector<su2double> CHybrid_Mediator::GetEigValues_Mtilde(vector<su2double> eigval
 }
 
 void CHybrid_Mediator::SolveEigen(su2double** M,
-                                  vector<su2double> eigvalues,
-                                  vector<vector<su2double> > eigvectors) {
+                                  vector<su2double> &eigvalues,
+                                  vector<vector<su2double> > &eigvectors) {
 #ifdef HAVE_LAPACK
   unsigned short iDim, jDim;
-  int lda=nDim, ldvl=nDim, ldvr=nDim;
   int info, lwork;
   su2double wkopt;
   su2double* work;
-  su2double wr[nDim], wi[nDim], vl[ldvl*nDim], vr[ldvr*nDim];
+  su2double wr[nDim], wi[nDim], vl[nDim*nDim], vr[nDim*nDim];
   su2double mat[nDim*nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim< nDim; jDim++) {
@@ -397,10 +417,27 @@ void CHybrid_Mediator::SolveEigen(su2double** M,
   }
 
   /*--- Call LAPACK routines ---*/
-  info = LAPACKE_dgeev(LAPACK_ROW_MAJOR, 'N', 'V', nDim, mat, lda, wr, wi, vl, ldvl, vr, ldvr);
+  info = LAPACKE_dgeev(LAPACK_ROW_MAJOR, 'N', 'V', nDim, mat, nDim, wr, wi, vl, nDim, vr, nDim);
   if (info != 0) {
     cout << "ERROR: The solver failed to compute eigenvalues." << endl;
     exit(EXIT_FAILURE);
+  }
+
+  /*--- Check the values ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    if (wr[iDim] < 0.0) {
+      if (wr[iDim] > -1e-6) {
+        wr[iDim] = 0.0;
+      } else {
+        cout << "ERROR: The solver return a large negative eigenvalue!" << endl;
+        cout << "    Eigenvalues:" << endl;
+        cout << "    [" << endl;
+        cout << wr[0] << ", " << endl;
+        cout << wr[1] << ", " << endl;
+        cout << wr[2] << "]" << endl;
+        exit(EXIT_FAILURE);
+      }
+    }
   }
 
   /*--- Rewrite arrays to eigenvalues/vectors output ---*/
@@ -409,8 +446,12 @@ void CHybrid_Mediator::SolveEigen(su2double** M,
     eigvalues[iDim] = wr[iDim];
 
   for (iDim = 0; iDim < nDim; iDim++) {
+    su2double norm = 0.0;
+    for (jDim = 0; jDim < nDim; jDim++)
+      norm += vr[iDim*nDim+jDim];
+    norm = sqrt(norm);
     for (jDim = 0; jDim < nDim; jDim++) {
-      eigvectors[iDim][jDim] = vr[iDim*nDim+jDim];
+      eigvectors[iDim][jDim] = vr[iDim*nDim+jDim]/norm;
     }
   }
 #else
