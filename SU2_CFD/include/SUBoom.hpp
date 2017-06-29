@@ -20,7 +20,7 @@ using namespace std;
 
 class SUBoom{
 public:
-  unsigned int n_prof;
+  unsigned long n_prof;
 
   /*---Flight variables---*/
   su2double flt_h;
@@ -96,10 +96,6 @@ public:
   /*---Main functions for boom calculations---*/
   SUBoom();
   SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry);
-/*su2double h0, su2double M, su2double psi, su2double gamma, su2double g,
-         unsigned long noise_flag, unsigned long N_phi,
-         su2double phi[], su2double dphi, su2double r0, su2double dr,
-	     su2double m, su2double dp, su2double l);*/
   ~SUBoom(void);
 
   void AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
@@ -132,3 +128,40 @@ su2double *derivs(su2double x, int m, su2double y[], SUBoom::RayData data);
 su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data);
 su2double **WaveformToPressureSignal(su2double fvec[], int M, int &Msig);
 su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2double coeffs[]);
+
+class searchTree{
+public:
+  unsigned long nPointsTree;
+  unsigned short nDimTree;
+
+  class treeNode{
+    public:
+      long root;
+      unsigned long *ind;
+      long *parent, *left, *right;
+      unsigned short *color;
+      su2double *x, *y, *z, *r, *phi;
+  };
+
+  treeNode nodes;
+
+  searchTree();
+  searchTree(unsigned short nDim, unsigned long nPoints, const su2double **coord,
+         const su2double Minf, const su2double r0, const su2double *phi, unsigned short nPhi);
+
+  void buildRBTree();
+  void insertRB(long i, long j);
+  void insertRB_1(long i);
+  void insertRB_2(long i);
+  void insertRB_3(long i);
+  void insertRB_4(long i);
+  void insertRB_5(long i);
+  void rotateLeft(long i);
+  void rotateRight(long i);
+  void searchRB();
+  
+  void buildQuadTree();
+
+};
+void MergeSort(searchTree::treeNode nodes, int l, int r, unsigned short nDimTree);
+void merge(searchTree::treeNode nodes, int l, int m, int r, unsigned short nDimTree);
