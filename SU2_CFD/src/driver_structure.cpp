@@ -2322,6 +2322,7 @@ void CDriver::Interface_Preprocessing() {
 
   /*--- Coupling between zones ---*/
   // There's a limit here, the interface boundary must connect only 2 zones
+
   /*--- Loops over all target and donor zones to find which ones are connected through an interface boundary (fsi or sliding mesh) ---*/
   for (targetZone = 0; targetZone < nZone; targetZone++) {
 
@@ -2330,7 +2331,7 @@ void CDriver::Interface_Preprocessing() {
       if ( donorZone == targetZone ) // We're processing the same zone, so skip the following
         continue;
 
-      nMarkerInt = (int) ( config_container[donorZone]->GetMarker_n_FSIinterface() / 2 );
+      nMarkerInt = (int) ( config_container[donorZone]->GetMarker_n_ZoneInterface() / 2 );
 
       /*--- Loops on Interface markers to find if the 2 zones are sharing the boundary and to determine donor and target marker tag ---*/
       for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
@@ -2344,7 +2345,7 @@ void CDriver::Interface_Preprocessing() {
         for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
 
           /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
-          if ( config_container[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
+          if ( config_container[donorZone]->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
             /*--- We have identified the identifier for the interface marker ---*/
             markDonor = iMarkerDonor;
 
@@ -2358,7 +2359,7 @@ void CDriver::Interface_Preprocessing() {
       for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
 
           /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
-        if ( config_container[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ) {
+        if ( config_container[targetZone]->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
             /*--- We have identified the identifier for the interface marker ---*/
             markTarget = iMarkerTarget;
 
@@ -2369,7 +2370,7 @@ void CDriver::Interface_Preprocessing() {
 #ifdef HAVE_MPI
 
       Donor_check  = -1;
-        Target_check = -1;
+      Target_check = -1;
 
         /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it ---*/
 
@@ -2412,7 +2413,7 @@ void CDriver::Interface_Preprocessing() {
 
         /*--- Set some boolean to properly allocate data structure later ---*/
       fluid_target      = false; 
-        structural_target = false;
+      structural_target = false;
 
       fluid_donor       = false; 
       structural_donor  = false;
@@ -2480,6 +2481,12 @@ void CDriver::Interface_Preprocessing() {
 
             break;
 
+          case WEIGHTED_AVERAGE:
+            interpolator_container[donorZone][targetZone] = new CSlidingMesh(geometry_container, config_container, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
+
+            break;
+
           case CONSISTCONSERVE:
             if ( targetZone > 0 && structural_target ) {
               interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
@@ -2492,6 +2499,7 @@ void CDriver::Interface_Preprocessing() {
             if ( targetZone == 0 && structural_target ) {
               if (rank == MASTER_NODE) cout << "Consistent and conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The isoparametric coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
             }
+
 
             break;
 

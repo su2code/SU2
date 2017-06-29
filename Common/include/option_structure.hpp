@@ -176,6 +176,20 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
 ("HIGH", VERB_HIGH);
 
 /*!
+ * \brief Type of One-Dimensionalization
+ */
+enum ONED_TYPE {
+  ONED_NONE = 0, /*!< \brief no one-dimensionalization. */
+  ONED_AREA = 1, /*!< \brief Area-weighted average. */
+  ONED_MFLUX = 2 /*!< \brief Mass-flux weighted average. */
+};
+static const map<string, ONED_TYPE> OneD_Map = CCreateMap<string, ONED_TYPE>
+("NONE", ONED_NONE)
+("AREA", ONED_AREA)
+("MASSFLUX", ONED_MFLUX);
+
+
+/*!
  * \brief different solver types for the CFD component
  */
 enum ENUM_SOLVER {
@@ -283,16 +297,17 @@ static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENU
  * \brief types of interpolators
  */
 enum ENUM_INTERPOLATOR {
-  NEAREST_NEIGHBOR = 0,   /*!< \brief Nearest Neigbhor interpolation */
-  ISOPARAMETRIC = 1, /*!< \brief Isoparametric interpolation */
-  CONSISTCONSERVE = 2,/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+  NEAREST_NEIGHBOR 	= 0,   	/*!< \brief Nearest Neigbhor interpolation */
+  ISOPARAMETRIC 	= 1,	/*!< \brief Isoparametric interpolation */
+  CONSISTCONSERVE 	= 2,	/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+  WEIGHTED_AVERAGE  = 3, 	/*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
 };
 
 static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
 ("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
-("ISOPARAMETRIC", ISOPARAMETRIC)
-("CONSISTCONSERVE", CONSISTCONSERVE);
-
+("ISOPARAMETRIC",    ISOPARAMETRIC)
+("CONSISTCONSERVE",  CONSISTCONSERVE)
+("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE);
 
 /*!
  * \brief different regime modes
@@ -1004,7 +1019,6 @@ enum ENUM_OBJECTIVE {
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  OUTFLOW_GENERALIZED = 31,       /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
   AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
   RADIAL_DISTORTION = 36, 	      /*!< \brief Radial Distortion objective function definition. */
   CIRCUMFERENTIAL_DISTORTION = 37,  /*!< \brief Circumferential Distortion objective function definition. */
@@ -1041,7 +1055,6 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE)
-("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED)
 ("AERO_DRAG", AERO_DRAG_COEFFICIENT)
 ("RADIAL_DISTORTION", RADIAL_DISTORTION)
 ("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION)
@@ -1219,8 +1232,7 @@ enum ENUM_PARAM {
   CST = 21,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
   SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
   SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
-  CUSTOM = 24,               /*!< 'CUSTOM' for use in external python analysis. */
-  NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
+  NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102,	 /*!< \brief Angle of attack for FFD problem. */
   FFD_ROTATION_TRANS = 103,	 /*!< \brief Free form deformation for 3D design (rotation + translation). */
@@ -1254,7 +1266,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("PARABOLIC", PARABOLIC)
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
-("CUSTOM", CUSTOM)
 ("NO_DEFORMATION", NO_DEFORMATION)
 ("CST", CST)
 ("FFD_DIRECT_MANIPULATION", FFD_DIRECT_MANIPULATION)
@@ -2243,7 +2254,7 @@ public:
         case SURFACE_FILE:         nParamDV = 0; break;
         case FFD_DIRECT_MANIPULATION: nParamDV = 4; break;
         case FFD_DIRECT_MANIPULATION_2D: nParamDV = 3; break;
-        case CUSTOM:               nParamDV = 1; break;
+//        case CUSTOM:               nParamDV = 1; break;
         default : {
           string newstring;
           newstring.append(this->name);

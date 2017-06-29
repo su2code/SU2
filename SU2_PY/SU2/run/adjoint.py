@@ -114,6 +114,8 @@ def adjoint( config ):
     
     # files out
     objective    = konfig['OBJECTIVE_FUNCTION']
+    if "," in objective:
+            objective="COMBO"
     adj_title    = 'ADJOINT_' + objective
     suffix       = su2io.get_adjointSuffix(objective)
     restart_name = konfig['RESTART_FLOW_FILENAME']
