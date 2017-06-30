@@ -154,15 +154,16 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
   F1   = 1.0;
   F2   = 0.0;
   CDkw = 0.0;
-  
-  /*--- Initialization of turbulence scales ---*/
-  L = 1.0;
-  T = 1.0;
 
   /*--- Initialization of eddy viscosity ---*/
   
   muT = val_muT;
   
+  /*--- Initialization of scales with isotropic turbulence assumption ---*/
+
+  L = sqrt(val_kine)/val_omega;
+  T = 1.0/val_omega;
+
   /*--- Allocate and initialize solution for the dual time strategy ---*/
   
   if (dual_time) {
@@ -203,12 +204,4 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
   arg2 = max(2.0*arg2A, arg2B);
   F2 = tanh(pow(arg2, 2.0));
   
-}
-
-su2double CTurbSSTVariable::GetTurbTimescale() {
-  return T;
-}
-
-su2double CTurbSSTVariable::GetTurbLengthscale() {
- return L;
 }

@@ -3875,6 +3875,13 @@ public:
    * \return The large-eddy lengthscale of the turbulence
    */
   su2double GetTurbLengthscale(void);
+
+  /**
+   * \brief Sets the large-eddy lengthscale and the large-eddy timescale
+   * \param[in] val_turb_T - Large eddy timescale of the turbulence
+   * \param[in] val_turb_L - Large eddy lengthscale of the turbulence
+   */
+  void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
 };
 
 /*!

@@ -1383,6 +1383,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           if (hybrid) {
+            // Use an anisotropic eddy viscosity
             numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config, true);
           } else {
             numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
@@ -1391,6 +1392,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           if (hybrid) {
+            // Use an anisotropic eddy viscosity
             numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config, true);
           } else {
             numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
@@ -1507,9 +1509,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 
 		/*--- Check if the combination of hybridization and RANS model are valid ---*/
     // TODO: Add in KE model (plus any other supported models)
-    if (hybrid && false) {
+    if (hybrid && !(menter_sst)) {
       cout << "Specified RANS model has not been implemented for hybrid RANS/LES." << endl;
-      cout << "Currently supported RANS models:" << endl;
+      cout << "Currently supported RANS models: SST" << endl;
       exit(EXIT_FAILURE);
     }
 

@@ -1211,3 +1211,16 @@ inline su2double CNSVariable::GetEddyViscAnisotropy(unsigned short iDim,
                                                     unsigned short jDim) {
   return Eddy_Visc_Anisotropy[iDim][jDim];
 }
+
+inline su2double CTurbSSTVariable::GetTurbTimescale() {
+  return T;
+}
+
+inline su2double CTurbSSTVariable::GetTurbLengthscale() {
+ return L;
+}
+
+inline void CTurbSSTVariable::SetTurbScales(su2double val_turb_T, su2double val_turb_L) {
+  T = val_turb_T;
+  L = val_turb_L;
+}

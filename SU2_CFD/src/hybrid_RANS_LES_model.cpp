@@ -92,6 +92,10 @@ void CHybrid_Aniso_Q::CalculateViscAnisotropy() {
 }
 
 inline su2double CHybrid_Aniso_Q::CalculateIsotropyWeight(su2double r_k) {
+  if (r_k < 0.0) {
+    cout << "ERROR: Resolution adequacy was negative! Value: " << r_k << endl;
+    exit(EXIT_FAILURE);
+  }
   return 1.0 - min(1.0/r_k, su2double(1.0));
 }
 
@@ -148,8 +152,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
   vector<vector<su2double> > Mtilde = BuildMtilde(ResolutionTensor);
   su2double** PrimVar_Grad =
       solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-  // su2double min_resolved  = solver_container[TURB_SOL]->node[iPoint]->GetPrimitive(2);
-  su2double min_resolved = TWO3*solver_container[TURB_SOL]->node[iPoint]->GetPrimitive(2);
+  su2double min_resolved = TWO3*solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
 
   CalculateApproxStructFunc(Mtilde, PrimVar_Grad, Q);
   su2double r_k = CalculateRk(Q, min_resolved);
@@ -239,8 +242,8 @@ void CHybrid_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
 
   /*--- Pass alpha to the resolved flow ---*/
 
-  su2double* alpha_i = solver_container[HYBRID_SOL]->node[iPoint]->GetPrimitive();
-  su2double* alpha_j = solver_container[HYBRID_SOL]->node[jPoint]->GetPrimitive();
+  su2double* alpha_i = solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
+  su2double* alpha_j = solver_container[HYBRID_SOL]->node[jPoint]->GetSolution();
   visc_numerics->SetHybridParameter(alpha_i, alpha_j);
 
   /*--- Pass the stress anisotropy tensor to the resolved flow ---*/
@@ -403,6 +406,9 @@ vector<su2double> CHybrid_Mediator::GetEigValues_Mtilde(vector<su2double> eigval
 void CHybrid_Mediator::SolveEigen(su2double** M,
                                   vector<su2double> &eigvalues,
                                   vector<vector<su2double> > &eigvectors) {
+  eigvalues.resize(nDim);
+  eigvectors.resize(nDim, std::vector<su2double>(nDim));
+
 #ifdef HAVE_LAPACK
   unsigned short iDim, jDim;
   int info, lwork;

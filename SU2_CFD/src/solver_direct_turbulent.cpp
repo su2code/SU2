@@ -2889,7 +2889,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   su2double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT;
-  su2double lengthscale, L1, L2, L3, timescale;
+  su2double lengthscale, timescale;
   su2double a1 = constants[7];
   unsigned long iPoint;
   
@@ -2932,19 +2932,15 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     omega = node[iPoint]->GetSolution(1);
 
     /*--- Calculate the relevant length and timescales ---*/
-    timescale = min(1.0/(a1*omega), 1/(strMag*F2));
+
+    timescale = min(1.0/(omega), a1/(strMag*F2));
     timescale = max(timescale, 0.0);
-    su2double eps = timescale;
-    L1 = pow(kine, 1.5)/eps;
-    L2 = pow(kine, 0.5)/(sqrt(6)*a1*strMag*2.0/3);
-    L3 = 85.0*pow(pow(mu, 3)/eps, 0.25);
-    lengthscale = 0.36*max(min(L1, L2), L3);
-    lengthscale = max(lengthscale, 0.0);
+    lengthscale = sqrt(max(kine, 0.0))*timescale;
     node[iPoint]->SetTurbScales(timescale, lengthscale);
 
     /*--- Compute the eddy viscosity ---*/
     
-    muT = min(max(rho*kine*a1*timescale,0.0),1.0);
+    muT = min(max(rho*kine*timescale,0.0),1.0);
     node[iPoint]->SetmuT(muT);
     
   }

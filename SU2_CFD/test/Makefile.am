@@ -33,6 +33,20 @@
 #
 ################################################################################
 
+libSU2Core_cxx_flags = -fPIC
+libSU2Core_libadd = 
+
+# always link to built dependencies from ./externals
+libSU2Core_cxx_flags += @su2_externals_INCLUDES@
+
+# if BUILD_LAPACK
+libSU2Core_cxx_flags += @LAPACK_CXX@
+libSU2Core_libadd += @LAPACK_LD@
+# endif
+
+libSU2Core_a_CXXFLAGS = $(libSU2Core_cxx_flags)
+libSU2Core_a_LIBADD = $(libSU2Core_libadd)
+
 check_PROGRAMS  =
 check_PROGRAMS += aniso_viscous_flux_inc
 check_PROGRAMS += aniso_viscous_flux
@@ -55,6 +69,8 @@ LDADD  =
 LDADD += $(top_builddir)/Common/lib/libSU2.a
 LDADD += $(top_builddir)/SU2_CFD/obj/libSU2Core.a
 LDADD += @su2_externals_LIBS@ @LAPACK_LD@
+
+LDFLAGS  = -mkl
 
 # Test sources
 aniso_viscous_flux_inc_SOURCES         = aniso_viscous_flux_inc.cpp
