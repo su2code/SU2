@@ -96,7 +96,7 @@ def gradient( func_name, method, config, state=None ):
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
               
             # Aerodynamics
-            if func_name_string in su2io.optnames_aero + su2io.optnames_turbo:
+            if func_output in su2io.optnames_aero + su2io.optnames_turbo:
                 grads = adjoint( func_name, config, state )
 
             elif func_name[0] in su2io.optnames_aero + su2io.optnames_turbo:

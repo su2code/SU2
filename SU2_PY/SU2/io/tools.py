@@ -247,14 +247,7 @@ def get_headerMap(nZones = 1):
                  "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
                  "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
  
-   
-def get_headerMap():
-    """ returns a dictionary that maps history file header names
-        to optimization problem function names
-    """
-    # header name to config file name map
-    map_dict = history_header_map
-    return map_dict
+    return history_header_map   	 
 
 def getTurboPerfIndex(nZones = 1):
 
