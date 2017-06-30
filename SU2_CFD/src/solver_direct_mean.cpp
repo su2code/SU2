@@ -88,6 +88,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
+
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
   ActDisk_DeltaP = NULL; ActDisk_DeltaT = NULL;
 
@@ -97,16 +98,19 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 
 
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
-
-  Cauchy_Value = 0;
-  Cauchy_Func = 0;
-  Old_Func = 0;
-  New_Func = 0;
+  
+  Cauchy_Value   = 0;
+  Cauchy_Func    = 0;
+  Old_Func       = 0;
+  New_Func       = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
-  FluidModel = NULL;
 
-  SlidingState = NULL;
+
+  FluidModel   =NULL;
+  
+  SlidingState     = NULL;
+  SlidingStateNodes = NULL;
 
   /*--- Initialize quantities for the average process for internal flow ---*/
   
@@ -276,21 +280,21 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initialize quantities for the average process for internal flow ---*/
 
-  AverageVelocity 									                  = NULL;
-  AverageTurboVelocity 							             = NULL;
-  ExtAverageTurboVelocity 					          = NULL;
-  AverageFlux 											                      = NULL;
-  SpanTotalFlux 										                    = NULL;
-  AveragePressure  									                 = NULL;
+  AverageVelocity 					= NULL;
+  AverageTurboVelocity 				= NULL;
+  ExtAverageTurboVelocity 			= NULL;
+  AverageFlux 					    = NULL;
+  SpanTotalFlux 					= NULL;
+  AveragePressure  					= NULL;
   RadialEquilibriumPressure         = NULL;
-  ExtAveragePressure  							              = NULL;
-  AverageDensity   									                 = NULL;
-  ExtAverageDensity   							              = NULL;
+  ExtAveragePressure  				= NULL;
+  AverageDensity   					= NULL;
+  ExtAverageDensity                 = NULL;
   AverageNu                         = NULL;
-  AverageKine                        = NULL;
+  AverageKine                       = NULL;
   AverageOmega                      = NULL;
   ExtAverageNu                      = NULL;
-  ExtAverageKine                     = NULL;
+  ExtAverageKine                    = NULL;
   ExtAverageOmega                   = NULL;
 
 
@@ -686,26 +690,30 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
-
-  SlidingState = new su2double** [nMarker];
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    
-    SlidingState[iMarker] = NULL;
-      
+  SlidingState       = new su2double*** [nMarker];
+  SlidingStateNodes  = new int*         [nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    SlidingState[iMarker]      = NULL;
+    SlidingStateNodes[iMarker] = NULL;
+
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
-      SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
 
-      for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++) {
-        SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
-      for (iVar = 0; iVar < nVar; iVar++)
-        SlidingState[iMarker][iPoint][iVar] = -1;
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
       }
+
     }
-    else
-      SlidingState[iMarker] = NULL;
   }
+
  
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
@@ -773,11 +781,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
+  /*--- Perform the MPI communication of the solution ---*/
+
+  Set_MPI_Solution(geometry, config);
+  
 }
 
 CEulerSolver::~CEulerSolver(void) {
 
-  unsigned short iVar, iMarker, iSpan;
+  unsigned short iVar, iMarker, iPoint, iSpan;
   unsigned long iVertex;
 
   /*--- Array deallocation ---*/
@@ -900,12 +912,23 @@ CEulerSolver::~CEulerSolver(void) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if ( SlidingState[iMarker] != NULL ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          delete [] SlidingState[iMarker][iVertex];
-          
+          if ( SlidingState[iMarker][iVertex] != NULL ){
+            for (iVar = 0; iVar < nPrimVar+1; iVar++)
+              delete [] SlidingState[iMarker][iVertex][iVar];
+            delete [] SlidingState[iMarker][iVertex];
+          }
         delete [] SlidingState[iMarker];
       }
     }
     delete [] SlidingState;
+  }
+  
+  if ( SlidingStateNodes != NULL ){
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+        if (SlidingStateNodes[iMarker] != NULL)
+            delete [] SlidingStateNodes[iMarker];  
+    }
+    delete [] SlidingStateNodes;
   }
   
   if (DonorPrimVar != NULL) {
@@ -957,7 +980,7 @@ CEulerSolver::~CEulerSolver(void) {
     }
     delete [] YPlus;
   }
-  
+
   if (Cauchy_Serie != NULL)  delete [] Cauchy_Serie;
   
   if (FluidModel != NULL) delete FluidModel;
@@ -1155,10 +1178,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     OldAverageDensity[iMarker]              = new su2double [nSpanWiseSections + 1];
     ExtAverageDensity[iMarker]              = new su2double [nSpanWiseSections + 1];
     AverageNu[iMarker]                      = new su2double [nSpanWiseSections + 1];
-    AverageKine[iMarker]                     = new su2double [nSpanWiseSections + 1];
+    AverageKine[iMarker]                    = new su2double [nSpanWiseSections + 1];
     AverageOmega[iMarker]                   = new su2double [nSpanWiseSections + 1];
     ExtAverageNu[iMarker]                   = new su2double [nSpanWiseSections + 1];
-    ExtAverageKine[iMarker]                  = new su2double [nSpanWiseSections + 1];
+    ExtAverageKine[iMarker]                 = new su2double [nSpanWiseSections + 1];
     ExtAverageOmega[iMarker]                = new su2double [nSpanWiseSections + 1];
 
     for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
@@ -1176,10 +1199,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       OldAverageDensity[iMarker][iSpan]         = 0.0;
       ExtAverageDensity[iMarker][iSpan]         = 0.0;
       AverageNu[iMarker][iSpan]                 = 0.0;
-      AverageKine[iMarker][iSpan]                = 0.0;
+      AverageKine[iMarker][iSpan]               = 0.0;
       AverageOmega[iMarker][iSpan]              = 0.0;
       ExtAverageNu[iMarker][iSpan]              = 0.0;
-      ExtAverageKine[iMarker][iSpan]             = 0.0;
+      ExtAverageKine[iMarker][iSpan]            = 0.0;
       ExtAverageOmega[iMarker][iSpan]           = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -1207,10 +1230,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   DensityOut                    = new su2double*[nMarkerTurboPerf];
   PressureOut                   = new su2double*[nMarkerTurboPerf];
   TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
-  KineIn                         = new su2double*[nMarkerTurboPerf];
+  KineIn                        = new su2double*[nMarkerTurboPerf];
   OmegaIn                       = new su2double*[nMarkerTurboPerf];
   NuIn                          = new su2double*[nMarkerTurboPerf];
-  KineOut                        = new su2double*[nMarkerTurboPerf];
+  KineOut                       = new su2double*[nMarkerTurboPerf];
   OmegaOut                      = new su2double*[nMarkerTurboPerf];
   NuOut                         = new su2double*[nMarkerTurboPerf];
 
@@ -1221,10 +1244,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     DensityOut[iMarker]         = new su2double [nSpanMax + 1];
     PressureOut[iMarker]        = new su2double [nSpanMax + 1];
     TurboVelocityOut[iMarker]   = new su2double*[nSpanMax + 1];
-    KineIn[iMarker]              = new su2double [nSpanMax + 1];
+    KineIn[iMarker]             = new su2double [nSpanMax + 1];
     OmegaIn[iMarker]            = new su2double [nSpanMax + 1];
     NuIn[iMarker]               = new su2double [nSpanMax + 1];
-    KineOut[iMarker]             = new su2double [nSpanMax + 1];
+    KineOut[iMarker]            = new su2double [nSpanMax + 1];
     OmegaOut[iMarker]           = new su2double [nSpanMax + 1];
     NuOut[iMarker]              = new su2double [nSpanMax + 1];
 
@@ -1237,10 +1260,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       DensityOut[iMarker][iSpan]         = 0.0;
       PressureOut[iMarker][iSpan]        = 0.0;
       TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
-      KineIn[iMarker][iSpan]              = 0.0;
+      KineIn[iMarker][iSpan]             = 0.0;
       OmegaIn[iMarker][iSpan]            = 0.0;
       NuIn[iMarker][iSpan]               = 0.0;
-      KineOut[iMarker][iSpan]             = 0.0;
+      KineOut[iMarker][iSpan]            = 0.0;
       OmegaOut[iMarker][iSpan]           = 0.0;
       NuOut[iMarker][iSpan]              = 0.0;
 
@@ -1370,20 +1393,20 @@ void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
         /*--- Rotate the momentum components. ---*/
         if (nDim == 2) {
           Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-              rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex];
+          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex];
           Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-              rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex];
+          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex];
         }
         else {
           Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-              rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-              rotMatrix[0][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
+          rotMatrix[0][2]*Buffer_Receive_U[3*nVertexR+iVertex];
           Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-              rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-              rotMatrix[1][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
+          rotMatrix[1][2]*Buffer_Receive_U[3*nVertexR+iVertex];
           Solution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-              rotMatrix[2][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-              rotMatrix[2][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+          rotMatrix[2][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
+          rotMatrix[2][2]*Buffer_Receive_U[3*nVertexR+iVertex];
         }
 
         /*--- Copy transformed conserved variables back into buffer. ---*/
@@ -1487,20 +1510,20 @@ void CEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
         /*--- Rotate the momentum components. ---*/
         if (nDim == 2) {
           Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-              rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex];
+          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex];
           Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-              rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex];
+          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex];
         }
         else {
           Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-              rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-              rotMatrix[0][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
+          rotMatrix[0][2]*Buffer_Receive_U[3*nVertexR+iVertex];
           Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-              rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-              rotMatrix[1][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
+          rotMatrix[1][2]*Buffer_Receive_U[3*nVertexR+iVertex];
           Solution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-              rotMatrix[2][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-              rotMatrix[2][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+          rotMatrix[2][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
+          rotMatrix[2][2]*Buffer_Receive_U[3*nVertexR+iVertex];
         }
 
         /*--- Copy transformed conserved variables back into buffer. ---*/
@@ -1603,20 +1626,20 @@ void CEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *con
         /*--- Rotate the momentum components. ---*/
         if (nDim == 2) {
           Solution[1] = rotMatrix[0][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
-              rotMatrix[0][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex];
+          rotMatrix[0][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex];
           Solution[2] = rotMatrix[1][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
-              rotMatrix[1][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex];
+          rotMatrix[1][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex];
         }
         else {
           Solution[1] = rotMatrix[0][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
-              rotMatrix[0][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
-              rotMatrix[0][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
+          rotMatrix[0][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
+          rotMatrix[0][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
           Solution[2] = rotMatrix[1][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
-              rotMatrix[1][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
-              rotMatrix[1][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
+          rotMatrix[1][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
+          rotMatrix[1][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
           Solution[3] = rotMatrix[2][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
-              rotMatrix[2][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
-              rotMatrix[2][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
+          rotMatrix[2][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
+          rotMatrix[2][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
         }
 
         /*--- Copy transformed conserved variables back into buffer. ---*/
@@ -2238,20 +2261,20 @@ void CEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *confi
         /*--- Rotate the momentum components. ---*/
         if (nDim == 2) {
           Limiter[1] = rotMatrix[0][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-              rotMatrix[0][1]*Buffer_Receive_Limit[2*nVertexR+iVertex];
+          rotMatrix[0][1]*Buffer_Receive_Limit[2*nVertexR+iVertex];
           Limiter[2] = rotMatrix[1][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-              rotMatrix[1][1]*Buffer_Receive_Limit[2*nVertexR+iVertex];
+          rotMatrix[1][1]*Buffer_Receive_Limit[2*nVertexR+iVertex];
         }
         else {
           Limiter[1] = rotMatrix[0][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-              rotMatrix[0][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
-              rotMatrix[0][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
+          rotMatrix[0][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
+          rotMatrix[0][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
           Limiter[2] = rotMatrix[1][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-              rotMatrix[1][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
-              rotMatrix[1][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
+          rotMatrix[1][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
+          rotMatrix[1][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
           Limiter[3] = rotMatrix[2][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-              rotMatrix[2][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
-              rotMatrix[2][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
+          rotMatrix[2][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
+          rotMatrix[2][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
         }
 
         /*--- Copy transformed conserved variables back into buffer. ---*/
@@ -9908,7 +9931,7 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
       Total_ComboObj+=Weight_ObjFunc*OneD_TotalPress;
       break;
     case AVG_OUTLET_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*OneD_PressureRef;
+      Total_ComboObj+=Weight_ObjFunc*OneD_Pressure1D;
       break;
     case MASS_FLOW_RATE:
       Total_ComboObj+=Weight_ObjFunc*OneD_MassFlowRate;
@@ -14418,10 +14441,12 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
   unsigned long iVertex;
   su2double *Coord, VarCoord[3] = {0,0,0};
 
-#ifndef HAVE_MPI
-  unsigned long iPoint_Donor, iPoint;
-  unsigned short iMarker;
-  su2double *CoordDonor, *DisplacementDonor;
+  #ifndef HAVE_MPI
+    unsigned long iPoint_Donor, iPoint;
+    unsigned short iMarker;
+    su2double *CoordDonor, *DisplacementDonor;
+
+    for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
   for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
@@ -14429,39 +14454,37 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
       for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
-        iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+          iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorPoint();
 
-        iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorPoint();
+          Coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
 
-        Coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
+          CoordDonor = fea_geometry[MESH_0]->node[iPoint_Donor]->GetCoord();
 
-        CoordDonor = fea_geometry[MESH_0]->node[iPoint_Donor]->GetCoord();
+          /*--- The displacements come from the predicted solution ---*/
+          DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
 
-        /*--- The displacements come from the predicted solution ---*/
-        DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
+          for (iDim = 0; iDim < nDim; iDim++)
 
-        for (iDim = 0; iDim < nDim; iDim++)
+            VarCoord[iDim] = (CoordDonor[iDim]+DisplacementDonor[iDim])-Coord[iDim];
 
-          VarCoord[iDim] = (CoordDonor[iDim]+DisplacementDonor[iDim])-Coord[iDim];
-
-        flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+          flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+        }
       }
     }
   }
 
 #else
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+    int rank = MASTER_NODE;
+    int size = SINGLE_NODE;
 
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
+    unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
 
     unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;      // Number of markers on FSI problem, FEA and Flow side
     unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;      // Variables for iteration over markers
-
     unsigned long MaxLocalVertexStruct = 0, MaxLocalVertexFlow = 0;
 
     unsigned long nBuffer_StructCoord = 0, nBuffer_FlowNewCoord = 0;
@@ -14480,7 +14503,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
     /*--- Number of markers on the FSI interface ---*/
 
-    nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
+    nMarkerFSI     = (flow_config->GetMarker_n_ZoneInterface())/2;
     nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
     nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
 
@@ -14565,30 +14588,30 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
         nBuffer_StructCoord = MaxLocalVertexStruct * nDim;
         nBuffer_FlowNewCoord = MaxLocalVertexFlow * nDim;
 
-    /*--- We will be gathering donor index and donor processor (for structure -> donor = flow) ---*/
-    /*--- Then we will pass on to the fluid side the index (flow point) to the appropriate processor ---*/
-    nBuffer_DonorIndices = 2 * MaxLocalVertexStruct;
-    nBuffer_SetIndex = MaxLocalVertexFlow;
+        /*--- We will be gathering donor index and donor processor (for structure -> donor = flow) ---*/
+        /*--- Then we will pass on to the fluid side the index (flow point) to the appropriate processor ---*/
+        nBuffer_DonorIndices = 2 * MaxLocalVertexStruct;
+        nBuffer_SetIndex = MaxLocalVertexFlow;
 
-    /*--- Send and Recv buffers ---*/
+        /*--- Send and Recv buffers ---*/
 
-    /*--- Buffers to send and receive the structural coordinates ---*/
-    su2double *Buffer_Send_StructCoord = new su2double[nBuffer_StructCoord];
-    su2double *Buffer_Recv_StructCoord = NULL;
+        /*--- Buffers to send and receive the structural coordinates ---*/
+        su2double *Buffer_Send_StructCoord = new su2double[nBuffer_StructCoord];
+        su2double *Buffer_Recv_StructCoord = NULL;
 
-    /*--- Buffers to send and receive the donor index and processor ---*/
-    long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
-    long *Buffer_Recv_DonorIndices = NULL;
+        /*--- Buffers to send and receive the donor index and processor ---*/
+        long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
+        long *Buffer_Recv_DonorIndices = NULL;
 
-    /*--- Buffers to send and receive the new fluid coordinates ---*/
-    su2double *Buffer_Send_FlowNewCoord = NULL;
-    su2double *Buffer_Recv_FlowNewCoord = new su2double[nBuffer_FlowNewCoord];
+        /*--- Buffers to send and receive the new fluid coordinates ---*/
+        su2double *Buffer_Send_FlowNewCoord = NULL;
+        su2double *Buffer_Recv_FlowNewCoord = new su2double[nBuffer_FlowNewCoord];
 
-    /*--- Buffers to send and receive the fluid index ---*/
-    long *Buffer_Send_SetIndex = NULL;
-    long *Buffer_Recv_SetIndex = new long[nBuffer_SetIndex];
+        /*--- Buffers to send and receive the fluid index ---*/
+        long *Buffer_Send_SetIndex = NULL;
+        long *Buffer_Recv_SetIndex = new long[nBuffer_SetIndex];
 
-    /*--- Prepare the receive buffers (1st step) and send buffers (2nd step) on the master node only. ---*/
+        /*--- Prepare the receive buffers (1st step) and send buffers (2nd step) on the master node only. ---*/
 
         if (rank == MASTER_NODE) {
             Buffer_Recv_StructCoord  = new su2double[size*nBuffer_StructCoord];
@@ -14715,7 +14738,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
                         Counter_Processor_Flow[Processor_Flow_Rcv]++;
                     }
 
-        }
+                }
 
             }
 
@@ -14755,9 +14778,9 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
                     flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->SetVarCoord(VarCoord);
 
-      }
+                }
 
-    }
+            }
 
         }
 
@@ -14776,57 +14799,55 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
             delete [] Counter_Processor_Flow;
         }
 
+    }
 
-  }
+  #endif
 
-#endif
-
-  flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
+    flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
 
 }
 
 void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
-    CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
-  unsigned short iMarker, iDim, iDonor, nDonor;
-  unsigned long iVertex;
-  su2double VarCoord[3];
+                                        CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
+    unsigned short iMarker, iDim, iDonor, nDonor;
+    unsigned long iVertex;
+    su2double VarCoord[3];
 
-  unsigned long iPoint_Donor;
-  su2double *DisplacementDonor, *DisplacementDonor_Prev, coeff;
+    unsigned long iPoint_Donor;
+    su2double *DisplacementDonor, *DisplacementDonor_Prev, coeff;
 
-  for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
+    for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
-    if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+      if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
 
-      for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+        for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
-        for (iDim = 0; iDim < nDim; iDim++)
-          VarCoord[iDim]=0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            VarCoord[iDim]=0.0;
 
-        nDonor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints();
+          nDonor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints();
 
           for (iDonor = 0; iDonor < nDonor; iDonor++) {
             iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(iDonor);
             coeff = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(iDonor);
 
-          /*--- The displacements come from the predicted solution ---*/
-          DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
+            /*--- The displacements come from the predicted solution ---*/
+            DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
 
-          DisplacementDonor_Prev = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred_Old();
+            DisplacementDonor_Prev = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred_Old();
 
-          for (iDim = 0; iDim < nDim; iDim++)
+            for (iDim = 0; iDim < nDim; iDim++)
 
-            VarCoord[iDim] += (DisplacementDonor[iDim] - DisplacementDonor_Prev[iDim])*coeff;
-        }
+              VarCoord[iDim] += (DisplacementDonor[iDim] - DisplacementDonor_Prev[iDim])*coeff;
+          }
 
-        flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+          flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
       }
     }
   }
   flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
 
 }
-
 
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
@@ -16227,7 +16248,9 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   /*--- Rotorcraft simulation array initialization ---*/
 
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
-
+  
+  SlidingState      = NULL;
+  SlidingStateNodes = NULL;
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
@@ -16305,21 +16328,21 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Initialize quantities for the average process for internal flow ---*/
 
-  AverageVelocity 									= NULL;
-  AverageTurboVelocity 							= NULL;
-  ExtAverageTurboVelocity 					= NULL;
-  AverageFlux 											= NULL;
-  SpanTotalFlux 										= NULL;
-  AveragePressure  									= NULL;
+  AverageVelocity 				    = NULL;
+  AverageTurboVelocity 				= NULL;
+  ExtAverageTurboVelocity 			= NULL;
+  AverageFlux 						= NULL;
+  SpanTotalFlux 					= NULL;
+  AveragePressure  					= NULL;
   RadialEquilibriumPressure         = NULL;
-  ExtAveragePressure  							= NULL;
-  AverageDensity   									= NULL;
-  ExtAverageDensity   							= NULL;
+  ExtAveragePressure  				= NULL;
+  AverageDensity   					= NULL;
+  ExtAverageDensity   				= NULL;
   AverageNu                         = NULL;
-  AverageKine                        = NULL;
+  AverageKine                       = NULL;
   AverageOmega                      = NULL;
   ExtAverageNu                      = NULL;
-  ExtAverageKine                     = NULL;
+  ExtAverageKine                    = NULL;
   ExtAverageOmega                   = NULL;
 
 
@@ -16826,24 +16849,28 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
   
-  SlidingState = new su2double** [nMarker];
+  SlidingState       = new su2double*** [nMarker];
+  SlidingStateNodes  = new int*         [nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    SlidingState[iMarker]      = NULL;
+    SlidingStateNodes[iMarker] = NULL;
     
-  SlidingState[iMarker] = NULL;
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
 
-        SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
 
-        for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++) {
-          SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
-        for (iVar = 0; iVar < nVar; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = -1;
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
       }
+
     }
-    else
-      SlidingState[iMarker] = NULL;
   }
 
 
@@ -16913,10 +16940,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
+  /*--- Perform the MPI communication of the solution ---*/
+
+  Set_MPI_Solution(geometry, config);
+  
 }
 
 CNSSolver::~CNSSolver(void) {
-  unsigned short iMarker, iDim;
+  unsigned short iMarker, iDim, iVar;
   unsigned long iVertex;
   
   if (CD_Visc != NULL)          delete [] CD_Visc;
@@ -16984,6 +17015,30 @@ CNSSolver::~CNSSolver(void) {
     delete [] Inlet_FlowDir;
   }
 
+  if ( SlidingState != NULL ) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if ( SlidingState[iMarker] != NULL ) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          if ( SlidingState[iMarker][iVertex] != NULL ){
+            for (iVar = 0; iVar < nPrimVar+1; iVar++)
+              delete [] SlidingState[iMarker][iVertex][iVar];
+            delete [] SlidingState[iMarker][iVertex];
+          }
+        delete [] SlidingState[iMarker];
+      }
+    }
+    delete [] SlidingState;
+    SlidingState = NULL;
+  }
+  
+  if ( SlidingStateNodes != NULL ){
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+        if (SlidingStateNodes[iMarker] != NULL)
+            delete [] SlidingStateNodes[iMarker];  
+    }
+    delete [] SlidingStateNodes;
+    SlidingStateNodes = NULL;
+  }
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -18074,8 +18129,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   su2double ProjGridVel, *GridVel, GridVel2, Pressure = 0.0, Density, Vel2;
   su2double total_viscosity, div_vel, tau_vel[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
   su2double laminar_viscosity, eddy_viscosity, Grad_Vel[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
-      tau[3][3] = {{0.0, 0.0, 0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}}, delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-
+  tau[3][3] = {{0.0, 0.0, 0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}}, delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
   su2double Prandtl_Turb = config->GetPrandtl_Turb();
   su2double Gas_Constant = config->GetGas_ConstantND();

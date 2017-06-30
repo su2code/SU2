@@ -1821,7 +1821,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   /*--- Move the FSI interfaces ---*/
 
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_FSIinterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+		if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -3208,8 +3208,6 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         cout << "No surface deformation (scaling, rotation, or translation)." << endl;
     }
   }
-  else if (config->GetDesign_Variable(0) == CUSTOM && rank == MASTER_NODE)
-    cout <<"Custom design variable will be used in external script" << endl;
   
   /*--- Design variable not implement ---*/
   
@@ -4116,7 +4114,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 
 
 bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
-                                         unsigned short iDV, bool ResetDef) {
+    unsigned short iDV, bool ResetDef) {
   
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j, iFFDBox, iPlane;

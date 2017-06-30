@@ -80,28 +80,21 @@ def gradient( func_name, method, config, state=None ):
     state = su2io.State(state)
     if func_name == 'ALL':
         raise Exception , "func_name = 'ALL' not yet supported"
-    func_name_string = func_name
+    func_output = func_name
     if (type(func_name)==list):
         if (config.OPT_COMBINE_OBJECTIVE=="YES"):
-            func_name_string = 'COMBO'
+            func_output = 'COMBO'
         else:
             func_name = func_name[0]
     else:
         config.OPT_COMBINE_OBJECTIVE="NO"
         config.OBJECTIVE_WEIGHT = "1.0"
     # redundancy check
-    if not state['GRADIENTS'].has_key(func_name_string):
+    if not state['GRADIENTS'].has_key(func_output):
 
         # Adjoint Gradients
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
-
-            # If using chain rule
-            if 'OUTFLOW_GENERALIZED' in ', '.join(func_name):
-                import downstream_function
-                chaingrad = downstream_function.downstream_gradient(config,state)
-                # Set coefficients for gradients
-                config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
-                
+              
             # Aerodynamics
             if func_name_string in su2io.optnames_aero + su2io.optnames_turbo:
                 grads = adjoint( func_name, config, state )
@@ -110,15 +103,15 @@ def gradient( func_name, method, config, state=None ):
                 grads = adjoint( func_name, config, state )
                 
             # Stability
-            elif func_name_string in su2io.optnames_stab:
+            elif func_output in su2io.optnames_stab:
                 grads = stability( func_name, config, state )
 
             # Geometry (actually a finite difference)
-            elif func_name_string in su2io.optnames_geo:
+            elif func_output in su2io.optnames_geo:
                 grads = geometry( func_name, config, state )
 
             else:
-                raise Exception, 'unknown function name: %s' % func_name_string
+                raise Exception, 'unknown function name: %s' % func_output
 
         # Finite Difference Gradients
         elif method == 'FINDIFF':
@@ -130,22 +123,13 @@ def gradient( func_name, method, config, state=None ):
         else:
             raise Exception , 'unrecognized gradient method'
         
-        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in ', '.join(func_name)):
-            import downstream_function
-            chaingrad = downstream_function.downstream_gradient(config,state)
-            n_dv = len(grads[func_name_string])
-            custom_dv=1
-            for idv in range(n_dv):
-                if (config.DV_KIND[idv] == 'CUSTOM'):
-                    grads[func_name_string][idv] = chaingrad[4+custom_dv]
-                    custom_dv = custom_dv+1
         # store
         state['GRADIENTS'].update(grads)
 
     # if not redundant
 
     # prepare output
-    grads_out = state['GRADIENTS'][func_name_string]
+    grads_out = state['GRADIENTS'][func_output]
 
     return copy.deepcopy(grads_out)
 
@@ -194,12 +178,13 @@ def adjoint( func_name, config, state=None ):
     state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
     
-    # check for multiple objectives
+    # When a list of objectives is used, they are combined 
+    # and the output name is 'COMBO'
     multi_objective = (type(func_name)==list)
-    func_name_string = func_name
-    if multi_objective:   func_name_string = 'COMBO'
+    func_output = func_name
+    if multi_objective:   func_output = 'COMBO'
 
-    ADJ_NAME = 'ADJOINT_'+func_name_string
+    ADJ_NAME = 'ADJOINT_'+func_output
 
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
@@ -212,7 +197,7 @@ def adjoint( func_name, config, state=None ):
     # ----------------------------------------------------    
 
     # master redundancy check
-    if state['GRADIENTS'].has_key(func_name_string):
+    if state['GRADIENTS'].has_key(func_output):
         grads = state['GRADIENTS']
         return copy.deepcopy(grads)
 
@@ -276,7 +261,7 @@ def adjoint( func_name, config, state=None ):
     with redirect_folder( ADJ_NAME, pull, link ) as push:
         with redirect_output(log_adjoint):        
 
-            # setup config
+            # Format objective list in config
             if multi_objective:
                 config['OBJECTIVE_FUNCTION'] = ", ".join(func_name)
             else:
@@ -301,7 +286,7 @@ def adjoint( func_name, config, state=None ):
 
     # return output 
     grads = su2util.ordered_bunch()
-    grads[func_name_string] = state['GRADIENTS'][func_name_string]
+    grads[func_output] = state['GRADIENTS'][func_output]
     return grads
 
 #: def adjoint()
@@ -469,8 +454,11 @@ def findiff( config, state=None ):
     else:
         log_findiff = None
 
-    # evaluate step
-    step = 0.001 * float(config.REF_LENGTH_MOMENT)
+    # evaluate step length or set default value
+    if config.has_key('FIN_DIFF_STEP'):
+        step = float(config.FIN_DIFF_STEP)
+    else:
+        step = 0.001 
 
     # ----------------------------------------------------
     #  Redundancy Check
@@ -553,12 +541,7 @@ def findiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
-    # Use custom variable
-    if ('CUSTOM' in konfig.DV_KIND and 'OUTFLOW_GENERALIZED' in grads.keys()):
-        import downstream_function
-        chaingrad = downstream_function.downstream_gradient(config,state)
-        custom_dv=1
-        
+       
     # output redirection
     with redirect_folder('FINDIFF',pull,link) as push:
         with redirect_output(log_findiff):
@@ -597,11 +580,7 @@ def findiff( config, state=None ):
                         this_grad = ( func_step[key] - func_base[key] ) / this_step
                         grads[key].append(this_grad)
                         
-                # Use custom DV
-                if (konfig.DV_KIND[i_dv] == 'CUSTOM' and 'OUTFLOW_GENERALIZED' in grads.keys()):
-                    grads['OUTFLOW_GENERALIZED'][i_dv] = chaingrad[4+custom_dv]
-                    custom_dv +=1
-                    
+                   
                 #: for each grad name
                     
                 su2util.write_plot(grad_filename,output_format,grads)
