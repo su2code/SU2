@@ -5735,45 +5735,44 @@ public:
   void SetOneD_MassFlowRate(su2double MassFlowRate);
   
   /*!
-   * \brief Get the flux averaged pressure at a marker.(same as area averaged pressure)
-   */
-  su2double GetOneD_FluxAvgPress(void);
-  
-  /*!
-   * \brief Set the flux averaged pressure at a marker. (same as area averaged pressure)
-   */
-  void SetOneD_FluxAvgPress(su2double PressureRef);
-  
-  /*!
-   * \brief Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-   */
-  su2double GetOneD_FluxAvgDensity(void);
-  
-  /*!
-   * \brief Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-   */
-  void SetOneD_FluxAvgDensity(su2double DensityRef);
-  
-  /*!
-   * \brief Get the flux averaged velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
-   */
-  su2double GetOneD_FluxAvgVelocity(void);
-  
-  /*!
-   * \brief Set the flux averaged velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
-   */
-  void SetOneD_FluxAvgVelocity(su2double VelocityRef);
-  
-  /*!
-   * \brief Get the flux averaged enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
-   */
-  su2double GetOneD_FluxAvgEntalpy(void);
-  
-  /*!
-   * \brief Set the flux averaged enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
-   */
-  void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
-  
+     * \brief Get the one-dimensionalized pressure at a marker.(same as area averaged pressure)
+     */
+    su2double GetOneD_AvgPress(void);
+
+    /*!
+     * \brief Set the one-dimensionalized pressure at a marker. (same as area averaged pressure)
+     */
+    void SetOneD_AvgPress(su2double Pressure1D);
+
+    /*!
+     * \brief Get the one-dimensionalized density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+     */
+    su2double GetOneD_AvgDensity(void);
+
+    /*!
+     * \brief Set the one-dimensionalized density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+     */
+    void SetOneD_AvgDensity(su2double Density1D);
+
+    /*!
+     * \brief Get the one-dimensionalized velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
+     */
+    su2double GetOneD_AvgVelocity(void);
+
+    /*!
+     * \brief Set the one-dimensionalized velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
+     */
+    void SetOneD_AvgVelocity(su2double Velocity1D);
+
+    /*!
+     * \brief Get the one-dimensionalized enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
+     */
+    su2double GetOneD_AvgEnthalpy(void);
+
+    /*!
+     * \brief Set the one-dimensionalized enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
+     */
+    void SetOneD_AvgEnthalpy(su2double Enthalpy1D);
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -5874,7 +5873,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
-   
+
+  /*!
    * \brief Initilize turbo containers.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

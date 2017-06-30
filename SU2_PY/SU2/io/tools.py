@@ -175,7 +175,13 @@ def read_history( History_filename, nZones = 1):
 # -------------------------------------------------------------------
 #  Define Dictionary Map for Header Names
 # -------------------------------------------------------------------
-history_header_map = { "Iteration"       : "ITERATION"               ,
+
+def get_headerMap(nZones = 1):
+    """ returns a dictionary that maps history file header names
+        to optimization problem function names
+    """
+    # header name to config file name map
+    history_header_map = { "Iteration"       : "ITERATION"               ,
                  "CLift"           : "LIFT"                    ,
                  "CDrag"           : "DRAG"                    ,
                  "CSideForce"      : "SIDEFORCE"               ,

@@ -13554,175 +13554,221 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
   
 }
 
-void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config) {
+void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                         CConfig *config) {
 
-	unsigned long iVertex, iPoint, Point_Normal;
-	unsigned short iDim, iVar, iMarker;
+  unsigned long iVertex, jVertex, iPoint, Point_Normal;
+  unsigned short iDim, iVar, iMarker, nDonorVertex;
 
-	bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool grid_movement = config->GetGrid_Movement();
-	bool viscous       = config->GetViscous();
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool viscous       = config->GetViscous();
 
-	su2double *Normal = new su2double[nDim];
-	su2double *PrimVar_i = new su2double[nPrimVar];
-	su2double *PrimVar_j = new su2double[nPrimVar];
+  su2double *Normal = new su2double[nDim];
+  su2double *PrimVar_i = new su2double[nPrimVar];
+  su2double *PrimVar_j = new su2double[nPrimVar];
+  su2double *tmp_residual = new su2double[nVar];
 
-	su2double P_static, rho_static;
+  su2double weight;
+  su2double P_static, rho_static;
 
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-		if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-				if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->node[iPoint]->GetDomain()) {
 
-					Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          nDonorVertex = GetnSlidingStates(iMarker, iVertex);
 
-					for (iVar = 0; iVar < nPrimVar; iVar++) {
-						PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-						PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
-					}
+          /*--- Initialize Residual, this will serve to accumulate the average ---*/
 
-					/*--- Set primitive variables ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            Residual[iVar] = 0.0;
 
-					conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+          /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
-					if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ) {
-						Secondary_i = node[iPoint]->GetSecondary();
+          for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
 
-						P_static   = PrimVar_j[nDim+1];
-						rho_static = PrimVar_j[nDim+2];
-						FluidModel->SetTDState_Prho(P_static, rho_static);
+            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-						Secondary_j[0] = FluidModel->GetdPdrho_e();
-						Secondary_j[1] = FluidModel->GetdPde_rho();
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
+            }
 
-						conv_numerics->SetSecondary(Secondary_i, Secondary_j);
-					}
+            /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
 
-					/*--- Set the normal vector ---*/
+            weight = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
 
-					geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-					for (iDim = 0; iDim < nDim; iDim++)
-						Normal[iDim] = -Normal[iDim];
+            /*--- Set primitive variables ---*/
 
-					conv_numerics->SetNormal(Normal);
+            conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
 
-					if (grid_movement)
-						conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+            if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ) {
+              Secondary_i = node[iPoint]->GetSecondary();
 
-					/*--- Compute the convective residual using an upwind scheme ---*/
+              P_static   = PrimVar_j[nDim+1];
+              rho_static = PrimVar_j[nDim+2];
+              FluidModel->SetTDState_Prho(P_static, rho_static);
 
-					conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+              Secondary_j[0] = FluidModel->GetdPdrho_e();
+              Secondary_j[1] = FluidModel->GetdPde_rho();
 
-					/*--- Add Residuals and Jacobians ---*/
+              conv_numerics->SetSecondary(Secondary_i, Secondary_j);
+            }
 
-					LinSysRes.AddBlock(iPoint, Residual);
-					if (implicit)
-						Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            /*--- Set the normal vector ---*/
 
-					if (viscous) {
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++)
+              Normal[iDim] = -Normal[iDim];
 
-						PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5);
-						PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6);
+            conv_numerics->SetNormal(Normal);
 
-						/*--- Set the normal vector and the coordinates ---*/
+            if (grid_movement)
+              conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
-						visc_numerics->SetNormal(Normal);
-						visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+            /*--- Compute the convective residual using an upwind scheme ---*/
 
-						/*--- Primitive variables, and gradient ---*/
+            conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
 
-						visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-						visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+            /*--- Accumulate the residuals to compute the average ---*/
 
-						/*--- Turbulent kinetic energy ---*/
+            for (iVar = 0; iVar < nVar; iVar++)
+              Residual[iVar] += weight*tmp_residual[iVar];
 
-						if (config->GetKind_Turb_Model() == SST)
-							visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+          }
 
-						/*--- Compute and update residual ---*/
+          /*--- Add Residuals and Jacobians ---*/
 
-						visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          LinSysRes.AddBlock(iPoint, Residual);
+          if (implicit)
+            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-						LinSysRes.SubtractBlock(iPoint, Residual);
+          if (viscous) {
 
-						/*--- Jacobian contribution for implicit integration ---*/
+            /*--- Initialize Residual, this will serve to accumulate the average ---*/
 
-						if (implicit)
-							Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-					}
-				}
-			}
-		}
-	}
+            for (iVar = 0; iVar < nVar; iVar++)
+              Residual[iVar] = 0.0;
 
-	/*--- Free locally allocated memory ---*/
+            /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
-	delete [] Normal;
-	delete [] PrimVar_i;
-	delete [] PrimVar_j;
+            for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+              PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5, jVertex);
+              PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6, jVertex);
+
+              /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+
+              weight = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+
+              /*--- Set the normal vector and the coordinates ---*/
+
+              visc_numerics->SetNormal(Normal);
+              visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+              /*--- Primitive variables, and gradient ---*/
+
+              visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+              visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+              /*--- Turbulent kinetic energy ---*/
+
+              if (config->GetKind_Turb_Model() == SST)
+                visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
+              /*--- Compute and update residual ---*/
+
+              visc_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+
+              /*--- Accumulate the residuals to compute the average ---*/
+
+              for (iVar = 0; iVar < nVar; iVar++)
+                Residual[iVar] += weight*tmp_residual[iVar];
+            }
+
+            LinSysRes.SubtractBlock(iPoint, Residual);
+
+            /*--- Jacobian contribution for implicit integration ---*/
+
+            if (implicit)
+              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+
+  delete [] tmp_residual;
+  delete [] Normal;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
 }
 
-void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                         CConfig *config, unsigned short val_marker) {
 
-	unsigned long iVertex, iPoint, GlobalIndex_iPoint, GlobalIndex_jPoint;
-	unsigned short iDim, iVar;
+  unsigned long iVertex, iPoint, GlobalIndex_iPoint, GlobalIndex_jPoint;
+  unsigned short iDim, iVar;
 
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-	su2double *Normal = new su2double[nDim];
-	su2double *PrimVar_i = new su2double[nPrimVar];
-	su2double *PrimVar_j = new su2double[nPrimVar];
+  su2double *Normal = new su2double[nDim];
+  su2double *PrimVar_i = new su2double[nPrimVar];
+  su2double *PrimVar_j = new su2double[nPrimVar];
 
-	/*--- Do the send process, by the moment we are sending each
+  /*--- Do the send process, by the moment we are sending each
    node individually, this must be changed ---*/
 
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-		GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
-		GlobalIndex_jPoint = GetDonorGlobalIndex(val_marker, iVertex);
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex_jPoint = GetDonorGlobalIndex(val_marker, iVertex);
 
-		if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
+    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
 
-			/*--- Store the solution for both points ---*/
+      /*--- Store the solution for both points ---*/
 
-			for (iVar = 0; iVar < nPrimVar; iVar++) {
-				PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-				PrimVar_j[iVar] = GetDonorPrimVar(val_marker, iVertex, iVar);
-			}
+      for (iVar = 0; iVar < nPrimVar; iVar++) {
+        PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+        PrimVar_j[iVar] = GetDonorPrimVar(val_marker, iVertex, iVar);
+      }
 
-			/*--- Set Conservative Variables ---*/
+      /*--- Set Conservative Variables ---*/
 
-			numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+      numerics->SetPrimitive(PrimVar_i, PrimVar_j);
 
-			/*--- Set Normal ---*/
+      /*--- Set Normal ---*/
 
-			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-			numerics->SetNormal(Normal);
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      numerics->SetNormal(Normal);
 
-			/*--- Compute the convective residual using an upwind scheme ---*/
+      /*--- Compute the convective residual using an upwind scheme ---*/
 
-			numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
-			/*--- Add Residuals and Jacobians ---*/
+      /*--- Add Residuals and Jacobians ---*/
 
-			LinSysRes.AddBlock(iPoint, Residual);
-			if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      LinSysRes.AddBlock(iPoint, Residual);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-		}
+    }
 
-	}
+  }
 
-	/*--- Free locally allocated memory ---*/
+  /*--- Free locally allocated memory ---*/
 
-	delete [] Normal;
-	delete [] PrimVar_i;
-	delete [] PrimVar_j;
+  delete [] Normal;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
 
 }
 
@@ -14530,7 +14576,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
         for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++) {
             /*--- If the tag GetMarker_All_FSIinterface(iMarkerFEA) equals the index we are looping at ---*/
-            if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ) {
+            if ( fea_config->GetMarker_All_ZoneInterface(iMarkerStruct) == iMarkerFSI ) {
                 /*--- We have identified the local index of the FEA marker ---*/
                 /*--- Store the number of local points that belong to markFEA on each processor ---*/
                 /*--- This includes the halo nodes ---*/
@@ -14551,7 +14597,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
         for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++) {
             /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-            if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ) {
+            if ( flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == iMarkerFSI ) {
                 /*--- We have identified the local index of the Flow marker ---*/
                 /*--- Store the number of local points that belong to markFlow on each processor ---*/
                 /*--- This includes the halo nodes ---*/
