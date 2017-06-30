@@ -4825,15 +4825,14 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
       config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
       config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
-      config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
-      config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
-      config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
-      config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+      config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
       config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
-
+	  config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+      config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
     }
     
     /*--- Send-Receive boundaries definition ---*/
@@ -4846,14 +4845,14 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Designing(iMarker, NO);
       config->SetMarker_All_Plotting(iMarker, NO);
       config->SetMarker_All_Analyze(iMarker, NO);
-      config->SetMarker_All_FSIinterface(iMarker, NO);
-      config->SetMarker_All_Turbomachinery(iMarker, NO);
-      config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
-      config->SetMarker_All_MixingPlaneInterface(iMarker, NO);
+  	  config->SetMarker_All_ZoneInterface(iMarker, NO);
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
       config->SetMarker_All_Out_1D(iMarker, NO);
+      config->SetMarker_All_Turbomachinery(iMarker, NO);
+      config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
+      config->SetMarker_All_MixingPlaneInterface(iMarker, NO);
       
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (config->GetMarker_All_SendRecv(iMarker) < 0)
@@ -6771,15 +6770,16 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-            config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
-	    config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
-            config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
-	    config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+            config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
+            config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
             config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+            config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+            config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+	        config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
             
             if (duplicate) {
               Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag_Duplicate)] = Marker_Tag_Duplicate;
@@ -6790,7 +6790,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               config->SetMarker_All_Designing(iMarker+1, config->GetMarker_CfgFile_Designing(Marker_Tag_Duplicate));
               config->SetMarker_All_Plotting(iMarker+1, config->GetMarker_CfgFile_Plotting(Marker_Tag_Duplicate));
               config->SetMarker_All_Analyze(iMarker+1, config->GetMarker_CfgFile_Analyze(Marker_Tag_Duplicate));
-              config->SetMarker_All_FSIinterface(iMarker+1, config->GetMarker_CfgFile_FSIinterface(Marker_Tag_Duplicate));
+              config->SetMarker_All_ZoneInterface(iMarker+1, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag_Duplicate));
               config->SetMarker_All_DV(iMarker+1, config->GetMarker_CfgFile_DV(Marker_Tag_Duplicate));
               config->SetMarker_All_Moving(iMarker+1, config->GetMarker_CfgFile_Moving(Marker_Tag_Duplicate));
               config->SetMarker_All_PerBound(iMarker+1, config->GetMarker_CfgFile_PerBound(Marker_Tag_Duplicate));
@@ -8511,15 +8511,15 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
             config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
-            config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
-            config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
-            config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
-            config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+            config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
+            config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+            config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+            config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
             
           }
           iMarker++;
@@ -11254,40 +11254,40 @@ void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short nNode, iDim, iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
   su2double **Coord;
-
+  
   /*--- Compute the center of gravity for elements ---*/
-
+  
   for (iElem = 0; iElem<nElem; iElem++) {
     nNode = elem[iElem]->GetnNodes();
     Coord = new su2double* [nNode];
-
+    
     /*--- Store the coordinates for all the element nodes ---*/
-
+    
     for (iNode = 0; iNode < nNode; iNode++) {
       elem_poin = elem[iElem]->GetNode(iNode);
       Coord[iNode] = new su2double [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
         Coord[iNode][iDim]=node[elem_poin]->GetCoord(iDim);
     }
-
+    
     /*--- Compute the element CG coordinates ---*/
-
+    
     elem[iElem]->SetCoord_CG(Coord);
-
+    
     for (iNode = 0; iNode < nNode; iNode++)
       if (Coord[iNode] != NULL) delete[] Coord[iNode];
     if (Coord != NULL) delete[] Coord;
   }
-
+  
   /*--- Center of gravity for face elements ---*/
-
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
       nNode = bound[iMarker][iElem]->GetnNodes();
       Coord = new su2double* [nNode];
-
+      
       /*--- Store the coordinates for all the element nodes ---*/
-
+      
       for (iNode = 0; iNode < nNode; iNode++) {
         elem_poin = bound[iMarker][iElem]->GetNode(iNode);
         Coord[iNode] = new su2double [nDim];
@@ -11295,32 +11295,32 @@ void CPhysicalGeometry::SetCoord_CG(void) {
           Coord[iNode][iDim]=node[elem_poin]->GetCoord(iDim);
       }
       /*--- Compute the element CG coordinates ---*/
-
+      
       bound[iMarker][iElem]->SetCoord_CG(Coord);
       for (iNode = 0; iNode < nNode; iNode++)
         if (Coord[iNode] != NULL) delete[] Coord[iNode];
       if (Coord != NULL) delete[] Coord;
     }
-
+  
   /*--- Center of gravity for edges ---*/
-
+  
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
     nNode = edge[iEdge]->GetnNodes();
     Coord = new su2double* [nNode];
-
+    
     /*--- Store the coordinates for all the element nodes ---*/
-
+    
     for (iNode = 0; iNode < nNode; iNode++) {
       edge_poin=edge[iEdge]->GetNode(iNode);
       Coord[iNode] = new su2double [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
         Coord[iNode][iDim]=node[edge_poin]->GetCoord(iDim);
     }
-
+    
     /*--- Compute the edge CG coordinates ---*/
-
+    
     edge[iEdge]->SetCoord_CG(Coord);
-
+    
     for (iNode = 0; iNode < nNode; iNode++)
       if (Coord[iNode] != NULL) delete[] Coord[iNode];
     if (Coord != NULL) delete[] Coord;
@@ -13341,7 +13341,7 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   
   unsigned long iPoint;
   su2double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
-
+  
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -14728,8 +14728,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     char str_buf[CGNS_STRING_SIZE], fname[100];
     unsigned short iVar;
     strcpy(fname, filename.c_str());
-    int nRestart_Vars = 4;
-    int *Restart_Vars = new int[4];
+    int nRestart_Vars = 5, nFields;
+    int *Restart_Vars = new int[5];
     passivedouble *Restart_Data = NULL;
     int Restart_Iter = 0;
     passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
@@ -14752,24 +14752,39 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
 
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
+
+    if (Restart_Vars[0] != 535532) {
+      cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
+      cout << " SU2 reads/writes binary restart files by default." << endl;
+      cout << " Note that backward compatibility for ASCII restart files is" << endl;
+      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    /*--- Store the number of fields for simplicity. ---*/
+
+    nFields = Restart_Vars[1];
+
     /*--- Read the variable names from the file. Note that we are adopting a
      fixed length of 33 for the string length to match with CGNS. This is
      needed for when we read the strings later. We pad the beginning of the
      variable string vector with the Point_ID tag that wasn't written. ---*/
 
     config->fields.push_back("Point_ID");
-    for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+    for (iVar = 0; iVar < nFields; iVar++) {
       fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
       config->fields.push_back(str_buf);
     }
 
     /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-    Restart_Data = new passivedouble[Restart_Vars[0]*GetnPointDomain()];
+    Restart_Data = new passivedouble[nFields*GetnPointDomain()];
 
     /*--- Read in the data for the restart at all local points. ---*/
 
-    fread(Restart_Data, sizeof(passivedouble), Restart_Vars[0]*GetnPointDomain(), fhw);
+    fread(Restart_Data, sizeof(passivedouble), nFields*GetnPointDomain(), fhw);
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
@@ -14826,27 +14841,46 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
+
+    if (Restart_Vars[0] != 535532) {
+      if (rank == MASTER_NODE) {
+        cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
+        cout << " SU2 reads/writes binary restart files by default." << endl;
+        cout << " Note that backward compatibility for ASCII restart files is" << endl;
+        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+
+    /*--- Store the number of fields for simplicity. ---*/
+
+    nFields = Restart_Vars[1];
+
     /*--- Read the variable names from the file. Note that we are adopting a
      fixed length of 33 for the string length to match with CGNS. This is
      needed for when we read the strings later. ---*/
 
-    char *mpi_str_buf = new char[Restart_Vars[0]*CGNS_STRING_SIZE];
+    char *mpi_str_buf = new char[nFields*CGNS_STRING_SIZE];
     if (rank == MASTER_NODE) {
       disp = nRestart_Vars*sizeof(int);
-      MPI_File_read_at(fhw, disp, mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE,
+      MPI_File_read_at(fhw, disp, mpi_str_buf, nFields*CGNS_STRING_SIZE,
                        MPI_CHAR, MPI_STATUS_IGNORE);
     }
 
     /*--- Broadcast the string names of the variables. ---*/
 
-    SU2_MPI::Bcast(mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR,
+    SU2_MPI::Bcast(mpi_str_buf, nFields*CGNS_STRING_SIZE, MPI_CHAR,
                    MASTER_NODE, MPI_COMM_WORLD);
 
     /*--- Now parse the string names and load into the config class in case
      we need them for writing visualization files (SU2_SOL). ---*/
 
     config->fields.push_back("Point_ID");
-    for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+    for (iVar = 0; iVar < nFields; iVar++) {
       index = iVar*CGNS_STRING_SIZE;
       field_buf.append("\"");
       for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
@@ -14869,7 +14903,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
      along with the string names of the variables. ---*/
 
-    disp = nRestart_Vars*sizeof(int) + CGNS_STRING_SIZE*Restart_Vars[0]*sizeof(char);
+    disp = nRestart_Vars*sizeof(int) + CGNS_STRING_SIZE*nFields*sizeof(char);
 
     /*--- Define a derived datatype for this rank's set of non-contiguous data
      that will be placed in the restart. Here, we are collecting each one of the
@@ -14881,8 +14915,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     counter = 0;
     for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
       if (GetGlobal_to_Local_Point(iPoint_Global) > -1) {
-        blocklen[counter] = Restart_Vars[0];
-        displace[counter] = iPoint_Global*Restart_Vars[0];
+        blocklen[counter] = nFields;
+        displace[counter] = iPoint_Global*nFields;
         counter++;
       }
     }
@@ -14896,11 +14930,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-    Restart_Data = new passivedouble[Restart_Vars[0]*GetnPointDomain()];
+    Restart_Data = new passivedouble[nFields*GetnPointDomain()];
 
     /*--- Collective call for all ranks to read from their view simultaneously. ---*/
     
-    MPI_File_read_all(fhw, Restart_Data, Restart_Vars[0]*GetnPointDomain(), MPI_DOUBLE, &status);
+    MPI_File_read_all(fhw, Restart_Data, nFields*GetnPointDomain(), MPI_DOUBLE, &status);
 
     /*--- Free the derived datatype. ---*/
 
@@ -14915,14 +14949,14 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     if (rank == MASTER_NODE) {
 
       /*--- External iteration. ---*/
-      disp = (nRestart_Vars*sizeof(int) + Restart_Vars[0]*CGNS_STRING_SIZE*sizeof(char) +
-              Restart_Vars[0]*Restart_Vars[1]*sizeof(passivedouble));
+      disp = (nRestart_Vars*sizeof(int) + nFields*CGNS_STRING_SIZE*sizeof(char) +
+              nFields*Restart_Vars[2]*sizeof(passivedouble));
       MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
 
       /*--- Additional doubles for AoA, AoS, etc. ---*/
 
-      disp = (nRestart_Vars*sizeof(int) + Restart_Vars[0]*CGNS_STRING_SIZE*sizeof(char) +
-              Restart_Vars[0]*Restart_Vars[1]*sizeof(passivedouble) + 1*sizeof(int));
+      disp = (nRestart_Vars*sizeof(int) + nFields*CGNS_STRING_SIZE*sizeof(char) +
+              nFields*Restart_Vars[2]*sizeof(passivedouble) + 1*sizeof(int));
       MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
     }
@@ -14956,7 +14990,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        index = counter*Restart_Vars[0] + skipVar;
+        index = counter*nFields + skipVar;
         for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
@@ -14969,6 +15003,93 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     config->SetAoA_Sens(Restart_Meta[4]);
 
   } else {
+
+    /*--- First, check that this is not a binary restart file. ---*/
+
+    char fname[100];
+    strcpy(fname, filename.c_str());
+    int magic_number;
+
+#ifndef HAVE_MPI
+
+    /*--- Serial binary input. ---*/
+
+    FILE *fhw;
+    fhw = fopen(fname,"rb");
+
+    /*--- Error check for opening the file. ---*/
+
+    if (!fhw) {
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    /*--- Attempt to read the first int, which should be our magic number. ---*/
+
+    fread(&magic_number, sizeof(int), 1, fhw);
+
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
+
+    if (magic_number == 535532) {
+      cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
+      cout << " SU2 reads/writes binary restart files by default." << endl;
+      cout << " Note that backward compatibility for ASCII restart files is" << endl;
+      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    fclose(fhw);
+
+#else
+
+    /*--- Parallel binary input using MPI I/O. ---*/
+
+    MPI_File fhw;
+    int ierr;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- All ranks open the file using MPI. ---*/
+
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- Error check opening the file. ---*/
+
+    if (ierr) {
+      if (rank == MASTER_NODE)
+        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+
+    /*--- Have the master attempt to read the magic number. ---*/
+
+    if (rank == MASTER_NODE)
+      MPI_File_read(fhw, &magic_number, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Broadcast the number of variables to all procs and store clearly. ---*/
+
+    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
+
+    if (magic_number == 535532) {
+      if (rank == MASTER_NODE) {
+        cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
+        cout << " SU2 reads/writes binary restart files by default." << endl;
+        cout << " Note that backward compatibility for ASCII restart files is" << endl;
+        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+    
+    MPI_File_close(&fhw);
+    
+#endif
 
   restart_file.open(filename.data(), ios::in);
   if (restart_file.fail()) {
