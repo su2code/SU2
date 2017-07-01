@@ -14496,7 +14496,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
   for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
-    if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+    if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
 
       for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
