@@ -300,6 +300,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case AERO_DRAG_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_AeroCD();
       break;
+    case SOLID_DRAG_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_SolidCD();
+      break;
     case RADIAL_DISTORTION:
       ObjFunc_Value = direct_solver->GetTotal_IDR();
       break;

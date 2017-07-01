@@ -1147,8 +1147,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief LIMIT_ADJFLOW \n DESCRIPTION: Limit value for the adjoint variable.\n DEFAULT: 1E6. \ingroup Config*/
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
-  /*!\brief MG_ADJFLOW\n DESCRIPTION: Multigrid with the adjoint problem. \n Defualt: YES \ingroup Config*/
-  addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
 
   /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
   addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
@@ -1811,9 +1809,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Optimization gradient factor */
   addPythonOption("OPT_GRADIENT_FACTOR");
-  
-  /* DESCRIPTION: Constratint push factor */
-  addPythonOption("OPT_PUSH_FACTOR");
 
   /* DESCRIPTION: Upper bound for the optimizer */
   addPythonOption("OPT_BOUND_UPPER");
@@ -2107,11 +2102,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
   
-  /*--- Deactivate the multigrid in the adjoint problem ---*/
-  
-  if ((ContinuousAdjoint && !MG_AdjointFlow) ||
-      (Unsteady_Simulation == TIME_STEPPING)) { nMGLevels = 0; }
-
   /*--- If Fluid Structure Interaction, set the solver for each zone.
    *--- ZONE_0 is the zone of the fluid.
    *--- All the other zones are structure.
@@ -2976,7 +2966,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Iter_Fixed_CM        = SU2_TYPE::Int(nExtIter / (su2double(Update_iH)+1));
   Iter_Fixed_NetThrust = SU2_TYPE::Int(nExtIter / (su2double(Update_BCThrust)+1));
 
+  /*--- Setting relaxation factor and CFL for the adjoint runs ---*/
+
   if (ContinuousAdjoint || DiscreteAdjoint) {
+    Relaxation_Factor_Flow = Relaxation_Factor_AdjFlow;
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[2] *= CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[3] *= CFLRedCoeff_AdjFlow;
@@ -3915,7 +3908,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "   - " << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
         if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ".\n";
         else {
-        	if (SystemMeasurements == US) cout <<" in."<< endl;
+        	if (SystemMeasurements == US) cout <<" ft."<< endl;
         	else cout <<" m."<< endl;
         }
       }
@@ -4225,6 +4218,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AVG_OUTLET_PRESSURE:        cout << "Average static objective pressure." << endl; break;
         case MASS_FLOW_RATE:             cout << "Mass flow rate objective function." << endl; break;
         case AERO_DRAG_COEFFICIENT:      cout << "Aero CD objective function." << endl; break;
+        case SOLID_DRAG_COEFFICIENT:     cout << "Solid CD objective function." << endl; break;
         case RADIAL_DISTORTION:          cout << "Radial distortion objective function." << endl; break;
         case CIRCUMFERENTIAL_DISTORTION: cout << "Circumferential distortion objective function." << endl; break;
         case ELLIPTIC_SPANLOAD:          cout << "Elliptic spanload objective function";
@@ -5771,6 +5765,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";      break;
       case AERO_DRAG_COEFFICIENT:   AdjExt = "_acd";       break;
+      case SOLID_DRAG_COEFFICIENT:   AdjExt = "_scd";       break;
       case RADIAL_DISTORTION:           AdjExt = "_rdis";      break;
       case CIRCUMFERENTIAL_DISTORTION:  AdjExt = "_cdis";      break;
       case ELLIPTIC_SPANLOAD:  AdjExt = "_ellip";      break;

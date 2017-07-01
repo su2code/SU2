@@ -2263,6 +2263,11 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               exit(EXIT_FAILURE);
             }
             break;
+          case SOLID_DRAG_COEFFICIENT :
+            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
+              exit(EXIT_FAILURE);
+            }
+            break;
           case RADIAL_DISTORTION :
             if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
               exit(EXIT_FAILURE);

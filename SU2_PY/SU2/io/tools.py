@@ -205,8 +205,9 @@ history_header_map = { "Iteration"       : "ITERATION"               ,
                  "Avg_Velocity"    : "AVG_OUTLET_VELOCITY"     ,
                  "AreaAvg_Mach"        : "AVG_OUTLET_MACH"         ,
                  "AreaAvg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
-                 "MassFlowRate"    : "MASS_FLOW_RATE"          ,
-                 "AeroCDrag"       : "AERO_DRAG"               ,
+                 "MassFlowRate"        : "MASS_FLOW_RATE"          ,
+                 "AeroCDrag"           : "AERO_DRAG"               ,
+                 "SolidCDrag"          : "SOLID_DRAG"               ,
                  "Radial_Distortion"           : "RADIAL_DISTORTION"              ,
                  "Circumferential_Distortion"  : "CIRCUMFERENTIAL_DISTORTION"     ,
                  "Linear_Solver_Iterations"    : "LINEAR_ITERATION"               ,
@@ -268,6 +269,7 @@ optnames_aero = [ "LIFT"                    ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ,
                   "AERO_DRAG"               ,
+                  "SOLID_DRAG"               ,
                   "RADIAL_DISTORTION"            ,
                   "CIRCUMFERENTIAL_DISTORTION"   ,
                   "ELLIPTIC_SPANLOAD"       ,
@@ -313,43 +315,25 @@ optnames_geo = [ "AIRFOIL_AREA"                   ,
                  "WING_OBJFUN_MIN_TOC"    ,
                  "WING_MAX_TWIST"         ,
                  "WING_MAX_CURVATURE"     ,
-                 "WING_MAX_DIHEDRAL"      ,
-                 "STATION1_AREA"          ,
-                 "STATION2_AREA"          ,
-                 "STATION3_AREA"          ,
-                 "STATION1_LENGTH"         ,
-                 "STATION2_LENGTH"         ,
-                 "STATION3_LENGTH"         ,
-                 "STATION1_WIDTH"         ,
-                 "STATION2_WIDTH"         ,
-                 "STATION3_WIDTH"         ,
-                 "STATION1_WATERLINE_WIDTH"         ,
-                 "STATION2_WATERLINE_WIDTH"         ,
-                 "STATION3_WATERLINE_WIDTH"         ,
-                 "STATION1_HEIGHT"        ,
-                 "STATION2_HEIGHT"        ,
-                 "STATION3_HEIGHT"        ,
-                 "STATION1_THICKNESS"     ,
-                 "STATION2_THICKNESS"     ,
-                 "STATION3_THICKNESS"     ,
-                 "STATION1_FRONT_SPAR_THICKNESS"     ,
-                 "STATION2_FRONT_SPAR_THICKNESS"     ,
-                 "STATION3_FRONT_SPAR_THICKNESS"     ,
-                 "STATION1_REAR_SPAR_THICKNESS"     ,
-                 "STATION2_REAR_SPAR_THICKNESS"     ,
-                 "STATION3_REAR_SPAR_THICKNESS"     ,
-                 "STATION1_CHORD"         ,
-                 "STATION2_CHORD"         ,
-                 "STATION3_CHORD"         ,
-                 "STATION1_LE_RADIUS"     ,
-                 "STATION2_LE_RADIUS"     ,
-                 "STATION3_LE_RADIUS"     ,
-                 "STATION1_TOC"           ,
-                 "STATION2_TOC"           ,
-                 "STATION3_TOC"           ,
-                 "STATION1_TWIST"         ,
-                 "STATION2_TWIST"         ,
-                 "STATION3_TWIST"         ]
+                 "WING_MAX_DIHEDRAL"      ]
+                 
+PerStation = []
+for i in range(20):
+	PerStation.append("STATION" + str(i) + "_AREA")
+	PerStation.append("STATION" + str(i) + "_LENGTH")
+    	PerStation.append("STATION" + str(i) + "_WIDTH")
+    	PerStation.append("STATION" + str(i) + "_WATERLINE_WIDTH")
+    	PerStation.append("STATION" + str(i) + "_HEIGHT")
+    	PerStation.append("STATION" + str(i) + "_THICKNESS")
+    	PerStation.append("STATION" + str(i) + "_FRONT_SPAR_THICKNESS")
+    	PerStation.append("STATION" + str(i) + "_REAR_SPAR_THICKNESS")
+    	PerStation.append("STATION" + str(i) + "_CHORD")
+    	PerStation.append("STATION" + str(i) + "_LE_RADIUS")
+    	PerStation.append("STATION" + str(i) + "_TOC")
+    	PerStation.append("STATION" + str(i) + "_TWIST")
+
+optnames_geo.extend(PerStation)
+                 
 #: optnames_geo
 
 grad_names_directdiff = ["D_LIFT"                  ,
@@ -533,6 +517,7 @@ def get_adjointSuffix(objective_function=None):
                  "MASS_FLOW_RATE"          : "mfr"       ,
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "AERO_DRAG"               : "acd"       ,
+                 "SOLID_DRAG"              : "scd"       ,
                  "RADIAL_DISTORTION"              : "rdis"       ,
                  "CIRCUMFERENTIAL_DISTORTION"     : "cdis"       ,
                  "ELLIPTIC_SPANLOAD"       : "ellip"       ,
@@ -677,8 +662,8 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
                 header.append(r',"Grad_CEquivArea","Grad_CNearFieldOF"') 
                 write_format.append(", %.10f, %.10f")
             if key == "ENGINE"     :
-                header.append(r',"Grad_AeroCDrag","Grad_Distortion"')
-                write_format.append(", %.10f, %.10f")
+                header.append(r',"Grad_AeroCDrag","Grad_SolidCDrag","Grad_Radial_Distortion","Grad_Circumferential_Distortion"')
+                write_format.append(", %.10f, %.10f, %.10f, %.10f")
             if key == "1D_OUTPUT"     :
                 header.append(r',"Grad_Avg_TotalPress","Grad_Avg_Mach","Grad_Avg_Temperature","Grad_MassFlowRate","Grad_Avg_Pressure","Grad_Avg_Density","Grad_Avg_Velocity","Grad_Avg_Enthalpy"')
                 write_format.append(", %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f")
@@ -798,8 +783,8 @@ def get_optFileFormat(plot_format,special_cases=None):
             header_list.extend(["CEquivArea","CNearFieldOF"]) 
             write_format.append(r', %.10f, %.10f')
         if key == "ENGINE"     :
-            header_list.extend(["AeroCDrag","Distortion"])
-            write_format.append(r', %.10f, %.10f')
+            header_list.extend(["AeroCDrag","SolidCDrag","Radial_Distortion","Circumferential_Distortion"])
+            write_format.append(r', %.10f, %.10f, %.10f, %.10f')
         if key == "1D_OUTPUT":
             header_list.extend(["AreaAvg_TotalPress","AreaAvg_Mach","AreaAvg_Temperature","MassFlowRate","Avg_Pressure","Avg_Density","Avg_Velocity","Avg_Enthalpy"])
             write_format.append(r', %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')

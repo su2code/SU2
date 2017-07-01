@@ -328,7 +328,7 @@ inline su2double CSolver::GetTotal_NetCThrust() { return 0; }
 
 inline su2double CSolver::GetTotal_Power() { return 0; }
 
-inline su2double CSolver::GetTotal_CD_SolidSurf() { return 0; }
+inline su2double CSolver::GetTotal_SolidCD() { return 0; }
 
 inline su2double CSolver::GetTotal_ReverseFlow() { return 0; }
 
@@ -448,7 +448,7 @@ inline void CSolver::SetTotal_NetCThrust(su2double val_Total_NetCThrust) { }
 
 inline void CSolver::SetTotal_Power(su2double val_Total_Power) { }
 
-inline void CSolver::SetTotal_CD_SolidSurf(su2double val_Total_CD_SolidSurf) { }
+inline void CSolver::SetTotal_SolidCD(su2double val_Total_SolidCD) { }
 
 inline void CSolver::SetTotal_ReverseFlow(su2double val_Total_ReverseFlow) { }
 
@@ -1162,7 +1162,7 @@ inline su2double CEulerSolver::GetTotal_NetCThrust() { return Total_NetCThrust; 
 
 inline su2double CEulerSolver::GetTotal_Power() { return Total_Power; }
 
-inline su2double CEulerSolver::GetTotal_CD_SolidSurf() { return Total_CD_SolidSurf; }
+inline su2double CEulerSolver::GetTotal_SolidCD() { return Total_SolidCD; }
 
 inline su2double CEulerSolver::GetTotal_ReverseFlow() { return Total_ReverseFlow; }
 
@@ -1260,7 +1260,7 @@ inline void CEulerSolver::SetTotal_NetCThrust(su2double val_Total_NetCThrust) { 
 
 inline void CEulerSolver::SetTotal_Power(su2double val_Total_Power) { Total_Power = val_Total_Power; }
 
-inline void CEulerSolver::SetTotal_CD_SolidSurf(su2double val_Total_CD_SolidSurf) { Total_CD_SolidSurf = val_Total_CD_SolidSurf; }
+inline void CEulerSolver::SetTotal_SolidCD(su2double val_Total_SolidCD) { Total_SolidCD = val_Total_SolidCD; }
 
 inline void CEulerSolver::SetTotal_ReverseFlow(su2double val_Total_ReverseFlow) { Total_ReverseFlow = val_Total_ReverseFlow; }
 

@@ -1602,7 +1602,7 @@ public:
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  virtual void SetTotal_CD_SolidSurf(su2double val_Total_CD_SolidSurf);
+  virtual void SetTotal_SolidCD(su2double val_Total_SolidCD);
   
   /*!
    * \brief A virtual member.
@@ -2352,7 +2352,7 @@ public:
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  virtual su2double GetTotal_CD_SolidSurf(void);
+  virtual su2double GetTotal_SolidCD(void);
   
   /*!
    * \brief A virtual member.
@@ -3895,7 +3895,7 @@ protected:
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CL,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
-  Total_CD_SolidSurf, /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_SolidCD, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_NetCThrust, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_Power, /*!< \brief Total drag coefficient for all the boundaries. */
@@ -5429,7 +5429,7 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  su2double GetTotal_CD_SolidSurf(void);
+  su2double GetTotal_SolidCD(void);
   
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -5645,7 +5645,7 @@ public:
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  void SetTotal_CD_SolidSurf(su2double val_Total_CD_SolidSurf);
+  void SetTotal_SolidCD(su2double val_Total_SolidCD);
   
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.

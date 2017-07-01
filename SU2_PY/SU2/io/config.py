@@ -594,8 +594,6 @@ def read_config(filename):
         data_dict['OPT_RELAX_FACTOR'] = 1.0    
     if not data_dict.has_key('OPT_GRADIENT_FACTOR'):                                                                                      
         data_dict['OPT_GRADIENT_FACTOR'] = 1.0
-    if not data_dict.has_key('OPT_PUSH_FACTOR'):
-        data_dict['OPT_PUSH_FACTOR'] = 1.0
     if not data_dict.has_key('OPT_BOUND_UPPER'):
         data_dict['OPT_BOUND_UPPER'] = 1e10
     if not data_dict.has_key('OPT_BOUND_LOWER'):

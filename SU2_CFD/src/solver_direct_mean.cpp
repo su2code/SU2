@@ -709,7 +709,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_Power = 0.0;      AoA_Prev           = 0.0;
   Total_CL_Prev = 0.0;    Total_CD_Prev      = 0.0;
   Total_CMx_Prev      = 0.0; Total_CMy_Prev      = 0.0; Total_CMz_Prev      = 0.0;
-  Total_AeroCD = 0.0;     Total_IDR   = 0.0;    Total_IDC   = 0.0;
+  Total_AeroCD = 0.0;  Total_SolidCD = 0.0;   Total_IDR   = 0.0;    Total_IDC   = 0.0;
 
   /*--- Read farfield conditions ---*/
   
@@ -9370,20 +9370,14 @@ void CEulerSolver::SetEngine_Output(CGeometry *geometry, CConfig *config) {
         su2double DmT = GetTotal_CD() * Factor;
         if (Engine_HalfModel) { DmT *= 2.0; }
         
-        /*--- Set the aero drag ---*/
-        
-        su2double Aero_Drag = DmT - Force;
-        su2double Aero_CD = Aero_Drag / Factor;
-        
-        SetTotal_AeroCD(Aero_CD);
-        
         /*--- Set the solid surface drag ---*/
         
-        su2double SolidSurf_Drag = DmT - Force;
-        su2double SolidSurf_CD = SolidSurf_Drag / Factor;
+        su2double Solid_Drag = DmT - Force;
+        su2double Solid_CD = Solid_Drag / Factor;
         
-        SetTotal_CD_SolidSurf(SolidSurf_CD);
-        
+        SetTotal_SolidCD(Solid_CD);
+        SetTotal_AeroCD(Solid_CD);
+
         /*--- Set the net thrust value---*/
         
         su2double CT = NetThrust / Factor;
@@ -9582,11 +9576,7 @@ void CEulerSolver::SetEngine_Output(CGeometry *geometry, CConfig *config) {
           
           if (config->GetSystemMeasurements() == SI) cout << "Solid surfaces Drag (N): ";
           else if (config->GetSystemMeasurements() == US) cout << "Solid surfaces Drag (lbf): ";
-          cout << setprecision(1) << SolidSurf_Drag * Ref << ". Solid surfaces CD: " << setprecision(5) << SolidSurf_CD << "." << endl;
-          
-          if (config->GetSystemMeasurements() == SI) cout << "Aero Drag (N): ";
-          else if (config->GetSystemMeasurements() == US) cout << "Aero Drag (lbf): ";
-          cout << setprecision(1) << Aero_Drag * Ref << ". Aero CD: " << setprecision(5) << Aero_CD << "." << endl;
+          cout << setprecision(1) << Solid_Drag * Ref << ". Solid surfaces CD: " << setprecision(5) << Solid_CD << "." << endl;
           
           if (config->GetSystemMeasurements() == SI) cout << setprecision(1) <<"Net Thrust (N): ";
           else if (config->GetSystemMeasurements() == US) cout << setprecision(1) << "Net Thrust (lbf): ";
@@ -10405,6 +10395,9 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
       break;
     case AERO_DRAG_COEFFICIENT:
       Total_ComboObj+=Weight_ObjFunc*Total_AeroCD;
+      break;
+    case SOLID_DRAG_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Total_SolidCD;
       break;
     case RADIAL_DISTORTION:
       Total_ComboObj+=Weight_ObjFunc*Total_IDR;
@@ -15532,7 +15525,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_NetCThrust = 0.0;   Total_NetCThrust_Prev = 0.0; Total_CL_Prev = 0.0;
   Total_Power      = 0.0;   AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
   Total_CMx_Prev   = 0.0;   Total_CMy_Prev      = 0.0;   Total_CMz_Prev      = 0.0;
-  Total_AeroCD     = 0.0;    Total_IDR   = 0.0; Total_IDC           = 0.0;
+  Total_AeroCD     = 0.0;   Total_SolidCD     = 0.0;   Total_IDR   = 0.0; Total_IDC           = 0.0;
 
   /*--- Read farfield conditions from config ---*/
   

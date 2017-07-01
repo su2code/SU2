@@ -4022,7 +4022,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char sec_coeff[] = ",\"Diff_Elliptic\",\"Max_SecCLift\"";
   char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
-  char engine_coeff[]= ",\"AeroCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
+  char engine_coeff[]= ",\"AeroCDrag\",\"SolidCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   char wave_coeff[]= ",\"CWave\"";
   char fem_coeff[]= ",\"VM_Stress\"";
@@ -4032,7 +4032,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   char mass_flow_rate[] = ",\"MassFlowRate\"";
   char d_flow_coeff[] = ",\"D(CLift)\",\"D(CDrag)\",\"D(CSideForce)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\"";
-  char d_engine[] = ",\"D(AeroCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
+  char d_engine[] = ",\"D(AeroCDrag)\",\"D(SolidCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
 
   /*--- Find the markers being monitored and create a header for them ---*/
   
@@ -4268,7 +4268,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0;
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_AvgPress = 0.0, OneD_AvgDensity = 0.0, OneD_AvgVelocity = 0.0, OneD_AvgEnthalpy = 0.0,
-    Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
+    Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
     Total_EllipticDiff = 0.0, Total_MaxSecCL = 0.0, Total_AoA = 0.0;
 
     /*--- Initialize variables to store information from all zone for turboperformance (direct solution) ---*/
@@ -4298,7 +4298,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
     su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0,
-        D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_AeroCD = 0.0, D_Total_IDR = 0.0, D_Total_IDC = 0.0;
+        D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_AeroCD = 0.0, D_Total_SolidCD = 0.0, D_Total_IDR = 0.0, D_Total_IDC = 0.0;
     
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
@@ -4440,9 +4440,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           D_Total_CFz      = SU2_TYPE::GetDerivative(Total_CFz);
           
           if (engine || actuator_disk) {
-            D_Total_AeroCD  = SU2_TYPE::GetDerivative(Total_AeroCD);
-            D_Total_IDR    = SU2_TYPE::GetDerivative(Total_IDR);
-            D_Total_IDC    = SU2_TYPE::GetDerivative(Total_IDC);
+            D_Total_AeroCD   = SU2_TYPE::GetDerivative(Total_AeroCD);
+            D_Total_SolidCD  = SU2_TYPE::GetDerivative(Total_SolidCD);
+            D_Total_IDR      = SU2_TYPE::GetDerivative(Total_IDR);
+            D_Total_IDC      = SU2_TYPE::GetDerivative(Total_IDC);
           }
           
         }
@@ -4463,6 +4464,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (engine || actuator_disk) {
           Total_AeroCD  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AeroCD();
+          Total_SolidCD = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_SolidCD();
           Total_IDR     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDR();
           Total_IDC     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDC();
 
@@ -4759,8 +4761,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                      Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff, Total_AoA);
             if (engine || actuator_disk)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx,
-                  Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_AeroCD, Total_IDR, Total_IDC);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx,
+                  Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
             if (equiv_area)
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_CEquivArea, Total_CNearFieldOF);
             if (rotating_frame)
@@ -4778,8 +4780,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Heat, Total_MaxHeat);
               if (engine || actuator_disk)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
-                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Heat, Total_MaxHeat, Total_AeroCD, Total_IDR, Total_IDC);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
+                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Heat, Total_MaxHeat, Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
               if (equiv_area)
                 SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Heat, Total_MaxHeat, Total_CEquivArea, Total_CNearFieldOF);
               if (rotating_frame)
@@ -4799,9 +4801,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                        D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
                        D_Total_CFz, D_Total_CEff);
               if (engine || actuator_disk)
-              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
+              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                        D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
-                       D_Total_CFz, D_Total_CEff, D_Total_AeroCD, D_Total_IDR, D_Total_IDC);
+                       D_Total_CFz, D_Total_CEff, D_Total_AeroCD, D_Total_SolidCD, D_Total_IDR, D_Total_IDC);
             }
             
             if (aeroelastic) {

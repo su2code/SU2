@@ -411,16 +411,15 @@ def con_ceq(dvs,config,state=None):
     # evaluate each constraint
     vals_out = []
     for i_obj,this_con in enumerate(constraints):
-        scale = def_cons[this_con]['SCALE']
         relax = float(config['OPT_GRADIENT_FACTOR'])
-        push  = float(config['OPT_PUSH_FACTOR'])
+        push  = def_cons[this_con]['SCALE']
         value = def_cons[this_con]['VALUE']
         
         # Evaluate Constraint Function
         func = su2func(this_con,config,state)
         
         # scaling and centering
-        func = (func - value) * scale * relax * push
+        func = (func - value) * relax * push
         
         vals_out.append(func)
         
@@ -458,7 +457,6 @@ def con_dceq(dvs,config,state=None):
     # evaluate each constraint
     vals_out = []
     for i_obj,this_con in enumerate(constraints):
-        scale = def_cons[this_con]['SCALE']
         relax = float(config['OPT_GRADIENT_FACTOR'])
         value = def_cons[this_con]['VALUE']
         
@@ -469,7 +467,7 @@ def con_dceq(dvs,config,state=None):
         k = 0
         for i_dv,dv_scl in enumerate(dv_scales):
             for i_grd in range(dv_size[i_dv]):
-                grad[k] = grad[k] * scale * relax / dv_scl
+                grad[k] = grad[k] * relax / dv_scl
                 k = k + 1
 
         vals_out.append(grad)
@@ -505,9 +503,8 @@ def con_cieq(dvs,config,state=None):
     # evaluate each constraint
     vals_out = []
     for i_obj,this_con in enumerate(constraints):
-        scale = def_cons[this_con]['SCALE']
         relax = float(config['OPT_GRADIENT_FACTOR'])
-        push = float(config['OPT_PUSH_FACTOR'])
+        push  = def_cons[this_con]['SCALE']
         value = def_cons[this_con]['VALUE']
         sign  = def_cons[this_con]['SIGN']
         sign  = su2io.get_constraintSign(sign)
@@ -516,7 +513,7 @@ def con_cieq(dvs,config,state=None):
         func = su2func(this_con,config,state)
         
         # scaling and centering
-        func = (func - value) * scale * sign * relax * push
+        func = (func - value) * sign * relax * push
         
         vals_out.append(func)
     
@@ -555,7 +552,6 @@ def con_dcieq(dvs,config,state=None):
     # evaluate each constraint
     vals_out = []
     for i_obj,this_con in enumerate(constraints):
-        scale = def_cons[this_con]['SCALE']
         relax = float(config['OPT_GRADIENT_FACTOR'])
         value = def_cons[this_con]['VALUE']
         sign  = def_cons[this_con]['SIGN']
@@ -568,7 +564,7 @@ def con_dcieq(dvs,config,state=None):
         k = 0
         for i_dv,dv_scl in enumerate(dv_scales):
             for i_grd in range(dv_size[i_dv]):
-                grad[k] = grad[k] * sign * scale * relax / dv_scl
+                grad[k] = grad[k] * sign * relax / dv_scl
                 k = k + 1
 
         vals_out.append(grad)

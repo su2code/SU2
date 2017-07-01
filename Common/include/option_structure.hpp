@@ -970,10 +970,11 @@ enum ENUM_OBJECTIVE {
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
   AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
-  RADIAL_DISTORTION = 36, 	      /*!< \brief Radial Distortion objective function definition. */
-  CIRCUMFERENTIAL_DISTORTION = 37,  /*!< \brief Circumferential Distortion objective function definition. */
-  ELLIPTIC_SPANLOAD = 38,           /*!< \brief Elliptic spanload objective function definition. */
-  MAX_SECTIONAL_CL = 39            /*!< \brief Maximum sectional CL objective function definition. */
+  SOLID_DRAG_COEFFICIENT = 36, 	  /*!< \brief Drag of solid surfaces objective function definition. */
+  RADIAL_DISTORTION = 37, 	      /*!< \brief Radial Distortion objective function definition. */
+  CIRCUMFERENTIAL_DISTORTION = 38,  /*!< \brief Circumferential Distortion objective function definition. */
+  ELLIPTIC_SPANLOAD = 39,           /*!< \brief Elliptic spanload objective function definition. */
+  MAX_SECTIONAL_CL = 40            /*!< \brief Maximum sectional CL objective function definition. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1007,6 +1008,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE)
 ("AERO_DRAG", AERO_DRAG_COEFFICIENT)
+("SOLID_DRAG", SOLID_DRAG_COEFFICIENT)
 ("RADIAL_DISTORTION", RADIAL_DISTORTION)
 ("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION)
 ("ELLIPTIC_SPANLOAD", ELLIPTIC_SPANLOAD)

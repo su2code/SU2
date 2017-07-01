@@ -89,7 +89,6 @@ private:
   su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
   su2double* Obj_ChainRuleCoeff; /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
-  bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   su2double* SubsonicEngine_Cyl; /*!< \brief Coordinates of the box subsonic region */
   su2double* ActDisk_GeoDef; /*!< \brief actuator disk geometrical definition */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
