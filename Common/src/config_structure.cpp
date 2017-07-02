@@ -1161,6 +1161,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("FROZEN_VISC_CONT", Frozen_Visc_Cont, true);
   /* DESCRIPTION: Discrete Adjoint frozen viscosity */
   addBoolOption("FROZEN_VISC_DISC", Frozen_Visc_Disc, false);
+  /* DESCRIPTION: Discrete Adjoint frozen limiter */
+  addBoolOption("FROZEN_LIMITER_DISC", Frozen_Limiter_Disc, false);
    /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /*!\brief SENS_REMOVE_SHARP
