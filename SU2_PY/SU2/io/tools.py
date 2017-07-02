@@ -275,6 +275,16 @@ optnames_stab = [ "D_LIFT_D_ALPHA"               ,
                   "D_MOMENT_Z_D_ALPHA"           ,
                 ]
 
+#: optnames_aero
+
+optnames_multi = [ "MULTIPOINT_LIFT"               ,
+                   "MULTIPOINT_DRAG"               ,
+                   "MULTIPOINT_SIDEFORCE"          ,
+                   "MULTIPOINT_MOMENT_X"           ,
+                   "MULTIPOINT_MOMENT_Y"           ,
+                   "MULTIPOINT_MOMENT_Z"           ,
+                   "MULTIPOINT_CUSTOM"]
+
 # Geometric Optimizer Function Names
 optnames_geo = [ "MAX_THICKNESS"      ,
                  "1/4_THICKNESS"      ,
