@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -5085,7 +5085,7 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
 
     for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
-      if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+      if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
 
         for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
@@ -5141,7 +5141,7 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
 
   /*--- Number of markers on the FSI interface ---*/
 
-  nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
+  nMarkerFSI     = (flow_config->GetMarker_n_ZoneInterface())/2;
   nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
   nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
 
@@ -5167,8 +5167,8 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
     /*--- On the structural side ---*/
 
     for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFEA) equals the index we are looping at ---*/
-      if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ){
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFEA) equals the index we are looping at ---*/
+      if ( fea_config->GetMarker_All_ZoneInterface(iMarkerStruct) == iMarkerFSI ){
         /*--- We have identified the local index of the FEA marker ---*/
         /*--- Store the number of local points that belong to markFEA on each processor ---*/
         /*--- This includes the halo nodes ---*/
@@ -5188,8 +5188,8 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
     /*--- On the fluid side ---*/
 
     for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ){
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == iMarkerFSI ){
         /*--- We have identified the local index of the Flow marker ---*/
         /*--- Store the number of local points that belong to markFlow on each processor ---*/
         /*--- This includes the halo nodes ---*/
@@ -5457,7 +5457,7 @@ void CIncEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolum
 
     for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
-      if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+      if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
 
         for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
