@@ -125,6 +125,7 @@ private:
   SubsonicEngine,			/*!< \brief Engine intake subsonic region. */
   Frozen_Visc_Cont,			/*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
   Frozen_Visc_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
+  Frozen_Limiter_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen limiter. */
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric; /*!< \brief Flag for axisymmetric calculations */
@@ -3660,11 +3661,18 @@ public:
   bool GetFrozen_Visc_Disc(void);
 
   /*!
+   * \brief Provides information about the way in which the limiter will be treated by the
+   *        disc. adjoint method.
+   * \return <code>FALSE</code> means that the limiter computation is included.
+   */
+  bool GetFrozen_Limiter_Disc(void);
+
+  /*!
    * \brief Viscous limiter mean flow.
    * \return <code>FALSE</code> means no viscous limiter turb equations.
    */
   bool GetViscous_Limiter_Flow(void);
-  
+
   /*!
    * \brief Viscous limiter turb equations.
    * \return <code>FALSE</code> means no viscous limiter turb equations.
