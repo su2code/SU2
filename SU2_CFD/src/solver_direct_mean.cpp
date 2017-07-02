@@ -14994,11 +14994,11 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         if (!steady_restart) {
 
           /*--- Rewind the index to retrieve the Coords. ---*/
-          index = counter*Restart_Vars[0];
+          index = counter*Restart_Vars[1];
           for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
 
           /*--- Move the index forward to get the grid velocities. ---*/
-          index = counter*Restart_Vars[0] + skipVars + nVar;
+          index = counter*Restart_Vars[1] + skipVars + nVar;
           for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
