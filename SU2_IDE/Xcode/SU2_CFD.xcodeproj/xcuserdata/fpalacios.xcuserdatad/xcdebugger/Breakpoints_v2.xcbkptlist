@@ -15,8 +15,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "4995"
             endingLineNumber = "4995"
-            landmarkName = "CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh)"
-            landmarkType = "5">
+            landmarkName = "CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
