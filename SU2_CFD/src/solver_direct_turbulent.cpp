@@ -1371,10 +1371,8 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Upwind second order reconstruction ---*/
 
-  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
-
-  if (limiter_turb) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
-
+  if (limiter_turb) SetSolution_Limiter(geometry, config);
+  
 }
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -2854,10 +2852,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
-  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
+  if (limiter_turb) SetSolution_Limiter(geometry, config);
   
-  if (limiter_turb) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
-
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
