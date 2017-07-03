@@ -333,6 +333,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case MASS_FLOW_RATE:
       ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
       break;
+    case CUSTOM_OBJFUNC:
+      ObjFunc_Value = direct_solver->GetTotal_Custom_ObjFunc();
+      break;
     }
 
     /*--- Template for new objective functions where TemplateObjFunction()
