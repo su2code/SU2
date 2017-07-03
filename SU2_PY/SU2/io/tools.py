@@ -176,9 +176,9 @@ def read_history( History_filename ):
 #  Define Dictionary Map for Header Names
 # -------------------------------------------------------------------
 history_header_map = { "Iteration"       : "ITERATION"               ,
-                 "CLift"           : "LIFT"                    ,
-                 "CDrag"           : "DRAG"                    ,
-                 "CSideForce"      : "SIDEFORCE"               ,
+                 "CL"              : "LIFT"                    ,
+                 "CD"              : "DRAG"                    ,
+                 "CSF"      : "SIDEFORCE"               ,
                  "Cp_Diff"         : "INVERSE_DESIGN_PRESSURE" ,
                  "HeatFlux_Diff"   : "INVERSE_DESIGN_HEATFLUX" ,
                  "HeatFlux_Total"  : "TOTAL_HEATFLUX"          ,
@@ -207,9 +207,9 @@ history_header_map = { "Iteration"       : "ITERATION"               ,
                  "Radial_Distortion"           : "RADIAL_DISTORTION"              ,
                  "Circumferential_Distortion"  : "CIRCUMFERENTIAL_DISTORTION"              ,
                  "Time(min)"         : "TIME"                    ,
-                 "D(CLift)"          : "D_LIFT"                  ,
-                 "D(CDrag)"          : "D_DRAG"                  ,
-                 "D(CSideForce)"     : "D_SIDEFORCE"             ,
+                 "D(CL)"             : "D_LIFT"                  ,
+                 "D(CD)"             : "D_DRAG"                  ,
+                 "D(CSF)"            : "D_SIDEFORCE"             ,
                  "D(CMx)"            : "D_MOMENT_X"              ,
                  "D(CMy)"            : "D_MOMENT_Y"              ,
                  "D(CMz)"            : "D_MOMENT_Z"              ,
@@ -374,9 +374,9 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "EFFICIENCY" : "D_EFFICIENCY"}
 
 # per-surface functions
-per_surface_map = {"LIFT"       :   "CLift" ,
-                  "DRAG"        :   "CDrag" ,
-                  "SIDEFORCE"   :   "CSideForce"  ,
+per_surface_map = {"LIFT"       :   "CL" ,
+                  "DRAG"        :   "CD" ,
+                  "SIDEFORCE"   :   "CSF"  ,
                   "MOMENT_X"    :   "CMx"   ,
                   "MOMENT_Y"    :   "CMy"   ,
                   "MOMENT_Z"    :   "CMz"   ,
@@ -657,9 +657,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         
     # Case: finite difference  
     elif grad_type == 'FINITE_DIFFERENCE':
-        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_Custom_ObjFunc","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
+        header.append(r'"iVar","Grad_CL","Grad_CD","Grad_CSF","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_CL/CD","Grad_Custom_ObjFunc","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
         write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
-        
+
         for key in special_cases: 
             if key == "ROTATING_FRAME" : 
                 header.append(r',"Grad_CMerit","Grad_CT","Grad_CQ"')
@@ -777,7 +777,7 @@ def get_optFileFormat(plot_format,special_cases=None):
     else: raise Exception('output plot format not recognized')
 
     # start header
-    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","HeatFlux_Total","HeatFlux_Maximum"])
+    header_list.extend(["Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","HeatFlux_Total","HeatFlux_Maximum"])
     write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
     # special cases
