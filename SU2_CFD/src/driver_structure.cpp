@@ -4202,14 +4202,6 @@ void CDiscAdjFluidDriver::Run() {
   else
     nIntIter = 1;
 
-  if (config_container[ZONE_0]->GetExtIter() == 0){
-    for (iZone = 0; iZone < nZone; iZone++) {
-      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
-      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
-      geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
-    }
-  }
-
   for (iZone = 0; iZone < nZone; iZone++) {
 
     iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
