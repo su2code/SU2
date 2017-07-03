@@ -8852,8 +8852,8 @@ abs_prefix=$prefix #`(cd $prefix && pwd)`
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|
-|                Dr. Thomas D. Economon, economon@stanford.edu          |
+| SU2 Original Developers: Dr. Francisco D. Palacios.                   |
+|                          Dr. Thomas D. Economon.                      |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
 | - Prof. Juan J. Alonso's group at Stanford University.                |
@@ -8941,8 +8941,8 @@ $as_echo "
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|
-|                Dr. Thomas D. Economon, economon@stanford.edu          |
+| SU2 Original Developers: Dr. Francisco D. Palacios.                   |
+|                          Dr. Thomas D. Economon.                      |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
 | - Prof. Juan J. Alonso's group at Stanford University.                |
