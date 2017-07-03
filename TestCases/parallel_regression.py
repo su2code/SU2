@@ -581,7 +581,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 29
-    Jones_tc.test_vals = [-5.563844, -0.197626, 9.203914e+01, 7.085155e-01] #last 4 columns
+    Jones_tc.test_vals = [-5.563796, -0.197664, 92.039250, 0.708515] #last 4 columns
     Jones_tc.su2_exec  = "parallel_computation.py -f"
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
