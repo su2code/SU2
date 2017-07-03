@@ -4115,7 +4115,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AERO_DRAG_COEFFICIENT:   cout << "Aero CD objective function." << endl; break;
         case RADIAL_DISTORTION:       cout << "Radial distortion objective function." << endl; break;
         case CIRCUMFERENTIAL_DISTORTION:   cout << "Circumferential distortion objective function." << endl; break;
-
+        case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
       }
 		}
 		else {
@@ -5649,6 +5649,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AERO_DRAG_COEFFICIENT:   AdjExt = "_acd";       break;
       case RADIAL_DISTORTION:           AdjExt = "_rdis";      break;
       case CIRCUMFERENTIAL_DISTORTION:  AdjExt = "_cdis";      break;
+      case CUSTOM_OBJFUNC:        		AdjExt = "_custom";   break;
       }
     }
     else{

@@ -190,34 +190,35 @@ history_header_map = { "Iteration"       : "ITERATION"               ,
                  "CFy"             : "FORCE_Y"                 ,
                  "CFz"             : "FORCE_Z"                 ,
                  "CL/CD"           : "EFFICIENCY"              ,
-                 "CEff"            : "EFFICIENCY"              ,
+                 "Custom_ObjFunc"  : "CUSTOM_OBJFUNC"          ,
                  "CMerit"          : "FIGURE_OF_MERIT"         ,
                  "CQ"              : "TORQUE"                  ,
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
                  "AreaAvg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
-                 "Avg_Pressure"    : "AVG_OUTLET_PRESSURE"     ,
-                 "Avg_Density"     : "AVG_OUTLET_DENSITY"      ,
-                 "Avg_Velocity"    : "AVG_OUTLET_VELOCITY"     ,
+                 "Avg_Pressure"        : "AVG_OUTLET_PRESSURE"     ,
+                 "Avg_Density"         : "AVG_OUTLET_DENSITY"      ,
+                 "Avg_Velocity"        : "AVG_OUTLET_VELOCITY"     ,
                  "AreaAvg_Mach"        : "AVG_OUTLET_MACH"         ,
                  "AreaAvg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
-                 "MassFlowRate"    : "MASS_FLOW_RATE"          ,
-                 "AeroCDrag"       : "AERO_DRAG"               ,
-                 "Radial_Distortion"      : "RADIAL_DISTORTION"              ,
-                 "Circumferential_Distortion"      : "CIRCUMFERENTIAL_DISTORTION"              ,
-                 "Time(min)"       : "TIME"                    ,
-                 "D(CLift)"        : "D_LIFT"                  ,
-                 "D(CDrag)"        : "D_DRAG"                  ,
-                 "D(CSideForce)"   : "D_SIDEFORCE"             ,
-                 "D(CMx)"          : "D_MOMENT_X"              ,
-                 "D(CMy)"          : "D_MOMENT_Y"              ,
-                 "D(CMz)"          : "D_MOMENT_Z"              ,
-                 "D(CFx)"          : "D_FORCE_X"               ,
-                 "D(CFy)"          : "D_FORCE_Y"               ,
-                 "D(CFz)"          : "D_FORCE_Z"               ,
-                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
-                 "ComboObj"        : "COMBO"}
+                 "MassFlowRate"        : "MASS_FLOW_RATE"          ,
+                 "AeroCDrag"           : "AERO_DRAG"               ,
+                 "Radial_Distortion"           : "RADIAL_DISTORTION"              ,
+                 "Circumferential_Distortion"  : "CIRCUMFERENTIAL_DISTORTION"              ,
+                 "Time(min)"         : "TIME"                    ,
+                 "D(CLift)"          : "D_LIFT"                  ,
+                 "D(CDrag)"          : "D_DRAG"                  ,
+                 "D(CSideForce)"     : "D_SIDEFORCE"             ,
+                 "D(CMx)"            : "D_MOMENT_X"              ,
+                 "D(CMy)"            : "D_MOMENT_Y"              ,
+                 "D(CMz)"            : "D_MOMENT_Z"              ,
+                 "D(CFx)"            : "D_FORCE_X"               ,
+                 "D(CFy)"            : "D_FORCE_Y"               ,
+                 "D(CFz)"            : "D_FORCE_Z"               ,
+                 "D(CL/CD)"          : "D_EFFICIENCY"            ,
+                 "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC"            ,
+                 "ComboObj"          : "COMBO"}
      
 
 def get_headerMap():
@@ -265,7 +266,7 @@ optnames_aero = [ "LIFT"                    ,
                   "RADIAL_DISTORTION"              ,
                   "CIRCUMFERENTIAL_DISTORTION"              ,
                   "COMBO"]
-#: optnames_aero
+#: Stability Optimizer Function Names
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
                   "D_DRAG_D_ALPHA"               ,
@@ -275,7 +276,7 @@ optnames_stab = [ "D_LIFT_D_ALPHA"               ,
                   "D_MOMENT_Z_D_ALPHA"           ,
                 ]
 
-#: optnames_aero
+#: Multipoint Optimizer Function Names
 
 optnames_multi = [ "MULTIPOINT_LIFT"               ,
                    "MULTIPOINT_DRAG"               ,
@@ -656,8 +657,8 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         
     # Case: finite difference  
     elif grad_type == 'FINITE_DIFFERENCE':
-        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
-        write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
+        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_Custom_ObjFunc","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
+        write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
         for key in special_cases: 
             if key == "ROTATING_FRAME" : 
@@ -776,8 +777,8 @@ def get_optFileFormat(plot_format,special_cases=None):
     else: raise Exception('output plot format not recognized')
 
     # start header
-    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CEff","HeatFlux_Total","HeatFlux_Maximum"])
-    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
+    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","HeatFlux_Total","HeatFlux_Maximum"])
+    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
     # special cases
     for key in special_cases: 

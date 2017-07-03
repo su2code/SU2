@@ -4004,7 +4004,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   
   /*--- Header for the coefficients ---*/
   
-  char flow_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\"";
+  char flow_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"Custom_ObjFunc\"";
   char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
   char engine_coeff[]= ",\"AeroCDrag\",\"Radial_Distortion\",\"Radial_Distortion(average)\",\"Circumferential_Distortion\",\"Circumferential_Distortion(average)\"";
@@ -4016,7 +4016,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   char mass_flow_rate[] = ",\"MassFlowRate\"";
-  char d_flow_coeff[] = ",\"D(CLift)\",\"D(CDrag)\",\"D(CSideForce)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\"";
+  char d_flow_coeff[] = ",\"D(CLift)\",\"D(CDrag)\",\"D(CSideForce)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\",\"D(Custom_ObjFunc)\"";
   char d_engine[] = ",\"D(AeroCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
 
   /*--- Find the markers being monitored and create a header for them ---*/
@@ -4246,7 +4246,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
-    Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0;
+    Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0, Total_Custom_ObjFunc = 0.0;
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_AvgPress = 0.0, OneD_AvgDensity = 0.0, OneD_AvgVelocity = 0.0,OneD_AvgEnthalpy,
     Total_ComboObj=0.0, Total_AeroCD = 0.0, Total_RadialDistortion = 0.0, Total_CircumferentialDistortion = 0.0,
@@ -4279,7 +4279,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
     su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0,
-        D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_AeroCD = 0.0, D_Total_RadialDistortion = 0.0, D_Total_CircumferentialDistortion = 0.0;
+        D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_AeroCD = 0.0, D_Total_RadialDistortion = 0.0, D_Total_CircumferentialDistortion = 0.0, D_Total_Custom_ObjFunc = 0.0;
     
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
@@ -4393,30 +4393,32 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
         
         /*--- Flow solution coefficients ---*/
-        Total_CL       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
-        Total_CD       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
-        Total_CSF      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSF();
-        Total_CEff     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
-        Total_CMx      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
-        Total_CMy      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
-        Total_CMz      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
-        Total_CFx      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
-        Total_CFy      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
-        Total_CFz      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
-        Total_ComboObj = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
+        Total_CL             = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
+        Total_CD             = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
+        Total_CSF            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSF();
+        Total_CEff           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
+        Total_CMx            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
+        Total_CMy            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
+        Total_CMz            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
+        Total_CFx            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+        Total_CFy            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
+        Total_CFz            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
+        Total_ComboObj       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
+        Total_Custom_ObjFunc = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Custom_ObjFunc();
 
         if (direct_diff != NO_DERIVATIVE) {
-          D_Total_CL       = SU2_TYPE::GetDerivative(Total_CL);
-          D_Total_CD       = SU2_TYPE::GetDerivative(Total_CD);
-          D_Total_CSF      = SU2_TYPE::GetDerivative(Total_CSF);
-          D_Total_CEff     = SU2_TYPE::GetDerivative(Total_CEff);
-          D_Total_CMx      = SU2_TYPE::GetDerivative(Total_CMx);
-          D_Total_CMy      = SU2_TYPE::GetDerivative(Total_CMy);
-          D_Total_CMz      = SU2_TYPE::GetDerivative(Total_CMz);
-          D_Total_CFx      = SU2_TYPE::GetDerivative(Total_CFx);
-          D_Total_CFy      = SU2_TYPE::GetDerivative(Total_CFy);
-          D_Total_CFz      = SU2_TYPE::GetDerivative(Total_CFz);
-          
+          D_Total_CL             = SU2_TYPE::GetDerivative(Total_CL);
+          D_Total_CD             = SU2_TYPE::GetDerivative(Total_CD);
+          D_Total_CSF            = SU2_TYPE::GetDerivative(Total_CSF);
+          D_Total_CEff           = SU2_TYPE::GetDerivative(Total_CEff);
+          D_Total_CMx            = SU2_TYPE::GetDerivative(Total_CMx);
+          D_Total_CMy            = SU2_TYPE::GetDerivative(Total_CMy);
+          D_Total_CMz            = SU2_TYPE::GetDerivative(Total_CMz);
+          D_Total_CFx            = SU2_TYPE::GetDerivative(Total_CFx);
+          D_Total_CFy            = SU2_TYPE::GetDerivative(Total_CFy);
+          D_Total_CFz            = SU2_TYPE::GetDerivative(Total_CFz);
+          D_Total_Custom_ObjFunc = SU2_TYPE::GetDerivative(Total_Custom_ObjFunc);
+
           if (engine || actuator_disk) {
             D_Total_AeroCD  = SU2_TYPE::GetDerivative(Total_AeroCD);
             D_Total_RadialDistortion    = SU2_TYPE::GetDerivative(Total_RadialDistortion);
@@ -4709,50 +4711,50 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
             
             /*--- Direct coefficients ---*/
-            SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
+            SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                      Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
-                     Total_CFz, Total_CEff);
+                     Total_CFz, Total_CEff, Total_Custom_ObjFunc);
             if (engine || actuator_disk)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx,
-                  Total_CFy, Total_CFz, Total_CEff, Total_AeroCD, Total_RadialDistortion, Ave_Total_RadialDistortion, Total_CircumferentialDistortion, Ave_Total_CircumferentialDistortion);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx,
+                  Total_CFy, Total_CFz, Total_CEff, Total_Custom_ObjFunc, Total_AeroCD, Total_RadialDistortion, Ave_Total_RadialDistortion, Total_CircumferentialDistortion, Ave_Total_CircumferentialDistortion);
             if (equiv_area)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
-                  Total_CEff, Total_CEquivArea, Total_CNearFieldOF);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
+                  Total_CEff, Total_Custom_ObjFunc, Total_CEquivArea, Total_CNearFieldOF);
             if (rotating_frame)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx,
-                       Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CMerit, Total_CT, Total_CQ);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx,
+                       Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Custom_ObjFunc, Total_CMerit, Total_CT, Total_CQ);
             if (inv_design) {
               Total_CpDiff  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff();
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CpDiff);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Custom_ObjFunc, Total_CpDiff);
             }
 
 
             if (thermal) {
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
-                       Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
+                       Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Custom_ObjFunc, Total_Heat, Total_MaxHeat);
               if (engine || actuator_disk)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
-                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_AeroCD, Total_RadialDistortion, Ave_Total_RadialDistortion, Total_CircumferentialDistortion,
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
+                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Custom_ObjFunc, Total_Heat, Total_MaxHeat, Total_AeroCD, Total_RadialDistortion, Ave_Total_RadialDistortion, Total_CircumferentialDistortion,
                         Ave_Total_CircumferentialDistortion);
               if (equiv_area)
-                SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_CEquivArea, Total_CNearFieldOF);
+                SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Custom_ObjFunc, Total_Heat, Total_MaxHeat, Total_CEquivArea, Total_CNearFieldOF);
               if (rotating_frame)
-                 SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx,
-                          Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_CMerit, Total_CT, Total_CQ);
+                 SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx,
+                          Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Custom_ObjFunc, Total_Heat, Total_MaxHeat, Total_CMerit, Total_CT, Total_CQ);
               if (inv_design) {
                 Total_CpDiff  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff();
-                SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_CpDiff, Total_HeatFluxDiff);
+                SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Custom_ObjFunc, Total_Heat, Total_MaxHeat, Total_CpDiff, Total_HeatFluxDiff);
               }
             }
             
             if (direct_diff != NO_DERIVATIVE) {
-              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
+              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                        D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
-                       D_Total_CFz, D_Total_CEff);
+                       D_Total_CFz, D_Total_CEff, D_Total_Custom_ObjFunc);
               if (engine || actuator_disk)
-              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
+              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                        D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
-                       D_Total_CFz, D_Total_CEff, D_Total_AeroCD, D_Total_RadialDistortion, D_Total_CircumferentialDistortion);
+                       D_Total_CFz, D_Total_CEff, D_Total_Custom_ObjFunc, D_Total_AeroCD, D_Total_RadialDistortion, D_Total_CircumferentialDistortion);
             }
             
             if (aeroelastic) {
