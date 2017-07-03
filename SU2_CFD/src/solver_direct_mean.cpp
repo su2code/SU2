@@ -112,22 +112,22 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 
   /*--- Initialize quantities for the average process for internal flow ---*/
   
-  AverageVelocity 		= NULL;
-  AverageTurboVelocity 		= NULL;
-  ExtAverageTurboVelocity 	= NULL;
-  AverageFlux 			= NULL;
-  SpanTotalFlux 		= NULL;
-  AveragePressure  		= NULL;
-  RadialEquilibriumPressure     = NULL;
-  ExtAveragePressure  		= NULL;
-  AverageDensity   		= NULL;
-  ExtAverageDensity   		= NULL;
-  AverageNu  = NULL;
-  AverageKine = NULL;
-	AverageOmega = NULL;
-	ExtAverageNu = NULL;
-	ExtAverageKine = NULL;
-	ExtAverageOmega = NULL;
+  AverageVelocity 		     = NULL;
+  AverageTurboVelocity 		 = NULL;
+  ExtAverageTurboVelocity 	 = NULL;
+  AverageFlux 			     = NULL;
+  SpanTotalFlux 		     = NULL;
+  AveragePressure  		     = NULL;
+  RadialEquilibriumPressure  = NULL;
+  ExtAveragePressure  		 = NULL;
+  AverageDensity   		     = NULL;
+  ExtAverageDensity   		 = NULL;
+  AverageNu                  = NULL;
+  AverageKine                = NULL;
+  AverageOmega               = NULL;
+  ExtAverageNu               = NULL;
+  ExtAverageKine             = NULL;
+  ExtAverageOmega            = NULL;
 
 
   /*--- Initialize primitive quantities for turboperformace ---*/
@@ -142,7 +142,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 
   /*--- Initialize quantities for NRBC ---*/
 
-  CkInflow			= NULL;
+  CkInflow			    = NULL;
   CkOutflow1			= NULL;
   CkOutflow2			= NULL;
  
@@ -711,7 +711,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     }
   }
-
  
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
@@ -4822,9 +4821,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
        first-order approximation, but this is typically only active
        during the start-up of a calculation. If non-physical, use the 
        cell-averaged state. ---*/
-
-        neg_pressure_i = (Primitive_i[nDim+1] < 0.0); neg_pressure_j = (Primitive_j[nDim+1] < 0.0);
-        neg_density_i  = (Primitive_i[nDim+2] < 0.0); neg_density_j  = (Primitive_j[nDim+2] < 0.0);
+      
+      neg_pressure_i = (Primitive_i[nDim+1] < 0.0); neg_pressure_j = (Primitive_j[nDim+1] < 0.0);
+      neg_density_i  = (Primitive_i[nDim+2] < 0.0); neg_density_j  = (Primitive_j[nDim+2] < 0.0);
 
       R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
       sq_vel = 0.0;
@@ -10450,7 +10449,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
-      //      cout << UnitNormal[0]<< "  "<<UnitNormal[1]<< " " <<  Marker_Tag<< endl;
+      
       /*--- Retrieve solution at this boundary node ---*/
       V_domain = node[iPoint]->GetPrimitive();
       
@@ -10461,10 +10460,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
         Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
       }
-      //      cout << Velocity_i[0] <<" " << Velocity_i[1]<<endl;
-      //			cout<< " "<<endl;
-      //			getchar();
-
+      
+      
       Density_i = node[iPoint]->GetDensity();
       
       Energy_i = node[iPoint]->GetEnergy();
@@ -10488,9 +10485,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       switch(config->GetKind_Data_Riemann(Marker_Tag))
       {
-      //TODO(turbo), generilize for 3D case
-      //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
-      //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
       case TOTAL_CONDITIONS_PT:
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
@@ -10518,12 +10512,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         }else{
           for (iDim = 0; iDim < nDim; iDim++)
             Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
-
-          //						NormalVelocity= -sqrt(Velocity2_e)*Flow_Dir[0];
-          //						TangVelocity= -sqrt(Velocity2_e)*Flow_Dir[1];
-          //						Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
-          //						Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
-          //						Velocity_e[2] = sqrt(Velocity2_e)*Flow_Dir[2];
         }
         StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
         FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
@@ -10588,39 +10576,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         if (tkeNeeded) Energy_e += GetTke_Inf();
         break;
 
-//			case MIXING_IN:
-//
-//				/*--- Retrieve the specified total conditions for this boundary. ---*/
-//				P_Total = ExtAverageTotPressure[val_marker][0];
-//				T_Total = ExtAverageTotTemperature[val_marker][0];
-//				ext_flow_angle = atan(ExtAverageTurboVelocity[val_marker][0][1]/ExtAveragedTurboVelocity[val_marker]);
-//				FlowDirMix[0] = cos(ext_flow_angle);
-//				FlowDirMix[1] = sin(ext_flow_angle);
-//
-//				/* --- Computes the total state --- */
-//				FluidModel->SetTDState_PT(P_Total, T_Total);
-//				Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-//				Entropy_e = FluidModel->GetEntropy();
-//
-//				/* --- Compute the boundary state u_e --- */
-//				Velocity2_e = Velocity2_i;
-//				if (nDim == 2){
-//					NormalVelocity= -sqrt(Velocity2_e)*FlowDirMix[0];
-//					TangVelocity= -sqrt(Velocity2_e)*FlowDirMix[1];
-//					Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
-//					Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
-//				}else{
-//					for (iDim = 0; iDim < nDim; iDim++)
-//						Velocity_e[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
-//				}
-//				StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-//				FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
-//				Density_e = FluidModel->GetDensity();
-//				StaticEnergy_e = FluidModel->GetStaticEnergy();
-//				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-//				if (tkeNeeded) Energy_e += GetTke_Inf();
-//				break;
-
       case DENSITY_VELOCITY:
 
         /*--- Retrieve the specified density and velocity magnitude ---*/
@@ -10636,22 +10591,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Velocity_e[iDim] = VelMag_e*Flow_Dir[iDim];
         Energy_e = Energy_i;
         break;
-
-        //        case MIXING_OUT:
-        //
-        //          /*--- Retrieve the staic pressure for this boundary. ---*/
-        //          Pressure_e = ExtAveragedPressure[val_marker];
-        //          Density_e = Density_i;
-        //
-        //          /* --- Compute the boundary state u_e --- */
-        //          FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-        //          Velocity2_e = 0.0;
-        //          for (iDim = 0; iDim < nDim; iDim++) {
-        //            Velocity_e[iDim] = Velocity_i[iDim];
-        //            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-        //          }
-        //          Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-        //          break;
 
       case STATIC_PRESSURE:
 

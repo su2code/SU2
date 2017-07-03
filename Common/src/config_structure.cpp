@@ -457,24 +457,24 @@ void CConfig::SetPointersNull(void) {
   default_htp_axis      = NULL;
   default_body_force    = NULL;
 
-  Riemann_FlowDir= NULL;
-  NRBC_FlowDir = NULL;
-  CoordFFDBox= NULL;
-  DegreeFFDBox= NULL;
-  FFDTag = NULL;
-  nDV_Value = NULL;
-  TagFFDBox = NULL;
+  Riemann_FlowDir       = NULL;
+  NRBC_FlowDir          = NULL;
+  CoordFFDBox           = NULL;
+  DegreeFFDBox          = NULL;
+  FFDTag                = NULL;
+  nDV_Value             = NULL;
+  TagFFDBox             = NULL;
  
-  Kind_Data_Riemann = NULL;
-  Riemann_Var1 = NULL;
-  Riemann_Var2 = NULL;
-  Kind_Data_NRBC = NULL;
-  NRBC_Var1 = NULL;
-  NRBC_Var2 = NULL;
-  Marker_TurboBoundIn = NULL;
-  Marker_TurboBoundOut = NULL;
-  Marker_NRBC = NULL;
-  nSpan_iZones = NULL;
+  Kind_Data_Riemann     = NULL;
+  Riemann_Var1          = NULL;
+  Riemann_Var2          = NULL;
+  Kind_Data_NRBC        = NULL;
+  NRBC_Var1             = NULL;
+  NRBC_Var2             = NULL;
+  Marker_TurboBoundIn   = NULL;
+  Marker_TurboBoundOut  = NULL;
+  Marker_NRBC           = NULL;
+  nSpan_iZones          = NULL;
   
   /*--- Variable initialization ---*/
   
@@ -511,25 +511,25 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*--- Allocate some default arrays needed for lists of doubles. ---*/
   
-  default_vel_inf       = new su2double[3];
-  default_ffd_axis      = new su2double[3];
-  default_eng_cyl       = new su2double[7];
-  default_eng_val       = new su2double[5];
-  default_cfl_adapt     = new su2double[4];
-  default_ad_coeff_flow = new su2double[3];
-  default_mixedout_coeff = new su2double[3];
-  default_extrarelfac   = new su2double[2];
+  default_vel_inf            = new su2double[3];
+  default_ffd_axis           = new su2double[3];
+  default_eng_cyl            = new su2double[7];
+  default_eng_val            = new su2double[5];
+  default_cfl_adapt          = new su2double[4];
+  default_ad_coeff_flow      = new su2double[3];
+  default_mixedout_coeff     = new su2double[3];
+  default_extrarelfac        = new su2double[2];
   default_rampRotFrame_coeff = new su2double[3];
-  default_rampOutPres_coeff = new su2double[3];
-  default_ad_coeff_adj  = new su2double[3];
-  default_obj_coeff     = new su2double[5];
-  default_geo_loc       = new su2double[2];
-  default_distortion    = new su2double[2];
-  default_ea_lim        = new su2double[3];
-  default_grid_fix      = new su2double[6];
-  default_inc_crit      = new su2double[3];
-  default_htp_axis      = new su2double[2];
-  default_body_force    = new su2double[3];
+  default_rampOutPres_coeff  = new su2double[3];
+  default_ad_coeff_adj       = new su2double[3];
+  default_obj_coeff          = new su2double[5];
+  default_geo_loc            = new su2double[2];
+  default_distortion         = new su2double[2];
+  default_ea_lim             = new su2double[3];
+  default_grid_fix           = new su2double[6];
+  default_inc_crit           = new su2double[3];
+  default_htp_axis           = new su2double[2];
+  default_body_force         = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do

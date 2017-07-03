@@ -661,7 +661,6 @@ void CDriver::Geometrical_Preprocessing() {
 
   }
 
-
   /*--- Loop over all the new grid ---*/
 
   for (iMGlevel = 1; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
@@ -2603,7 +2602,6 @@ void CDriver::Interface_Preprocessing() {
 
 }
 
-
 void CDriver::InitStaticMeshMovement(){
 
   unsigned short iMGlevel;
@@ -4032,12 +4030,6 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetExtIter(ExtIter);
   delete runtime;
-
-  /*--- Update average process runtime in each zone---*/
-  //  for (iZone = 0; iZone < nZone; iZone++){
-  //  	config_container[iZone]->SetKind_AverageProcess(config_container[ZONE_0]->GetKind_AverageProcess());
-  //  	config_container[iZone]->SetKind_PerformanceAverageProcess(config_container[ZONE_0]->GetKind_PerformanceAverageProcess());
-  //  }
 
   /*--- Update the convergence history file (serial and parallel computations). ---*/
 
