@@ -577,7 +577,7 @@ def main():
     ######################################	
 
     # Jones APU Turbocharger
-    Jones_tc           = TestCase('Jones_tc')
+    Jones_tc           = TestCase('jones_turbocharger')
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 29
@@ -608,6 +608,17 @@ def main():
     transonic_stator.timeout   = 1600
     transonic_stator.tol       = 0.00001
     test_list.append(transonic_stator)
+    
+    # 2D transonic stator restart
+    transonic_stator_rst           = TestCase('transonic_stator_restart')
+    transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
+    transonic_stator_rst.test_iter = 300
+    transonic_stator_rst.test_vals = [-0.682535, 4.593685, 6.248181e+00, 3.774933e-03] #last 4 columns
+    transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
+    transonic_stator_rst.timeout   = 1600
+    transonic_stator_rst.tol       = 0.00001
+    test_list.append(transonic_stator_rst)
 
     ######################################
     ### Sliding Mesh                   ###
