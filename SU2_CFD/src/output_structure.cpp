@@ -2945,7 +2945,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 
     /*--- Communicate the Extra Variables for Hybrid RANS/LES ---*/
     // This will need to be changed if more variables are needed.
-    if (Kind_Solver == RANS) {
+    if (hybrid && (config->GetKind_Hybrid_Blending() == CONVECTIVE)) {
 
       /*--- Loop over this partition to collect the current variable ---*/
 

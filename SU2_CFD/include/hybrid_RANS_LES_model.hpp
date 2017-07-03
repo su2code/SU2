@@ -290,12 +290,19 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
 
   unsigned short nDim;
   const su2double C_sf; /*!> \brief Model constant relating the structure function to the unresolved turbulent kinetic energy  */
-  su2double **Q,
-  **ResolutionTensor,
-  **PrimVar_Grad_i,
-  **PrimVar_Grad_j;
-  su2double r_k;
+  su2double **Q,        /*!> \brief An approximate 2nd order structure function tensor */
+            **Qapprox;  /*!> \brief An approximate 2nd order structure function tensor (used for temporary calculations) */
+  su2double r_k;        /*!> \brief The resolution adequacy parameter */
   std::vector<std::vector<su2double> > constants;
+
+  /*--- Data structures for LAPACK ---*/
+#ifdef HAVE_LAPACK
+  int info, lwork;
+  su2double wkopt;
+  su2double* work;
+  su2double wr[3], wi[3], vl[3*3], vr[3];
+  su2double mat[3*3];
+#endif
 
   /*!
    * \brief Calculates the resolution inadequacy parameter
@@ -305,16 +312,18 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
    */
   su2double CalculateRk(su2double** Q, su2double v2);
 
-  /*!
-   * \brief Calculates the approximate 2nd order structure function tensor, Qij
-   * \param[in] ResolutionTensor - The resolution (metric) tensor
-   * \param[in] PrimVar_Grad - Gradients of the primitive flow variables
-   * \param[out] Q - The approximate 2nd order structure function tensor
+  /**
+   * \brief Uses a resolution tensor and a gradient-gradient tensor to build an
+   *        approximate two-point structure function tensor
+   * \param[in] val_ResolutionTensor - A tensor representing cell-cell distances
+   * \param[in] val_PrimVar_Grad - The gradient in the resolved velocity field.
+   * \param[out] val_Q - An approximate resolution-scale two-point second-order
+   *                 structure function.
    */
   template <class T>
-  void CalculateApproxStructFunc(T ResolutionTensor,
-                                 su2double** PrimVar_Grad,
-                                 su2double** Q);
+  void CalculateApproxStructFunc(T val_ResolutionTensor,
+                                 su2double** val_PrimVar_Grad,
+                                 su2double** val_Q);
 
   /*!
    * \brief Loads the model fit constants from *.dat files
@@ -324,28 +333,33 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   vector<vector<su2double> > LoadConstants(string filename);
 
   /*!
-   * \brief Transforms eigenvalues of the resolution tensor to eigenvalues of
-   *        the gradient-gradient tensor.
+   * \brief Solve for the eigenvalues of Q, given eigenvalues of M
+   *
+   * Solves for the eigenvalues of the expected value of the contracted velocity
+   * differences at grid resolution (Q), given the eigenvalues of the
+   * resolution tensor.
+   *
    * \param[in] eig_values_M - Eigenvalues of the resolution tensor.
-   * \return The eigenvalues of the gradient-gradient tensor.
+   * \return The eigenvalues of the expected value of the approx SF tensor.
    */
-  vector<su2double> GetEigValues_G(vector<su2double> eig_values_M);
+  vector<su2double> GetEigValues_Q(vector<su2double> eig_values_M);
 
   /*!
    * \brief Calculates the eigenvalues of a modified resolution tensor.
    * \param eig_values_M - Eigenvalues of the grid-based resolution tensor.
-   * \return Eigenvalues of a new tensor, based on the resolution tensor, that
-   *         corrects for the effects of anisotropic filtering.
+   * \return Eigenvalues of a transformation mapping the approximate velocity
+   *         differences at grid resolution to the two-point second-order
+   *         structure function.
    */
-  vector<su2double> GetEigValues_Mtilde(vector<su2double> eig_values_M);
+  vector<su2double> GetEigValues_Zeta(vector<su2double> eig_values_M);
 
   /*!
-   * \brief Builds a modified resolution tensor.
-   * \param M - The grid-based resolution tensor, without modification
-   * \return A new tensor, based on the resolution tensor, that corrects
-   *         for the effects of anisotropic filtering.
+   * \brief Builds a transformation for the approximate structure function.
+   * \param[in] eigvalues_M - The cell-to-cell distances in the "principal
+   *            "directions"
+   * \param[in] eigvectors_M - The "principal directions" of the cell.
    */
-  vector<vector<su2double> > BuildMtilde(su2double** M);
+  vector<vector<su2double> > BuildZeta(su2double* values_M);
 
  public:
 
@@ -541,32 +555,24 @@ class CHybrid_Dummy_Mediator : public CAbstract_Hybrid_Mediator {
  * These must be placed with the template declarations.  They can be kept here
  * or moved to an *.inl file that is included in this header. ---*/
 
-/**
- * \brief Uses a resolution tensor and a gradient-gradient tensor to build an
- *        approximate two-point structure function tensor
- * \param[in] ResolutionTensor - A tensor representing cell-cell distances
- * \param[in] PrimVar_Grad - The gradient in the resolved velocity field.
- * \param[out] Q - An approximate resolution-scale two-point second-order
- *                 structure function.
- */
 template <class T>
-void CHybrid_Mediator::CalculateApproxStructFunc(T ResolutionTensor,
-                                                 su2double** PrimVar_Grad,
-                                                 su2double** Q) {
+void CHybrid_Mediator::CalculateApproxStructFunc(T val_ResolutionTensor,
+                                                 su2double** val_PrimVar_Grad,
+                                                 su2double** val_Q) {
   unsigned int iDim, jDim, kDim, lDim, mDim;
 
   for (iDim = 0; iDim < nDim; iDim++)
     for (jDim = 0; jDim < nDim; jDim++)
-      Q[iDim][jDim] = 0.0;
+      val_Q[iDim][jDim] = 0.0;
 
   for (iDim = 0; iDim < nDim; iDim++)
     for (jDim = 0; jDim < nDim; jDim++)
       for (kDim = 0; kDim < nDim; kDim++)
         for (lDim = 0; lDim < nDim; lDim++)
           for (mDim = 0; mDim < nDim; mDim++)
-            Q[iDim][jDim] += ResolutionTensor[iDim][mDim]*
-                             PrimVar_Grad[mDim+1][kDim]*
-                             PrimVar_Grad[lDim+1][kDim]*
-                             ResolutionTensor[lDim][jDim];
+            val_Q[iDim][jDim] += val_ResolutionTensor[iDim][mDim]*
+                             val_PrimVar_Grad[mDim+1][kDim]*
+                             val_PrimVar_Grad[lDim+1][kDim]*
+                             val_ResolutionTensor[lDim][jDim];
 }
 

@@ -764,7 +764,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         hybrid_mediator = new CHybrid_Dummy_Mediator(nDim, config);
         break;
       case CONVECTIVE:
-        hybrid_mediator = new CHybrid_Mediator(nDim, config);
+        hybrid_mediator = new CHybrid_Mediator(nDim, config, config->GetHybrid_Const_FileName());
         break;
     }
     // Hybrid anisotropy is created in the CNSSolver constructor

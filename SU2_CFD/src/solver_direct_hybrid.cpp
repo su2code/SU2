@@ -572,7 +572,6 @@ void CHybridConvSolver::Source_Residual(CGeometry *geometry,
     cout << "Error: Harmonic balance is not supported with hybrid methods." << endl;
     exit(EXIT_FAILURE);
   }
-
 }
 
 void CHybridSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -1312,7 +1311,9 @@ void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Use the hybrid mediator to set up the solver ---*/
 
-  HybridMediator->SetupHybridParamSolver(geometry, solver_container, iPoint);
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+    HybridMediator->SetupHybridParamSolver(geometry, solver_container, iPoint);
+  }
 
   /*--- Initialize the Jacobian matrices ---*/
 
@@ -1323,11 +1324,22 @@ void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Upwind second order reconstruction ---*/
 
-  // XXX: Do we need limiters?
+  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
 
 }
 
 void CHybridConvSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetSolution_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetSolution_Gradient_LS(geometry, config);
+  }
+
+  /*--- Limit alpha to be between 0 and 1 ---*/
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+    Solution[iPoint] = min(max(0.0, Solution[0]), 1.0);
+  }
 }
 
 void CHybridConvSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {

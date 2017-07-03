@@ -58,13 +58,6 @@ void CUpwSca_HybridConv::ComputeResidual(su2double *val_residual, su2double **va
 
   q_ij = 0.0;
 
-//#ifndef NDEBUG
-//  if (HybridParameter_i[0] - 1.0 > 1e-7) {
-//    cout << "ERROR: Hybrid parameter was not 1.0!!!" << std::endl;
-//    exit(EXIT_FAILURE);
-//  }
-//#endif
-
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
   AD::SetPreaccIn(HybridParameter_i[0]); AD::SetPreaccIn(HybridParameter_j[0]);
@@ -149,6 +142,6 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
   val_residual[0] = (S_r/TurbT + S_c/T_c) * Volume;
 
   // Jacobian of \alpha with respect to \alpha
-  val_Jacobian_i[0][0] = 0.0; val_Jacobian_j[0][0] = 0.0;
+  val_Jacobian_i[0][0] = 0.0;
 }
 

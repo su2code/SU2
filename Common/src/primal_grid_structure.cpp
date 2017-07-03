@@ -826,6 +826,22 @@ void CHexahedron::SetResolutionTensor(su2double** val_coord) {
   vector<vector<su2double> > temp_eigvecs = eigvecs;
   GramSchmidt(temp_eigvecs, eigvecs);
 
+  /*--- Change vectors to be positive ---*/
+  vector<su2double> x_vector(3);
+  vector<su2double> y_vector(3);
+  vector<su2double> z_vector(3);
+  x_vector[0] = 1.0; y_vector[1] = 1.0; z_vector[2] = 1.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    su2double alignment = inline_dot_prod(eigvecs[iDim],x_vector) +
+                          inline_dot_prod(eigvecs[iDim],y_vector) +
+                          inline_dot_prod(eigvecs[iDim],z_vector);
+    if (alignment < 0) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        eigvecs[iDim][jDim] *= -1;
+      }
+    }
+  }
+
   /*-- Perform matrix multiplication --*/
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {

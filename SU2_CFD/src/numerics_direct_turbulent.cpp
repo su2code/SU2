@@ -1224,15 +1224,6 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
     pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
     pk = max(pk,0.0);
-    
-#ifndef NDEBUG
-  if (config->isHybrid_Turb_Model()) {
-    if (fabs(HybridParameter_i[0] - 1.0) > 1e-7) {
-      cout << "ERROR: Hybrid parameter was " << HybridParameter_i[0] << std::endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-#endif
 
     if (config->isHybrid_Turb_Model()) pk = pk*HybridParameter_i[0];
 

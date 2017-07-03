@@ -1309,8 +1309,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
-  /*!\brief CONST_FILENAME \n DESCRIPTION: Input file for the hybrid RANS/LES constants (w/o extension) \n DEFAULT: hybrid_constants \ingroup Config*/
-  addStringOption("CONST_FILENAME", Hybrid_Const_FileName, string("hybrid_constants"));
+  /*!\brief CONST_FILENAME \n DESCRIPTION: Input file for the hybrid RANS/LES constants (w/o extension) \n DEFAULT: "" \ingroup Config*/
+  addStringOption("CONST_FILENAME", Hybrid_Const_FileName, string(""));
 
 
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/

@@ -9643,6 +9643,10 @@ void CGeometry::SetResolutionTensor(void) {
     }
   }
 
+#ifdef HAVE_LAPACK
+  /*--- NOTE: Since we're using averages across cells, averages of eigenvalues
+   * are not equal to the eigenvalues of the average tensor. ---*/
+  // TODO: Make this section actually compute eigenvalues and eigenvectors.
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
       iElem_global = node[iPoint]->GetElem(iElem);
@@ -9666,6 +9670,32 @@ void CGeometry::SetResolutionTensor(void) {
       }
     }
   }
+#else
+  /*--- Use an approximate average of the eigenvalues and eigenvectors ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      iElem_global = node[iPoint]->GetElem(iElem);
+      temp_tensor = elem[iElem_global]->GetResolutionVectors();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          temp_value = temp_tensor[iDim][jDim] / (node[iPoint]->GetnElem());
+          node[iPoint]->AddResolutionVector(iDim, jDim, temp_value);
+        }
+      }
+    }
+  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      iElem_global = node[iPoint]->GetElem(iElem);
+      temp_vector = elem[iElem_global]->GetResolutionValues();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        temp_value = temp_vector[iDim] / (node[iPoint]->GetnElem());
+        node[iPoint]->AddResolutionValue(iDim, temp_value);
+      }
+    }
+  }
+#endif
 
   SetResolutionGradient();
 }
