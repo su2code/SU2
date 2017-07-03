@@ -537,4 +537,3 @@ void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CG
 
   target_solution->SetnSlidingStates( Marker_Target, Vertex_Target, iDonorVertex + 1 );
 }
-

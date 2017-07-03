@@ -2431,7 +2431,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         else if (geometry->GetnDim() == 3) nVar_Total += 3;
       }
       iVar_FEA_Stress  = nVar_Total; nVar_Total += 3;
-
       if (geometry->GetnDim() == 3) {iVar_FEA_Stress_3D = nVar_Total; nVar_Total += 3;}
       iVar_FEA_Extra = nVar_Total; nVar_Total += 1;
     }
@@ -7902,7 +7901,6 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Temperature = solver_container->node[iPoint]->GetTemperature();
           
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
-
           if (incompressible)
           Tot_Pressure = Pressure + 0.5*Density*Velocity2;
           else

@@ -4279,57 +4279,57 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     }
 
   /*--- initialize pointers for turbomachinery computations  ---*/
-  nSpanWiseSections        = new unsigned short[2];
+  nSpanWiseSections                 = new unsigned short[2];
   SpanWiseValue						= new su2double*[2];
   for (iMarker = 0; iMarker < 2; iMarker++){
-    nSpanWiseSections[iMarker] = 0;
-    SpanWiseValue[iMarker] = NULL;
+    nSpanWiseSections[iMarker]      = 0;
+    SpanWiseValue[iMarker]          = NULL;
   }
 
   nVertexSpan 						= new long* [nMarker];
-  nTotVertexSpan 				  = new unsigned long* [nMarker];
+  nTotVertexSpan 				    = new unsigned long* [nMarker];
   turbovertex 						= new CTurboVertex***[nMarker];
-  AverageTurboNormal 			= new su2double**[nMarker];
-  AverageNormal     			= new su2double**[nMarker];
+  AverageTurboNormal 			    = new su2double**[nMarker];
+  AverageNormal     			    = new su2double**[nMarker];
   AverageGridVel 					= new su2double**[nMarker];
-  AverageTangGridVel  		= new su2double*[nMarker];
-  SpanArea 								= new su2double*[nMarker];
-  TurboRadius 					  = new su2double*[nMarker];
-  MaxAngularCoord = new su2double*[nMarker];
-  MinAngularCoord = new su2double*[nMarker];
-  MinRelAngularCoord = new su2double*[nMarker];
+  AverageTangGridVel  		        = new su2double*[nMarker];
+  SpanArea 							= new su2double*[nMarker];
+  TurboRadius 					    = new su2double*[nMarker];
+  MaxAngularCoord                   = new su2double*[nMarker];
+  MinAngularCoord                   = new su2double*[nMarker];
+  MinRelAngularCoord                = new su2double*[nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
-    nVertexSpan[iMarker] 								= NULL;
-    nTotVertexSpan[iMarker] 						= NULL;
-    turbovertex[iMarker] 								= NULL;
-    AverageTurboNormal[iMarker]					= NULL;
-    AverageNormal[iMarker]							= NULL;
-    AverageGridVel[iMarker] 						= NULL;
-    AverageTangGridVel[iMarker]					= NULL;
-    SpanArea[iMarker]										= NULL;
-    TurboRadius[iMarker]								= NULL;
-    MaxAngularCoord[iMarker]= NULL;
-    MinAngularCoord[iMarker]= NULL;
-    MinRelAngularCoord[iMarker]= NULL;
+    nVertexSpan[iMarker] 			= NULL;
+    nTotVertexSpan[iMarker] 		= NULL;
+    turbovertex[iMarker] 			= NULL;
+    AverageTurboNormal[iMarker]		= NULL;
+    AverageNormal[iMarker]			= NULL;
+    AverageGridVel[iMarker] 		= NULL;
+    AverageTangGridVel[iMarker]		= NULL;
+    SpanArea[iMarker]				= NULL;
+    TurboRadius[iMarker]			= NULL;
+    MaxAngularCoord[iMarker]        = NULL;
+    MinAngularCoord[iMarker]        = NULL;
+    MinRelAngularCoord[iMarker]     = NULL;
   }
 
   /*--- initialize pointers for turbomachinery performance computation  ---*/
 
   TangGridVelIn  		= new su2double*[config->GetnMarker_TurboPerformance()];
-  SpanAreaIn 								= new su2double*[config->GetnMarker_TurboPerformance()];
-  TurboRadiusIn 					  = new su2double*[config->GetnMarker_TurboPerformance()];
+  SpanAreaIn 			= new su2double*[config->GetnMarker_TurboPerformance()];
+  TurboRadiusIn 		= new su2double*[config->GetnMarker_TurboPerformance()];
   TangGridVelOut  		= new su2double*[config->GetnMarker_TurboPerformance()];
-  SpanAreaOut 							= new su2double*[config->GetnMarker_TurboPerformance()];
-  TurboRadiusOut 					  = new su2double*[config->GetnMarker_TurboPerformance()];
+  SpanAreaOut 			= new su2double*[config->GetnMarker_TurboPerformance()];
+  TurboRadiusOut 		= new su2double*[config->GetnMarker_TurboPerformance()];
 
   for (iMarker = 0; iMarker < config->GetnMarker_TurboPerformance(); iMarker++){
-    TangGridVelIn[iMarker]								= NULL;
-    SpanAreaIn[iMarker]										= NULL;
-    TurboRadiusIn[iMarker]								= NULL;
-    TangGridVelOut[iMarker]			  				= NULL;
-    SpanAreaOut[iMarker]									= NULL;
-    TurboRadiusOut[iMarker]								= NULL;
+    TangGridVelIn[iMarker]		= NULL;
+    SpanAreaIn[iMarker]			= NULL;
+    TurboRadiusIn[iMarker]		= NULL;
+    TangGridVelOut[iMarker]		= NULL;
+    SpanAreaOut[iMarker]		= NULL;
+    TurboRadiusOut[iMarker]		= NULL;
   }
 
   /*--- Release all of the temporary memory ---*/
@@ -9593,7 +9593,6 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
       }
   }
 }
-
 
 void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
   unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan, iSize;

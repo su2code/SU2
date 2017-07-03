@@ -325,7 +325,7 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
       grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
 
       break;
-
+	/*--- Already initialized in the static mesh movement routine at driver level. ---*/ 
     case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
       break;
 
@@ -810,7 +810,7 @@ void CTurboIteration::Preprocess(COutput *output,
                                     CFreeFormDefBox*** FFDBox,
                                     unsigned short val_iZone) {
 
-
+  /*--- Average quantities at the inflow and outflow boundaries ---*/ 
   solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],INFLOW);
   solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],OUTFLOW);
 
@@ -821,12 +821,14 @@ void CTurboIteration::Postprocess( CConfig **config_container,
                                    CSolver ****solver_container,
                                    unsigned short val_iZone) {
 
+  /*--- Average quantities at the inflow and outflow boundaries ---*/
   solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],INFLOW);
   solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],OUTFLOW);
+  
+  /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
   solver_container[val_iZone][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config_container[val_iZone], geometry_container[val_iZone][MESH_0]);
 
 }
-
 
 
 CWaveIteration::CWaveIteration(CConfig *config) : CIteration(config) { }

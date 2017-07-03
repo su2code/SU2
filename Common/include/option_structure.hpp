@@ -827,11 +827,11 @@ enum RIEMANN_TYPE {
   MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
   MIXING_OUT = 8, /*!< \brief User does not specify anything information are retrieved from the other domain */
   SUPERSONIC_OUTFLOW = 9,
-	RADIAL_EQUILIBRIUM = 10,
-	TOTAL_CONDITIONS_PT_1D = 11,
-	STATIC_PRESSURE_1D = 12,
-	MIXING_IN_1D = 13,
-	MIXING_OUT_1D =14
+  RADIAL_EQUILIBRIUM = 10,
+  TOTAL_CONDITIONS_PT_1D = 11,
+  STATIC_PRESSURE_1D = 12,
+  MIXING_IN_1D = 13,
+  MIXING_OUT_1D =14
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -917,8 +917,8 @@ enum TURBOMACHINERY_TYPE {
   AXIAL       = 1,		/*!< \brief axial turbomachinery. */
   CENTRIFUGAL = 2,    /*!< \brief centrifugal turbomachinery. */
   CENTRIPETAL = 3,		 /*!< \brief centripetal turbomachinery. */
-	CENTRIPETAL_AXIAL = 4,		 /*!< \brief mixed flow turbine. */
-	AXIAL_CENTRIFUGAL = 5		 /*!< \brief mixed flow turbine. */
+  CENTRIPETAL_AXIAL = 4,		 /*!< \brief mixed flow turbine. */
+  AXIAL_CENTRIFUGAL = 5		 /*!< \brief mixed flow turbine. */
 };
 
 static const map<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = CCreateMap<string, TURBOMACHINERY_TYPE>
@@ -2860,16 +2860,6 @@ public:
   }
 };
 
-//template <class Tenum>
-//class COptionNRBC : public COptionRiemann<Tenum> {
-//
-//public:
-//	  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field,
-//			  	  const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir): COptionRiemann<Tenum>(option_field_name, nMarker_NRBC,  Marker_NRBC, option_field,
-//			  	   m, var1, var2,FlowDir){}
-//	  ~COptionNRBC() {};
-//
-//};
 template <class Tenum>
 class COptionNRBC : public COptionBase{
 
@@ -3232,8 +3222,6 @@ public:
     this->translation = NULL;
   }
 };
-
-
 
 class COptionTurboPerformance : public COptionBase {
   string name; // identifier for the option

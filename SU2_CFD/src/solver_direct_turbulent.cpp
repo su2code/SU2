@@ -778,7 +778,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
 }
 
-
 void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
   
@@ -1152,11 +1151,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
+//TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart.
   solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-
-  /*--- We have to do the communication again to properly communicate the values to the periodic ghost cells
-   *    (The periodic communication is done before the parallel communication). ---*/
-
   solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
 
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);

@@ -3909,7 +3909,7 @@ public:
 	bool GetBoolNRBC(void);
   
   /*!
-   * \brief Verify if there is any Rieamann Boundary Condition option specified from config file.
+   * \brief Verify if there is any Riemann Boundary Condition option specified from config file.
    * \return boolean.
    */
 	bool GetBoolRiemann(void);

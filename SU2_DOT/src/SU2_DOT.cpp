@@ -39,8 +39,8 @@ int main(int argc, char *argv[]) {
   
   char config_file_name[MAX_STRING_SIZE], *cstr;
   ofstream Gradient_file;
-	int rank = MASTER_NODE;
-	int size = SINGLE_NODE;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
 
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
@@ -552,7 +552,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     Gradient[iDV][0] += localGradient;
     }
   }
-  }
+}
   
 
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double** Gradient){
