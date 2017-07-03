@@ -3362,15 +3362,6 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar,
   Mean_GradPrimVar = new su2double* [nDim+1];
   for (iVar = 0; iVar < nDim+1; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
-  
-  if (hasAnisoEddyViscosity) {
-    Aniso_Eddy_Viscosity_i = new su2double*[nDim];
-    Aniso_Eddy_Viscosity_j = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Aniso_Eddy_Viscosity_i[iDim] = new su2double[nDim];
-      Aniso_Eddy_Viscosity_j[iDim] = new su2double[nDim];
-    }
-  }
 
 }
 
@@ -3383,65 +3374,6 @@ CAvgGrad_Flow::~CAvgGrad_Flow(void) {
     delete [] Mean_GradPrimVar[iVar];
   delete [] Mean_GradPrimVar;
   
-}
-
-void CAvgGrad_Flow::ComputeAnisoEddyViscosity(su2double** primvar_grad,
-                                              su2double** resolution,
-                                              su2double scalar_eddy_viscosity,
-                                              su2double** eddy_viscosity) {
-  unsigned short iDim, jDim, pDim, qDim;
-  su2double** delta_u;  // Tensor analog of velocity difference
-  su2double** Qt;       // Tensor analog of 2-point, 2nd order struct. func.
-  su2double** MQM;
-  su2double** sqrtMQM;
-
-//    /*--- Allocate temporary arrays ---*/
-//    delta_u = new su2double*[nDim];
-//    Qt = new su2double*[nDim];
-//    MQM = new su2double*[nDim];
-//    sqrtMQM = new su2double*[nDim];
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      delta_u[iDim] = new su2double[nDim];
-//      Qt[iDim] = new su2double[nDim];
-//      MQM[iDim] = new su2double[nDim];
-//      sqrtMQM[iDim] = new su2double[nDim];
-//    }
-//
-//    /*-- Force arrays to be zero --*/
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      for (jDim = 0; jDim < nDim; jDim++) {
-//        delta_u[iDim][jDim] = 0.0;
-//        Qt[iDim][jDim] = 0.0;
-//        MQM[iDim][jDim] = 0.0;
-//        sqrtMQM[iDim][jDim] = 0.0;
-//        eddy_viscosity[iDim][jDim] = 0.0;
-//      }
-//    }
-//
-//    /*--- Gradient of U * Resolution Tensor ---*/
-//    for (iDim = 0; iDim < nDim; iDim++)
-//      for (jDim = 0; jDim < nDim; jDim++)
-//        for (pDim = 0; pDim < nDim; pDim++)
-//          delta_u[iDim][jDim] += primvar_grad[iDim+1][pDim]*resolution[pDim][jDim];
-//
-//    /*--- Q_{ij} = \pderiv{U_k}{x_m} M_{mi} \pderiv{U_k}{x_n} M_{nj} ---*/
-//    for (iDim = 0; iDim < nDim; iDim++)
-//      for (jDim = 0; jDim < nDim; jDim++)
-//        for (pDim = 0; pDim < nDim; pDim++)
-//          Qt[iDim][jDim] += delta_u[pDim][iDim]*delta_u[pDim][jDim];
-//
-//    /*--- Resolution Tensor * Q * Resolution Tensor ---*/
-//    for (iDim = 0; iDim < nDim; iDim++)
-//      for (jDim = 0; jDim < nDim; jDim++)
-//        for (pDim = 0; pDim < nDim; pDim++)
-//          for (qDim = 0; qDim < nDim; qDim++)
-//            MQM += resolution[iDim][pDim]*Qt[pDim][qDim]*resolution[qDim][jDim];
-//
-//    sqrtMQM = f(MQM) // ?????
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    for (jDim = 0; jDim < nDim; jDim++)
-      eddy_viscosity[iDim][jDim] = scalar_eddy_viscosity*delta[iDim][jDim];
 }
 
 void CAvgGrad_Flow::ComputeResidual(su2double *val_residual,
@@ -3471,25 +3403,26 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual,
 
   Laminar_Viscosity_i = V_i[nDim+5]; Laminar_Viscosity_j = V_j[nDim+5];
   Eddy_Viscosity_i = V_i[nDim+6]; Eddy_Viscosity_j = V_j[nDim+6];
+
   if (hasAnisoEddyViscosity) {
+
     Mean_Aniso_Eddy_Viscosity = new su2double*[nDim];
     for (iDim = 0; iDim<nDim; iDim++)
       Mean_Aniso_Eddy_Viscosity[iDim] = new su2double[nDim];
-    ComputeAnisoEddyViscosity(PrimVar_Grad_i, Resolution_Tensor_i,
-                              Eddy_Viscosity_i, Aniso_Eddy_Viscosity_i);
-    ComputeAnisoEddyViscosity(PrimVar_Grad_j, Resolution_Tensor_j,
-                              Eddy_Viscosity_j, Aniso_Eddy_Viscosity_j);
 
+    // I assume here that it is hybrid
     for (iDim = 0; iDim<nDim; iDim++) {
       for (jDim = 0; jDim<nDim; jDim++) {
-        Mean_Aniso_Eddy_Viscosity[iDim][jDim] = 0.5*(Aniso_Eddy_Viscosity_i[iDim][jDim] +
-            Aniso_Eddy_Viscosity_j[iDim][jDim]);
+        Mean_Aniso_Eddy_Viscosity[iDim][jDim] = 0.5*
+            (HybridParameter_i[0]*Eddy_Viscosity_i *
+             Eddy_Viscosity_Anisotropy_i[iDim][jDim] +
+             HybridParameter_j[0]*Eddy_Viscosity_j *
+             Eddy_Viscosity_Anisotropy_j[iDim][jDim]);
       }
     }
   } else {
     Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   }
-
 
   /*--- Mean Viscosities and turbulent kinetic energy---*/
 
@@ -3513,7 +3446,6 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual,
     GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal,
                        Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   }
-
 
   /*--- Update viscous residual ---*/
 
@@ -3551,8 +3483,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual,
     }
   }
 
-  // Both conditions are required to avoid segfaults
-  if (Mean_Eddy_Viscosity != NULL && hasAnisoEddyViscosity) {
+  if (Mean_Aniso_Eddy_Viscosity != NULL) {
     for (iDim = 0; iDim < nDim; iDim++) {
       delete[] Mean_Aniso_Eddy_Viscosity[iDim];
     }

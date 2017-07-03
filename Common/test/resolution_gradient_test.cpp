@@ -308,7 +308,7 @@ int main() {
 
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      vector<vector<su2double> > dMsqdx = geometry->node[iPoint]->GetResolutionGradient(iDim);
+      su2double** dMsqdx = geometry->node[iPoint]->GetResolutionGradient(iDim);
       su2double* coord;
       coord = geometry->node[iPoint]->GetCoord();
 

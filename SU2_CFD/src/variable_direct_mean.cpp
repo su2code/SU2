@@ -475,6 +475,13 @@ CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2doub
     Prandtl_Lam     = config->GetPrandtl_Lam();
     Prandtl_Turb    = config->GetPrandtl_Turb();
   
+    if (config->isHybrid_Turb_Model()) {
+      Eddy_Visc_Anisotropy = new su2double*[nDim];
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Eddy_Visc_Anisotropy[iDim] = new su2double[nDim];
+    } else {
+      Eddy_Visc_Anisotropy = NULL;
+    }
 }
 
 CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
@@ -485,9 +492,23 @@ CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
     Viscosity_Inf   = config->GetViscosity_FreeStreamND();
     Prandtl_Lam     = config->GetPrandtl_Lam();
     Prandtl_Turb    = config->GetPrandtl_Turb();
+
+    if (config->isHybrid_Turb_Model()) {
+      Eddy_Visc_Anisotropy = new su2double*[nDim];
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Eddy_Visc_Anisotropy[iDim] = new su2double[nDim];
+    } else {
+      Eddy_Visc_Anisotropy = NULL;
+    }
 }
 
-CNSVariable::~CNSVariable(void) { }
+CNSVariable::~CNSVariable(void) {
+  if (Eddy_Visc_Anisotropy != NULL) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      delete [] Eddy_Visc_Anisotropy[iDim];
+    delete [] Eddy_Visc_Anisotropy;
+  }
+}
 
 bool CNSVariable::SetVorticity(bool val_limiter) {
   

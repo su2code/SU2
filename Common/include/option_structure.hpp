@@ -178,6 +178,7 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
 /*!
  * \brief different solver types for the CFD component
  */
+// TODO: Should we be using a different solver?
 enum ENUM_SOLVER {
   NO_SOLVER = 0,						/*!< \brief Definition of no solver. */
   EULER = 1,							/*!< \brief Definition of the Euler's solver. */
@@ -345,6 +346,7 @@ enum RUNTIME_TYPE {
   RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_HYBRID_SYS = 23,  /*!< \brief One-physics case, the code is solving the a hybrid of RANS and LES */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
@@ -354,6 +356,7 @@ const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution i
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
+const int HYBRID_SOL = 5; /*!< \brief Position of the hybrid RANS/LES transport eqn. for the hybrid parameter(s) in the solver container array. */
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
 const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
 const int HEAT_SOL = 2;		/*!< \brief Position of the heat equation in the solution solver array. */
@@ -632,6 +635,30 @@ static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, EN
 ("SA", SA)
 ("SA_NEG", SA_NEG)
 ("SST", SST);
+
+/*!
+ * \brief Types of hybrid RANS/LES blending schemes.
+ *
+ * These define the transport equation for the hybrid parameter.
+ */
+enum ENUM_HYBRID_BLENDING {
+    RANS_ONLY = 0, /*!< \brief Kind of hybrid RANS/LES blending (RANS only). */
+    CONVECTIVE = 1 /*!< \brief Kind of hybrid RANS/LES blending (Convective). */
+};
+static const map<string, ENUM_HYBRID_BLENDING> Hybrid_Blending_Map = CCreateMap<string, ENUM_HYBRID_BLENDING>
+("RANS_ONLY", RANS_ONLY)
+("CONVECTIVE", CONVECTIVE);
+
+/*!
+ * \brief Types of hybrid RANS/LES subgrid anisotropy models.
+ */
+enum ENUM_HYBRID_ANISOTROPY {
+  ISOTROPIC = 0, /*!< \brief Kind of hybrid RANS/LES subgrid anisotropy (Isotropic) */
+  Q_BASED = 1    /*!< \brief Kind of hybrid RANS/LES subgrid anisotropy (Approximate Structure Function) */
+};
+static const map<string, ENUM_HYBRID_ANISOTROPY> Hybrid_Aniso_Map = CCreateMap<string, ENUM_HYBRID_ANISOTROPY>
+("ISOTROPIC", ISOTROPIC)
+("Q_BASED", Q_BASED);
 
 /*!
  * \brief types of transition models

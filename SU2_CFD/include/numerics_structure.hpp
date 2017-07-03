@@ -50,6 +50,19 @@
 
 using namespace std;
 
+#ifdef HAVE_MPI
+inline void BREAK(const char* filename, int linenum) {
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == 0)
+    printf("%s\t%6d\n", filename, linenum);
+}
+#else
+inline void BREAK(const char* filename, int linenum) {
+  printf("%s\t%6d\n", filename, linenum);
+}
+#endif
+
 /*!
  * \class CNumerics
  * \brief Class for defining the numerical methods.
@@ -92,10 +105,22 @@ public:
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
   su2double Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
   Eddy_Viscosity_j;      /*!< \brief Eddy viscosity at point j. */
-  su2double** Aniso_Eddy_Viscosity_i;  /*!< \brief Anisotropic eddy viscosity at point i. */
-  su2double** Aniso_Eddy_Viscosity_j;  /*!< \brief Anisotropic eddy viscosity at point j. */
+  /*--- Although some of these pertain to the turbulence, the hybridization
+   * in a RANS/LES framework requires variables to be used in various solvers
+   * (i.e. the eddy viscosity anisotropy is created by the turbulence, but
+   * affects the resolved flow). Rather than repeat the same code multiple
+   * times, the respective variables, getters and setters are stored in the
+   * base class. ---*/
+  su2double** Eddy_Viscosity_Anisotropy_i;  /*!< \brief Normalized anisotropy tensor for the eddy viscosity at point i. */
+  su2double** Eddy_Viscosity_Anisotropy_j;  /*!< \brief Normalized anisotropy tensor for the eddy viscosity at point j. */
   su2double** Resolution_Tensor_i;  /*!< \brief Resolution tensor at point i. */
   su2double** Resolution_Tensor_j;  /*!< \brief Resolution tensor at point j. */
+  su2double*** Resolution_Tensor_Gradient; /*!< \brief Gradient of the resolution tensor at point i. */
+  su2double Resolution_Adequacy; /*!< \brief Resolution adequacy parameter for a hybrid RANS/LES at point i. */
+  su2double TurbT, /*!< \brief Turbulent timescale */
+            TurbL; /*!< \brief Turbulent lengthscale */
+  su2double *HybridParameter_i, /*!< \brief Vector of variables for hybrid RANS/LES "hybrid parameters" at point i. */
+            *HybridParameter_j; /*!< \brief Vector of variables for hybrid RANS/LES "hybrid parameters" at point j. */
   su2double turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;      /*!< \brief Turbulent kinetic energy at point j. */
   su2double Pressure_i,  /*!< \brief Pressure at point i. */
@@ -513,20 +538,52 @@ public:
                         su2double val_eddy_viscosity_j);
 
   /*!
+   * \brief Set the turbulent timescale
+   * \param[in] val_turb_T - Turbulent timescale at point i
+   */
+  void SetTurbTimescale(su2double val_turb_T);
+
+  /*!
+   * \brief Set the turbulent timescale
+   * \param[in] val_turb_T - Turbulent lengthscale at point i
+   */
+  void SetTurbLengthscale(su2double val_turb_L);
+
+  /*!
+   * \brief Set the value of the hybrid RANS/LES blending variable.
+   * \param[in] val_hybrid_param_i - Value of the hybrid parameter(s) at point i.
+   * \param[in] val_hybrid_param_j - Value of the hybrid parameter(s) at point j.
+   */
+  void SetHybridParameter(su2double* val_hybrid_param_i, su2double* val_hybrid_param_j);
+
+  /*!
    * \brief Set the resolution tensors
-   * @param val_resolution_tensor_i - Value of the resolution tensor at point i
-   * @param val_resolution_tensor_j - Value of the resolution tensor at point j
+   * \param[in] val_resolution_tensor_i - Value of the resolution tensor at point i
+   * \param[in] val_resolution_tensor_j - Value of the resolution tensor at point j
    */
   void SetResolutionTensor(su2double** val_resolution_tensor_i,
                            su2double** val_resolution_tensor_j);
 
   /*!
-     * \brief Set the anisotropic eddy viscosity.
-     * \param[in] val_eddy_viscosity_i - Value of the eddy viscosity at point i.
-     * \param[in] val_eddy_viscosity_j - Value of the eddy viscosity at point j.
+   * \brief Set the gradient of the resolution tensors
+   * \param[in] val_grad_tensor - Value of the gradient of the resolution tensor at point i
+   \*/
+  void SetGradResolutionTensor(su2double*** val_grad_tensor);
+
+  /*!
+   * \brief Sets the resolution adequacy parameter for a hybrid RANS/LES model
+   * \param val_resolution_adequacy - The resolution adequacy parameter
+   */
+  void SetResolutionAdequacy(su2double val_resolution_adequacy);
+
+  /*!
+     * \brief Set the normalized eddy viscosity anisotropy tensor.
+     * \param[in] val_anisotropy_i - Normalized anisotropy tensor for the eddy viscosity
+     * \param[in] val_anisotropy_j - Normalized anisotropy tensor for the eddy viscosity
      */
-  void SetAnisoEddyViscosity(su2double** val_eddy_viscosity_i,
-                             su2double** val_eddy_viscosity_j);
+  void SetEddyViscAnisotropy(su2double** val_anisotropy_i,
+                             su2double** val_anisotropy_j);
+
   /*!
    * \brief Set the turbulent kinetic energy.
    * \param[in] val_turb_ke_i - Value of the turbulent kinetic energy at point i.
@@ -2302,6 +2359,47 @@ public:
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
 
+/*!
+ * \class CUpwSca_HybridConv
+ * \brief Class for doing a scalar upwind solver for the hybrid RANS/LES
+ *        blending equation.
+ * \ingroup ConvDiscr
+ * \author C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CUpwSca_HybridConv : public CNumerics {
+private:
+  su2double *Velocity_i, *Velocity_j;
+  bool implicit, grid_movement, incompressible;
+  su2double q_ij, a0, a1;
+  unsigned short iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSca_HybridConv(unsigned short val_nDim,
+                       unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwSca_HybridConv(void);
+
+  /*!
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                       su2double **val_Jacobian_j, CConfig *config);
+};
 
 /*!
  * \class CCentJST_Flow
@@ -2812,18 +2910,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-
-  /*!
-   * \brief Compute the anisotropic eddy viscosity, given the gradients
-   * @param[in] primvar_grad - Gradients of the primitive variables
-   * @param[in] resolution - The resolution tensor
-   * @param[in] scalar_eddy_viscosity - The scalar eddy viscosity
-   * @param[out] eddy_viscosity - A 2D tensor representing the eddy viscosity
-   */
-  void ComputeAnisoEddyViscosity(su2double** primvar_grad,
-                                 su2double** resolution,
-                                 su2double scalar_eddy_viscosity,
-                                 su2double** eddy_viscosity);
 };
 
 /*!
@@ -4411,6 +4497,44 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
   
+};
+
+/*!
+ * \class CSourcePieceWise_HybridConv
+ * \brief Class for integrating the source terms of the transport equation for
+ *        the hybrid parameters (in a hybrid RANS/LES model).
+ * \ingroup SourceDiscr
+ * \author C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CSourcePieceWise_HybridConv : public CNumerics {
+private:
+  bool incompressible;
+  bool rotating_frame;
+  bool transition;
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_HybridConv(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourcePieceWise_HybridConv(void);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!

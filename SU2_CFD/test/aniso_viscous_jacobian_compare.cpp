@@ -1,5 +1,5 @@
 /*!
- * \file aniso-viscous_residual_test.cpp
+ * \file aniso_viscous_jacobian_compare.cpp
  * \brief 
  * \author C. Pederson
  * \version 5.0.0 "Raven"
@@ -47,11 +47,12 @@ const unsigned short nVar = 7;
 
 template<std::size_t M, std::size_t N>
 void PrintMatrix(su2double** A) {
+  std::cout << std::fixed << std::setprecision(6);
   std::cout << "  [[";
   for (unsigned int i = 0; i < M; i++) {
     for (unsigned int j = 0; j < N; j++) {
       std::cout << A[i][j];
-      if (j<N-1) std::cout << ", ";
+      if (j<N-1) std::cout << ",\t";
     }
     if (i < M-1) std::cout << "]" << std::endl << "   [";
   }
@@ -62,7 +63,7 @@ class TestNumerics : public CAvgGrad_Flow {
  public:
   TestNumerics(CConfig* config, bool hasAnisoViscosity)
     : CAvgGrad_Flow(3, 6, config, hasAnisoViscosity) {
-    implicit = false;
+    implicit = true;
   };
 };
 
@@ -103,6 +104,8 @@ int main() {
   }
   primvar_grad_i[1][1] = 1.0;
   primvar_grad_j[1][1] = 1.0;
+  primvar_grad_i[2][2] = 0.3;
+  primvar_grad_j[2][2] = 0.3;
 
 
   su2double** resolution_i = new su2double*[nDim];
@@ -130,20 +133,25 @@ int main() {
     }
   }
 
-
   su2double normal[nDim] = {0.577350269, 0.577350269, 0.577350269};
+
+  su2double coord_i[nDim] = {0.0, 0.0, 0.0};
+  su2double coord_j[nDim] = {0.577350269, 0.577350269, 0.577350269};
 
   /*--- Outputs ---*/
 
-  su2double** Jacobian_i = new su2double*[nVar];
-  su2double** Jacobian_j = new su2double*[nVar];
+  su2double** Jacobian_i_a = new su2double*[nVar];
+  su2double** Jacobian_j_a = new su2double*[nVar];
+  su2double** Jacobian_i_b = new su2double*[nVar];
+  su2double** Jacobian_j_b = new su2double*[nVar];
   for (int iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double[nVar];
-    Jacobian_j[iVar] = new su2double[nVar];
+    Jacobian_i_a[iVar] = new su2double[nVar];
+    Jacobian_j_a[iVar] = new su2double[nVar];
+    Jacobian_i_b[iVar] = new su2double[nVar];
+    Jacobian_j_b[iVar] = new su2double[nVar];
   }
 
-  su2double* residual_a = new su2double[nVar];
-  su2double* residual_b = new su2double[nVar];
+  su2double* residual = new su2double[nVar];
 
   /**-------------------------------------------------------------------------
    * TEST
@@ -152,27 +160,36 @@ int main() {
    */
    su2double tol = 10*std::numeric_limits<su2double>::epsilon();
    isotropic_numerics.SetNormal(normal);
+   isotropic_numerics.SetCoord(coord_i, coord_j);
    isotropic_numerics.SetResolutionTensor(resolution_i, resolution_j);
    isotropic_numerics.SetPrimitive(primvar_i, primvar_j);
    isotropic_numerics.SetPrimVarGradient(primvar_grad_i, primvar_grad_j);
-   isotropic_numerics.ComputeResidual(residual_a, Jacobian_i, Jacobian_j, test_config);
+   isotropic_numerics.ComputeResidual(residual, Jacobian_i_a, Jacobian_j_a, test_config);
 
    anisotropic_numerics.SetHybridParameter(hybrid_param_i, hybrid_param_j);
    anisotropic_numerics.SetNormal(normal);
+   anisotropic_numerics.SetCoord(coord_i, coord_j);
    anisotropic_numerics.SetResolutionTensor(resolution_i, resolution_j);
    anisotropic_numerics.SetPrimitive(primvar_i, primvar_j);
    anisotropic_numerics.SetPrimVarGradient(primvar_grad_i, primvar_grad_j);
    anisotropic_numerics.SetEddyViscAnisotropy(anisotropy_i, anisotropy_j);
-   anisotropic_numerics.ComputeResidual(residual_b, Jacobian_i, Jacobian_j, test_config);
+   anisotropic_numerics.ComputeResidual(residual, Jacobian_i_b, Jacobian_j_b, test_config);
 
    for (int iVar = 0; iVar < nVar; iVar++) {
-     if (std::abs(residual_a[iVar] - residual_b[iVar]) > tol ) return_flag = 1;
+     for (int jVar = 0; jVar < nVar; jVar++) {
+       if (fabs(Jacobian_i_a[iVar][jVar] - Jacobian_i_b[iVar][jVar]) > 1e-7)
+        return_flag = 1;
+     }
    }
    if (return_flag == 1) {
-     std::cout << "ERROR: The residual did not match an isotropic viscosity residual." << std::endl;
-     std::cout << "  Expected: " << residual_a << std::endl;
-     std::cout << "  Found:    " << residual_b << std::endl;
+     std::cout << "ERROR: The anisotropic jacobian did not match an isotropic jacobian." << std::endl;
+     std::cout << "  Isotropic:" << std::endl;
+     PrintMatrix<nVar,nVar>(Jacobian_i_a);
+     std::cout << endl;
+     std::cout << "  Found:" << std::endl;
+     PrintMatrix<nVar,nVar>(Jacobian_i_b);
    }
+
   /**-------------------------------------------------------------------------
    * TEARDOWN
    *
@@ -186,13 +203,17 @@ int main() {
    delete[] resolution_i;
    delete[] resolution_j;
    for (int iVar = 0; iVar < nVar; iVar++) {
-     delete[] Jacobian_i[iVar];
-     delete[] Jacobian_j[iVar];
+     delete[] Jacobian_i_a[iVar];
+     delete[] Jacobian_j_a[iVar];
+     delete[] Jacobian_i_b[iVar];
+     delete[] Jacobian_j_b[iVar];
      delete[] primvar_grad_i[iVar];
      delete[] primvar_grad_j[iVar];
    }
-   delete[] Jacobian_i;
-   delete[] Jacobian_j;
+   delete[] Jacobian_i_a;
+   delete[] Jacobian_j_a;
+   delete[] Jacobian_i_b;
+   delete[] Jacobian_j_b;
    delete[] primvar_grad_i;
    delete[] primvar_grad_j;
 

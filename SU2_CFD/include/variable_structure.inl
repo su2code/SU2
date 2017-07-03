@@ -251,6 +251,19 @@ inline su2double *CVariable::GetIntBoundary_Jump(void) { return NULL; }
 
 inline su2double CVariable::GetEddyViscosity(void) { return 0; }
 
+inline su2double CVariable::GetTurbTimescale(void) { return 0; }
+
+inline su2double CVariable::GetTurbLengthscale(void) { return 0; }
+
+inline su2double CVariable::GetResolutionAdequacy(void) {return 1; }
+
+inline su2double** CVariable::GetEddyViscAnisotropy(void) { return NULL; }
+
+inline su2double CVariable::GetEddyViscAnisotropy(unsigned short iDim,
+                                                  unsigned short jDim) {
+  return (iDim == jDim);
+}
+
 inline void CVariable::SetGammaEff(void) { }
 
 inline void CVariable::SetGammaSep(su2double gamma_sep) { }
@@ -426,6 +439,12 @@ inline void CVariable::SetLaminarViscosity(su2double laminarViscosity) { }
 inline void CVariable::SetLaminarViscosity(CConfig *config) { }
 
 inline void CVariable::SetEddyViscosity(su2double eddy_visc) { }
+
+inline void CVariable::SetTurbScales(su2double val_turb_T, su2double val_turb_L) { }
+
+inline void CVariable::SetResolutionAdequacy(su2double val_r_k) { }
+
+inline void CVariable::SetEddyViscAnisotropy(su2double** val_anisotropy_i) { }
 
 inline void CVariable::SetThermalConductivity(su2double thermalConductivity) { }
 
@@ -1171,4 +1190,37 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Solution_Direct[iVar] = val_solution_direct[iVar];
   }
+}
+
+inline void CHybridVariable::SetResolutionAdequacy(su2double val_r_k) { resolution_adequacy = val_r_k;}
+
+inline su2double CHybridVariable::GetResolutionAdequacy() { return resolution_adequacy; }
+
+inline void CNSVariable::SetEddyViscAnisotropy(su2double** val_anisotropy) {
+    // Copy values instead of copying pointers to values that may change
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0; jDim < nDim; jDim++)
+        Eddy_Visc_Anisotropy[iDim][jDim] = val_anisotropy[iDim][jDim];
+}
+
+inline su2double** CNSVariable::GetEddyViscAnisotropy() {
+  return Eddy_Visc_Anisotropy;
+}
+
+inline su2double CNSVariable::GetEddyViscAnisotropy(unsigned short iDim,
+                                                    unsigned short jDim) {
+  return Eddy_Visc_Anisotropy[iDim][jDim];
+}
+
+inline su2double CTurbSSTVariable::GetTurbTimescale() {
+  return T;
+}
+
+inline su2double CTurbSSTVariable::GetTurbLengthscale() {
+ return L;
+}
+
+inline void CTurbSSTVariable::SetTurbScales(su2double val_turb_T, su2double val_turb_L) {
+  T = val_turb_T;
+  L = val_turb_L;
 }

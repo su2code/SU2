@@ -216,10 +216,24 @@ inline void CNumerics::SetEddyViscosity(su2double val_eddy_viscosity_i, su2doubl
   Eddy_Viscosity_j = val_eddy_viscosity_j;
 }
 
-inline void CNumerics::SetAnisoEddyViscosity(su2double** val_eddy_viscosity_i,
-                                             su2double** val_eddy_viscosity_j) {
-    Aniso_Eddy_Viscosity_i = val_eddy_viscosity_i;
-    Aniso_Eddy_Viscosity_j = val_eddy_viscosity_j;
+inline void CNumerics::SetEddyViscAnisotropy(su2double** val_anisotropy_i,
+                                             su2double** val_anisotropy_j) {
+    Eddy_Viscosity_Anisotropy_i = val_anisotropy_i;
+    Eddy_Viscosity_Anisotropy_j = val_anisotropy_j;
+}
+
+inline void CNumerics::SetTurbLengthscale(su2double val_turb_L) {
+  TurbL = val_turb_L;
+}
+
+inline void CNumerics::SetTurbTimescale(su2double val_turb_T) {
+  TurbT = val_turb_T;
+}
+
+inline void CNumerics::SetHybridParameter(su2double* val_hybrid_param_i,
+                                          su2double* val_hybrid_param_j) {
+  HybridParameter_i = val_hybrid_param_i;
+  HybridParameter_j = val_hybrid_param_j;
 }
 
 inline void CNumerics::SetResolutionTensor(su2double** val_resolution_tensor_i,
@@ -227,6 +241,12 @@ inline void CNumerics::SetResolutionTensor(su2double** val_resolution_tensor_i,
   Resolution_Tensor_i = val_resolution_tensor_i;
   Resolution_Tensor_j = val_resolution_tensor_j;
 }
+
+inline void CNumerics::SetGradResolutionTensor(su2double*** val_grad_tensor) {
+    Resolution_Tensor_Gradient = val_grad_tensor;
+}
+
+inline void CNumerics::SetResolutionAdequacy(su2double val_r_k) { Resolution_Adequacy = val_r_k; }
 
 inline void CNumerics::SetIntermittency(su2double intermittency_in) { }
 

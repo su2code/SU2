@@ -139,6 +139,11 @@ lib_cxxflags += @JSONCPP_CXX@
 lib_ldadd += @JSONCPP_LD@
 # endif
 
+# if BUILD_LAPACK
+lib_cxxflags += @LAPACK_CXX@
+lib_ldadd += @LAPACK_LD@
+# endif
+
 if BUILD_NORMAL
 libSU2_a_SOURCES = $(lib_sources)
 libSU2_a_CXXFLAGS = ${lib_cxxflags}

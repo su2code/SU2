@@ -177,7 +177,6 @@ CNumerics::~CNumerics(void) {
 
   if (l != NULL) delete [] l;
   if (m != NULL) delete [] m;
-
 }
 
 void CNumerics::GetInviscidFlux(su2double val_density, su2double *val_velocity,
@@ -1681,13 +1680,22 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
 }
 
 void CNumerics::GetViscousProjFlux(su2double *val_primvar,
-               su2double **val_gradprimvar, su2double val_turb_ke,
-               su2double *val_normal,
-               su2double val_laminar_viscosity,
-               su2double **val_eddy_viscosity) {
+                                   su2double **val_gradprimvar,
+                                   su2double val_turb_ke,
+                                   su2double *val_normal,
+                                   su2double val_laminar_viscosity,
+                                   su2double **val_eddy_viscosity) {
     unsigned short iVar, iDim, jDim, kDim, lDim;
     su2double** total_viscosity, **G;
     su2double heat_flux_factor, div_vel, Cp, Density, trace_eddy_viscosity;
+
+    // TODO: Add 2D option, mostly for testing
+    if (nDim == 2) {
+      cout << "ERROR: The anisotropic eddy viscosity has not been implemented for 2D!" << endl;
+      cout << "In file: " << __FILE__ << endl;
+      cout << "At line: " << __LINE__ << endl;
+      exit(EXIT_FAILURE);
+    }
 
     Density = val_primvar[nDim+2];
     total_viscosity = new su2double*[nDim];
@@ -1701,7 +1709,7 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
     /*--- Trace of the anisotropic eddy viscosity ---*/
     trace_eddy_viscosity = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-      trace_eddy_viscosity += val_eddy_viscosity[iDim][jDim];
+      trace_eddy_viscosity += val_eddy_viscosity[iDim][iDim];
 
     Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
     heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam
@@ -1771,6 +1779,13 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
       for (iDim = 0; iDim < nDim; iDim++)
         Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
     }
+
+    for (iDim  = 0; iDim < nDim; iDim++)
+      delete [] G[iDim];
+    delete [] G;
+    for (iDim  = 0; iDim < nDim; iDim++)
+      delete [] total_viscosity[iDim];
+    delete [] total_viscosity;
   }
 
 void CNumerics::GetViscousProjFlux(su2double *val_primvar,
@@ -2002,7 +2017,7 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double val_la
     su2double etay = val_normal[0]*val_normal[2]/3.0;
     su2double etaz = val_normal[0]*val_normal[1]/3.0;
 
-    su2double pix = val_Mean_PrimVar[1]*thetax + val_Mean_PrimVar[2]*etaz   + val_Mean_PrimVar[3]*3;
+    su2double pix = val_Mean_PrimVar[1]*thetax + val_Mean_PrimVar[2]*etaz   + val_Mean_PrimVar[3]*etay;
     su2double piy = val_Mean_PrimVar[1]*etaz   + val_Mean_PrimVar[2]*thetay + val_Mean_PrimVar[3]*etax;
     su2double piz = val_Mean_PrimVar[1]*etay   + val_Mean_PrimVar[2]*etax   + val_Mean_PrimVar[3]*thetaz;
 
@@ -2093,18 +2108,19 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 
   /*--- Trace of the anisotropic viscosities ---*/
   su2double trace_eddy_viscosity = 0.0;
-  su2double trace_total_viscosity = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     trace_eddy_viscosity += val_eddy_viscosity[iDim][iDim];
-    trace_total_viscosity += total_viscosity[iDim][iDim];
   }
+  su2double trace_total_viscosity = trace_eddy_viscosity/3
+                                    + val_laminar_viscosity;
 
-  su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + 1.0/3*trace_eddy_viscosity/Prandtl_Turb;
+  su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam
+                               + trace_eddy_viscosity/(3*Prandtl_Turb);
   su2double cpoR = Gamma/(Gamma-1.0); // cp over R
-  su2double factor = 1.0/3*trace_total_viscosity*val_dS/(Density*val_dist_ij);
+  su2double factor = trace_total_viscosity*val_dS/(Density*val_dist_ij);
   su2double phi_rho = -cpoR*heat_flux_factor*Pressure/(Density*Density);
   su2double phi_p = cpoR*heat_flux_factor/(Density);
-  su2double rhoovisc = Density/(1.0/3*trace_total_viscosity); // rho over viscosity
+  su2double rhoovisc = Density/(trace_total_viscosity); // rho over viscosity
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     for (unsigned short jVar = 0; jVar < nVar; jVar++) {
@@ -2139,10 +2155,6 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
     su2double pix = val_Mean_PrimVar[1]*thetax + val_Mean_PrimVar[2]*etaz;
     su2double piy = val_Mean_PrimVar[1]*etaz   + val_Mean_PrimVar[2]*thetay;
 
-    val_Proj_Jac_Tensor_i[0][0] = 0.0;
-    val_Proj_Jac_Tensor_i[0][1] = 0.0;
-    val_Proj_Jac_Tensor_i[0][2] = 0.0;
-    val_Proj_Jac_Tensor_i[0][3] = 0.0;
     val_Proj_Jac_Tensor_i[1][0] = factor*pix;
     val_Proj_Jac_Tensor_i[2][0] = factor*piy;
 
@@ -2179,17 +2191,9 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
     su2double piy = val_Mean_PrimVar[1]*etaz   + val_Mean_PrimVar[2]*thetay + val_Mean_PrimVar[3]*etax;
     su2double piz = val_Mean_PrimVar[1]*etay   + val_Mean_PrimVar[2]*etax   + val_Mean_PrimVar[3]*thetaz;
 
-    val_Proj_Jac_Tensor_i[0][0] = 0.0;
-    val_Proj_Jac_Tensor_i[0][1] = 0.0;
-    val_Proj_Jac_Tensor_i[0][2] = 0.0;
-    val_Proj_Jac_Tensor_i[0][3] = 0.0;
-    val_Proj_Jac_Tensor_i[0][4] = 0.0;
     val_Proj_Jac_Tensor_i[1][0] = factor*pix;
-    val_Proj_Jac_Tensor_i[1][4] = 0.0;
     val_Proj_Jac_Tensor_i[2][0] = factor*piy;
-    val_Proj_Jac_Tensor_i[2][4] = 0.0;
     val_Proj_Jac_Tensor_i[3][0] = factor*piz;
-    val_Proj_Jac_Tensor_i[3][4] = 0.0;
     val_Proj_Jac_Tensor_i[4][0] = -factor*(rhoovisc*theta*(phi_rho+phi*phi_p) - (pix*val_Mean_PrimVar[1] + piy*val_Mean_PrimVar[2] + piz*val_Mean_PrimVar[3]));
     val_Proj_Jac_Tensor_i[4][1] = -factor*(pix-rhoovisc*theta*phi_p*(Gamma-1)*val_Mean_PrimVar[1]);
     val_Proj_Jac_Tensor_i[4][2] = -factor*(piy-rhoovisc*theta*phi_p*(Gamma-1)*val_Mean_PrimVar[2]);
@@ -2213,6 +2217,10 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 
 
   }
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    delete [] total_viscosity[iDim];
+  delete [] total_viscosity;
 
 }
 

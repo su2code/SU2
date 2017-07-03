@@ -154,11 +154,16 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
   F1   = 1.0;
   F2   = 0.0;
   CDkw = 0.0;
-  
+
   /*--- Initialization of eddy viscosity ---*/
   
   muT = val_muT;
   
+  /*--- Initialization of scales with isotropic turbulence assumption ---*/
+
+  L = sqrt(val_kine)/val_omega;
+  T = 1.0/val_omega;
+
   /*--- Allocate and initialize solution for the dual time strategy ---*/
   
   if (dual_time) {

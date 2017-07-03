@@ -142,7 +142,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<
   
   if (!Convergence) {
     if (rank == MASTER_NODE)
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+      cout << "\n !!! Error: SU2's CSysSolve has diverged. Now exiting... !!! \n" << endl;
 #ifndef HAVE_MPI
 		exit(EXIT_DIVERGENCE);
 #else

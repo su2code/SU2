@@ -456,8 +456,11 @@ private:
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
-  bool Hybrid_Turb_Model;  /*!< \brief A k-based blending hybrid model will be used. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
+  bool Hybrid_Turb_Model;  /*!< \brief A hybrid RANS/LES model (other than DES) will be used. */
+  unsigned short Kind_Hybrid_Blending; /*!< \brief Hybrid RANS/LES blending definition */
+  unsigned short Kind_Hybrid_Aniso_Model; /*!< \brief Hybrid RANS/LES subgrid anisotropy model definition */
+  su2double Hybrid_Model_Constant; /*!< \brief Model constant relating the approximate second order structure function to the unresolved turbulent kinetic energy */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
   Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
@@ -629,7 +632,8 @@ private:
   SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-  VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  VolSens_FileName,			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  Hybrid_Const_FileName;                /*!< \brief Input file for the hybrid RANS/LES constants. */
   bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
@@ -3274,6 +3278,24 @@ public:
   bool isHybrid_Turb_Model(void);
 
   /*!
+   * \brief Get the kind of hybrid RANS/LES blending scheme.
+   * \return Kind of blending scheme.
+   */
+  unsigned short GetKind_Hybrid_Blending(void);
+
+  /*!
+   * \brief Get the kind of hybrid RANS/LES subgrid anisotropy model.
+   * \return Kind of subgrid anisotropy model.
+   */
+  unsigned short GetKind_Hybrid_Anisotropy_Model(void);
+
+  /*!
+   * \brief Get the hybrid RANS/LES model constant.
+   * \return The hybrid RANS/LES model constant.
+   */
+  su2double Get_Hybrid_Model_Const(void);
+
+  /*!
    * \brief Get the kind of the turbulence model.
    * \return Kind of the turbulence model.
    */
@@ -4239,6 +4261,12 @@ public:
    */
   string GetVolSens_FileName(void);
   
+  /*!
+   * \brief Get the name of the file with the hybrid RANS/LES constants.
+   * \return Name of the file with the hybrid RANS/LES constants.
+   */
+  string GetHybrid_Const_FileName(void);
+
   /*!
    * \brief Augment the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.

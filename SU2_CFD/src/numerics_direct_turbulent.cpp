@@ -1170,6 +1170,7 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsi
   alfa_1        = constants[8];
   alfa_2        = constants[9];
   a1            = constants[7];
+
 }
 
 CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
@@ -1223,7 +1224,9 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
     pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
     pk = max(pk,0.0);
-    
+
+    if (config->isHybrid_Turb_Model()) pk = pk*HybridParameter_i[0];
+
     zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
     pw = max(pw,0.0);

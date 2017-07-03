@@ -44,16 +44,25 @@ CPrimalGrid::CPrimalGrid(void) {
 	Coord_FaceElems_CG = NULL;
   GlobalIndex = 0;
 	ResolutionTensor = NULL;
-  
+	ResolutionValues = NULL;
+	ResolutionVectors = NULL;
 }
 
 CPrimalGrid::~CPrimalGrid() {
+  unsigned short iDim;
 
 	if (Nodes != NULL) delete[] Nodes;
 	if (Coord_CG != NULL) delete[] Coord_CG;
   if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
-  if (ResolutionTensor != NULL) delete[] ResolutionTensor;
-   
+  if (ResolutionValues != NULL) delete[] ResolutionValues;
+  if (ResolutionVectors != NULL) {
+    for (iDim = 0; iDim < nDim; iDim++) delete [] ResolutionVectors[iDim];
+    delete [] ResolutionVectors;
+  }
+  if (ResolutionTensor != NULL) {
+    for (iDim = 0; iDim < nDim; iDim++) delete [] ResolutionTensor[iDim];
+    delete [] ResolutionTensor;
+  }
 }
 
 void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
@@ -100,8 +109,11 @@ void CPrimalGrid::SetResolutionTensor(su2double** val_coord) {
 
   /*--- Allocate Resolution Tensor ---*/
   ResolutionTensor = new su2double* [nDim];
+  ResolutionValues = new su2double[nDim];
+  ResolutionVectors = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     ResolutionTensor[iDim] = new su2double [nDim];
+    ResolutionVectors[iDim] = new su2double[nDim];
     for (jDim = 0; jDim < nDim; ++jDim) {
       ResolutionTensor[iDim][jDim] = 0.0;
     }
@@ -132,6 +144,14 @@ void CPrimalGrid::SetResolutionTensor(su2double** val_coord) {
     }
   }
 
+  /*--- Record calculation values in values and vectors ---*/
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    ResolutionValues[iDim] = coord_max[iDim] - coord_min[iDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      ResolutionVectors[iDim][jDim] = (iDim == jDim);
+    }
+  }
+
   delete[] coord_max;
   delete[] coord_min;
 };
@@ -141,34 +161,60 @@ void CPrimalGrid::GramSchmidt(std::vector<std::vector<su2double> > &w,
   unsigned short iDim, jDim;
   const unsigned short nDim = w.size();
 
-  /*-- Set the first basis vector to the first input vector --*/
+  vector<su2double> magnitude;
+  for (iDim =0; iDim < nDim; iDim++) {
+    magnitude.push_back(inline_magnitude(w[iDim]));
+  }
+
+  su2double max = magnitude[0], min = magnitude[0];
+  unsigned short maxloc = 0, minloc = 0, medianloc=0;
+  for (iDim = 1; iDim < nDim; iDim++) {
+    if (magnitude[iDim] > max) {
+      max = magnitude[iDim]; maxloc = iDim;
+    } else if (magnitude[iDim] <= min) {
+      min = magnitude[iDim]; minloc = iDim;
+    }
+  }
+  if (nDim == 3) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      if (iDim != maxloc && iDim != minloc) {
+        medianloc = iDim; break;
+      }
+    }
+  } else {
+    medianloc = minloc;
+  }
+
+  /*-- Set the largest basis vector to the first input vector --*/
   for (iDim = 0; iDim < nDim; ++iDim) {
-    v[0][iDim] = w[0][iDim];
+    v[maxloc][iDim] = w[maxloc][iDim];
   }
 
   if (nDim > 1) {
     /*-- Compute the next orthogonal vector --*/
     for (iDim = 0; iDim < nDim; ++iDim) {
-      v[1][iDim] = w[1][iDim] -
-          inline_dot_prod(w[1],v[0])/inline_dot_prod(v[0],v[0])*v[0][iDim];
+      v[medianloc][iDim] = w[medianloc][iDim] -
+          inline_dot_prod(w[medianloc],v[maxloc])/
+          inline_dot_prod(v[maxloc],v[maxloc])*v[maxloc][iDim];
     }
   }
 
   if (nDim > 2) {
     /*-- Compute the next orthogonal vector --*/
     for (iDim = 0; iDim < nDim; ++iDim) {
-      v[2][iDim] = w[2][iDim] -
-          inline_dot_prod(w[2],v[0])/inline_dot_prod(v[0],v[0])*v[0][iDim] -
-          inline_dot_prod(w[2],v[1])/inline_dot_prod(v[1],v[1])*v[1][iDim];
+      v[minloc][iDim] = w[minloc][iDim] -
+          inline_dot_prod(w[minloc],v[maxloc])/
+          inline_dot_prod(v[maxloc],v[maxloc])*v[maxloc][iDim] -
+          inline_dot_prod(w[minloc],v[medianloc])/
+          inline_dot_prod(v[medianloc],v[medianloc])*v[medianloc][iDim];
     }
   }
 
   /*-- Normalize results of the Gram-Schmidt --*/
-  su2double mag;
   for (iDim = 0; iDim < nDim; ++iDim) {
-    mag = inline_magnitude(v[iDim]);
+    magnitude[iDim] = inline_magnitude(v[iDim]);
     for (jDim = 0; jDim < nDim; ++jDim) {
-      v[iDim][jDim] /= mag;
+      v[iDim][jDim] /= magnitude[iDim];
     }
   }
 }
@@ -410,10 +456,14 @@ void CQuadrilateral::SetResolutionTensor(su2double **val_coord) {
 
   /*-- Allocate ResolutionTensor --*/
   ResolutionTensor = new su2double* [nDim];
+  ResolutionValues = new su2double[nDim];
+  ResolutionVectors = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     ResolutionTensor[iDim] = new su2double [nDim];
+    ResolutionVectors[iDim] = new su2double [nDim];
     for (jDim = 0; jDim < nDim; ++jDim) {
       ResolutionTensor[iDim][jDim] = 0.0;
+      ResolutionVectors[iDim][jDim] = 0.0;
     }
   }
 
@@ -495,6 +545,14 @@ void CQuadrilateral::SetResolutionTensor(su2double **val_coord) {
               eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
         }
       }
+    }
+  }
+
+  /*--- Record calculation values in values and vectors ---*/
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    ResolutionValues[iDim] = eigvalues[iDim][iDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      ResolutionVectors[iDim][jDim] = eigvecs[iDim][jDim];
     }
   }
 
@@ -635,7 +693,6 @@ CHexahedron::~CHexahedron() {
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
-  
 }
 
 void CHexahedron::Change_Orientation(void) {
@@ -673,8 +730,11 @@ void CHexahedron::SetResolutionTensor(su2double** val_coord) {
 
   /*-- Allocate ResolutionTensor --*/
   ResolutionTensor = new su2double* [nDim];
+  ResolutionValues = new su2double[nDim];
+  ResolutionVectors = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     ResolutionTensor[iDim] = new su2double [nDim];
+    ResolutionVectors[iDim] = new su2double[nDim];
     for (jDim = 0; jDim < nDim; ++jDim) {
       ResolutionTensor[iDim][jDim] = 0.0;
     }
@@ -766,6 +826,22 @@ void CHexahedron::SetResolutionTensor(su2double** val_coord) {
   vector<vector<su2double> > temp_eigvecs = eigvecs;
   GramSchmidt(temp_eigvecs, eigvecs);
 
+  /*--- Change vectors to be positive ---*/
+  vector<su2double> x_vector(3);
+  vector<su2double> y_vector(3);
+  vector<su2double> z_vector(3);
+  x_vector[0] = 1.0; y_vector[1] = 1.0; z_vector[2] = 1.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    su2double alignment = inline_dot_prod(eigvecs[iDim],x_vector) +
+                          inline_dot_prod(eigvecs[iDim],y_vector) +
+                          inline_dot_prod(eigvecs[iDim],z_vector);
+    if (alignment < 0) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        eigvecs[iDim][jDim] *= -1;
+      }
+    }
+  }
+
   /*-- Perform matrix multiplication --*/
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
@@ -777,6 +853,16 @@ void CHexahedron::SetResolutionTensor(su2double** val_coord) {
       }
     }
   }
+
+  /*--- Record calculation values in values and vectors ---*/
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    ResolutionValues[iDim] = eigvalues[iDim][iDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      ResolutionVectors[iDim][jDim] = eigvecs[iDim][jDim];
+    }
+  }
+
+  delete [] paired_faces;
 
 
 };
@@ -881,6 +967,7 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
 	unsigned short iDim, iFace, iNeighbor_Elements;
 
 	/*--- Allocate CG coordinates ---*/
+
 	nDim = 3;
 	Coord_CG = new su2double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -893,6 +980,7 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
 	}
 	
 	/*--- Allocate and define face structure of the element ---*/
+
 	Nodes = new unsigned long[nNodes];
 	Nodes[0] = val_point_0;
 	Nodes[1] = val_point_1;
@@ -901,6 +989,7 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
 	Nodes[4] = val_point_4;
 	
 	/*--- Allocate and define neighbor elements to a element ---*/
+
 	nNeighbor_Elements = nFaces;
 	Neighbor_Elements = new long[nNeighbor_Elements];
 	for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {

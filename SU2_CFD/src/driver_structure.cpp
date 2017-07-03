@@ -64,6 +64,7 @@ CDriver::CDriver(char* confFile,
   FFDBox                        = NULL;
   interpolator_container        = NULL;
   transfer_container            = NULL;
+  hybrid_mediator               = NULL;
 
   /*--- Definition and of the containers for all possible zones. ---*/
 
@@ -425,7 +426,12 @@ void CDriver::Postprocessing() {
   }
   delete [] integration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIntegration container." << endl;
-  
+
+  if (hybrid_mediator != NULL) {
+    delete hybrid_mediator;
+    if (rank == MASTER_NODE) cout << "Deleted Hybrid RANS/LES mediator." << endl;
+  }
+
   for (iZone = 0; iZone < nZone; iZone++) {
     Solver_Postprocessing(solver_container[iZone],
                           geometry_container[iZone],
@@ -647,6 +653,8 @@ void CDriver::Geometrical_Preprocessing() {
       geometry_container[iZone][iMGlevel]->SetBoundControlVolume(config_container[iZone], geometry_container[iZone][iMGlevel-1], ALLOCATE);
       geometry_container[iZone][iMGlevel]->SetCoord(geometry_container[iZone][iMGlevel-1]);
 
+      geometry_container[iZone][iMGlevel]->SetResolutionTensor();
+
       /*--- Find closest neighbor to a surface point ---*/
 
       geometry_container[iZone][iMGlevel]->FindNormal_Neighbor(config_container[iZone]);
@@ -745,9 +753,23 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
     if (config->isHybrid_Turb_Model()) hybrid = true;
-    // TODO: Incorporate hybrid solver here...
   }
+ 
+  /*--- Creation of the hybrid mediator class ---*/ 
   
+  if (hybrid) {
+    /*--- Only one hybrid model can be used for all zones ---*/
+    switch (config->GetKind_Hybrid_Blending()) {
+      case RANS_ONLY:
+        hybrid_mediator = new CHybrid_Dummy_Mediator(nDim, config);
+        break;
+      case CONVECTIVE:
+        hybrid_mediator = new CHybrid_Mediator(nDim, config, config->GetHybrid_Const_FileName());
+        break;
+    }
+    // Hybrid anisotropy is created in the CNSSolver constructor
+  }
+
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
   
@@ -774,6 +796,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (ns) {
       if (compressible) {
         solver_container[iMGlevel][FLOW_SOL] = new CNSSolver(geometry[iMGlevel], config, iMGlevel);
+        if (hybrid) solver_container[iMGlevel][FLOW_SOL]->AddHybridMediator(hybrid_mediator);
       }
       if (incompressible) {
         solver_container[iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[iMGlevel], config, iMGlevel);
@@ -782,18 +805,26 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (turbulent) {
       if (spalart_allmaras) {
         solver_container[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
       }
       else if (neg_spalart_allmaras) {
         solver_container[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
       }
       else if (menter_sst) {
         solver_container[iMGlevel][TURB_SOL] = new CTurbSSTSolver(geometry[iMGlevel], config, iMGlevel);
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
+      }
+
+      if (hybrid) {
+        solver_container[iMGlevel][TURB_SOL]->AddHybridMediator(hybrid_mediator);
+        switch (config->GetKind_Hybrid_Blending()) {
+          case RANS_ONLY: // Only the source numerics object is different.
+            solver_container[iMGlevel][HYBRID_SOL] = new CHybridConvSolver(geometry[iMGlevel], config, iMGlevel);
+            solver_container[iMGlevel][HYBRID_SOL]->AddHybridMediator(hybrid_mediator);
+            break;
+          case CONVECTIVE:
+            solver_container[iMGlevel][HYBRID_SOL] = new CHybridConvSolver(geometry[iMGlevel], config, iMGlevel);
+            solver_container[iMGlevel][HYBRID_SOL]->AddHybridMediator(hybrid_mediator);
+            break;
+        }
       }
       if (transition) {
         solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
@@ -895,7 +926,6 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
     if (config->isHybrid_Turb_Model()) hybrid = true;
-    // TODO: Incorporate hybrid solver here...
   }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
@@ -944,6 +974,9 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     if (fem) {
       delete solver_container[iMGlevel][FEA_SOL];
     }
+    if (hybrid) {
+      delete solver_container[iMGlevel][HYBRID_SOL];
+    }
     
     delete [] solver_container[iMGlevel];
   }
@@ -954,7 +987,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
 
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, template_solver, transition, disc_adj;
+      heat, template_solver, transition, disc_adj, hybrid;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -985,6 +1018,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
 
   }
+  hybrid = config->isHybrid_Turb_Model();
 
   /*--- Allocate solution for a template problem ---*/
   if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
@@ -994,6 +1028,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (ns) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
   if (turbulent) integration_container[TURB_SOL] = new CSingleGridIntegration(config);
   if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
+  if (hybrid) integration_container[HYBRID_SOL] = new CSingleGridIntegration(config);
   if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
@@ -1011,7 +1046,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
 void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, template_solver, transition, disc_adj;
+      heat, template_solver, transition, disc_adj, hybrid;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1042,6 +1077,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
 
   }
+  hybrid = config->isHybrid_Turb_Model();
 
   /*--- DeAllocate solution for a template problem ---*/
   if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
@@ -1054,6 +1090,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
   if (wave) delete integration_container[WAVE_SOL];
   if (heat) delete integration_container[HEAT_SOL];
   if (fem) delete integration_container[FEA_SOL];
+  if (hybrid) delete integration_container[HYBRID_SOL];
 
   /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
@@ -1074,6 +1111,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   nVar_Turb             = 0,
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
+  nVar_Hybrid           = 0,
   nVar_Poisson          = 0,
   nVar_FEM        = 0,
   nVar_Wave             = 0,
@@ -1104,7 +1142,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   wave             = false;   heat             = false;   fem        = false;
   spalart_allmaras = false; neg_spalart_allmaras = false;  menter_sst       = false;
-  hybrid           = false;  // FIXME: Hybrid not fully implemented
+  hybrid           = false;
   transition       = false;
   template_solver  = false;
   
@@ -1129,13 +1167,11 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     switch (config->GetKind_Turb_Model()) {
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;           break;
-
+      case SST:    menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
-    if (config->isHybrid_Turb_Model()) hybrid = true;
-    // TODO: Incorporate hybrid solver here...
   }
+  hybrid = config->isHybrid_Turb_Model();
   
   /*--- Number of variables for the template ---*/
   
@@ -1146,6 +1182,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (euler)        nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   if (ns)           nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   if (turbulent)    nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
+  if (hybrid)       nVar_Hybrid = solver_container[MESH_0][HYBRID_SOL]->GetnVar();
   if (transition)   nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
   if (poisson)      nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
   
@@ -1346,6 +1383,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           if (hybrid) {
+            // Use an anisotropic eddy viscosity
             numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config, true);
           } else {
             numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
@@ -1354,9 +1392,10 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           if (hybrid) {
-            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config, true);
+            // Use an anisotropic eddy viscosity
+            numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config, true);
           } else {
-            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+            numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
           }
         }
         
@@ -1458,10 +1497,77 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       }
     }
   }
-  
+
+  /*--- Solver definition for the hybrid parameter (for hybrid RANS/LES) ---*/
+
+  if (hybrid) {
+    if (hybrid && not(turbulent)) {
+      cout << "No turbulence model specified." << endl;
+      cout << "Please specify a RANS model to be used with the hybrid model." << endl;
+      exit(EXIT_FAILURE);
+    }
+
+		/*--- Check if the combination of hybridization and RANS model are valid ---*/
+    // TODO: Add in KE model (plus any other supported models)
+    if (hybrid && !(menter_sst)) {
+      cout << "Specified RANS model has not been implemented for hybrid RANS/LES." << endl;
+      cout << "Currently supported RANS models: SST" << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // Allow convection (there's no dummy upwinding convection class)
+          numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
+          break;
+        case CONVECTIVE:
+          numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
+          break;
+        default:
+          cout << "Convective numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
+      }
+    }
+
+    /* VISC_TERM is not necessary; it will be passed as a NULL pointer to a
+     * virtual function from CSolver that does nothing.  As long as
+     * Viscous_Residual is not implemented for the HybridSolver, we do not
+     * need to set up a dummy viscous numerics class.
+     */
+
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Hybrid, config);
+          break;
+        case CONVECTIVE:
+          numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_HybridConv(nDim, nVar_Hybrid, config);
+          break;
+        default:
+          cout << "Source numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
+      }
+      numerics_container[iMGlevel][HYBRID_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Hybrid, config);
+    }
+
+    /*--- Definition of the boundary condition method ---*/
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
+          break;
+        case CONVECTIVE:
+          numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
+          break;
+        default:
+          cout << "Boundary numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
+      }
+    }
+  }
+
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
-    
+
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case NONE :
@@ -1829,7 +1935,6 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
     if (config->isHybrid_Turb_Model()) hybrid = true;
-    // TODO: Incorporate hybrid solver here...
   }
   
   /*--- Solver definition for the template problem ---*/
@@ -1973,6 +2078,20 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     
   }
   
+  /*--- Solver garbage collection for the hybrid model ---*/
+
+  if (hybrid) {
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      delete numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM];
+//      delete numerics_container[iMGlevel][BLENDING_SOL][VISC_TERM];
+      delete numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM];
+      delete numerics_container[iMGlevel][HYBRID_SOL][SOURCE_SECOND_TERM];
+      /*--- Definition of the boundary condition method ---*/
+      delete numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM];
+//      delete numerics_container[iMGlevel][BLENDING_SOL][VISC_BOUND_TERM];
+    }
+  }
+
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
     

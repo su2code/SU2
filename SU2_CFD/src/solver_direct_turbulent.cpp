@@ -2888,7 +2888,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  su2double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT, zeta;
+  su2double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT;
+  su2double lengthscale, timescale;
   su2double a1 = constants[7];
   unsigned long iPoint;
   
@@ -2927,12 +2928,19 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     F2 = node[iPoint]->GetF2blending();
     
-    /*--- Compute the eddy viscosity ---*/
-    
     kine  = node[iPoint]->GetSolution(0);
     omega = node[iPoint]->GetSolution(1);
-    zeta = min(1.0/omega, a1/(strMag*F2));
-    muT = min(max(rho*kine*zeta,0.0),1.0);
+
+    /*--- Calculate the relevant length and timescales ---*/
+
+    timescale = min(1.0/(omega), a1/(strMag*F2));
+    timescale = max(timescale, 0.0);
+    lengthscale = sqrt(max(kine, 0.0))*timescale;
+    node[iPoint]->SetTurbScales(timescale, lengthscale);
+
+    /*--- Compute the eddy viscosity ---*/
+    
+    muT = min(max(rho*kine*timescale,0.0),1.0);
     node[iPoint]->SetmuT(muT);
     
   }
@@ -2983,7 +2991,14 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Cross diffusion ---*/
     
     numerics->SetCrossDiff(node[iPoint]->GetCrossDiff(),0.0);
-    
+
+    /*--- Pass in relevant information from the hybridization ---*/
+
+    if (config->isHybrid_Turb_Model()) {
+      HybridMediator->SetupRANSNumerics(geometry, solver_container, numerics,
+                                        iPoint, iPoint);
+    }
+
     /*--- Compute the source term ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);

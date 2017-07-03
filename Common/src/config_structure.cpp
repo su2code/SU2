@@ -563,6 +563,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief HYBRID_TURB_MODEL \n DESCRIPTION: Specify if a hybrid LES/RANS model is used. \n Options: NO, YES \n DEFAULT: NO  \ingroup Config*/
   addBoolOption("HYBRID_TURB_MODEL", Hybrid_Turb_Model, false);
 
+  /*! \brief HYBRID_BLENDING_SCHEME \n DESCRIPTION: Specify the blending model for a hybrid LES/RANS model. \n Options: see \link Hybrid_Blending_Map \endlink \n DEFAULT: CONVECTIVE \ingroup Config */
+  addEnumOption("HYBRID_BLENDING_SCHEME", Kind_Hybrid_Blending, Hybrid_Blending_Map, CONVECTIVE);
+
+  /*! \brief HYBRID_ANISOTROPY_MODEL \n DESCRIPTION: Specify the subgrid anisotropy model for a hybrid LES/RANS model. \n Options: see \link Hybrid_Aniso_Map \endlink \n DEFAULT: ISOTROPIC \ingroup Config */
+  addEnumOption("HYBRID_ANISOTROPY_MODEL", Kind_Hybrid_Aniso_Model, Hybrid_Aniso_Map, ISOTROPIC);
+
+  /*!\brief HYBRID_MODEL_CONSTANT \n DESCRIPTION: Model constant relating the approximate second order structure function to the unresolved kinetic energy  \ingroup Config*/
+  addDoubleOption("HYBRID_MODEL_CONSTANT", Hybrid_Model_Constant, 0.367);
+
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
@@ -1300,6 +1309,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
+  /*!\brief CONST_FILENAME \n DESCRIPTION: Input file for the hybrid RANS/LES constants (w/o extension) \n DEFAULT: "" \ingroup Config*/
+  addStringOption("CONST_FILENAME", Hybrid_Const_FileName, string(""));
 
 
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
@@ -5656,6 +5667,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_FLOW_SYS:      return FLOW_SOL;
     case RUNTIME_TURB_SYS:      return TURB_SOL;
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
+    case RUNTIME_HYBRID_SYS:    return HYBRID_SOL;
     case RUNTIME_POISSON_SYS:   return POISSON_SOL;
     case RUNTIME_WAVE_SYS:      return WAVE_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;

@@ -6986,7 +6986,7 @@ fi
 
 ###########################
 
-ac_config_files="$ac_config_files Makefile externals/Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DOT/obj/Makefile SU2_MSH/obj/Makefile SU2_DEF/obj/Makefile SU2_SOL/obj/Makefile SU2_GEO/obj/Makefile SU2_PY/Makefile SU2_PY/pySU2/Makefile"
+ac_config_files="$ac_config_files Makefile externals/Makefile Common/lib/Makefile Common/test/Makefile SU2_CFD/obj/Makefile SU2_CFD/test/Makefile SU2_DOT/obj/Makefile SU2_MSH/obj/Makefile SU2_DEF/obj/Makefile SU2_SOL/obj/Makefile SU2_GEO/obj/Makefile SU2_PY/Makefile SU2_PY/pySU2/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -7854,7 +7854,9 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "externals/Makefile") CONFIG_FILES="$CONFIG_FILES externals/Makefile" ;;
     "Common/lib/Makefile") CONFIG_FILES="$CONFIG_FILES Common/lib/Makefile" ;;
+    "Common/test/Makefile") CONFIG_FILES="$CONFIG_FILES Common/test/Makefile" ;;
     "SU2_CFD/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_CFD/obj/Makefile" ;;
+    "SU2_CFD/test/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_CFD/test/Makefile" ;;
     "SU2_DOT/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_DOT/obj/Makefile" ;;
     "SU2_MSH/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_MSH/obj/Makefile" ;;
     "SU2_DEF/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_DEF/obj/Makefile" ;;

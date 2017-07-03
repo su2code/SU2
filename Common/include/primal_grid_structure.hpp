@@ -60,7 +60,9 @@ protected:
 	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
                                  elements. */
   su2double **ResolutionTensor; /*! < \brief A resolution tensor, representing separation distances in the global coordinate system. */
-	static unsigned short nDim;		/*!< \brief Dimension of the element (2D or 3D) useful for triangles,
+	su2double *ResolutionValues;  /*! < \brief The approximate cell resolution in the three "principal directions" */
+	su2double **ResolutionVectors; /*! < \brief An orthogonal set of "principal directions" for the cell-to-cell spacings */
+  static unsigned short nDim;		/*!< \brief Dimension of the element (2D or 3D) useful for triangles,
                                  quadrilateral and edges. */
 	unsigned long DomainElement;	/*!< \brief Only for boundaries, in this variable the 3D elements which
                                  correspond with a boundary element is stored. */
@@ -294,6 +296,20 @@ public:
    * \brief Gets the resolution tensor for the given grid object.
    */
   su2double** GetResolutionTensor(void);
+
+  /*!
+   * \brief Gets the set of values for the resolution tensor.
+   * \return The cell-to-cell distances along the "principal directions" of the
+   *         current cell.
+   */
+  su2double* GetResolutionValues(void);
+
+  /**
+   * \brief Gets the set of vectors for the resolution tensor.
+   * \return Vectors representing the "principal directions" for the
+   * cell-to-cell separations.
+   */
+  su2double** GetResolutionVectors(void);
 };
 
 /*!

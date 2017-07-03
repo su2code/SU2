@@ -1996,7 +1996,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Lam = 0, iVar_MachMean = 0,
   iVar_ViscCoeffs = 0, iVar_HeatCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
   iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0,
-  iVar_FEA_Extra = 0, iVar_SensDim = 0;
+  iVar_FEA_Extra = 0, iVar_SensDim = 0, iVar_Eddy_Anisotropy = 0,
+  iVar_Extra_Hybrid_Vars = 0;
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
@@ -2029,8 +2030,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                          ( config->GetKind_Solver() == ADJ_NAVIER_STOKES ) ||
                          ( config->GetKind_Solver() == ADJ_RANS          )   );
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool hybrid = (config->isHybrid_Turb_Model());
   
-  unsigned short iDim;
+  unsigned short iDim, jDim;
   unsigned short nDim = geometry->GetnDim();
   su2double RefAreaCoeff = config->GetRefAreaCoeff();
   su2double Gamma = config->GetGamma();
@@ -2060,7 +2062,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   switch (Kind_Solver) {
     case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
-    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if (transition) ThirdIndex=TRANS_SOL; else ThirdIndex = NONE; break;
+    case RANS :
+      FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL;
+      if (transition) ThirdIndex=TRANS_SOL;
+      else if (hybrid) ThirdIndex=HYBRID_SOL;
+      else ThirdIndex = NONE;
+      break;
     case POISSON_EQUATION: FirstIndex = POISSON_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case WAVE_EQUATION: FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case HEAT_EQUATION: FirstIndex = HEAT_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
@@ -2115,12 +2122,30 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       nVar_Total += 2;
     }
     
-    /*--- Add Eddy Viscosity to the restart file ---*/
+    /*--- Add Eddy Viscosity to the output ---*/
     
     if (Kind_Solver == RANS) {
       iVar_Eddy = nVar_Total; nVar_Total += 1;
     }
     
+    /*--- Add extra hybrid variables to the output ---*/
+
+    if (hybrid) {
+      // Add the eddy viscosity anisotropy (a rank 3 tensor)
+      iVar_Eddy_Anisotropy = nVar_Total; nVar_Total += 9;
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // No extra variables
+          break;
+        case CONVECTIVE:
+          // Add resolution adequacy.
+          iVar_Extra_Hybrid_Vars = nVar_Total; nVar_Total++;
+          break;
+        default:
+          cout << "WARNING: Could not find appropriate output for the hybrid model." << endl;
+      }
+    }
+
     /*--- Add Sharp edges to the restart file ---*/
     
     if (config->GetWrt_SharpEdges()) {
@@ -2862,6 +2887,113 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       
     }
     
+    /*--- Communicate the Eddy Viscosity Anisotropy ---*/
+
+    if (hybrid) {
+      iVar = iVar_Eddy_Anisotropy;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+
+          /*--- Loop over this partition to collect the current variable ---*/
+
+          jPoint = 0;
+          for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+            /*--- Check for halos & write only if requested ---*/
+
+            if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+              /*--- Load buffers with the pressure and mach variables. ---*/
+
+              Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscAnisotropy(iDim, jDim);
+
+              jPoint++;
+            }
+          }
+
+          /*--- Gather the data on the master node. ---*/
+
+    #ifdef HAVE_MPI
+          SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    #else
+          for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+    #endif
+
+          /*--- The master node unpacks and sorts this variable by global index ---*/
+
+          if (rank == MASTER_NODE) {
+            jPoint = 0;
+            for (iProcessor = 0; iProcessor < size; iProcessor++) {
+              for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+                /*--- Get global index, then loop over each variable and store ---*/
+
+                iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+                Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+                jPoint++;
+              }
+
+              /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+              jPoint = (iProcessor+1)*nBuffer_Scalar;
+            }
+          }
+          iVar++;
+        }
+      }
+    }
+
+    /*--- Communicate the Extra Variables for Hybrid RANS/LES ---*/
+    // This will need to be changed if more variables are needed.
+    if (hybrid && (config->GetKind_Hybrid_Blending() == CONVECTIVE)) {
+
+      /*--- Loop over this partition to collect the current variable ---*/
+
+      jPoint = 0;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+        /*--- Check for halos & write only if requested ---*/
+
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+          /*--- Load buffers with the pressure and mach variables. ---*/
+
+          Buffer_Send_Var[jPoint] = solver[HYBRID_SOL]->node[iPoint]->GetResolutionAdequacy();
+
+          jPoint++;
+        }
+      }
+
+      /*--- Gather the data on the master node. ---*/
+
+#ifdef HAVE_MPI
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
+
+      /*--- The master node unpacks and sorts this variable by global index ---*/
+
+      if (rank == MASTER_NODE) {
+        jPoint = 0; iVar = iVar_Extra_Hybrid_Vars;
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
+          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+            /*--- Get global index, then loop over each variable and store ---*/
+
+            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+            Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+            jPoint++;
+          }
+
+          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+          jPoint = (iProcessor+1)*nBuffer_Scalar;
+        }
+      }
+
+    }
+
     /*--- Communicate the Sharp Edges ---*/
     
     if (config->GetWrt_SharpEdges()) {
@@ -3677,6 +3809,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool grid_movement = config->GetGrid_Movement();
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool hybrid = (config->isHybrid_Turb_Model());
   ofstream restart_file;
   string filename;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
@@ -3778,6 +3911,45 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
         restart_file << "\t\"<greek>m</greek><sub>t</sub>\"";
     }
     
+    if (hybrid) {
+      if (config->GetOutput_FileFormat() == PARAVIEW) {
+        restart_file << "\t\"Eddy_Visc_Anisotropy_11\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_12\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_13\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_21\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_22\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_23\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_31\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_32\"";
+        restart_file << "\t\"Eddy_Visc_Anisotropy_33\"";
+      } else {
+        restart_file << "\t\"a<sub>11</sub>\"";
+        restart_file << "\t\"a<sub>12</sub>\"";
+        restart_file << "\t\"a<sub>13</sub>\"";
+        restart_file << "\t\"a<sub>21</sub>\"";
+        restart_file << "\t\"a<sub>22</sub>\"";
+        restart_file << "\t\"a<sub>23</sub>\"";
+        restart_file << "\t\"a<sub>31</sub>\"";
+        restart_file << "\t\"a<sub>32</sub>\"";
+        restart_file << "\t\"a<sub>33</sub>\"";
+      }
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // No extra variables
+          break;
+        case CONVECTIVE:
+          // Add resolution adequacy.
+          if (config->GetOutput_FileFormat() == PARAVIEW)
+            restart_file << "\t\"Resolution_Adequacy\"";
+          else
+            restart_file << "\t\"r<sub>k</sub>\"";
+          break;
+        default:
+          cout << "WARNING: Could not find appropriate output for the hybrid model." << endl;
+      }
+    }
+
+
     if (config->GetWrt_SharpEdges()) {
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         restart_file << "\t\"Sharp_Edge_Dist\"";
@@ -3958,6 +4130,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool hybrid = config->isHybrid_Turb_Model();
   bool frozen_turb = config->GetFrozen_Visc();
   bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
   bool output_1d = config->GetWrt_1D_Output();
@@ -4050,6 +4223,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     case SA_NEG: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
     case SST:     SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
   }
+  char hybrid_resid[] = ",\"Res_Hybrid[0]\"";
   char adj_turb_resid[]= ",\"Res_AdjTurb[0]\"";
   char wave_resid[]= ",\"Res_Wave[0]\",\"Res_Wave[1]\"";
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
@@ -4083,6 +4257,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (rotating_frame) ConvHist_file[0] << rotating_frame_coeff;
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
+      if (hybrid) ConvHist_file[0] << hybrid_resid;
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_1d) ConvHist_file[0] << oneD_outputs;
@@ -4194,7 +4369,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
      may have to adjust them to be larger if adding more entries. ---*/
     char begin[1000], direct_coeff[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
-    adj_turb_resid[1000], wave_coeff[1000],
+    adj_turb_resid[1000], wave_coeff[1000], hybrid_resid[1000],
     heat_coeff[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
     fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000];
 
@@ -4216,6 +4391,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
     bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
+    bool hybrid = (config[val_iZone]->isHybrid_Turb_Model());
     bool thermal = false; /* flag for whether to print heat flux values */
     if (config[val_iZone]->GetKind_Solver() == RANS or config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES) {
       thermal = true;
@@ -4296,6 +4472,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double *residual_fea          = NULL;
     su2double *residual_fem       = NULL;
     su2double *residual_heat         = NULL;
+    su2double *residual_hybrid       = NULL;
     
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
@@ -4314,7 +4491,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Initialize number of variables ---*/
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
     nVar_Trans = 0, nVar_Wave = 0, nVar_Heat = 0,
-    nVar_AdjFlow = 0, nVar_AdjTurb = 0,
+    nVar_AdjFlow = 0, nVar_AdjTurb = 0, nVar_Hybrid = 0,
     nVar_FEM = 0;
     
     /*--- Direct problem variables ---*/
@@ -4326,6 +4503,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SST:    nVar_Turb = 2; break;
       }
     }
+    if (hybrid) nVar_Hybrid = 1;
     if (transition) nVar_Trans = 2;
     if (wave) nVar_Wave = 2;
     if (heat) nVar_Heat = 1;
@@ -4344,7 +4522,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SST:    nVar_AdjTurb = 2; break;
       }
     }
-    
+
     /*--- Allocate memory for the residual ---*/
     residual_flow       = new su2double[nVar_Flow];
     residual_turbulent  = new su2double[nVar_Turb];
@@ -4352,6 +4530,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     residual_wave       = new su2double[nVar_Wave];
     residual_heat       = new su2double[nVar_Heat];
     residual_fem     = new su2double[nVar_FEM];
+    residual_hybrid     = new su2double[nVar_Hybrid];
     
     residual_adjflow      = new su2double[nVar_AdjFlow];
     residual_adjturbulent = new su2double[nVar_AdjTurb];
@@ -4563,6 +4742,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             residual_transition[iVar] = solver_container[val_iZone][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
         }
         
+        /*--- Hybrid parameter solver ---*/
+
+        if (hybrid) {
+          for (iVar = 0; iVar < nVar_Hybrid; iVar++)
+            residual_hybrid[iVar] = solver_container[val_iZone][FinestMesh][HYBRID_SOL]->GetRes_RMS(iVar);
+        }
+
         
         /*--- FEA residual ---*/
         //        if (fluid_structure) {
@@ -4825,6 +5011,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 case 2: SPRINTF (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
               }
             }
+
+            /*--- Hybrid RANS/LES hybrid parameter transport model ---*/
+            if (hybrid) {
+              SPRINTF(hybrid_resid, ", %12.10f", log10(residual_hybrid[0]));
+            }
+
             /*---- Averaged stagnation pressure at an exit ----*/
             if (output_1d) {
               SPRINTF( oneD_outputs, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
@@ -4832,7 +5024,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (output_massflow && !output_1d) {
               SPRINTF(massflow_outputs,", %12.10f", Total_Mdot);
             }
-            
             
             /*--- Transition residual ---*/
             if (transition) {
@@ -5197,6 +5388,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               case SST:     cout << "     Res[kine]" << "     Res[omega]"; break;
             }
             
+            if (hybrid)
+              cout << "    Res[alpha]";
+
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
             else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
@@ -5452,6 +5646,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.width(15); cout << log10(residual_turbulent[1]); break;
           }
           
+          if (hybrid) {
+            cout.width(14); cout << log10(residual_hybrid[0]);
+          }
+
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
           
           if (rotating_frame && nDim == 3 ) {
@@ -5631,6 +5829,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     delete [] residual_flow;
     delete [] residual_turbulent;
     delete [] residual_transition;
+    delete [] residual_hybrid;
     delete [] residual_wave;
     delete [] residual_fea;
     delete [] residual_fem;
@@ -10192,7 +10391,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
 
 void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
   
-  unsigned short iDim;
+  unsigned short iDim, jDim;
   unsigned short Kind_Solver = config->GetKind_Solver();
   unsigned short nDim = geometry->GetnDim();
   
@@ -10210,6 +10409,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = (config->GetGrid_Movement());
+  bool hybrid         = config->isHybrid_Turb_Model();
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   
   int *Local_Halo = NULL;
@@ -10419,14 +10619,37 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Eddy_Viscosity");
       
     }
-    
+
+    if (hybrid) {
+      nVar_Par += 9;
+      Variable_Names.push_back("Eddy_Visc_Aniso_11");
+      Variable_Names.push_back("Eddy_Visc_Aniso_12");
+      Variable_Names.push_back("Eddy_Visc_Aniso_13");
+      Variable_Names.push_back("Eddy_Visc_Aniso_21");
+      Variable_Names.push_back("Eddy_Visc_Aniso_22");
+      Variable_Names.push_back("Eddy_Visc_Aniso_23");
+      Variable_Names.push_back("Eddy_Visc_Aniso_31");
+      Variable_Names.push_back("Eddy_Visc_Aniso_32");
+      Variable_Names.push_back("Eddy_Visc_Aniso_33");
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // No extra variables
+          break;
+        case CONVECTIVE:
+          // Add resolution adequacy.
+          Variable_Names.push_back("Resolution_Adequacy"); nVar_Par++;
+          break;
+      }
+    }
+
     /*--- Add the distance to the nearest sharp edge if requested. ---*/
     
     if (config->GetWrt_SharpEdges()) {
       nVar_Par += 1;
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
-    
+
+
     /*--- New variables get registered here before the end of the loop. ---*/
     
   }
@@ -10633,12 +10856,33 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
         }
         
+        /*--- Load data for a hybrid RANS/LES model. ---*/
+        if (hybrid) {
+          su2double** eddy_visc_anisotropy = solver[FLOW_SOL]->node[iPoint]->GetEddyViscAnisotropy();
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (jDim = 0; jDim < nDim; jDim++) {
+              Local_Data[jPoint][iVar] = eddy_visc_anisotropy[iDim][jDim];
+              iVar++;
+            }
+          }
+          switch (config->GetKind_Hybrid_Blending()) {
+            case RANS_ONLY:
+              // No extra variables
+              break;
+            case CONVECTIVE:
+              // Add resolution adequacy.
+              Local_Data[jPoint][iVar] = solver[HYBRID_SOL]->node[iPoint]->GetResolutionAdequacy();
+              iVar++;
+              break;
+          }
+        }
+
         /*--- Load data for the distance to the nearest sharp edge. ---*/
         
         if (config->GetWrt_SharpEdges()) {
           Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
         }
-        
+
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
         

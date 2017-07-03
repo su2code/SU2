@@ -1,5 +1,5 @@
 /*!
- * \file aniso_viscosity_calc_test.cpp
+ * \file load_hybrid_constants_test.cpp
  * \brief 
  * \author C. Pederson
  * \version 5.0.0 "Raven"
@@ -35,34 +35,19 @@
 #include <mpi.h>
 #endif
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <iomanip>
 #include <iostream>
 #include <limits> // used to find machine epsilon
 #include <cmath>  // std::abs
 
-#include "../include/numerics_structure.hpp"
+#include "../include/hybrid_RANS_LES_model.hpp"
 
-const unsigned short nDim = 3;
-const unsigned short nVar = 6;
+const std::string filename = "constants";
+const std::string extension = ".dat";
 
-template<std::size_t M, std::size_t N>
-void print_matrix(su2double** A) {
-  std::cout << "  [[";
-  for (unsigned int i = 0; i < M; i++) {
-    for (unsigned int j = 0; j < N; j++) {
-      std::cout << A[i][j];
-      if (j<N-1) std::cout << ", ";
-    }
-    if (i < M-1) std::cout << "]" << std::endl << "   [";
-  }
-  std::cout << "]]" << std::endl;
-}
 
-class TestNumerics : public CAvgGrad_Flow {
- public:
-  TestNumerics(CConfig* config) : CAvgGrad_Flow(3, 6, config) {
-  }
-};
 
 int main() {
 
@@ -79,20 +64,18 @@ int main() {
 
   CConfig* test_config = new CConfig();
 
-  TestNumerics numerics(test_config);
+  const int nConstants = 15;
 
-  /*XXX: These will have to be allocated and initialized when the
-   * ComputeAnisoEddy function actually calls for them.
-   */
-  su2double** primvar_grad;
-  su2double** resolution;
-
-  su2double scalar_eddy_viscosity = 7.0;
-  su2double** eddy_viscosity = new su2double*[nDim];
-  su2double** correct_vals = new su2double*[nDim];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    eddy_viscosity[iDim] = new su2double[nDim];
-    correct_vals[iDim] = new su2double[nDim];
+  /*--- Create constants files ---*/
+  std::ofstream testfile;
+  for (int i=0; i<3; i++) {
+    std::stringstream temp_stream;
+    temp_stream << filename << i << extension;
+    testfile.open(temp_stream.str().c_str());
+    for (int j=0; j<nConstants; j++) {
+      testfile << j << std::endl;
+    }
+    testfile.close();
   }
 
   /**-------------------------------------------------------------------------
@@ -100,37 +83,19 @@ int main() {
    *
    *--------------------------------------------------------------------------
    */
-  numerics.ComputeAnisoEddyViscosity(primvar_grad,
-                                     resolution,
-                                     scalar_eddy_viscosity,
-                                     eddy_viscosity);
 
-  su2double tol = 10*std::numeric_limits<su2double>::epsilon();
-  // This was left general (not in a loop) for easy modification later
-  correct_vals[0][0] = 7;
-  correct_vals[0][1] = 0;
-  correct_vals[0][2] = 0;
-  correct_vals[1][0] = 0;
-  correct_vals[1][1] = 7;
-  correct_vals[1][2] = 0;
-  correct_vals[2][0] = 0;
-  correct_vals[2][1] = 0;
-  correct_vals[2][2] = 7;
-
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-      if (std::abs(correct_vals[iDim][jDim] -
-                   eddy_viscosity[iDim][jDim]) > tol)
+  CHybrid_Mediator mediator(3, test_config, filename);
+  for (int i=0; i<3; i++) {
+    for (int j=0; j<nConstants; j++) {
+      if (mediator.GetConstants().at(i).at(j) != j) {
+        cout << "ERROR: Constant at [" << i << "][" << j << "]";
+        cout << "was wrong!" << endl;
+        cout << "    Expected: " << j << endl;
+        cout << "    Found;    " << mediator.GetConstants().at(i).at(j) << endl;
         return_flag = 1;
+        break;
+      }
     }
-  }
-
-  if (return_flag == 1) {
-    std::cout << "ERROR: The anisotropic viscosity was computed incorrectly!" << std::endl;
-    std::cout << "  Expected:" << std::endl;
-    print_matrix<3,3>(correct_vals);
-    std::cout << "  Found:" << std::endl;
-    print_matrix<3,3>(eddy_viscosity);
   }
 
   /**-------------------------------------------------------------------------

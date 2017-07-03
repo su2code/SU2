@@ -979,6 +979,8 @@ inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
 
+inline void CSolver::AddHybridMediator(CAbstract_Hybrid_Mediator* hybrid_mediator) { }
+
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline su2double CEulerSolver::GetModVelocity_Inf(void) { 
@@ -1497,6 +1499,8 @@ inline void CNSSolver::SetStrainMag_Max(su2double val_strainmag_max) { StrainMag
 
 inline void CNSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
 
+inline void CEulerSolver::AddHybridMediator(CAbstract_Hybrid_Mediator* hybrid_mediator) { HybridMediator = hybrid_mediator; }
+
 inline su2double CAdjEulerSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
 inline void CAdjEulerSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { CSensitivity[val_marker][val_vertex] = val_sensitivity; }
@@ -1889,6 +1893,10 @@ inline su2double CEulerSolver::GetSlidingState(unsigned short val_marker, unsign
 inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component) { }
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
+
+inline void CHybridSolver::AddHybridMediator(CAbstract_Hybrid_Mediator* hybrid_mediator) { HybridMediator = hybrid_mediator; }
+
+inline void CTurbSolver::AddHybridMediator(CAbstract_Hybrid_Mediator* hybrid_mediator) { HybridMediator = hybrid_mediator; }
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)

@@ -1366,7 +1366,7 @@ CEulerSolver::~CEulerSolver(void) {
   if (NormalMachIn          != NULL) delete [] NormalMachIn;
   if (NormalMachOut         != NULL) delete [] NormalMachOut;
   if (VelocityOutIs         != NULL) delete [] VelocityOutIs;
-  
+
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -10436,7 +10436,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
       }
-
+      
       /*--- Compute the convective residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -10464,12 +10464,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         V_infty[nDim+5] = node[iPoint]->GetLaminarViscosity();
         V_infty[nDim+6] = node[iPoint]->GetEddyViscosity();
         
-        /*--- Pass in the geometry information for the cells ---*/
-
-        if (config->isHybrid_Turb_Model())
-          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                             geometry->node[Point_Normal]->GetResolutionTensor());
-
         /*--- Set the normal vector and the coordinates ---*/
         
         visc_numerics->SetNormal(Normal);
@@ -10488,9 +10482,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
+        /*--- Pass in relevant information from hybrid model ---*/
 
-
-
+        if (config->isHybrid_Turb_Model())
+          HybridMediator->SetupResolvedFlowNumerics(geometry, solver_container,
+                                                    visc_numerics, iPoint, iPoint);
 
         /*--- Compute and update viscous residual ---*/
         
@@ -10993,11 +10989,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         /*--- Set the normal vector and the coordinates ---*/
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-
-        /*--- Pass in the geometry information for the cells ---*/
-        if (config->isHybrid_Turb_Model())
-          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                             geometry->node[Point_Normal]->GetResolutionTensor());
         
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetPrimitive(V_domain, V_boundary);
@@ -11797,12 +11788,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
-        /*--- Pass in the geometry information for the cells ---*/
-        if (config->isHybrid_Turb_Model())
-          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                             geometry->node[Point_Normal]->GetResolutionTensor());
-
-
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetPrimitive(V_domain, V_boundary);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
@@ -12150,12 +12135,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-
-        /*--- Pass in the geometry information for the cells ---*/
-
-        if (config->isHybrid_Turb_Model())
-          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                             geometry->node[Point_Normal]->GetResolutionTensor());
         
         /*--- Primitive variables, and gradient ---*/
         
@@ -12167,6 +12146,12 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
+        /*--- Pass in relevant information from hybrid model ---*/
+
+        if (config->isHybrid_Turb_Model())
+          HybridMediator->SetupResolvedFlowNumerics(geometry, solver_container,
+                                                    visc_numerics, iPoint, iPoint);
+
         /*--- Compute and update residual ---*/
         
         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -12334,15 +12319,17 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
-        /*--- Pass in the geometry information for the cells ---*/
-        if (config->isHybrid_Turb_Model())
-          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                             geometry->node[Point_Normal]->GetResolutionTensor());
-
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetPrimitive(V_domain, V_outlet);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
+        /*--- Pass in relevant information from hybrid model ---*/
+
+        if (config->isHybrid_Turb_Model())
+          HybridMediator->SetupResolvedFlowNumerics(geometry, solver_container,
+                                                    visc_numerics, iPoint, iPoint);
+
+
         /*--- Turbulent kinetic energy ---*/
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
@@ -12478,12 +12465,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
         
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-
-        /*--- Pass in the geometry information for the cells ---*/
-        if (config->isHybrid_Turb_Model())
-          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                             geometry->node[Point_Normal]->GetResolutionTensor());
-
+        
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_inlet);
@@ -12603,11 +12585,6 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
-        /*--- Pass in the geometry information for the cells ---*/
-        if (config->isHybrid_Turb_Model())
-          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                             geometry->node[Point_Normal]->GetResolutionTensor());
-
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_outlet);
@@ -12826,11 +12803,6 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
-        /*--- Pass in the geometry information for the cells ---*/
-        if (config->isHybrid_Turb_Model())
-          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                             geometry->node[Point_Normal]->GetResolutionTensor());
-
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_inflow);
@@ -13082,11 +13054,6 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
-        /*--- Pass in the geometry information for the cells ---*/
-        if (config->isHybrid_Turb_Model())
-          visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                             geometry->node[Point_Normal]->GetResolutionTensor());
-
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_exhaust);
@@ -13673,12 +13640,6 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
                     visc_numerics->SetNormal(Normal);
                     visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
-
-                    /*--- Pass in the geometry information for the cells ---*/
-
-                    if (config->isHybrid_Turb_Model())
-                      visc_numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                                         geometry->node[iPoint]->GetResolutionTensor());
 
                     /*--- Primitive variables, and gradient ---*/
 
@@ -14611,6 +14572,8 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
   
+  hybrid_anisotropy = NULL;
+
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
@@ -15383,6 +15346,24 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     VelocityOutIs[iMarker]= 0.0;
   }
   
+  /*--- Setup hybridization ---*/
+
+  if (config->isHybrid_Turb_Model()) {
+    switch (config->GetKind_Hybrid_Anisotropy_Model()) {
+      case ISOTROPIC:
+        hybrid_anisotropy = new CHybrid_Isotropic_Visc(nDim);
+        break;
+      case Q_BASED:
+        hybrid_anisotropy = new CHybrid_Aniso_Q(nDim);
+        break;
+      default:
+        cout << "Error: Selected anisotropy model not initialized." << std::endl;
+        cout << "       At line " << __LINE__ << " of file " __FILE__ << std::endl;
+        exit(EXIT_FAILURE);
+    }
+  } else {
+    hybrid_anisotropy = NULL;
+  }
   
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
   
@@ -15583,7 +15564,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 CNSSolver::~CNSSolver(void) {
   unsigned short iMarker, iDim;
   unsigned long iVertex;
-  
+
   if (CD_Visc != NULL)          delete [] CD_Visc;
   if (CL_Visc != NULL)          delete [] CL_Visc;
   if (CSF_Visc != NULL)         delete [] CSF_Visc;
@@ -15649,6 +15630,7 @@ CNSSolver::~CNSSolver(void) {
     delete [] Inlet_FlowDir;
   }
 
+  if (hybrid_anisotropy != NULL) delete hybrid_anisotropy;
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -15749,6 +15731,15 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     StrainMag_Max = max(StrainMag_Max, StrainMag);
     Omega_Max = max(Omega_Max, Omega);
     
+    /*--- Solve for the stress anisotropy ---*/
+
+    if (config->isHybrid_Turb_Model()) {
+      HybridMediator->SetupStressAnisotropy(geometry, solver_container, hybrid_anisotropy, iPoint);
+      hybrid_anisotropy->CalculateViscAnisotropy();
+      node[iPoint]->SetEddyViscAnisotropy(hybrid_anisotropy->GetViscAnisotropy());
+      // The mediator doesn't need to set up the resolved flow solver
+    }
+
   }
   
   /*--- Initialize the Jacobian matrices ---*/
@@ -16036,12 +16027,6 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
-    /*--- Pass in the geometry information for the cells ---*/
-
-    if (config->isHybrid_Turb_Model())
-      numerics->SetResolutionTensor(geometry->node[iPoint]->GetResolutionTensor(),
-                                         geometry->node[jPoint]->GetResolutionTensor());
-
     /*--- Primitive and secondary variables ---*/
     
     numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
@@ -16058,6 +16043,11 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
       numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                      solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     
+    /*--- Pass in relevant information from hybrid model ---*/
+    if (config->isHybrid_Turb_Model())
+      HybridMediator->SetupResolvedFlowNumerics(geometry, solver_container,
+                                                numerics, iPoint, jPoint);
+
     /*--- Compute and update residual ---*/
     
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
