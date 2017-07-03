@@ -4,8 +4,8 @@
  * \author F. Palacios
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -32,7 +32,7 @@
  */
 
 /*! 
- * \mainpage The SU2 Suite
+ * \mainpage SU2 version 5.0.0 "Raven"
  * SU2 suite is an open-source collection of C++ based software tools
  * to perform PDE analysis and PDE constrained optimization problems.  The toolset is designed with 
  * computational fluid dynamics and aerodynamic shape optimization in mind, but is extensible to

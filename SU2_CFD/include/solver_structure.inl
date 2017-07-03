@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -76,7 +76,7 @@ inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver
 
 inline void CSolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
 
-inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) { }
+inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) { }
 
 inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) { }
   
@@ -588,21 +588,21 @@ inline su2double CSolver::GetOneD_MassFlowRate(void) { return 0;}
 
 inline void CSolver::SetOneD_MassFlowRate(su2double MassFlowRate) { }
 
-inline su2double CSolver::GetOneD_FluxAvgPress(void) { return 0;}
+inline su2double CSolver::GetOneD_AvgPress(void) {return 0;}
 
-inline void CSolver::SetOneD_FluxAvgPress(su2double PressureRef) { }
+inline void CSolver::SetOneD_AvgPress(su2double Pressure1D) { }
 
-inline su2double CSolver::GetOneD_FluxAvgDensity(void) { return 0;}
+inline su2double CSolver::GetOneD_AvgDensity(void) {return 0;}
 
-inline void CSolver::SetOneD_FluxAvgDensity(su2double DensityRef) { }
+inline void CSolver::SetOneD_AvgDensity(su2double Density1D) { }
 
-inline su2double CSolver::GetOneD_FluxAvgVelocity(void) { return 0;}
+inline su2double CSolver::GetOneD_AvgVelocity(void) {return 0;}
 
-inline void CSolver::SetOneD_FluxAvgVelocity(su2double VelocityRef) { }
+inline void CSolver::SetOneD_AvgVelocity(su2double Velocity1D) { }
 
-inline su2double CSolver::GetOneD_FluxAvgEntalpy(void) { return 0;}
+inline su2double CSolver::GetOneD_AvgEnthalpy(void) {return 0;}
 
-inline void CSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) { }
+inline void CSolver::SetOneD_AvgEnthalpy(su2double Velocity1D) { }
 
 inline void CSolver::SetTotal_ComboObj(su2double ComboObj) {}
 
@@ -707,7 +707,7 @@ inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
                   unsigned short val_marker) { }
 
-inline void CSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+inline void CSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                          CConfig *config) { }
 
 inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -849,6 +849,9 @@ inline void CSolver::Wave_Strength(CGeometry *geometry, CConfig *config) { }
 inline void CSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, 
                       CConfig *config, unsigned short iRKStep) { }
 
+inline void CSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                            CConfig *config, unsigned short iRKStep) { }
+
 inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
@@ -896,11 +899,13 @@ inline unsigned long CSolver::GetPoint_Max(unsigned short val_var) { return Poin
 inline su2double* CSolver::GetPoint_Max_Coord(unsigned short val_var) { return Point_Max_Coord[val_var]; }
 
 inline void CSolver::Set_OldSolution(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) 
-    node[iPoint]->Set_OldSolution(); // The loop should be over nPoints 
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    node[iPoint]->Set_OldSolution(); // The loop should be over nPoints
                                      //  to guarantee that the boundaries are
                                      //  well updated
 }
+
+inline void CSolver::Set_NewSolution(CGeometry *geometry) { }
 
 inline unsigned short CSolver::GetnVar(void) { return nVar; }
 
@@ -978,6 +983,11 @@ inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
+
+inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    node[iPoint]->SetSolution_New();
+}
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
@@ -1308,21 +1318,21 @@ inline su2double CEulerSolver::GetOneD_MassFlowRate(void) { return OneD_MassFlow
 
 inline void CEulerSolver::SetOneD_MassFlowRate(su2double MassFlowRate) { OneD_MassFlowRate = MassFlowRate; }
 
-inline su2double CEulerSolver::GetOneD_FluxAvgPress(void) { return OneD_PressureRef;}
+inline su2double CEulerSolver::GetOneD_AvgPress(void) {return OneD_Pressure1D;}
 
-inline void CEulerSolver::SetOneD_FluxAvgPress(su2double PressureRef) {OneD_PressureRef = PressureRef; }
+inline void CEulerSolver::SetOneD_AvgPress(su2double Pressure1D) {OneD_Pressure1D = Pressure1D; }
 
-inline su2double CEulerSolver::GetOneD_FluxAvgDensity(void) { return OneD_DensityRef;}
+inline su2double CEulerSolver::GetOneD_AvgDensity(void) {return OneD_Density1D;}
 
-inline void CEulerSolver::SetOneD_FluxAvgDensity(su2double DensityRef) {OneD_DensityRef = DensityRef; }
+inline void CEulerSolver::SetOneD_AvgDensity(su2double Density1D) {OneD_Density1D = Density1D; }
 
-inline su2double CEulerSolver::GetOneD_FluxAvgVelocity(void) { return OneD_VelocityRef;}
+inline su2double CEulerSolver::GetOneD_AvgVelocity(void) {return OneD_Velocity1D;}
 
-inline void CEulerSolver::SetOneD_FluxAvgVelocity(su2double VelocityRef) {OneD_VelocityRef = VelocityRef; }
+inline void CEulerSolver::SetOneD_AvgVelocity(su2double Velocity1D) {OneD_Velocity1D = Velocity1D; }
 
-inline su2double CEulerSolver::GetOneD_FluxAvgEntalpy(void) { return OneD_EnthalpyRef;}
+inline su2double CEulerSolver::GetOneD_AvgEnthalpy(void) {return OneD_Enthalpy1D;}
 
-inline void CEulerSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) {OneD_EnthalpyRef = EnthalpyRef; }
+inline void CEulerSolver::SetOneD_AvgEnthalpy(su2double Enthalpy1D) {OneD_Enthalpy1D = Enthalpy1D; }
 
 inline su2double CEulerSolver::GetAveragedDensity(unsigned short valMarker) { return AveragedDensity[valMarker];}
 
@@ -1882,13 +1892,62 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_BPress() { return Total_Sens_BPre
 
 inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
-inline void CEulerSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component){ SlidingState[val_marker][val_vertex][val_state] = component; }
+inline void CEulerSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ 
+  SlidingState[val_marker][val_vertex][val_state][donor_index] = component; 
+}
 
-inline su2double CEulerSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return SlidingState[val_marker][val_vertex][val_state]; }
+inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ }
 
-inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component) { }
+inline su2double CEulerSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
 
-inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
+inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return 0; }
+
+inline int CEulerSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return SlidingStateNodes[val_marker][val_vertex]; }
+
+inline int CSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return 0; }
+
+inline void CEulerSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
+
+inline void CSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){}
+
+inline void CSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){}
+
+inline void CEulerSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){	
+  int iVar;
+
+  for( iVar = 0; iVar < nPrimVar+1; iVar++){
+    if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+      delete [] SlidingState[val_marker][val_vertex][iVar];
+  }
+
+  for( iVar = 0; iVar < nPrimVar+1; iVar++)
+    SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
+}
+
+
+
+inline void CTurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ 
+  SlidingState[val_marker][val_vertex][val_state][donor_index] = component; 
+}
+
+inline int CTurbSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return SlidingStateNodes[val_marker][val_vertex]; }
+
+inline void CTurbSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){	
+  int iVar;
+
+  for( iVar = 0; iVar < nVar+1; iVar++){
+    if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+      delete [] SlidingState[val_marker][val_vertex][iVar];
+  }
+
+  for( iVar = 0; iVar < nVar+1; iVar++)
+    SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
+}
+
+inline void CTurbSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
+
+inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
+
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)

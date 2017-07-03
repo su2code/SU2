@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -969,6 +969,10 @@ inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Si
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
 
+inline bool CConfig::GetWrt_Binary_Restart(void) {	return Wrt_Binary_Restart; }
+
+inline bool CConfig::GetRead_Binary_Restart(void) {	return Read_Binary_Restart; }
+
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
@@ -1018,7 +1022,7 @@ inline void CConfig::SetMarker_All_Plotting(unsigned short val_marker, unsigned 
 
 inline void CConfig::SetMarker_All_Analyze(unsigned short val_marker, unsigned short val_analyze) { Marker_All_Analyze[val_marker] = val_analyze; }
 
-inline void CConfig::SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_FSIinterface[val_marker] = val_fsiinterface; }
+inline void CConfig::SetMarker_All_ZoneInterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_ZoneInterface[val_marker] = val_fsiinterface; }
 
 inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short val_DV) { Marker_All_DV[val_marker] = val_DV; }
 
@@ -1046,9 +1050,9 @@ inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker)
 
 inline unsigned short CConfig::GetMarker_All_Analyze(unsigned short val_marker) { return Marker_All_Analyze[val_marker]; }
 
-inline unsigned short CConfig::GetMarker_All_FSIinterface(unsigned short val_marker) { return Marker_All_FSIinterface[val_marker]; }
+inline unsigned short CConfig::GetMarker_All_ZoneInterface(unsigned short val_marker) { return Marker_All_ZoneInterface[val_marker]; }
 
-inline unsigned short CConfig::GetMarker_n_FSIinterface(void) { return nMarker_FSIinterface; }
+inline unsigned short CConfig::GetMarker_n_ZoneInterface(void) { return nMarker_ZoneInterface; }
 
 inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { return Marker_All_DV[val_marker]; }
 
@@ -1232,6 +1236,10 @@ inline bool CConfig::Low_Mach_Correction(void) { return Low_Mach_Corr; }
 
 inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 
+inline bool CConfig::GetBody_Force(void) { return Body_Force; }
+
+inline su2double* CConfig::GetBody_Force_Vector(void) { return Body_Force_Vector; }
+
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 
 inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = val_smoothnumgrid; }
@@ -1296,7 +1304,7 @@ inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 
-inline bool CConfig::GetWrt_1D_Output(void) { return Wrt_1D_Output; }
+inline bool CConfig::GetWrt_1D_Output(void) { return (Kind_OneD != ONED_NONE); }
 
 inline vector<vector<su2double> > CConfig::GetAeroelastic_np1(unsigned short iMarker) { return Aeroelastic_np1[iMarker]; }
 
@@ -1403,6 +1411,8 @@ inline void CConfig::SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr)
 inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }
 
 inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Output_Verb; }
+
+inline unsigned short CConfig::GetKind_OneD(void) { return Kind_OneD; }
 
 inline unsigned short CConfig::GetnIterFSI(void) { return nIterFSI; }
 
