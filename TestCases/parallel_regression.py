@@ -587,6 +587,17 @@ def main():
     Jones_tc.tol       = 0.00001
     test_list.append(Jones_tc)
 
+	# Jones APU Turbocharger restart
+    Jones_tc_rst           = TestCase('jones_turbocharger_restart')
+    Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
+    Jones_tc_rst.test_iter = 30
+    Jones_tc_rst.test_vals = [-3.936718, -0.754654, 8.277812e+01, 2.715092e+00] #last 4 columns
+    Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
+    Jones_tc_rst.timeout   = 1600
+    Jones_tc_rst.tol       = 0.00001
+    test_list.append(Jones_tc_rst)
+
     # 2D axial stage
     axial_stage2D           = TestCase('axial_stage2D')
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
