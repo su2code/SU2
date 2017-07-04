@@ -616,7 +616,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 100
-    axial_stage2D.test_vals = [-1.535402, 6.554638, 7.558980e+01, 7.930833e-01] #last 4 columns
+    axial_stage2D.test_vals = [-1.537311, 6.552745, 75.589800, 0.793084] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.timeout   = 1600
     axial_stage2D.tol       = 0.00001
