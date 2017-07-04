@@ -3965,7 +3965,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool cont_adj = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool adjoint =  cont_adj || disc_adj;
-  bool frozen_visc = (adjoint && config->GetFrozen_Visc_Cont()) ||( disc_adj && config->GetFrozen_Visc_Disc());
+  bool frozen_visc = (cont_adj && config->GetFrozen_Visc_Cont()) ||( disc_adj && config->GetFrozen_Visc_Disc());
   bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
   bool output_1d = config->GetWrt_1D_Output();
   bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
@@ -5591,7 +5591,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
             if (heat)
-              ConvHist_file[0] << log10(solver_container[val_iZone][MESH_0][ADJHEAT_SOL]->GetRes_RMS(0));
+              ConvHist_file[0] << ", " << log10(solver_container[val_iZone][MESH_0][ADJHEAT_SOL]->GetRes_RMS(0));
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -5634,7 +5634,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (!frozen_visc)
               ConvHist_file[0] << adj_turb_resid;
             if (heat)
-              ConvHist_file[0] << log10(solver_container[val_iZone][MESH_0][ADJHEAT_SOL]->GetRes_RMS(0));
+              ConvHist_file[0] << ", " << log10(solver_container[val_iZone][MESH_0][ADJHEAT_SOL]->GetRes_RMS(0));
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
