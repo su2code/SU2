@@ -640,7 +640,8 @@ cout << endl;
 su2double m;
 for (iDim = 0; iDim < nDim; iDim++)
   m += Normal[iDim];
-if (m == 0) getchar();    
+
+//if (m == 0) getchar();    
     
     
   AD::SetPreaccOut(Normal, nDim);
