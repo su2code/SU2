@@ -274,91 +274,70 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+  int counter = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = 0;
+
+  if (config->GetKind_Turb_Model() == SA || config->GetKind_Turb_Model() == SA_NEG) {
+    if (nDim == 2) skipVars += 6;
+    if (nDim == 3) skipVars += 8;
+  }
+  else if (config->GetKind_Turb_Model() == SST ) {
+    if (nDim == 2) skipVars += 7;
+    if (nDim == 3) skipVars += 9;
+  }
+  else {
+    if (nDim == 2) skipVars += 5;
+    if (nDim == 3) skipVars += 7;
+  }
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-  restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
 
   /*--- Modify file name for an unsteady restart ---*/
 
   if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
-  /*--- Open the restart file, and throw an error if this fails. ---*/
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  restart_file.open(restart_filename.data(), ios::in);
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
+  /*--- Load data from the restart into correct containers. ---*/
 
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
-  /*--- Now fill array with the transform values only for local points ---*/
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
 
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
-  /*--- Read all lines in the restart file ---*/
+    if (iPoint_Local > -1) {
 
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
 
-  /*--- The first line is the header ---*/
-
-  getline (restart_file, text_line);
-
-   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-  getline (restart_file, text_line);
-
-    istringstream point_line(text_line);
-
-     /*--- Retrieve local index. If this node from the restart file lives
-      on the current processor, we will load and instantiate the vars. ---*/
-
-     MI = Global2Local.find(iPoint_Global);
-     if (MI != Global2Local.end()) {
-
-       iPoint_Local = Global2Local[iPoint_Global];
-
-       if (flow) {
-         if (nDim == 2) {
-           if(turbulent == SA || turbulent == SA_NEG)
-             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-           else if(turbulent = SST)
-             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-           else
-             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-         }
-         else
-           if(turbulent == SA || turbulent == SA_NEG)
-             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-           else if(turbulent = SST)
-             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-           else
-             point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-       }
-       else {
-        if (nDim == 2)
-          point_line >> index >> dull_val >> dull_val >> Solution[0];
-        else
-          point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0];
-       }
-
-      //cout << "Read temperature solution from restart file: " << Solution[0] << endl;
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
-
       iPoint_Global_Local++;
 
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
     }
+
   }
 
   /*--- Detect a wrong solution file ---*/
@@ -383,10 +362,6 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     MPI_Finalize();
 #endif
   }
-
-  /*--- Close the restart file ---*/
-
-  restart_file.close();
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. We alo call the preprocessing routine
@@ -414,10 +389,15 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     }
     solver[iMesh][HEAT_SOL]->Set_MPI_Solution(geometry[iMesh], config);
     solver[iMesh][HEAT_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
-
   }
 
   delete [] Coord;
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
 
 }
 
