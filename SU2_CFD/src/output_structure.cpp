@@ -4228,7 +4228,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool cont_adj = config[val_iZone]->GetContinuous_Adjoint();
     bool disc_adj = config[val_iZone]->GetDiscrete_Adjoint();
     bool adjoint =  cont_adj || disc_adj;
-    bool frozen_visc = (adjoint && config[val_iZone]->GetFrozen_Visc_Cont()) ||( disc_adj && config[val_iZone]->GetFrozen_Visc_Disc());
+    bool frozen_visc = (cont_adj && config[val_iZone]->GetFrozen_Visc_Cont()) ||( disc_adj && config[val_iZone]->GetFrozen_Visc_Disc());
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
     bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION) || (config[val_iZone]->GetHeat_Inc());
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
@@ -5589,7 +5589,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
           
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
+            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
             if (heat)
               ConvHist_file[0] << ", " << log10(solver_container[val_iZone][MESH_0][ADJHEAT_SOL]->GetRes_RMS(0));
             ConvHist_file[0] << end;
