@@ -562,23 +562,12 @@ def main():
     ls89_sa.tol       = 0.00001
     test_list.append(ls89_sa)
 
-#    # ls89_sst
-#    ls89_sst           = TestCase('ls89_sst')
-#    ls89_sst.cfg_dir   = "nicf/LS89"
-#    ls89_sst.cfg_file  = "turb_SST_PR.cfg"
-#    ls89_sst.test_iter = 100
-#    ls89_sst.test_vals =  [-8.548266, -1.449437, 0.067986, 0.151168] #last 4 columns
-#    ls89_sst.su2_exec  = "SU2_CFD"
-#    ls89_sst.timeout   = 1600
-#    ls89_sst.tol       = 0.00001
-#    test_list.append(ls89_sst)
-
     # Rarefaction shock wave edge_VW
     edge_VW           = TestCase('edge_VW')
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 100
-    edge_VW.test_vals = [-5.055874, 1.117978, -0.000009, 0.000000] #last 4 columns
+    edge_VW.test_vals = [-5.057244, 1.116904, -0.000009, 0.000000] #last 4 columns
     edge_VW.su2_exec  = "SU2_CFD"
     edge_VW.timeout   = 1600
     edge_VW.tol       = 0.00001
@@ -589,7 +578,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 100
-    edge_PPR.test_vals = [-5.484387, 0.656352, -0.000037, 0.000000] #last 4 columns
+    edge_PPR.test_vals = [-5.485453, 0.655375, -0.000037, 0.000000] #last 4 columns
     edge_PPR.su2_exec  = "SU2_CFD"
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
@@ -597,31 +586,64 @@ def main():
     
     
     ######################################
-    ### turboSU2                       ###
+    ### turbomachinery                 ###
     ######################################
     
-    # Mini centrifugal turbine blade
-    centrifugal_blade           = TestCase('centrifugal_blade')
-    centrifugal_blade.cfg_dir   = "turbomachinery/centrifugal_blade"
-    centrifugal_blade.cfg_file  = "centrifugal_blade.cfg"
-    centrifugal_blade.test_iter = 100
-    centrifugal_blade.test_vals = [-9.106943, -0.460429, 1.069070e+01, 3.396010e-01] #last 4 columns
-    centrifugal_blade.su2_exec  = "SU2_CFD"
-    centrifugal_blade.timeout   = 1600
-    centrifugal_blade.tol       = 0.000001
-    test_list.append(centrifugal_blade) 
+    # Jones APU Turbocharger
+    Jones_tc           = TestCase('jones_turbocharger')
+    Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc.cfg_file  = "Jones.cfg"
+    Jones_tc.test_iter = 29
+    Jones_tc.test_vals = [-5.561276, -0.197256, 9.203919e+01, 7.085071e-01] #last 4 columns
+    Jones_tc.su2_exec  = "SU2_CFD"
+    Jones_tc.timeout   = 1600
+    Jones_tc.tol       = 0.00001
+    test_list.append(Jones_tc)
+
+	# Jones APU Turbocharger restart
+    Jones_tc_rst           = TestCase('jones_turbocharger_restart')
+    Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
+    Jones_tc_rst.test_iter = 30
+    Jones_tc_rst.test_vals = [-3.937025, -0.754638, 8.277785e+01, 2.715131e+00] #last 4 columns
+    Jones_tc_rst.su2_exec  = "SU2_CFD"
+    Jones_tc_rst.timeout   = 1600
+    Jones_tc_rst.tol       = 0.00001
+    test_list.append(Jones_tc_rst)
+
+    # 2D axial stage
+    axial_stage2D           = TestCase('axial_stage2D')
+    axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
+    axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
+    axial_stage2D.test_iter = 100
+    axial_stage2D.test_vals = [-1.535402, 6.554638, 7.558980e+01, 7.930833e-01] #last 4 columns
+    axial_stage2D.su2_exec  = "SU2_CFD"
+    axial_stage2D.timeout   = 1600
+    axial_stage2D.tol       = 0.00001
+    test_list.append(axial_stage2D)
     
+    # 2D transonic stator
+    transonic_stator           = TestCase('transonic_stator')
+    transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator.cfg_file  = "transonic_stator.cfg"
+    transonic_stator.test_iter = 100
+    transonic_stator.test_vals = [-0.074100, 4.592379, 8.305280e+00, 7.038669e-03] #last 4 columns
+    transonic_stator.su2_exec  = "SU2_CFD"
+    transonic_stator.timeout   = 1600
+    transonic_stator.tol       = 0.00001
+    test_list.append(transonic_stator)
     
-    # Mini centrifugal turbine stage
-    centrifugal_stage           = TestCase('centrifugal_stage')
-    centrifugal_stage.cfg_dir   = "turbomachinery/centrifugal_stage"
-    centrifugal_stage.cfg_file  = "centrifugal_stage.cfg"
-    centrifugal_stage.test_iter = 100
-    centrifugal_stage.test_vals = [-10.166628, 1.621134, 22.064950, 0.527107] #last 4 columns
-    centrifugal_stage.su2_exec  = "SU2_CFD"
-    centrifugal_stage.timeout   = 1600
-    centrifugal_stage.tol       = 0.000001
-    test_list.append(centrifugal_stage) 
+    # 2D transonic stator restart
+    transonic_stator_rst           = TestCase('transonic_stator_restart')
+    transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
+    transonic_stator_rst.test_iter = 300
+    transonic_stator_rst.test_vals = [-0.682808, 4.594626, 6.245881e+00, 3.775056e-03] #last 4 columns -0.682808       4.594626   6.245881e+00   3.775056e-03
+    transonic_stator_rst.su2_exec  = "SU2_CFD"
+    transonic_stator_rst.timeout   = 1600
+    transonic_stator_rst.tol       = 0.00001
+    test_list.append(transonic_stator_rst)
+
 
     ######################################
     ### Sliding Mesh                   ###
