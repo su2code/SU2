@@ -2092,7 +2092,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   }
   
   /*--- Solver definition for the poisson potential problem ---*/
-  if (poisson || heat) {
+  if (poisson) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     delete numerics_container[MESH_0][POISSON_SOL][VISC_TERM];
@@ -2103,6 +2103,16 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     
   }
   
+  if (heat) {
+
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+    delete numerics_container[MESH_0][HEAT_SOL][VISC_TERM];
+
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    delete numerics_container[MESH_0][HEAT_SOL][SOURCE_FIRST_TERM];
+    delete numerics_container[MESH_0][HEAT_SOL][SOURCE_SECOND_TERM];
+
+  }
   /*--- Solver definition for the flow adjoint problem ---*/
   
   if (adj_euler || adj_ns ) {
