@@ -607,7 +607,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
   bool TapeActive = NO;
 
-  if (config->GetDiscrete_Adjoint()) {
+  if (config->GetDiscrete_Adjoint() && false) {
 #ifdef CODI_REVERSE_TYPE
 
    /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/

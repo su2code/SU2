@@ -776,9 +776,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_EULER: euler = true; disc_adj = true; heat = config->GetHeat_Inc(); break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat = config->GetHeat_Inc(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); heat = config->GetHeat_Inc(); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -883,6 +883,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
       if (adj_turb)
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
+      if (heat)
+        solver_container[iMGlevel][ADJHEAT_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][HEAT_SOL], RUNTIME_HEAT_SYS, iMGlevel);
+
     }
   }
 
@@ -895,6 +898,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
     if (turbulent) {
       solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+    }
+    if (heat) {
+      solver_container[MESH_0][HEAT_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
     if (fem) {
       if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
@@ -1080,9 +1086,9 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
+    case DISC_ADJ_EULER : euler = true; disc_adj = true; heat = config->GetHeat_Inc(); break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat = config->GetHeat_Inc(); break;
+    case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; heat = config->GetHeat_Inc(); break;
 
   }
 
@@ -3859,6 +3865,9 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
+    if (config_container[iZone]->GetHeat_Inc()) {
+      solver_container[iZone][MESH_0][ADJHEAT_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
   }
 
 
@@ -3897,6 +3906,12 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
       if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
         cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
       }
+      if ( config_container[iZone]->GetHeat_Inc()) {
+
+        cout <<"       log10[HeatRes]: " << log10(solver_container[iZone][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
+        cout <<"       Heat Flux:    " << solver_container[iZone][MESH_0][HEAT_SOL]->GetTotal_HeatFlux() << endl;
+      }
+
     }
   }
 
@@ -3986,6 +4001,16 @@ void CDiscAdjFluidDriver::SetObjFunction(){
   for (iZone = 0; iZone < nZone; iZone++){
     solver_container[iZone][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[iZone]);
     ObjFunc += solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++){
+
+    if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+
+      if (config_container[iZone]->GetHeat_Inc())
+        ObjFunc += solver_container[iZone][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
+        cout << "objective function heat flux: " << solver_container[iZone][MESH_0][HEAT_SOL]->GetTotal_HeatFlux() << endl;
+    }
   }
 
   if (rank == MASTER_NODE){

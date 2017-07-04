@@ -4056,6 +4056,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char wave_resid[]= ",\"Res_Wave[0]\",\"Res_Wave[1]\"";
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
   char heat_resid[]= ",\"Res_Heat\"";
+  char adj_heat_resid[]=",\"Res_AdjHeat\"";
   
   /*--- End of the header ---*/
   
@@ -4103,6 +4104,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
       if ((turbulent) && (!frozen_visc)) ConvHist_file[0] << adj_turb_resid;
+      if (heat) ConvHist_file[0] << adj_heat_resid;
       ConvHist_file[0] << end;
       break;
       
@@ -5340,6 +5342,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible) cout << "   Res[Psi_Velx]";
               else cout << "     Res[Psi_E]";
             }
+            if (heat) cout << "   Res[Psi_Heat]";
             if (disc_adj) {
               cout << "    Sens_Press" << "      Sens_AoA" << endl;
             } else {
@@ -5587,6 +5590,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
+            if (heat)
+              ConvHist_file[0] << log10(solver_container[val_iZone][MESH_0][ADJHEAT_SOL]->GetRes_RMS(0));
+            ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
           if (DualTime_Iteration || !Unsteady){
@@ -5600,8 +5606,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.width(17); cout << log10(residual_adjflow[0]);
               cout.width(16); cout << log10(residual_adjflow[1]);
             }
-
             if (disc_adj) {
+              if (heat) {
+                cout.width(15);
+                cout << log10(solver_container[val_iZone][MESH_0][ADJHEAT_SOL]->GetRes_RMS(0));
+              }
               cout.precision(4);
               cout.setf(ios::scientific, ios::floatfield);
               cout.width(14); cout << Total_Sens_Press;
@@ -5624,6 +5633,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
             if (!frozen_visc)
               ConvHist_file[0] << adj_turb_resid;
+            if (heat)
+              ConvHist_file[0] << log10(solver_container[val_iZone][MESH_0][ADJHEAT_SOL]->GetRes_RMS(0));
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -5644,6 +5655,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
             }
             if (disc_adj) {
+              if (heat) {
+                cout.width(19);
+                cout << log10(solver_container[val_iZone][MESH_0][ADJHEAT_SOL]->GetRes_RMS(0));
+              }
               cout.precision(4);
               cout.setf(ios::scientific, ios::floatfield);
               cout.width(14); cout << Total_Sens_Press;

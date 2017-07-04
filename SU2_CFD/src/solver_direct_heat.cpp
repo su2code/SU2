@@ -250,19 +250,18 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine, dull_val;
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
-  unsigned short turbulent = config->GetKind_Turb_Model();
+
   string UnstExt, text_line;
   ifstream restart_file;
 
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
+  unsigned short nZone = geometry[iZone]->GetnZone();
 
   string restart_filename = config->GetSolution_FlowFileName();
 
