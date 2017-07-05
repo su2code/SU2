@@ -87,6 +87,7 @@ void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2do
 		Rc = 0;
 		h_l = h_v;
 		rho_m = rho;
+		Rdroplet = 0;
 
 	}
 
@@ -227,8 +228,6 @@ void CWater::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
 		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
 		else      T_l = T;
 
-		rho_l = 928.08 + 464.63*T_l/Tstar - 568.46*(T_l/Tstar)*(T_l/Tstar)
-				- 255.17*(T_l/Tstar)*(T_l/Tstar)*(T_l/Tstar);
 }
 
 void CWater::SetLiquidDensity() {
@@ -247,5 +246,279 @@ void CWater::SetLiquidEnthalpy(su2double h_v) {
 		h_l = h_l + coeff_latent_heat[2]*pow((T_l/Tstar), 2) +
 					coeff_latent_heat[3]*pow((T_l/Tstar), 3);
 		h_l = h_v - h_l;
+}
+
+
+CCO2::CCO2(CConfig *config) : CLiquidModel(config) {
+
+	Ei = new su2double [8];
+
+    Ei[0] =  0.9287838;
+    Ei[1] = -0.5910856e-2;
+    Ei[2] = -0.5047727e-4;
+    Ei[3] = -0.9781836e-6;
+    Ei[4] = -0.2475923e-7;
+    Ei[5] = -0.5433246e-9;
+    Ei[6] = -0.6854221e-11;
+    Ei[7] = -0.3503978e-13;
+
+    Gas_Constant = config->GetGas_Constant();
+    Tstar = config->GetTemperature_Critical();
+
+}
+
+
+
+CCO2::~CCO2(void) {
+
+	delete [] Ei;
+
+}
+
+
+void CCO2::SetTsat(su2double P) {
+
+	su2double P_limited;
+
+	P_limited = P/1e5;
+	Tsat = -6E-06 * pow(P_limited, 4)  + 0.0013 * pow(P_limited,3)
+	       -0.0981 * pow(P_limited,2) + 4.2985 * P_limited + 198.22;
+
+}
+
+void CCO2::SetPsat(su2double T) {
+
+	su2double  T_limited = T;
+
+	Psat = 4E-05 * pow(T_limited,3) -0.0213 * pow(T_limited,2) + 4.1933 * T_limited - 284.83;
+	Psat = Psat * 1e5;
+
+}
+
+void CCO2::SetSurfaceTension(su2double T, su2double Rdroplet) {
+
+    su2double  T_limited = min(T, Tstar);
+
+    sigma = 1.0 - 1.0 * T_limited/Tstar;
+    sigma = 84.72 * pow(sigma, 1.281);
+    sigma = sigma * 1.0e-3;
+}
+
+void CCO2::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
+
+		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
+		else      T_l = T;
+
+}
+
+void CCO2::SetLiquidDensity() {
+
+	    su2double  T_limited = T_l;
+
+        rho_l = 0.0;
+
+        for ( i=0; i< 8; i++) {
+             rho_l += 1000.0 * Ei[i] * pow(T_limited-273.15,i);
+        }
+
+}
+
+void CCO2::SetLiquidEnthalpy(su2double h_v) {
+
+	su2double T_limited = T_l;
+
+	h_l = -8E-09 * pow(T_limited, 6) + 1E-05 * pow(T_limited, 5) -0.0078 * pow(T_limited, 4)
+	      + 2.6673 * pow(T_limited, 3) - 508.95 *pow(T_limited, 2) + 51679 * T_limited - 2E+06;
+
+    h_l = h_l * 1e3 + 252943.0559;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
+
+
+}
+
+CR22::CR22(CConfig *config) : CLiquidModel(config) {
+
+	Ei = new su2double [8];
+
+    Ei[0] =  0.1284436e1;
+    Ei[1] = -0.3440780e-2;
+    Ei[2] = -0.7891991e-5;
+    Ei[3] = -0.4743679e-7;
+    Ei[4] = -0.6503566e-9;
+    Ei[5] = +0.5864434e-11;
+    Ei[6] = +0.1317490e-13;
+    Ei[7] = -0.1788847e-14;
+
+    Gas_Constant = config->GetGas_Constant();
+    Tstar = config->GetTemperature_Critical();
+
+}
+
+
+
+CR22::~CR22(void) {
+
+	delete [] Ei;
+
+}
+
+
+void CR22::SetTsat(su2double P) {
+
+	su2double P_limited;
+
+	P_limited = P/1e5;
+
+	Tsat = 4E-06 * pow(P_limited, 5) - 0.0006 * pow(P_limited, 4)  + 0.0346 * pow(P_limited,3)
+	       -0.9326 * pow(P_limited,2) + 14.359 * P_limited + 217.93;
+
+
+}
+
+void CR22::SetPsat(su2double T) {
+
+
+	su2double  T_limited = T;
+
+	Psat = 1E-05 * pow(T_limited,3) - 0.0078 * pow(T_limited,2) + 1.7371 * T_limited - 132.32;
+	Psat = Psat * 1e5;
+
+}
+
+void CR22::SetSurfaceTension(su2double T, su2double Rdroplet) {
+
+    su2double  T_limited = min(T, Tstar);
+
+    sigma = 1.0 - 1.0 * T_limited/Tstar;
+    sigma = 69.93 * (1.0 - 0.154 *pow(sigma, 0.87)) * pow(sigma, 1.285);
+    sigma = sigma * 1.0e-3;
+
+}
+
+void CR22::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
+
+		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
+		else      T_l = T;
+
+}
+
+void CR22::SetLiquidDensity() {
+
+	    su2double  T_limited = T_l;
+
+        rho_l = 0.0;
+
+        for ( i=0; i< 8; i++) {
+             rho_l += 1000.0 * Ei[i] * pow(T_limited-273.15,i);
+        }
+
+}
+
+void CR22::SetLiquidEnthalpy(su2double h_v) {
+
+	su2double T_limited = T_l;
+
+	h_l = -2E-10 * pow(T_limited, 6) + 4E-07 * pow(T_limited, 5) - 0.0003 * pow(T_limited, 4)
+	      + 0.1101 * pow(T_limited, 3) - 23.296 *pow(T_limited, 2) + 2614.9 * T_limited - 121670;
+
+    h_l = h_l * 1e3 + 194147.1632;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
+
+
+}
+
+
+
+
+
+
+CR12::CR12(CConfig *config) : CLiquidModel(config) {
+
+	Ei = new su2double [8];
+
+    Ei[0] =  0.1395549e1;
+    Ei[1] = -0.3225727e-2;
+    Ei[2] = -0.5998138e-5;
+    Ei[3] = -0.1307566e-7;
+    Ei[4] = -0.1071878e-8;
+    Ei[5] = -0.9172160e-11;
+    Ei[6] = +0.3799672e-12;
+    Ei[7] = -0.2864822e-14;
+
+    Gas_Constant = config->GetGas_Constant();
+    Tstar = config->GetTemperature_Critical();
+
+}
+
+
+
+CR12::~CR12(void) {
+
+	delete [] Ei;
+
+}
+
+
+void CR12::SetTsat(su2double P) {
+
+	su2double P_limited;
+
+	P_limited = P/1e5;
+
+	Tsat = -3E-05 * pow(P_limited, 4)  + 0.0041 * pow(P_limited,3)
+	- 0.1972 * pow(P_limited,2) + 5.6176 * P_limited + 192.93;
+
+
+}
+
+void CR12::SetPsat(su2double T) {
+
+
+	su2double  T_limited = T;
+
+	Psat = 3E-05 * pow(T_limited,3) - 0.0187 * pow(T_limited,2) + 3.5625 * T_limited - 232.73;
+	Psat = Psat * 1e5;
+
+}
+
+void CR12::SetSurfaceTension(su2double T, su2double Rdroplet) {
+
+
+    su2double  T_limited = min(T, Tstar);
+
+    sigma = 1.0 - 1.0 * T_limited/Tstar;
+    sigma = 61.23 * (1.0 - 0.094 *pow(sigma, 0.584)) * pow(sigma, 1.285);
+    sigma = sigma * 1.0e-3;
+
+}
+
+void CR12::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
+
+		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
+		else      T_l = T;
+
+}
+
+void CR12::SetLiquidDensity() {
+
+	    su2double  T_limited = T_l;
+
+        rho_l = 0.0;
+
+        for ( i=0; i< 8; i++) {
+             rho_l += 1000.0 * Ei[i] * pow(T_limited-273.15,i);
+        }
+
+}
+
+void CR12::SetLiquidEnthalpy(su2double h_v) {
+
+
+	su2double T_limited = T_l;
+
+	h_l = -1E-06 * pow(T_limited, 4) + 0.0009 * pow(T_limited, 3) - 0.3005 * pow(T_limited, 2)
+	+ 47.331 * T_limited - 2947.7;
+
+    h_l = h_l * 1e3 + 151401.6891;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
+
+
 }
 

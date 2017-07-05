@@ -198,6 +198,121 @@ public:
 };
 
 
+class CCO2 : public CLiquidModel {
+protected:
+
+  su2double *Ei;
+  unsigned short i;
+
+public:
+
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CCO2(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CCO2(void);
+
+  /*!
+   * \brief return liquid density value.
+   */
+
+  void SetTsat(su2double P);
+
+  void SetPsat (su2double T);
+
+  void SetLiquidDensity();
+
+  void SetTLiquid( su2double T, su2double Rcritical, su2double Rdroplet);
+
+  void SetLiquidEnthalpy(su2double h_v);
+
+  void SetSurfaceTension(su2double T, su2double Rdroplet);
+
+
+};
+
+class CR22 : public CLiquidModel {
+protected:
+
+	  su2double *Ei;
+	  unsigned short i;
+
+public:
+
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CR22(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CR22(void);
+
+  /*!
+   * \brief return liquid density value.
+   */
+
+  void SetTsat(su2double P);
+
+  void SetPsat (su2double T);
+
+  void SetLiquidDensity();
+
+  void SetTLiquid( su2double T, su2double Rcritical, su2double Rdroplet);
+
+  void SetLiquidEnthalpy(su2double h_v);
+
+  void SetSurfaceTension(su2double T, su2double Rdroplet);
+
+
+};
+
+class CR12 : public CLiquidModel {
+protected:
+
+	  su2double *Ei;
+	  unsigned short i;
+
+public:
+
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CR12(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CR12(void);
+
+  /*!
+   * \brief return liquid density value.
+   */
+
+  void SetTsat(su2double P);
+
+  void SetPsat (su2double T);
+
+  void SetLiquidDensity();
+
+  void SetTLiquid( su2double T, su2double Rcritical, su2double Rdroplet);
+
+  void SetLiquidEnthalpy(su2double h_v);
+
+  void SetSurfaceTension(su2double T, su2double Rdroplet);
+
+
+};
+
+
 
 
 #include "liquid_phase_model.inl"

@@ -725,9 +725,9 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
   su2double cons_s, cons_h;
 
   su2double error=1, error_v = 1, T_new, v_new;
-  unsigned short countrtb=0, NTRY=20, ITMAX=100, count_T=0, count_v = 0;
+  unsigned short countrtb=0, NTRY=50, ITMAX=100, count_T=0, count_v = 0;
 
-  /*
+/*
   HeatCapacity->Set_Cv0(TstarCrit);
   Cp = HeatCapacity->Get_Cv0 ();
   T_new = abs(h)/Cp;
@@ -776,8 +776,8 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
      cout<< "TD consistency not verified in hs call"<< endl;
    }
 
-}
-*/
+}*/
+
     HeatCapacity->Set_Cv0(TstarCrit);
     A = HeatCapacity->Get_Cv0 ();
     T = abs(h)/A;
@@ -882,6 +882,7 @@ void CPengRobinson_Generic::SetTDState_hs (su2double h, su2double s ) {
          //getchar();
     }
   }
+
 
 
 void CPengRobinson_Generic::SetEnergy_Prho (su2double P, su2double rho) {

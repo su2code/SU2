@@ -93,6 +93,10 @@ void CFluidModel::SetLiquidPhaseModel (CConfig *config) {
 
 	switch (config->GetKind_Liquid_Model() ) {
 	case WATER:    Liquid_Prop = new CWater(config); break;
+	case CO2:      Liquid_Prop = new CCO2  (config); break;
+	case R12:      Liquid_Prop = new CR12  (config); break;
+	case R22:      Liquid_Prop = new CR22  (config); break;
+
 	default: cout << "No liquid model selected, stop" << endl; exit(EXIT_FAILURE); break;
 	}
 

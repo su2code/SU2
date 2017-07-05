@@ -683,9 +683,16 @@ static const map<string, ENUM_NUCLEATION_MODEL> Nucleation_Model_Map = CCreateMa
 
 enum ENUM_LIQUID_MODEL {
   WATER = 0, /*!< \brief No 2phase model. */
+  CO2   = 1,
+  R12   = 2,
+  R22   = 3,
 };
+
 static const map<string, ENUM_LIQUID_MODEL> Liquid_Model_Map = CCreateMap<string, ENUM_LIQUID_MODEL>
-("WATER", WATER);
+("WATER", WATER)
+("CO2"  , CO2  )
+("R12"  , R12  )
+("R22"  , R22  );
 
 /*!
  * \brief types of transition models
