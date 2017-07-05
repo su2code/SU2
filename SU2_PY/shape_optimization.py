@@ -5,8 +5,8 @@
 #  \author T. Economon, T. Lukaczyk, F. Palacios
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -74,8 +74,8 @@ def main():
     sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|\n')
-    sys.stdout.write('|                Dr. Thomas D. Economon, economon@stanford.edu          |\n')
+    sys.stdout.write('| SU2 Original Developers: Dr. Francisco D. Palacios.                   |\n')
+    sys.stdout.write('|                          Dr. Thomas D. Economon.                      |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
     sys.stdout.write('| SU2 Developers:                                                       |\n')
     sys.stdout.write('| - Prof. Juan J. Alonso\'s group at Stanford University.                |\n')
