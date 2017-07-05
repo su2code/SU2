@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-## \file Compute_polar.py
+## \file Compute_multipoint.py
 #  \brief Python script for performing a multipoint design.
 #  \author Indiana Stokes
 #  \version 5.0.0 "Raven"

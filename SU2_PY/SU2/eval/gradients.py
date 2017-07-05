@@ -105,6 +105,10 @@ def gradient( func_name, method, config, state=None ):
             # Stability
             elif func_output in su2io.optnames_stab:
                 grads = stability( func_name, config, state )
+            
+            # Multipoint
+            elif func_output in su2io.optnames_multi:
+              grads = multipoint( func_name, config, state )
 
             # Geometry (actually a finite difference)
             elif func_output in su2io.optnames_geo:
@@ -372,7 +376,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
             ztate  = copy.deepcopy(state)
 
             # TODO: GENERALIZE
-            konfig.AoA = konfig.AoA + step
+            konfig.AOA = konfig.AOA + step
 
             # let's start somethin somthin
             del ztate.GRADIENTS[base_name]
@@ -462,7 +466,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     
     # will run in ADJOINT/
 
-    config.AoA = aoa_list[0]
+    config.AOA = aoa_list[0]
     config.SIDESLIP_ANGLE = sideslip_list[0]
     config.MACH_NUMBER = mach_list[0]
     config.REYNOLDS_NUMBER = reynolds_list[0]
@@ -526,7 +530,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
           konfig = copy.deepcopy(config)
           ztate  = copy.deepcopy(state)
         
-          konfig.AoA = aoa_list[i+1]
+          konfig.AOA = aoa_list[i+1]
           konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
           konfig.MACH_NUMBER = mach_list[i+1]
           konfig.REYNOLDS_NUMBER = reynolds_list[i+1]

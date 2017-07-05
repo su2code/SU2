@@ -97,6 +97,10 @@ def function( func_name, config, state=None ):
         elif func_name in su2io.optnames_stab:
             stability( config, state )
         
+        # Multipoint
+        elif func_name in su2io.optnames_multi:
+          multipoint( config, state )
+
         # Geometry
         elif func_name in su2io.optnames_geo:
             geometry( func_name, config, state )
@@ -361,7 +365,7 @@ def stability( config, state=None, step=1e-2 ):
             ztate  = copy.deepcopy(state)
             
             # TODO: GENERALIZE
-            konfig.AoA = konfig.AoA + step
+            konfig.AOA = konfig.AOA + step
             ztate.FUNCTIONS.clear()
             
             func_1 = aerodynamics(konfig,ztate)
@@ -453,7 +457,7 @@ def multipoint( config, state=None, step=1e-2 ):
   
     # will run in DIRECT/
 
-    config.AoA = aoa_list[0]
+    config.AOA = aoa_list[0]
     config.SIDESLIP_ANGLE = sideslip_list[0]
     config.MACH_NUMBER = mach_list[0]
     config.REYNOLDS_NUMBER = reynolds_list[0]
@@ -521,7 +525,7 @@ def multipoint( config, state=None, step=1e-2 ):
           konfig = copy.deepcopy(config)
           ztate  = copy.deepcopy(state)
 
-          konfig.AoA = aoa_list[i+1]
+          konfig.AOA = aoa_list[i+1]
           konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
           konfig.MACH_NUMBER = mach_list[i+1]
           konfig.REYNOLDS_NUMBER = reynolds_list[i+1]
