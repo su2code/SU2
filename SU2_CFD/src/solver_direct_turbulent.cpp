@@ -1383,7 +1383,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
 CTurbSASolver::~CTurbSASolver(void) {
   
-  unsigned long iMarker, iVertex, iVar;
+  unsigned long iMarker, iVertex;
+  unsigned short iVar;
   
   if ( SlidingState != NULL ) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -2612,7 +2613,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
 void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
     CNumerics *visc_numerics, CConfig *config){
 
-  unsigned long iVertex, jVertex, iPoint, Point_Normal;
+  unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, iMarker;
 
   bool grid_movement = config->GetGrid_Movement();
@@ -3093,7 +3094,8 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
   
   if (constants != NULL) delete [] constants;
   
-  unsigned long iMarker, iVertex, iVar;
+  unsigned long iMarker, iVertex;
+  unsigned short iVar;
 
   if ( SlidingState != NULL ) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -3855,7 +3857,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
     CNumerics *visc_numerics, CConfig *config){
 
-  unsigned long iVertex, jVertex, iPoint, Point_Normal;
+  unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, iMarker;
 
   bool grid_movement = config->GetGrid_Movement();

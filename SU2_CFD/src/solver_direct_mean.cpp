@@ -786,7 +786,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 CEulerSolver::~CEulerSolver(void) {
 
-  unsigned short iVar, iMarker, iPoint, iSpan;
+  unsigned short iVar, iMarker, iSpan;
   unsigned long iVertex;
 
   /*--- Array deallocation ---*/
@@ -4378,7 +4378,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     /*--- Limiter computation ---*/
     
-    if ((limiter) && (iMesh == MESH_0) && !Output) {
+    if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
       SetPrimitive_Limiter(geometry, config);
     }
     
@@ -4706,7 +4706,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA;
   bool low_mach_corr    = config->Low_Mach_Correction();
-  bool turbo            = config->GetBoolTurbomachinery();
+
   /*--- Loop over all the edges ---*/
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -11556,8 +11556,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   su2double relfacFouCfg       = config->GetNRBC_RelaxFactorFourier(Marker_Tag);
   su2double *Normal;
   su2double TwoPiThetaFreq_Pitch, pitch,theta;
-  su2double *SpanWiseValues;
-  su2double spanPercent, extrarelfacAvg, deltaSpan, relfacAvg, relfacFou, coeffrelfacAvg;
+  su2double *SpanWiseValues = NULL;
+  su2double spanPercent, extrarelfacAvg = 0.0, deltaSpan = 0.0, relfacAvg, relfacFou, coeffrelfacAvg = 0.0;
   unsigned short Turbo_Flag;
 
   Normal 		 		= new su2double[nDim];
@@ -13486,7 +13486,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                          CConfig *config) {
   
-  unsigned long iVertex, jVertex, iPoint, Point_Normal;
+  unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, iMarker, nDonorVertex;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -15053,7 +15053,6 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
   unsigned short iDim;
   unsigned short iZone  =  config->GetiZone();
   su2double *turboVelocity, *cartVelocity, *turboNormal;
-  bool RightSol;
 
   su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
   su2double Mach             = config->GetMach();
@@ -15079,6 +15078,7 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
   ComputeBackVelocity(turboVelocity, turboNormal, cartVelocity, INFLOW, config->GetKind_TurboMachinery(iZone));
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    bool RightSol = false;
     node[iPoint]->SetSolution(0, Density_Inf);
     for (iDim = 0; iDim < nDim; iDim++) {
       node[iPoint]->SetSolution(iDim+1, Density_Inf*cartVelocity[iDim]);
@@ -16013,7 +16013,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     su2double *TurbPerfIn= NULL,*TurbPerfOut= NULL;
     su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
-    int *TotMarkerTP;
+    int *TotMarkerTP = NULL;
 
     n1          = 8;
     n2          = 8;
