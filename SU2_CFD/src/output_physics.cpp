@@ -46,7 +46,6 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
   relVel = new su2double[nDim];
   su2double muLam, kine, omega, nu;
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
   bool menter_sst       = (config->GetKind_Turb_Model() == SST);
 
   unsigned short nBladesRow, nStages;

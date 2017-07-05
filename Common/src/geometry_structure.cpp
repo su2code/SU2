@@ -9595,7 +9595,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan, iSize;
+  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0, iSize;
   unsigned long iPoint, iVertex;
   long jVertex;
   int nSpan, nSpan_loc, nSpan_max;
@@ -9913,7 +9913,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
   unsigned long  iPoint, **ordered, **disordered, **oldVertex3D, iInternalVertex;
   unsigned long nVert, nVertMax;
-  unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, iSize, kSize, jSize;
+  unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, iSize, kSize = 0, jSize;
   su2double min, minInt, max, *coord, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -9923,7 +9923,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   max    = -10.0E+06;
 
   su2double radius;
-  long iVertex, iSpanVertex, jSpanVertex, kSpanVertex;
+  long iVertex, iSpanVertex, jSpanVertex, kSpanVertex = 0;
   int *nTotVertex_gb, *nVertexSpanHalo;
   su2double **x_loc, **y_loc, **z_loc, **angCoord_loc, **deltaAngCoord_loc, **angPitch, **deltaAngPitch, *minIntAngPitch,
   *minAngPitch, *maxAngPitch;
