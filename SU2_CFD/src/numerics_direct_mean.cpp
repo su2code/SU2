@@ -2868,9 +2868,9 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 
 void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 
-  su2double delta_rhoStaticEnergy, err_P, s, D;//, stateSeparationLimit;
+  //su2double delta_rhoStaticEnergy, err_P, s, D;
   // su2double tol = 10-6;
-  //
+
   R = sqrt(fabs(Density_j/Density_i));
   RoeDensity = R*Density_i;
   sq_vel = 0;  for (iDim = 0; iDim < nDim; iDim++) {
@@ -2886,16 +2886,15 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
   RoeChi = 0.5*(Chi_i + Chi_j);
   RoeChi = (Chi_i + Chi_j + 4*RoeChi)/6;
 
-  //
 
-  RoeKappaStaticEnthalpy = 0.5*(StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j);
-  RoeKappaStaticEnthalpy = (StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j + 4*RoeKappaStaticEnthalpy)/6;
-  s = RoeChi + RoeKappaStaticEnthalpy;
-  D = s*s*delta_rho*delta_rho + delta_p*delta_p;
-  delta_rhoStaticEnergy = Density_j*StaticEnergy_j - Density_i*StaticEnergy_i;
-  err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
-
-
+//  RoeKappaStaticEnthalpy = 0.5*(StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j);
+//  RoeKappaStaticEnthalpy = (StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j + 4*RoeKappaStaticEnthalpy)/6;
+//  s = RoeChi + RoeKappaStaticEnthalpy;
+//  D = s*s*delta_rho*delta_rho + delta_p*delta_p;
+//  delta_rhoStaticEnergy = Density_j*StaticEnergy_j - Density_i*StaticEnergy_i;
+//  err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
+//
+//
 //  if (abs((D - delta_p*err_P)/Density_i)>1e-3 && abs(delta_rho/Density_i)>1e-3 && s/Density_i > 1e-3) {
 //
 //    RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);

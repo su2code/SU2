@@ -10225,7 +10225,6 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config->GetnZone();
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
   bool menter_sst       = (config->GetKind_Turb_Model() == SST);
 
   unsigned short nBladesRow, nStages;
@@ -10478,7 +10477,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config[val_iZone]->GetnZone();
 
-  unsigned short iMarker_Monitoring, iDim, iSpan;
+  unsigned short iDim, iSpan;
 
   unsigned long iExtIter = config[val_iZone]->GetExtIter();
   su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
