@@ -621,7 +621,8 @@ def read_config(filename):
 
     multipoints = 1
     if not data_dict.has_key('MULTIPOINT_WEIGHT'):
-      raise AttributeError , 'A value for MULTIPOINT_WEIGHT should be provided'
+      data_dict['MULTIPOINT_WEIGHT'] = "(1.0)"
+      multipoints = 1
     else:
       multipoints = len(data_dict['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(','))
 
