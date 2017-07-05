@@ -437,8 +437,8 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
     
 
 
-	  geo_adapt[iZone]->SetnPointDomain(geometry[iZone]->GetnPoint() ); // This is going to be used as a counter later
-    geo_adapt[iZone]->SetnPoint(      geometry[iZone]->GetnPoint() ); // This is going to be used as a counter later
+	  geo_adapt[iZone]->SetnPointDomain( geometry[iZone]->GetnPoint() ); // This is going to be used as a counter later
+    geo_adapt[iZone]->SetnPoint(       geometry[iZone]->GetnPoint() ); // This is going to be used as a counter later
 	  geo_adapt[iZone]->SetnDim(nDim);
     geo_adapt[iZone]->node = new CPoint*[ geometry[iZone]->GetnPoint() + gridPoints2Add[iZone] ];
 	  
@@ -523,11 +523,7 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
     }
   }
 
-  
-  
-  
-  
-  
+   
   /* 2 - Find boundary tag between touching grids */
 
   /*--- Coupling between zones ---*/
@@ -593,8 +589,8 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
 
         /*--- Match Zones ---*/
         if (rank == MASTER_NODE) cout << "Setting coupling "<< endl;
-      
-      
+        
+        
         for (iTarget = 0; iTarget < nVertexTarget; iTarget++) {
           
           /*--- Stores coordinates of the target node ---*/
@@ -605,7 +601,7 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
 
           mindist = 1E6;
           
-          nVertexDonor  = geo_adapt[donorZone]->GetnVertex( markDonor  );
+          nVertexDonor  = geo_adapt[donorZone]->GetnVertex( markDonor );
  
  
  //////////remove nearest search?           
@@ -627,6 +623,7 @@ void CGridAdaptation::SetSlidingMesh_Refinement(CGeometry **geometry, CConfig **
 
             if (dist == 0.0){
               //proximityCheck[donorZone][iDonor] = true;
+              //cout << "ECCO" << endl; getchar();
               break;
             }    
           }
@@ -712,8 +709,39 @@ for(iDim = 0; iDim < nDim; iDim ++)
             iPoint = geo_adapt[donorZone]->GetnPoint();
             
             geo_adapt[donorZone]->vertex[markDonor][ geo_adapt[donorZone]->GetnVertex( markDonor ) ] = new CVertex(iPoint, nDim);
-                        
-            geo_adapt[donorZone]->node[iPoint] = new CPoint(Coord_i[0], Coord_i[1], iPoint, config[donorZone]);               
+            
+            
+            if(dist != 0.0)
+              geo_adapt[donorZone]->node[iPoint] = new CPoint(Coord_i[0], Coord_i[1], iPoint, config[donorZone]);
+            else{
+            
+              m = 0.0;
+              for(iDim = 0; iDim < nDim; iDim ++)
+                m += r2[iDim]*r2[iDim];
+              
+                
+              if( m == 0.0 )
+                for(iDim = 0; iDim < nDim; iDim ++)
+                  r2[iDim] = r1[iDim];
+              
+              for(iDim = 0; iDim < nDim; iDim ++)
+                r2[iDim] /= 10000;
+                    
+ 
+              geo_adapt[donorZone]->node[iPoint] = new CPoint(Coord_i[0]+r2[0], Coord_i[1]+r2[1], iPoint, config[donorZone]);
+              
+
+              Coord_i = geometry[targetZone]->node[target_iPoint]->GetCoord();
+
+              Coord_i[0] += r2[0];
+              Coord_i[1] += r2[1];
+
+       
+              Coord_i = geo_adapt[targetZone]->node[target_iPoint]->GetCoord();
+
+              Coord_i[0] += r2[0];
+              Coord_i[1] += r2[1];
+            }
 
             geo_adapt[donorZone]->node[iPoint]->SetBoundary(geo_adapt[donorZone]->GetnMarker());
           
@@ -860,7 +888,7 @@ if(dist1 > dist_original || dist2 > dist_original){
             geo_adapt[donorZone]->SetnElem( geo_adapt[donorZone]->GetnElem() + 1);
                   
             geo_adapt[donorZone]->SetnPoint(       geo_adapt[donorZone]->GetnPoint() + 1 );                  
-            geo_adapt[donorZone]->SetnPointDomain( geo_adapt[donorZone]->GetnPointDomain() + 1 );
+            //geo_adapt[donorZone]->SetnPointDomain( geo_adapt[donorZone]->GetnPointDomain() + 1 );
                   
             geo_adapt[donorZone]->SetnElem_Bound(markDonor, geo_adapt[donorZone]->GetnElem_Bound(markDonor) + 1);
             

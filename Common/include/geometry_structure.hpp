@@ -137,7 +137,7 @@ public:
 	vector<su2double> XCoordList;	/*!< \brief Vector containing points appearing on a single plane */
 	CPrimalGrid*** newBound;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
-
+  unsigned long nPointBaseline;
   
   /*--- Partitioning-specific variables ---*/
   map<unsigned long,unsigned long> Global_to_Local_Elem;
@@ -175,6 +175,12 @@ public:
 	 */
 	unsigned short GetnZone(void);
 
+	/*! 
+	 * \brief Get number of points of the baseline grid.
+	 * \return Number of points of the baseline grid.
+	 */
+	unsigned long GetnPointBaseline(void);
+  
 	/*! 
 	 * \brief Get number of points.
 	 * \return Number of points.
@@ -288,6 +294,12 @@ public:
 	 */	
 	void SetnElem_Bound(unsigned short val_marker, unsigned long val_nelem_bound);
 
+	/*! 
+	 * \brief Set the number of grid points of the baseline grid.
+	 * \param[in] val_npoint - Number of grid points of the baseline grid.
+	 */	
+	void SetnPointBaseline(unsigned long val_npoint);
+  
 	/*! 
 	 * \brief Set the number of grid points.
 	 * \param[in] val_npoint - Number of grid points.

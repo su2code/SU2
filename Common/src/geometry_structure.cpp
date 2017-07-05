@@ -62,6 +62,7 @@ CGeometry::CGeometry(void) {
   nPoint     = 0;
   nPointNode = 0;
   nElem      = 0;
+  nPointBaseline = 0;
   
   nElem_Bound         = NULL;
   Tag_to_Marker       = NULL;
@@ -1379,7 +1380,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   if (config->GetKind_SU2() == SU2_CFD) {
     
     NewCoord = new su2double [nDim];
-    
+  
     /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
     
     if (config->GetSystemMeasurements() == US) {
@@ -1713,6 +1714,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   Buffer_Send_nDim  = geometry->GetnDim();
   Buffer_Send_nZone = geometry->GetnZone();
+  
+  
+  //cout << nPoint << "  " << nPointBaseline << endl; getchar();  
+  
+  nPointBaseline = geometry->GetnPointBaseline();
+  
+  
+  
   
   /*--- Divide the elements in color list to speed up the grid partitioning ---*/
   
@@ -5502,8 +5511,15 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       stringstream  stream_line(text_line);
       if (iCount == 2) {
         
-        stream_line >> nPoint;
-        stream_line >> nPointDomain;
+        if (config->GetKind_Adaptation() != SLIDING_ADAPT ){  
+          stream_line >> nPoint; 
+          stream_line >> nPointDomain; 
+        }
+        else{
+          stream_line >> nPoint; 
+          nPointDomain = nPoint; 
+          stream_line >> nPointBaseline; 
+        }
         
         if (actuator_disk) { nPoint += ActDiskNewPoints;  nPointDomain += ActDiskNewPoints; }
         
@@ -10525,6 +10541,65 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         
         switch (nDim) {
           case 2:
+          
+/*          
+su2double m;
+m = 0;
+
+unsigned short EdgeIndex, dPoint, jNode, jElem;
+
+for(iDim = 0; iDim < nDim; iDim++)
+  m += (Coord_Edge_CG[iDim] - Coord_FaceiPoint[iDim])*(Coord_Edge_CG[iDim] - Coord_FaceiPoint[iDim]);
+
+if (m == 0)
+{
+  cout << "A" << endl;
+  for (iDim = 0; iDim < nDim; iDim++)
+  cout << Coord_Edge_CG[iDim] << "  ";
+  cout << endl;
+
+  for (iDim = 0; iDim < nDim; iDim++)
+  cout << Coord_FaceiPoint[iDim] << "  ";
+  cout << endl;
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+  cout << Coord_FaceElem_CG[iDim] << "  ";
+  cout << endl;
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+  cout << Coord_Elem_CG[iDim] << "  ";
+  cout << endl;
+  
+  for (jNode = 0; jNode < node[face_jPoint]->GetnPoint(); jNode++){
+  
+    EdgeIndex = node[face_jPoint]->GetEdge(jNode);
+
+    if( face_jPoint == edge[EdgeIndex]->GetNode(0) )
+      dPoint = edge[EdgeIndex]->GetNode(1);
+    else
+      dPoint = edge[EdgeIndex]->GetNode(0);
+              
+    if ( dPoint != iPoint && node[dPoint]->GetVertex( node[face_iPoint]->GetMarker() ) !=-1 ){
+      iEdge = FindEdge(dPoint, face_jPoint);
+      //jElem = FindFace
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
+      }
+      
+      jNode = node[face_jPoint]->GetnPoint();
+      break;
+    }
+  }
+  
+  cout << "B" << endl;
+  for (iDim = 0; iDim < nDim; iDim++)
+  cout << Coord_Edge_CG[iDim] << "  ";
+  cout << endl;
+    
+  cout <<"ecco" << endl; getchar();
+}
+/*
+
             /*--- Two dimensional problem ---*/
             if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG);
             else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);

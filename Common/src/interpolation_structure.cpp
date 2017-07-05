@@ -2772,8 +2772,207 @@ bool CSlidingMesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
   return (check == 3);     
 }
 
+
+
 CSlidingAdaptive::CSlidingAdaptive(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone)  :  CInterpolator(geometry_container, config, iZone, jZone){
 
+  /* --- This routine sets the transfer coefficient for sliding mesh approach --- */
+  
+  /*
+   * The algorithm is based on Rinaldi et al. "Flux-conserving treatment of non-conformal interfaces 
+   * for finite-volume discritization of conservaation laws" 2015, Comp. Fluids, 120, pp 126-139
+   */
+
+  /*  0 - Variable declaration - */
+
+  /* --- General variables --- */
+
+  bool check;
+  int rank, nProcessor;
+  
+  unsigned short iDim, nDim;
+  
+  unsigned long ii, jj, *uptr;
+  unsigned long vPoint, dPoint;
+  unsigned long iEdgeVisited, nEdgeVisited, iNodeVisited;
+  unsigned long nAlreadyVisited, nToVisit, StartVisited;
+  
+  unsigned long *alreadyVisitedDonor, *ToVisit, *tmpVect;
+  unsigned long *storeProc, *tmp_storeProc;
+
+  su2double dTMP;
+  su2double *Coeff_Vect, *tmp_Coeff_Vect;               
+
+  /* --- Geometrical variables --- */
+
+  su2double *Coord_i, *Coord_j, dist, mindist, *Normal;
+  su2double Area, Area_old, tmp_Area;
+  su2double LineIntersectionLength, *Direction, length;
+
+
+  /* --- Markers Variables --- */
+
+  unsigned short iMarkerInt, nMarkerInt; 
+
+  unsigned long iVertex, nVertexDonor, nVertexTarget;
+
+  int markDonor, markTarget;
+
+  /* --- Target variables --- */
+
+  unsigned long target_iPoint, jVertexTarget;
+  unsigned long nEdges_target, nNode_target;
+
+  unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNodes, *target_segment;
+  unsigned long *Target_GlobalPoint, *Target_Proc;  
+  
+  su2double *TargetPoint_Coord, *target_iMidEdge_point, *target_jMidEdge_point, **target_element;
+
+  /* --- Donor variables --- */
+
+  unsigned long donor_StartIndex, donor_forward_point, donor_backward_point, donor_iPoint, donor_OldiPoint; 
+  unsigned long nEdges_donor, nNode_donor, nGlobalVertex_Donor; 
+
+  unsigned long nDonorPoints, iDonor;
+  unsigned long *Donor_Vect, *tmp_Donor_Vect;
+  unsigned long *Donor_nLinkedNodes, *Donor_LinkedNodes, *Donor_StartLinkedNodes;
+  unsigned long *Donor_GlobalPoint, *Donor_Proc;
+  
+  su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
+  su2double **donor_element, *DonorPoint_Coord;
+    
+  /*  1 - Variable pre-processing - */
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
+  nProcessor = SINGLE_NODE;
+  rank = MASTER_NODE;
+#endif
+
+  nDim = donor_geometry->GetnDim();
+
+  /* 2 - Find boundary tag between touching grids */
+
+  /*--- Number of markers on the FSI interface ---*/
+  nMarkerInt    = (int)( config[ donorZone ]->GetMarker_n_ZoneInterface() ) / 2;
+
+  /*--- For the number of markers on the interface... ---*/
+  for ( iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++ ){
+
+    /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
+    markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
+
+    /*--- On the target side: find the tag of the boundary sharing the interface ---*/
+    markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+
+    /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
+    if( !CheckInterfaceBoundary(markDonor, markTarget) )
+      continue;
+
+    if(markDonor != -1)
+      nVertexDonor  = donor_geometry->GetnVertex(  markDonor  );
+    else
+      nVertexDonor  = 0;
+
+    if(markTarget != -1)
+      nVertexTarget = target_geometry->GetnVertex( markTarget );
+    else
+      nVertexTarget  = 0;
+
+    /*
+    3 -Reconstruct the boundaries from parallel partitioning
+    */
+
+    /*--- Target boundary ---*/
+    ReconstructBoundary(targetZone, markTarget);
+    
+    nGlobalVertex_Target = nGlobalVertex;
+
+    TargetPoint_Coord       = Buffer_Receive_Coord;
+    Target_GlobalPoint      = Buffer_Receive_GlobalPoint;
+    Target_nLinkedNodes     = Buffer_Receive_nLinkedNodes;
+    Target_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
+    Target_LinkedNodes      = Buffer_Receive_LinkedNodes;
+    Target_Proc             = Buffer_Receive_Proc;
+    
+    /*--- Donor boundary ---*/
+    ReconstructBoundary(donorZone, markDonor);
+    
+    nGlobalVertex_Donor = nGlobalVertex;
+
+    DonorPoint_Coord       = Buffer_Receive_Coord;
+    Donor_GlobalPoint      = Buffer_Receive_GlobalPoint;
+    Donor_nLinkedNodes     = Buffer_Receive_nLinkedNodes;
+    Donor_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
+    Donor_LinkedNodes      = Buffer_Receive_LinkedNodes;
+    Donor_Proc             = Buffer_Receive_Proc;
+
+    /*--- Starts building the supermesh layer (2D or 3D) ---*/
+    /* - For each target node, it first finds the closest donor point
+     * - Then it creates the supermesh in the close proximity of the target point:
+     * - Starting from the closest donor node, it expands the supermesh by including 
+     * donor elements neighboring the initial one, until the overall target area is fully covered.
+     */
+
+        
+    /*--- Starts with supermesh reconstruction ---*/
+      
+    for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
+
+      /*--- Stores coordinates of the target node ---*/
+
+      target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
+
+      if (target_geometry->node[target_iPoint]->GetDomain()){
+
+        Coord_i = target_geometry->node[target_iPoint]->GetCoord();
+
+        /*--- Brute force to find the closest donor_node ---*/
+
+        mindist = 1E6;
+        donor_StartIndex = 0;
+
+        for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
+       
+          Coord_j = &DonorPoint_Coord[ donor_iPoint * nDim ];
+
+          dist = PointsDistance(Coord_i, Coord_j);
+
+          if (dist == 0.0){
+            donor_iPoint;
+            break;
+          }    
+        }
+   
+        target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(1);
+
+        target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+             
+        target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(          0, 1.0);
+        target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(    0, Donor_GlobalPoint[ donor_iPoint ]);
+        target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(0, Donor_Proc[        donor_iPoint ]);
+          
+      }
+    }    
+      
+    delete [] TargetPoint_Coord;
+    delete [] Target_GlobalPoint;
+    delete [] Target_Proc;
+    delete [] Target_nLinkedNodes;
+    delete [] Target_LinkedNodes;
+    delete [] Target_StartLinkedNodes;
+        
+    delete [] DonorPoint_Coord;
+    delete [] Donor_GlobalPoint;
+    delete [] Donor_Proc;
+    delete [] Donor_nLinkedNodes;      
+    delete [] Donor_StartLinkedNodes;  
+    delete [] Donor_LinkedNodes;       
+    
+  }
+  
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(config);
 
@@ -2786,5 +2985,215 @@ CSlidingAdaptive::~CSlidingAdaptive(){}
 void CSlidingAdaptive::Set_TransferCoeff(CConfig **config){
 
   cout << "Fin qua tutto bene..." << endl;
+  
+  /* --- This routine sets the transfer coefficient for adaptive sliding mesh approach --- */
+  
+
+  /*  0 - Variable declaration - */
+
+  /* --- General variables --- */
+
+  bool check;
+  int rank, nProcessor;
+  
+  unsigned short iDim, nDim;
+  
+  unsigned long ii, jj, *uptr;
+  unsigned long vPoint, dPoint;
+  unsigned long iEdgeVisited, nEdgeVisited, iNodeVisited;
+  unsigned long nAlreadyVisited, nToVisit, StartVisited;
+  
+  unsigned long *alreadyVisitedDonor, *ToVisit, *tmpVect;
+  unsigned long *storeProc, *tmp_storeProc;
+
+  su2double dTMP;
+  su2double *Coeff_Vect, *tmp_Coeff_Vect;               
+
+  /* --- Geometrical variables --- */
+
+  su2double *Coord_i, *Coord_j, dist, mindist, *Normal;
+  su2double Area, Area_old, tmp_Area;
+  su2double LineIntersectionLength, *Direction, length;
+
+
+  /* --- Markers Variables --- */
+
+  unsigned short iMarkerInt, nMarkerInt; 
+
+  unsigned long iVertex, nVertexDonor, nVertexTarget;
+
+  int markDonor, markTarget;
+
+  /* --- Target variables --- */
+
+  unsigned long target_iPoint, jVertexTarget;
+  unsigned long nEdges_target, nNode_target;
+
+  unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNodes, *target_segment;
+  unsigned long *Target_GlobalPoint, *Target_Proc;  
+  
+  su2double *TargetPoint_Coord, *target_iMidEdge_point, *target_jMidEdge_point, **target_element;
+
+  /* --- Donor variables --- */
+
+  unsigned long donor_StartIndex, donor_forward_point, donor_backward_point, donor_iPoint, donor_OldiPoint; 
+  unsigned long nEdges_donor, nNode_donor, nGlobalVertex_Donor; 
+
+  unsigned long nDonorPoints, iDonor;
+  unsigned long *Donor_Vect, *tmp_Donor_Vect;
+  unsigned long *Donor_nLinkedNodes, *Donor_LinkedNodes, *Donor_StartLinkedNodes;
+  unsigned long *Donor_GlobalPoint, *Donor_Proc;
+  
+  su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
+  su2double **donor_element, *DonorPoint_Coord;
+    
+  /*  1 - Variable pre-processing - */
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
+  nProcessor = SINGLE_NODE;
+  rank = MASTER_NODE;
+#endif
+
+  nDim = donor_geometry->GetnDim();
+
+  /*--- Setting up auxiliary vectors ---*/
+
+  Donor_Vect = NULL;
+  Coeff_Vect = NULL;
+  storeProc  = NULL;
+
+  tmp_Donor_Vect = NULL;
+  tmp_Coeff_Vect = NULL;
+  tmp_storeProc  = NULL;
+  
+  Normal    = new su2double[nDim];
+  Direction = new su2double[nDim];
+    
+    
+  /* 2 - Find boundary tag between touching grids */
+
+  /*--- Number of markers on the FSI interface ---*/
+  nMarkerInt    = (int)( config[ donorZone ]->GetMarker_n_ZoneInterface() ) / 2;
+
+  /*--- For the number of markers on the interface... ---*/
+  for ( iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++ ){
+
+    /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
+    markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
+
+    /*--- On the target side: find the tag of the boundary sharing the interface ---*/
+    markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+
+    /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
+    if( !CheckInterfaceBoundary(markDonor, markTarget) )
+      continue;
+
+    if(markDonor != -1)
+      nVertexDonor  = donor_geometry->GetnVertex(  markDonor  );
+    else
+      nVertexDonor  = 0;
+
+    if(markTarget != -1)
+      nVertexTarget = target_geometry->GetnVertex( markTarget );
+    else
+      nVertexTarget  = 0;
+
+    /*
+    3 -Reconstruct the boundaries from parallel partitioning
+    */
+
+    /*--- Target boundary ---*/
+    ReconstructBoundary(targetZone, markTarget);
+    
+    nGlobalVertex_Target = nGlobalVertex;
+
+    TargetPoint_Coord       = Buffer_Receive_Coord;
+    Target_GlobalPoint      = Buffer_Receive_GlobalPoint;
+    Target_nLinkedNodes     = Buffer_Receive_nLinkedNodes;
+    Target_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
+    Target_LinkedNodes      = Buffer_Receive_LinkedNodes;
+    Target_Proc             = Buffer_Receive_Proc;
+    
+    /*--- Donor boundary ---*/
+    ReconstructBoundary(donorZone, markDonor);
+    
+    nGlobalVertex_Donor = nGlobalVertex;
+
+    DonorPoint_Coord       = Buffer_Receive_Coord;
+    Donor_GlobalPoint      = Buffer_Receive_GlobalPoint;
+    Donor_nLinkedNodes     = Buffer_Receive_nLinkedNodes;
+    Donor_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
+    Donor_LinkedNodes      = Buffer_Receive_LinkedNodes;
+    Donor_Proc             = Buffer_Receive_Proc;
+
+    /*--- Starts adapting the mesh ---*/
+    /* - For each target node, it first finds the closest donor point 
+     * - Then it creates the supermesh in the close proximity of the target point:
+     * - Starting from the closest donor node, it expands the supermesh by including 
+     * donor elements neighboring the initial one, until the overall target area is fully covered.
+     */
+
+unsigned long GlobalDonorPoint;
+
+    if( nDim == 2 ){
+      
+      for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
+
+        target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
+        
+//cout << target_geometry->GetnPointBaseline() << endl; getchar();
+
+        if (target_geometry->node[target_iPoint]->GetDomain() && target_iPoint >= target_geometry->GetnPointBaseline()){
+          
+          Coord_i = target_geometry->node[target_iPoint]->GetCoord();
+
+          GlobalDonorPoint = target_geometry->vertex[markTarget][iVertex]->GetInterpDonorPoint( 0 );
+          
+          for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++)
+            if(GlobalDonorPoint == Donor_GlobalPoint[donor_iPoint])
+              break;
+              
+          Coord_j = &DonorPoint_Coord[ donor_iPoint * nDim ];
+
+          for(iDim = 0; iDim < nDim; iDim++)
+            Coord_i[iDim] = Coord_j[iDim];
+            
+          //cout << "ECCO" << endl;
+        }
+      }
+      
+    }
+    else{
+      cout << "3D not working yet!!!" << endl;
+      getchar();
+      exit(EXIT_FAILURE);
+    }
+    
+    
+    delete [] TargetPoint_Coord;
+    delete [] Target_GlobalPoint;
+    delete [] Target_Proc;
+    delete [] Target_nLinkedNodes;
+    delete [] Target_LinkedNodes;
+    delete [] Target_StartLinkedNodes;
+        
+    delete [] DonorPoint_Coord;
+    delete [] Donor_GlobalPoint;
+    delete [] Donor_Proc;
+    delete [] Donor_nLinkedNodes;      
+    delete [] Donor_StartLinkedNodes;  
+    delete [] Donor_LinkedNodes;       
+    
+  }
+  
+  delete [] Normal;
+  delete [] Direction;
+  
+  if (Donor_Vect != NULL) delete [] Donor_Vect;
+  if (Coeff_Vect != NULL) delete [] Coeff_Vect;
+  if (storeProc  != NULL) delete [] storeProc;  
   
 }

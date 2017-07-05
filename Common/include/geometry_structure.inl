@@ -125,6 +125,8 @@ inline void CGeometry::SetElement_Connectivity(void) { }
 
 inline unsigned long CGeometry::GetnPoint(void) { return nPoint; }
 
+inline unsigned long CGeometry::GetnPointBaseline(void) { return nPointBaseline; }
+
 inline unsigned long CGeometry::GetnPointDomain(void) { return nPointDomain; }
 
 inline unsigned long CGeometry::GetnElem(void) { return nElem; }
@@ -148,6 +150,8 @@ inline unsigned long CGeometry::GetnElem_Bound(unsigned short val_marker) { retu
 inline void CGeometry::SetMarker_Tag(unsigned short val_marker, string val_index) { Tag_to_Marker[val_marker] = val_index; }
 
 inline void CGeometry::SetnPoint(unsigned long val_npoint) { nPoint = val_npoint; }
+
+inline void CGeometry::SetnPointBaseline(unsigned long val_npoint) { nPointBaseline = val_npoint; }
 
 inline void CGeometry::SetnPointDomain(unsigned long val_npoint) { nPointDomain = val_npoint; }
 

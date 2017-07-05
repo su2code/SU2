@@ -288,6 +288,7 @@ public:
   
 };
 
+
 /*!
  * \brief Sliding mesh approach
   */
@@ -384,6 +385,8 @@ public:
   */
 class CSlidingAdaptive : public CInterpolator {
 public:
+
+  unsigned long *map;
 
   /*!
    * \brief Constructor of the class.
