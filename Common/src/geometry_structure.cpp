@@ -1322,6 +1322,30 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
+
+  /*--- Arrays for defining the tutbomachinery structure ---*/
+
+  nSpanWiseSections       = NULL;
+  SpanWiseValue           = NULL;
+  nVertexSpan             = NULL;
+  nTotVertexSpan          = NULL;
+  turbovertex             = NULL;
+  AverageTurboNormal      = NULL;
+  AverageNormal           = NULL;
+  AverageGridVel          = NULL;
+  AverageTangGridVel      = NULL;
+  SpanArea                = NULL;
+  TurboRadius             = NULL;
+  MaxAngularCoord         = NULL;
+  MinAngularCoord         = NULL;
+  MinRelAngularCoord      = NULL;
+
+  TangGridVelIn           = NULL;
+  SpanAreaIn              = NULL;
+  TurboRadiusIn           = NULL;
+  TangGridVelOut          = NULL;
+  SpanAreaOut             = NULL;
+  TurboRadiusOut          = NULL;
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
@@ -1334,6 +1358,30 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   ending_node   = NULL;
   npoint_procs  = NULL;
   
+  /*--- Arrays for defining the tutbomachinery structure ---*/
+
+  nSpanWiseSections       = NULL;
+  SpanWiseValue           = NULL;
+  nVertexSpan             = NULL;
+  nTotVertexSpan          = NULL;
+  turbovertex             = NULL;
+  AverageTurboNormal      = NULL;
+  AverageNormal           = NULL;
+  AverageGridVel          = NULL;
+  AverageTangGridVel      = NULL;
+  SpanArea                = NULL;
+  TurboRadius             = NULL;
+  MaxAngularCoord         = NULL;
+  MinAngularCoord         = NULL;
+  MinRelAngularCoord      = NULL;
+
+  TangGridVelIn           = NULL;
+  SpanAreaIn              = NULL;
+  TurboRadiusIn           = NULL;
+  TangGridVelOut          = NULL;
+  SpanAreaOut             = NULL;
+  TurboRadiusOut          = NULL;
+
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short iDim, iMarker, iNodes;
@@ -1467,6 +1515,30 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
+
+  /*--- Arrays for defining the tutbomachinery structure ---*/
+
+  nSpanWiseSections       = NULL;
+  SpanWiseValue           = NULL;
+  nVertexSpan             = NULL;
+  nTotVertexSpan          = NULL;
+  turbovertex             = NULL;
+  AverageTurboNormal      = NULL;
+  AverageNormal           = NULL;
+  AverageGridVel          = NULL;
+  AverageTangGridVel      = NULL;
+  SpanArea                = NULL;
+  TurboRadius             = NULL;
+  MaxAngularCoord         = NULL;
+  MinAngularCoord         = NULL;
+  MinRelAngularCoord      = NULL;
+
+  TangGridVelIn           = NULL;
+  SpanAreaIn              = NULL;
+  TurboRadiusIn           = NULL;
+  TangGridVelOut          = NULL;
+  SpanAreaOut             = NULL;
+  TurboRadiusOut          = NULL;
 
   /*--- Local variables and counters for the following communications. ---*/
   
@@ -4279,43 +4351,43 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     }
 
   /*--- initialize pointers for turbomachinery computations  ---*/
-  nSpanWiseSections                 = new unsigned short[2];
-  SpanWiseValue						= new su2double*[2];
+  nSpanWiseSections       = new unsigned short[2];
+  SpanWiseValue           = new su2double*[2];
   for (iMarker = 0; iMarker < 2; iMarker++){
     nSpanWiseSections[iMarker]      = 0;
     SpanWiseValue[iMarker]          = NULL;
   }
 
-  nVertexSpan 						= new long* [nMarker];
-  nTotVertexSpan 				    = new unsigned long* [nMarker];
-  turbovertex 						= new CTurboVertex***[nMarker];
-  AverageTurboNormal 			    = new su2double**[nMarker];
-  AverageNormal     			    = new su2double**[nMarker];
-  AverageGridVel 					= new su2double**[nMarker];
-  AverageTangGridVel  		        = new su2double*[nMarker];
-  SpanArea 							= new su2double*[nMarker];
-  TurboRadius 					    = new su2double*[nMarker];
+  nVertexSpan                       = new long* [nMarker];
+  nTotVertexSpan                    = new unsigned long* [nMarker];
+  turbovertex                       = new CTurboVertex***[nMarker];
+  AverageTurboNormal                = new su2double**[nMarker];
+  AverageNormal                     = new su2double**[nMarker];
+  AverageGridVel                    = new su2double**[nMarker];
+  AverageTangGridVel                = new su2double*[nMarker];
+  SpanArea                          = new su2double*[nMarker];
+  TurboRadius                       = new su2double*[nMarker];
   MaxAngularCoord                   = new su2double*[nMarker];
   MinAngularCoord                   = new su2double*[nMarker];
   MinRelAngularCoord                = new su2double*[nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
-    nVertexSpan[iMarker] 			= NULL;
-    nTotVertexSpan[iMarker] 		= NULL;
-    turbovertex[iMarker] 			= NULL;
-    AverageTurboNormal[iMarker]		= NULL;
-    AverageNormal[iMarker]			= NULL;
-    AverageGridVel[iMarker] 		= NULL;
-    AverageTangGridVel[iMarker]		= NULL;
-    SpanArea[iMarker]				= NULL;
-    TurboRadius[iMarker]			= NULL;
+    nVertexSpan[iMarker]            = NULL;
+    nTotVertexSpan[iMarker]         = NULL;
+    turbovertex[iMarker]            = NULL;
+    AverageTurboNormal[iMarker]     = NULL;
+    AverageNormal[iMarker]          = NULL;
+    AverageGridVel[iMarker]         = NULL;
+    AverageTangGridVel[iMarker]     = NULL;
+    SpanArea[iMarker]               = NULL;
+    TurboRadius[iMarker]            = NULL;
     MaxAngularCoord[iMarker]        = NULL;
     MinAngularCoord[iMarker]        = NULL;
     MinRelAngularCoord[iMarker]     = NULL;
   }
 
   /*--- initialize pointers for turbomachinery performance computation  ---*/
-
+  nTurboPerf            = config->GetnMarker_TurboPerformance();
   TangGridVelIn  		= new su2double*[config->GetnMarker_TurboPerformance()];
   SpanAreaIn 			= new su2double*[config->GetnMarker_TurboPerformance()];
   TurboRadiusIn 		= new su2double*[config->GetnMarker_TurboPerformance()];
@@ -9939,10 +10011,10 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 #endif
   string multizone_filename;
 
-  x_loc    				          = new su2double*[nSpanWiseSections[marker_flag-1]];
-  y_loc    				          = new su2double*[nSpanWiseSections[marker_flag-1]];
-  z_loc    				          = new su2double*[nSpanWiseSections[marker_flag-1]];
-  angCoord_loc 	      	= new su2double*[nSpanWiseSections[marker_flag-1]];
+  x_loc              = new su2double*[nSpanWiseSections[marker_flag-1]];
+  y_loc              = new su2double*[nSpanWiseSections[marker_flag-1]];
+  z_loc              = new su2double*[nSpanWiseSections[marker_flag-1]];
+  angCoord_loc       = new su2double*[nSpanWiseSections[marker_flag-1]];
   deltaAngCoord_loc  = new su2double*[nSpanWiseSections[marker_flag-1]];
   angPitch           = new su2double*[nSpanWiseSections[marker_flag-1]];
   deltaAngPitch      = new su2double*[nSpanWiseSections[marker_flag-1]];
@@ -9962,39 +10034,38 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   }
 
   /*--- Initialize auxiliary pointers ---*/
-  TurboNormal      	= new su2double[3];
-  NormalArea       				= new su2double[3];
-  ordered     			     = new unsigned long* [nSpanWiseSections[marker_flag-1]];
-  disordered     		  = new unsigned long* [nSpanWiseSections[marker_flag-1]];
-  oldVertex3D      = new unsigned long* [nSpanWiseSections[marker_flag-1]];
-  area 							            = new su2double* [nSpanWiseSections[marker_flag-1]];
-  unitnormal 				      = new su2double** [nSpanWiseSections[marker_flag-1]];
-  checkAssign      = new bool* [nSpanWiseSections[marker_flag-1]];
+  TurboNormal        = new su2double[3];
+  NormalArea         = new su2double[3];
+  ordered            = new unsigned long* [nSpanWiseSections[marker_flag-1]];
+  disordered         = new unsigned long* [nSpanWiseSections[marker_flag-1]];
+  oldVertex3D        = new unsigned long* [nSpanWiseSections[marker_flag-1]];
+  area               = new su2double* [nSpanWiseSections[marker_flag-1]];
+  unitnormal         = new su2double** [nSpanWiseSections[marker_flag-1]];
+  checkAssign        = new bool* [nSpanWiseSections[marker_flag-1]];
 
-  /*--- Initialize the new Vertex structure.
-   * 		The if statement ensures that these vectors are initialized only once	 ---*/
-  //TODO (turbo) put some of this allocation on the Class constructor.
-  //TODO (turbo) generalize for different number of section for inlet and outlet.
+  /*--- Initialize the new Vertex structure. The if statement ensures that these vectors are initialized
+   * only once even if the routine is called more than once.---*/
+
   if (allocate){
     for (iMarker = 0; iMarker < nMarker; iMarker++){
       for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-            nVertexSpan[iMarker] 							= new long[nSpanWiseSections[marker_flag-1]];
-            turbovertex[iMarker] 							= new CTurboVertex** [nSpanWiseSections[marker_flag-1]];
-            nTotVertexSpan[iMarker]						= new unsigned long [nSpanWiseSections[marker_flag-1] +1];
-            MaxAngularCoord[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
-            MinAngularCoord[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
-            MinRelAngularCoord[iMarker] = new su2double [nSpanWiseSections[marker_flag-1]];
+            nVertexSpan[iMarker]                 = new long[nSpanWiseSections[marker_flag-1]];
+            turbovertex[iMarker]                 = new CTurboVertex** [nSpanWiseSections[marker_flag-1]];
+            nTotVertexSpan[iMarker]              = new unsigned long [nSpanWiseSections[marker_flag-1] +1];
+            MaxAngularCoord[iMarker]             = new su2double [nSpanWiseSections[marker_flag-1]];
+            MinAngularCoord[iMarker]             = new su2double [nSpanWiseSections[marker_flag-1]];
+            MinRelAngularCoord[iMarker]          = new su2double [nSpanWiseSections[marker_flag-1]];
             for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-              nVertexSpan[iMarker][iSpan] 								= 0;
-              turbovertex[iMarker][iSpan] 								= NULL;
-              MinAngularCoord[iMarker][iSpan] = 10.0E+06;
-              MaxAngularCoord[iMarker][iSpan] = -10.0E+06;
+              nVertexSpan[iMarker][iSpan]        = 0;
+              turbovertex[iMarker][iSpan]        = NULL;
+              MinAngularCoord[iMarker][iSpan]    = 10.0E+06;
+              MaxAngularCoord[iMarker][iSpan]    = -10.0E+06;
               MinRelAngularCoord[iMarker][iSpan] = 10.0E+06;
             }
             for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1] +1; iSpan++){
-              nTotVertexSpan[iMarker][iSpan]							= 0;
+              nTotVertexSpan[iMarker][iSpan]     = 0;
             }
           }
         }
@@ -10092,19 +10163,22 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
             for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
               if (allocate){
                 turbovertex[iMarker][iSpan] = new CTurboVertex* [nVertexSpan[iMarker][iSpan]];
+                for (iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++){
+                  turbovertex[iMarker][iSpan][iVertex] = NULL;
+                }
               }
-              ordered[iSpan]     					= new unsigned long [nVertexSpanHalo[iSpan]];
-              disordered[iSpan]  					= new unsigned long [nVertexSpanHalo[iSpan]];
-              oldVertex3D[iSpan]					 = new unsigned long [nVertexSpanHalo[iSpan]];
-              checkAssign[iSpan] 			= new bool [nVertexSpanHalo[iSpan]];
-              area[iSpan]				 					       = new su2double [nVertexSpanHalo[iSpan]];
-              unitnormal[iSpan]	 					 = new su2double* [nVertexSpanHalo[iSpan]];
+              ordered[iSpan]                           = new unsigned long [nVertexSpanHalo[iSpan]];
+              disordered[iSpan]                        = new unsigned long [nVertexSpanHalo[iSpan]];
+              oldVertex3D[iSpan]                       = new unsigned long [nVertexSpanHalo[iSpan]];
+              checkAssign[iSpan]                       = new bool [nVertexSpanHalo[iSpan]];
+              area[iSpan]                              = new su2double [nVertexSpanHalo[iSpan]];
+              unitnormal[iSpan]                        = new su2double* [nVertexSpanHalo[iSpan]];
               for (iVertex = 0; iVertex < nVertexSpanHalo[iSpan]; iVertex++){
-                unitnormal[iSpan][iVertex] = new su2double [nDim];
+                unitnormal[iSpan][iVertex]             = new su2double [nDim];
               }
-              angPitch[iSpan]             = new su2double [nVertexSpanHalo[iSpan]];
-              deltaAngPitch[iSpan]        = new su2double [nVertexSpanHalo[iSpan]];
-              nVertexSpanHalo[iSpan]      = 0;
+              angPitch[iSpan]                          = new su2double [nVertexSpanHalo[iSpan]];
+              deltaAngPitch[iSpan]                     = new su2double [nVertexSpanHalo[iSpan]];
+              nVertexSpanHalo[iSpan]                   = 0;
             }
 
             /*--- store the vertexes in a ordered manner in span-wise directions but not yet ordered pitch-wise ---*/
@@ -10185,9 +10259,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               Area = sqrt(Area);
               for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] /= Area;
               /*--- store all the all the info into the auxiliary containers ---*/
-              disordered[jSpan][nVertexSpanHalo[jSpan]] 	= iPoint;
+              disordered[jSpan][nVertexSpanHalo[jSpan]]  = iPoint;
               oldVertex3D[jSpan][nVertexSpanHalo[jSpan]] = iVertex;
-              area[jSpan][nVertexSpanHalo[jSpan]]				= Area;
+              area[jSpan][nVertexSpanHalo[jSpan]]        = Area;
               for (iDim = 0; iDim < nDim; iDim++){
                 unitnormal[jSpan][nVertexSpanHalo[jSpan]][iDim] = NormalArea[iDim];
               }
@@ -10421,8 +10495,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
             nVert = nVertexSpan[iMarker][iSpan];
-            MinAngularCoord[iMarker][iSpan] = minAngPitch[iSpan];
-            MaxAngularCoord[iMarker][iSpan] = maxAngPitch[iSpan];
+            MinAngularCoord[iMarker][iSpan]    = minAngPitch[iSpan];
+            MaxAngularCoord[iMarker][iSpan]    = maxAngPitch[iSpan];
             MinRelAngularCoord[iMarker][iSpan] = minIntAngPitch[iSpan] - minAngPitch[iSpan];
             for(iSpanVertex = 0; iSpanVertex< nVertexSpan[iMarker][iSpan]; iSpanVertex++){
              turbovertex[iMarker][iSpan][iSpanVertex]->SetRelAngularCoord(MinAngularCoord[iMarker][iSpan]);
@@ -10462,19 +10536,19 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   /*--- Send all the info to the MASTERNODE ---*/
 
   for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-    x_loc[iSpan]    				= new su2double[nTotVertex_gb[iSpan]];
-    y_loc[iSpan]    				= new su2double[nTotVertex_gb[iSpan]];
-    z_loc[iSpan]    				= new su2double[nTotVertex_gb[iSpan]];
+    x_loc[iSpan]             = new su2double[nTotVertex_gb[iSpan]];
+    y_loc[iSpan]             = new su2double[nTotVertex_gb[iSpan]];
+    z_loc[iSpan]             = new su2double[nTotVertex_gb[iSpan]];
     angCoord_loc[iSpan]      = new su2double[nTotVertex_gb[iSpan]];
     deltaAngCoord_loc[iSpan] = new su2double[nTotVertex_gb[iSpan]];
     rank_loc[iSpan]          = new int[nTotVertex_gb[iSpan]];
     for(iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++){
-      x_loc[iSpan][iSpanVertex] 				= -1.0;
-      y_loc[iSpan][iSpanVertex] 				= -1.0;
-      z_loc[iSpan][iSpanVertex] 				= -1.0;
-      angCoord_loc[iSpan][iSpanVertex] 	= -1.0;
+      x_loc[iSpan][iSpanVertex]             = -1.0;
+      y_loc[iSpan][iSpanVertex]             = -1.0;
+      z_loc[iSpan][iSpanVertex]             = -1.0;
+      angCoord_loc[iSpan][iSpanVertex]      = -1.0;
       deltaAngCoord_loc[iSpan][iSpanVertex] = -1.0;
-      rank_loc[iSpan][iSpanVertex] = -1;
+      rank_loc[iSpan][iSpanVertex]          = -1;
     }
   }
 
@@ -10486,15 +10560,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
             for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
               iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
               coord  = node[iPoint]->GetCoord();
-              x_loc[iSpan][iSpanVertex] = coord[0];
-              y_loc[iSpan][iSpanVertex] = coord[1];
+              x_loc[iSpan][iSpanVertex]   = coord[0];
+              y_loc[iSpan][iSpanVertex]   = coord[1];
               if (nDim == 3){
                 z_loc[iSpan][iSpanVertex] = coord[2];
               }
               else{
                 z_loc[iSpan][iSpanVertex] = 0.0;
               }
-              angCoord_loc[iSpan][iSpanVertex]     = turbovertex[iMarker][iSpan][iSpanVertex]->GetRelAngularCoord();
+              angCoord_loc[iSpan][iSpanVertex]      = turbovertex[iMarker][iSpan][iSpanVertex]->GetRelAngularCoord();
               deltaAngCoord_loc[iSpan][iSpanVertex] = turbovertex[iMarker][iSpan][iSpanVertex]->GetDeltaAngularCoord();
             }
           }
@@ -10507,10 +10581,10 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
   for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
     if (rank == MASTER_NODE){
-      x_gb                				= new su2double[nTotVertex_gb[iSpan]*size];
-      y_gb    				            = new su2double[nTotVertex_gb[iSpan]*size];
-      z_gb    				            = new su2double[nTotVertex_gb[iSpan]*size];
-      angCoord_gb    	     = new su2double[nTotVertex_gb[iSpan]*size];
+      x_gb                = new su2double[nTotVertex_gb[iSpan]*size];
+      y_gb                = new su2double[nTotVertex_gb[iSpan]*size];
+      z_gb                = new su2double[nTotVertex_gb[iSpan]*size];
+      angCoord_gb         = new su2double[nTotVertex_gb[iSpan]*size];
       deltaAngCoord_gb    = new su2double[nTotVertex_gb[iSpan]*size];
       checkAssign_gb      = new bool[nTotVertex_gb[iSpan]*size];
 
@@ -10528,10 +10602,10 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
     if (rank == MASTER_NODE){
       for(iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++){
-        x_loc[iSpan][iSpanVertex] 				= -1.0;
-        y_loc[iSpan][iSpanVertex] 				= -1.0;
-        z_loc[iSpan][iSpanVertex] 				= -1.0;
-        angCoord_loc[iSpan][iSpanVertex] 	= -1.0;
+        x_loc[iSpan][iSpanVertex]             = -1.0;
+        y_loc[iSpan][iSpanVertex]             = -1.0;
+        z_loc[iSpan][iSpanVertex]             = -1.0;
+        angCoord_loc[iSpan][iSpanVertex]      = -1.0;
         deltaAngCoord_loc[iSpan][iSpanVertex] = -1.0;
       }
 
@@ -10801,10 +10875,10 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
   long iVertex;
   /*-- Variables declaration and allocation ---*/
   TotalTurboNormal = new su2double[nDim];
-  TotalNormal			 = new su2double[nDim];
-  TurboNormal			 = new su2double[nDim];
-  TotalGridVel 		 = new su2double[nDim];
-  Normal					 = new su2double[nDim];
+  TotalNormal      = new su2double[nDim];
+  TurboNormal      = new su2double[nDim];
+  TotalGridVel     = new su2double[nDim];
+  Normal           = new su2double[nDim];
 
   bool grid_movement        = config->GetGrid_Movement();
 #ifdef HAVE_MPI
@@ -10813,32 +10887,32 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
-  /*--- Intialization of the vector for the interested boudary ---*/
+  /*--- Intialization of the vector for the interested boundary ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
     for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
           if(allocate){
-            AverageTurboNormal[iMarker] 			= new su2double *[nSpanWiseSections[marker_flag-1] + 1];
-            AverageNormal[iMarker]			 			= new su2double *[nSpanWiseSections[marker_flag-1] + 1];
-            AverageGridVel[iMarker] 					= new su2double *[nSpanWiseSections[marker_flag-1] + 1];
-            AverageTangGridVel[iMarker]				= new su2double [nSpanWiseSections[marker_flag-1] + 1];
-            SpanArea[iMarker] 								= new su2double [nSpanWiseSections[marker_flag-1] + 1];
-            TurboRadius[iMarker]              = new su2double [nSpanWiseSections[marker_flag-1] + 1];
+            AverageTurboNormal[iMarker]               = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
+            AverageNormal[iMarker]                    = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
+            AverageGridVel[iMarker]                   = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
+            AverageTangGridVel[iMarker]               = new su2double [nSpanWiseSections[marker_flag-1] + 1];
+            SpanArea[iMarker]                         = new su2double [nSpanWiseSections[marker_flag-1] + 1];
+            TurboRadius[iMarker]                      = new su2double [nSpanWiseSections[marker_flag-1] + 1];
             for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1] + 1; iSpan++){
-              AverageTurboNormal[iMarker][iSpan] 					= new su2double [nDim];
-              AverageNormal[iMarker][iSpan]			 					= new su2double [nDim];
-              AverageGridVel[iMarker][iSpan] 	  					= new su2double [nDim];
+              AverageTurboNormal[iMarker][iSpan]      = new su2double [nDim];
+              AverageNormal[iMarker][iSpan]           = new su2double [nDim];
+              AverageGridVel[iMarker][iSpan]          = new su2double [nDim];
             }
           }
           for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1] + 1; iSpan++){
-            AverageTangGridVel[iMarker][iSpan]					= 0.0;
-            SpanArea[iMarker][iSpan]										= 0.0;
-            TurboRadius[iMarker][iSpan]										= 0.0;
+            AverageTangGridVel[iMarker][iSpan]          = 0.0;
+            SpanArea[iMarker][iSpan]                    = 0.0;
+            TurboRadius[iMarker][iSpan]                 = 0.0;
             for(iDim=0; iDim < nDim; iDim++){
-              AverageTurboNormal[iMarker][iSpan][iDim]	  = 0.0;
-              AverageNormal[iMarker][iSpan][iDim]	  			= 0.0;
-              AverageGridVel[iMarker][iSpan][iDim]				= 0.0;
+              AverageTurboNormal[iMarker][iSpan][iDim]  = 0.0;
+              AverageNormal[iMarker][iSpan][iDim]       = 0.0;
+              AverageGridVel[iMarker][iSpan][iDim]      = 0.0;
             }
           }
         }
@@ -10854,8 +10928,8 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
     /*--- Forces initialization for contenitors to zero ---*/
     for (iDim=0; iDim<nDim; iDim++) {
       TotalTurboNormal[iDim]	=0.0;
-      TotalNormal[iDim]				=0.0;
-      TotalGridVel[iDim]			=0.0;
+      TotalNormal[iDim]         =0.0;
+      TotalGridVel[iDim]        =0.0;
     }
     TotalArea = 0.0;
     TotalRadius = 0.0;
@@ -10868,12 +10942,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
               turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
               turbovertex[iMarker][iSpan][iVertex]->GetNormal(Normal);
               coord  = node[iPoint]->GetCoord();
-              //    					cout<< "Normal "<< Normal[0]<<endl;
-              //    					cout<< "TurboNormal "<< TurboNormal[0]<<endl;
-              //    					cout<< "Normal 1 "<< Normal[1]<<endl;
-              //							cout<< "TurboNormal 1 "<< TurboNormal[1]<<endl;
-              //							cout<< " coord x " << node[iPoint]->GetCoord()[0]<<endl;
-              //							cout<< " coord y " << node[iPoint]->GetCoord()[1]<<endl;
+
               if (nDim == 3){
                 radius = sqrt(coord[0]*coord[0] + coord[1]*coord[1]);
               }
@@ -10881,15 +10950,15 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
                 radius = 0.0;
               }
               Area = turbovertex[iMarker][iSpan][iVertex]->GetArea();
-              TotalArea += Area;
+              TotalArea   += Area;
               TotalRadius += radius;
               for (iDim = 0; iDim < nDim; iDim++) {
                 TotalTurboNormal[iDim]  +=TurboNormal[iDim];
-                TotalNormal[iDim] 			+=Normal[iDim];
+                TotalNormal[iDim]       +=Normal[iDim];
               }
               if (grid_movement){
                 gridVel = node[iPoint]->GetGridVel();
-                for (iDim = 0; iDim < nDim; iDim++)	TotalGridVel[iDim] +=gridVel[iDim];
+                for (iDim = 0; iDim < nDim; iDim++) TotalGridVel[iDim] +=gridVel[iDim];
               }
             }
           }
@@ -10904,17 +10973,17 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
     SU2_MPI::Allreduce(&MyTotalArea, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalRadius, &TotalRadius, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    MyTotalTurboNormal          = new su2double[nDim];
-    MyTotalNormal          			= new su2double[nDim];
-    MyTotalGridVel				 			= new su2double[nDim];
+    MyTotalTurboNormal     = new su2double[nDim];
+    MyTotalNormal          = new su2double[nDim];
+    MyTotalGridVel         = new su2double[nDim];
 
     for (iDim = 0; iDim < nDim; iDim++) {
-      MyTotalTurboNormal[iDim]				 				= TotalTurboNormal[iDim];
-      TotalTurboNormal[iDim] 									= 0.0;
-      MyTotalNormal[iDim]							 				= TotalNormal[iDim];
-      TotalNormal[iDim] 											= 0.0;
-      MyTotalGridVel[iDim] 										= TotalGridVel[iDim];
-      TotalGridVel[iDim]											= 0.0;
+      MyTotalTurboNormal[iDim]	= TotalTurboNormal[iDim];
+      TotalTurboNormal[iDim]    = 0.0;
+      MyTotalNormal[iDim]       = TotalNormal[iDim];
+      TotalNormal[iDim]         = 0.0;
+      MyTotalGridVel[iDim]      = TotalGridVel[iDim];
+      TotalGridVel[iDim]        = 0.0;
     }
 
     SU2_MPI::Allreduce(MyTotalTurboNormal, TotalTurboNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -10931,38 +11000,30 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
 
-            SpanArea[iMarker][iSpan]										= TotalArea;
-            TurboRadius[iMarker][iSpan]                 = TotalRadius/nTotVertexSpan[iMarker][iSpan];
-            //						cout<< "Area Span " << SpanArea[iMarker][iSpan]<< " in span " << iSpan <<" in rank " <<rank << endl;
+            SpanArea[iMarker][iSpan]           = TotalArea;
+            TurboRadius[iMarker][iSpan]        = TotalRadius/nTotVertexSpan[iMarker][iSpan];
 
-            //						cout<< "nVertex " << nTotVertexSpan[iMarker][iSpan]<< " in span " << iSpan <<" in rank " <<rank << endl;
-            /*--- Compute the averaged value for the boundary of interest ---*/
-            turboNormal2 = 0.0;
-            Normal2 		= 0.0;
+            turboNormal2    = 0.0;
+            Normal2         = 0.0;
             for (iDim = 0; iDim < nDim; iDim++){
-              //							TotalTurboNormal[iDim] /=nTotVertexSpan[iMarker][iSpan];
-              //							TotalNormal[iDim] /=nTotVertexSpan[iMarker][iSpan];
               turboNormal2 += TotalTurboNormal[iDim]*TotalTurboNormal[iDim];
-              Normal2 += TotalNormal[iDim]*TotalNormal[iDim];
+              Normal2      += TotalNormal[iDim]*TotalNormal[iDim];
             }
             for (iDim = 0; iDim < nDim; iDim++){
               AverageTurboNormal[iMarker][iSpan][iDim] = TotalTurboNormal[iDim]/sqrt(turboNormal2);
-              AverageNormal[iMarker][iSpan][iDim] = TotalNormal[iDim]/sqrt(Normal2);
+              AverageNormal[iMarker][iSpan][iDim]      = TotalNormal[iDim]/sqrt(Normal2);
             }
             if (grid_movement){
               for (iDim = 0; iDim < nDim; iDim++){
-                AverageGridVel[iMarker][iSpan][iDim] =TotalGridVel[iDim]/nTotVertexSpan[iMarker][iSpan];
-                //								cout << "AverageGridVel in dim  " << iDim << " is "<< AverageGridVel[iMarker][iSpan][iDim] <<endl;
+                AverageGridVel[iMarker][iSpan][iDim]   =TotalGridVel[iDim]/nTotVertexSpan[iMarker][iSpan];
               }
               switch (config->GetKind_TurboMachinery(val_iZone)){
               case CENTRIFUGAL:case CENTRIPETAL:
                 if (marker_flag == INFLOW ){
                   AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
-                  //									cout <<" Tang grid velocity inflow " << AverageTangGridVel[iMarker][iSpan] << endl;
                 }
                 else{
                   AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
-                  //									cout <<" Tang grid velocity outflow " << AverageTangGridVel[iMarker][iSpan] << endl;
                 }
                 break;
               case AXIAL:
@@ -10997,22 +11058,16 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
                 break;
               }
             }
-            //						for (iDim = 0; iDim < nDim; iDim++){
-            //							cout << "average turbo normal "<<AverageTurboNormal[iMarker][iSpan][iDim]<< " in span " << iSpan <<" in rank " <<rank <<endl;
-            //							cout << "average  normal "<<AverageNormal[iMarker][iSpan][iDim]<< " in span " << iSpan <<" in rank " <<rank <<endl;
-            //						}
-
 
             /*--- Compute the 1D average values ---*/
-            AverageTangGridVel[iMarker][nSpanWiseSections[marker_flag-1]]	+= AverageTangGridVel[iMarker][iSpan]/nSpanWiseSections[marker_flag-1];
-            SpanArea[iMarker][nSpanWiseSections[marker_flag-1]]				+= SpanArea[iMarker][iSpan];
+            AverageTangGridVel[iMarker][nSpanWiseSections[marker_flag-1]]             += AverageTangGridVel[iMarker][iSpan]/nSpanWiseSections[marker_flag-1];
+            SpanArea[iMarker][nSpanWiseSections[marker_flag-1]]                       += SpanArea[iMarker][iSpan];
             for(iDim=0; iDim < nDim; iDim++){
-              AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]	  += AverageTurboNormal[iMarker][iSpan][iDim];
-              AverageNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]	  			+= AverageNormal[iMarker][iSpan][iDim];
-              AverageGridVel[iMarker][nSpanWiseSections[marker_flag-1]][iDim]				+= AverageGridVel[iMarker][iSpan][iDim]/nSpanWiseSections[marker_flag-1];
+              AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]     += AverageTurboNormal[iMarker][iSpan][iDim];
+              AverageNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]          += AverageNormal[iMarker][iSpan][iDim];
+              AverageGridVel[iMarker][nSpanWiseSections[marker_flag-1]][iDim]         += AverageGridVel[iMarker][iSpan][iDim]/nSpanWiseSections[marker_flag-1];
 
             }
-            //						cout <<" Tang grid velocity 1D " << AverageTangGridVel[iMarker][nSpanWiseSections[marker_flag-1]] << endl;
           }
         }
       }
@@ -11080,7 +11135,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
       for (iSpan= 0; iSpan < config->GetnSpanMaxAllZones() + 1 ; iSpan++){
         SpanAreaIn[iMarkerTP][iSpan]       = 0.0;
         TangGridVelIn[iMarkerTP][iSpan]    = 0.0;
-        TurboRadiusIn[iMarkerTP][iSpan]     = 0.0;
+        TurboRadiusIn[iMarkerTP][iSpan]    = 0.0;
         SpanAreaOut[iMarkerTP][iSpan]      = 0.0;
         TangGridVelOut[iMarkerTP][iSpan]   = 0.0;
         TurboRadiusOut[iMarkerTP][iSpan]   = 0.0;
@@ -11111,17 +11166,16 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
       TurbGeoOut[i]   = -1.0;
 #endif
     pitchIn           =  0.0;
-    areaIn           		 = -1.0;
+    areaIn            = -1.0;
     tangGridVelIn     = -1.0;
-    radiusIn     				     = -1.0;
+    radiusIn          = -1.0;
     for(iDim = 0; iDim < nDim; iDim++){
       turboNormal[iDim] = -1.0;
     }
 
-    areaOut          		 = -1.0;
+    areaOut           = -1.0;
     tangGridVelOut    = -1.0;
-    radiusOut    				     = -1.0;
-
+    radiusOut         = -1.0;
 
     markerTP          = -1;
 
@@ -11129,13 +11183,13 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
       for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
-            markerTP        = iMarkerTP;
+            markerTP          = iMarkerTP;
             if (iSpan < nSpanWiseSections){
               pitchIn         = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
             }
-            areaIn          		= SpanArea[iMarker][iSpan];
-            tangGridVelIn   = AverageTangGridVel[iMarker][iSpan];
-            radiusIn    	    			= TurboRadius[iMarker][iSpan];
+            areaIn            = SpanArea[iMarker][iSpan];
+            tangGridVelIn     = AverageTangGridVel[iMarker][iSpan];
+            radiusIn          = TurboRadius[iMarker][iSpan];
             for(iDim = 0; iDim < nDim; iDim++) turboNormal[iDim] = AverageTurboNormal[iMarker][iSpan][iDim];
 
 
@@ -11152,9 +11206,9 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
           /*--- retrieve outlet information ---*/
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
             pitchIn         = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
-            areaOut         		= SpanArea[iMarker][iSpan];
+            areaOut         = SpanArea[iMarker][iSpan];
             tangGridVelOut  = AverageTangGridVel[iMarker][iSpan];
-            radiusOut   				    = TurboRadius[iMarker][iSpan];
+            radiusOut       = TurboRadius[iMarker][iSpan];
 #ifdef HAVE_MPI
             TurbGeoOut[0]  = areaOut;
             TurbGeoOut[1]  = tangGridVelOut;
@@ -11190,8 +11244,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
         areaIn              = TotTurbGeoIn[n1*i];
         tangGridVelIn       = 0.0;
         tangGridVelIn       = TotTurbGeoIn[n1*i+1];
-        radiusIn 					           = 0.0;
-        radiusIn 					           = TotTurbGeoIn[n1*i+2];
+        radiusIn            = 0.0;
+        radiusIn            = TotTurbGeoIn[n1*i+2];
         turboNormal[0]      = 0.0;
         turboNormal[0]      = TotTurbGeoIn[n1*i+3];
         turboNormal[1]      = 0.0;
@@ -11199,8 +11253,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
         pitchIn             = 0.0;
         pitchIn             = TotTurbGeoIn[n1*i+5];
 
-        markerTP               = -1;
-        markerTP               = TotMarkerTP[i];
+        markerTP            = -1;
+        markerTP            = TotMarkerTP[i];
       }
 
       if(TotTurbGeoOut[n2*i] > 0.0){
@@ -11208,8 +11262,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
         areaOut             = TotTurbGeoOut[n2*i];
         tangGridVelOut      = 0.0;
         tangGridVelOut      = TotTurbGeoOut[n2*i+1];
-        radiusOut 					          = 0.0;
-        radiusOut 					          = TotTurbGeoOut[n2*i+2];
+        radiusOut           = 0.0;
+        radiusOut           = TotTurbGeoOut[n2*i+2];
       }
     }
 
@@ -11240,8 +11294,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
       SpanAreaOut[markerTP -1][iSpan]      = areaOut;
       TangGridVelOut[markerTP -1][iSpan]   = tangGridVelOut;
       TurboRadiusOut[markerTP -1][iSpan]   = radiusOut;
-
-
     }
   }
   delete [] turboNormal;
