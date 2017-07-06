@@ -92,12 +92,21 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
 void CFluidModel::SetLiquidPhaseModel (CConfig *config) {
 
 	switch (config->GetKind_Liquid_Model() ) {
-	case WATER:    Liquid_Prop = new CWater(config); break;
-	case CO2:      Liquid_Prop = new CCO2  (config); break;
-	case R12:      Liquid_Prop = new CR12  (config); break;
-	case R22:      Liquid_Prop = new CR22  (config); break;
+		case WATER:    Liquid_Prop = new CWater(config); break;
+		case CO2:      Liquid_Prop = new CCO2  (config); break;
+		case R12:      Liquid_Prop = new CR12  (config); break;
+		case R22:      Liquid_Prop = new CR22  (config); break;
+		default: cout << "No liquid model selected, stop" << endl; exit(EXIT_FAILURE); break;
+	}
 
-	default: cout << "No liquid model selected, stop" << endl; exit(EXIT_FAILURE); break;
+	if (config->GetKind_Liquid_Model() != WATER) {
+		if (config->GetKind_FluidModel() != PR_GAS || config->Get_ConstantGamma() != false) {
+			cout << "Warning: reference enthalpy for the selected fluid calculated with non-polytropic PR EoS" << endl;
+			cout << "Please check config options FLUID_MODEL and CONSTANT_GAMMA"<< endl;
+			cout << endl;
+			cout << "Press enter to continue anyway (not-recommended)" << endl;
+			getchar();
+		}
 	}
 
 }
