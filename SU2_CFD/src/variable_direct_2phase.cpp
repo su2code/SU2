@@ -40,9 +40,7 @@ C2phaseVariable::C2phaseVariable(void) : CVariable() {
 	Source = 0; Enthalpy_Liquid = 0;
 	Radius = 0; Liquid_Fraction = 0;
 
-	Primitive_Liquid = new su2double [11];
-	for (iVar = 0; iVar < 11; iVar++)
-		  Primitive_Liquid[iVar] = 0.0;
+	Primitive_Liquid = NULL;
 
 }
 
