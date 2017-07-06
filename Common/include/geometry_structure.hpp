@@ -120,20 +120,21 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
 	CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-  unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker. */
-  su2double **SpanWiseValue; /*!< \brief Span wise values for each turbo marker. */
-  long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
-  unsigned long **nTotVertexSpan; /*! <\brief number of vertexes at each span wise section for each marker.  */
-  unsigned long nVertexSpanMax[3]; /*! <\brief max number of vertexes for each span section for each marker flag.  */
+        unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker. */
+        unsigned short nTurboPerf; /*!< \brief Number of Span wise section for each turbo marker. */
+        su2double **SpanWiseValue; /*!< \brief Span wise values for each turbo marker. */
+        long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
+        unsigned long **nTotVertexSpan; /*! <\brief number of vertexes at each span wise section for each marker.  */
+        unsigned long nVertexSpanMax[3]; /*! <\brief max number of vertexes for each span section for each marker flag.  */
 	su2double ***AverageTurboNormal; /*! <\brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
 	su2double ***AverageNormal; /*! <\brief Average boundary normal at each span wise section for each marker.*/
 	su2double ***AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
 	su2double **AverageTangGridVel; /*! <\brief Average tangential rotational speed at each span wise section for each marker.*/
 	su2double **SpanArea; /*! <\brief Area at each span wise section for each marker.*/
-su2double **MaxAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
-su2double **MinAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
-su2double **MinRelAngularCoord; /*! <\brief Min relative angular coord at each span wise section for each marker.*/
-su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
+        su2double **MaxAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+        su2double **MinAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+        su2double **MinRelAngularCoord; /*! <\brief Min relative angular coord at each span wise section for each marker.*/
+        su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
 	su2double **TangGridVelIn, **TangGridVelOut; /*! <\brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
 	su2double **SpanAreaIn, **SpanAreaOut; /*! <\brief Area at each span wise section for each turbomachinery marker.*/
 	su2double **TurboRadiusIn, **TurboRadiusOut; /*! <\brief Radius at each span wise section for each turbomachinery marker*/
