@@ -464,17 +464,27 @@ void CConfig::SetPointersNull(void) {
   nDV_Value             = NULL;
   TagFFDBox             = NULL;
  
-  Kind_Data_Riemann     = NULL;
-  Riemann_Var1          = NULL;
-  Riemann_Var2          = NULL;
-  Kind_Data_NRBC        = NULL;
-  NRBC_Var1             = NULL;
-  NRBC_Var2             = NULL;
-  Marker_TurboBoundIn   = NULL;
-  Marker_TurboBoundOut  = NULL;
-  Marker_NRBC           = NULL;
-  nSpan_iZones          = NULL;
-  
+  Kind_Data_Riemann        = NULL;
+  Riemann_Var1             = NULL;
+  Riemann_Var2             = NULL;
+  Kind_Data_NRBC           = NULL;
+  NRBC_Var1                = NULL;
+  NRBC_Var2                = NULL;
+  RelaxFactorAverage       = NULL;
+  RelaxFactorFourier       = NULL;
+  nSpan_iZones             = NULL;
+  ExtraRelFacNRBC          = NULL;
+  Mixedout_Coeff           = NULL;
+  RampRotatingFrame_Coeff  = NULL;
+  RampOutletPressure_Coeff = NULL;
+  Kind_TurboMachinery      = NULL;
+
+  Marker_MixingPlaneInterface  = NULL;
+  Marker_TurboBoundIn          = NULL;
+  Marker_TurboBoundOut         = NULL;
+  Marker_NRBC                  = NULL;
+  Marker_Shroud                = NULL;
+
   /*--- Variable initialization ---*/
   
   ExtIter    = 0;
@@ -839,8 +849,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("RAMP_ROTATING_FRAME_COEFF", 3, RampRotatingFrame_Coeff, default_rampRotFrame_coeff);
   /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
   addDoubleOption("AVERAGE_MACH_LIMIT", AverageMachLimit, 0.03);
-  /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
-  addDoubleOption("UPWIND_MACH_LIMIT", UpwindMachLimit, 2.5);
   /*!\brief RAMP_OUTLET_PRESSURE\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
   addBoolOption("RAMP_OUTLET_PRESSURE", RampOutletPressure, false);
   default_rampOutPres_coeff[0] = 100000.0; default_rampOutPres_coeff[1] = 1.0; default_rampOutPres_coeff[2] = 1000.0;
@@ -5050,22 +5058,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (nMarker_ActDiskInlet != 0) {
-		cout << "Actuator disk (inlet) boundary marker(s): ";
-		for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
-			cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
-			if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
-			else cout <<"."<< endl;
-		}
-	}
+    cout << "Actuator disk (inlet) boundary marker(s): ";
+    for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+      cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
+      if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
 
   if (nMarker_ActDiskOutlet != 0) {
-		cout << "Actuator disk (outlet) boundary marker(s): ";
-		for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
-			cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
-			if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
-			else cout <<"."<< endl;
-		}
-	}
+    cout << "Actuator disk (outlet) boundary marker(s): ";
+    for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+      cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
+      if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
 
 }
 
@@ -5721,12 +5729,17 @@ CConfig::~CConfig(void) {
   if (Kind_Data_NRBC != NULL) delete [] Kind_Data_NRBC;
   if (NRBC_Var1 != NULL) delete [] NRBC_Var1;
   if (NRBC_Var2 != NULL) delete [] NRBC_Var2;
+  if (RelaxFactorAverage != NULL) delete [] RelaxFactorAverage;
+  if (RelaxFactorFourier != NULL) delete [] RelaxFactorFourier;
+  if (nSpan_iZones != NULL) delete [] nSpan_iZones;
+  if (Kind_TurboMachinery != NULL) delete [] Kind_TurboMachinery;
+
+  if (Marker_MixingPlaneInterface !=NULL) delete [] Marker_MixingPlaneInterface;
   if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
   if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
   if (Marker_Riemann != NULL) delete [] Marker_Riemann;
   if (Marker_NRBC != NULL) delete [] Marker_NRBC;
-
-  if (nSpan_iZones != NULL) delete [] nSpan_iZones;
+  if (Marker_Shroud != NULL) delete [] Marker_Shroud;
 
  
 }
@@ -6385,34 +6398,34 @@ su2double CConfig::GetPressureOut_BC() {
   su2double pres_out = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
     if (Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_NRBC[iMarker_BC] == RADIAL_EQUILIBRIUM ){
-    	pres_out = NRBC_Var1[iMarker_BC];
+      pres_out = NRBC_Var1[iMarker_BC];
     }
   }
   for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-  	if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker_BC] == RADIAL_EQUILIBRIUM){
-  		pres_out = Riemann_Var1[iMarker_BC];
-  	}
+    if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker_BC] == RADIAL_EQUILIBRIUM){
+      pres_out = Riemann_Var1[iMarker_BC];
+    }
   }
   return pres_out/Pressure_Ref;
 }
 
 su2double CConfig::GetTotalPressureIn_BC() {
-	unsigned short iMarker_BC;
-	su2double tot_pres_in = 0.0;
-	for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
-		if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
-			tot_pres_in = NRBC_Var1[iMarker_BC];
-		}
-	}
-	for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-		if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
-			tot_pres_in = Riemann_Var1[iMarker_BC];
-		}
-	}
-	if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
-		tot_pres_in = Inlet_Ptotal[0];
-	}
-	return tot_pres_in/Pressure_Ref;
+  unsigned short iMarker_BC;
+  su2double tot_pres_in = 0.0;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+    if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+      tot_pres_in = NRBC_Var1[iMarker_BC];
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+      tot_pres_in = Riemann_Var1[iMarker_BC];
+    }
+  }
+  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+    tot_pres_in = Inlet_Ptotal[0];
+  }
+  return tot_pres_in/Pressure_Ref;
 }
 
 su2double CConfig::GetTotalTemperatureIn_BC() {
@@ -6420,17 +6433,17 @@ su2double CConfig::GetTotalTemperatureIn_BC() {
   su2double tot_temp_in = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
     if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
-    	tot_temp_in = NRBC_Var2[iMarker_BC];
+      tot_temp_in = NRBC_Var2[iMarker_BC];
     }
   }
   for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-  	if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
-  		tot_temp_in = Riemann_Var2[iMarker_BC];
-  	}
+    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+      tot_temp_in = Riemann_Var2[iMarker_BC];
+    }
   }
 
   if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
-  	tot_temp_in = Inlet_Ttotal[0];
+    tot_temp_in = Inlet_Ttotal[0];
   }
   return tot_temp_in/Temperature_Ref;
 }

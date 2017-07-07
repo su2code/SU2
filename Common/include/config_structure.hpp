@@ -857,7 +857,6 @@ private:
   su2double *RampRotatingFrame_Coeff; /*!< \brief coefficient for Rotating frame ramp */
   su2double *RampOutletPressure_Coeff; /*!< \brief coefficient for outlet pressure ramp */
   su2double AverageMachLimit;       /*!< \brief option for turbulent mixingplane */
-  su2double UpwindMachLimit;        /*!< \brief Upwind mach limit */
   su2double *FinalRotation_Rate_Z; /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure; /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
@@ -3837,12 +3836,6 @@ public:
   su2double GetAverageMachLimit(void);
 
   /*!
-   * \brief Get mach limit for upwind 2nd order reconstruction.
-   * \return mach limit.
-   */
-  su2double GetUpwindMachLimit(void);
-
-  /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.
    * \return Kind of mixing process.
    */
@@ -3882,7 +3875,7 @@ public:
    * \brief number mixing plane interface specified from config file.
    * \return number of bound.
    */
-	unsigned short GetnMarker_MixingPlaneInterface(void);
+  unsigned short GetnMarker_MixingPlaneInterface(void);
   
   /*!
    * \brief Verify if there is Turbomachinery performance option specified from config file.
@@ -3906,19 +3899,19 @@ public:
    * \brief Verify if there is any Non Reflecting Boundary Condition option specified from config file.
    * \return boolean.
    */
-	bool GetBoolNRBC(void);
+  bool GetBoolNRBC(void);
   
   /*!
    * \brief Verify if there is any Riemann Boundary Condition option specified from config file.
    * \return boolean.
    */
-	bool GetBoolRiemann(void);
+  bool GetBoolRiemann(void);
 
   /*!
    * \brief number Turbomachinery performance option specified from config file.
    * \return number of bound.
    */
-	unsigned short GetnMarker_Turbomachinery(void);
+  unsigned short GetnMarker_Turbomachinery(void);
 
   /*!
    * \brief Get number of shroud markers.
@@ -3942,7 +3935,7 @@ public:
    * \brief number span-wise sections to compute 3D BC and performance for turbomachinery specified by the user.
    * \return number of span-wise sections.
    */
-	unsigned short Get_nSpanWiseSections_User(void);
+  unsigned short Get_nSpanWiseSections_User(void);
 
   /*!
    * \brief number span-wise sections to compute 3D BC and performance for turbomachinery.
@@ -3994,11 +3987,11 @@ public:
    */
   unsigned short GetKind_TurboPerf(unsigned short index);
   
-	/*!
-	 * \brief get outlet bounds name for Turbomachinery performance calculation.
-	 * \return name of the bound.
-	 */
-	string GetMarker_PerBound(unsigned short val_marker);
+  /*!
+   * \brief get outlet bounds name for Turbomachinery performance calculation.
+   * \return name of the bound.
+   */
+  string GetMarker_PerBound(unsigned short val_marker);
   
   /*!
    * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
