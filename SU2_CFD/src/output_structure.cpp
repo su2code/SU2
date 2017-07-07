@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -33,7 +33,9 @@
 
 #include "../include/output_structure.hpp"
 
-COutput::COutput(void) {
+COutput::COutput(CConfig *config) {
+
+	unsigned short iDim, iSpan, iMarker;
   
   /*--- Initialize point and connectivity counters to zero. ---*/
   
@@ -113,13 +115,290 @@ COutput::COutput(void) {
   Sum_Total_RadialDistortion = 0.0;
   Sum_Total_CircumferentialDistortion = 0.0;
 
+
+  wrote_Paraview_base = false;
+
+  /*--- Initialize turbo flag ---*/
+  turbo = config->GetBoolTurbomachinery();
+
+  if(turbo){
+  	/*--- Initializate quantities for turboperformace ---*/
+  	nSpanWiseSections = config->GetnSpanMaxAllZones();
+  	nMarkerTurboPerf  = config->GetnMarker_TurboPerformance();
+
+
+  	TotalStaticEfficiency         = new su2double*[nMarkerTurboPerf];
+  	TotalTotalEfficiency          = new su2double*[nMarkerTurboPerf];
+  	KineticEnergyLoss             = new su2double*[nMarkerTurboPerf];
+  	TRadius                       = new su2double*[nMarkerTurboPerf];
+  	TotalPressureLoss             = new su2double*[nMarkerTurboPerf];
+  	MassFlowIn                    = new su2double*[nMarkerTurboPerf];
+  	MassFlowOut                   = new su2double*[nMarkerTurboPerf];
+  	FlowAngleIn                   = new su2double*[nMarkerTurboPerf];
+  	FlowAngleIn_BC                = new su2double*[nMarkerTurboPerf];
+  	FlowAngleOut                  = new su2double*[nMarkerTurboPerf];
+  	EulerianWork                  = new su2double*[nMarkerTurboPerf];
+  	TotalEnthalpyIn               = new su2double*[nMarkerTurboPerf];
+  	TotalEnthalpyIn_BC            = new su2double*[nMarkerTurboPerf];
+  	EntropyIn                     = new su2double*[nMarkerTurboPerf];
+  	EntropyOut                    = new su2double*[nMarkerTurboPerf];
+  	EntropyIn_BC                  = new su2double*[nMarkerTurboPerf];
+  	PressureRatio                 = new su2double*[nMarkerTurboPerf];
+  	TotalTemperatureIn            = new su2double*[nMarkerTurboPerf];
+  	EnthalpyOut                   = new su2double*[nMarkerTurboPerf];
+  	MachIn                        = new su2double**[nMarkerTurboPerf];
+  	MachOut                       = new su2double**[nMarkerTurboPerf];
+  	VelocityOutIs                 = new su2double*[nMarkerTurboPerf];
+  	DensityIn                     = new su2double*[nMarkerTurboPerf];
+  	PressureIn                    = new su2double*[nMarkerTurboPerf];
+  	TurboVelocityIn               = new su2double**[nMarkerTurboPerf];
+  	DensityOut                    = new su2double*[nMarkerTurboPerf];
+  	PressureOut                   = new su2double*[nMarkerTurboPerf];
+  	TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
+  	EnthalpyOutIs                 = new su2double*[nMarkerTurboPerf];
+  	EntropyGen                    = new su2double*[nMarkerTurboPerf];
+  	AbsFlowAngleIn                = new su2double*[nMarkerTurboPerf];
+  	TotalEnthalpyOut              = new su2double*[nMarkerTurboPerf];
+  	TotalEnthalpyOutIs            = new su2double*[nMarkerTurboPerf];
+  	RothalpyIn               			= new su2double*[nMarkerTurboPerf];
+  	RothalpyOut             		 	= new su2double*[nMarkerTurboPerf];
+  	AbsFlowAngleOut               = new su2double*[nMarkerTurboPerf];
+  	PressureOut_BC                = new su2double*[nMarkerTurboPerf];
+  	TemperatureIn                 = new su2double*[nMarkerTurboPerf];
+  	TemperatureOut                = new su2double*[nMarkerTurboPerf];
+  	TotalPressureIn               = new su2double*[nMarkerTurboPerf];
+  	TotalPressureOut              = new su2double*[nMarkerTurboPerf];
+  	TotalTemperatureOut           = new su2double*[nMarkerTurboPerf];
+  	EnthalpyIn                    = new su2double*[nMarkerTurboPerf];
+  TurbIntensityIn               = new su2double*[nMarkerTurboPerf];
+  Turb2LamViscRatioIn           = new su2double*[nMarkerTurboPerf];
+  TurbIntensityOut              = new su2double*[nMarkerTurboPerf];
+  Turb2LamViscRatioOut          = new su2double*[nMarkerTurboPerf];
+  NuFactorIn                    = new su2double*[nMarkerTurboPerf];
+  NuFactorOut                   = new su2double*[nMarkerTurboPerf];
+
+  	for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+  		TotalStaticEfficiency   [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TotalTotalEfficiency    [iMarker] = new su2double [nSpanWiseSections + 1];
+  		KineticEnergyLoss       [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TRadius                 [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TotalPressureLoss       [iMarker] = new su2double [nSpanWiseSections + 1];
+  		MassFlowIn              [iMarker] = new su2double [nSpanWiseSections + 1];
+  		MassFlowOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+  		FlowAngleIn             [iMarker] = new su2double [nSpanWiseSections + 1];
+  		FlowAngleIn_BC          [iMarker] = new su2double [nSpanWiseSections + 1];
+  		FlowAngleOut            [iMarker] = new su2double [nSpanWiseSections + 1];
+  		EulerianWork            [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TotalEnthalpyIn         [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TotalEnthalpyIn_BC      [iMarker] = new su2double [nSpanWiseSections + 1];
+  		EntropyIn               [iMarker] = new su2double [nSpanWiseSections + 1];
+  		EntropyOut              [iMarker] = new su2double [nSpanWiseSections + 1];
+  		EntropyIn_BC            [iMarker] = new su2double [nSpanWiseSections + 1];
+  		PressureRatio           [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TotalTemperatureIn      [iMarker] = new su2double [nSpanWiseSections + 1];
+  		EnthalpyOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+  		MachIn                  [iMarker] = new su2double*[nSpanWiseSections + 1];
+  		MachOut                 [iMarker] = new su2double*[nSpanWiseSections + 1];
+  		VelocityOutIs           [iMarker] = new su2double [nSpanWiseSections + 1];
+  		DensityIn               [iMarker] = new su2double [nSpanWiseSections + 1];
+  		PressureIn              [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TurboVelocityIn         [iMarker] = new su2double*[nSpanWiseSections + 1];
+  		DensityOut              [iMarker] = new su2double [nSpanWiseSections + 1];
+  		PressureOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TurboVelocityOut        [iMarker] = new su2double*[nSpanWiseSections + 1];
+  		EnthalpyOutIs           [iMarker] = new su2double [nSpanWiseSections + 1];
+  		EntropyGen              [iMarker] = new su2double [nSpanWiseSections + 1];
+  		AbsFlowAngleIn          [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TotalEnthalpyOut        [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TotalEnthalpyOutIs      [iMarker] = new su2double [nSpanWiseSections + 1];
+  		RothalpyIn         			[iMarker] = new su2double [nSpanWiseSections + 1];
+  		RothalpyOut        			[iMarker] = new su2double [nSpanWiseSections + 1];
+  		AbsFlowAngleOut         [iMarker] = new su2double [nSpanWiseSections + 1];
+  		PressureOut_BC          [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TemperatureIn           [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TemperatureOut          [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TotalPressureIn         [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TotalPressureOut        [iMarker] = new su2double [nSpanWiseSections + 1];
+  		TotalTemperatureOut     [iMarker] = new su2double [nSpanWiseSections + 1];
+  		EnthalpyIn              [iMarker] = new su2double [nSpanWiseSections + 1];
+  TurbIntensityIn         [iMarker] = new su2double [nSpanWiseSections + 1];
+  Turb2LamViscRatioIn     [iMarker] = new su2double [nSpanWiseSections + 1];
+  TurbIntensityOut        [iMarker] = new su2double [nSpanWiseSections + 1];
+  Turb2LamViscRatioOut    [iMarker] = new su2double [nSpanWiseSections + 1];
+  NuFactorIn              [iMarker] = new su2double [nSpanWiseSections + 1];
+  NuFactorOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+
+
+  		for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+  			TotalStaticEfficiency   [iMarker][iSpan] = 0.0;
+  			TotalTotalEfficiency    [iMarker][iSpan] = 0.0;
+  			KineticEnergyLoss       [iMarker][iSpan] = 0.0;
+  			TRadius                 [iMarker][iSpan] = 0.0;
+  			TotalPressureLoss       [iMarker][iSpan] = 0.0;
+  			MassFlowIn              [iMarker][iSpan] = 0.0;
+  			MassFlowOut             [iMarker][iSpan] = 0.0;
+  			FlowAngleIn             [iMarker][iSpan] = 0.0;
+  			FlowAngleIn_BC          [iMarker][iSpan] = config->GetFlowAngleIn_BC();
+  			FlowAngleOut            [iMarker][iSpan] = 0.0;
+  			EulerianWork            [iMarker][iSpan] = 0.0;
+  			TotalEnthalpyIn         [iMarker][iSpan] = 0.0;
+  			TotalEnthalpyIn_BC      [iMarker][iSpan] = 0.0;
+  			EntropyIn               [iMarker][iSpan] = 0.0;
+  			EntropyOut              [iMarker][iSpan] = 0.0;
+  			EntropyIn_BC            [iMarker][iSpan] = 0.0;
+  			PressureRatio           [iMarker][iSpan] = 0.0;
+  			TotalTemperatureIn      [iMarker][iSpan] = 0.0;
+  			EnthalpyOut             [iMarker][iSpan] = 0.0;
+
+
+  			VelocityOutIs           [iMarker][iSpan] = 0.0;
+  			DensityIn               [iMarker][iSpan] = 0.0;
+  			PressureIn              [iMarker][iSpan] = 0.0;
+
+  			DensityOut              [iMarker][iSpan] = 0.0;
+  			PressureOut             [iMarker][iSpan] = 0.0;
+
+  			EnthalpyOutIs           [iMarker][iSpan] = 0.0;
+  			EntropyGen              [iMarker][iSpan] = 0.0;
+  			AbsFlowAngleIn          [iMarker][iSpan] = 0.0;
+  			TotalEnthalpyOut        [iMarker][iSpan] = 0.0;
+  			TotalEnthalpyOutIs      [iMarker][iSpan] = 0.0;
+  			RothalpyIn         			[iMarker][iSpan] = 0.0;
+  			RothalpyOut        			[iMarker][iSpan] = 0.0;
+  			AbsFlowAngleOut         [iMarker][iSpan] = 0.0;
+  			PressureOut_BC          [iMarker][iSpan] = config->GetPressureOut_BC();
+
+  			TemperatureIn           [iMarker][iSpan] = 0.0;
+  			TemperatureOut          [iMarker][iSpan] = 0.0;
+  			TotalPressureIn         [iMarker][iSpan] = 0.0;
+  			TotalPressureOut        [iMarker][iSpan] = 0.0;
+  			TotalTemperatureOut     [iMarker][iSpan] = 0.0;
+  			EnthalpyIn              [iMarker][iSpan] = 0.0;
+  TurbIntensityIn         [iMarker][iSpan] = 0.0;
+  Turb2LamViscRatioIn     [iMarker][iSpan] = 0.0;
+  TurbIntensityOut        [iMarker][iSpan] = 0.0;
+  Turb2LamViscRatioOut    [iMarker][iSpan] = 0.0;
+  NuFactorIn              [iMarker][iSpan] = 0.0;
+  NuFactorOut             [iMarker][iSpan] = 0.0;
+  			MachIn           [iMarker][iSpan]           = new su2double[4];
+  			MachOut          [iMarker][iSpan]           = new su2double[4];
+  			TurboVelocityIn  [iMarker][iSpan]           = new su2double[4];
+  			TurboVelocityOut [iMarker][iSpan]           = new su2double[4];
+
+  			for (iDim = 0; iDim < 4; iDim++){
+  				MachIn           [iMarker][iSpan][iDim]   = 0.0;
+  				MachOut          [iMarker][iSpan][iDim]   = 0.0;
+  				TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
+  				TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
+  			}
+  		}
+  	}
+  }
 }
 
 COutput::~COutput(void) {
   /* delete pointers initialized at construction*/
   /* Coords and Conn_*(Connectivity) have their own dealloc functions */
   /* Data is taken care of in DeallocateSolution function */
-  
+
+
+	/*--- Delete turboperformance pointers initiliazed at constrction  ---*/
+	unsigned short iMarker, iSpan;
+	if(turbo){
+		for(iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++){
+			for(iSpan=0; iSpan<nSpanWiseSections+1; iSpan++){
+				delete [] MachIn          [iMarker][iSpan];
+				delete [] MachOut         [iMarker][iSpan];
+				delete [] TurboVelocityIn [iMarker][iSpan];
+				delete [] TurboVelocityOut[iMarker][iSpan];
+			}
+		}
+		for(iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++){
+			delete [] TotalStaticEfficiency[iMarker];
+			delete [] TotalTotalEfficiency [iMarker];
+			delete [] KineticEnergyLoss    [iMarker];
+			delete [] TotalPressureLoss    [iMarker];
+			delete [] MassFlowIn           [iMarker];
+			delete [] MassFlowOut          [iMarker];
+			delete [] FlowAngleIn          [iMarker];
+			delete [] FlowAngleOut         [iMarker];
+			delete [] EulerianWork         [iMarker];
+			delete [] TotalEnthalpyIn      [iMarker];
+			delete [] TotalEnthalpyOut     [iMarker];
+			delete [] TotalEnthalpyOutIs   [iMarker];
+			delete [] PressureRatio        [iMarker];
+			delete [] EnthalpyOut          [iMarker];
+			delete [] VelocityOutIs        [iMarker];
+			delete [] TotalTemperatureIn   [iMarker];
+			delete [] FlowAngleIn_BC       [iMarker];
+			delete [] EntropyIn            [iMarker];
+			delete [] EntropyIn_BC         [iMarker];
+			delete [] TotalEnthalpyIn_BC   [iMarker];
+			delete [] DensityIn            [iMarker];
+			delete [] PressureIn           [iMarker];
+			delete [] DensityOut           [iMarker];
+			delete [] PressureOut          [iMarker];
+			delete [] EnthalpyOutIs        [iMarker];
+			delete [] EntropyGen           [iMarker];
+			delete [] AbsFlowAngleIn       [iMarker];
+			delete [] RothalpyIn      		 [iMarker];
+			delete [] RothalpyOut     		 [iMarker];
+			delete [] AbsFlowAngleOut      [iMarker];
+			delete [] PressureOut_BC       [iMarker];
+			delete [] MachIn               [iMarker];
+			delete [] MachOut              [iMarker];
+			delete [] TurboVelocityIn      [iMarker];
+			delete [] TurboVelocityOut     [iMarker];
+			delete [] TemperatureIn        [iMarker];
+			delete [] TemperatureOut       [iMarker];
+			delete [] TotalPressureIn      [iMarker];
+			delete [] TotalPressureOut     [iMarker];
+			delete [] TotalTemperatureOut  [iMarker];
+			delete [] EnthalpyIn           [iMarker];
+
+
+		}
+		delete [] TotalStaticEfficiency;
+		delete [] TotalTotalEfficiency;
+		delete [] KineticEnergyLoss;
+		delete [] TotalPressureLoss;
+		delete [] MassFlowIn;
+		delete [] MassFlowOut;
+		delete [] FlowAngleIn;
+		delete [] FlowAngleOut;
+		delete [] EulerianWork;
+		delete [] TotalEnthalpyIn;
+		delete [] TotalEnthalpyOut;
+		delete [] TotalEnthalpyOutIs;
+		delete [] PressureRatio;
+		delete [] EnthalpyOut;
+		delete [] VelocityOutIs;
+		delete [] TotalTemperatureIn;
+		delete [] FlowAngleIn_BC;
+		delete [] EntropyIn;
+		delete [] EntropyIn_BC;
+		delete [] TotalEnthalpyIn_BC;
+		delete [] DensityIn;
+		delete [] PressureIn;
+		delete [] DensityOut;
+		delete [] PressureOut;
+		delete [] EnthalpyOutIs;
+		delete [] EntropyGen;
+		delete [] AbsFlowAngleIn;
+		delete [] RothalpyIn;
+		delete [] RothalpyOut;
+		delete [] AbsFlowAngleOut;
+		delete [] PressureOut_BC;
+		delete [] MachIn;
+		delete [] MachOut;
+		delete [] TurboVelocityIn;
+		delete [] TurboVelocityOut;
+		delete [] TemperatureOut;
+		delete [] TotalPressureIn;
+		delete [] TotalPressureOut;
+		delete [] TotalTemperatureOut;
+		delete [] EnthalpyIn;
+	}
 }
 
 void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
@@ -2748,7 +3027,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           jPoint = (iProcessor + 1) * nBuffer_Scalar;
         }
       }
-
+      
       /*--- Communicate heat transfer, y+ ---*/
       
       /*--- First, loop through the mesh in order to find and store the
@@ -3393,7 +3672,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             if (Kind_Solver == RANS) {
               Buffer_Send_Var[jPoint] = solver[TURB_SOL]->OutputVariables[iPoint*nVar_Extra+jVar];
             }
-
             jPoint++;
             
           }
@@ -3982,10 +4260,10 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   }
 }
 
-void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
-  char cstr[200], buffer[50], turb_resid[1000], two_phase_resid[1000];
+void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone) {
+  char cstr[200], buffer[50], turb_resid[1000],two_phase_resid[1000];
   unsigned short iMarker_Monitoring;
-  string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff;
+  string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
   
   bool rotating_frame = config->GetRotating_Frame();
   bool aeroelastic = config->GetAeroelastic_Simulation();
@@ -4001,22 +4279,20 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool output_1d = config->GetWrt_1D_Output();
   bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
   bool output_comboObj = (config->GetnObj() > 1);
-  bool output_per_surface = false;
-  //if ((config->GetnMarker_Monitoring() > 1) && (!output_comboObj)) output_per_surface = true;
-  
+  bool output_per_surface = (config->GetnMarker_Monitoring() > 1);
+  bool turbo = config->GetBoolTurbomachinery();
   unsigned short direct_diff = config->GetDirectDiff();
-
-  bool thermal = false; /* Flag for whether to print heat flux values */
-
-  if (config->GetKind_Solver() == RANS or config->GetKind_Solver()  == NAVIER_STOKES
-		  or config->GetKind_Solver()  == TWO_PHASE_NAVIER_STOKES or config->GetKind_Solver()  == TWO_PHASE_RANS) {
-    thermal = true;
-  }
+  /* Flag for whether to print heat flux values */
+  bool thermal = (config->GetKind_Solver() == RANS or config->GetKind_Solver()  == NAVIER_STOKES
+                  or config->GetKind_Solver()  == TWO_PHASE_NAVIER_STOKES 
+                  or config->GetKind_Solver()  == TWO_PHASE_RANS);
 
   
   /*--- Write file name with extension ---*/
-  
   string filename = config->GetConv_FileName();
+  if(config->GetnZone() > 1){
+    filename = config->GetMultizone_HistoryFileName(filename, val_iZone);
+  }
   strcpy (cstr, filename.data());
   
   if (config->GetWrt_Unsteady() && config->GetRestart()) {
@@ -4053,15 +4329,14 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char wave_coeff[]= ",\"CWave\"";
   char fem_coeff[]= ",\"VM_Stress\"";
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
-  char oneD_outputs[]= ",\"Avg_TotalPress\",\"Avg_Mach\",\"Avg_Temperature\",\"MassFlowRate\",\"FluxAvg_Pressure\",\"FluxAvg_Density\",\"FluxAvg_Velocity\",\"FluxAvg_Enthalpy\"";
+  char oneD_outputs[]= ",\"AreaAvg_TotalPress\",\"AreaAvg_Mach\",\"AreaAvg_Temperature\",\"MassFlowRate\",\"Avg_Pressure\",\"Avg_Density\",\"Avg_Velocity\",\"Avg_Enthalpy\"";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   char mass_flow_rate[] = ",\"MassFlowRate\"";
   char d_flow_coeff[] = ",\"D(CLift)\",\"D(CDrag)\",\"D(CSideForce)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\"";
   char d_engine[] = ",\"D(AeroCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
+  char d_turbo_coeff[] = ",\"D(TotalPressureLoss_0)\",\"D(FlowAngleOut_0)\",\"D(TotalEfficency)\",\"D(TotalStaticEfficiency)\", \"D(EntropyGen)\"";
   char two_phase_mom[] = ",\"Mom0\",\"Mom1\",\"Mom2\",\"Mom3\"";
-
-
   /*--- Find the markers being monitored and create a header for them ---*/
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -4078,6 +4353,32 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     monitoring_coeff += ",\"CMz_"    + Monitoring_Tag + "\"";
     aeroelastic_coeff += ",\"plunge_" + Monitoring_Tag + "\"";
     aeroelastic_coeff += ",\"pitch_"  + Monitoring_Tag + "\"";
+  }
+
+  if (turbo){
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
+
+      stringstream tag;
+      tag << iMarker_Monitoring + 1;
+
+      turbo_coeff += ",\"TotalPressureLoss_" + tag.str() + "\"";
+      turbo_coeff += ",\"KineticEnergyLoss_" + tag.str() + "\"";
+      turbo_coeff += ",\"EntropyGen_" + tag.str() + "\"";
+      turbo_coeff += ",\"EulerianWork_" + tag.str() + "\"";
+      turbo_coeff += ",\"PressureRatio_" + tag.str() + "\"";
+      turbo_coeff += ",\"FlowAngleIn_" + tag.str() + "\"";
+      turbo_coeff += ",\"FlowAngleOut_" + tag.str() + "\"";
+      turbo_coeff += ",\"AbsFlowAngleIn_" + tag.str() + "\"";
+      turbo_coeff += ",\"AbsFlowAngleOut_" + tag.str() + "\"";
+      turbo_coeff += ",\"MassFlowIn_" + tag.str() + "\"";
+      turbo_coeff += ",\"MassFlowOut_" + tag.str() + "\"";
+      turbo_coeff += ",\"MachIn_" + tag.str() + "\"";
+      turbo_coeff += ",\"MachOut_" + tag.str() + "\"";
+      // different from zero only in multi-zone computation
+      turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
+      turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
+
+    }
   }
 
   char combo_obj[] = ",\"ComboObj\"";
@@ -4117,15 +4418,17 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       
     case EULER : case NAVIER_STOKES: case RANS :
     case TWO_PHASE_EULER : case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS :
-      ConvHist_file[0] << begin << flow_coeff;
-      if (thermal) ConvHist_file[0] << heat_coeff;
+      ConvHist_file[0] << begin;
+      if (!turbo) ConvHist_file[0] << flow_coeff;
+      if (turbo) ConvHist_file[0] << turbo_coeff;
+      if (thermal && !turbo) ConvHist_file[0] << heat_coeff;
       if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
       if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
       if (inv_design) {
         ConvHist_file[0] << Cp_inverse_design;
-        if (thermal) ConvHist_file[0] << Heat_inverse_design;
+        if (thermal && !turbo) ConvHist_file[0] << Heat_inverse_design;
       }
-      if (rotating_frame) ConvHist_file[0] << rotating_frame_coeff;
+      if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
       if (two_phase) ConvHist_file[0] << two_phase_resid;
@@ -4134,36 +4437,38 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (output_1d) ConvHist_file[0] << oneD_outputs;
       if (output_massflow && !output_1d)  ConvHist_file[0]<< mass_flow_rate;
       if (direct_diff != NO_DERIVATIVE) {
-        ConvHist_file[0] << d_flow_coeff;
-        if (engine || actuator_disk) ConvHist_file[0] << d_engine;
-      }
-      if (output_comboObj) ConvHist_file[0] << combo_obj;
-      ConvHist_file[0] << end;
-      
-      break;
-      
-    case ADJ_EULER      : case ADJ_NAVIER_STOKES      : case ADJ_RANS:
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
-      if ((turbulent) && (!frozen_turb)) ConvHist_file[0] << adj_turb_resid;
-      ConvHist_file[0] << end;
-      break;
-      
-    case WAVE_EQUATION:
-      ConvHist_file[0] << begin << wave_coeff;
-      ConvHist_file[0] << wave_resid << end;
-      break;
-      
-    case HEAT_EQUATION:
-      ConvHist_file[0] << begin << heat_coeff;
-      ConvHist_file[0] << heat_resid << end;
-      break;
-      
-    case FEM_ELASTICITY:
-      ConvHist_file[0] << begin << fem_coeff;
-      ConvHist_file[0] << fem_resid << end;
-      break;
-      
+      if (!turbo) ConvHist_file[0] << d_flow_coeff;
+      else
+        ConvHist_file[0] << d_turbo_coeff;
+      if (engine || actuator_disk) ConvHist_file[0] << d_engine;
+    }
+    if (output_comboObj) ConvHist_file[0] << combo_obj;
+    ConvHist_file[0] << end;
+
+    break;
+
+  case ADJ_EULER      : case ADJ_NAVIER_STOKES      : case ADJ_RANS:
+  case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
+    if ((turbulent) && (!frozen_turb)) ConvHist_file[0] << adj_turb_resid;
+    ConvHist_file[0] << end;
+    break;
+
+  case WAVE_EQUATION:
+    ConvHist_file[0] << begin << wave_coeff;
+    ConvHist_file[0] << wave_resid << end;
+    break;
+
+  case HEAT_EQUATION:
+    ConvHist_file[0] << begin << heat_coeff;
+    ConvHist_file[0] << heat_resid << end;
+    break;
+
+  case FEM_ELASTICITY:
+    ConvHist_file[0] << begin << fem_coeff;
+    ConvHist_file[0] << fem_resid << end;
+    break;
+
   }
   
   if (config->GetOutput_FileFormat() == TECPLOT ||
@@ -4189,7 +4494,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   bool output_massflow = (config[val_iZone]->GetKind_ObjFunc() == MASS_FLOW_RATE);
   bool output_comboObj = (config[val_iZone]->GetnObj() > 1);
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  
+  unsigned short nZone       = config[val_iZone]->GetnZone();
   int rank;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -4245,7 +4550,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], wave_coeff[1000], two_phase_resid[1000],
     heat_coeff[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
-    fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000];
+    fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
 
     su2double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker_Monitoring;
@@ -4265,12 +4570,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
     bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
-    bool thermal = false; /* flag for whether to print heat flux values */
-    if (config[val_iZone]->GetKind_Solver() == RANS or config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES or
-    		config[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS or
-			config[val_iZone]->GetKind_Solver()  == TWO_PHASE_NAVIER_STOKES) {
-      thermal = true;
-    }
+    /* Flag for whether to print heat flux values */
+    bool thermal = (config[val_iZone]->GetKind_Solver() == RANS or config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES
+                    or config[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS or
+			        config[val_iZone]->GetKind_Solver()  == TWO_PHASE_NAVIER_STOKES);
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) ||  (config[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) );
     bool two_phase = ((config[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) || (config[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
@@ -4291,13 +4594,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
     
-    bool turbo = config[val_iZone]->GetBoolTurboPerf();
-    string inMarker_Tag, outMarker_Tag;
-    
-    bool output_per_surface = false;
- //   if ((config[val_iZone]->GetnMarker_Monitoring() > 1) && (config[val_iZone]->GetnObj() <= 1)) output_per_surface = true;
+    bool turbo = config[val_iZone]->GetBoolTurbomachinery();
+
+    unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
 
     
+    bool output_per_surface = (config[val_iZone]->GetnMarker_Monitoring() > 1);
+    
+
     unsigned short direct_diff = config[val_iZone]->GetDirectDiff();
     
     
@@ -4308,38 +4612,20 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0;
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
-    OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0,
+    OneD_AvgPress = 0.0, OneD_AvgDensity = 0.0, OneD_AvgVelocity = 0.0,OneD_AvgEnthalpy,
     Total_ComboObj=0.0, Total_AeroCD = 0.0, Total_RadialDistortion = 0.0, Total_CircumferentialDistortion = 0.0,
     Ave_Total_RadialDistortion = 0.0, Ave_Total_CircumferentialDistortion = 0.0;
-    
-    /*--- Initialize variables to store information from all zone for turboperformance (direct solution) ---*/
-    
-    su2double *TotalStaticEfficiency = NULL,
-    *TotalTotalEfficiency = NULL,
-    *KineticEnergyLoss     = NULL,
-    *TotalPressureLoss     = NULL,
-    *MassFlowIn           = NULL,
-    *MassFlowOut          = NULL,
-    *FlowAngleIn          = NULL,
-    *FlowAngleOut         = NULL,
-    *EulerianWork         = NULL,
-    *TotalEnthalpyIn      = NULL,
-    *PressureRatio        = NULL,
-    *PressureOut          = NULL,
-    *EnthalpyOut          = NULL,
-    *MachIn               = NULL,
-    *MachOut              = NULL,
-    *NormalMachIn         = NULL,
-    *NormalMachOut        = NULL,
-    *VelocityOutIs        = NULL;
-    
+
+    unsigned short iSpan;
+
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
     su2double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
-    su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0,
-        D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_AeroCD = 0.0, D_Total_RadialDistortion = 0.0, D_Total_CircumferentialDistortion = 0.0;
+    su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0,
+              D_Total_AeroCD = 0.0, D_Total_RadialDistortion = 0.0, D_Total_CircumferentialDistortion = 0.0, D_TotalPressure_Loss = 0.0, D_FlowAngle_Out = 0.0, D_TotalStaticEfficiency = 0.0,
+              D_TotalTotalEfficiency = 0.0, D_EntropyGen = 0.0;
     
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
@@ -4430,26 +4716,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Surface_CMx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    
-    /*--- Allocate memory for the turboperformace ---*/
-    TotalStaticEfficiency = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalTotalEfficiency  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    KineticEnergyLoss     = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalPressureLoss     = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MassFlowIn           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MassFlowOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    FlowAngleIn           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    FlowAngleOut          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    EulerianWork          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalEnthalpyIn       = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    PressureRatio         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    PressureOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    EnthalpyOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MachIn                = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MachOut               = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    NormalMachIn          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    NormalMachOut         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    VelocityOutIs         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     
     /*--- Write information from nodes ---*/
     switch (config[val_iZone]->GetKind_Solver()) {
@@ -4557,25 +4823,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (turbo) {
           /*--- Loop over the nMarker of turboperformance and get the desired values ---*/
-          for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->Get_nMarkerTurboPerf(); iMarker_Monitoring++) {
-            TotalStaticEfficiency[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(iMarker_Monitoring);
-            TotalTotalEfficiency[iMarker_Monitoring]  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalTotalEfficiency(iMarker_Monitoring);
-            KineticEnergyLoss[iMarker_Monitoring]     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetKineticEnergyLoss(iMarker_Monitoring);
-            TotalPressureLoss[iMarker_Monitoring]     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalPressureLoss(iMarker_Monitoring);
-            MassFlowIn[iMarker_Monitoring]           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMassFlowIn(iMarker_Monitoring);
-            MassFlowOut[iMarker_Monitoring]           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMassFlowOut(iMarker_Monitoring);
-            FlowAngleIn[iMarker_Monitoring]           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetFlowAngleIn(iMarker_Monitoring);
-            FlowAngleOut[iMarker_Monitoring]          = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetFlowAngleOut(iMarker_Monitoring);
-            EulerianWork[iMarker_Monitoring]          = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetEulerianWork(iMarker_Monitoring);
-            TotalEnthalpyIn[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalEnthalpyIn(iMarker_Monitoring);
-            PressureRatio[iMarker_Monitoring]         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPressureRatio(iMarker_Monitoring);
-            PressureOut[iMarker_Monitoring]           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPressureOut(iMarker_Monitoring);
-            EnthalpyOut[iMarker_Monitoring]           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetEnthalpyOut(iMarker_Monitoring);
-            MachIn[iMarker_Monitoring]                = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMachIn(iMarker_Monitoring);
-            MachOut[iMarker_Monitoring]               = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMachOut(iMarker_Monitoring);
-            NormalMachIn[iMarker_Monitoring]          = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetNormalMachIn(iMarker_Monitoring);
-            NormalMachOut[iMarker_Monitoring]         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetNormalMachOut(iMarker_Monitoring);
-            VelocityOutIs[iMarker_Monitoring]         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocityOutIs(iMarker_Monitoring);
+        	for (iMarker_Monitoring = 0; iMarker_Monitoring < nTurboPerf; iMarker_Monitoring++) {
+        		for(iSpan=0; iSpan<nSpanWiseSections+1; iSpan++){
+        			if ((iMarker_Monitoring == 0) && (direct_diff != NO_DERIVATIVE)){
+        				D_TotalPressure_Loss = SU2_TYPE::GetDerivative(TotalPressureLoss[iMarker_Monitoring][iSpan]);
+        				D_FlowAngle_Out      = 180.0/PI_NUMBER*SU2_TYPE::GetDerivative(FlowAngleOut[iMarker_Monitoring][iSpan]);
+        			}
+        		}
+        	}
+        	if (direct_diff != NO_DERIVATIVE){
+            D_TotalStaticEfficiency = SU2_TYPE::GetDerivative(TotalStaticEfficiency[nTurboPerf-1][nSpanWiseSections]);
+            D_TotalTotalEfficiency  = SU2_TYPE::GetDerivative(TotalTotalEfficiency[nTurboPerf-1][nSpanWiseSections]);
+        		D_EntropyGen            = SU2_TYPE::GetDerivative(EntropyGen[nTurboPerf-1][nSpanWiseSections]);
           }
         }
         
@@ -4593,11 +4852,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           OneD_AvgTemp = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_Temp();
           OneD_MassFlowRate = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_MassFlowRate();
           
-          OneD_FluxAvgPress = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_FluxAvgPress();
-          OneD_FluxAvgDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_FluxAvgDensity();
-          OneD_FluxAvgVelocity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_FluxAvgVelocity();
-          OneD_FluxAvgEntalpy = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_FluxAvgEntalpy();
-          
+          OneD_AvgPress = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_AvgPress();
+          OneD_AvgDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_AvgDensity();
+          OneD_AvgVelocity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_AvgVelocity();
+          OneD_AvgEnthalpy = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_AvgEnthalpy();
         }
         /*--- Get Mass Flow at the Monitored Markers ---*/
         
@@ -4752,7 +5010,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (Unsteady) write_heads = (iIntIter == 0);
     else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
     
-    bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*200)) == 0));
+    bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter() -1)));
     
     /*--- Analogous for dynamic problems (as of now I separate the problems, it may be worthy to do all together later on ---*/
     bool write_heads_FEM;
@@ -4821,9 +5079,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             
             if (direct_diff != NO_DERIVATIVE) {
-              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
-                       D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
-                       D_Total_CFz, D_Total_CEff);
+              if (!turbo)
+                SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
+                         D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
+                         D_Total_CFz, D_Total_CEff);
+              else 
+                SPRINTF (d_direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", D_TotalPressure_Loss, D_FlowAngle_Out,
+                         D_TotalTotalEfficiency, D_TotalStaticEfficiency, D_EntropyGen);
               if (engine || actuator_disk)
               SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                        D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
@@ -4875,6 +5137,47 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 strcat(monitoring_coeff, surface_coeff);
               }
             }
+
+            if (turbo){
+              for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_TurboPerformance(); iMarker_Monitoring++){
+                if (iMarker_Monitoring == 0){
+                  SPRINTF(turbo_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
+                }else{
+                  SPRINTF(surface_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
+                  strcat(turbo_coeff, surface_coeff);
+                }
+                SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", EulerianWork[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", PressureRatio[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*FlowAngleOut[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*AbsFlowAngleOut[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", MassFlowIn[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", MassFlowOut[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", sqrt(MachIn[iMarker_Monitoring][nSpanWiseSections][1]*MachIn[iMarker_Monitoring][nSpanWiseSections][1] + MachIn[iMarker_Monitoring][nSpanWiseSections][0]*MachIn[iMarker_Monitoring][nSpanWiseSections][0]));
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", sqrt(MachOut[iMarker_Monitoring][nSpanWiseSections][1]*MachOut[iMarker_Monitoring][nSpanWiseSections][1] + MachOut[iMarker_Monitoring][nSpanWiseSections][0]*MachOut[iMarker_Monitoring][nSpanWiseSections][0]));
+								strcat(turbo_coeff, surface_coeff);
+								//
+                SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+                SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+
+              }
+            }
             
             
             /*--- Flow residual ---*/
@@ -4903,7 +5206,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             /*---- Averaged stagnation pressure at an exit ----*/
             if (output_1d) {
-              SPRINTF( oneD_outputs, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
+              SPRINTF( oneD_outputs, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_AvgPress, OneD_AvgDensity, OneD_AvgVelocity, OneD_AvgEnthalpy);
             }
             if (output_massflow && !output_1d) {
               SPRINTF(massflow_outputs,", %12.10f", Total_Mdot);
@@ -4981,66 +5284,66 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
         }
       }
-      
-      /*--- Write the screen header---*/
-      if (  (!fem && ((write_heads) && !(!DualTime_Iteration && Unsteady))) ||
-          (fem && ((write_heads_FEM) && !(!DualTime_Iteration && nonlinear_analysis)))
-          ) {
-        
-        if (!fem) {
-          if (!Unsteady && (config[val_iZone]->GetUnsteady_Simulation() != TIME_STEPPING)) {
-            switch (config[val_iZone]->GetKind_Solver()) {
+      if (val_iZone == 0){
+        /*--- Write the screen header---*/
+        if (  (!fem && ((write_heads) && !(!DualTime_Iteration && Unsteady))) ||
+            (fem && ((write_heads_FEM) && !(!DualTime_Iteration && nonlinear_analysis)))
+        ) {
+
+          if (!fem) {
+            if (!Unsteady && (config[val_iZone]->GetUnsteady_Simulation() != TIME_STEPPING)) {
+              switch (config[val_iZone]->GetKind_Solver()) {
               case EULER : case NAVIER_STOKES: case RANS:
               case TWO_PHASE_EULER : case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
               case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-                
+
                 cout << endl << "---------------------- Local Time Stepping Summary ----------------------" << endl;
-                
+
                 for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
                   cout << "MG level: "<< iMesh << " -> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                   ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                   ". CFL: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
-                
+
                 cout << "-------------------------------------------------------------------------" << endl;
-                
+
                 if (direct_diff != NO_DERIVATIVE) {
                   cout << endl << "---------------------- Direct Differentiation Summary -------------------" << endl;
                   cout << "Coefficients are differentiated with respect to ";
                   switch (direct_diff) {
-                    case D_MACH:
-                      cout << "Mach number." << endl;
-                      break;
-                    case D_AOA:
-                      cout << "AoA." << endl;
-                      break;
-                    case D_SIDESLIP:
-                      cout << "AoS." << endl;
-                      break;
-                    case D_REYNOLDS:
-                      cout << "Reynolds number." << endl;
-                      break;
-                    case D_TURB2LAM:
-                      cout << "Turb/Lam ratio." << endl;
-                      break;
-                    case D_PRESSURE:
-                      cout << "Freestream Pressure." << endl;
-                      break;
-                    case D_TEMPERATURE:
-                      cout << "Freestream Temperature." << endl;
-                      break;
-                    case D_DENSITY:
-                      cout << "Freestream Density." << endl;
-                      break;
-                    case D_VISCOSITY:
-                      cout << "Freestream Viscosity." << endl;
-                      break;
-                    case D_DESIGN:
-                      cout << "Design Variables." << endl;
-                      break;
-                    default:
-                      break;
+                  case D_MACH:
+                    cout << "Mach number." << endl;
+                    break;
+                  case D_AOA:
+                    cout << "AoA." << endl;
+                    break;
+                  case D_SIDESLIP:
+                    cout << "AoS." << endl;
+                    break;
+                  case D_REYNOLDS:
+                    cout << "Reynolds number." << endl;
+                    break;
+                  case D_TURB2LAM:
+                    cout << "Turb/Lam ratio." << endl;
+                    break;
+                  case D_PRESSURE:
+                    cout << "Freestream Pressure." << endl;
+                    break;
+                  case D_TEMPERATURE:
+                    cout << "Freestream Temperature." << endl;
+                    break;
+                  case D_DENSITY:
+                    cout << "Freestream Density." << endl;
+                    break;
+                  case D_VISCOSITY:
+                    cout << "Freestream Viscosity." << endl;
+                    break;
+                  case D_DESIGN:
+                    cout << "Design Variables." << endl;
+                    break;
+                  default:
+                    break;
                   }
-                  
+
                   cout << "    D_CLift(Total)" << "    D_CDrag(Total)" << "      D_CMz(Total)" <<"     D_CEff(Total)" << endl;
                   cout.width(18); cout << D_Total_CL;
                   cout.width(18); cout << D_Total_CD;
@@ -5049,102 +5352,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   cout << endl << "-------------------------------------------------------------------------" << endl;
                   cout << endl;
                 }
-                if (turbo && write_turbo) {
-                  cout << endl << "---------------------- Turbo Performance Summary -------------------" << endl;
-                  for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->Get_nMarkerTurboPerf(); iMarker_Monitoring++) {
-                    inMarker_Tag = config[ZONE_0]->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring);
-                    outMarker_Tag = config[ZONE_0]->GetMarker_TurboPerf_BoundOut(iMarker_Monitoring);
-                    switch (config[ZONE_0]->GetKind_TurboPerf(iMarker_Monitoring)) {
-                      case BLADE:
-                        cout << "Blade performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
-                        cout << endl;
-                        cout << "   Total Pressure Loss(%)" << "   Kinetic Energy Loss(%)" << "            Eulerian Work" << endl;
-                        cout.width(25); cout << TotalPressureLoss[iMarker_Monitoring]*100.0;
-                        cout.width(25); cout << KineticEnergyLoss[iMarker_Monitoring]*100.0;
-                        cout.width(25); cout << EulerianWork[iMarker_Monitoring];
-                        cout << endl;
-                        cout << endl;
-                        cout << "     Total Inlet Enthalpy" << "          Outlet Enthalpy" << "            D_MassFlow(%)" <<  endl;
-                        cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring];
-                        cout.width(25); cout << EnthalpyOut[iMarker_Monitoring];
-                        cout.width(25); cout << abs((MassFlowIn[iMarker_Monitoring] + MassFlowOut[iMarker_Monitoring])/MassFlowIn[iMarker_Monitoring])*100.0;
-                        cout << endl;
-                        cout << endl;
-                        cout << "   Isentropic Outlet Vel." << "         Inlet Flow Angle" << "        Outlet Flow Angle" <<endl;
-                        cout.width(25); cout << VelocityOutIs[iMarker_Monitoring];
-                        cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring];
-                        cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleOut[iMarker_Monitoring];
-                        cout << endl;
-                        cout << endl;
-                        cout << "          Inlet Mass Flow"<< "               Inlet Mach" << "              Outlet Mach" << endl;
-                        cout.width(25); cout << MassFlowIn[iMarker_Monitoring];
-                        cout.width(25); cout << MachIn[iMarker_Monitoring];
-                        cout.width(25); cout << MachOut[iMarker_Monitoring];
-                        cout << endl;
-                        cout << endl;
-                        cout << "        Inlet Normal Mach" << "       Outlet Normal Mach" << endl;
-                        cout.width(25); cout << NormalMachIn[iMarker_Monitoring];
-                        cout.width(25); cout << NormalMachOut[iMarker_Monitoring];
-                        cout << endl;
-                        cout << endl;
-                        cout << "           Pressure Ratio" << "         Outlet Pressure" << endl;
-                        cout.width(25); cout << PressureRatio[iMarker_Monitoring];
-                        cout.width(25); cout << PressureOut[iMarker_Monitoring];
-                        cout << endl;
-                        cout << endl << "-------------------------------------------------------------------------" << endl;
-                        cout << endl;
-                        
-                        break;
-                      case STAGE:
-                        cout << "Stage performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
-                        cout << endl;
-                        cout << "    Tot Tot Efficiency(%)" << "   Tot Stat Efficiency(%)" << endl;
-                        cout.width(25); cout << TotalTotalEfficiency[iMarker_Monitoring]*100.0;
-                        cout.width(25); cout << TotalStaticEfficiency[iMarker_Monitoring]*100.0;
-                        cout << endl;
-                        cout << endl;
-                        cout << "           Pressure Ratio" << "          Outlet Pressure" << endl;
-                        cout.width(25); cout << PressureRatio[iMarker_Monitoring];
-                        cout.width(25); cout << PressureOut[iMarker_Monitoring];
-                        cout << endl;
-                        cout << endl;
-                        cout << "     Total Inlet Enthalpy" << "    Total Outlet Enthalpy" << endl;
-                        cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring];
-                        cout.width(25); cout << EnthalpyOut[iMarker_Monitoring];
-                        cout << endl;
-                        cout << endl << "-------------------------------------------------------------------------" << endl;
-                        cout << endl;
-                        
-                        break;
-                      case TURBINE:
-                        cout << "Multi-stage performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
-                        cout << endl;
-                        cout << "    Tot Tot Efficiency(%)" << "   Tot Stat Efficiency(%)" << endl;
-                        cout.width(25); cout << TotalTotalEfficiency[iMarker_Monitoring]*100.0;
-                        cout.width(25); cout << TotalStaticEfficiency[iMarker_Monitoring]*100.0;
-                        cout << endl;
-                        cout << endl;
-                        cout << "           Pressure Ratio" << "          Outlet Pressure" << endl;
-                        cout.width(25); cout << PressureRatio[iMarker_Monitoring];
-                        cout.width(25); cout << PressureOut[iMarker_Monitoring];
-                        cout << endl;
-                        cout << endl;
-                        cout << "     Total Inlet Enthalpy" << "    Total Outlet Enthalpy" << endl;
-                        cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring];
-                        cout.width(25); cout << EnthalpyOut[iMarker_Monitoring];
-                        cout << endl;
-                        cout << endl << "-------------------------------------------------------------------------" << endl;
-                        cout << endl;
-                        break;
-                      default:
-                        break;
-                    }
-                  }
-                  
-                  
+                if (turbo && write_turbo && val_iZone== 0){
+                  WriteTutboPerfConvHistory(config[val_iZone]);
                 }
                 break;
-                
+
               case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
                 cout << endl;
                 cout << "------------------------ Discrete Adjoint Summary -----------------------" << endl;
@@ -5154,41 +5366,41 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 cout << Total_Sens_Geo;
                 cout << endl << "-------------------------------------------------------------------------" << endl;
                 break;
-                
-            }
-          }
-          else {
-            if (flow) {
-              if ((config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()== 0.0))
-              {
-                cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
-              } else if ((config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()!= 0.0)) {
-                cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ". Time step: " << solver_container[val_iZone][config[val_iZone]->GetFinestMesh()][FLOW_SOL]->GetMin_Delta_Time() << ". CFL: " << config[val_iZone]->GetUnst_CFL()<<".";
-              } else {
-                cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+
               }
-            } else {
-              cout << endl << "Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+            }
+            else {
+              if (flow) {
+                if ((config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()== 0.0))
+                {
+                  cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                } else if ((config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()!= 0.0)) {
+                  cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ". Time step: " << solver_container[val_iZone][config[val_iZone]->GetFinestMesh()][FLOW_SOL]->GetMin_Delta_Time() << ". CFL: " << config[val_iZone]->GetUnst_CFL()<<".";
+                } else {
+                  cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                }
+              } else {
+                cout << endl << "Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+              }
             }
           }
-        }
-        else if (fem && !fsi) {
-          if (dynamic) {
-            cout << endl << "Simulation time: " << config[val_iZone]->GetCurrent_DynTime() << ". Time step: " << config[val_iZone]->GetDelta_DynTime() << ".";
+          else if (fem && !fsi) {
+            if (dynamic) {
+              cout << endl << "Simulation time: " << config[val_iZone]->GetCurrent_DynTime() << ". Time step: " << config[val_iZone]->GetDelta_DynTime() << ".";
+            }
           }
-        }
-        
-        switch (config[val_iZone]->GetKind_Solver()) {
-        case TWO_PHASE_EULER :        case TWO_PHASE_NAVIER_STOKES:
-            
+
+          switch (config[val_iZone]->GetKind_Solver()) {
+          case EULER :case NAVIER_STOKES: case TWO_PHASE_EULER :case TWO_PHASE_NAVIER_STOKES:
+
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
-            
+
             cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
-            
+
             cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            
+
             if (config[val_iZone]->GetSystemMeasurements() == SI) {
               cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
               if (nDim == 3) cout << ", " << Coord[2];
@@ -5199,140 +5411,43 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (nDim == 3) cout << ", " << Coord[2]*12.0;
               cout <<   ")." << endl;
             }
-            
+
             /*--- Print out the number of non-physical points and reconstructions ---*/
-            
+
             if (config[val_iZone]->GetNonphysical_Points() > 0)
               cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
             if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
               cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
-            
+
             cout << "-------------------------------------------------------------------------" << endl;
-            
-            cout << endl << " IntIter" << " ExtIter";
-            cout <<  "     Res[Rho]" << "     Res[RhoE]" << "       Res[N]" << "         Res[y]" <<  "        CL(Total)" << "      CD(Total)" << endl;
+
+            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+            else cout << endl << " IntIter" << " ExtIter";
+
+            //            if (!fluid_structure) {
+            if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
+            else if (rotating_frame && nDim == 3 && !turbo) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
+            else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
+            else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
+            else if (turbo){
+
+
+              if(nZone  < 2){
+                /*--- single zone output ---*/
+                cout << "     Res[Rho]" << "     Res[RhoE]"  << "  TotPresLoss(%)" << "  Entropy Gen.(%)" << endl;
+              }
+              else{
+                /* --- multi-zone output ---*/
+                cout << "     Res[Rho]" << "     Res[RhoE]"  << " TTEfficiency(%)" << " Entropy Gen.(%)" << endl;
+              }
+            }
+            else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
             //            }
             //            else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
-            
+
             break;
-            
-			  case EULER :        case NAVIER_STOKES:
 
-				/*--- Visualize the maximum residual ---*/
-				iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
-				Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
-
-				cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
-
-				cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
-
-				if (config[val_iZone]->GetSystemMeasurements() == SI) {
-				  cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
-				  if (nDim == 3) cout << ", " << Coord[2];
-				  cout <<   ")." << endl;
-				}
-				else {
-				  cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
-				  if (nDim == 3) cout << ", " << Coord[2]*12.0;
-				  cout <<   ")." << endl;
-				}
-
-				/*--- Print out the number of non-physical points and reconstructions ---*/
-
-				if (config[val_iZone]->GetNonphysical_Points() > 0)
-				  cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
-				if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
-				  cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
-
-				cout << "-------------------------------------------------------------------------" << endl;
-
-				if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
-				else cout << endl << " IntIter" << " ExtIter";
-
-				//            if (!fluid_structure) {
-				if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
-				else if (rotating_frame && nDim == 3) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
-				else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
-				else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
-				else if (turbo)
-				  switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
-					case BLADE:
-					  cout << "     Res[Rho]" << "     Res[RhoE]"  << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
-					  break;
-					case STAGE: case TURBINE:
-					  cout << "     Res[Rho]" << "     Res[RhoE]"  << " TSEfficiency(%)" << " Outlet Pressure" << endl;
-					  break;
-					default:
-					  break;
-				  }
-				else cout << "     Res[Rho]" << "     Res[RhoE]" << "      CL(Total)" << "      CD(Total)" << endl;
-				//            }
-				//            else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
-
-				break;
-
-			  case RANS :
-            
-            /*--- Visualize the maximum residual ---*/
-            iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
-            Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
-            
-            cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
-            
-            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            if (config[val_iZone]->GetSystemMeasurements() == SI) {
-              cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
-              if (nDim == 3) cout << ", " << Coord[2];
-              cout <<   ")." << endl;
-            }
-            else {
-              cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
-              if (nDim == 3) cout << ", " << Coord[2]*12.0;
-              cout <<   ")." << endl;
-            }
-            cout <<"Maximum Omega " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOmega_Max() << ", maximum Strain Rate " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetStrainMag_Max() << "." << endl;
-            
-            /*--- Print out the number of non-physical points and reconstructions ---*/
-            if (config[val_iZone]->GetNonphysical_Points() > 0)
-              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
-            if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
-              cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
-            
-            cout << "-------------------------------------------------------------------------" << endl;
-            
-            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
-            else cout << endl << " IntIter" << " ExtIter";
-            if (incompressible) cout << "   Res[Press]";
-            else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
-            
-            switch (config[val_iZone]->GetKind_Turb_Model()) {
-              case SA:     cout << "       Res[nu]"; break;
-              case SA_NEG: cout << "       Res[nu]"; break;
-              case SST:     cout << "     Res[kine]" << "     Res[omega]"; break;
-            }
-            
-            if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
-            else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
-            else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
-            else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
-            else if (turbo)
-              switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
-                case BLADE:
-                  cout << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
-                  break;
-                case STAGE: case TURBINE:
-                  cout << " TSEfficiency(%)" << " Outlet Pressure" << endl;
-                  break;
-                default:
-                  break;
-              }
-            else if (actuator_disk) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
-            else if (engine) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
-            else cout << "      CL(Total)" << "      CD(Total)" << endl;
-            
-            break;
-            
-			  case TWO_PHASE_RANS :
+          case RANS :case TWO_PHASE_RANS :
 
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
@@ -5366,173 +5481,315 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (incompressible) cout << "   Res[Press]";
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
-            cout << "      Res[N]";
-
             switch (config[val_iZone]->GetKind_Turb_Model()) {
-              case SA:     cout << "       Res[nu]"; break;
-              case SA_NEG: cout << "       Res[nu]"; break;
-              case SST:     cout << "     Res[kine]" << "     Res[omega]"; break;
+            case SA:     cout << "       Res[nu]"; break;
+            case SA_NEG: cout << "       Res[nu]"; break;
+            case SST:     cout << "     Res[kine]" << "     Res[omega]"; break;
             }
 
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
-            else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
+            else if (rotating_frame && nDim == 3 && !turbo ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
-            else if (turbo)
-              switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
-                case BLADE:
-                  cout << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
-                  break;
-                case STAGE: case TURBINE:
-                  cout << " TSEfficiency(%)" << " Outlet Pressure" << endl;
-                  break;
-                default:
-                  break;
+            else if (turbo){
+              if (nZone < 2){
+                /*--- single zone output ---*/
+                cout << "  TotPresLoss(%)" << "  Entropy Gen.(%)" << endl;
               }
-            else if (actuator_disk) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
-            else if (engine) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
-            else cout << "      CL(Total)" << "      CD(Total)" << endl;
+              else{
+                /*--- multi zone output ---*/
+                cout << " TTEfficiency(%)" << " Entropy Gen.(%)" << endl;
+
+              }
+            }
+            else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
 
             break;
 
-          case WAVE_EQUATION :
-            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
-            else cout << endl << " IntIter" << "  ExtIter";
-            
-            cout << "      Res[Wave]" << "   CWave(Total)"<<  endl;
-            break;
-            
-          case HEAT_EQUATION :
-            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
-            else cout << endl << " IntIter" << "  ExtIter";
-            
-            cout << "      Res[Heat]" << "   CHeat(Total)"<<  endl;
-            break;
-            
-          case FEM_ELASTICITY :
-            if (!nonlinear_analysis) cout << endl << " Iter" << "    Time(s)";
-            else cout << endl << " IntIter" << " ExtIter";
-            
-            if (linear_analysis) {
-              if (nDim == 2) cout << "    Res[Displx]" << "    Res[Disply]" << "   CFEM(Total)"<<  endl;
-              if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "   CFEM(Total)"<<  endl;
-            }
-            else if (nonlinear_analysis) {
-              cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
-            }
-            break;
-            
-          case ADJ_EULER :              case ADJ_NAVIER_STOKES :
-          case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
-            
-            /*--- Visualize the maximum residual ---*/
-            iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
-            Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
-            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            if (config[val_iZone]->GetSystemMeasurements() == SI) {
-              cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
-              if (nDim == 3) cout << ", " << Coord[2];
-              cout <<   ")." << endl;
-            }
-            else {
-              cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
-              if (nDim == 3) cout << ", " << Coord[2]*12.0;
-              cout <<   ")." << endl;
-            }
-            
-            /*--- Print out the number of non-physical points and reconstructions ---*/
-            if (config[val_iZone]->GetNonphysical_Points() > 0)
-              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
-            
-            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
-            else cout << endl << " IntIter" << "  ExtIter";
-            
-            if (incompressible) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
-            else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
-            if (disc_adj) {
-              cout << "    Sens_Press" << "      Sens_AoA" << endl;
-            } else {
-              cout << "      Sens_Geo" << "      Sens_AoA" << endl;
-            }
-            break;
-            
-          case ADJ_RANS : case DISC_ADJ_RANS:
-            
-            /*--- Visualize the maximum residual ---*/
-            iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
-            Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
-            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            if (config[val_iZone]->GetSystemMeasurements() == SI) {
-              cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
-              if (nDim == 3) cout << ", " << Coord[2];
-              cout <<   ")." << endl;
-            }
-            else {
-              cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
-              if (nDim == 3) cout << ", " << Coord[2]*12.0;
-              cout <<   ")." << endl;
-            }
-            
-            /*--- Print out the number of non-physical points and reconstructions ---*/
-            if (config[val_iZone]->GetNonphysical_Points() > 0)
-              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
-            
-            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
-            else cout << endl << " IntIter" << "  ExtIter";
-            
-            if (incompressible) cout << "     Res[Psi_Press]";
-            else cout << "     Res[Psi_Rho]";
-            
-            if (!config[val_iZone]->GetFrozen_Visc()) {
-              cout << "      Res[Psi_nu]";
-            }
-            else {
-              if (incompressible) cout << "   Res[Psi_Velx]";
-              else cout << "     Res[Psi_E]";
-            }
-            if (disc_adj) {
-              cout << "    Sens_Press" << "      Sens_AoA" << endl;
-            } else {
-              cout << "      Sens_Geo" << "      Sens_AoA" << endl;
-            }
-            break;
-            
+            case WAVE_EQUATION :
+              if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+              else cout << endl << " IntIter" << "  ExtIter";
+
+              cout << "      Res[Wave]" << "   CWave(Total)"<<  endl;
+              break;
+
+            case HEAT_EQUATION :
+              if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+              else cout << endl << " IntIter" << "  ExtIter";
+
+              cout << "      Res[Heat]" << "   CHeat(Total)"<<  endl;
+              break;
+
+            case FEM_ELASTICITY :
+              if (!nonlinear_analysis) cout << endl << " Iter" << "    Time(s)";
+              else cout << endl << " IntIter" << " ExtIter";
+
+              if (linear_analysis) {
+                if (nDim == 2) cout << "    Res[Displx]" << "    Res[Disply]" << "   CFEM(Total)"<<  endl;
+                if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "   CFEM(Total)"<<  endl;
+              }
+              else if (nonlinear_analysis) {
+                cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
+              }
+              break;
+
+            case ADJ_EULER :              case ADJ_NAVIER_STOKES :
+            case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
+
+              /*--- Visualize the maximum residual ---*/
+              iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
+              Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
+              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
+              if (config[val_iZone]->GetSystemMeasurements() == SI) {
+                cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
+                if (nDim == 3) cout << ", " << Coord[2];
+                cout <<   ")." << endl;
+              }
+              else {
+                cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
+                if (nDim == 3) cout << ", " << Coord[2]*12.0;
+                cout <<   ")." << endl;
+              }
+
+              /*--- Print out the number of non-physical points and reconstructions ---*/
+              if (config[val_iZone]->GetNonphysical_Points() > 0)
+                cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+
+              if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+              else cout << endl << " IntIter" << "  ExtIter";
+
+              if (incompressible) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
+              else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
+              if (disc_adj) {
+                cout << "    Sens_Press" << "      Sens_AoA" << endl;
+              } else {
+                cout << "      Sens_Geo" << "      Sens_AoA" << endl;
+              }
+              break;
+
+            case ADJ_RANS : case DISC_ADJ_RANS:
+
+              /*--- Visualize the maximum residual ---*/
+              iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
+              Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
+              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
+              if (config[val_iZone]->GetSystemMeasurements() == SI) {
+                cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
+                if (nDim == 3) cout << ", " << Coord[2];
+                cout <<   ")." << endl;
+              }
+              else {
+                cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
+                if (nDim == 3) cout << ", " << Coord[2]*12.0;
+                cout <<   ")." << endl;
+              }
+
+              /*--- Print out the number of non-physical points and reconstructions ---*/
+              if (config[val_iZone]->GetNonphysical_Points() > 0)
+                cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+
+              if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+              else cout << endl << " IntIter" << "  ExtIter";
+
+              if (incompressible) cout << "     Res[Psi_Press]";
+              else cout << "     Res[Psi_Rho]";
+
+              if (!config[val_iZone]->GetFrozen_Visc()) {
+                cout << "      Res[Psi_nu]";
+              }
+              else {
+                if (incompressible) cout << "   Res[Psi_Velx]";
+                else cout << "     Res[Psi_E]";
+              }
+              if (disc_adj) {
+                cout << "    Sens_Press" << "      Sens_AoA" << endl;
+              } else {
+                cout << "      Sens_Geo" << "      Sens_AoA" << endl;
+              }
+              break;
+
+          }
+
         }
-        
       }
-      
+
       /*--- Write the solution on the screen and history file ---*/
-      cout.precision(6);
-      cout.setf(ios::fixed, ios::floatfield);
-      
-      if (!fem) {
-        if (!Unsteady) {
-          cout.width(5); cout << iExtIter + ExtIter_OffSet;
-          cout.width(11); cout << timeiter;
-          
-        } else if (Unsteady && DualTime_Iteration) {
-          cout.width(8); cout << iIntIter;
-          cout.width(8); cout << iExtIter;
+      if (val_iZone == 0){
+        cout.precision(6);
+        cout.setf(ios::fixed, ios::floatfield);
+        if (!fem) {
+          if (!Unsteady) {
+            cout.width(5); cout << iExtIter + ExtIter_OffSet;
+            cout.width(11); cout << timeiter;
+
+          } else if (Unsteady && DualTime_Iteration) {
+            cout.width(8); cout << iIntIter;
+            cout.width(8); cout << iExtIter;
+          }
+        }
+        else if (fem) {
+          if (!nonlinear_analysis) {
+            cout.width(5); cout << iExtIter;
+            cout.width(11); cout << timeiter;
+
+          } else {
+            cout.width(8); cout << iIntIter;
+            cout.width(8); cout << iExtIter;
+          }
         }
       }
-      else if (fem) {
-        if (!nonlinear_analysis) {
-          cout.width(5); cout << iExtIter;
-          cout.width(11); cout << timeiter;
-          
-        } else {
-          cout.width(8); cout << iIntIter;
-          cout.width(8); cout << iExtIter;
-        }
-      }
-      
       
       switch (config[val_iZone]->GetKind_Solver()) {
         case EULER : case NAVIER_STOKES:
           
           if (!DualTime_Iteration) {
-            if (compressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
-            if (incompressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            if (compressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            if (incompressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid;            
+//            if (fluid_structure) ConvHist_file[0] << fea_resid;
+            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
+            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
+            if (output_1d) ConvHist_file[0] << oneD_outputs;
+            if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
+            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
+            if (output_comboObj) ConvHist_file[0] << combo_obj;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
+          }
+          if (val_iZone == 0){
+
+            if(DualTime_Iteration || !Unsteady) {
+              cout.precision(6);
+              cout.setf(ios::fixed, ios::floatfield);
+              cout.width(13); cout << log10(residual_flow[0]);
+              //          if (!fluid_structure && !equiv_area) {
+              if (!equiv_area) {
+                if (compressible) {
+                  if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
+                  else { cout.width(14); cout << log10(residual_flow[4]); }
+                }
+                if (incompressible) { cout.width(14); cout << log10(residual_flow[1]); }
+              }
+              //          else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
+
+              if (rotating_frame && nDim == 3 && !turbo ) {
+                cout.setf(ios::scientific, ios::floatfield);
+                cout.width(15); cout << Total_CT;
+                cout.width(15); cout << Total_CQ;
+                cout.unsetf(ios_base::floatfield);
+              }
+              else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); cout.width(15);
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout << Total_CNearFieldOF; }
+              else if (turbo) {
+                cout.setf(ios::scientific, ios::floatfield);
+                /*--- singlezone output---*/
+                if (nZone < 2){
+                  cout.width(15); cout << TotalPressureLoss[0][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << EntropyGen[0][nSpanWiseSections]*100.0;
+                }
+                else{
+                  /*--- multizone output---*/
+                  cout.width(15); cout << TotalTotalEfficiency[nTurboPerf -1][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << EntropyGen[nTurboPerf -1][nSpanWiseSections]*100.0;
+
+                }
+                cout.unsetf(ios_base::floatfield);
+              }
+              else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
+              if (aeroelastic) {
+                cout.setf(ios::scientific, ios::floatfield);
+                cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
+                cout.width(15); cout << aeroelastic_pitch[0];
+                cout.unsetf(ios_base::floatfield);
+              }
+            }
+            cout << endl;
+          }
+          break;
+          
+        case RANS :
+          
+          if (!DualTime_Iteration) {
+            if (!turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
+            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
+            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
+            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
+            if (output_1d) ConvHist_file[0] << oneD_outputs;
+            if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
+            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
+            if (output_comboObj) ConvHist_file[0] << combo_obj;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
+          }
+          if (val_iZone == 0){
+            if(DualTime_Iteration || !Unsteady) {
+              cout.precision(6);
+              cout.setf(ios::fixed, ios::floatfield);
+
+              if (incompressible) cout.width(13);
+              else  cout.width(14);
+              cout << log10(residual_flow[0]);
+              //          else  cout.width(14),
+              //                 cout << log10(residual_flow[0]),
+              //                 cout.width(14);
+              //          if ( nDim==2 ) cout << log10(residual_flow[3]);
+              //          if ( nDim==3 ) cout << log10(residual_flow[4]);
+
+              switch(nVar_Turb) {
+              case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
+              case 2: cout.width(14); cout << log10(residual_turbulent[0]);
+              cout.width(15); cout << log10(residual_turbulent[1]); break;
+              }
+
+              if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
+
+              if (rotating_frame && nDim == 3 && !turbo ) {
+                cout.setf(ios::scientific, ios::floatfield);
+                cout.width(15); cout << Total_CT; cout.width(15);
+                cout << Total_CQ;
+                cout.unsetf(ios_base::floatfield);
+              }
+              else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); cout.width(15);
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout << Total_CNearFieldOF; }
+              else if (turbo) {
+                cout.setf(ios::scientific, ios::floatfield);
+                if (nZone < 2){
+                  /*--- single zone output ---*/
+                  cout.width(15); cout << TotalPressureLoss[0][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << EntropyGen[0][nSpanWiseSections]*100.0;
+                }
+                else{
+                  /*--- multi zone output ---*/
+                  cout.width(15); cout << TotalTotalEfficiency[nTurboPerf - 1][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << EntropyGen[nTurboPerf -1][nSpanWiseSections]*100.0;
+                  if (direct_diff){
+                    cout.width(15); cout << D_EntropyGen;
+                  }
+                }
+                cout.unsetf(ios_base::floatfield);
+              }
+              else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
+
+              if (aeroelastic) {
+                cout.setf(ios::scientific, ios::floatfield);
+                cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
+                cout.width(15); cout << aeroelastic_pitch[0];
+                cout.unsetf(ios_base::floatfield);
+              }
+              cout << endl;
+            }
+          }
+          break;
+        case TWO_PHASE_EULER : case TWO_PHASE_NAVIER_STOKES:
+          
+          if (!DualTime_Iteration) {
+            if (compressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            if (incompressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid;            
             //            if (fluid_structure) ConvHist_file[0] << fea_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
@@ -5543,172 +5800,37 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          
-    if(DualTime_Iteration || !Unsteady) {
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          cout.width(13); cout << log10(residual_flow[0]);
-          //          if (!fluid_structure && !equiv_area) {
-          if (!equiv_area) {
-            if (compressible) {
+          if (val_iZone == 0){
+
+            if(DualTime_Iteration || !Unsteady) {
+              cout.precision(6);
+              cout.setf(ios::fixed, ios::floatfield);
+
+              if (incompressible) cout.width(13);
+              else  cout.width(14);
+              cout << log10(residual_flow[0]);
               if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
               else { cout.width(14); cout << log10(residual_flow[4]); }
+              //          else  cout.width(14),
+              //                 cout << log10(residual_flow[0]),
+              //                 cout.width(14);
+              //          if ( nDim==2 ) cout << log10(residual_flow[3]);
+              //          if ( nDim==3 ) cout << log10(residual_flow[4]);
+
+              cout.width(14); cout << log10(max(residual_2phase[0], 1e-40));
+              cout.width(15); cout << log10(max(residual_2phase[3], 1e-40));
+              cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD));
+              cout << endl;
             }
-            if (incompressible) { cout.width(14); cout << log10(residual_flow[1]); }
+
           }
-          //          else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
-          
-          if (rotating_frame && nDim == 3 ) {
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(15); cout << Total_CT;
-            cout.width(15); cout << Total_CQ;
-            cout.unsetf(ios_base::floatfield);
-          }
-          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); cout.width(15);
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout << Total_CNearFieldOF; }
-          else if (turbo) {
-            cout.setf(ios::scientific, ios::floatfield);
-            switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
-              case BLADE:
-                cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-                cout.width(15); cout << abs((MassFlowIn[0] + MassFlowOut[0])/MassFlowIn[0])*100.0;
-                break;
-              case STAGE: case TURBINE:
-                cout.width(15); cout << TotalStaticEfficiency[0]*100.0;
-                cout.width(15); cout << PressureOut[0];
-                break;
-              default:
-                break;
-            }
-            cout.unsetf(ios_base::floatfield);
-          }
-          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
-          if (aeroelastic) {
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
-            cout.width(15); cout << aeroelastic_pitch[0];
-            cout.unsetf(ios_base::floatfield);
-          }
-    }
-          cout << endl;
-          
           break;
           
-        case RANS :
-          
-          if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
-            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
-            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            if (output_1d) ConvHist_file[0] << oneD_outputs;
-            if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
-            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
-            if (output_comboObj) ConvHist_file[0] << combo_obj;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
-          }
-          
-          if(DualTime_Iteration || !Unsteady) {
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          
-          if (incompressible) cout.width(13);
-          else  cout.width(14);
-          cout << log10(residual_flow[0]);
-          //          else  cout.width(14),
-          //                 cout << log10(residual_flow[0]),
-          //                 cout.width(14);
-          //          if ( nDim==2 ) cout << log10(residual_flow[3]);
-          //          if ( nDim==3 ) cout << log10(residual_flow[4]);
-          
-          switch(nVar_Turb) {
-            case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
-            case 2: cout.width(14); cout << log10(residual_turbulent[0]);
-              cout.width(15); cout << log10(residual_turbulent[1]); break;
-          }
-          
-          if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
-          
-          if (rotating_frame && nDim == 3 ) {
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(15); cout << Total_CT; cout.width(15);
-            cout << Total_CQ;
-            cout.unsetf(ios_base::floatfield);
-          }
-          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); cout.width(15);
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout << Total_CNearFieldOF; }
-          else if (turbo) {
-            cout.setf(ios::scientific, ios::floatfield);
-            switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
-              case BLADE:
-                cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-                cout.width(15); cout << abs((MassFlowIn[0] + MassFlowOut[0])/MassFlowIn[0])*100.0;
-                break;
-              case STAGE: case TURBINE:
-                cout.width(15); cout << TotalStaticEfficiency[0]*100.0;
-                cout.width(15); cout << PressureOut[0];
-                break;
-              default:
-                break;
-            }
-            cout.unsetf(ios_base::floatfield);
-          }
-          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
-          
-          if (aeroelastic) {
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
-            cout.width(15); cout << aeroelastic_pitch[0];
-            cout.unsetf(ios_base::floatfield);
-          }
-          cout << endl;
-          } break;
-
-        case TWO_PHASE_EULER : case TWO_PHASE_NAVIER_STOKES:
-
-          if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << direct_coeff << flow_resid << two_phase_resid;
-            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
-            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            if (output_1d) ConvHist_file[0] << oneD_outputs;
-            if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
-            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
-            if (output_comboObj) ConvHist_file[0] << combo_obj;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
-          }
-          
-        if(DualTime_Iteration || !Unsteady) {
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-
-          if (incompressible) cout.width(13);
-          else  cout.width(14);
-          cout << log10(residual_flow[0]);
-          if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
-          else { cout.width(14); cout << log10(residual_flow[4]); }
-          //          else  cout.width(14),
-          //                 cout << log10(residual_flow[0]),
-          //                 cout.width(14);
-          //          if ( nDim==2 ) cout << log10(residual_flow[3]);
-          //          if ( nDim==3 ) cout << log10(residual_flow[4]);
-
-          cout.width(14); cout << log10(max(residual_2phase[0], 1e-40));
-          cout.width(15); cout << log10(max(residual_2phase[3], 1e-40));
-          cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD));
-          cout << endl;
-          }
-      break;
-
-
         case TWO_PHASE_RANS :
-
+          
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << direct_coeff << flow_resid << two_phase_resid << turb_resid;
+            if (!turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
+            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
@@ -5718,84 +5840,66 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
+          if (val_iZone == 0){
+            if(DualTime_Iteration || !Unsteady) {
+              cout.precision(6);
+              cout.setf(ios::fixed, ios::floatfield);
 
+              if (incompressible) cout.width(13);
+              else  cout.width(14);
+              cout << log10(residual_flow[0]);
+              //          else  cout.width(14),
+              //                 cout << log10(residual_flow[0]),
+              //                 cout.width(14);
+              //          if ( nDim==2 ) cout << log10(residual_flow[3]);
+              //          if ( nDim==3 ) cout << log10(residual_flow[4]);
 
-          if(DualTime_Iteration || !Unsteady) {
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
+              cout.width(14); cout << log10(max(residual_2phase[0], 1e-40));
 
-          if (incompressible) cout.width(13);
-          else  cout.width(14);
-          cout << log10(residual_flow[0]);
-          //          else  cout.width(14),
-          //                 cout << log10(residual_flow[0]),
-          //                 cout.width(14);
-          //          if ( nDim==2 ) cout << log10(residual_flow[3]);
-          //          if ( nDim==3 ) cout << log10(residual_flow[4]);
-
-          cout.width(14); cout << log10(max(residual_2phase[0], 1e-40));
-
-          switch(nVar_Turb) {
-            case 1: cout.width(14);
-            cout << log10(residual_turbulent[0]);  break;
-            case 2: cout.width(14); cout << log10(residual_turbulent[0]);
+              switch(nVar_Turb) {
+              case 1: cout.width(14);
+              cout << log10(residual_turbulent[0]);  break;
+              case 2: cout.width(14); cout << log10(residual_turbulent[0]);
               cout.width(15); cout << log10(residual_turbulent[1]); break;
-          }
+              }
 
-          if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
+              if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
 
-          if (rotating_frame && nDim == 3 ) {
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(15); cout << Total_CT; cout.width(15);
-            cout << Total_CQ;
-            cout.unsetf(ios_base::floatfield);
-          }
-          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); cout.width(15);
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout << Total_CNearFieldOF; }
-          else if (turbo) {
-            cout.setf(ios::scientific, ios::floatfield);
-            switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
-              case BLADE:
-                cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-                cout.width(15); cout << abs((MassFlowIn[0] + MassFlowOut[0])/MassFlowIn[0])*100.0;
-                break;
-              case STAGE: case TURBINE:
-                cout.width(15); cout << TotalStaticEfficiency[0]*100.0;
-                cout.width(15); cout << PressureOut[0];
-                break;
-              default:
-                break;
+              if (rotating_frame && nDim == 3 ) {
+                cout.setf(ios::scientific, ios::floatfield);
+                cout.width(15); cout << Total_CT; cout.width(15);
+                cout << Total_CQ;
+                cout.unsetf(ios_base::floatfield);
+              }
+              else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); cout.width(15);
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout << Total_CNearFieldOF; }
+              else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
+
+              if (aeroelastic) {
+                cout.setf(ios::scientific, ios::floatfield);
+                cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
+                cout.width(15); cout << aeroelastic_pitch[0];
+                cout.unsetf(ios_base::floatfield);
+              }
+              cout << endl;
             }
-            cout.unsetf(ios_base::floatfield);
           }
-          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
-
-          if (aeroelastic) {
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
-            cout.width(15); cout << aeroelastic_pitch[0];
-            cout.unsetf(ios_base::floatfield);
-          }
-          cout << endl;
-          }
-
-          break;
- //       break;
-          
+          break;         
         case WAVE_EQUATION:
           
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << wave_coeff << wave_resid << end;
             ConvHist_file[0].flush();
           }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          cout.width(14); cout << log10(residual_wave[0]);
-          cout.width(14); cout << Total_CWave;
-          cout << endl;
+          if (val_iZone == 0){
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            cout.width(14); cout << log10(residual_wave[0]);
+            cout.width(14); cout << Total_CWave;
+            cout << endl;
+          }
           break;
           
         case HEAT_EQUATION:
@@ -5804,12 +5908,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
             ConvHist_file[0].flush();
           }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          cout.width(14); cout << log10(residual_heat[0]);
-          cout.width(14); cout << Total_CHeat;
-          cout << endl;
+          if (val_iZone == 0){
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            cout.width(14); cout << log10(residual_heat[0]);
+            cout.width(14); cout << Total_CHeat;
+            cout << endl;
+          }
           break;
           
         case FEM_ELASTICITY:
@@ -5845,32 +5950,34 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
             ConvHist_file[0].flush();
           }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          if (compressible) {
-            cout.width(15); cout << log10(residual_adjflow[0]);
-            cout.width(15); cout << log10(residual_adjflow[nDim+1]);
-          }
-          if (incompressible) {
-            cout.width(17); cout << log10(residual_adjflow[0]);
-            cout.width(16); cout << log10(residual_adjflow[1]);
-          }
-          
-          if (disc_adj) {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Press;
-            cout.width(14); cout << Total_Sens_AoA;
-          }else {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Geo;
-              cout.width(14); cout << Total_Sens_AoA;
-            }
-          cout << endl;
-          cout.unsetf(ios_base::floatfield);          
+          if (val_iZone == 0){
+            if (DualTime_Iteration || !Unsteady){
+              cout.precision(6);
+              cout.setf(ios::fixed, ios::floatfield);
+              if (compressible) {
+                cout.width(15); cout << log10(residual_adjflow[0]);
+                cout.width(15); cout << log10(residual_adjflow[nDim+1]);
+              }
+              if (incompressible) {
+                cout.width(17); cout << log10(residual_adjflow[0]);
+                cout.width(16); cout << log10(residual_adjflow[1]);
+              }
 
+              if (disc_adj) {
+                cout.precision(4);
+                cout.setf(ios::scientific, ios::floatfield);
+                cout.width(14); cout << Total_Sens_Press;
+                cout.width(14); cout << Total_Sens_AoA;
+              }else {
+                cout.precision(4);
+                cout.setf(ios::scientific, ios::floatfield);
+                cout.width(14); cout << Total_Sens_Geo;
+                cout.width(14); cout << Total_Sens_AoA;
+              }
+              cout << endl;
+              cout.unsetf(ios_base::floatfield);
+            }
+          }
           break;
           
         case ADJ_RANS : case DISC_ADJ_RANS:
@@ -5882,85 +5989,69 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          cout.width(17); cout << log10(residual_adjflow[0]);
-          if (!config[val_iZone]->GetFrozen_Visc()) {
-            cout.width(17); cout << log10(residual_adjturbulent[0]);
+          if (val_iZone == 0){
+            if (DualTime_Iteration || !Unsteady){
+              cout.precision(6);
+              cout.setf(ios::fixed, ios::floatfield);
+              cout.width(17); cout << log10(residual_adjflow[0]);
+              if (!config[val_iZone]->GetFrozen_Visc()) {
+                cout.width(17); cout << log10(residual_adjturbulent[0]);
+              }
+              else {
+                if (compressible) {
+                  if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
+                  else { cout.width(15); cout << log10(residual_adjflow[4]); }
+                }
+                if (incompressible) {
+                  cout.width(15); cout << log10(residual_adjflow[1]);
+                }
+              }
+              if (disc_adj) {
+                cout.precision(4);
+                cout.setf(ios::scientific, ios::floatfield);
+                cout.width(14); cout << Total_Sens_Press;
+                cout.width(14); cout << Total_Sens_AoA;
+              }else {
+                cout.precision(4);
+                cout.setf(ios::scientific, ios::floatfield);
+                cout.width(14); cout << Total_Sens_Geo;
+                cout.width(14); cout << Total_Sens_AoA;
+              }
+              cout << endl;
+              cout.unsetf(ios_base::floatfield);
+            }
           }
-          else {
-            if (compressible) {
-              if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
-              else { cout.width(15); cout << log10(residual_adjflow[4]); }
-            }
-            if (incompressible) {
-              cout.width(15); cout << log10(residual_adjflow[1]);
-            }
-          }
-          if (disc_adj) {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Press;
-            cout.width(14); cout << Total_Sens_AoA;
-          }else {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Geo;
-              cout.width(14); cout << Total_Sens_AoA;
-            }
-          cout << endl;
-          cout.unsetf(ios_base::floatfield);
           break;
           
       }
       cout.unsetf(ios::fixed);
-      
+
     }
     
-    
-    delete [] residual_flow;
-    delete [] residual_turbulent;
-    delete [] residual_transition;
-    delete [] residual_wave;
-    delete [] residual_fea;
-    delete [] residual_fem;
-    delete [] residual_heat;
-    
-    delete [] residual_adjflow;
-    delete [] residual_adjturbulent;
-    
+      
+		delete [] residual_flow;
+		delete [] residual_turbulent;
+		delete [] residual_transition;
+		delete [] residual_wave;
+		delete [] residual_fea;
+		delete [] residual_fem;
+		delete [] residual_heat;
+
+		delete [] residual_adjflow;
+		delete [] residual_adjturbulent;
+
     delete [] Surface_CL;
     delete [] Surface_CD;
     delete [] Surface_CSF;
-    delete [] Surface_CEff;
-    delete [] Surface_CFx;
-    delete [] Surface_CFy;
-    delete [] Surface_CFz;
-    delete [] Surface_CMx;
-    delete [] Surface_CMy;
-    delete [] Surface_CMz;
-    delete [] aeroelastic_pitch;
-    delete [] aeroelastic_plunge;
-    
-    delete [] TotalStaticEfficiency;
-    delete [] TotalTotalEfficiency;
-    delete [] KineticEnergyLoss;
-    delete [] TotalPressureLoss;
-    delete [] MassFlowIn;
-    delete [] MassFlowOut;
-    delete [] FlowAngleIn;
-    delete [] FlowAngleOut;
-    delete [] EulerianWork;
-    delete []  TotalEnthalpyIn;
-    delete [] PressureRatio;
-    delete [] PressureOut;
-    delete [] EnthalpyOut;
-    delete [] MachIn;
-    delete [] MachOut;
-    delete [] NormalMachIn;
-    delete [] NormalMachOut;
-    delete [] VelocityOutIs;
+		delete [] Surface_CEff;
+		delete [] Surface_CFx;
+		delete [] Surface_CFy;
+		delete [] Surface_CFz;
+		delete [] Surface_CMx;
+		delete [] Surface_CMy;
+		delete [] Surface_CMz;
+		delete [] aeroelastic_pitch;
+		delete [] aeroelastic_plunge;
     
   }
 }
@@ -6393,8 +6484,8 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "|                                                                       |" << "\n";
     //Breakdown_file << "|   Local date and time: " << dt << "                      |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|" << "\n";
-    Breakdown_file << "|                Dr. Thomas D. Economon, economon@stanford.edu          |" << "\n";
+    Breakdown_file << "| SU2 Original Developers: Dr. Francisco D. Palacios.                   |" << "\n";
+    Breakdown_file << "|                          Dr. Thomas D. Economon.                      |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "| SU2 Developers:                                                       |" << "\n";
     Breakdown_file << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << "\n";
@@ -7811,9 +7902,28 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
+  char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   unsigned short iZone;
-  
+  ofstream output_file;
+  string str;
+
+  /*--- Read the name of the output and input file ---*/
+
+  if (rank == MASTER_NODE) {
+    if (su2_file){
+      str = config[ZONE_0]->GetMesh_Out_FileName();
+      strcpy (out_file, str.c_str());
+      strcpy (cstr, out_file);
+      output_file.precision(15);
+      output_file.open(cstr, ios::out);
+
+      if (val_nZone > 1){
+        output_file << "NZONE= " << val_nZone << endl;
+      }
+    }
+  }
+
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
     /*--- Flags identifying the types of files to be written. ---*/
@@ -7847,7 +7957,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         
         /*--- Write a Tecplot ASCII file ---*/
         if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
+        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
         
       }
       
@@ -7857,7 +7967,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         
         /*--- Write a Tecplot ASCII file ---*/
         if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
+        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
         
         
       }
@@ -7866,14 +7976,15 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
       
       /*--- Write a .su2 ASCII file ---*/
       
-      if (su2_file) SetSU2_MeshASCII(config[iZone], geometry[iZone]);
-      
+      if (su2_file){
+        SetSU2_MeshASCII(config[iZone], geometry[iZone], iZone, output_file);
+      }
       /*--- Deallocate connectivity ---*/
       
       DeallocateConnectivity(config[iZone], geometry[iZone], true);
       
     }
-    
+
     /*--- Final broadcast (informing other procs that the base output
      file was written). ---*/
     
@@ -7881,6 +7992,12 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
+  }
+
+  if (rank == MASTER_NODE) {
+    if (su2_file){
+      output_file.close();
+    }
   }
 }
 
@@ -7920,14 +8037,15 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Out1D;
   su2double *Normal = NULL, Area = 0.0, UnitNormal[3],
-  Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, U,// local values at each node (Velocity2 = V^2). U = normal velocity
-  AveragePt = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
-  VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
-  su2double TotalArea=0.0;
+  Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, Vn, Density,// local values at each node (Velocity2 = V^2). U = normal velocity
+  AveragePt = 0.0, AverageMach = 0.0, AverageTemperature = 0.0,  // Area Averaged values
+  Velocity1D = 0.0, Enthalpy1D = 0.0, Density1D = 0.0, Pressure1D = 0.0; // Averaging depends on choices.
+  su2double MassFlowRate = 0.0, TotalArea=0.0; // Reference values
   
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   su2double Gamma = config->GetGamma();
   unsigned short nDim = geometry->GetnDim();
+  unsigned short OneD_Type = config->GetKind_OneD();
   
   /*--- Loop over the markers ---*/
   
@@ -7958,32 +8076,44 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           
           /*-- Find velocity normal to the marked surface/opening --*/
           
-          U = 0.0; RhoUA = 0.0;
+          Vn = 0.0; RhoUA = 0.0;
           for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-            U += UnitNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
+            Vn += UnitNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
             RhoUA -=Normal[iDim]*solver_container->node[iPoint]->GetSolution(iDim+1);
           }
-          
+          Density = solver_container->node[iPoint]->GetDensity();
           Enthalpy = solver_container->node[iPoint]->GetEnthalpy();
           Velocity2 = solver_container->node[iPoint]->GetVelocity2();
           Temperature = solver_container->node[iPoint]->GetTemperature();
           
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
           if (incompressible)
-          Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
+          Tot_Pressure = Pressure + 0.5*Density*Velocity2;
           else
             Tot_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
           
-          
-          AveragePt += Tot_Pressure * Area;
-          TotalArea += Area;
-          AverageMach += Mach*Area;
-          PressureRef += Pressure * Area;
+          switch (OneD_Type){
+          case ONED_MFLUX:
+            Pressure1D += RhoUA*Pressure;
+            Velocity1D+=RhoUA*Vn*Vn; // V.n Magnitude
+            Enthalpy1D+=RhoUA*Enthalpy;
+            Density1D+=RhoUA*Density;
+            break;
+          case ONED_AREA:
+            Pressure1D += Pressure * Area;
+            Velocity1D+=Vn*Vn*Area; // V.n magnitude
+            Enthalpy1D+=Enthalpy*Area;
+            Density1D+=Density*Area;
+            break;
+
+          }
+          /* Always area-averaged */
           AverageTemperature += Temperature*Area;
+          AveragePt += Tot_Pressure * Area;
+          AverageMach += Mach*Area;
+          /*--- Reference Areas ---*/
           MassFlowRate += RhoUA; // RhoU is rho * vn * Area
-          VelocityRef+=RhoUA*U*U; // rho u A
-          EnthalpyRef+=RhoUA*Enthalpy;
-          
+          TotalArea += Area;
         }
       }
     }
@@ -7998,41 +8128,56 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   su2double My_AverageMach         = AverageMach;        AverageMach = 0.0;
   su2double My_AverageTemperature  = AverageTemperature; AverageTemperature = 0.0;
   su2double My_MassFlowRate        = MassFlowRate;       MassFlowRate = 0.0;
-  su2double My_PressureRef         = PressureRef;        PressureRef = 0.0;
-  su2double My_VelocityRef         = VelocityRef;        VelocityRef = 0.0;
-  su2double My_EnthalpyRef         = EnthalpyRef;        EnthalpyRef = 0.0;
-  su2double My_DensityRef          = DensityRef;         DensityRef = 0.0;
+  su2double My_Pressure1D         = Pressure1D;        Pressure1D = 0.0;
+  su2double My_Velocity1D         = Velocity1D;        Velocity1D = 0.0;
+  su2double My_Enthalpy1D         = Enthalpy1D;        Enthalpy1D = 0.0;
+  su2double My_Density1D          = Density1D;         Density1D = 0.0;
   
   SU2_MPI::Allreduce(&My_Area, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_AveragePt, &AveragePt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_AverageMach, &AverageMach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_AverageTemperature, &AverageTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_MassFlowRate, &MassFlowRate, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&My_PressureRef, &PressureRef, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&My_VelocityRef, &VelocityRef, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&My_EnthalpyRef , &EnthalpyRef , 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&My_DensityRef , &DensityRef , 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&My_Pressure1D, &Pressure1D, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&My_Velocity1D, &Velocity1D, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&My_Enthalpy1D , &Enthalpy1D , 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&My_Density1D , &Density1D , 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
 #endif
   
-  /*--- Set the 1D output ---*/
-  /*--- DensityRef depends on the final values of other flux avg variables ---*/
-  VelocityRef=sqrt(VelocityRef/MassFlowRate);
-  PressureRef=PressureRef/TotalArea;
-  EnthalpyRef=EnthalpyRef/MassFlowRate;
-  DensityRef =PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef);
-  
+  /*--- Scaling by Total Values ---*/
+  switch (OneD_Type) {
   /*Area averaged values*/
-  solver_container->SetOneD_TotalPress(AveragePt/TotalArea);
-  solver_container->SetOneD_Mach(AverageMach/TotalArea);
-  solver_container->SetOneD_Temp(AverageTemperature/TotalArea);
-  solver_container->SetOneD_MassFlowRate(MassFlowRate);
-  
+  case ONED_AREA:
+    Velocity1D=sqrt(Velocity1D/TotalArea);
+    Pressure1D/=TotalArea;
+    Enthalpy1D/=TotalArea;
+    Density1D/=TotalArea;
+    break;
   /*Flux averaged values*/
-  solver_container->SetOneD_FluxAvgPress(PressureRef);
-  solver_container->SetOneD_FluxAvgDensity(DensityRef);
-  solver_container->SetOneD_FluxAvgVelocity(VelocityRef);
-  solver_container->SetOneD_FluxAvgEntalpy(EnthalpyRef);
+  case ONED_MFLUX:
+    Velocity1D=sqrt(Velocity1D/MassFlowRate);
+    Pressure1D/=MassFlowRate;
+    Enthalpy1D/=MassFlowRate;
+    Density1D/=MassFlowRate;
+    break;
+  }
+
+  /*-- Always area-averaged ---*/
+  AveragePt/=TotalArea;
+  AverageMach/=TotalArea;
+  AverageTemperature/=TotalArea;
+  
+  /*--- Store Values ---*/
+  solver_container->SetOneD_TotalPress(AveragePt);
+  solver_container->SetOneD_Mach(AverageMach);
+  solver_container->SetOneD_Temp(AverageTemperature);
+  solver_container->SetOneD_MassFlowRate(MassFlowRate);
+  /*--- One-Dimensionalized Values ---*/
+  solver_container->SetOneD_AvgPress(Pressure1D);
+  solver_container->SetOneD_AvgDensity(Density1D);
+  solver_container->SetOneD_AvgVelocity(Velocity1D);
+  solver_container->SetOneD_AvgEnthalpy(Enthalpy1D);
   
 }
 
@@ -9179,6 +9324,7 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
   int rank, iProcessor, nProcessor;
   rank = MASTER_NODE;
   nProcessor = SINGLE_NODE;
+
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -10259,6 +10405,572 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
 }
 
+void COutput::WriteTutboPerfConvHistory(CConfig *config){
+
+  unsigned short iMarker_Monitoring;
+  string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
+  unsigned short nZone       = config->GetnZone();
+  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool menter_sst       = (config->GetKind_Turb_Model() == SST);
+
+  unsigned short nBladesRow, nStages;
+  unsigned short iStage;
+  nBladesRow = config->GetnMarker_Turbomachinery();
+  nStages    = int(nBladesRow/2);
+
+  cout << endl << "------------------------- Turbomachinery Summary ------------------------" << endl;
+  cout << endl;
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Turbomachinery(); iMarker_Monitoring++){
+    cout << endl << "----------------------------- Blade " << iMarker_Monitoring + 1 << " -----------------------------------" << endl;
+    inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring);
+    outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(iMarker_Monitoring);
+    if(iMarker_Monitoring == 0){
+      cout << "BC Inlet convergence monitoring marker " << inMarker_Tag << " : "<<endl;
+      cout << endl;
+      cout << "     Inlet Total Enthalpy" << "     Inlet Total Enthalpy BC" << "     err(%)" <<  endl;
+      cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+      cout.width(25); cout << TotalEnthalpyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+      cout.width(25); cout << abs((TotalEnthalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - TotalEnthalpyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/TotalEnthalpyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Inlet Entropy" << "            Inlet Entropy BC" << "            err(%)" <<  endl;
+      cout.width(25); cout << EntropyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+      cout.width(25); cout << EntropyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+      cout.width(25); cout << abs((EntropyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - EntropyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/EntropyIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Inlet Absolute Angle" << "     Inlet Absolute Angle BC" << "     err(%)" <<  endl;
+      cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+      cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+      cout.width(25); cout << abs((AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+      cout << endl;
+      cout << endl;
+      if(turbulent){
+        if(menter_sst){
+          cout << "     Inlet TurbIntensity" << "      Inlet TurbIntensity BC" << "      err(%)" <<  endl;
+          cout.width(25); cout << TurbIntensityIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << config->GetTurbulenceIntensity_FreeStream();
+          cout.width(25); cout << abs((TurbIntensityIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - config->GetTurbulenceIntensity_FreeStream())/config->GetTurbulenceIntensity_FreeStream())*100.0;
+          cout << endl;
+          cout << endl;
+          cout << "     Inlet Turb2LamRatio" << "      Inlet Turb2LamRatio BC" << "      err(%)" <<  endl;
+          cout.width(25); cout << Turb2LamViscRatioIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << config->GetTurb2LamViscRatio_FreeStream();
+          cout.width(25); cout << abs((Turb2LamViscRatioIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - config->GetTurb2LamViscRatio_FreeStream())/config->GetTurb2LamViscRatio_FreeStream())*100.0;
+          cout << endl;
+          cout << endl;
+        }
+        else{
+          cout << "     Inlet Nu Factor" << "          Inlet Nu Factor BC" << "          err(%)" <<  endl;
+          cout.width(25); cout << NuFactorIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << config->GetNuFactor_FreeStream();
+          cout.width(25); cout << abs((NuFactorIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - config->GetNuFactor_FreeStream())/config->GetNuFactor_FreeStream())*100.0;
+          cout << endl;
+          cout << endl;
+        }
+      }
+    }
+    if(iMarker_Monitoring == config->GetnMarker_Turbomachinery() -1 ){
+      // if BC outlet
+      cout << "BC outlet convergence monitoring  marker " << outMarker_Tag << " : "<<endl;
+      cout << endl;
+      cout << "     Outlet Pressure" << "          Outlet Pressure BC" << "          err(%)" <<  endl;
+      cout.width(25); cout << PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetPressure_Ref();
+      cout.width(25); cout << PressureOut_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetPressure_Ref();
+      cout.width(25); cout << abs((PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - PressureOut_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/PressureOut_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+      cout << endl;
+      cout << endl;
+    }
+
+    cout << "Convergence monitoring for integral quantities between markers " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+    cout << endl;
+    cout << "     Inlet Mass Flow " << "         Outlet Mass Flow" << "            err(%)" <<  endl;
+    cout.width(25); cout << MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetVelocity_Ref()*config->GetDensity_Ref();
+    cout.width(25); cout << MassFlowOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetVelocity_Ref()*config->GetDensity_Ref();
+    cout.width(25); cout << abs((MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - MassFlowOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+    cout << endl;
+    cout << endl;
+    //if(stator)
+    //cout << "     Inlet Total Enthalpy " << "    Outlet Total Enthalpy" << "     err(%)" <<  endl;
+    //else
+    cout << "     Inlet Total Rothalpy " << "    Outlet Total Rothalpy" << "       err(%)" <<  endl;
+    cout.width(25); cout << RothalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+    cout.width(25); cout << RothalpyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+    cout.width(25); cout << abs((RothalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - RothalpyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/RothalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
+    cout << endl;
+    cout << endl;
+    cout << "Blade performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+    cout << endl;
+    cout << "     Total Pressure Loss(%)" << "   Kinetic Energy Loss(%)" << "      Entropy Generation(%)" << endl;
+    cout.width(25); cout << TotalPressureLoss[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
+    cout.width(25); cout << KineticEnergyLoss[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
+    cout.width(25); cout << EntropyGen[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*100.0;
+    cout << endl;
+    cout << endl;
+    cout << "     Total Inlet Enthalpy" << "     Eulerian Work" << "               Pressure Ratio" <<  endl;
+    cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+    cout.width(25); cout << EulerianWork[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+    cout.width(25); cout << PressureRatio[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+    cout << endl;
+    cout << endl;
+    cout << "     Inlet Entropy" << "            Outlet Entropy" << "             Outlet Is. Enthalpy" <<  endl;
+    cout.width(25); cout << EntropyIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+    cout.width(25); cout << EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+    cout.width(25); cout << EnthalpyOutIs[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref();
+    cout << endl;
+    cout << endl;
+    cout << "Cinematic quantities between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+    cout << endl;
+    cout << "     Inlet Mach"<< "               Inlet Normal Mach" << "            Inlet Tang. Mach" << endl;
+    cout.width(25); cout << sqrt(MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0]*MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0] +MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]*MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]);
+    cout.width(25); cout << MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0];
+    cout.width(25); cout << MachIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1];
+    cout << endl;
+    cout << endl;
+    cout << "     Outlet Mach"<< "              Outlet Normal Mach" << "           Outlet Tang. Mach" << endl;
+    cout.width(25); cout << sqrt(MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0]*MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0] +MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]*MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]);
+    cout.width(25); cout << MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0];
+    cout.width(25); cout << MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1];cout << endl;
+    cout << endl;
+    cout << "     Inlet Flow Angle" << "         Outlet flow Angle  " << endl;
+    cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+    cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+    cout << endl;
+    cout << endl;
+    // if gridmov
+    cout << "     Inlet Abs Flow Angle" << "     Outlet Abs Flow Angle  " << endl;
+    cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+    cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+    cout << endl;
+    cout << endl << "-------------------------------------------------------------------------" << endl;
+    cout << endl;
+    if(nZone > 0 && iMarker_Monitoring < config->GetnMarker_Turbomachinery() -1){
+      cout << endl << "---------- Mixing-Plane Interface between Blade " << iMarker_Monitoring + 1 << " and Blade " << iMarker_Monitoring + 2 << " -----------" << endl;
+      cout << endl;
+      inMarkerTag_Mix = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring + 1);
+      cout << "Convergence monitoring for the outlet  " << outMarker_Tag << " and the inlet  "<< inMarkerTag_Mix << " : "<<endl;
+      cout << endl;
+      cout << "     Outlet Density " << "          Inlet Density" << "               err(%)" <<  endl;
+      cout.width(25); cout << DensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetDensity_Ref();
+      cout.width(25); cout << DensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring + 1)]*config->GetDensity_Ref();
+      cout.width(25); cout << abs((DensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)] - DensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/DensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Outlet Pressure " << "         Inlet Pressure" << "              err(%)" <<  endl;
+      cout.width(25); cout << PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetPressure_Ref();
+      cout.width(25); cout << PressureIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)]*config->GetPressure_Ref();
+      cout.width(25); cout << abs((PressureIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)] - PressureOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/PressureIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Outlet Normal Velocity " << "  Inlet Normal Velocity" << "       err(%)" <<  endl;
+      cout.width(25); cout << TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0]*config->GetVelocity_Ref();
+      cout.width(25); cout << TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][0]*config->GetVelocity_Ref();
+      cout.width(25); cout << abs((TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][0] - TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0])/TurboVelocityIn[iMarker_Monitoring+1][config->GetnSpan_iZones(iMarker_Monitoring +1)][0])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Outlet Tang. Velocity " << "   Inlet Tang. Velocity" << "        err(%)" <<  endl;
+      cout.width(25); cout << TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]*config->GetVelocity_Ref();
+      cout.width(25); cout << TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][1]*config->GetVelocity_Ref();
+      cout.width(25); cout << abs((TurboVelocityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)][1] - TurboVelocityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1])/TurboVelocityIn[iMarker_Monitoring+1][config->GetnSpan_iZones(iMarker_Monitoring +1)][1])*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Outlet Entropy " << "          Inlet Entropy" << "               err(%)" <<  endl;
+      cout.width(25); cout << EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+      cout.width(25); cout << EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
+      cout.width(25); cout << abs((EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
+      if(turbulent){
+        cout << endl;
+        cout << endl;
+        if(menter_sst){
+          cout << "     Outlet TurbIntensity " << "    Inlet TurbIntensity" << "         err(%)" <<  endl;
+          cout.width(25); cout << TurbIntensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << TurbIntensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)];
+          cout.width(25); cout << abs((TurbIntensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - TurbIntensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/TurbIntensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
+          cout << endl;
+          cout << endl;
+          cout << "     Outlet Turb2LamRatio " << "    Inlet Turb2LamRatio" << "         err(%)" <<  endl;
+          cout.width(25); cout << Turb2LamViscRatioOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << Turb2LamViscRatioIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)];
+          cout.width(25); cout << abs((Turb2LamViscRatioIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - Turb2LamViscRatioOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/Turb2LamViscRatioIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
+        }
+        else{
+          cout << "     Outlet Nu Factor " << "        Inlet Nu Factor" << "             err(%)" <<  endl;
+          cout.width(25); cout << NuFactorOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
+          cout.width(25); cout << NuFactorIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)];
+          cout.width(25); cout << abs((NuFactorIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - NuFactorOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/NuFactorIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
+        }
+      }
+      cout << endl;
+      cout << endl << "-------------------------------------------------------------------------" << endl;
+      cout << endl;
+    }
+
+  }
+  if(nZone > 1){
+    /*--- Stage Performance ---*/
+    for(iStage = 0; iStage < nStages; iStage++ ){
+      cout << endl << "----------------------------- Stage " << iStage + 1 << " -----------------------------------" << endl;
+      inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(iStage*2);
+      outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(iStage*2+1);
+      cout << "Stage performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+      cout << endl;
+      cout << "     Total-Total Eff.(%)" << "      Total-Static Eff.(%)" << "      Entropy Generation(%)" << endl;
+      cout.width(25); cout << TotalTotalEfficiency[nBladesRow + iStage][nSpanWiseSections]*100.0;
+      cout.width(25); cout << TotalStaticEfficiency[nBladesRow + iStage][nSpanWiseSections]*100.0;
+      cout.width(25); cout << EntropyGen[nBladesRow + iStage][nSpanWiseSections]*100.0;
+      cout << endl;
+      cout << endl;
+      cout << "     Pressure Ratio " << "          Outlet Is. Enthalpy" << "       In-Out MassFlow Diff (%)" <<  endl;
+      cout.width(25); cout << PressureRatio[nBladesRow + iStage][nSpanWiseSections];
+      cout.width(25); cout << EnthalpyOutIs[nBladesRow + iStage][nSpanWiseSections]*config->GetEnergy_Ref();
+      cout.width(25); cout << abs((MassFlowIn[nBladesRow + iStage][nSpanWiseSections] - MassFlowOut[nBladesRow + iStage][nSpanWiseSections])/MassFlowIn[nBladesRow + iStage][nSpanWiseSections])*100.0;
+    }
+    cout << endl;
+    cout << endl << "-------------------------------------------------------------------------" << endl;
+    cout << endl;
+
+    /*--- Full Machine Performance ---*/
+    // if(turbine)
+    cout << endl << "---------------------------- Turbine ------------------------------------" << endl;
+    inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(0);
+    outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(nBladesRow-1);
+    cout << "Turbine performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+    cout << endl;
+    cout << "     Total-Total Eff.(%)" << "      Total-Static Eff.(%)" << "      Entropy Generation(%)" << endl;
+    cout.width(25); cout << TotalTotalEfficiency[nBladesRow + nStages][nSpanWiseSections]*100.0;
+    cout.width(25); cout << TotalStaticEfficiency[nBladesRow + nStages][nSpanWiseSections]*100.0;
+    cout.width(25); cout << EntropyGen[nBladesRow + nStages][nSpanWiseSections]*100.0;
+    cout << endl;
+    cout << endl;
+    cout << "     Pressure Ratio " << "          Outlet Is. Enthalpy" << "       In-Out MassFlow Diff (%)" <<  endl;
+    cout.width(25); cout << PressureRatio[nBladesRow + nStages][nSpanWiseSections];
+    cout.width(25); cout << EnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]*config->GetEnergy_Ref();;
+    cout.width(25); cout << abs((MassFlowIn[nBladesRow + nStages][nSpanWiseSections] - MassFlowOut[nBladesRow + nStages][nSpanWiseSections])/MassFlowIn[nBladesRow + nStages][nSpanWiseSections])*100.0;
+    cout << endl;
+    cout << endl << "-------------------------------------------------------------------------" << endl;
+    cout << endl;
+  }
+
+}
+
+
+
+
+void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
+                           CConfig **config,
+                           unsigned short val_iZone) {
+
+  string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
+  unsigned short nZone       = config[val_iZone]->GetnZone();
+
+  unsigned short iDim, iSpan;
+
+  unsigned long iExtIter = config[val_iZone]->GetExtIter();
+  su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
+  int rank;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = MASTER_NODE;
+#endif
+  ofstream myfile;
+  string spanwise_performance_filename;
+
+
+  /*--- Start of write file turboperformance spanwise ---*/
+  if (rank == MASTER_NODE){
+    SpanWiseValuesIn = geometry[val_iZone][MESH_0]->GetSpanWiseValue(1);
+    SpanWiseValuesOut = geometry[val_iZone][MESH_0]->GetSpanWiseValue(2);
+
+
+
+    /*--- Writing Span wise inflow thermodynamic quantities. ---*/
+    spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_thermodynamic_values.dat";
+    char buffer[50];
+    if (nZone > 1){
+      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+      spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
+      SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+      spanwise_performance_filename.append(string(buffer));
+    }
+
+
+    myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+    myfile.setf(ios::scientific);
+    myfile.precision(12);
+
+    myfile << "TITLE = \"Inflow Spanwise Thermodynamic Values. iExtIter = " << iExtIter << " \"" << endl;
+    myfile << "VARIABLES =" << endl;
+
+    myfile.width(30); myfile << "\"SpanWise Value[m]\"";
+    myfile.width(15); myfile << "\"iSpan\"";
+    myfile.width(30); myfile << "\"Pressure[Pa]\"";
+    myfile.width(30); myfile << "\"TotalPressure[Pa]\"";
+    myfile.width(30); myfile << "\"Temperature[K]\"";
+    myfile.width(30); myfile << "\"TotalTemperature[K]\"";
+    myfile.width(30); myfile << "\"Enthalpy[J]\"";
+    myfile.width(30); myfile << "\"TotalEnthalpy[J]\"";
+    myfile.width(30); myfile << "\"Density[kg/m3]\"";
+    myfile.width(30); myfile << "\"Entropy[J/K]\"";
+    myfile.width(30); myfile << "\"TurbIntensity[-]\"";
+    myfile.width(30); myfile << "\"Turb2LamViscRatio[-]\"";
+    myfile.width(30); myfile << "\"NuFactor[-]\"";
+    myfile << endl;
+
+    for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
+
+      myfile.width(30); myfile << SpanWiseValuesIn[iSpan];
+      myfile.width(15); myfile << iSpan;
+      myfile.width(30); myfile << PressureIn           [val_iZone][iSpan]*config[ZONE_0]->GetPressure_Ref();
+      myfile.width(30); myfile << TotalPressureIn      [val_iZone][iSpan]*config[ZONE_0]->GetPressure_Ref();
+      myfile.width(30); myfile << TemperatureIn        [val_iZone][iSpan]*config[ZONE_0]->GetTemperature_Ref();
+      myfile.width(30); myfile << TotalTemperatureIn   [val_iZone][iSpan]*config[ZONE_0]->GetTemperature_Ref();
+      myfile.width(30); myfile << EnthalpyIn           [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+      myfile.width(30); myfile << TotalEnthalpyIn      [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+      myfile.width(30); myfile << DensityIn            [val_iZone][iSpan]*config[ZONE_0]->GetDensity_Ref();
+      myfile.width(30); myfile << EntropyIn            [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+      if(TurbIntensityIn[val_iZone][iSpan] > 1.0){
+        myfile.width(30); myfile << TurbIntensityIn      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
+      }else{
+        myfile.width(30); myfile << TurbIntensityIn      [val_iZone][iSpan];
+      }
+      myfile.width(30); myfile << Turb2LamViscRatioIn  [val_iZone][iSpan];
+      myfile.width(30); myfile << NuFactorIn           [val_iZone][iSpan];
+      myfile << endl;
+    }
+
+    myfile.close();
+
+    /*--- Writing Span wise outflow thermodynamic quantities. ---*/
+    spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_thermodynamic_values.dat";
+    if (nZone > 1){
+      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+      spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
+      SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+      spanwise_performance_filename.append(string(buffer));
+    }
+
+    myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+    myfile.setf(ios::scientific);
+    myfile.precision(12);
+
+    myfile << "TITLE = \"Outflow Span-wise Thermodynamic Values. iExtIter = " << iExtIter << " \"" << endl;
+    myfile << "VARIABLES =" << endl;
+
+    myfile.width(30); myfile << "\"SpanWise Value[m]\"";
+    myfile.width(15); myfile << "\"iSpan\"";
+    myfile.width(30); myfile << "\"Pressure[Pa]\"";
+    myfile.width(30); myfile << "\"TotalPressure[Pa]\"";
+    myfile.width(30); myfile << "\"Temperature[K]\"";
+    myfile.width(30); myfile << "\"TotalTemperature[K]\"";
+    myfile.width(30); myfile << "\"Enthalpy[J]\"";
+    myfile.width(30); myfile << "\"TotalEnthalpy[J]\"";
+    myfile.width(30); myfile << "\"Density[kg/m3]\"";
+    myfile.width(30); myfile << "\"Entropy[J/K]\"";
+    myfile.width(30); myfile << "\"TurbIntensity[-]\"";
+    myfile.width(30); myfile << "\"Turb2LamViscRatio[-]\"";
+    myfile.width(30); myfile << "\"NuFactor[-]\"";
+    myfile << endl;
+
+
+    for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
+
+      myfile.width(30); myfile << SpanWiseValuesOut[iSpan];
+      myfile.width(15); myfile << iSpan;
+      myfile.width(30); myfile << PressureOut           [val_iZone][iSpan]*config[ZONE_0]->GetPressure_Ref();
+      myfile.width(30); myfile << TotalPressureOut      [val_iZone][iSpan]*config[ZONE_0]->GetPressure_Ref();
+      myfile.width(30); myfile << TemperatureOut        [val_iZone][iSpan]*config[ZONE_0]->GetTemperature_Ref();
+      myfile.width(30); myfile << TotalTemperatureOut   [val_iZone][iSpan]*config[ZONE_0]->GetTemperature_Ref();
+      myfile.width(30); myfile << EnthalpyOut           [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+      myfile.width(30); myfile << TotalEnthalpyOut      [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+      myfile.width(30); myfile << DensityOut            [val_iZone][iSpan]*config[ZONE_0]->GetDensity_Ref();
+      myfile.width(30); myfile << EntropyOut            [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+      if(TurbIntensityOut[val_iZone][iSpan] > 1.0){
+        myfile.width(30); myfile << TurbIntensityOut      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
+      }else{
+        myfile.width(30); myfile << TurbIntensityOut      [val_iZone][iSpan];
+      }
+      myfile.width(30); myfile << Turb2LamViscRatioOut  [val_iZone][iSpan];
+      myfile.width(30); myfile << NuFactorOut           [val_iZone][iSpan];
+      myfile << endl;
+    }
+
+    myfile.close();
+
+    /*--- Writing Span wise inflow kinematic quantities. ---*/
+    spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_kinematic_values.dat";
+        if (nZone > 1){
+          unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+          spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
+          SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+          spanwise_performance_filename.append(string(buffer));
+        }
+
+        myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+        myfile.setf(ios::scientific);
+        myfile.precision(12);
+
+        myfile << "TITLE = \"Inflow Span-wise Kinematic Values. iExtIter = " << iExtIter << " \"" << endl;
+        myfile << "VARIABLES =" << endl;
+
+        myfile.width(30); myfile << "\"SpanWise Value[m]\"";
+        myfile.width(15); myfile << "\"iSpan\"";
+        myfile.width(30); myfile << "\"Normal Mach[-]\"";
+        myfile.width(30); myfile << "\"Tangential Mach[-]\"";
+        myfile.width(30); myfile << "\"3rd Component Mach[-]\"";
+        myfile.width(30); myfile << "\"Mach Module[-]\"";
+        myfile.width(30); myfile << "\"Normal Velocity[m/s]\"";
+        myfile.width(30); myfile << "\"Tangential Velocity[m/s]\"";
+        myfile.width(30); myfile << "\"3rd Component Velocity[m/s]\"";
+        myfile.width(30); myfile << "\"Velocity Module[m/s]\"";
+        myfile.width(30); myfile << "\"Absolute Flow Angle[deg]\"";
+        myfile.width(30); myfile << "\"Relative Flow Angle[deg]\"";
+        myfile << endl;
+
+
+        for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
+
+          myfile.width(30); myfile << SpanWiseValuesIn[iSpan];
+          myfile.width(15); myfile << iSpan;
+          for (iDim = 0; iDim < 4; iDim++){
+          	myfile.width(30); myfile << MachIn              [val_iZone][iSpan][iDim];
+          }
+          for (iDim = 0; iDim < 4; iDim++){
+          	myfile.width(30); myfile << TurboVelocityIn     [val_iZone][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();
+          }
+          if(AbsFlowAngleIn[val_iZone][iSpan] != AbsFlowAngleIn[val_iZone][iSpan]){
+          	myfile.width(30); myfile << "0.0000";
+          }
+          else{
+          	myfile.width(30); myfile << AbsFlowAngleIn     [val_iZone][iSpan]*180.0/PI_NUMBER;
+          }
+          if(FlowAngleIn[val_iZone][iSpan] != FlowAngleIn[val_iZone][iSpan]){
+          	myfile.width(30); myfile << "0.0000";
+          }
+          else{
+          	myfile.width(30); myfile << FlowAngleIn      [val_iZone][iSpan]*180.0/PI_NUMBER;
+          }
+          myfile << endl;
+        }
+
+        myfile.close();
+
+        /*--- Writing Span wise outflow thermodynamic quantities. ---*/
+        spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_kinematic_values.dat";
+        if (nZone > 1){
+        	unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+        	spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
+        	SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+        	spanwise_performance_filename.append(string(buffer));
+        }
+
+        myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+        myfile.setf(ios::scientific);
+        myfile.precision(12);
+
+        myfile << "TITLE = \"Outflow Span-wise Kinematic Values. iExtIter = " << iExtIter << " \"" << endl;
+        myfile << "VARIABLES =" << endl;
+
+        myfile.width(30); myfile << "\"SpanWise Value[m]\"";
+        myfile.width(15); myfile << "\"iSpan\"";
+        myfile.width(30); myfile << "\"Normal Mach[-]\"";
+        myfile.width(30); myfile << "\"Tangential Mach[-]\"";
+        myfile.width(30); myfile << "\"3rd Component Mach[-]\"";
+        myfile.width(30); myfile << "\"Mach Module[-]\"";
+        myfile.width(30); myfile << "\"Normal Velocity[m/s]\"";
+        myfile.width(30); myfile << "\"Tangential Velocity[m/s]\"";
+        myfile.width(30); myfile << "\"3rd Component Velocity[m/s]\"";
+        myfile.width(30); myfile << "\"Velocity Module[m/s]\"";
+        myfile.width(30); myfile << "\"Absolute Flow Angle[deg]\"";
+        myfile.width(30); myfile << "\"Relative Flow Angle[deg]\"";
+        myfile << endl;
+
+
+        for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
+
+        	myfile.width(30); myfile << SpanWiseValuesOut[iSpan];
+        	myfile.width(15); myfile << iSpan;
+        	for (iDim = 0; iDim < 4; iDim++){
+        		myfile.width(30); myfile << MachOut              [val_iZone][iSpan][iDim];
+        	}
+        	for (iDim = 0; iDim < 4; iDim++){
+        		myfile.width(30); myfile << TurboVelocityOut     [val_iZone][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();
+        	}
+        	if(AbsFlowAngleOut[val_iZone][iSpan] != AbsFlowAngleOut[val_iZone][iSpan]){
+        		myfile.width(30); myfile << "0.0000";
+        	}
+        	else{
+        		myfile.width(30); myfile << AbsFlowAngleOut      [val_iZone][iSpan]*180.0/PI_NUMBER;
+        	}
+        	if(FlowAngleOut[val_iZone][iSpan] != FlowAngleOut[val_iZone][iSpan]){
+        		myfile.width(30); myfile << "0.0000";
+        	}
+        	else{
+        		myfile.width(30); myfile << FlowAngleOut      [val_iZone][iSpan]*180.0/PI_NUMBER;
+        	}
+        	myfile << endl;
+        }
+
+        myfile.close();
+
+    //myfile.width(30); myfile << "\"TotalPressureLoss[%]\"";
+    //myfile.width(30); myfile << "\"KineticEnergyLoss[%]\"";
+    //myfile.width(30); myfile << "\"TotalStaticEfficiency[%]\"";
+    //myfile.width(30); myfile << "\"TotalTotalEfficiency[%]\"";
+    //myfile.width(30); myfile << "\"EulerianWork[J]\"";
+
+//    myfile.width(30); myfile << "\"EntropyGen[J]\"";
+//    myfile.width(30); myfile << "\"TotalEnthalpyOutIs[J]\"";
+//    myfile.width(30); myfile << "\"RothalpyIn[J]\"";
+//    myfile.width(30); myfile << "\"RothalpyOut[J]\"";
+//    myfile.width(30); myfile << "\"MassFlowIn[kg/s]\"";
+//    myfile.width(30); myfile << "\"MassFlowOut[kg/s]\"";
+//    myfile.width(30); myfile << "\"VelocityOutIs[m/s]\"";
+//    myfile.width(30); myfile << "\"EntropyIn_BC[J]\"";
+//    myfile.width(30); myfile << "\"TotalEnthalpyIn_BC[J]\"";
+//    myfile.width(30); myfile << "\"PressureOut_BC[Pa]\"";
+
+//    myfile.width(30); myfile << "\"MachInNormal[-]\"";
+//    myfile.width(30); myfile << "\"MachOutNormal[-]\"";
+//    myfile.width(30); myfile << "\"MachInTang[-]\"";
+//    myfile.width(30); myfile << "\"MachOutTang[-]\"";
+//    myfile.width(30); myfile << "\"MachInRadial[-]\"";
+//    myfile.width(30); myfile << "\"MachOutRadial[-]\"";
+//    myfile.width(30); myfile << "\"MachIn[-]\"";
+//    myfile.width(30); myfile << "\"MachOut[-]\"";
+//    myfile.width(30); myfile << "\"TurboVelocityInNormal[m/s]\"";
+//    myfile.width(30); myfile << "\"TurboVelocityOutNormal[m/s]\"";
+//    myfile.width(30); myfile << "\"TurboVelocityInTang[m/s]\"";
+//    myfile.width(30); myfile << "\"TurboVelocityOutTang[m/s]\"";
+//    myfile.width(30); myfile << "\"TurboVelocityInRadial[m/s]\"";
+//    myfile.width(30); myfile << "\"TurboVelocityOutRadial[m/s]\"";
+//    myfile.width(30); myfile << "\"TurboVelocityIn[m/s]\"";
+//    myfile.width(30); myfile << "\"TurboVelocityOut[m/s]\"";
+
+
+    //          myfile.width(30); myfile << RothalpyIn      [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+    //          myfile.width(30); myfile << RothalpyOut     [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+    //          myfile.width(30); myfile << MassFlowIn           [iMarker_Monitoring-1][iSpan]*1;
+    //          myfile.width(30); myfile << MassFlowOut          [iMarker_Monitoring-1][iSpan]*1;
+    //          myfile.width(30); myfile << VelocityOutIs        [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+    //          myfile.width(30); myfile << EntropyIn_BC         [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+    //          myfile.width(30); myfile << TotalEnthalpyIn_BC   [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+    //          myfile.width(30); myfile << PressureOut_BC       [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetPressure_Ref();
+    //          myfile.width(30); myfile << AbsFlowAngleIn       [iMarker_Monitoring-1][iSpan]*180.0/PI_NUMBER;
+    //          myfile.width(30); myfile << AbsFlowAngleOut      [iMarker_Monitoring-1][iSpan]*180.0/PI_NUMBER;
+    //          myfile.width(30); myfile << FlowAngleIn          [iMarker_Monitoring-1][iSpan]*180.0/PI_NUMBER;
+    //          myfile.width(30); myfile << FlowAngleOut         [iMarker_Monitoring-1][iSpan]*180.0/PI_NUMBER;
+    //
+    //          for (iDim = 0; iDim < 4; iDim++){
+    //            myfile.width(30); myfile << MachIn              [iMarker_Monitoring-1][iSpan][iDim];
+    //            myfile.width(30); myfile << MachOut             [iMarker_Monitoring-1][iSpan][iDim];
+    //          }
+    //          for (iDim = 0; iDim < 4; iDim++){
+    //            myfile.width(30); myfile << TurboVelocityIn     [iMarker_Monitoring-1][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();;
+    //            myfile.width(30); myfile << TurboVelocityOut    [iMarker_Monitoring-1][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();;
+    //          }
+  }
+}
 
 void COutput::HarmonicBalanceOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short iZone) {
 
@@ -10595,6 +11307,13 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     
     Variable_Names.clear();
     
+    /*--- write span-wise value for turbomachinery ---*/
+    if(config[ZONE_0]->GetBoolTurbomachinery()){
+      if (rank == MASTER_NODE) cout << "Writing span-wise values file."<<endl;
+      WriteSpanWiseValuesFiles(geometry, config, iZone);
+    }
+
+
   }
 }
 
@@ -10623,7 +11342,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   int *Local_Halo = NULL;
   
   stringstream varname;
-
+  
   /*--- Set the non-dimensionalization for coefficients. ---*/
   
   if (grid_movement) {
@@ -10941,46 +11660,51 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         iVar++;
       }
       
-      /*--- Load the conservative variable states for the mean flow variables.
-       If requested, load the limiters and residuals as well. ---*/
+      /*--- Load the conservative variable states for the mean flow variables. ---*/
       
       for (jVar = 0; jVar < nVar_First; jVar++) {
         Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar);
         iVar++;
       }
       
-      if (!config->GetLow_MemoryOutput()) {
-        if (config->GetWrt_Limiters()) {
-          for (jVar = 0; jVar < nVar_First; jVar++) {
-            Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
-            iVar++;
-          }
-        }
-        if (config->GetWrt_Residuals()) {
-          for (jVar = 0; jVar < nVar_First; jVar++) {
-            Local_Data[jPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
-            iVar++;
-          }
-        }
-      }
-      
       /*--- If this is RANS, i.e., the second solver container is not empty,
-       then load data for the conservative turbulence variables and the
-       limiters / residuals (if requested). ----*/
+       then load data for the conservative turbulence variables. ---*/
       
       if (SecondIndex != NONE) {
         for (jVar = 0; jVar < nVar_Second; jVar++) {
           Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
           iVar++;
         }
-        if (!config->GetLow_MemoryOutput()) {
-          if (config->GetWrt_Limiters()) {
+      }
+
+      /*--- If limiters and/or residuals are requested. ---*/
+      if (!config->GetLow_MemoryOutput()) {
+        
+        /*--- Limiters ---*/
+        if (config->GetWrt_Limiters()) {
+          /*--- Mean Flow Limiters ---*/
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+            iVar++;
+          }
+          /*--- RANS Limiters ---*/
+          if (SecondIndex != NONE) {
             for (jVar = 0; jVar < nVar_Second; jVar++) {
               Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
               iVar++;
             }
           }
-          if (config->GetWrt_Residuals()) {
+        }
+        
+        /*--- Residuals ---*/
+        if (config->GetWrt_Residuals()) {
+          /*--- Mean Flow Residuals ---*/
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[jPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
+            iVar++;
+          }
+          /*--- RANS Residuals ---*/
+          if (SecondIndex != NONE) {
             for (jVar = 0; jVar < nVar_Second; jVar++) {
               Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
               iVar++;
@@ -15842,11 +16566,14 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   }
   nPoint_Linear[size] = nTotalPoint;
 
-  /*--- Prepare the first four ints containing the counts. The last two values
-   are for metadata: one int for ExtIter and 5 su2doubles. ---*/
+  /*--- Prepare the first ints containing the counts. The first is a
+   magic number that we can use to check for binary files (it is the hex
+   representation for "SU2"). The second two values are number of variables
+   and number of points (DoFs). The last two values are for metadata: 
+   one int for ExtIter and 5 su2doubles. ---*/
 
-  int var_buf_size = 4;
-  int var_buf[4] = {nVar_Par, (int)nTotalPoint, 1, 5};
+  int var_buf_size = 5;
+  int var_buf[5] = {535532, nVar_Par, (int)nTotalPoint, 1, 5};
 
   /*--- Prepare the 1D data buffer on this rank. ---*/
 
@@ -16075,3 +16802,5 @@ void COutput::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometr
   if (Parallel_Surf_Data != NULL) delete [] Parallel_Surf_Data;
   
 }
+
+

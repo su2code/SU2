@@ -5,8 +5,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -156,9 +156,38 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \param[in] ??? - Description here.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
-  virtual void Postprocess();
+  virtual void Postprocess( CConfig **config_container,
+                            CGeometry ***geometry_container,
+                            CSolver ****solver_container,
+                            unsigned short val_iZone);
+
+  virtual void InitializeAdjoint(CSolver ****solver_container,
+                                 CGeometry ***geometry_container,
+                                 CConfig **config_container,
+                                 unsigned short iZone){}
+
+  virtual void RegisterInput(CSolver ****solver_container,
+                             CGeometry*** geometry_container,
+                             CConfig** config_container,
+                             unsigned short iZone,
+                             unsigned short kind_recording){}
+
+  virtual void SetDependencies(CSolver ****solver_container,
+                               CGeometry ***geometry_container,
+                               CConfig **config_container,
+                               unsigned short iZone,
+                               unsigned short kind_recording){}
+
+  virtual void RegisterOutput(CSolver ****solver_container,
+                              CGeometry*** geometry_container,
+                              CConfig** config_container,
+                              COutput* output,
+                              unsigned short iZone){}
+
 
 };
 
@@ -249,8 +278,14 @@ public:
   
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
-  void Postprocess();
+  void Postprocess(CConfig **config_container,
+                   CGeometry ***geometry_container,
+                   CSolver ****solver_container,
+                   unsigned short val_iZone);
   
   /*!
    * \brief Imposes a gust via the grid velocities.
@@ -272,26 +307,55 @@ public:
    */
   void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
   
-  /*!
-   * \brief compute and set mixing-plane quantities at the interface between two adjacent zone.
-   * \author S. Vitale
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] iZone - zone of the problem.
-   */
-  void SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short iZone);
+};
+
+
+
+/*!
+ * \class CTurboIteration
+ * \brief Class for driving an iteration for turbomachinery simulation.
+ * \author T. Economon
+ * \version 5.0.0 "Raven"
+ */
+class CTurboIteration : public CFluidIteration {
+public:
 
   /*!
-   * \brief compute and set mixing-plane quantities at the interface between two adjacent zone.
-   * \author S. Vitale
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] output - Definition of the output for the particular problem.
-   * \param[in] iZone - zone of the problem.
+   * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone);
+  CTurboIteration(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurboIteration(void);
+
+  /*!
+   * \brief Preprocessing to prepare for an iteration of the physics.
+   * \param[in] ??? - Description here.
+   */
+  void Preprocess(COutput *output,
+                  CIntegration ***integration_container,
+                  CGeometry ***geometry_container,
+                  CSolver ****solver_container,
+                  CNumerics *****numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement **grid_movement,
+                  CFreeFormDefBox*** FFDBox,
+                  unsigned short val_iZone);
+
+  /*!
+   * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   */
+  void Postprocess(CConfig **config_container,
+                   CGeometry ***geometry_container,
+                   CSolver ****solver_container,
+                   unsigned short val_iZone);
 
 
 };
@@ -399,9 +463,16 @@ public:
   void Output();
   
   /*!
-   * \brief Postprocesses the wave system before heading to another physics system or the next iteration.
+   * \brief Postprocess ???.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
-  void Postprocess();
+  void Postprocess(CConfig **config_container,
+                   CGeometry ***geometry_container,
+                   CSolver ****solver_container,
+                   unsigned short val_iZone);
+
   
 };
 
@@ -491,10 +562,16 @@ public:
   void Output();
   
   /*!
-   * \brief Postprocesses the heat system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
+   * \brief Postprocess ???.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
-  void Postprocess();
+  void Postprocess(CConfig **config_container,
+                   CGeometry ***geometry_container,
+                   CSolver ****solver_container,
+                   unsigned short val_iZone);
+
   
 };
 
@@ -584,10 +661,16 @@ public:
   void Output();
   
   /*!
-   * \brief Postprocesses the poisson system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
+   * \brief Postprocess ???.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
-  void Postprocess();
+  void Postprocess(CConfig **config_container,
+                   CGeometry ***geometry_container,
+                   CSolver ****solver_container,
+                     unsigned short val_iZone);
+
   
 };
 
@@ -671,10 +754,16 @@ public:
   void Output();
 
   /*!
-   * \brief Postprocesses the FEM system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
+   * \brief Postprocess ???.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
-  void Postprocess();
+  void Postprocess(CConfig **config_container,
+                   CGeometry ***geometry_container,
+                   CSolver ****solver_container,
+                   unsigned short val_iZone);
+
 
 };
 
@@ -762,9 +851,16 @@ public:
   void Output();
   
   /*!
-   * \brief Postprocesses the adjoint fluid system before heading to another physics system or the next iteration.
+   * \brief Postprocess ???.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
-  void Postprocess();
+  void Postprocess(CConfig **config_container,
+                   CGeometry ***geometry_container,
+                   CSolver ****solver_container,
+                   unsigned short val_iZone);
+
   
 };
 
@@ -781,18 +877,6 @@ private:
   CFluidIteration* fluid_iteration; /*!< \brief Pointer to the fluid iteration class. */
   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
   bool turbulent;       /*!< \brief Stores the turbulent flag. */
-
-  enum RECORDING{
-    NONE = 0,      /*!< \brief Indicates that nothing is recorded. */
-    FLOW_VARIABLES = 1, /*!< \brief Indicates that the current recording
-                                    can be used to compute the gradients with respect
-                                    to the conservative flow variables. */
-    GEOMETRY_VARIABLES = 2, /*!< \brief Indicates that the current recording
-                                       can be used to compute the gradients with respect
-                                       to the geometry variables. */
-    ALL_VARIABLES = 3,
-  };
-
 
 public:
   
@@ -873,10 +957,16 @@ public:
   void Output();
   
   /*!
-   * \brief Postprocesses the discrete adjoint fluid system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
+   * \brief Postprocess ???.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
-  void Postprocess(); 
+  void Postprocess(CConfig **config_container,
+                   CGeometry ***geometry_container,
+                   CSolver ****solver_container,
+                     unsigned short val_iZone);
+
 
   /*!
    * \brief Registers all input variables of the fluid iteration.
@@ -884,9 +974,11 @@ public:
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
-   * \param[in] kind_recording - Kind of recording, either FLOW_VARIABLES or GEOMETRY_VARIABLES
    */
-  void RegisterInput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone, unsigned short kind_recording);
+  void InitializeAdjoint(CSolver ****solver_container,
+                         CGeometry*** geometry_container,
+                         CConfig** config_container,
+                         unsigned short iZone);
 
   /*!
    * \brief Registers all output variables of the fluid iteration.
@@ -894,8 +986,13 @@ public:
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
+   * \param[in] kind_recording - Kind of recording, either FLOW_VARIABLES or GEOMETRY_VARIABLES
    */
-  void RegisterOutput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
+  void RegisterInput(CSolver ****solver_container,
+                     CGeometry*** geometry_container,
+                     CConfig** config_container,
+                     unsigned short iZone,
+                     unsigned short kind_recording);
 
   /*!
    * \brief Initializes the adjoints of the output variables of the fluid iteration.
@@ -904,35 +1001,11 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void InitializeAdjoint(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
-
-
-  /*!
-   * \brief Record a single iteration of the direct fluid system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] kind_recording - The kind of recording (geometry or flow).
-   */
-  void SetRecording(COutput *output,
-                      CIntegration ***integration_container,
-                      CGeometry ***geometry_container,
-                      CSolver ****solver_container,
-                      CNumerics *****numerics_container,
-                      CConfig **config_container,
-                      CSurfaceMovement **surface_movement,
-                      CVolumetricMovement **grid_movement,
-                      CFreeFormDefBox*** FFDBox,
-                      unsigned short val_iZone,
-                      unsigned short kind_recording);
-
+  void RegisterOutput(CSolver ****solver_container,
+                      CGeometry*** geometry_container,
+                      CConfig** config_container,
+											                      COutput* output,
+                      unsigned short iZone);
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
    * (e.g. turbulent variables, normals, volumes).

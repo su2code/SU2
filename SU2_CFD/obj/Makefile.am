@@ -5,8 +5,8 @@
 # \author M. Colonno, T. Economon, F. Palacios
 # \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -112,6 +112,7 @@ libSU2Core_sources = \
   ../src/numerics_template.cpp \
   ../src/output_cgns.cpp \
   ../src/output_structure.cpp \
+  ../src/output_physics.cpp \
   ../src/output_tecplot.cpp \
   ../src/output_fieldview.cpp \
   ../src/output_su2.cpp \

@@ -5,8 +5,8 @@
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -340,12 +340,12 @@ def main():
     contadj_oneram6.tol       = 0.00001
     test_list.append(contadj_oneram6)
 
-    # Inviscid WEDGE: tests generalized adjoint
+    # Inviscid WEDGE: tests averaged outflow total pressure adjoint
     contadj_wedge             = TestCase('contadj_wedge')
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [2.780403, -3.223266, -1448300.000000, -0.000000] #last 4 columns
+    contadj_wedge.test_vals = [2.856008, -2.767216, 1.0029e+06, 1.3024e-13] #last 4 columns
     contadj_wedge.su2_exec  = "SU2_CFD"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
@@ -562,23 +562,12 @@ def main():
     ls89_sa.tol       = 0.00001
     test_list.append(ls89_sa)
 
-#    # ls89_sst
-#    ls89_sst           = TestCase('ls89_sst')
-#    ls89_sst.cfg_dir   = "nicf/LS89"
-#    ls89_sst.cfg_file  = "turb_SST_PR.cfg"
-#    ls89_sst.test_iter = 100
-#    ls89_sst.test_vals =  [-8.548266, -1.449437, 0.067986, 0.151168] #last 4 columns
-#    ls89_sst.su2_exec  = "SU2_CFD"
-#    ls89_sst.timeout   = 1600
-#    ls89_sst.tol       = 0.00001
-#    test_list.append(ls89_sst)
-
     # Rarefaction shock wave edge_VW
     edge_VW           = TestCase('edge_VW')
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 100
-    edge_VW.test_vals = [-5.055874, 1.117978, -0.000009, 0.000000] #last 4 columns
+    edge_VW.test_vals = [-5.057244, 1.116904, -0.000009, 0.000000] #last 4 columns
     edge_VW.su2_exec  = "SU2_CFD"
     edge_VW.timeout   = 1600
     edge_VW.tol       = 0.00001
@@ -589,7 +578,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 100
-    edge_PPR.test_vals = [-5.484387, 0.656352, -0.000037, 0.000000] #last 4 columns
+    edge_PPR.test_vals = [-5.485453, 0.655375, -0.000037, 0.000000] #last 4 columns
     edge_PPR.su2_exec  = "SU2_CFD"
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
@@ -597,54 +586,87 @@ def main():
     
     
     ######################################
-    ### turboSU2                       ###
+    ### turbomachinery                 ###
     ######################################
     
-    # Mini centrifugal turbine blade
-    centrifugal_blade           = TestCase('centrifugal_blade')
-    centrifugal_blade.cfg_dir   = "turbomachinery/centrifugal_blade"
-    centrifugal_blade.cfg_file  = "centrifugal_blade.cfg"
-    centrifugal_blade.test_iter = 100
-    centrifugal_blade.test_vals = [-9.106943, -0.460429, 1.069070e+01, 3.396010e-01] #last 4 columns
-    centrifugal_blade.su2_exec  = "SU2_CFD"
-    centrifugal_blade.timeout   = 1600
-    centrifugal_blade.tol       = 0.000001
-    test_list.append(centrifugal_blade) 
+    # Jones APU Turbocharger
+    Jones_tc           = TestCase('jones_turbocharger')
+    Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc.cfg_file  = "Jones.cfg"
+    Jones_tc.test_iter = 29
+    Jones_tc.test_vals = [-5.571666, -0.207646, 9.203919e+01, 7.085071e-01] #last 4 columns
+    Jones_tc.su2_exec  = "SU2_CFD"
+    Jones_tc.timeout   = 1600
+    Jones_tc.tol       = 0.00001
+    test_list.append(Jones_tc)
+
+	# Jones APU Turbocharger restart
+    Jones_tc_rst           = TestCase('jones_turbocharger_restart')
+    Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
+    Jones_tc_rst.test_iter = 30
+    Jones_tc_rst.test_vals = [-3.947103, -0.763670, 8.277936e+01, 2.714948e+00] #last 4 columns
+    Jones_tc_rst.su2_exec  = "SU2_CFD"
+    Jones_tc_rst.timeout   = 1600
+    Jones_tc_rst.tol       = 0.00001
+    test_list.append(Jones_tc_rst)
+
+    # 2D axial stage
+    axial_stage2D           = TestCase('axial_stage2D')
+    axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
+    axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
+    axial_stage2D.test_iter = 100
+    axial_stage2D.test_vals = [-1.537311, 6.552745, 75.589800, 0.793084] #last 4 columns
+    axial_stage2D.su2_exec  = "SU2_CFD"
+    axial_stage2D.timeout   = 1600
+    axial_stage2D.tol       = 0.00001
+    test_list.append(axial_stage2D)
     
+    # 2D transonic stator
+    transonic_stator           = TestCase('transonic_stator')
+    transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator.cfg_file  = "transonic_stator.cfg"
+    transonic_stator.test_iter = 100
+    transonic_stator.test_vals = [-0.076402, 4.590077, 8.305280e+00, 7.038669e-03] #last 4 columns
+    transonic_stator.su2_exec  = "SU2_CFD"
+    transonic_stator.timeout   = 1600
+    transonic_stator.tol       = 0.00001
+    test_list.append(transonic_stator)
     
-    # Mini centrifugal turbine stage
-    centrifugal_stage           = TestCase('centrifugal_stage')
-    centrifugal_stage.cfg_dir   = "turbomachinery/centrifugal_stage"
-    centrifugal_stage.cfg_file  = "centrifugal_stage.cfg"
-    centrifugal_stage.test_iter = 100
-    centrifugal_stage.test_vals = [-10.166628, 1.621134, 22.064950, 0.527107] #last 4 columns
-    centrifugal_stage.su2_exec  = "SU2_CFD"
-    centrifugal_stage.timeout   = 1600
-    centrifugal_stage.tol       = 0.000001
-    test_list.append(centrifugal_stage) 
+    # 2D transonic stator restart
+    transonic_stator_rst           = TestCase('transonic_stator_restart')
+    transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
+    transonic_stator_rst.test_iter = 300
+    transonic_stator_rst.test_vals = [-0.685109, 4.592324, 6.245881e+00, 3.775056e-03] #last 4 columns
+    transonic_stator_rst.su2_exec  = "SU2_CFD"
+    transonic_stator_rst.timeout   = 1600
+    transonic_stator_rst.tol       = 0.00001
+    test_list.append(transonic_stator_rst)
+
 
     ######################################
     ### Sliding Mesh                   ###
     ######################################
 
     # Uniform flow
-#    uniform_flow         = TestCase('uniform_flow')
-#    uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
-#    uniform_flow.cfg_file  = "uniform_NN.cfg"
-#    uniform_flow.test_iter = 50
-#    uniform_flow.test_vals = [-0.368836, 5.156090, 0.000000, 0.000000] #last 4 columns
-#    uniform_flow.su2_exec  = "SU2_CFD"
-#    uniform_flow.timeout   = 1600
-#    uniform_flow.tol       = 0.000001
-#    uniform_flow.unsteady  = True
-#    test_list.append(uniform_flow) 
+    uniform_flow         = TestCase('uniform_flow')
+    uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
+    uniform_flow.cfg_file  = "uniform_NN.cfg"
+    uniform_flow.test_iter = 50
+    uniform_flow.test_vals = [-0.368836, 5.156090, 0.000000, 0.000000] #last 4 columns
+    uniform_flow.su2_exec  = "SU2_CFD"
+    uniform_flow.timeout   = 1600
+    uniform_flow.tol       = 0.000001
+    uniform_flow.unsteady  = True
+    test_list.append(uniform_flow) 
 
     # Channel_2D
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
-    channel_2D.cfg_file  = "channel_2D_NN.cfg"
+    channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 4
-    channel_2D.test_vals = [-1.498300, 4.541411, 0.000000, 0.000000] #last 4 columns
+    channel_2D.test_vals = [-1.656896, 4.263158, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -654,9 +676,9 @@ def main():
     # Channel_3D
     channel_3D           = TestCase('channel_3D')
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
-    channel_3D.cfg_file  = "channel_3D_NN.cfg"
+    channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 1
-    channel_3D.test_vals = [-1.899948, 4.032874, 0.000000, 0.000000] #last 4 columns
+    channel_3D.test_vals = [-1.899946, 4.032882, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "SU2_CFD"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -664,16 +686,40 @@ def main():
     test_list.append(channel_3D)
 
     # Pipe
-#    pipe           = TestCase('pipe')
-#    pipe.cfg_dir   = "sliding_interface/pipe"
-#    pipe.cfg_file  = "pipe_NN.cfg"
-#    pipe.test_iter = 2
-#    pipe.test_vals = [-3.503708, 3.194241, 0.000000, 0.000000] #last 4 columns
-#    pipe.su2_exec  = "SU2_CFD"
-#    pipe.timeout   = 1600
-#    pipe.tol       = 0.00001
-#    pipe.unsteady  = True
-#    test_list.append(pipe)
+    pipe           = TestCase('pipe')
+    pipe.cfg_dir   = "sliding_interface/pipe"
+    pipe.cfg_file  = "pipe_NN.cfg"
+    pipe.test_iter = 2
+    pipe.test_vals = [-3.503708, 3.194241, 0.000000, 0.000000] #last 4 columns
+    pipe.su2_exec  = "SU2_CFD"
+    pipe.timeout   = 1600
+    pipe.tol       = 0.00001
+    pipe.unsteady  = True
+    test_list.append(pipe)
+
+    # Rotating cylinders
+    rotating_cylinders           = TestCase('rotating_cylinders')
+    rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
+    rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
+    rotating_cylinders.test_iter = 3
+    rotating_cylinders.test_vals = [-1.253451, 4.531335, 0.000000, 0.000000] #last 4 columns
+    rotating_cylinders.su2_exec  = "SU2_CFD"
+    rotating_cylinders.timeout   = 1600
+    rotating_cylinders.tol       = 0.00001
+    rotating_cylinders.unsteady  = True
+    test_list.append(rotating_cylinders)
+
+    # Supersonic vortex shedding
+    supersonic_vortex_shedding           = TestCase('supersonic_vortex_shedding')
+    supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
+    supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
+    supersonic_vortex_shedding.test_iter = 5
+    supersonic_vortex_shedding.test_vals = [-1.122916, 4.606248, 0.000000, 0.000000] #last 4 columns
+    supersonic_vortex_shedding.su2_exec  = "SU2_CFD"
+    supersonic_vortex_shedding.timeout   = 1600
+    supersonic_vortex_shedding.tol       = 0.00001
+    supersonic_vortex_shedding.unsteady  = True
+    test_list.append(supersonic_vortex_shedding)
 
     # Bars_SST_2D
     bars_SST_2D           = TestCase('bars_SST_2D')
@@ -947,16 +993,16 @@ def main():
     test_list.append(shape_opt_euler_py)
 
     # test continuous_adjoint.py, with multiple objectives
-    #contadj_multi_py            = TestCase('contadj_multi_py')
-    #contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
-    #contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
-    #contadj_multi_py.test_iter  = 10
-    #contadj_multi_py.su2_exec   = "continuous_adjoint.py"
-    #contadj_multi_py.timeout    = 1600
-    #contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
-    #contadj_multi_py.test_file  = "of_grad_combo.dat"
-    #pass_list.append(contadj_multi_py.run_filediff())
-    #test_list.append(contadj_multi_py)
+    contadj_multi_py            = TestCase('contadj_multi_py')
+    contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
+    contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+    contadj_multi_py.test_iter  = 10
+    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    contadj_multi_py.timeout    = 1600
+    contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
+    contadj_multi_py.test_file  = "of_grad_combo.dat"
+    pass_list.append(contadj_multi_py.run_filediff())
+    test_list.append(contadj_multi_py)
 
 
     ##########################

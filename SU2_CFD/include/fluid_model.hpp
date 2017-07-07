@@ -4,8 +4,8 @@
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -73,6 +73,10 @@ su2double      StaticEnergy,      /*!< \brief Internal Energy. */
        dPde_rho,         /*!< \brief DpDe_d. */
        dTdrho_e,         /*!< \brief DTDd_e. */
        dTde_rho,         /*!< \brief DTDe_d. */
+       dhdrho_P,	 /*!< \brief DhDrho_p. */
+       dhdP_rho,	/*!< \brief DhDp_rho. */
+       dsdrho_P,	/*!< \brief DsDrho_p. */
+       dsdP_rho,	/*!< \brief DsDp_rho. */
              Cp,                    /*!< \brief Specific Heat Capacity at constant pressure. */
 			 Cv,
 			 Cv0,
@@ -175,6 +179,26 @@ public:
      */
     su2double GetdTde_rho ();
 
+    /*!
+     * \brief Get fluid pressure partial derivative.
+     */
+    su2double Getdhdrho_P ();
+
+    /*!
+     * \brief Get fluid pressure partial derivative.
+     */
+    su2double GetdhdP_rho ();
+
+    /*!
+     * \brief Get fluid temperature partial derivative.
+     */
+    su2double Getdsdrho_P ();
+
+    /*!
+     * \brief Get fluid temperature partial derivative.
+     */
+    su2double GetdsdP_rho ();
+    
     /*!
      * \brief Get fluid dynamic viscosity partial derivative.
      */
@@ -279,8 +303,16 @@ public:
      * \param[in] th1 - first thermodynamic variable (P).
      * \param[in] th2 - second thermodynamic variable (s).
      */
-
-    virtual void SetTDState_Ps (su2double P, su2double s );
+     virtual void SetTDState_Ps (su2double P, su2double s );
+     
+	/*!
+	 * \brief virtual member that would be different for each gas model implemented
+	 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+	 * \param[in] th1 - first thermodynamic variable (P).
+	 * \param[in] th2 - second thermodynamic variable (v).
+	 *
+	 */
+	virtual void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 
 
     void SetLiquidProp (su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double R, su2double mom3);
@@ -397,12 +429,20 @@ public:
 
     void SetTDState_Ps (su2double P, su2double s );
 
+	/*!
+     * \brief virtual member that would be different for each gas model implemented
+	 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+	 * \param[in] th1 - first thermodynamic variable (P).
+	 * \param[in] th2 - second thermodynamic variable (v).
+	 *
+	 */
+  virtual void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
+
     /*!
      * \brief Return gamma value.
      */
 
     su2double GetGamma ();
-
 
 };
 
@@ -487,13 +527,20 @@ public:
      * \param[in] th1 - first thermodynamic variable (P).
      * \param[in] th2 - second thermodynamic variable (s).
      */
-
     void SetTDState_Ps (su2double P, su2double s );
+
+	/*!
+	 * \brief virtual member that would be different for each gas model implemented
+	 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+	 * \param[in] th1 - first thermodynamic variable (P).
+	 * \param[in] th2 - second thermodynamic variable (v).
+     *
+     */
+    virtual void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 
     /*!
      * \brief Return gamma value.
      */
-
     void SetGamma_Trho();
 };
 
@@ -508,7 +555,6 @@ class CVanDerWaalsGas : public CIdealGas {
 protected:
   su2double
       a, b, Zed;             /*!< \brief Parameters for the Dimensionless Equation. */
-
 
 public:
 
@@ -554,8 +600,6 @@ public:
      * \param[in] P - first thermodynamic variable.
      * \param[in] rho - second thermodynamic variable.
      */
-
-
     void SetEnergy_Prho (su2double P, su2double rho );
 
     /*!
@@ -580,10 +624,16 @@ public:
      * \param[in] P - first thermodynamic variable (P).
      * \param[in] s - second thermodynamic variable (s).
      */
-
     void SetTDState_Ps (su2double P, su2double s );
 
-
+    /*!
+     * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+     * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+     * \param[in] th1 - first thermodynamic variable (P).
+     * \param[in] th2 - second thermodynamic variable (v).
+     *
+     */
+    void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 };
 
 
@@ -657,6 +707,15 @@ public:
      */
 
     void SetTDState_Ps (su2double P, su2double s );
+
+    /*!
+	 * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+	 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+	 * \param[in] th1 - first thermodynamic variable (P).
+	 * \param[in] th2 - second thermodynamic variable (v).
+	 *
+     */
+    void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 
     void SetGamma_Trho ();
 
@@ -767,6 +826,15 @@ public:
 
     void SetTDState_Ps (su2double P, su2double s );
 
+	/*!
+     * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+     * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+     * \param[in] th1 - first thermodynamic variable (P).
+     * \param[in] th2 - second thermodynamic variable (v).
+     *
+     */
+    void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
+
 };
 
 
@@ -876,6 +944,15 @@ public:
     void SetGamma_Trho ();
 
     void Set_Cv(su2double T, su2double v);
+
+    /*!
+     * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+     * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+     * \param[in] th1 - first thermodynamic variable (P).
+     * \param[in] th2 - second thermodynamic variable (v).
+     *
+     */
+    void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 
 };
 

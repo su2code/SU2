@@ -4,8 +4,8 @@
  * \author F. Palacios, A. Bueno
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -177,6 +177,12 @@ CTurbSSTVariable::~CTurbSSTVariable(void) {
 void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density) {
   unsigned short iDim;
   su2double arg2, arg2A, arg2B, arg1;
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(val_viscosity);  AD::SetPreaccIn(val_dist);
+  AD::SetPreaccIn(val_density);
+  AD::SetPreaccIn(Solution, nVar);
+  AD::SetPreaccIn(Gradient, nVar, nDim);
   
   /*--- Cross diffusion ---*/
   
@@ -198,5 +204,8 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
   
   arg2 = max(2.0*arg2A, arg2B);
   F2 = tanh(pow(arg2, 2.0));
+
+  AD::SetPreaccOut(F1); AD::SetPreaccOut(F2); AD::SetPreaccOut(CDkw);
+  AD::EndPreacc();
   
 }

@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -77,17 +77,30 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
   
+
+  
   /*--- Compute source term residuals ---*/
 
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
   
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
+  
   if (dual_time)
     solver_container[MainSolver]->SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
-
+  
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config);
+
+  /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/
+
+  if (config->GetBoolNRBC() && config->GetSpatialFourier()){
+    solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], INFLOW);
+
+    solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
+  }
+
+
   /*--- Weak boundary conditions ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -124,26 +137,16 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     	  solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
       case NRBC_BOUNDARY:
-        if (MainSolver == FLOW_SOL)
-          solver_container[MainSolver]->BC_NonReflecting(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        else if (MainSolver == TURB_SOL && config->GetKind_Data_NRBC(config->GetMarker_All_TagBound(iMarker)) == TOTAL_CONDITIONS_PT)
-          solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        else if (MainSolver == TURB_SOL && config->GetKind_Data_NRBC(config->GetMarker_All_TagBound(iMarker)) == STATIC_PRESSURE)
-          solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        break;
+      	solver_container[MainSolver]->BC_NonReflecting(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      	break;
       case RIEMANN_BOUNDARY:
-        if (MainSolver == FLOW_SOL)
-          solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == TOTAL_CONDITIONS_PT)
-          solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == STATIC_PRESSURE)
-          solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        else if (MainSolver == TWO_PHASE_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == TOTAL_CONDITIONS_PT)
-          solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], NULL, config, iMarker);
-        else if (MainSolver == TWO_PHASE_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == STATIC_PRESSURE)
-          solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], NULL, config, iMarker);
-
-        break;
+      	if (config->GetBoolTurbomachinery()){
+      		solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      	}
+      	else{
+      		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      	}
+      	break;
       case FAR_FIELD:
         solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
@@ -513,7 +516,6 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       
     }
     
-
     /*--- Do not apply any convergence criteria of the number
      of iterations is less than a particular value ---*/
     
@@ -560,7 +562,6 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     
     if (monitor != monitor) {
       if (rank == MASTER_NODE)
-
       cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
 #ifndef HAVE_MPI
       exit(EXIT_DIVERGENCE);

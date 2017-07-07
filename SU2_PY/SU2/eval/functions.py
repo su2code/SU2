@@ -5,8 +5,8 @@
 #  \author T. Lukaczyk, F. Palacios
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -81,6 +81,7 @@ def function( func_name, config, state=None ):
     
     # check for multiple objectives
     multi_objective = (type(func_name)==list)
+
     # func_name_string is only used to check whether the function has already been evaluated. 
     func_name_string = func_name
     if multi_objective:   func_name_string = func_name[0]  
@@ -89,7 +90,7 @@ def function( func_name, config, state=None ):
     if not state['FUNCTIONS'].has_key(func_name_string):
 
         # Aerodynamics
-        if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
+        if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff + su2io.optnames_turbo:
             aerodynamics( config, state )
             
         # Stability
@@ -110,15 +111,17 @@ def function( func_name, config, state=None ):
         func_out = state['FUNCTIONS']
     elif (multi_objective):
         # If combine_objective is true, use the 'combo' output.
-        objectives=config.OPT_OBJECTIVE
-        func_out = 0.0
-        for func in func_name:
-            sign = su2io.get_objectiveSign(func)
-            func_out+=state['FUNCTIONS'][func]*objectives[func]['SCALE']*sign
-        state['FUNCTIONS']['COMBO'] = func_out
+        func_out = state['FUNCTIONS']['COMBO']
     else:
         func_out = state['FUNCTIONS'][func_name]
-        
+
+    if config['OPT_OBJECTIVE'].has_key(func_name_string):
+        marker = config['OPT_OBJECTIVE'][func_name_string]['MARKER']
+        if su2io.per_surface_map.has_key(func_name_string):
+            name = su2io.per_surface_map[func_name_string]+'_'+marker
+            if state['FUNCTIONS'].has_key(name):
+                func_out = state['FUNCTIONS'][name]
+
     
     return copy.deepcopy(func_out)
 
@@ -212,6 +215,7 @@ def aerodynamics( config, state=None ):
     # files: direct solution
     if files.has_key('DIRECT'):
         name = files['DIRECT']
+        name = su2io.expand_zones(name, config)
         name = su2io.expand_time(name,config)
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
@@ -244,6 +248,7 @@ def aerodynamics( config, state=None ):
             
             # direct files to push
             name = info.FILES['DIRECT']
+            name = su2io.expand_zones(name,config)
             name = su2io.expand_time(name,config)
             push.extend(name)
             
@@ -260,16 +265,13 @@ def aerodynamics( config, state=None ):
                 push.append(info.FILES['TARGET_HEATFLUX'])
                 
     #: with output redirection
+    su2io.update_persurface(config,state)
     # return output 
     funcs = su2util.ordered_bunch()
-    for key in su2io.optnames_aero + su2io.grad_names_directdiff:
+    for key in su2io.optnames_aero + su2io.grad_names_directdiff + su2io.optnames_turbo:
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
             
-    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:    
-        import downstream_function
-        state['FUNCTIONS']['OUTFLOW_GENERALIZED']=downstream_function.downstream_function(config,state)
-
     return funcs
 
 #: def aerodynamics()

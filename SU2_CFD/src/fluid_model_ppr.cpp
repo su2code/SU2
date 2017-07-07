@@ -4,8 +4,8 @@
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -107,6 +107,9 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
     Density = rho;
     StaticEnergy = e;
 
+    AD::StartPreacc();
+    AD::SetPreaccIn(rho); AD::SetPreaccIn(e);
+
     rho2 = rho*rho;
     sqrt2=sqrt(2.0);
 
@@ -148,6 +151,13 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
 
     Zed = Pressure/(Gas_Constant*Temperature*Density);
 
+
+    AD::SetPreaccOut(Temperature); AD::SetPreaccOut(SoundSpeed2);
+    AD::SetPreaccOut(dPde_rho); AD::SetPreaccOut(dPdrho_e);
+    AD::SetPreaccOut(Zed); AD::SetPreaccOut(dTde_rho);
+    AD::SetPreaccOut(Pressure); AD::SetPreaccOut(Entropy);
+    AD::EndPreacc();
+
 }
 
 void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
@@ -156,6 +166,9 @@ void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
   su2double rho, fv, e;
   su2double sqrt2=sqrt(2.0);
   unsigned short nmax = 20, count=0;
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(P); AD::SetPreaccIn(T);
 
   A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
   B= b*P/(T*Gas_Constant);
@@ -187,6 +200,9 @@ void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
 
   e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) )*fv / (b*sqrt2);
 
+  AD::SetPreaccOut(rho); AD::SetPreaccOut(e);
+  AD::EndPreacc();
+
   SetTDState_rhoe(rho, e);
 }
 
@@ -205,21 +221,16 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
   su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
   su2double toll = 1e-9, FACTOR=0.2;
   su2double cons_s, cons_h;
-  unsigned short countrtb=0, NTRY=10, ITMAX=100;
+  unsigned short countrtb=0, NTRY=100, ITMAX=100;
 
   A = Gas_Constant / Gamma_Minus_One;
   T = h*Gamma_Minus_One/Gas_Constant/Gamma;
   v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
 
 
-  if (Zed<0.9999) {
-    x1 = Zed*v;
-    x2 = v;
-
-  } else {
     x1 = 0.2*v;
-    x2 = v;
-  }
+    x2 = 0.35*v;
+
 
 
   T = T_v_h(x1, h);
@@ -275,40 +286,27 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
     countrtb++;
   }while(abs(fmid) > toll && countrtb<ITMAX);
 
-  v = xmid;
-  if (countrtb==ITMAX) {
-    cout <<"Too many bisections in rtbis" << endl;
-//      do{
-//          atanh = (log(1.0+( b/v* sqrt2/(1 + b/v))) - log(1.0-( b/v* sqrt2/(1 + b/v))))/2.0;
-//          fv = atanh;
-//          T=T_v_h(v, h);
-//          f = A*log(T) + Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-//          f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(T)) *k/(sqrt(T*TstarCrit)*(v*v - b*b - 2*v*b));
-//          dv= f/f1;
-//          v-= dv;
-//          countnw++;
-//      }while(abs(f/x2) > toll && countnw<ITMAXNW);
-//
-//    } else {
-  }
-  if (v!=v) {
-    cout <<"not physical solution found, h and s input " << h << " "<< s << endl;
-    SetTDState_rhoT(Density, Temperature);
-  }
+	v = xmid;
+	if (countrtb==ITMAX) {
+		cout <<"Too many bisections in rtbis" << endl;
+		cout << countrtb <<endl;
 
-  T=T_v_h(v, h);
-  SetTDState_rhoT(1/v, T);
+	}
+	if (v!=v) {
+		cout <<"not physical solution found, h and s input " << h << " "<< s << endl;
+		SetTDState_rhoT(Density, Temperature);
+	}
 
-  // consistency check
-  cons_h= abs(((StaticEnergy + Pressure/Density) - h)/h);
-  cons_s= abs((Entropy-s)/s);
+	T=T_v_h(v, h);
+	SetTDState_rhoT(1/v, T);
 
-  if (cons_h >1e-4 || cons_s >1e-4) {
-    cout<< "TD consistency not verified in hs call"<< endl;
-       //cout <<"Before  "<< h <<" "<< s << endl;
-       //cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< countrtb<<" "<< countnw<< endl;
-       //getchar();
-  }
+	// consistency check
+	cons_h= abs(((StaticEnergy + Pressure/Density) - h)/h);
+	cons_s= abs((Entropy-s)/s);
+
+	if (cons_h >1e-4 || cons_s >1e-4) {
+		cout<< "TD consistency not verified in hs call"<< endl;
+	}
 }
 
 
@@ -316,6 +314,10 @@ void CPengRobinson::SetEnergy_Prho (su2double P, su2double rho) {
 
     su2double ad;
     su2double A, B, C, T, vb1, vb2, atanh;
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(P); AD::SetPreaccIn(rho);
+
     vb1 = (1/rho -b);
     vb2 = (1/rho/rho + 2*b/rho - b*b);
 
@@ -333,6 +335,8 @@ void CPengRobinson::SetEnergy_Prho (su2double P, su2double rho) {
 
     StaticEnergy = T * Gas_Constant / Gamma_Minus_One - ad;
 
+    AD::SetPreaccOut(StaticEnergy);
+    AD::EndPreacc();
 }
 
 void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
@@ -346,10 +350,10 @@ void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
 
 void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
 
-  su2double T, rho, v, cons_P, cons_s, fv, A, atanh;
-  su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
-  su2double toll = 1e-5, FACTOR=0.2;
-  unsigned short count=0, NTRY=10, ITMAX=100;
+	su2double T, rho, v, cons_P, cons_s, fv, A, atanh;
+	su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
+	su2double toll = 1e-5, FACTOR=0.2;
+	unsigned short count=0, NTRY=100, ITMAX=100;
 
   A = Gas_Constant / Gamma_Minus_One;
   T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
@@ -423,22 +427,38 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
 
     if(count==ITMAX) {
       cout <<"Too many bisections in rtbis" << endl;
-    }
+		}
 
-  rho = 1.0/xmid;
-  T = T_P_rho(P, rho);
-  SetTDState_rhoT(rho, T);
-//  cout << xmid << " "<< T<< " "<< Pressure<< " "<< P << " "<< Entropy << " "<< s <<endl;
+	rho = 1.0/xmid;
+	T = T_P_rho(P, rho);
+	SetTDState_rhoT(rho, T);
 
-  cons_P= abs((Pressure -P)/P);
-  cons_s= abs((Entropy-s)/s);
+	cons_P= abs((Pressure -P)/P);
+	cons_s= abs((Entropy-s)/s);
 
-  if(cons_P >1e-3 || cons_s >1e-3) {
-    cout<< "TD consistency not verified in hs call"<< endl;
-  }
+	if(cons_P >1e-3 || cons_s >1e-3) {
+		cout<< "TD consistency not verified in hs call"<< endl;
+	}
 
 }
 
+void CPengRobinson::ComputeDerivativeNRBC_Prho(su2double P, su2double rho ){
+
+	su2double dPdT_rho,dPdrho_T, dPds_rho, der1_alpha;
+
+	SetTDState_Prho(P, rho);
+
+	der1_alpha =-k/(2*sqrt(TstarCrit*Temperature));
+	dPdT_rho= Gas_Constant*rho/(1.0 -rho*b) - 2*a*rho*rho*sqrt(alpha2(Temperature))*der1_alpha/(1+2*b*rho-b*b*rho*rho);
+	dPdrho_T= Gas_Constant*Temperature/(1.0 -rho*b)/(1.0 -rho*b) - 2.0*rho*a*alpha2(Temperature)*(1.0+b*rho)/(1+2*b*rho-b*b*rho*rho)/(1+2*b*rho-b*b*rho*rho);
+
+	dhdrho_P= -dPdrho_e/dPde_rho -P/rho/rho;
+  dhdP_rho= 1.0/dPde_rho +1.0/rho;
+  dPds_rho= rho*rho*(SoundSpeed2 - dPdrho_T)/dPdT_rho;
+  dsdP_rho= 1.0/dPds_rho;
+  dsdrho_P= -SoundSpeed2/dPds_rho;
+
+}
 
 CPengRobinson_Generic::CPengRobinson_Generic() : CPengRobinson() {
   a= 0.0;
@@ -1033,4 +1053,21 @@ void CPengRobinson_Generic::Set_Cv (su2double T, su2double v) {
 
 }
 
+void CPengRobinson_Generic::ComputeDerivativeNRBC_Prho(su2double P, su2double rho ){
+
+su2double dPdT_rho,dPdrho_T, dPds_rho, der1_alpha;
+
+SetTDState_Prho(P, rho);
+
+der1_alpha =-k/(2*sqrt(TstarCrit*Temperature));
+dPdT_rho= Gas_Constant*rho/(1.0 -rho*b) - 2*a*rho*rho*sqrt(alpha2(Temperature))*der1_alpha/(1+2*b*rho-b*b*rho*rho);
+dPdrho_T= Gas_Constant*Temperature/(1.0 -rho*b)/(1.0 -rho*b) - 2.0*rho*a*alpha2(Temperature)*(1.0+b*rho)/(1+2*b*rho-b*b*rho*rho)/(1+2*b*rho-b*b*rho*rho);
+
+dhdrho_P= -dPdrho_e/dPde_rho -P/rho/rho;
+  dhdP_rho= 1.0/dPde_rho +1.0/rho;
+  dPds_rho= rho*rho*(SoundSpeed2 - dPdrho_T)/dPdT_rho;
+  dsdP_rho= 1.0/dPds_rho;
+  dsdrho_P= -SoundSpeed2/dPds_rho;
+
+}
 
