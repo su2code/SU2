@@ -4019,7 +4019,6 @@ void CDiscAdjFluidDriver::SetObjFunction(){
 
       if (config_container[iZone]->GetHeat_Inc())
         ObjFunc += solver_container[iZone][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
-        cout << "objective function heat flux: " << solver_container[iZone][MESH_0][HEAT_SOL]->GetTotal_HeatFlux() << endl;
     }
   }
 
