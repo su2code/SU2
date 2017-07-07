@@ -5429,6 +5429,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else if (rotating_frame && nDim == 3 && !turbo) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
             else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
+            else if (two_phase) cout <<  "     Res[Rho]" << "     Res[RhoE]" << "       Res[N]" << "         Res[y]" << endl;
             else if (turbo){
 
 
@@ -5480,6 +5481,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << endl << " IntIter" << " ExtIter";
             if (incompressible) cout << "   Res[Press]";
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
+            if (two_phase) cout << "      Res[N]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
             case SA:     cout << "       Res[nu]"; break;
