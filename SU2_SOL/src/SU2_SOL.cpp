@@ -162,13 +162,13 @@ int main(int argc, char *argv[]) {
 
 
 
-////////  if (rank == MASTER_NODE)
-////////          cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
+  if (rank == MASTER_NODE)
+          cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 
 /*--- Compute elements surrounding points, points surrounding points ---*/
 
-////////if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-////////geometry_container[ZONE_0]->SetPoint_Connectivity();
+if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
+geometry_container[ZONE_0]->SetPoint_Connectivity();
 
 ////////if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
 ////////geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
@@ -180,8 +180,8 @@ int main(int argc, char *argv[]) {
 
 /*--- Compute elements surrounding elements ---*/
 
-////////if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
-////////geometry_container[ZONE_0]->SetElement_Connectivity();
+if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
+geometry_container[ZONE_0]->SetElement_Connectivity();
 
 /*--- Check the orientation before computing geometrical quantities ---*/
 
@@ -196,8 +196,8 @@ int main(int argc, char *argv[]) {
 
 /*--- Compute center of gravity ---*/
 
-////////if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-////////geometry_container[ZONE_0]->SetCoord_CG();
+if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+geometry_container[ZONE_0]->SetCoord_CG();
 
 /*--- Create the dual control volume structures ---*/
 

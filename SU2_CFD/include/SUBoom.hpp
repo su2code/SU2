@@ -21,6 +21,8 @@ using namespace std;
 class SUBoom{
 public:
   unsigned long n_prof;
+  unsigned long *pointID_original;
+  su2double **Coord_original;
 
   /*---Flight variables---*/
   su2double flt_h;
@@ -40,7 +42,7 @@ public:
   su2double scale_C1, scale_C2;
 
   /*---Ray variables---*/
-  unsigned long ray_N_phi;
+  unsigned short ray_N_phi;
   su2double ray_r0;
   su2double *ray_t0;
   su2double *ray_phi;
@@ -62,7 +64,8 @@ public:
   su2double p_rise, p_max, p_rise2, p_int2;
 
   /*---Sensitivity---*/
-  unsigned long nPanel, nDim, nSig;
+  unsigned short nDim;
+  unsigned long nPanel, nSig;
   unsigned long *PointID;
   su2double **dJdU;
 
@@ -100,6 +103,13 @@ public:
 
   void AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
                 su2double& rho, su2double& g);
+  void SearchLinear(CSolver *solver, CConfig *config, CGeometry *geometry, 
+                    const su2double r0, const su2double *phi, unsigned short nPhi);
+  void ExtractLine(CSolver *solver, CConfig *config, CGeometry *geometry, 
+                   const su2double r0, const su2double *phi, unsigned short nPhi);
+  bool InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1);
+  int Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *p0, su2double *p1);
+  int Intersect3D();
   void ConditionAtmosphericData();
   void ScaleFactors();
   void InitialWaveNormals();
@@ -133,6 +143,10 @@ class searchTree{
 public:
   unsigned long nPointsTree;
   unsigned short nDimTree;
+  int *count;
+  su2double **yNN;
+
+  int **kNN;
 
   class treeNode{
     public:
@@ -158,10 +172,13 @@ public:
   void insertRB_5(long i);
   void rotateLeft(long i);
   void rotateRight(long i);
-  void searchRB();
+  void kNNRB(long i, int k, const su2double r0);
   
   void buildQuadTree();
+  void kNNQuad();
 
 };
 void MergeSort(searchTree::treeNode nodes, int l, int r, unsigned short nDimTree);
+void MergeSort(su2double y[], int kNN[], int l, int r);
 void merge(searchTree::treeNode nodes, int l, int m, int r, unsigned short nDimTree);
+void merge(su2double y[], int kNN[], int l, int m, int r);

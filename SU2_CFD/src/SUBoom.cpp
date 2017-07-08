@@ -24,6 +24,8 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   /*---Make sure to read in hard-coded values in the future!---*/
 
   if (rank == MASTER_NODE){
+  nDim = geometry->GetnDim();
+
   /*---Flight variables---*/
   flt_h = 15240; // altitude [m]
   flt_M = config->GetMach();
@@ -38,7 +40,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   scale_L = config->GetRefLengthMoment();
 
   /*---Ray variables---*/
-  int N_phi = 1;
+  unsigned short N_phi = 1;
   ray_N_phi = N_phi;
   ray_phi = new su2double[ray_N_phi];
   for(int i = 0; i < N_phi; i++){
@@ -93,6 +95,11 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     cout << "Pressure_Ref = " << Pressure_Ref << ", Pressure_FreeStream = " << Pressure_FreeStream << endl;
 
   /*---Loop over boundary markers to select those to extract pressure signature---*/
+  cout << "ray_r0 = " << ray_r0 << endl;
+  cout << "n_prof = " << n_prof << endl;
+  cout << "tol_m = " << tol_m << endl;
+  SearchLinear(solver, config, geometry, ray_r0, ray_phi, ray_N_phi);
+  ExtractLine(solver, config, geometry, ray_r0, ray_phi, ray_N_phi);
   unsigned long nMarker = config->GetnMarker_All();
   unsigned long sigCount=0;
   unsigned long panelCount=0;
@@ -103,7 +110,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   su2double *Coord;
 
   nSig = 0;
-  nDim = geometry->GetnDim();
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
       sigCount++;
@@ -283,12 +289,74 @@ void MergeSort(su2double x[], su2double p[], int l, int r){
   }
 }
 
+void MergeSort(su2double y[], int kNN[], int l, int r){
+  if(l < r){
+    int m = l + (r-l)/2;
+    MergeSort(y, kNN, l, m);
+    MergeSort(y, kNN, m+1, r);
+    merge(y, kNN, l, m, r);
+  }
+}
+
 void merge(su2double x[], su2double p[], int l, int m, int r){
   int i, j, k;
   int n1 = m-l+1;
   int n2 = r-m;
 
   su2double L[n1], R[n2], Lp[n1], Rp[n2];
+
+  /*--- Temporary arrays ---*/
+  for(i = 0; i < n1; i++){
+    L[i]  = x[l+i];
+    Lp[i] = p[l+i];
+  }
+  for(j = 0; j < n2; j++){
+    R[j]  = x[m+1+j];
+    Rp[j] = p[m+1+j];
+  }
+
+  i = 0;
+  j = 0;
+  k = l;
+
+  /*--- Begin sorting ---*/
+  while(i < n1 && j < n2){
+    if(L[i] <= R[j]){
+      x[k] = L[i];
+      p[k] = Lp[i];
+      i++;
+    }
+    else{
+      x[k] = R[j];
+      p[k] = Rp[j];
+      j++;
+    }
+    k++;
+  }
+
+  /*--- Fill rest of arrays ---*/
+  while(i < n1){
+    x[k] = L[i];
+    p[k] = Lp[i];
+    i++;
+    k++;
+  }
+
+  while(j < n2){
+    x[k] = R[j];
+    p[k] = Rp[j];
+    j++;
+    k++;
+  }
+}
+
+void merge(su2double x[], int p[], int l, int m, int r){
+  int i, j, k;
+  int n1 = m-l+1;
+  int n2 = r-m;
+
+  su2double L[n1], R[n2];
+  int Lp[n1], Rp[n2];
 
   /*--- Temporary arrays ---*/
   for(i = 0; i < n1; i++){
@@ -355,6 +423,350 @@ void QuickSort(su2double x[], su2double p[], int l, int r){
   }
   if(l < j) QuickSort(x, p, l, j);
   if(i < r) QuickSort(x, p, i, r);
+}
+
+void SUBoom::SearchLinear(CSolver *solver, CConfig *config, CGeometry *geometry, 
+               const su2double r0, const su2double *phi, unsigned short nPhi){
+  
+  /*--- Loop over boundary markers ---*/
+  unsigned long nMarker = config->GetnMarker_All();
+  unsigned long nPoint = geometry->GetnPoint();
+  unsigned long iMarker, iVertex, iPoint, *iPointmin;
+  unsigned long jElem;
+  unsigned short iElem, nElem;
+
+  bool inside;
+
+  su2double Minf = config->GetMach();
+  su2double x = 0.0, y = 0.0, z = 0.0;
+  su2double *Coord;
+  su2double *y0, *z0;
+  su2double yy, zz;
+  su2double r2, r02 = r0*r0, *r2min;
+  su2double sq2 = sqrt(2.0), sq2_2 = sq2/2.0;
+  su2double mu = asin(1.0/Minf), cotmu = 1.0/tan(mu);
+  su2double xwave = r0*cotmu;
+  su2double *p0, *p1;
+
+
+  if(nDim == 2){
+    y0 = new su2double[1];
+    r2min = new su2double[1];
+    iPointmin = new unsigned long[1];
+    y0[0] = r0;
+    r2min[0] = 1E6;
+  }
+  else{
+    y0 = new su2double[nPhi];
+    z0 = new su2double[nPhi];
+    r2min = new su2double[nPhi];
+    iPointmin = new unsigned long[nPhi];
+    for(int i = 0; i < nPhi; i++){
+      y0[i] = r0*sin(phi[i]);
+      z0[i] = r0*cos(phi[i]);
+      r2min[i] = 1.0E6;
+    }
+  }
+
+  for(iMarker = 0; iMarker < nMarker; iMarker++){
+    /*--- Only look at farfield boundary ---*/
+    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD){
+      for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        /*--- Make sure point is in domain ---*/
+        if(geometry->node[iPoint]->GetDomain()){
+          Coord = geometry->node[iPoint]->GetCoord();
+          y = SU2_TYPE::GetValue(Coord[1]);
+          if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
+          /*--- Only look at points below aircraft ---*/
+          if((nDim == 2 && y < 0.0) || (nDim == 3 && z < 0.0)){
+            r2 = y*y;
+            if(nDim == 3) r2 += z*z;
+            /*--- Limit search to points within strip ---*/
+            if(r2 > r02*sq2_2 && r2 < r02*sq2){
+              x = SU2_TYPE::GetValue(Coord[0]);
+              /*--- Make sure point is at "front" of domain ---*/
+              if(x < xwave){
+                if(nDim == 2){
+                  yy = abs(y);
+                  r2 = (yy-y0[0])*(yy-y0[0]);
+                  if(r2 < r2min[0]){
+                    iPointmin[0] = iPoint;
+                    r2min[0] = r2;
+                  }
+                }
+                else{
+                  yy = abs(y);
+                  zz = abs(z);
+                  for(int i = 0; i < nPhi; i++){
+                    r2 = (yy-y0[i])*(yy-y0[i]) + (zz-z0[i])*(zz-z0[i]);
+                    if(r2 < r2min[i]){
+                      iPointmin[i] = iPoint;
+                      r2min[i] = r2;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  Coord = geometry->node[iPointmin[0]]->GetCoord();
+
+  if(nDim == 2){
+    p0 = new su2double[2];
+    p1 = new su2double[2];
+    nElem = geometry->node[iPointmin[0]]->GetnElem();
+    for(iElem = 0; iElem < nElem; iElem++){
+      jElem = geometry->node[iPointmin[0]]->GetElem(iElem);
+      inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
+      if(inside){
+        nPanel = 1;
+        pointID_original = new unsigned long[nPanel];
+        Coord_original = new su2double*[nPanel];
+        Coord_original[0] = new su2double[nDim];
+
+        pointID_original[0] = jElem;
+        Coord_original[0][0] = (p0[0] + p1[0])/2.0;
+        Coord_original[0][1] = -r0;
+
+        break;
+      }
+    }
+
+    if(!inside){
+      unsigned short nPoint = geometry->node[iPointmin[0]]->GetnPoint();
+      for(iPoint = 0; iPoint < nPoint; iPoint++){
+        unsigned long jPoint = geometry->node[iPointmin[0]]->GetPoint(iPoint);
+        nElem = geometry->node[jPoint]->GetnElem();
+        for(iElem = 0; iElem < nElem; iElem++){
+          inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
+          if(inside){
+            nPanel = 1;
+            pointID_original = new unsigned long[nPanel];
+            Coord_original = new su2double*[nPanel];
+            Coord_original[0] = new su2double[nDim];
+
+            pointID_original[0] = jElem;
+            Coord_original[0][0] = (p0[0] + p1[0])/2.0;
+            Coord_original[0][1] = -r0;
+
+            break;
+          }
+        }
+        if(inside) break;
+      }
+    }
+  }
+
+  else if(nDim == 3){
+
+  }
+
+  delete [] iPointmin;
+  delete [] Coord;
+  delete [] y0;
+  if(nDim == 3) delete [] z0;
+  delete [] r2min;
+  delete [] p0;
+  delete [] p1;
+
+}
+
+void SUBoom::ExtractLine(CSolver *solver, CConfig *config, CGeometry *geometry, 
+               const su2double r0, const su2double *phi, unsigned short nPhi){
+  bool inside, end = false;
+  unsigned short iElem, nElem;
+  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem();
+  su2double x_i, x_m1;
+
+  unsigned long *pointID_tmp;
+  su2double **Coord_tmp;
+  su2double *p0 = new su2double[nDim], *p1 = new su2double[nDim];
+
+  while(!end){
+    if(nDim == 2){
+
+      jElem_m1 = pointID_original[nPanel-1];
+      x_m1 = geometry->elem[jElem_m1]->GetCG(0);
+      nElem = geometry->elem[jElem_m1]->GetnNeighbor_Elements();
+      inside = false;
+
+      for(iElem = 0; iElem < nElem; iElem++){
+        jElem = geometry->elem[jElem_m1]->GetNeighbor_Elements(iElem);
+        if(jElem < nElem_tot){
+          x_i = geometry->elem[jElem]->GetCG(0);
+
+          if(x_i > x_m1){
+            inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
+            if(inside){
+              nPanel++;
+
+              pointID_tmp = new unsigned long[nPanel-1];
+              Coord_tmp = new su2double*[nPanel-1];
+              for(unsigned long i = 0; i < nPanel-1; i++){
+                Coord_tmp[i] = new su2double[nDim];
+                pointID_tmp[i] = pointID_original[i];
+                Coord_tmp[i][0] = Coord_original[i][0];
+                Coord_tmp[i][1] = Coord_original[i][1];
+
+                delete [] Coord_original[i];
+              }
+              delete [] pointID_original;
+              delete [] Coord_original;
+
+              pointID_original = new unsigned long[nPanel];
+              Coord_original = new su2double*[nPanel];
+              for(unsigned long i = 0; i < nPanel-1; i++){
+                Coord_original[i] = new su2double[nDim];
+                pointID_original[i] = pointID_tmp[i];
+                Coord_original[i][0] = Coord_tmp[i][0];
+                Coord_original[i][1] = Coord_tmp[i][1];
+
+                delete [] Coord_tmp[i];
+              }
+              delete [] pointID_tmp;
+              delete [] Coord_tmp;
+
+              Coord_original[nPanel-1] = new su2double[nDim];
+              pointID_original[nPanel-1] = jElem;
+              Coord_original[nPanel-1][0] = (p0[0] + p1[0])/2.0;
+              Coord_original[nPanel-1][1] = -r0;
+
+              break;
+            }
+          }
+        }
+      }
+      if(!inside){
+        end = true;
+      }
+    }
+  }
+
+  cout << "nPanel extracted = " << nPanel << endl;
+
+}
+
+bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1){
+  bool inside = false;
+  unsigned long iPoint;
+  unsigned short iNode, nNode, count, intersect;
+
+  nNode = geometry->elem[jElem]->GetnNodes();
+
+  su2double **Coord_elem = new su2double*[nNode];
+  su2double *pp0 = new su2double[nDim];
+  su2double *pp1 = new su2double[nDim];
+
+  /*--- Compute element CG ---*/
+  for(iNode = 0; iNode < nNode; iNode++){
+    iPoint = geometry->elem[jElem]->GetNode(iNode);
+    Coord_elem[iNode] = new su2double[nDim];
+    for(unsigned short iDim = 0; iDim < nDim; iDim++){
+      Coord_elem[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
+    }
+  }
+
+  /*--- Now determine if line intersects element ---*/
+  if(nDim == 2){
+    count = 0;
+    for(unsigned short iEdge = 0; iEdge < nNode; iEdge++){
+      unsigned short iEdge_p1 = iEdge + 1;
+      if(iEdge == nNode-1) iEdge_p1 = 0;
+      intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], pp0, pp1);
+      if(intersect == 1){
+        if(count == 0){
+          p0[0] = pp0[0];
+          p0[1] = pp0[1];
+        }
+        else{
+          p1[0] = pp0[0];
+          p1[1] = pp0[1];
+        }
+      }
+      else if(intersect == 2){
+        p0[0] = pp0[0];
+        p0[1] = pp0[1];
+        p1[0] = pp1[0];
+        p1[1] = pp1[1];
+      }
+      count += intersect;
+      if(count > 1){
+        inside = true;
+        break;
+      }
+    }
+  }
+
+  for(iNode = 0; iNode < nNode; iNode++){
+    delete [] Coord_elem[iNode];
+  }
+  delete [] Coord_elem;
+
+  return inside;
+}
+
+int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *p0, su2double *p1){
+
+  su2double line[2][2] = {{-1.0,-r0},{1.0E3,-r0}};
+  su2double u[2] = {line[1][0]-line[0][0], line[1][1]-line[0][1]};
+  su2double v[2] = {Coord_ip1[0]-Coord_i[0], Coord_ip1[1]-Coord_i[1]};
+  su2double w[2] = {line[0][0]-Coord_i[0], line[0][1]-Coord_i[1]};
+  su2double upv = u[0]*v[1] - u[1]*v[0], 
+            upw = u[0]*w[1] - u[1]*w[0], 
+            vpw = v[0]*w[1] - v[1]*w[0]; // Perp dot product
+
+  if(abs(upv) < 1E-8){ // Segments are parallel
+    if(abs(upw) > 1.0E-8 || abs(vpw) > 1.0E-8){ // Not colinear
+      return 0;
+    }
+    /*--- Get overlap of collinear segments ---*/
+    su2double t0, t1;
+    su2double w2[2] = {line[1][0]-Coord_i[0], line[1][1]-Coord_i[1]};
+    if(abs(v[0]) > 1.0E-8){
+      t0 = w[0]/v[0];
+      t1 = w2[0]/v[0];
+    }
+    else{
+      t0 = w[1]/v[1];
+      t1 = w2[1]/v[1];
+    }
+    if(t0 > t1){
+      su2double t = t0;
+      t0 = t1;
+      t1 = t;
+    }
+
+    t0 = t0<0.0? 0.0 : t0; // Clip min to 0
+    t1 = t1>1.0? 1.0 : t1; // Clip min to 1
+
+    p0[0] = Coord_i[0] + t0*v[0];
+    p0[1] = Coord_i[1] + t0*v[1];
+    p1[0] = Coord_i[0] + t1*v[0];
+    p1[1] = Coord_i[1] + t1*v[1];
+
+    return 2;
+  }
+
+  /*--- Segments not parallel and may intersect at a point ---*/
+  su2double s = vpw/upv, t = upw/upv;
+  if(s < 0 || s > 1 || t < 0 || t > 1){
+    return 0;
+  }
+
+  p0[0] = line[0][0] + s*u[0];
+  p0[1] = line[0][1] + s*u[1];
+
+  return 1;
+
+}
+
+int SUBoom::Intersect3D(){
+  
 }
 
 void SUBoom::AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
@@ -734,24 +1146,6 @@ void SUBoom::RayTracer(){
       dydt[i][0][ik] = ky[ik];
       dzdt[i][0][ik] = kz[ik];
     }
-    /*jj = 0;
-    while(jj < n_prof-1){
-    for(int ik = 0; ik < 1001; ik++){
-        xtmp[ik] = x[ik+jj];
-        ytmp[ik] = y[ik+jj];
-        ztmp[ik] = z[ik+jj];
-        ttmp[ik] = t[ik+jj];
-    }
-    kx = SplineGetDerivs(ttmp, xtmp, 1001);
-    ky = SplineGetDerivs(ttmp, ytmp, 1001);
-    kz = SplineGetDerivs(ttmp, ztmp, 1001);
-    for(int ik = 0; ik < 1001; ik++){
-      dxdt[i][0][ik+jj] = kx[ik];
-      dydt[i][0][ik+jj] = ky[ik];
-      dzdt[i][0][ik+jj] = kz[ik];
-    }
-    jj = jj + 1001-1;
-}*/
 
     /*---Ray tube corners: {0, +dheading}---*/
     r0[0] = flt_heading[0]*tol_dr;
@@ -778,21 +1172,6 @@ void SUBoom::RayTracer(){
       dxdt[i][1][ik] = kx[ik];
       dydt[i][1][ik] = ky[ik];
     }
-    /*jj = 0;
-    while(jj < n_prof-1){
-    for(int ik = 0; ik < 1001; ik++){
-        xtmp[ik] = x[ik+jj];
-        ytmp[ik] = y[ik+jj];
-        ttmp[ik] = t[ik+jj];
-    }
-    kx = SplineGetDerivs(ttmp, xtmp, 1001);
-    ky = SplineGetDerivs(ttmp, ytmp, 1001);
-    for(int ik = 0; ik < 1001; ik++){
-      dxdt[i][1][ik+jj] = kx[ik];
-      dydt[i][1][ik+jj] = ky[ik];
-    }
-    jj = jj + 1001-1;
-}*/
 
     /*---Ray tube corners: {+dphi, 0}---*/
     data.c0 = ray_c0[i][1];
@@ -822,24 +1201,6 @@ void SUBoom::RayTracer(){
       dydt[i][2][ik] = ky[ik];
       dzdt[i][2][ik] = kz[ik];
     }
-    /*jj = 0;
-    while(jj < n_prof-1){
-    for(int ik = 0; ik < 1001; ik++){
-      xtmp[ik] = x[ik+jj];
-      ytmp[ik] = y[ik+jj];
-      ztmp[ik] = z[ik+jj];
-      ttmp[ik] = t[ik+jj];
-    }
-    kx = SplineGetDerivs(ttmp, xtmp, 1001);
-    ky = SplineGetDerivs(ttmp, ytmp, 1001);
-    kz = SplineGetDerivs(ttmp, ztmp, 1001);
-    for(int ik = 0; ik < 1001; ik++){
-      dxdt[i][2][ik+jj] = kx[ik];
-      dydt[i][2][ik+jj] = ky[ik];
-      dzdt[i][2][ik+jj] = kz[ik];
-    }
-    jj = jj + 1001-1;
-}*/
 
     /*---Ray tube corners: {+dphi, +dheading}---*/
     r0[0] = flt_heading[0]*tol_dr;
@@ -866,21 +1227,6 @@ void SUBoom::RayTracer(){
       dxdt[i][3][ik] = kx[ik];
       dydt[i][3][ik] = ky[ik];
     }
-    /*jj = 0;
-    while(jj < n_prof-1){
-    for(int ik = 0; ik < 1001; ik++){
-      xtmp[ik] = x[ik+jj];
-      ytmp[ik] = y[ik+jj];
-      ttmp[ik] = t[ik+jj];
-    }
-    kx = SplineGetDerivs(ttmp, xtmp, 1001);
-    ky = SplineGetDerivs(ttmp, ytmp, 1001);
-    for(int ik = 0; ik < 1001; ik++){
-      dxdt[i][3][ik+jj] = kx[ik];
-      dydt[i][3][ik+jj] = ky[ik];
-    }
-    jj = jj + 1001-1;
-}*/
 
   }
 
@@ -894,7 +1240,6 @@ void SUBoom::RayTracer(){
   delete [] kx;
   delete [] ky;
   delete [] kz;
-
 
 }
 
@@ -1375,7 +1720,6 @@ su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2
 }
 
 void SUBoom::PropagateSignal(){
-//  int len = signal.original_len;
   su2double t0, tf, dt;
   int j0;
   RayData data;
@@ -1451,11 +1795,8 @@ void SUBoom::PropagateSignal(){
     signal.final_M = Msig;
 
     /*---Final signal and boom strength---*/
-//    char cstr [200];
     ofstream sigFile;
-//    SPRINTF (cstr, "signal_final.dat");
     sigFile.precision(15);
-//    sigFile.open(cstr, ios::out);
     sigFile.open("signal_final.dat", ios::out);
     sigFile << "# T, p" << endl;
     p_max = -1E10;
@@ -1543,7 +1884,6 @@ void SUBoom::WriteSensitivities(){
 #ifdef HAVE_MPI
   SU2_MPI::Gather(&Buffer_Send_nSig, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nSig, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
   SU2_MPI::Allreduce(&nSig,&Max_nSig,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
-//  SU2_MPI::Reduce(&nSig,&Tot_nSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
 #endif
 
   nVar = nDim+3;
@@ -1634,7 +1974,7 @@ searchTree::searchTree(unsigned short nDim, unsigned long nPoints, const su2doub
   su2double x = 0.0, y = 0.0, z = 0.0;
   su2double r2 = 0.0, r02 = r0*r0;
   su2double sq2 = sqrt(2.0), sq2_2 = sq2/2.0;
-  su2double mu = asin(1.0/Minf);
+  su2double mu = asin(1.0/Minf), cotmu = 1.0/tan(mu);
 
   unsigned long *ind_tmp;
   su2double *x_tmp, *y_tmp, *z_tmp;
@@ -1655,7 +1995,7 @@ searchTree::searchTree(unsigned short nDim, unsigned long nPoints, const su2doub
     if(nDimTree == 2) z = coord[i][2];
     r2 = y*y + z*z;
     /*--- Check if point is within radius range, below aircraft, ahead of Mach angle ---*/
-    if(r2 > sq2_2*r02 && r2 < sq2*r02 && ((nDimTree == 1 && y < 0) || (nDimTree == 2 && z < 0)) && x > sq2_2*mu){
+    if(r2 > sq2_2*r02 && r2 < sq2*r02 && ((nDimTree == 1 && y < 0 && x > -sq2_2*y*cotmu) || (nDimTree == 2 && z < 0 && x > -sq2_2*z*cotmu))){
       /*--- Modify arrays ---*/
       nPointsTree++;
       if(nPointsTree == 1){
@@ -1731,6 +2071,26 @@ searchTree::searchTree(unsigned short nDim, unsigned long nPoints, const su2doub
   else if(nDimTree == 2 && nPointsTree > 0){
     buildQuadTree();
   }
+
+  /*--- Search the tree ---*/
+  if(nDimTree == 1){
+    int k = 1000;
+    count = new int[1];
+    count[0] = 0;
+    kNN = new int*[1];
+    yNN = new su2double*[1];
+    kNN[0] = new int[k];
+    yNN[0] = new su2double[k];
+    for(int i = 0; i < k; i++){
+      kNN[0][i] = -1;
+    }
+    kNNRB(nodes.root, k, r0);
+  }
+  else if(nDimTree == 2){
+    kNNQuad();
+  }
+
+  // TODO: Extract points along line (determine intersection)
 
 }
 
@@ -1855,7 +2215,7 @@ void searchTree::insertRB(long i, long j){
 
   if(j == -1)
     return;
-  else if(nodes.y[i] < nodes.y[j]){
+  else if(nodes.y[i] <= nodes.y[j]){
     nodes.parent[i] = j;
     insertRB(i,nodes.left[j]);
     if(nodes.left[j] == -1) nodes.left[j] = i;
@@ -1950,9 +2310,12 @@ void searchTree::rotateLeft(long i){
   
   nodes.parent[i] = nodes.parent[saved_p];
   
-  if(nodes.parent[saved_p] == -1) nodes.root = i;
-  else if(saved_p == nodes.left[nodes.parent[saved_p]]) nodes.left[nodes.parent[saved_p]] = i;
-  else nodes.right[nodes.parent[saved_p]] = i;
+  if(nodes.parent[saved_p] == -1)
+    nodes.root = i;
+  else if(saved_p == nodes.left[nodes.parent[saved_p]])
+    nodes.left[nodes.parent[saved_p]] = i;
+  else
+    nodes.right[nodes.parent[saved_p]] = i;
 
   nodes.left[i] = saved_p;
   nodes.parent[saved_p] = i;
@@ -1967,18 +2330,42 @@ void searchTree::rotateRight(long i){
   
   nodes.parent[i] = nodes.parent[saved_p];
   
-  if(nodes.parent[saved_p] == -1) nodes.root = i;
-  else if(saved_p == nodes.right[nodes.parent[saved_p]]) nodes.right[nodes.parent[saved_p]] = i;
-  else nodes.left[nodes.parent[saved_p]] = i;
+  if(nodes.parent[saved_p] == -1)
+    nodes.root = i;
+  else if(saved_p == nodes.right[nodes.parent[saved_p]])
+    nodes.right[nodes.parent[saved_p]] = i;
+  else 
+    nodes.left[nodes.parent[saved_p]] = i;
 
   nodes.right[i] = saved_p;
   nodes.parent[saved_p] = i;
 }
 
-void searchTree::searchRB(){
+void searchTree::kNNRB(long i, int k, const su2double r0){
+  if(count[0] < k){
+    kNN[0][count[0]] = i;
+    yNN[0][count[0]] = abs(r0-nodes.y[i]);
+    count++;
+    MergeSort(yNN[0], kNN[0], 0, count[0]-1);
+  }
+  else{
+    if(abs(r0-nodes.y[i]) < abs(r0-yNN[0][count[0]-1])){
+      kNN[0][count[0]] = i;
+      yNN[0][count[0]] = abs(r0-nodes.y[i]);
+      MergeSort(yNN[0], kNN[0], 0, count[0]-1);
+    }
+  }
 
+  if(r0 <= nodes.y[i] && nodes.left[i] != -1)
+    kNNRB(nodes.left[i], k, r0);
+  else if(nodes.right[i] != -1)
+    kNNRB(nodes.right[i], k, r0);
 }
 
 void searchTree::buildQuadTree(){
+
+}
+
+void searchTree::kNNQuad(){
 
 }
