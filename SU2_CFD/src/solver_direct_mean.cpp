@@ -15653,7 +15653,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
                    	   Mom0 = Mom0/rho_m;
     				   Mom3 = Mom3/rho_m;
-    			cout << "Mom0" << Mom0 << endl;
                    }
                    else{
                 	   Mom0 = 0.0;
