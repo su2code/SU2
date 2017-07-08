@@ -1156,10 +1156,12 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   OldAverageDensity                     = new su2double* [nMarker];
   ExtAverageDensity                     = new su2double* [nMarker];
   AverageNu                             = new su2double* [nMarker];
-  AverageKine                            = new su2double* [nMarker];
+  AverageKine                           = new su2double* [nMarker];
   AverageOmega                          = new su2double* [nMarker];
+  AverageMom0                           = new su2double* [nMarker];
+  AverageMom3                           = new su2double* [nMarker];
   ExtAverageNu                          = new su2double* [nMarker];
-  ExtAverageKine                         = new su2double* [nMarker];
+  ExtAverageKine                        = new su2double* [nMarker];
   ExtAverageOmega                       = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1179,6 +1181,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     AverageNu[iMarker]                      = new su2double [nSpanWiseSections + 1];
     AverageKine[iMarker]                    = new su2double [nSpanWiseSections + 1];
     AverageOmega[iMarker]                   = new su2double [nSpanWiseSections + 1];
+    AverageMom0[iMarker]                    = new su2double [nSpanWiseSections + 1];
+    AverageMom3[iMarker]                    = new su2double [nSpanWiseSections + 1];
     ExtAverageNu[iMarker]                   = new su2double [nSpanWiseSections + 1];
     ExtAverageKine[iMarker]                 = new su2double [nSpanWiseSections + 1];
     ExtAverageOmega[iMarker]                = new su2double [nSpanWiseSections + 1];
@@ -1200,6 +1204,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       AverageNu[iMarker][iSpan]                 = 0.0;
       AverageKine[iMarker][iSpan]               = 0.0;
       AverageOmega[iMarker][iSpan]              = 0.0;
+      AverageMom0[iMarker][iSpan]               = 0.0;
+      AverageMom3[iMarker][iSpan]               = 0.0;
       ExtAverageNu[iMarker][iSpan]              = 0.0;
       ExtAverageKine[iMarker][iSpan]            = 0.0;
       ExtAverageOmega[iMarker][iSpan]           = 0.0;
@@ -1235,6 +1241,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   KineOut                       = new su2double*[nMarkerTurboPerf];
   OmegaOut                      = new su2double*[nMarkerTurboPerf];
   NuOut                         = new su2double*[nMarkerTurboPerf];
+  Mom0In                        = new su2double*[nMarkerTurboPerf];
+  Mom0Out                       = new su2double*[nMarkerTurboPerf];
+  Mom3In                        = new su2double*[nMarkerTurboPerf];
+  Mom3Out                       = new su2double*[nMarkerTurboPerf];
 
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
     DensityIn[iMarker]          = new su2double [nSpanMax + 1];
@@ -1249,7 +1259,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     KineOut[iMarker]            = new su2double [nSpanMax + 1];
     OmegaOut[iMarker]           = new su2double [nSpanMax + 1];
     NuOut[iMarker]              = new su2double [nSpanMax + 1];
-
+    Mom0In[iMarker]             = new su2double [nSpanMax + 1];
+    Mom0Out[iMarker]            = new su2double [nSpanMax + 1];
+    Mom3In[iMarker]            = new su2double [nSpanMax + 1];
+    Mom3Out[iMarker]            = new su2double [nSpanMax + 1];
 
 
     for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
@@ -1265,6 +1278,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       KineOut[iMarker][iSpan]            = 0.0;
       OmegaOut[iMarker][iSpan]           = 0.0;
       NuOut[iMarker][iSpan]              = 0.0;
+      Mom0In[iMarker][iSpan]             = 0.0;
+      Mom0Out[iMarker][iSpan]            = 0.0;
+      Mom3In[iMarker][iSpan]             = 0.0;
+      Mom3Out[iMarker][iSpan]            = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++){
         TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
@@ -15454,9 +15471,9 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
   bool menter_sst       = (config->GetKind_Turb_Model() == SST);
-  bool two_phase = (config->GetKind_Turb_Model() == TWO_PHASE_EULER) ||
-		  	  	   (config->GetKind_Turb_Model() == TWO_PHASE_NAVIER_STOKES) ||
-		  	  	   (config->GetKind_Turb_Model() == TWO_PHASE_RANS);
+  bool two_phase = (config->GetKind_Solver() == TWO_PHASE_EULER) ||
+		  	  	   (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+		  	  	   (config->GetKind_Solver() == TWO_PHASE_RANS);
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 
@@ -15489,7 +15506,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-
 
   for (iSpan= 0; iSpan < nSpanWiseSections + 1; iSpan++){
 
@@ -15618,9 +15634,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   TotalMassNu    += Area*(Density*TurboVelocity[0] )*Nu;
 
                 }
-
                 /*--- Compute two phase integral quantities for the boundary of interest ---*/
-
                if (two_phase) {
 
                    Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
@@ -15639,6 +15653,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
                    	   Mom0 = Mom0/rho_m;
     				   Mom3 = Mom3/rho_m;
+    			cout << "Mom0" << Mom0 << endl;
                    }
                    else{
                 	   Mom0 = 0.0;
@@ -16588,6 +16603,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   AverageNu                         = NULL;
   AverageKine                       = NULL;
   AverageOmega                      = NULL;
+  AverageMom0                       = NULL;
+  AverageMom3                       = NULL;
   ExtAverageNu                      = NULL;
   ExtAverageKine                    = NULL;
   ExtAverageOmega                   = NULL;

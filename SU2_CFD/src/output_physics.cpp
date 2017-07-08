@@ -254,7 +254,6 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
           LiquidFractionOut[iMarkerTP][iSpan] = 0.0;
       }
 
-
       /*--- TURBO-PERFORMANCE---*/
       EntropyGen[iMarkerTP][iSpan]		   = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
       EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
@@ -265,7 +264,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
     }
   }
 
-  if(nBladesRow > 1){
+  if (nBladesRow > 1) {
     /*--- Compute performance for each stage ---*/
 
     EulerianWork[nBladesRow + nStages][nSpanWiseSections]           = 0.0;

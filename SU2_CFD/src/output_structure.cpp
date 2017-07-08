@@ -170,12 +170,18 @@ COutput::COutput(CConfig *config) {
   	TotalPressureOut              = new su2double*[nMarkerTurboPerf];
   	TotalTemperatureOut           = new su2double*[nMarkerTurboPerf];
   	EnthalpyIn                    = new su2double*[nMarkerTurboPerf];
-  TurbIntensityIn               = new su2double*[nMarkerTurboPerf];
-  Turb2LamViscRatioIn           = new su2double*[nMarkerTurboPerf];
-  TurbIntensityOut              = new su2double*[nMarkerTurboPerf];
-  Turb2LamViscRatioOut          = new su2double*[nMarkerTurboPerf];
-  NuFactorIn                    = new su2double*[nMarkerTurboPerf];
-  NuFactorOut                   = new su2double*[nMarkerTurboPerf];
+    TurbIntensityIn               = new su2double*[nMarkerTurboPerf];
+    Turb2LamViscRatioIn           = new su2double*[nMarkerTurboPerf];
+    TurbIntensityOut              = new su2double*[nMarkerTurboPerf];
+    Turb2LamViscRatioOut          = new su2double*[nMarkerTurboPerf];
+    NuFactorIn                    = new su2double*[nMarkerTurboPerf];
+    NuFactorOut                   = new su2double*[nMarkerTurboPerf];
+    DropletNumberIn               = new su2double*[nMarkerTurboPerf];
+    DropletNumberOut              = new su2double*[nMarkerTurboPerf];
+    LiquidMassIn                  = new su2double*[nMarkerTurboPerf];
+    LiquidMassOut                 = new su2double*[nMarkerTurboPerf];
+    LiquidFractionIn              = new su2double*[nMarkerTurboPerf];
+    LiquidFractionOut             = new su2double*[nMarkerTurboPerf];
 
   	for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
   		TotalStaticEfficiency   [iMarker] = new su2double [nSpanWiseSections + 1];
@@ -211,8 +217,8 @@ COutput::COutput(CConfig *config) {
   		AbsFlowAngleIn          [iMarker] = new su2double [nSpanWiseSections + 1];
   		TotalEnthalpyOut        [iMarker] = new su2double [nSpanWiseSections + 1];
   		TotalEnthalpyOutIs      [iMarker] = new su2double [nSpanWiseSections + 1];
-  		RothalpyIn         			[iMarker] = new su2double [nSpanWiseSections + 1];
-  		RothalpyOut        			[iMarker] = new su2double [nSpanWiseSections + 1];
+  		RothalpyIn         		[iMarker] = new su2double [nSpanWiseSections + 1];
+  		RothalpyOut        		[iMarker] = new su2double [nSpanWiseSections + 1];
   		AbsFlowAngleOut         [iMarker] = new su2double [nSpanWiseSections + 1];
   		PressureOut_BC          [iMarker] = new su2double [nSpanWiseSections + 1];
   		TemperatureIn           [iMarker] = new su2double [nSpanWiseSections + 1];
@@ -221,12 +227,18 @@ COutput::COutput(CConfig *config) {
   		TotalPressureOut        [iMarker] = new su2double [nSpanWiseSections + 1];
   		TotalTemperatureOut     [iMarker] = new su2double [nSpanWiseSections + 1];
   		EnthalpyIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-  TurbIntensityIn         [iMarker] = new su2double [nSpanWiseSections + 1];
-  Turb2LamViscRatioIn     [iMarker] = new su2double [nSpanWiseSections + 1];
-  TurbIntensityOut        [iMarker] = new su2double [nSpanWiseSections + 1];
-  Turb2LamViscRatioOut    [iMarker] = new su2double [nSpanWiseSections + 1];
-  NuFactorIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-  NuFactorOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+        TurbIntensityIn         [iMarker] = new su2double [nSpanWiseSections + 1];
+        Turb2LamViscRatioIn     [iMarker] = new su2double [nSpanWiseSections + 1];
+        TurbIntensityOut        [iMarker] = new su2double [nSpanWiseSections + 1];
+        Turb2LamViscRatioOut    [iMarker] = new su2double [nSpanWiseSections + 1];
+        NuFactorIn              [iMarker] = new su2double [nSpanWiseSections + 1];
+        NuFactorOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+        DropletNumberIn         [iMarker] = new su2double [nSpanWiseSections + 1];
+        DropletNumberOut        [iMarker] = new su2double [nSpanWiseSections + 1];
+        LiquidMassIn            [iMarker] = new su2double [nSpanWiseSections + 1];
+        LiquidMassOut           [iMarker] = new su2double [nSpanWiseSections + 1];
+        LiquidFractionIn        [iMarker] = new su2double [nSpanWiseSections + 1];
+        LiquidFractionOut       [iMarker] = new su2double [nSpanWiseSections + 1];
 
 
   		for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
@@ -274,16 +286,23 @@ COutput::COutput(CConfig *config) {
   			TotalPressureOut        [iMarker][iSpan] = 0.0;
   			TotalTemperatureOut     [iMarker][iSpan] = 0.0;
   			EnthalpyIn              [iMarker][iSpan] = 0.0;
-  TurbIntensityIn         [iMarker][iSpan] = 0.0;
-  Turb2LamViscRatioIn     [iMarker][iSpan] = 0.0;
-  TurbIntensityOut        [iMarker][iSpan] = 0.0;
-  Turb2LamViscRatioOut    [iMarker][iSpan] = 0.0;
-  NuFactorIn              [iMarker][iSpan] = 0.0;
-  NuFactorOut             [iMarker][iSpan] = 0.0;
-  			MachIn           [iMarker][iSpan]           = new su2double[4];
+            TurbIntensityIn         [iMarker][iSpan] = 0.0;
+            Turb2LamViscRatioIn     [iMarker][iSpan] = 0.0;
+            TurbIntensityOut        [iMarker][iSpan] = 0.0;
+            Turb2LamViscRatioOut    [iMarker][iSpan] = 0.0;
+            NuFactorIn              [iMarker][iSpan] = 0.0;
+            NuFactorOut             [iMarker][iSpan] = 0.0;
+            DropletNumberIn         [iMarker][iSpan] = 0.0;
+            DropletNumberOut        [iMarker][iSpan] = 0.0;
+            LiquidMassIn            [iMarker][iSpan] = 0.0;
+            LiquidMassOut           [iMarker][iSpan] = 0.0;
+            LiquidFractionIn        [iMarker][iSpan] = 0.0;
+            LiquidFractionOut       [iMarker][iSpan] = 0.0;
+            MachIn           [iMarker][iSpan]           = new su2double[4];
   			MachOut          [iMarker][iSpan]           = new su2double[4];
   			TurboVelocityIn  [iMarker][iSpan]           = new su2double[4];
   			TurboVelocityOut [iMarker][iSpan]           = new su2double[4];
+
 
   			for (iDim = 0; iDim < 4; iDim++){
   				MachIn           [iMarker][iSpan][iDim]   = 0.0;
@@ -341,8 +360,8 @@ COutput::~COutput(void) {
 			delete [] EnthalpyOutIs        [iMarker];
 			delete [] EntropyGen           [iMarker];
 			delete [] AbsFlowAngleIn       [iMarker];
-			delete [] RothalpyIn      		 [iMarker];
-			delete [] RothalpyOut     		 [iMarker];
+			delete [] RothalpyIn      	   [iMarker];
+			delete [] RothalpyOut     	   [iMarker];
 			delete [] AbsFlowAngleOut      [iMarker];
 			delete [] PressureOut_BC       [iMarker];
 			delete [] MachIn               [iMarker];
@@ -355,7 +374,12 @@ COutput::~COutput(void) {
 			delete [] TotalPressureOut     [iMarker];
 			delete [] TotalTemperatureOut  [iMarker];
 			delete [] EnthalpyIn           [iMarker];
-
+			delete [] DropletNumberIn      [iMarker];
+			delete [] DropletNumberOut     [iMarker];
+			delete [] LiquidMassIn         [iMarker];
+			delete [] LiquidMassOut        [iMarker];
+			delete [] LiquidFractionIn     [iMarker];
+			delete [] LiquidFractionOut    [iMarker];
 
 		}
 		delete [] TotalStaticEfficiency;
@@ -398,6 +422,13 @@ COutput::~COutput(void) {
 		delete [] TotalPressureOut;
 		delete [] TotalTemperatureOut;
 		delete [] EnthalpyIn;
+		delete [] DropletNumberIn;
+		delete [] DropletNumberOut;
+		delete [] LiquidMassIn;
+		delete [] LiquidMassOut;
+		delete [] LiquidFractionIn;
+		delete [] LiquidFractionOut;
+
 	}
 }
 
@@ -4598,7 +4629,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
 
-    
     bool output_per_surface = (config[val_iZone]->GetnMarker_Monitoring() > 1);
     
 
@@ -5429,7 +5459,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else if (rotating_frame && nDim == 3 && !turbo) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
             else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
-            else if (two_phase) cout <<  "     Res[Rho]" << "     Res[RhoE]" << "       Res[N]" << "         Res[y]" << endl;
+            else if (two_phase) cout <<  "     Res[Rho]" << "     Res[RhoE]" << "       Res[N]" << "         Res[y]" << "  TotPresLoss(%)" << "  Entropy Gen.(%)" << endl;
             else if (turbo){
 
 
@@ -5481,7 +5511,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << endl << " IntIter" << " ExtIter";
             if (incompressible) cout << "   Res[Press]";
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
-            if (two_phase) cout << "      Res[N]";
+            if (two_phase) cout << "      Res[N]" << "  TotPresLoss(%)" << "  Entropy Gen.(%)" << endl;
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
             case SA:     cout << "       Res[nu]"; break;

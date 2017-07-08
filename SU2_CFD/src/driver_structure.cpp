@@ -2906,7 +2906,6 @@ void CDriver::TurbomachineryPreprocessing(){
     geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
   }
 
-
   if(mixingplane){
     if (rank == MASTER_NODE) cout << "Set span-wise sections between zones on Mixing-Plane interface." << endl;
     for (donorZone = 0; donorZone < nZone; donorZone++) {

@@ -1,0 +1,20 @@
+fmt      name
+'grd'    'gyarmathy'
+optimization
+1
+max element deformation
+1.
+layer of the background grid
+0
+Periodic geometry        tol perio
+.false.                  1.e-6
+Scaling for SU2 file
+1. 
+number of boundary layers    BL thickness
+32                            1.e-2
+Graph for hybrid mesh construction
+.false.
+Kind of radial basis function (1-11)
+8
+Support radius for compact basis functions
+0.08

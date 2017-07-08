@@ -1,0 +1,15 @@
+    thk_bl      n BC      GEOM        CV
+     2.e-2         4       axl         0
+  
+          PITCH             xc             yc
+     0.00000000            1.0            1.0
+      
+ 1 INFLOW    h_min   h_max  Nd RadCRv
+               0.0003    0.0003        5.
+ 3 OUTFLOW   h_min   h_max  Nd RadCRv
+               0.0003    0.0003        5.
+ 2 SYM       h min   h max  Nd RadCRv
+               0.0003    0.0003        5.
+ 8 WALL      h min   h max  Nd RadCRv
+               0.0003    0.0003        5.
+
