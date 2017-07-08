@@ -47,6 +47,9 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
   su2double muLam, kine, omega, nu;
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool menter_sst = (config->GetKind_Turb_Model() == SST);
+  bool two_phase = ( (config->GetKind_Solver() == TWO_PHASE_EULER) ||
+		             (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+					 (config->GetKind_Solver() == TWO_PHASE_RANS) );
 
   unsigned short nBladesRow, nStages;
 
@@ -149,6 +152,14 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
         }
       }
 
+      /*--- Compute Two-phase inflow quantities ---*/
+      if (two_phase) {
+          DropletNumberIn[iMarkerTP][iSpan] = solver_container->GetMom0In(iMarkerTP, iSpan);
+          LiquidMassIn[iMarkerTP][iSpan] = solver_container->GetMom3In(iMarkerTP, iSpan);
+          LiquidFractionIn[iMarkerTP][iSpan] = 0.0;
+      }
+
+
       /*--- OUTFLOW ---*/
       /*--- Retrieve Outflow primitive quantities ---*/
       DensityOut[iMarkerTP][iSpan]         = solver_container->GetDensityOut(iMarkerTP, iSpan);
@@ -237,6 +248,13 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
         }
       }
 
+      if (two_phase) {
+          DropletNumberOut[iMarkerTP][iSpan] = solver_container->GetMom0Out(iMarkerTP, iSpan);
+          LiquidMassOut[iMarkerTP][iSpan] = solver_container->GetMom3Out(iMarkerTP, iSpan);
+          LiquidFractionOut[iMarkerTP][iSpan] = 0.0;
+      }
+
+
       /*--- TURBO-PERFORMANCE---*/
       EntropyGen[iMarkerTP][iSpan]		   = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
       EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
@@ -301,101 +319,4 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan){return EntropyGen[iMarkerTP][iSpan];}
 su2double COutput::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan){return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER;}
 su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan){return MassFlowIn[iMarkerTP][iSpan];}
-
-void COutput::ComputeTwoPhasePerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
-
-  CFluidModel *FluidModel;
-  unsigned short nDim = geometry->GetnDim();
-  unsigned short iMarkerTP, iSpan, iDim, iStage, iBlade;
-  unsigned short nMarkerTP = config->GetnMarker_Turbomachinery();
-  FluidModel = solver_container->GetFluidModel();
-  su2double area, absVel2, soundSpeed;
-  su2double muLam, kine, omega, nu;
-  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool menter_sst = (config->GetKind_Turb_Model() == SST);
-
-  /*--- Compute BC imposed value for convergence monitoring ---*/
-
-  FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());
-
-  /*--- Compute performance for the two-phase flow device ---*/
-
-  for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ) {
-
-	 for(iSpan = 0; iSpan < config->GetnSpan_iZones(iMarkerTP) + 1; iSpan++) {
-
-	      /*--- INFLOW ---*/
-	      /*--- Retrieve Inflow primitive quantities ---*/
-	      DensityIn[iMarkerTP][iSpan]          = solver_container->GetDensityIn(iMarkerTP, iSpan);
-	      PressureIn[iMarkerTP][iSpan]         = solver_container->GetPressureIn(iMarkerTP, iSpan);
-
-	      absVel2 = 0.0;
-
-	      for (iDim = 0; iDim < nDim; iDim++){
-	        TurboVelocityIn[iMarkerTP][iSpan][iDim]    = solver_container->GetTurboVelocityIn(iMarkerTP, iSpan)[iDim];
-	        absVel2   += TurboVelocityIn[iMarkerTP][iSpan][iDim]*TurboVelocityIn[iMarkerTP][iSpan][iDim];
-	      }
-	      TurboVelocityIn[iMarkerTP][iSpan][nDim] = sqrt(absVel2);
-
-	      area = geometry->GetSpanAreaIn(iMarkerTP, iSpan);
-
-	      /*--- Compute static Inflow quantities ---*/
-	      FluidModel->SetTDState_Prho(PressureIn[iMarkerTP][iSpan], DensityIn[iMarkerTP][iSpan]);
-	      EntropyIn[iMarkerTP][iSpan]		   = FluidModel->GetEntropy();
-	      MassFlowIn[iMarkerTP][iSpan]         = config->GetnBlades(iMarkerTP)*DensityIn[iMarkerTP][iSpan]*TurboVelocityIn[iMarkerTP][iSpan][0]*area;
-	      AbsFlowAngleIn[iMarkerTP][iSpan]     = atan(TurboVelocityIn[iMarkerTP][iSpan][1]/TurboVelocityIn[iMarkerTP][iSpan][0]);
-	      EnthalpyIn[iMarkerTP][iSpan]         = FluidModel->GetStaticEnergy() + PressureIn[iMarkerTP][iSpan]/DensityIn[iMarkerTP][iSpan];
-	      soundSpeed                           = FluidModel->GetSoundSpeed();
-
-	      /*--- Compute Total Inflow quantities ---*/
-	      TotalEnthalpyIn[iMarkerTP][iSpan]    = EnthalpyIn[iMarkerTP][iSpan] + 0.5*absVel2;
-	      FluidModel->SetTDState_hs(TotalEnthalpyIn[iMarkerTP][iSpan], EntropyIn[iMarkerTP][iSpan]);
-	      TotalPressureIn[iMarkerTP][iSpan]    = FluidModel->GetPressure();
-	      TotalTemperatureIn[iMarkerTP][iSpan] = FluidModel->GetTemperature();
-
-	      /*--- Compute Two-phase quantities ---*/
-	      DropletNumberIn[iMarkerTP][iSpan] = solver_container->GetMom0In(iMarkerTP, iSpan);
-	      LiquidMassFlowIn[iMarkerTP][iSpan] = solver_container->GetMom3In(iMarkerTP, iSpan);
-
-
-	      /*--- OUTFLOW ---*/
-	      /*--- Retrieve Outflow primitive quantities ---*/
-	      DensityOut[iMarkerTP][iSpan] = solver_container->GetDensityOut(iMarkerTP, iSpan);
-	      PressureOut[iMarkerTP][iSpan] = solver_container->GetPressureOut(iMarkerTP, iSpan);
-	      absVel2 = 0.0;
-
-	      for (iDim = 0; iDim < nDim; iDim++){
-	        TurboVelocityOut[iMarkerTP][iSpan][iDim]    = solver_container->GetTurboVelocityOut(iMarkerTP, iSpan)[iDim];
-	        absVel2   += TurboVelocityOut[iMarkerTP][iSpan][iDim]*TurboVelocityOut[iMarkerTP][iSpan][iDim];
-	      }
-	      TurboVelocityOut[iMarkerTP][iSpan][nDim] = sqrt(absVel2);
-
-	      area = geometry->GetSpanAreaOut(iMarkerTP, iSpan);
-
-	      /*--- Compute all the Outflow quantities ---*/
-	      FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
-	      EntropyOut[iMarkerTP][iSpan]		    = FluidModel->GetEntropy();
-	      MassFlowOut[iMarkerTP][iSpan]         = config->GetnBlades(iMarkerTP)*DensityOut[iMarkerTP][iSpan]*TurboVelocityOut[iMarkerTP][iSpan][0]*area;
-	      AbsFlowAngleOut[iMarkerTP][iSpan]     = atan(TurboVelocityOut[iMarkerTP][iSpan][1]/TurboVelocityOut[iMarkerTP][iSpan][0]);
-	      EnthalpyOut[iMarkerTP][iSpan]         = FluidModel->GetStaticEnergy() + PressureOut[iMarkerTP][iSpan]/DensityOut[iMarkerTP][iSpan];
-	      soundSpeed                            = FluidModel->GetSoundSpeed();
-
-	      /*--- Compute Total Outflow quantities ---*/
-	      TotalEnthalpyOut[iMarkerTP][iSpan]    = EnthalpyOut[iMarkerTP][iSpan] + 0.5*absVel2;
-	      FluidModel->SetTDState_hs(TotalEnthalpyOut[iMarkerTP][iSpan], EntropyOut[iMarkerTP][iSpan]);
-	      TotalPressureOut[iMarkerTP][iSpan]    = FluidModel->GetPressure();
-	      TotalTemperatureOut[iMarkerTP][iSpan] = FluidModel->GetTemperature();
-
-	      /*--- Compute Two-phase quantities ---*/
-	      DropletNumberOut[iMarkerTP][iSpan] = solver_container->GetMom0Out(iMarkerTP, iSpan);
-	      LiquidMassFlowOut[iMarkerTP][iSpan] = solver_container->GetMom3Out(iMarkerTP, iSpan);
-
-	      /*--- TWO-PHASE PERFORMANCE---*/
-	      EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
-
-	 }
-
-  }
-
-}
 
