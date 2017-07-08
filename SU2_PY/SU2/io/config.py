@@ -601,24 +601,23 @@ def read_config(filename):
     if not data_dict.has_key('OPT_CONSTRAINT'):
         data_dict['OPT_CONSTRAINT'] =  {'INEQUALITY': OrderedDict(), 'EQUALITY': OrderedDict()}
     if not data_dict.has_key('VALUE_OBJFUNC_FILENAME'):
-      data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
+        data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
     if not data_dict.has_key('GRAD_OBJFUNC_FILENAME'):
-      data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
+        data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
     if not data_dict.has_key('SIDESLIP_ANGLE'):
-      data_dict['SIDESLIP_ANGLE'] = 0.0
+        data_dict['SIDESLIP_ANGLE'] = 0.0
     if not data_dict.has_key('REYNOLDS_NUMBER'):
-      data_dict['REYNOLDS_NUMBER'] = 0.0
+        data_dict['REYNOLDS_NUMBER'] = 0.0
     if not data_dict.has_key('TARGET_CL'):
-      data_dict['TARGET_CL'] = 0.0
+        data_dict['TARGET_CL'] = 0.0
     if not data_dict.has_key('FREESTREAM_PRESSURE'):
-      data_dict['FREESTREAM_PRESSURE'] = 0.0
+        data_dict['FREESTREAM_PRESSURE'] = 101325.0
     if not data_dict.has_key('FREESTREAM_TEMPERATURE'):
-      data_dict['FREESTREAM_TEMPERATURE'] = 0.0
+        data_dict['FREESTREAM_TEMPERATURE'] = 288.15
 
     #
-    # Multipoints requires
+    # Multipoints requires some particular default values
     #
-
     multipoints = 1
     if not data_dict.has_key('MULTIPOINT_WEIGHT'):
       data_dict['MULTIPOINT_WEIGHT'] = "(1.0)"
