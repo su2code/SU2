@@ -8382,7 +8382,6 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   ifstream Surface_file;
   char buffer[50], cstr[200];
   
-  
   nPointLocal = geometry->GetnPoint();
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);

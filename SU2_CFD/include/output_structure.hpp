@@ -179,7 +179,11 @@ class COutput {
         **TurbIntensityOut,
         **Turb2LamViscRatioOut,
         **NuFactorIn,
-        **NuFactorOut;
+        **NuFactorOut,
+        **LiquidMassFlowIn,
+  	  	**DropletNumberIn,
+        **LiquidMassFlowOut,
+  	    **DropletNumberOut;
 
 protected:
 
@@ -689,6 +693,15 @@ public:
    * \param[in] iSpan - span section.
    */
   su2double GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan);
+
+  /*!
+	 * \brief Compute the performance of a device operating with two-phase flow.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iExtIter - Current external (time) iteration.
+	 */
+  void ComputeTwoPhasePerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Write the output file for harmonic balance for each time-instance.

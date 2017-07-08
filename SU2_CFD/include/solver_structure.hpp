@@ -3575,6 +3575,34 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetMom0In(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetMom0Out(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetMom3In(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetMom3Out(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
@@ -3985,6 +4013,8 @@ protected:
   **AverageNu,
   **AverageKine,
   **AverageOmega,
+  **AverageMom0,
+  **AverageMom3,
   **ExtAverageNu,
   **ExtAverageKine,
   **ExtAverageOmega;
@@ -4000,7 +4030,11 @@ protected:
   **NuIn,
   **KineOut,
   **OmegaOut,
-  **NuOut;
+  **NuOut,
+  **Mom0In,
+  **Mom3In,
+  **Mom0Out,
+  **Mom3Out;
   
   complex<su2double> ***CkInflow,
   ***CkOutflow1,
@@ -6132,6 +6166,34 @@ public:
    * \return Value of the inlet density.
    */
   su2double GetNuOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the averaged liquid fraction at the inflow boundary.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the liquid fraction.
+   */
+  su2double GetMom0In(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the averaged liquid fraction at the outflow boundary.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the liquid fraction.
+   */
+  su2double GetMom0Out(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the averaged droplet number at the inflow boundary.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the droplet number.
+   */
+  su2double GetMom3In(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the averaged droplet number at the outflow boundary.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the droplet number.
+   */
+  su2double GetMom3Out(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief Set inlet density.
