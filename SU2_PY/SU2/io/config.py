@@ -606,6 +606,8 @@ def read_config(filename):
         data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
     if not data_dict.has_key('SIDESLIP_ANGLE'):
         data_dict['SIDESLIP_ANGLE'] = 0.0
+    if not data_dict.has_key('MACH_NUMBER'):
+        data_dict['MACH_NUMBER'] = 0.0
     if not data_dict.has_key('REYNOLDS_NUMBER'):
         data_dict['REYNOLDS_NUMBER'] = 0.0
     if not data_dict.has_key('TARGET_CL'):
