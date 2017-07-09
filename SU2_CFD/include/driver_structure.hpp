@@ -82,7 +82,6 @@ protected:
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CTransfer ***transfer_container;              /*!< \brief Definition of the transfer of information and the physics involved in the interface. */
-  CTransfer ***transfer_performance_container;  /*!< \brief Definition of the transfer of performance involved in the interface. */
   su2double APIVarCoord[3];                     /*!< \brief This is used to store the VarCoord of each node. */
   su2double APINodalForce[3];                   /*!< \brief This is used to store the force at each node. */
   su2double APINodalForceDensity[3];            /*!< \brief This is used to store the force density at each node. */
