@@ -5281,7 +5281,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   cout << endl;
                 }
                 if (turbo && write_turbo && val_iZone== 0){
-                  WriteTutboPerfConvHistory(config[val_iZone]);
+                  WriteTurboPerfConvHistory(config[val_iZone]);
                 }
                 break;
 
@@ -5855,29 +5855,29 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     }
     
       
-		delete [] residual_flow;
-		delete [] residual_turbulent;
-		delete [] residual_transition;
-		delete [] residual_wave;
-		delete [] residual_fea;
-		delete [] residual_fem;
-		delete [] residual_heat;
+    delete [] residual_flow;
+    delete [] residual_turbulent;
+    delete [] residual_transition;
+    delete [] residual_wave;
+    delete [] residual_fea;
+    delete [] residual_fem;
+    delete [] residual_heat;
 
-		delete [] residual_adjflow;
-		delete [] residual_adjturbulent;
+    delete [] residual_adjflow;
+    delete [] residual_adjturbulent;
 
     delete [] Surface_CL;
     delete [] Surface_CD;
     delete [] Surface_CSF;
-		delete [] Surface_CEff;
-		delete [] Surface_CFx;
-		delete [] Surface_CFy;
-		delete [] Surface_CFz;
-		delete [] Surface_CMx;
-		delete [] Surface_CMy;
-		delete [] Surface_CMz;
-		delete [] aeroelastic_pitch;
-		delete [] aeroelastic_plunge;
+    delete [] Surface_CEff;
+    delete [] Surface_CFx;
+    delete [] Surface_CFy;
+    delete [] Surface_CFz;
+    delete [] Surface_CMx;
+    delete [] Surface_CMy;
+    delete [] Surface_CMz;
+    delete [] aeroelastic_pitch;
+    delete [] aeroelastic_plunge;
     
   }
 }
@@ -10219,7 +10219,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
 }
 
-void COutput::WriteTutboPerfConvHistory(CConfig *config){
+void COutput::WriteTurboPerfConvHistory(CConfig *config){
 
   unsigned short iMarker_Monitoring;
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;

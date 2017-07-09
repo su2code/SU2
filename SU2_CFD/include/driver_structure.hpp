@@ -68,8 +68,8 @@ protected:
                 nZone,                          /*!< \brief Total number of zones in the problem. */
                 nDim;                           /*!< \brief Number of dimensions.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
-	     mixingplane,															/*!< \brief mixingplane simulation flag.*/
-			 fsi;                                     /*!< \brief FSI simulation flag.*/
+       mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
+       fsi;                                     /*!< \brief FSI simulation flag.*/
   CIteration **iteration_container;             /*!< \brief Container vector with all the iteration methods. */
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
   CIntegration ***integration_container;        /*!< \brief Container vector with all the integration methods. */
@@ -536,7 +536,6 @@ public:
    * \brief Perform a mesh deformation as initial condition (single zone).
    */
   void SetInitialMesh();
-
 };
 
 
@@ -607,7 +606,7 @@ public:
  * \class CTurbomachineryDriver
  * \brief Class for driving an iteration for turbomachinery flow analysis.
  * \author S. Vitale
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CTurbomachineryDriver : public CFluidDriver {
 public:
@@ -618,10 +617,10 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
    */
-	CTurbomachineryDriver(char* confFile,
-                   unsigned short val_nZone,
-                   unsigned short val_nDim,
-                   SU2_Comm MPICommunicator);
+  CTurbomachineryDriver(char* confFile,
+                        unsigned short val_nZone,
+                        unsigned short val_nDim,
+                        SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
@@ -658,7 +657,7 @@ public:
  * \class CDiscAdjMultiZoneDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CDiscAdjFluidDriver : public CFluidDriver {
 
@@ -707,7 +706,7 @@ public:
  * \class CDiscAdjMultiZoneDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author S. Vitale, T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CDiscAdjTurbomachineryDriver : public  CDiscAdjFluidDriver {
 

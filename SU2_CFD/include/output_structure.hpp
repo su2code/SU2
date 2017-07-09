@@ -129,7 +129,7 @@ class COutput {
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
   bool turbo;
   unsigned short   nSpanWiseSections,
-									nMarkerTurboPerf;
+		   nMarkerTurboPerf;
 
   su2double **TotalStaticEfficiency,
         **TotalTotalEfficiency,
@@ -646,27 +646,27 @@ public:
   void SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone);
 
   /*!
-	 * \brief Compute .
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iExtIter - Current external (time) iteration.
-	 */
+   * \brief Compute .
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   */
   void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
 
   /*!
-	 * \brief Compute .
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  void WriteTutboPerfConvHistory(CConfig *config);
+   * \brief Compute .
+   * \param[in] config - Definition of the particular problem.
+   */
+  void WriteTurboPerfConvHistory(CConfig *config);
 
   /*!
-	 * \brief Write the output file for spanwise turboperformance.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_nZone - iZone index.
-	 */
+   * \brief Write the output file for spanwise turboperformance.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - iZone index.
+   */
   void WriteSpanWiseValuesFiles(CGeometry ***geometry, CConfig **config, unsigned short val_iZone);
 
   /*!
