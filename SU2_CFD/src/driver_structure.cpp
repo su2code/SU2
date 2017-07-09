@@ -4043,7 +4043,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
     finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(2));
     rot_z_ini = config_container[ZONE_0]->GetRampRotatingFrame_Coeff(0);
-    print = ((ExtIter + 1)%40 == 0 && ExtIter > 0);
+    print = false;
     if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
 
       for (iZone = 0; iZone < nZone; iZone++) {
