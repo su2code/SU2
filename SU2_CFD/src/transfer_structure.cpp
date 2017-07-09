@@ -76,8 +76,8 @@ CTransfer::~CTransfer(void) {
   if (Donor_Variable       != NULL) delete [] Donor_Variable;
   if (Target_Variable      != NULL) delete [] Target_Variable;
 
-	if (SpanValueCoeffTarget != NULL) delete[] SpanValueCoeffTarget;
-	if (SpanLevelDonor       != NULL) delete[] SpanLevelDonor;
+  if (SpanValueCoeffTarget != NULL) delete[] SpanValueCoeffTarget;
+  if (SpanLevelDonor       != NULL) delete[] SpanLevelDonor;
 
   
 }

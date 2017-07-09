@@ -853,10 +853,10 @@ private:
   *default_heat_capacity,     /*!< \brief Default heat capacity coefficients. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
-	*default_mixedout_coeff,    /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
-	*default_rampRotFrame_coeff,/*!< \brief Default ramp rotating frame coefficients for the COption class. */
-	*default_rampOutPres_coeff, /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
-	*default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  *default_mixedout_coeff,    /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
+  *default_rampRotFrame_coeff,/*!< \brief Default ramp rotating frame coefficients for the COption class. */
+  *default_rampOutPres_coeff, /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
+  *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */

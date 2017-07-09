@@ -118,26 +118,26 @@ public:
 	CPoint** node;			/*!< \brief Node vector (dual grid information). */
 	CEdge** edge;			/*!< \brief Edge vector (dual grid information). */
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
-	CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
-	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-        unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker. */
-        unsigned short nTurboPerf; /*!< \brief Number of Span wise section for each turbo marker. */
-        su2double **SpanWiseValue; /*!< \brief Span wise values for each turbo marker. */
-        long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
-        unsigned long **nTotVertexSpan; /*! <\brief number of vertexes at each span wise section for each marker.  */
-        unsigned long nVertexSpanMax[3]; /*! <\brief max number of vertexes for each span section for each marker flag.  */
-	su2double ***AverageTurboNormal; /*! <\brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
-	su2double ***AverageNormal; /*! <\brief Average boundary normal at each span wise section for each marker.*/
-	su2double ***AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
-	su2double **AverageTangGridVel; /*! <\brief Average tangential rotational speed at each span wise section for each marker.*/
-	su2double **SpanArea; /*! <\brief Area at each span wise section for each marker.*/
-        su2double **MaxAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
-        su2double **MinAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
-        su2double **MinRelAngularCoord; /*! <\brief Min relative angular coord at each span wise section for each marker.*/
-        su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
-	su2double **TangGridVelIn, **TangGridVelOut; /*! <\brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
-	su2double **SpanAreaIn, **SpanAreaOut; /*! <\brief Area at each span wise section for each turbomachinery marker.*/
-	su2double **TurboRadiusIn, **TurboRadiusOut; /*! <\brief Radius at each span wise section for each turbomachinery marker*/
+  CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
+  unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
+  unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker. */
+  unsigned short nTurboPerf; /*!< \brief Number of Span wise section for each turbo marker. */
+  su2double **SpanWiseValue; /*!< \brief Span wise values for each turbo marker. */
+  long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
+  unsigned long **nTotVertexSpan; /*! <\brief number of vertexes at each span wise section for each marker.  */
+  unsigned long nVertexSpanMax[3]; /*! <\brief max number of vertexes for each span section for each marker flag.  */
+  su2double ***AverageTurboNormal; /*! <\brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
+  su2double ***AverageNormal; /*! <\brief Average boundary normal at each span wise section for each marker.*/
+  su2double ***AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
+  su2double **AverageTangGridVel; /*! <\brief Average tangential rotational speed at each span wise section for each marker.*/
+  su2double **SpanArea; /*! <\brief Area at each span wise section for each marker.*/
+  su2double **MaxAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+  su2double **MinAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+  su2double **MinRelAngularCoord; /*! <\brief Min relative angular coord at each span wise section for each marker.*/
+  su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
+  su2double **TangGridVelIn, **TangGridVelOut; /*! <\brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
+  su2double **SpanAreaIn, **SpanAreaOut; /*! <\brief Area at each span wise section for each turbomachinery marker.*/
+  su2double **TurboRadiusIn, **TurboRadiusOut; /*! <\brief Radius at each span wise section for each turbomachinery marker*/
 
   unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
 	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that
@@ -439,58 +439,58 @@ public:
 	 */
 	virtual void SetVertex(CConfig *config);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
-
-/*!
- * \brief A virtual member.
- * \param[in] config - Definition of the particular problem.
- */
-virtual void UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void GatherInOutAverageValues(CConfig *config, bool allocate);
-
-	/*! 
-	 * \brief A virtual member.
-	 */
-	virtual void SetVertex(void);
-
-	/*! 
-	 * \brief A virtual member.
-	 */		
-	virtual void SetCoord_CG(void);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] action - Allocate or not the new elements.		 
-	 */
-	virtual void SetControlVolume(CConfig *config, unsigned short action);
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
 
   /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] action - Allocate or not the new elements.
-	 */
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void GatherInOutAverageValues(CConfig *config, bool allocate);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetVertex(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetCoord_CG(void);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] action - Allocate or not the new elements.
+   */
+  virtual void SetControlVolume(CConfig *config, unsigned short action);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] action - Allocate or not the new elements.
+   */
   virtual void VisualizeControlVolume(CConfig *config, unsigned short action);
   
 	/*! 
@@ -679,41 +679,41 @@ virtual void UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsign
 	 */
 	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
-/*!
- * \brief A virtual member.
- * \param[in] config - Definition of the particular problem.
- */
-virtual void SetShroudVelocity(CConfig *config);
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+   virtual void SetShroudVelocity(CConfig *config);
 
-/*!
- * \brief A virtual member.
- * \param[in] config - Definition of the particular problem.
- */
-virtual void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iter - Current physical time step.
-	 */
-	virtual void SetGridVelocity(CConfig *config, unsigned long iter);
+   /*!
+    * \brief A virtual member.
+    * \param[in] config - Definition of the particular problem.
+    */
+   virtual void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  virtual void Set_MPI_Coord(CConfig *config);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  virtual void Set_MPI_GridVel(CConfig *config);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
+   /*!
+    * \brief A virtual member.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] iter - Current physical time step.
+    */
+   virtual void SetGridVelocity(CConfig *config, unsigned long iter);
+
+   /*!
+    * \brief A virtual member.
+    * \param[in] config - Definition of the particular problem.
+    */
+   virtual void Set_MPI_Coord(CConfig *config);
+
+   /*!
+    * \brief A virtual member.
+    * \param[in] config - Definition of the particular problem.
+    */
+   virtual void Set_MPI_GridVel(CConfig *config);
+
+   /*!
+    * \brief A virtual member.
+    * \param[in] config - Definition of the particular problem.
+    */
   virtual void Set_MPI_OldCoord(CConfig *config);
 
 	/*!
@@ -1502,55 +1502,55 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    */
   void SetColorGrid_Parallel(CConfig *config);
   
-	/*!
-	 * \brief Set the rotational velocity at each node.
-	 * \param[in] config - Definition of the particular problem.
+  /*!
+   * \brief Set the rotational velocity at each node.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
-	 */
-	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
+   */
+  void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
-/*!
- * \brief Set the rotational velocity of the points on the shroud markers to 0.
- * \param[in] config - Definition of the particular problem.
- */
-void SetShroudVelocity(CConfig *config);
+  /*!
+   * \brief Set the rotational velocity of the points on the shroud markers to 0.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetShroudVelocity(CConfig *config);
 
-/*!
- * \brief Set the translational velocity at each node.
- * \param[in] config - Definition of the particular problem.
- */
-void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
+  /*!
+   * \brief Set the translational velocity at each node.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
-	/*! 
-	 * \brief Set the grid velocity via finite differencing at each node.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetGridVelocity(CConfig *config, unsigned long iter);
+  /*!
+   * \brief Set the grid velocity via finite differencing at each node.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetGridVelocity(CConfig *config, unsigned long iter);
   
   /*!
-	 * \brief Perform the MPI communication for the grid coordinates (dynamic meshes).
-	 * \param[in] config - Definition of the particular problem.
-	 */
+   * \brief Perform the MPI communication for the grid coordinates (dynamic meshes).
+   * \param[in] config - Definition of the particular problem.
+   */
   void Set_MPI_Coord(CConfig *config);
   
   /*!
-	 * \brief Perform the MPI communication for the grid velocities.
-	 * \param[in] config - Definition of the particular problem.
-	 */
+   * \brief Perform the MPI communication for the grid velocities.
+   * \param[in] config - Definition of the particular problem.
+   */
   void Set_MPI_GridVel(CConfig *config);
   
   /*!
-	 * \brief Perform the MPI communication for the grid coordinates (dynamic meshes) for restart purposes.
-	 * \param[in] config - Definition of the particular problem.
-	 */
+   * \brief Perform the MPI communication for the grid coordinates (dynamic meshes) for restart purposes.
+   * \param[in] config - Definition of the particular problem.
+   */
   void Set_MPI_OldCoord(CConfig *config);
-
-	/*! 
-	 * \brief Set the periodic boundary conditions.
-	 * \param[in] config - Definition of the particular problem.		 
-	 */
-	void SetPeriodicBoundary(CConfig *config);
   
+  /*!
+   * \brief Set the periodic boundary conditions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPeriodicBoundary(CConfig *config);
+
 	/*! 
 	 * \brief Do an implicit smoothing of the grid coordinates.
 	 * \param[in] val_nSmooth - Number of smoothing iterations.
