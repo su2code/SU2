@@ -983,79 +983,115 @@ CEulerSolver::~CEulerSolver(void) {
   if (FluidModel != NULL) delete FluidModel;
 
   if(AverageVelocity !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  		for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
-  			delete [] AverageVelocity[iMarker][iSpan];
-  		delete  [] AverageVelocity[iMarker];
-  	}
-  	delete [] AverageVelocity;
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
+        delete [] AverageVelocity[iMarker][iSpan];
+      delete  [] AverageVelocity[iMarker];
+    }
+    delete [] AverageVelocity;
   }
 
   if(AverageTurboVelocity !=NULL){
-    	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    		for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
-    			delete [] AverageTurboVelocity[iMarker][iSpan];
-    		delete  [] AverageTurboVelocity[iMarker];
-    	}
-    	delete [] AverageTurboVelocity;
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
+        delete [] AverageTurboVelocity[iMarker][iSpan];
+      delete  [] AverageTurboVelocity[iMarker];
     }
+    delete [] AverageTurboVelocity;
+  }
 
   if(ExtAverageTurboVelocity !=NULL){
-    	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    		for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
-    			delete [] ExtAverageTurboVelocity[iMarker][iSpan];
-    		delete  [] ExtAverageTurboVelocity[iMarker];
-    	}
-    	delete [] ExtAverageTurboVelocity;
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
+        delete [] ExtAverageTurboVelocity[iMarker][iSpan];
+      delete  [] ExtAverageTurboVelocity[iMarker];
     }
+    delete [] ExtAverageTurboVelocity;
+  }
 
 
   if(AverageFlux !=NULL){
-    	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    		for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
-    			delete [] AverageFlux[iMarker][iSpan];
-    		delete  [] AverageFlux[iMarker];
-    	}
-    	delete [] AverageFlux;
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
+        delete [] AverageFlux[iMarker][iSpan];
+      delete  [] AverageFlux[iMarker];
     }
+    delete [] AverageFlux;
+  }
 
   if(SpanTotalFlux !=NULL){
-    	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    		for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
-    			delete [] SpanTotalFlux[iMarker][iSpan];
-    		delete  [] SpanTotalFlux[iMarker];
-    	}
-    	delete [] SpanTotalFlux;
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
+        delete [] SpanTotalFlux[iMarker][iSpan];
+      delete  [] SpanTotalFlux[iMarker];
     }
+    delete [] SpanTotalFlux;
+  }
 
   if(AveragePressure !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++)
-  		delete [] AveragePressure[iMarker];
-  	delete [] AveragePressure;
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] AveragePressure[iMarker];
+    delete [] AveragePressure;
   }
 
   if(RadialEquilibriumPressure !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++)
-  		delete [] RadialEquilibriumPressure[iMarker];
-  	delete [] RadialEquilibriumPressure;
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] RadialEquilibriumPressure[iMarker];
+    delete [] RadialEquilibriumPressure;
   }
 
   if(ExtAveragePressure !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++)
-  		delete [] ExtAveragePressure[iMarker];
-  	delete [] ExtAveragePressure;
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ExtAveragePressure[iMarker];
+    delete [] ExtAveragePressure;
   }
 
   if(AverageDensity !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++)
-  		delete [] AverageDensity[iMarker];
-  	delete [] AverageDensity;
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] AverageDensity[iMarker];
+    delete [] AverageDensity;
   }
 
   if(ExtAverageDensity !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++)
-  		delete [] ExtAverageDensity[iMarker];
-  	delete [] ExtAverageDensity;
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ExtAverageDensity[iMarker];
+    delete [] ExtAverageDensity;
+  }
+
+  if(AverageKine !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] AverageKine[iMarker];
+    delete [] AverageKine;
+  }
+
+  if(AverageOmega !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] AverageOmega[iMarker];
+    delete [] AverageOmega;
+  }
+
+  if(AverageNu !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] AverageNu[iMarker];
+    delete [] AverageNu;
+  }
+
+  if(ExtAverageKine !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ExtAverageKine[iMarker];
+    delete [] ExtAverageKine;
+  }
+
+  if(ExtAverageOmega !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ExtAverageOmega[iMarker];
+    delete [] ExtAverageOmega;
+  }
+
+  if(ExtAverageNu !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ExtAverageNu[iMarker];
+    delete [] ExtAverageNu;
   }
 
   if(TurboVelocityIn !=NULL){
@@ -1080,53 +1116,89 @@ CEulerSolver::~CEulerSolver(void) {
 
   if(DensityIn !=NULL){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
-  		delete  [] DensityIn[iMarker];
-  	delete [] DensityIn;
+      delete  [] DensityIn[iMarker];
+    delete [] DensityIn;
   }
 
   if(PressureIn !=NULL){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
-  		delete  [] PressureIn[iMarker];
-  	delete [] PressureIn;
+      delete  [] PressureIn[iMarker];
+    delete [] PressureIn;
   }
 
   if(DensityOut !=NULL){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
-  		delete  [] DensityOut[iMarker];
-  	delete [] DensityOut;
+      delete  [] DensityOut[iMarker];
+    delete [] DensityOut;
   }
 
   if(PressureOut !=NULL){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
-  		delete  [] PressureOut[iMarker];
-  	delete [] PressureOut;
+      delete  [] PressureOut[iMarker];
+    delete [] PressureOut;
+  }
+
+  if(KineIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] KineIn[iMarker];
+    delete [] KineIn;
+  }
+
+  if(OmegaIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] OmegaIn[iMarker];
+    delete [] OmegaIn;
+  }
+
+  if(NuIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] NuIn[iMarker];
+    delete [] NuIn;
+  }
+
+  if(KineOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] KineOut[iMarker];
+    delete [] KineOut;
+  }
+
+  if(OmegaOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] OmegaOut[iMarker];
+    delete [] OmegaOut;
+  }
+
+  if(NuOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] NuOut[iMarker];
+    delete [] NuOut;
   }
 
   if(CkInflow !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  		for(iSpan = 0; iSpan <nSpanWiseSections ; iSpan++)
-  			delete [] CkInflow[iMarker][iSpan];
-  		delete  [] CkInflow[iMarker];
-  	}
-  	delete [] CkInflow;
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for(iSpan = 0; iSpan <nSpanWiseSections ; iSpan++)
+        delete [] CkInflow[iMarker][iSpan];
+      delete  [] CkInflow[iMarker];
+    }
+    delete [] CkInflow;
   }
 
   if(CkOutflow1 !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  		for(iSpan = 0; iSpan <nSpanWiseSections ; iSpan++)
-  			delete [] CkOutflow1[iMarker][iSpan];
-  		delete  [] CkOutflow1[iMarker];
-  	}
-  	delete [] CkOutflow1;
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for(iSpan = 0; iSpan <nSpanWiseSections ; iSpan++)
+        delete [] CkOutflow1[iMarker][iSpan];
+      delete  [] CkOutflow1[iMarker];
+    }
+    delete [] CkOutflow1;
   }
 
   if(CkOutflow2 !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  		for(iSpan = 0; iSpan <nSpanWiseSections ; iSpan++)
-  			delete [] CkOutflow2[iMarker][iSpan];
-  		delete  [] CkOutflow2[iMarker];
-  	}
-  	delete [] CkOutflow2;
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for(iSpan = 0; iSpan <nSpanWiseSections ; iSpan++)
+        delete [] CkOutflow2[iMarker][iSpan];
+      delete  [] CkOutflow2[iMarker];
+    }
+    delete [] CkOutflow2;
   }
 
 }
