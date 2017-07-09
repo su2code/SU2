@@ -1615,33 +1615,6 @@ void CAdjFluidIteration::Iterate(COutput *output,
     
   }
   
-  /*--- Dual time stepping strategy ---*/
-  
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    
-    for (IntIter = 1; IntIter < config_container[val_iZone]->GetUnst_nIntIter(); IntIter++) {
-      
-      /*--- Write the convergence history (only screen output) ---*/
-      
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-      
-      /*--- Set the value of the internal iteration ---*/
-      
-      config_container[val_iZone]->SetIntIter(IntIter);
-      
-      /*--- All zones must be advanced and coupled with each pseudo timestep ---*/
-      
-      integration_container[val_iZone][ADJFLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                         config_container, RUNTIME_ADJFLOW_SYS, IntIter, val_iZone);
-      
-      /*--- Check to see if the convergence criteria has been met ---*/
-      
-      if (integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) break;
-    }
-    
-  }
-  
 }
 void CAdjFluidIteration::Update(COutput *output,
                                    CIntegration ***integration_container,
