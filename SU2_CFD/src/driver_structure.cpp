@@ -2920,11 +2920,11 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   /*--- Update the convergence history file (serial and parallel computations). ---*/
   
   if (!fsi) {
-    output->SetConvHistory_Body(&ConvHist_file[ZONE_0], geometry_container, solver_container,
-                                config_container, integration_container, false, UsedTime, ZONE_0);
-    
+    for (iZone = 0; iZone < nZone; iZone++) {
+      output->SetConvHistory_Body(&ConvHist_file[iZone], geometry_container, solver_container,
+          config_container, integration_container, false, UsedTime, iZone);
+    }
   }
-  
 
   /*--- Evaluate the new CFL number (adaptive). ---*/
 
