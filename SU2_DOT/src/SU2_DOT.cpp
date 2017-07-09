@@ -659,6 +659,9 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #endif
   
+  Gradient_file.setf(ios::scientific, ios::floatfield);
+  Gradient_file.width(15);
+
   nDV = config->GetnDV();
   
   /*--- Loop through all design variables and their gradients ---*/

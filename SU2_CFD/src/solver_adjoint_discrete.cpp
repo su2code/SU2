@@ -292,7 +292,7 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case DRAG_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CD();
       if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
-      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
+      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCMy() * direct_solver->GetTotal_CMy();
       break;
     case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CL();
@@ -300,11 +300,14 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case AERO_DRAG_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_AeroCD();
       break;
+    case SOLID_DRAG_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_SolidCD();
+      break;
     case RADIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_RadialDistortion();
+      ObjFunc_Value = direct_solver->GetTotal_IDR();
       break;
     case CIRCUMFERENTIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_CircumferentialDistortion();
+      ObjFunc_Value = direct_solver->GetTotal_IDC();
       break;
     case SIDEFORCE_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CSF();
@@ -314,12 +317,15 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       break;
     case MOMENT_X_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CMx();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCMx_dCL() * direct_solver->GetTotal_CL();
       break;
     case MOMENT_Y_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CMy();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCMy_dCL() * direct_solver->GetTotal_CL();
       break;
     case MOMENT_Z_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CMz();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCMz_dCL() * direct_solver->GetTotal_CL();
       break;
     case EQUIVALENT_AREA:
       ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
@@ -636,6 +642,10 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+  /*--- Read and store the restart metadata. ---*/
+
+  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 

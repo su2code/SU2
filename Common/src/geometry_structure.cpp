@@ -579,301 +579,616 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
 }
 
 void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
-                                       su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
-                                       vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
-                                       vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
-                                       bool original_surface, CConfig *config) {
-  
-  unsigned short iMarker, iNode, jNode, iDim;
-  bool intersect;
-  long MinDist_Point, MinDistAngle_Point;
-  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex;
-  su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
-  Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, MaxAngle = 30, *VarCoord = NULL, CosValue, Variable_Interp;
-  vector<su2double> Xcoord, Ycoord, Zcoord, Variable;
-  vector<unsigned long> Duplicate;
-  vector<unsigned long>::iterator it;
-  int rank = MASTER_NODE;
-  su2double **Coord_Variation = NULL;
-  
+		su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
+		vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
+		vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
+		bool original_surface, CConfig *config) {
+
+	unsigned short iMarker, iNode, jNode, iDim, Index = 0;
+	bool intersect;
+	long MinDist_Point;
+	unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, PointIndex, jVertex;
+	su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord,
+			*VarCoord = NULL, Variable_Interp;
+	passivedouble MinDist_Value, Dist_Value, Segment[3] = {0.0, 0.0, 0.0}, Tolerance = 1E-10;
+	vector<su2double> Xcoord_Index0, Ycoord_Index0, Zcoord_Index0, Variable_Index0, Xcoord_Index1, Ycoord_Index1, Zcoord_Index1, Variable_Index1;
+	vector<unsigned short> Conection_Index0, Conection_Index1;
+	vector<unsigned long> Duplicate;
+	vector<unsigned long>::iterator it;
+	int rank = MASTER_NODE;
+	su2double **Coord_Variation = NULL;
+
 #ifdef HAVE_MPI
-  unsigned long nLocalVertex, nGlobalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
-  int nProcessor, iProcessor;
-  su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	unsigned long nLocalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
+	int nProcessor, iProcessor;
+
+	su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-  Xcoord_Airfoil.clear();
-  Ycoord_Airfoil.clear();
-  Zcoord_Airfoil.clear();
-  Variable_Airfoil.clear();
-  
-  /*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
-  
-  if (nDim == 2) {
-    Plane_P0[0] = 0.0;      Plane_P0[1] = 0.0;      Plane_P0[2] = 0.0;
-    Plane_Normal[0] = 0.0;  Plane_Normal[1] = 1.0;  Plane_Normal[2] = 0.0;
-  }
-  
-  /*--- the grid variation is stored using a vertices information,
+
+	Xcoord_Airfoil.clear();
+	Ycoord_Airfoil.clear();
+	Zcoord_Airfoil.clear();
+	Variable_Airfoil.clear();
+
+	/*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
+
+	if (nDim == 2) {
+		Plane_P0[0] = 0.0;      Plane_P0[1] = 0.0;      Plane_P0[2] = 0.0;
+		Plane_Normal[0] = 0.0;  Plane_Normal[1] = 1.0;  Plane_Normal[2] = 0.0;
+	}
+
+	/*--- the grid variation is stored using a vertices information,
    we should go from vertex to points ---*/
-  
-  if (original_surface == false) {
-    
-    Coord_Variation = new su2double *[nPoint];
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      Coord_Variation[iPoint] = new su2double [nDim];
-    
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_GeoEval(iMarker) == YES) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
-          iPoint = vertex[iMarker][iVertex]->GetNode();
-          for (iDim = 0; iDim < nDim; iDim++)
-            Coord_Variation[iPoint][iDim] = VarCoord[iDim];
-        }
-      }
-    }
-    
-  }
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_GeoEval(iMarker) == YES) {
-      for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-        for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-          iPoint = bound[iMarker][iElem]->GetNode(iNode);
-          for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
-            jPoint = bound[iMarker][iElem]->GetNode(jNode);
-            
-            if ((jPoint > iPoint) && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))) {
-              
-              Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
-              Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
-              
-              for (iDim = 0; iDim < nDim; iDim++) {
-                if (original_surface == true) {
-                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
-                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
-                }
-                else {
-                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
-                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
-                }
-              }
-              
-              if (FlowVariable != NULL) {
-                Variable_P0 = FlowVariable[iPoint];
-                Variable_P1 = FlowVariable[jPoint];
-              }
-              
-              /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
-              
-              if (nDim == 2) {
-                Xcoord.push_back(Segment_P0[0]);    Xcoord.push_back(Segment_P1[0]);
-                Ycoord.push_back(Segment_P0[2]);    Ycoord.push_back(Segment_P1[2]);
-                Zcoord.push_back(Segment_P0[1]);    Zcoord.push_back(Segment_P1[1]);
-                Variable.push_back(Variable_P0);    Variable.push_back(Variable_P1);
-              }
-              /*--- In 3D compute the intersection ---*/
-              
-              else if (nDim == 3) {
-                intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
-                if (intersect == true) {
-                  Xcoord.push_back(Intersection[0]);
-                  Ycoord.push_back(Intersection[1]);
-                  Zcoord.push_back(Intersection[2]);
-                  Variable.push_back(Variable_Interp);
-                }
-              }
-              
-            }
-            
-          }
-        }
-      }
-    }
-  }
-  
-  if (original_surface == false) {
-    
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      delete [] Coord_Variation[iPoint];
-    delete [] Coord_Variation;
-    
-  }
-  
-  
+
+	if (original_surface == false) {
+
+		Coord_Variation = new su2double *[nPoint];
+		for (iPoint = 0; iPoint < nPoint; iPoint++)
+			Coord_Variation[iPoint] = new su2double [nDim];
+
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+			if (config->GetMarker_All_GeoEval(iMarker) == YES) {
+				for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+					VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
+					iPoint = vertex[iMarker][iVertex]->GetNode();
+					for (iDim = 0; iDim < nDim; iDim++)
+						Coord_Variation[iPoint][iDim] = VarCoord[iDim];
+				}
+			}
+		}
+
+	}
+
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		if (config->GetMarker_All_GeoEval(iMarker) == YES) {
+
+			for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+				PointIndex=0;
+
+				for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+					iPoint = bound[iMarker][iElem]->GetNode(iNode);
+
+					for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
+						jPoint = bound[iMarker][iElem]->GetNode(jNode);
+
+						if ((jPoint > iPoint) && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))) {
+
+							Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
+							Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
+
+							for (iDim = 0; iDim < nDim; iDim++) {
+								if (original_surface == true) {
+									Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
+									Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
+								}
+								else {
+									Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
+									Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
+								}
+							}
+
+							if (FlowVariable != NULL) {
+								Variable_P0 = FlowVariable[iPoint];
+								Variable_P1 = FlowVariable[jPoint];
+							}
+
+							/*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
+
+									if (nDim == 2) {
+
+										Xcoord_Index0.push_back(Segment_P0[0]);    Xcoord_Index1.push_back(Segment_P1[0]);
+										Ycoord_Index0.push_back(Segment_P0[2]);    Ycoord_Index1.push_back(Segment_P1[2]);
+										Zcoord_Index0.push_back(Segment_P0[1]);    Zcoord_Index1.push_back(Segment_P1[1]);
+										Variable_Index0.push_back(Variable_P0);    Variable_Index1.push_back(Variable_P1);
+										PointIndex++;
+
+									}
+									/*--- In 3D compute the intersection ---*/
+
+									else if (nDim == 3) {
+
+										intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
+
+										if (intersect == true) {
+
+											if (PointIndex == 0) {
+												Xcoord_Index0.push_back(Intersection[0]);
+												Ycoord_Index0.push_back(Intersection[1]);
+												Zcoord_Index0.push_back(Intersection[2]);
+												Variable_Index0.push_back(Variable_Interp);
+											}
+											if (PointIndex == 1) {
+												Xcoord_Index1.push_back(Intersection[0]);
+												Ycoord_Index1.push_back(Intersection[1]);
+												Zcoord_Index1.push_back(Intersection[2]);
+												Variable_Index1.push_back(Variable_Interp);
+											}
+											PointIndex++;
+										}
+									}
+
+						}
+
+					}
+				}
+
+
+
+			}
+		}
+	}
+
+	if (original_surface == false) {
+
+		for (iPoint = 0; iPoint < nPoint; iPoint++)
+			delete [] Coord_Variation[iPoint];
+		delete [] Coord_Variation;
+
+	}
+
 #ifdef HAVE_MPI
-  
-  /*--- Copy the coordinates of all the points in the plane to the master node ---*/
-  
-  nLocalVertex = 0, nGlobalVertex = 0, MaxLocalVertex = 0;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  Buffer_Send_nVertex = new unsigned long [1];
-  Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-  nLocalVertex = Xcoord.size();
-  
-  Buffer_Send_nVertex[0] = nLocalVertex;
-  
-  SU2_MPI::Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
-  Buffer_Send_Coord = new su2double [MaxLocalVertex*4];
-  Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex*4];
-  nBuffer = MaxLocalVertex*4;
-  
-  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-    Buffer_Send_Coord[iVertex*4 + 0] = Xcoord[iVertex];
-    Buffer_Send_Coord[iVertex*4 + 1] = Ycoord[iVertex];
-    Buffer_Send_Coord[iVertex*4 + 2] = Zcoord[iVertex];
-    Buffer_Send_Coord[iVertex*4 + 3] = Variable[iVertex];
-  }
-  
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-  
-  /*--- Clean the vectors before adding the new vertices only to the master node ---*/
-  
-  Xcoord.clear();
-  Ycoord.clear();
-  Zcoord.clear();
-  Variable.clear();
-  
-  /*--- Copy the boundary to the master node vectors ---*/
-  if (rank == MASTER_NODE) {
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        Xcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 0] );
-        Ycoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 1] );
-        Zcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 2] );
-        Variable.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 3] );
-      }
-    }
-  }
-  
-  delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
-  
+
+	/*--- Copy the coordinates of all the points in the plane to the master node ---*/
+
+	nLocalVertex = 0, MaxLocalVertex = 0;
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+
+	Buffer_Send_nVertex = new unsigned long [1];
+	Buffer_Receive_nVertex = new unsigned long [nProcessor];
+
+	nLocalVertex = Xcoord_Index0.size();
+
+	Buffer_Send_nVertex[0] = nLocalVertex;
+
+	SU2_MPI::Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+	Buffer_Send_Coord = new su2double [MaxLocalVertex*8];
+	Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex*8];
+	nBuffer = MaxLocalVertex*8;
+
+	for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
+		Buffer_Send_Coord[iVertex*8 + 0] = Xcoord_Index0[iVertex];
+		Buffer_Send_Coord[iVertex*8 + 1] = Ycoord_Index0[iVertex];
+		Buffer_Send_Coord[iVertex*8 + 2] = Zcoord_Index0[iVertex];
+		Buffer_Send_Coord[iVertex*8 + 3] = Variable_Index0[iVertex];
+		Buffer_Send_Coord[iVertex*8 + 4] = Xcoord_Index1[iVertex];
+		Buffer_Send_Coord[iVertex*8 + 5] = Ycoord_Index1[iVertex];
+		Buffer_Send_Coord[iVertex*8 + 6] = Zcoord_Index1[iVertex];
+		Buffer_Send_Coord[iVertex*8 + 7] = Variable_Index1[iVertex];
+	}
+
+	SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
+
+	/*--- Clean the vectors before adding the new vertices only to the master node ---*/
+
+	Xcoord_Index0.clear();     Xcoord_Index1.clear();
+	Ycoord_Index0.clear();     Ycoord_Index1.clear();
+	Zcoord_Index0.clear();     Zcoord_Index1.clear();
+	Variable_Index0.clear();   Variable_Index1.clear();
+
+	/*--- Copy the boundary to the master node vectors ---*/
+
+	if (rank == MASTER_NODE) {
+		for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+			for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+				Xcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 0] );
+				Ycoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 1] );
+				Zcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 2] );
+				Variable_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 3] );
+				Xcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 4] );
+				Ycoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 5] );
+				Zcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 6] );
+				Variable_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 7] );
+			}
+		}
+	}
+
+	delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
+	delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
+
 #endif
-  
-  if ((rank == MASTER_NODE) && (Xcoord.size() != 0)) {
-    
-    /*--- Create a list with the duplicated points ---*/
-    
-    for (iVertex = 0; iVertex < Xcoord.size()-1; iVertex++) {
-      for (jVertex = iVertex+1; jVertex < Xcoord.size(); jVertex++) {
-        Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
-        Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
-        Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
+
+
+
+	if ((rank == MASTER_NODE) && (Xcoord_Index0.size() != 0)) {
+
+    /*--- Remove edges with zero length ---*/
+
+    bool Remove;
+
+    do {
+
+      Remove = false;
+
+      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+
+        Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[iVertex]);
+        Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[iVertex]);
+        Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[iVertex]);
+
         Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        if (Dist_Value < 1E-6) {
-          Duplicate.push_back (jVertex);
+
+        if (Dist_Value <= Tolerance) {
+
+          /*--- Remove edge with repeated points ---*/
+
+          Xcoord_Index0.erase (Xcoord_Index0.begin() + iVertex);
+          Ycoord_Index0.erase (Ycoord_Index0.begin() + iVertex);
+          Zcoord_Index0.erase (Zcoord_Index0.begin() + iVertex);
+          Variable_Index0.erase (Variable_Index0.begin() + iVertex);
+
+          Xcoord_Index1.erase (Xcoord_Index1.begin() + iVertex);
+          Ycoord_Index1.erase (Ycoord_Index1.begin() + iVertex);
+          Zcoord_Index1.erase (Zcoord_Index1.begin() + iVertex);
+          Variable_Index1.erase (Variable_Index1.begin() + iVertex);
+
+          Remove = true; break;
+
         }
+
+        if (Remove) break;
+
       }
-    }
-    
-    sort(Duplicate.begin(), Duplicate.end());
-    it = unique(Duplicate.begin(), Duplicate.end());
-    Duplicate.resize(it - Duplicate.begin());
-    
-    /*--- Remove duplicated points (starting from the back) ---*/
-    
-    for (iVertex = Duplicate.size(); iVertex > 0; iVertex--) {
-      Xcoord.erase (Xcoord.begin() + Duplicate[iVertex-1]);
-      Ycoord.erase (Ycoord.begin() + Duplicate[iVertex-1]);
-      Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
-      Variable.erase (Variable.begin() + Duplicate[iVertex-1]);
-    }
-    
-    if (Xcoord.size() != 1) {
-      
-      /*--- Find the trailing edge ---*/
-      
-      Trailing_Point = 0; Trailing_Coord = Xcoord[0];
-      for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
-        if (Xcoord[iVertex] > Trailing_Coord) {
-          Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex];
-        }
-      }
-      
-      /*--- Add the trailing edge to the list, and remove from the original list ---*/
-      Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]); Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]); Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]); Variable_Airfoil.push_back(Variable[Trailing_Point]);
-      Xcoord.erase (Xcoord.begin() + Trailing_Point); Ycoord.erase (Ycoord.begin() + Trailing_Point); Zcoord.erase (Zcoord.begin() + Trailing_Point); Variable.erase (Variable.begin() + Trailing_Point);
-      
-      /*--- Find the next point using the right hand side rule ---*/
-      MinDist_Value = 1E6; MinDist_Point = 0;
-      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-        Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[0];
-        Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[0];
-        Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[0];
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
-        
-        if ((Dist_Value < MinDist_Value) && (Segment[2] > 0.0)) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-      }
-      
-      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);  Variable_Airfoil.push_back(Variable[MinDist_Point]);
-      Xcoord.erase (Xcoord.begin() + MinDist_Point);    Ycoord.erase (Ycoord.begin() + MinDist_Point);    Zcoord.erase (Zcoord.begin() + MinDist_Point);    Variable.erase (Variable.begin() + MinDist_Point);
-      
-      /*--- Algorithm for the rest of the points ---*/
-      do {
-        
-        /*--- Last added point in the list ---*/
-        Airfoil_Point = Xcoord_Airfoil.size() - 1;
-        
-        /*--- Compute the slope of the curve ---*/
-        Airfoil_Tangent[0] = Xcoord_Airfoil[Airfoil_Point] - Xcoord_Airfoil[Airfoil_Point-1];
-        Airfoil_Tangent[1] = Ycoord_Airfoil[Airfoil_Point] - Ycoord_Airfoil[Airfoil_Point-1];
-        Airfoil_Tangent[2] = Zcoord_Airfoil[Airfoil_Point] - Zcoord_Airfoil[Airfoil_Point-1];
-        Length = sqrt(pow(Airfoil_Tangent[0], 2.0) + pow(Airfoil_Tangent[1], 2.0) + pow(Airfoil_Tangent[2], 2.0));
-        Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
-        
-        /*--- Find the closest point with the right slope ---*/
-        MinDist_Value = 1E6; MinDistAngle_Value = 180;
-        MinDist_Point = -1; MinDistAngle_Point = -1;
-        for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-          
-          Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
-          Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[Airfoil_Point];
-          Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[Airfoil_Point];
-          
-          /*--- Compute the distance to each point ---*/
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          
-          /*--- Compute the angle of the point ---*/
-          Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
-          
-          /*--- Clip the value of the cosine, this is important due to the round errors ---*/
-          CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
-          if (CosValue >= 1.0) CosValue = 1.0;
-          if (CosValue <= -1.0) CosValue = -1.0;
-          
-          Angle_Value = acos(CosValue) * 180 / PI_NUMBER;
-          
-          if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-          if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) {MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value;}
-          
-        }
-        
-        if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
-        
-        /*--- Add and remove the min distance to the list ---*/
-        Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);    Variable_Airfoil.push_back(Variable[MinDist_Point]);
-        Xcoord.erase(Xcoord.begin() + MinDist_Point);     Ycoord.erase(Ycoord.begin() + MinDist_Point);     Zcoord.erase(Zcoord.begin() + MinDist_Point);       Variable.erase(Variable.begin() + MinDist_Point);
-        
-      } while (Xcoord.size() != 0);
-      
-      /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
-      
-      Xcoord.clear(); Ycoord.clear(); Zcoord.clear(); Variable.clear();
-      
-    }
-    
-    
-  }
-  
+
+    } while (Remove == true);
+
+
+		/*--- Remove repeated edges computing distance ---*/
+
+		do {
+
+			Remove = false;
+
+			for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
+				for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
+
+					/*--- First check ---*/
+
+					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+
+					/*--- Compute the distance to each point ---*/
+
+					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+
+					/*--- Check the second point ---*/
+
+					if (Dist_Value <= Tolerance) {
+
+						Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+						Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+						Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+
+						/*--- Compute the distance to each point ---*/
+
+						Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+
+						if (Dist_Value <= Tolerance) {
+
+							/*--- Remove repeated point ---*/
+
+							Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
+							Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
+							Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
+							Variable_Index0.erase (Variable_Index0.begin() + jVertex);
+
+							Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
+							Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
+							Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
+							Variable_Index1.erase (Variable_Index1.begin() + jVertex);
+
+							Remove = true; break;
+
+						}
+
+					}
+
+					/*--- Second check ---*/
+
+					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+
+					/*--- Compute the distance to each point ---*/
+
+					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+
+					/*--- Check the second point ---*/
+
+					if (Dist_Value <= Tolerance) {
+
+						Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+						Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+						Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+
+						/*--- Compute the distance to each point ---*/
+
+						Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+
+						if (Dist_Value <= Tolerance) {
+
+							/*--- Remove repeated point ---*/
+
+							Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
+							Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
+							Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
+							Variable_Index0.erase (Variable_Index0.begin() + jVertex);
+
+							Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
+							Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
+							Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
+							Variable_Index1.erase (Variable_Index1.begin() + jVertex);
+
+							Remove = true; break;
+						}
+					}
+					if (Remove) break;
+				}
+				if (Remove) break;
+			}
+
+		} while (Remove == true);
+
+		if (Xcoord_Index0.size() != 1) {
+
+			if (config->GetGeo_Description() == FUSELAGE) {
+
+				/*--- Rotate from the Y-Z plane to the X-Z plane to reuse the rest of subroutines  ---*/
+
+				su2double Angle = -0.5*PI_NUMBER;
+
+				for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+
+					su2double XCoord = Xcoord_Index0[iVertex]*cos(Angle) - Ycoord_Index0[iVertex]*sin(Angle);
+					su2double YCoord = Ycoord_Index0[iVertex]*cos(Angle) + Xcoord_Index0[iVertex]*sin(Angle);
+					su2double ZCoord = Zcoord_Index0[iVertex];
+
+					Xcoord_Index0[iVertex] = XCoord;
+					Ycoord_Index0[iVertex] = YCoord;
+					Zcoord_Index0[iVertex] = ZCoord;
+
+					XCoord = Xcoord_Index1[iVertex]*cos(Angle) - Ycoord_Index1[iVertex]*sin(Angle);
+					YCoord = Ycoord_Index1[iVertex]*cos(Angle) + Xcoord_Index1[iVertex]*sin(Angle);
+					ZCoord = Zcoord_Index1[iVertex];
+					Xcoord_Index1[iVertex] = XCoord;
+					Ycoord_Index1[iVertex] = YCoord;
+					Zcoord_Index1[iVertex] = ZCoord;
+
+				}
+
+			}
+
+			/*--- Identify the extreme of the curve and close it ---*/
+
+			Conection_Index0.reserve(Xcoord_Index0.size()+1);
+			Conection_Index1.reserve(Xcoord_Index0.size()+1);
+
+			for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+				Conection_Index0[iVertex] = 0;
+				Conection_Index1[iVertex] = 0;
+			}
+
+			for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
+				for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
+
+					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+					if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index0[jVertex]++; }
+
+					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+					if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index1[jVertex]++; }
+
+					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+					if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index0[jVertex]++; }
+
+					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+					if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index1[jVertex]++; }
+
+				}
+			}
+
+			/*--- Connect extremes of the curves ---*/
+
+			vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
+			vector<bool> AddExtra;
+			 unsigned long VertexDonor;
+			 bool FoundVertex;
+
+			for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+				if (Conection_Index0[iVertex] == 0) {
+					XcoordExtra.push_back(Xcoord_Index0[iVertex]);
+					YcoordExtra.push_back(Ycoord_Index0[iVertex]);
+					ZcoordExtra.push_back(Zcoord_Index0[iVertex]);
+					VariableExtra.push_back(Variable_Index0[iVertex]);
+					AddExtra.push_back(true);
+				}
+				if (Conection_Index1[iVertex] == 0) {
+					XcoordExtra.push_back(Xcoord_Index1[iVertex]);
+					YcoordExtra.push_back(Ycoord_Index1[iVertex]);
+					ZcoordExtra.push_back(Zcoord_Index1[iVertex]);
+					VariableExtra.push_back(Variable_Index1[iVertex]);
+					AddExtra.push_back(true);
+				}
+			}
+
+			/*---Compute min distance from the points ---*/
+
+			if (XcoordExtra.size() > 1) {
+
+				for (iVertex = 0; iVertex < XcoordExtra.size()-1; iVertex++) {
+
+          su2double MinDist = 1E6;
+          FoundVertex = false;
+          VertexDonor = 0;
+
+          for (jVertex = iVertex+1; jVertex <XcoordExtra.size(); jVertex++) {
+            Dist_Value = sqrt(pow(SU2_TYPE::GetValue(XcoordExtra[iVertex])-SU2_TYPE::GetValue(XcoordExtra[jVertex]), 2.0));
+            if ((Dist_Value < MinDist) && (AddExtra[iVertex]) && (AddExtra[jVertex])) {
+              VertexDonor = jVertex;
+              FoundVertex = true;
+            }
+          }
+
+					if (FoundVertex) {
+
+						/*--- Add first point of the new edge ---*/
+
+						Xcoord_Index0.push_back (XcoordExtra[iVertex]);
+						Ycoord_Index0.push_back (YcoordExtra[iVertex]);
+						Zcoord_Index0.push_back (ZcoordExtra[iVertex]);
+						Variable_Index0.push_back (VariableExtra[iVertex]);
+						AddExtra[iVertex] = false;
+
+						/*--- Add second (closest)  point of the new edge ---*/
+
+						Xcoord_Index1.push_back (XcoordExtra[VertexDonor]);
+						Ycoord_Index1.push_back (YcoordExtra[VertexDonor]);
+						Zcoord_Index1.push_back (ZcoordExtra[VertexDonor]);
+						Variable_Index1.push_back (VariableExtra[VertexDonor]);
+						AddExtra[VertexDonor] = false;
+
+					}
+
+				}
+
+			}
+
+			else if (XcoordExtra.size() == 1) {
+				cout <<"There cutting system has failed, there is an incomplete curve (not used)." << endl;
+			}
+
+			Trailing_Point = 0; Trailing_Coord = Xcoord_Index0[0];
+			for (iVertex = 1; iVertex < Xcoord_Index0.size(); iVertex++) {
+				if (Xcoord_Index0[iVertex] > Trailing_Coord) {
+					Trailing_Point = iVertex; Trailing_Coord = Xcoord_Index0[iVertex];
+				}
+			}
+
+			/*--- Add the trailing edge to the list and the contect points to the trailing edge and remove from the original list ---*/
+
+			Xcoord_Airfoil.push_back(Xcoord_Index0[Trailing_Point]);
+			Ycoord_Airfoil.push_back(Ycoord_Index0[Trailing_Point]);
+			Zcoord_Airfoil.push_back(Zcoord_Index0[Trailing_Point]);
+			Variable_Airfoil.push_back(Variable_Index0[Trailing_Point]);
+
+			Xcoord_Airfoil.push_back(Xcoord_Index1[Trailing_Point]);
+			Ycoord_Airfoil.push_back(Ycoord_Index1[Trailing_Point]);
+			Zcoord_Airfoil.push_back(Zcoord_Index1[Trailing_Point]);
+			Variable_Airfoil.push_back(Variable_Index1[Trailing_Point]);
+
+			Xcoord_Index0.erase (Xcoord_Index0.begin() + Trailing_Point);
+			Ycoord_Index0.erase (Ycoord_Index0.begin() + Trailing_Point);
+			Zcoord_Index0.erase (Zcoord_Index0.begin() + Trailing_Point);
+			Variable_Index0.erase (Variable_Index0.begin() + Trailing_Point);
+
+			Xcoord_Index1.erase (Xcoord_Index1.begin() + Trailing_Point);
+			Ycoord_Index1.erase (Ycoord_Index1.begin() + Trailing_Point);
+			Zcoord_Index1.erase (Zcoord_Index1.begin() + Trailing_Point);
+			Variable_Index1.erase (Variable_Index1.begin() + Trailing_Point);
+
+			/*--- Algorithm for the rest of the points ---*/
+
+			do {
+
+				/*--- Last added point in the list ---*/
+
+				Airfoil_Point = Xcoord_Airfoil.size() - 1;
+
+				/*--- Find the closest point  ---*/
+
+				MinDist_Value = 1E6;
+				MinDist_Point = -1;
+
+				for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+
+					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
+					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
+					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
+
+					/*--- Compute the distance to each point ---*/
+
+					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+					if (Dist_Value <= MinDist_Value) {
+						MinDist_Point = iVertex;
+						MinDist_Value = Dist_Value;
+						Index = 0;
+					}
+
+					/*--- Same with the second index  ---*/
+
+					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
+					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
+					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
+
+					/*--- Compute the distance to each point ---*/
+
+					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+					if (Dist_Value <= MinDist_Value) {
+						MinDist_Point = iVertex;
+						MinDist_Value = Dist_Value;
+						Index = 1;
+					}
+
+				}
+
+				/*--- Add and remove the min distance to the list and the next point in the edge ---*/
+
+				if (MinDist_Value < Tolerance) {
+
+					if (Index == 0) {
+
+						Xcoord_Airfoil.push_back(Xcoord_Index1[MinDist_Point]);
+						Ycoord_Airfoil.push_back(Ycoord_Index1[MinDist_Point]);
+						Zcoord_Airfoil.push_back(Zcoord_Index1[MinDist_Point]);
+						Variable_Airfoil.push_back(Variable_Index1[MinDist_Point]);
+					}
+
+					if (Index == 1) {
+
+						Xcoord_Airfoil.push_back(Xcoord_Index0[MinDist_Point]);
+						Ycoord_Airfoil.push_back(Ycoord_Index0[MinDist_Point]);
+						Zcoord_Airfoil.push_back(Zcoord_Index0[MinDist_Point]);
+						Variable_Airfoil.push_back(Variable_Index0[MinDist_Point]);
+					}
+
+					Xcoord_Index0.erase(Xcoord_Index0.begin() + MinDist_Point);
+					Ycoord_Index0.erase(Ycoord_Index0.begin() + MinDist_Point);
+					Zcoord_Index0.erase(Zcoord_Index0.begin() + MinDist_Point);
+					Variable_Index0.erase(Variable_Index0.begin() + MinDist_Point);
+
+					Xcoord_Index1.erase(Xcoord_Index1.begin() + MinDist_Point);
+					Ycoord_Index1.erase(Ycoord_Index1.begin() + MinDist_Point);
+					Zcoord_Index1.erase(Zcoord_Index1.begin() + MinDist_Point);
+					Variable_Index1.erase(Variable_Index1.begin() + MinDist_Point);
+
+				}
+				else { break; }
+
+			} while (Xcoord_Index0.size() != 0);
+
+			/*--- Clean the vector before using them again for storing the upper or the lower side ---*/
+
+			Xcoord_Index0.clear(); Ycoord_Index0.clear(); Zcoord_Index0.clear(); Variable_Index0.clear();
+			Xcoord_Index1.clear(); Ycoord_Index1.clear(); Zcoord_Index1.clear(); Variable_Index1.clear();
+
+		}
+
+	}
+
 }
 
 void CGeometry::RegisterCoordinates(CConfig *config) {
@@ -9059,7 +9374,9 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   unsigned short iMarker, Boundary, Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, PositiveXArea, PositiveYArea, PositiveZArea, WettedArea;
+  su2double *Normal, PositiveXArea, PositiveYArea, PositiveZArea, WettedArea, CoordX = 0.0, CoordY = 0.0, CoordZ = 0.0, MinCoordX = 1E10, MinCoordY = 1E10,
+  MinCoordZ = 1E10, MaxCoordX = -1E10, MaxCoordY = -1E10, MaxCoordZ = -1E10, TotalMinCoordX = 1E10, TotalMinCoordY = 1E10,
+  TotalMinCoordZ = 1E10, TotalMaxCoordX = -1E10, TotalMaxCoordY = -1E10, TotalMaxCoordZ = -1E10;
   su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
 
   bool axisymmetric = config->GetAxisymmetric();
@@ -9089,6 +9406,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
         if (node[iPoint]->GetDomain()) {
           Normal = vertex[iMarker][iVertex]->GetNormal();
+          CoordX = node[iPoint]->GetCoord(0);
+          CoordY = node[iPoint]->GetCoord(1);
+          if (nDim == 3) CoordZ = node[iPoint]->GetCoord(2);
 
           if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*node[iPoint]->GetCoord(1);
           else AxiFactor = 1.0;
@@ -9099,7 +9419,18 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
           if (Normal[0] < 0) PositiveXArea -= Normal[0];
           if (Normal[1] < 0) PositiveYArea -= Normal[1];
           if ((nDim == 3) && (Normal[2] < 0)) PositiveZArea -= Normal[2];
+          
+          if (CoordX < MinCoordX) MinCoordX = CoordX;
+          if (CoordX > MaxCoordX) MaxCoordX = CoordX;
 
+          if (CoordY < MinCoordY) MinCoordY = CoordY;
+          if (CoordY > MaxCoordY) MaxCoordY = CoordY;
+
+          if (nDim == 3) {
+            if (CoordZ < MinCoordZ) MinCoordZ = CoordZ;
+            if (CoordZ > MaxCoordZ) MaxCoordZ = CoordZ;
+          }
+          
         }
       }
   }
@@ -9108,17 +9439,35 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&PositiveYArea, &TotalPositiveYArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  
+  SU2_MPI::Allreduce(&MinCoordX, &TotalMinCoordX, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MinCoordY, &TotalMinCoordY, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MinCoordZ, &TotalMinCoordZ, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  
+  SU2_MPI::Allreduce(&MaxCoordX, &TotalMaxCoordX, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MaxCoordY, &TotalMaxCoordY, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MaxCoordZ, &TotalMaxCoordZ, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
   SU2_MPI::Allreduce(&WettedArea, &TotalWettedArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   TotalPositiveXArea = PositiveXArea;
   TotalPositiveYArea = PositiveYArea;
   TotalPositiveZArea = PositiveZArea;
+  
+  TotalMinCoordX = MinCoordX;
+  TotalMinCoordY = MinCoordY;
+  TotalMinCoordZ = MinCoordZ;
+
+  TotalMaxCoordX = MaxCoordX;
+  TotalMaxCoordY = MaxCoordY;
+  TotalMaxCoordZ = MaxCoordZ;
+
   TotalWettedArea    = WettedArea;
 #endif
     
-  if (config->GetRefAreaCoeff() == 0.0) {
-  	if (nDim == 3) config->SetRefAreaCoeff(TotalPositiveZArea);
-  	else config->SetRefAreaCoeff(TotalPositiveYArea);
+  if (config->GetRefArea() == 0.0) {
+  	if (nDim == 3) config->SetRefArea(TotalPositiveZArea);
+  	else config->SetRefArea(TotalPositiveYArea);
   }
   
   if (rank == MASTER_NODE) {
@@ -9136,7 +9485,31 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
 
     if (nDim == 3) { cout << " z-plane = "<< TotalPositiveZArea;
-    if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
+      if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
+    
+    cout << "Max. coordinate in the x-direction = "<< TotalMaxCoordX;
+    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,";
+    
+    cout << " y-direction = "<< TotalMaxCoordY;
+    if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
+    
+    if (nDim == 3) {
+    	cout << ", z-direction = "<< TotalMaxCoordZ;
+      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl;
+    }
+    else cout << "." << endl;
+    
+    cout << "Min coordinate in the x-direction = "<< TotalMinCoordX;
+    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
+    
+    cout << " y-direction = "<< TotalMinCoordY;
+    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
+    
+    if (nDim == 3) {
+    	cout << ", z-direction = "<< TotalMinCoordZ;
+      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl;
+    }
+    else cout << "." << endl;
 
   }
   
@@ -11198,98 +11571,6 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
   
 }
 
-void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) {
-  
-  ofstream STL_File;
-  unsigned long this_node, iNode, nNode, iElem;
-  unsigned short iDim, iMarker;
-  su2double p[3] = {0.0,0.0,0.0}, u[3] = {0.0,0.0,0.0}, v[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, a;
-  
-  /*---	STL format:
-   solid NAME
-   ...
-   facet normal 0.00 0.00 1.00
-   outer loop
-   vertex  2.00  2.00  0.00
-   vertex -1.00  1.00  0.00
-   vertex  0.00 -1.00  0.00
-   endloop
-   endfacet
-   ...
-   end solid
-   ---*/
-  
-  /*--- Open the STL file ---*/
-  
-  if (new_file) STL_File.open(mesh_filename, ios::out);
-  else STL_File.open(mesh_filename, ios::out | ios::app);
-  
-  /*--- Write the header of the file ---*/
-  
-  STL_File << "solid surface_mesh" << endl;
-  
-  /*--- Write facets of surface markers ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Plotting(iMarker) == YES)
-      for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-        
-        /*--- number of nodes for this elemnt ---*/
-        
-        nNode = bound[iMarker][iElem]->GetnNodes();
-        
-        /*--- Calculate Normal Vector ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          p[0] = node[bound[iMarker][iElem]->GetNode(0)]      ->GetCoord(iDim);
-          p[1] = node[bound[iMarker][iElem]->GetNode(1)]      ->GetCoord(iDim);
-          p[2] = node[bound[iMarker][iElem]->GetNode(nNode-1)]->GetCoord(iDim);
-          u[iDim] = p[1]-p[0];
-          v[iDim] = p[2]-p[0];
-        }
-        
-        n[0] = u[1]*v[2]-u[2]*v[1];
-        n[1] = u[2]*v[0]-u[0]*v[2];
-        n[2] = u[0]*v[1]-u[1]*v[0];
-        a = sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
-        
-        /*--- Print normal vector ---*/
-        
-        STL_File << "  facet normal ";
-        for (iDim = 0; iDim < nDim; iDim++) {
-          STL_File << n[iDim]/a << " ";
-        }
-        STL_File << endl;
-        
-        /*--- STL Facet Loop --*/
-        
-        STL_File << "    outer loop" << endl;
-        
-        /*--- Print Nodes for Facet ---*/
-        
-        for (iNode = 0; iNode < nNode; iNode++) {
-          this_node = bound[iMarker][iElem]->GetNode(iNode);
-          STL_File << "      vertex ";
-          for (iDim = 0; iDim < nDim; iDim++)
-            STL_File << node[this_node]->GetCoord(iDim) << " ";
-          if (nDim==2)
-            STL_File << 0.0 << " ";
-          STL_File <<  endl;
-        }
-        STL_File << "    endloop" << endl;
-        STL_File << "  endfacet" << endl;
-      }
-  
-  /*--- Done with Surface Mesh ---*/
-  
-  STL_File << "endsolid" << endl;
-  
-  /*--- Close the file ---*/
-  
-  STL_File.close();
-  
-}
-
 void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   
 #ifdef HAVE_MPI
@@ -12911,12 +13192,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   Sensitivity = new su2double[nPoint*nDim];
 
-  if (config->GetUnsteady_Simulation()) {
-    nExtIter = config->GetnExtIter();
-  }else {
-    nExtIter = 1;
-  }
-    int rank = MASTER_NODE;
+  if (config->GetUnsteady_Simulation()) { nExtIter = config->GetnExtIter(); }
+  else { nExtIter = 1; }
+
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -12926,7 +13205,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   unsigned short skipVar = nDim, skipMult = 1;
 
-  if (wrt_residuals) { skipMult = 2; }
+  if (wrt_residuals)  { skipMult = 2; }
   if (incompressible) { skipVar += skipMult*(nDim+1); }
   if (compressible)   { skipVar += skipMult*(nDim+2); }
   if (sst)            { skipVar += skipMult*2;}
@@ -12966,7 +13245,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     int *Restart_Vars = new int[5];
     passivedouble *Restart_Data = NULL;
     int Restart_Iter = 0;
-    passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+    passivedouble Restart_Meta_Passive[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    su2double Restart_Meta[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 
 #ifndef HAVE_MPI
 
@@ -13030,7 +13310,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Read the metadata. ---*/
 
-    fread(Restart_Meta, 5, sizeof(passivedouble), fhw);
+    fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
     
     /*--- Close the file. ---*/
 
@@ -13191,14 +13471,21 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
       disp = (nRestart_Vars*sizeof(int) + nFields*CGNS_STRING_SIZE*sizeof(char) +
               nFields*Restart_Vars[2]*sizeof(passivedouble) + 1*sizeof(int));
-      MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
     }
 
     /*--- Communicate metadata. ---*/
 
     SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Copy to a su2double structure (because of the SU2_MPI::Bcast
+              doesn't work with passive data)---*/
+
+    for (unsigned short iVar = 0; iVar < 8; iVar++)
+      Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
+
+    SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
     /*--- All ranks close the file after writing. ---*/
     
@@ -13224,7 +13511,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        index = counter*nFields + skipVar;
+        index = counter*Restart_Vars[1] + skipVar;
         for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
@@ -13280,6 +13567,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
+    MPI_Status status;
+    MPI_Datatype etype, filetype;
+    MPI_Offset disp;
+
     int ierr;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -13327,11 +13618,18 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   restart_file.open(filename.data(), ios::in);
   if (restart_file.fail()) {
-    cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
+    if (rank == MASTER_NODE) cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
   }
   
   /*--- The first line is the header ---*/
+
   getline (restart_file, text_line);
   
   for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
@@ -13409,7 +13707,7 @@ void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
   
 }
 
-su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, jVertex, n, Trailing_Point, Leading_Point;
   su2double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, MaxDistance, Distance, AoA;
@@ -13448,10 +13746,8 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
   for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     XValue = Xcoord_Airfoil_[iVertex];
     ZValue = Zcoord_Airfoil_[iVertex];
-    
     Xcoord_Airfoil_[iVertex] = XValue*ValCos - ZValue*ValSin;
     Zcoord_Airfoil_[iVertex] = ZValue*ValCos + XValue*ValSin;
-    
   }
   
   /*--- Identify upper and lower side, and store the value of the normal --*/
@@ -13461,6 +13757,7 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
     Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
     Tangent[2] = Zcoord_Airfoil_[iVertex] - Zcoord_Airfoil_[iVertex-1];
     Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
+
     Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
     
     BiNormal[0] = Plane_Normal[0];
@@ -13476,9 +13773,11 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
     unsigned short index = 2;
-    if ((config->GetAxis_Stations() == Z_AXIS) && (nDim == 3)) index = 0;
     
-    if (Normal[index] >= 0.0) {
+    /*--- Removing the trailing edge from list of points that we are going to use in the interpolation,
+			to be sure that a blunt trailing edge do not affect the interpolation ---*/
+
+    if ((Normal[index] >= 0.0) && (fabs(Xcoord_Airfoil_[iVertex]) > MaxDistance*0.01)) {
       Xcoord.push_back(Xcoord_Airfoil_[iVertex]);
       Ycoord.push_back(Ycoord_Airfoil_[iVertex]);
       Zcoord.push_back(Zcoord_Airfoil_[iVertex]);
@@ -13499,22 +13798,25 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
   }
   
   n = Xcoord.size();
-  zp1 = (Zcoord[1]-Zcoord[0])/(Xcoord[1]-Xcoord[0]);
-  zpn = (Zcoord[n-1]-Zcoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
-  Z2coord.resize(n+1);
-  SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
-  
-  /*--- Compute the thickness (we add a fabs because we can not guarantee the
-   right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
-  
-  MaxThickness_Value = 0.0;
-  for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
-    if (Zcoord_Normal[iVertex] < 0.0) {
-      Thickness = fabs(Zcoord_Airfoil_[iVertex] - GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]));
-      if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; }
+  if (n > 1) {
+    zp1 = (Zcoord[1]-Zcoord[0])/(Xcoord[1]-Xcoord[0]);
+    zpn = (Zcoord[n-1]-Zcoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
+    Z2coord.resize(n+1);
+    SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
+    
+    /*--- Compute the thickness (we add a fabs because we can not guarantee the
+     right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
+    
+    MaxThickness_Value = 0.0;
+    for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+      if (Zcoord_Normal[iVertex] < 0.0) {
+        Thickness = fabs(Zcoord_Airfoil_[iVertex] - GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]));
+        if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; }
+      }
     }
   }
-  
+  else { MaxThickness_Value = 0.0; }
+
   return MaxThickness_Value;
   
 }
@@ -13529,7 +13831,7 @@ su2double CPhysicalGeometry::Compute_Dihedral(su2double *LeadingEdge_im1, su2dou
 
   Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
 
-  return Dihedral;
+  return Dihedral_Trailing;
 
 }
 
@@ -13571,11 +13873,11 @@ su2double CPhysicalGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2do
 
   Curvature = 0.5*(Curvature_Leading + Curvature_Trailing);
 
-  return Curvature;
+  return Curvature_Trailing;
 
 }
 
-su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex, Trailing_Point, Leading_Point;
   su2double MaxDistance, Distance, Twist = 0.0;
   
@@ -13592,13 +13894,11 @@ su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane
   
   Twist = atan((Zcoord_Airfoil[Leading_Point] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[Leading_Point]))*180/PI_NUMBER;
 
-  if (fabs(Twist) < 0.01) Twist = 0.0;
-
   return Twist;
 
 }
 
-void CPhysicalGeometry::Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection,
+void CPhysicalGeometry::Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
                                                 vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, Trailing_Point, Leading_Point;
@@ -13626,7 +13926,35 @@ void CPhysicalGeometry::Compute_LeadingTrailing(su2double *LeadingEdge, su2doubl
   
 }
 
-su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+void CPhysicalGeometry::Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
+                                                vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point, Leading_Point;
+  su2double MaxDistance, Distance;
+
+  MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0));
+    if (MaxDistance < Distance) { MaxDistance = Distance; Leading_Point = iVertex; }
+  }
+
+  LeadingEdge[0] = Xcoord_Airfoil[Leading_Point];
+  LeadingEdge[1] = Ycoord_Airfoil[Leading_Point];
+  LeadingEdge[2] = Zcoord_Airfoil[Leading_Point];
+
+  MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
+  for (iVertex = 1; iVertex < Zcoord_Airfoil.size(); iVertex++) {
+    Distance = sqrt(pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    if (MaxDistance < Distance) { MaxDistance = Distance; Leading_Point = iVertex; }
+  }
+
+  TrailingEdge[0] = 0.5*(Xcoord_Airfoil[Trailing_Point]+Xcoord_Airfoil[Leading_Point]);
+  TrailingEdge[1] = 0.5*(Ycoord_Airfoil[Trailing_Point]+Ycoord_Airfoil[Leading_Point]);
+  TrailingEdge[2] = 0.5*(Zcoord_Airfoil[Trailing_Point]+Zcoord_Airfoil[Leading_Point]);
+
+}
+
+su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex, Trailing_Point;
   su2double MaxDistance, Distance, Chord = 0.0;
   
@@ -13647,11 +13975,103 @@ su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane
   
 }
 
-su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point;
+  su2double MaxDistance, Distance, Width = 0.0;
+
+  MaxDistance = 0.0; Trailing_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Distance = fabs(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point]);
+    if (MaxDistance < Distance) { MaxDistance = Distance; }
+  }
+
+  Width = MaxDistance;
+  return Width;
+
+}
+
+su2double CPhysicalGeometry::Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point;
+  su2double MinDistance, Distance, WaterLineWidth = 0.0;
+  su2double WaterLine = config->GetGeo_Waterline_Location();
+
+  MinDistance = 1E10; WaterLineWidth = 0; Trailing_Point = 0;
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Distance = fabs(Zcoord_Airfoil[iVertex] - WaterLine);
+    if (Distance < MinDistance) {
+    	MinDistance = Distance;
+    	WaterLineWidth = fabs(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point]);
+    }
+  }
+
+  return WaterLineWidth;
+
+}
+
+su2double CPhysicalGeometry::Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point;
+  su2double MaxDistance, Distance, Height = 0.0;
+
+  MaxDistance = 0.0; Trailing_Point = 0;
+  for (iVertex = 1; iVertex < Zcoord_Airfoil.size(); iVertex++) {
+    Distance = sqrt(pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    if (MaxDistance < Distance) { MaxDistance = Distance; }
+  }
+
+  Height = MaxDistance;
+
+  return Height;
+
+}
+
+su2double CPhysicalGeometry::Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point, Leading_Point;
+  su2double MaxDistance, Distance, LERadius = 0.0, X1, X2, X3, Y1, Y2, Y3, Ma, Mb, Xc, Yc, Radius;
+  
+  /*--- Find the leading and trailing edges and compute the radius of curvature ---*/
+  
+  MaxDistance = 0.0; Trailing_Point = 0;  Leading_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    
+    if (MaxDistance < Distance) { MaxDistance = Distance; Leading_Point = iVertex; }
+  }
+  
+  X1 = Xcoord_Airfoil[Leading_Point-3];
+  Y1 = Zcoord_Airfoil[Leading_Point-3];
+
+  X2 = Xcoord_Airfoil[Leading_Point];
+  Y2 = Zcoord_Airfoil[Leading_Point];
+  
+  X3 = Xcoord_Airfoil[Leading_Point+3];
+  Y3 = Zcoord_Airfoil[Leading_Point+3];
+  
+  if (X2 != X1) Ma = (Y2-Y1) / (X2-X1); else Ma = 0.0;
+  if (X3 != X2) Mb = (Y3-Y2) / (X3-X2); else Mb = 0.0;
+
+  if (Mb != Ma) Xc = (Ma*Mb*(Y1-Y3)+Mb*(X1+X2)-Ma*(X2+X3))/(2.0*(Mb-Ma)); else Xc = 0.0;
+  if (Ma != 0.0) Yc = -(1.0/Ma)*(Xc-0.5*(X1+X2))+0.5*(Y1+Y2); else Yc = 0.0;
+  
+  Radius = sqrt((Xc-X1)*(Xc-X1)+(Yc-Y1)*(Yc-Y1));
+  if (Radius != 0.0) LERadius = 1.0/Radius; else LERadius = 0.0;
+
+  return LERadius;
+  
+}
+
+su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, su2double &ZLoc) {
 
   unsigned long iVertex, jVertex, n_Upper, n_Lower, Trailing_Point, Leading_Point;
   su2double Thickness_Location, Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Thickness_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, zp1, zpn, Chord, MaxDistance, Distance, AoA;
   vector<su2double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Z2coord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
+  su2double Zcoord_Up, Zcoord_Down, ZLoc_, YLoc_;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
   
@@ -13714,7 +14134,6 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
     unsigned short index = 2;
-    if ((config->GetAxis_Stations() == Z_AXIS) && (nDim == 3)) index = 0;
     
     if (Normal[index] >= 0.0) {
       Xcoord_Upper.push_back(Xcoord_Airfoil_[iVertex]);
@@ -13754,29 +14173,46 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
   }
   
   n_Upper = Xcoord_Upper.size();
-  zp1 = (Zcoord_Upper[1]-Zcoord_Upper[0])/(Xcoord_Upper[1]-Xcoord_Upper[0]);
-  zpn = (Zcoord_Upper[n_Upper-1]-Zcoord_Upper[n_Upper-2])/(Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2]);
-  Z2coord_Upper.resize(n_Upper+1);
-  SetSpline(Xcoord_Upper, Zcoord_Upper, n_Upper, zp1, zpn, Z2coord_Upper);
+  if (n_Upper > 1) {
+    zp1 = (Zcoord_Upper[1]-Zcoord_Upper[0])/(Xcoord_Upper[1]-Xcoord_Upper[0]);
+    zpn = (Zcoord_Upper[n_Upper-1]-Zcoord_Upper[n_Upper-2])/(Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2]);
+    Z2coord_Upper.resize(n_Upper+1);
+    SetSpline(Xcoord_Upper, Zcoord_Upper, n_Upper, zp1, zpn, Z2coord_Upper);
+  }
   
   n_Lower = Xcoord_Lower.size();
-  zp1 = (Zcoord_Lower[1]-Zcoord_Lower[0])/(Xcoord_Lower[1]-Xcoord_Lower[0]);
-  zpn = (Zcoord_Lower[n_Lower-1]-Zcoord_Lower[n_Lower-2])/(Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2]);
-  Z2coord_Lower.resize(n_Lower+1);
-  SetSpline(Xcoord_Lower, Zcoord_Lower, n_Lower, zp1, zpn, Z2coord_Lower);
+  if (n_Lower > 1) {
+    zp1 = (Zcoord_Lower[1]-Zcoord_Lower[0])/(Xcoord_Lower[1]-Xcoord_Lower[0]);
+    zpn = (Zcoord_Lower[n_Lower-1]-Zcoord_Lower[n_Lower-2])/(Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2]);
+    Z2coord_Lower.resize(n_Lower+1);
+    SetSpline(Xcoord_Lower, Zcoord_Lower, n_Lower, zp1, zpn, Z2coord_Lower);
+  }
   
-  /*--- Compute the thickness (we add a fabs because we can not guarantee the
-   right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
-  
-  Thickness_Location = - Chord*(1.0-Location);
-  
-  Thickness_Value = fabs(GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location) - GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location));
-  
+  if ((n_Upper > 1) && (n_Lower > 1)) {
+    
+    Thickness_Location = - Chord*(1.0-Location);
+    
+    Zcoord_Up = GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location);
+    Zcoord_Down = GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location);
+    
+    YLoc_ = Thickness_Location;
+    ZLoc_ = 0.5*(Zcoord_Up + Zcoord_Down);
+    
+    ZLoc = sin(-AoA*PI_NUMBER/180.0)*YLoc_ + cos(-AoA*PI_NUMBER/180.0)*ZLoc_ + Zcoord_Trailing;
+    
+    /*--- Compute the thickness (we add a fabs because we can not guarantee the
+     right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
+    
+    Thickness_Value = fabs(Zcoord_Up - Zcoord_Down);
+    
+  }
+  else { Thickness_Value = 0.0; }
+
   return Thickness_Value;
   
 }
 
-su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config,
+su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config,
                                           vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex;
   su2double Area_Value = 0.0;
@@ -13808,14 +14244,45 @@ su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_
   
 }
 
+su2double CPhysicalGeometry::Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config,
+                                          vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+  unsigned long iVertex;
+  su2double Length_Value = 0.0, Length_Value_ = 0.0;
+  su2double DeltaZ, DeltaX;
+
+  /*--- Not that in a symmetry plane configuration there is an extra edge that connects
+   the two extremes, and we really don't now the curve orientation. We will evaluate
+   both distance and picked the smallest one ---*/
+
+  Length_Value = 0.0;
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size()-2; iVertex++) {
+    DeltaX = Xcoord_Airfoil[iVertex+1] - Xcoord_Airfoil[iVertex];
+    DeltaZ = Zcoord_Airfoil[iVertex+1] - Zcoord_Airfoil[iVertex];
+    Length_Value += sqrt(DeltaX*DeltaX + DeltaZ*DeltaZ);
+  }
+
+  Length_Value_ = 0.0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size()-1; iVertex++) {
+    DeltaX = Xcoord_Airfoil[iVertex+1] - Xcoord_Airfoil[iVertex];
+    DeltaZ = Zcoord_Airfoil[iVertex+1] - Zcoord_Airfoil[iVertex];
+    Length_Value_ += sqrt(DeltaX*DeltaX + DeltaZ*DeltaZ);
+  }
+
+  Length_Value = min(Length_Value, Length_Value_);
+
+  return Length_Value;
+
+}
+
 void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
-                                     su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord,
-                                     su2double &Wing_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                                     su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                                     su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                                     su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                                      su2double &Wing_MaxDihedral) {
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
-  su2double MinPlane, MaxPlane, MinXCoord, MaxXCoord, dPlane, *Area, *MaxThickness, *ToC, *Chord, *Twist, *Curvature, *Dihedral, SemiSpan;
+  su2double MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, *Curvature, *Dihedral, SemiSpan;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Wing_File, Section_File;
   
@@ -13835,6 +14302,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   Area = new su2double [nPlane];
   MaxThickness = new su2double [nPlane];
   Chord = new su2double [nPlane];
+  LERadius = new su2double [nPlane];
   ToC = new su2double [nPlane];
   Twist = new su2double [nPlane];
   Curvature = new su2double [nPlane];
@@ -13856,16 +14324,29 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     Plane_Normal[iPlane] = new su2double[nDim];
   
-  MinPlane = config->GetSection_WingBounds(0); MaxPlane = config->GetSection_WingBounds(1);
-  MinXCoord = -1E6; MaxXCoord = 1E6;
+  MinPlane = config->GetStations_Bounds(0); MaxPlane = config->GetStations_Bounds(1);
   dPlane = fabs((MaxPlane - MinPlane)/su2double(nPlane-1));
 
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
     Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
-    Plane_Normal[iPlane][config->GetAxis_Stations()] = 1.0;
-    Plane_P0[iPlane][config->GetAxis_Stations()] = MinPlane + iPlane*dPlane;
+
+    if (config->GetGeo_Description() == FUSELAGE) {
+      Plane_Normal[iPlane][0] = 1.0;
+      Plane_P0[iPlane][0] = MinPlane + iPlane*dPlane;
+    }
+
+    if (config->GetGeo_Description() == WING) {
+      Plane_Normal[iPlane][1] = 1.0;
+      Plane_P0[iPlane][1] = MinPlane + iPlane*dPlane;
+    }
+
+    if (config->GetGeo_Description() == TWOD_AIRFOIL) {
+      Plane_Normal[iPlane][2] = 1.0;
+      Plane_P0[iPlane][2] = MinPlane + iPlane*dPlane;
+    }
+
   }
   
   /*--- Allocate some vectors for storing airfoil coordinates ---*/
@@ -13878,32 +14359,34 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   /*--- Create the section slices through the geometry ---*/
 
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
-                           MinXCoord, MaxXCoord, NULL, Xcoord_Airfoil[iPlane],
+                           -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
-  }
 
-  /*--- Compute the area at each section ---*/
+   }
+
+  /*--- Compute airfoil characteristic only in the master node ---*/
   
   if (rank == MASTER_NODE) {
     
     /*--- Write an output file---*/
 
     if (config->GetOutput_FileFormat() == PARAVIEW) {
-      Wing_File.open("Wing_Distribution.csv", ios::out);
+      Wing_File.open("wing_distribution.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
-        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
       else
-        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"Leading Edge Radius (1/m)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
     }
     else {
       Wing_File.open("wing_description.dat", ios::out);
       Wing_File << "TITLE = \"Wing description\"" << endl;
       if (config->GetSystemMeasurements() == US)
-        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
       else
-        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"Leading Edge Radius (1/m)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
       Wing_File << "ZONE T= \"Baseline wing\"" << endl;
     }
 
@@ -13913,29 +14396,33 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        LeadingEdge[iPlane][iDim] = 0.0;
+        LeadingEdge[iPlane][iDim]  = 0.0;
         TrailingEdge[iPlane][iDim] = 0.0;
       }
 
-      Area[iPlane] = 0.0;
-      MaxThickness[iPlane] = 0.0;
-      Chord[iPlane] = 0.0;
-      ToC[iPlane] = 0.0;
-      Twist[iPlane] = 0.0;
+      Area[iPlane]                = 0.0;
+      MaxThickness[iPlane]        = 0.0;
+      Chord[iPlane]               = 0.0;
+      LERadius[iPlane]            = 0.0;
+      ToC[iPlane]                 = 0.0;
+      Twist[iPlane]               = 0.0;
 
-      if (Xcoord_Airfoil[iPlane].size() != 0) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
 
-        Compute_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Compute_Wing_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        MaxThickness[iPlane]= Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        MaxThickness[iPlane] = Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Twist[iPlane] = Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        LERadius[iPlane] = Compute_LERadius(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
         ToC[iPlane] = MaxThickness[iPlane] / Chord[iPlane];
 
-        Twist[iPlane] = Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
       }
 
@@ -13945,10 +14432,10 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
-      Curvature[iPlane] = 0.0;
-      Dihedral[iPlane] = 0.0;
+      Curvature[iPlane]      = 0.0;
+      Dihedral[iPlane]       = 0.0;
 
-      if (Xcoord_Airfoil[iPlane].size() != 0) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
 
         if ((iPlane == 0) || (iPlane == nPlane-1)) Curvature[iPlane] = 0.0;
         else Curvature[iPlane] = Compute_Curvature(LeadingEdge[iPlane-1], TrailingEdge[iPlane-1],
@@ -13977,24 +14464,27 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     /*--- Plot the geometrical quatities ---*/
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    	if (Xcoord_Airfoil[iPlane].size() != 0) {
+    	if (Xcoord_Airfoil[iPlane].size() > 1) {
     		if (config->GetOutput_FileFormat() == PARAVIEW) {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane]  <<", "<< MaxThickness[iPlane]  <<", "<< Chord[iPlane]  <<", "<< ToC[iPlane]
-    			                                                                                                                                            <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
-    			                                                                                                                                                                                                                <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][1]  <<", "<< LeadingEdge[iPlane][2]
-    			                                                                                                                                                                                                                                                                                                              <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][1]  <<", "<< TrailingEdge[iPlane][2]  << endl;
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
+    			           <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
+    			           <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
+    			           <<", "<< TrailingEdge[iPlane][0]/SemiSpan <<", "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
+
+
+
     		}
     		else  {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane]  <<" "<< MaxThickness[iPlane]  <<" "<< Chord[iPlane]  <<" "<< ToC[iPlane]
-    			                                                                                                                                        <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
-    			                                                                                                                                                                                                          <<" "<< LeadingEdge[iPlane][0] <<" "<< LeadingEdge[iPlane][1]  <<" "<< LeadingEdge[iPlane][2]
-    			                                                                                                                                                                                                                                                                                                     <<" "<< TrailingEdge[iPlane][0] <<" "<< TrailingEdge[iPlane][1]  <<" "<< TrailingEdge[iPlane][2] << endl;
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane] <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
+    			           <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
+    			           <<" "<< LeadingEdge[iPlane][0]/SemiSpan <<" "<< LeadingEdge[iPlane][2]/SemiSpan
+    			           <<" "<< TrailingEdge[iPlane][0]/SemiSpan <<" "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
+
     		}
     	}
     }
 
     Wing_File.close();
-
 
     Section_File.open("wing_slices.dat", ios::out);
 
@@ -14007,7 +14497,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
         else Section_File << "VARIABLES = \"x (m)\", \"y (m)\", \"z (m)\", \"x<sub>2D</sub>/c\", \"y<sub>2D</sub>/c\"" << endl;
       }
 
-      if (Xcoord_Airfoil[iPlane].size() !=0) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
 
         Section_File << "ZONE T=\"<greek>h</greek> = " << Ycoord_Airfoil[iPlane][0]/SemiSpan << " \", I= " << Xcoord_Airfoil[iPlane].size() << ", F=POINT" << endl;
 
@@ -14041,23 +14531,27 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     Wing_Volume = 0.0;
     for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
-      if (Xcoord_Airfoil[iPlane].size() != 0) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
         Wing_Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
       }
-    }
-    if (Xcoord_Airfoil[nPlane-1].size() != 0) {
-      Wing_Volume /= (Ycoord_Airfoil[nPlane-1][0] - Ycoord_Airfoil[0][0]);
     }
 
     /*--- Evaluate Max and Min quantities ---*/
 
-    Wing_MinMaxThickness = 1E6; Wing_MaxChord = -1E6; Wing_MinToC = 1E6;
+    Wing_MaxMaxThickness = -1E6; Wing_MinMaxThickness = 1E6; Wing_MinChord = 1E6; Wing_MaxChord = -1E6;
+    Wing_MinLERadius = 1E6; Wing_MaxLERadius = -1E6; Wing_MinToC = 1E6; Wing_MaxToC = -1E6;
     Wing_MaxTwist = -1E6; Wing_MaxCurvature = -1E6; Wing_MaxDihedral = -1E6;
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      Wing_MinMaxThickness = min(Wing_MinMaxThickness, MaxThickness[iPlane]);
+      if (MaxThickness[iPlane] != 0.0) Wing_MinMaxThickness = min(Wing_MinMaxThickness, MaxThickness[iPlane]);
+      Wing_MaxMaxThickness = max(Wing_MaxMaxThickness, MaxThickness[iPlane]);
+      if (Chord[iPlane] != 0.0) Wing_MinChord = min(Wing_MinChord, Chord[iPlane]);
       Wing_MaxChord = max(Wing_MaxChord, Chord[iPlane]);
-      Wing_MinToC = min(Wing_MinToC, ToC[iPlane]);
+      if (LERadius[iPlane] != 0.0) Wing_MinLERadius = min(Wing_MinLERadius, LERadius[iPlane]);
+      Wing_MaxLERadius = max(Wing_MaxLERadius, LERadius[iPlane]);
+      if (ToC[iPlane] != 0.0) Wing_MinToC = min(Wing_MinToC, ToC[iPlane]);
+      Wing_MaxToC = max(Wing_MaxToC, ToC[iPlane]);
+      Wing_ObjFun_MinToC = sqrt((Wing_MinToC - 0.07)*(Wing_MinToC - 0.07));
       Wing_MaxTwist = max(Wing_MaxTwist, fabs(Twist[iPlane]));
       Wing_MaxCurvature = max(Wing_MaxCurvature, Curvature[iPlane]);
       Wing_MaxDihedral = max(Wing_MaxDihedral, fabs(Dihedral[iPlane]));
@@ -14091,10 +14585,304 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   delete [] Area;
   delete [] MaxThickness;
   delete [] Chord;
+  delete [] LERadius;
   delete [] ToC;
   delete [] Twist;
   delete [] Curvature;
   delete [] Dihedral;
+
+}
+
+void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
+                                         su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+                                         su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+                                         su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+                                         su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+                                         su2double &Fuselage_MaxCurvature) {
+
+  unsigned short iPlane, iDim, nPlane = 0;
+  unsigned long iVertex;
+  su2double MinPlane, MaxPlane, dPlane, *Area, *Length, *Width, *WaterLineWidth, *Height, *Curvature;
+  vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
+  ofstream Fuselage_File, Section_File;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+
+  /*--- Make a large number of section cuts for approximating volume ---*/
+
+  nPlane = config->GetnWingStations();
+
+  /*--- Allocate memory for the section cutting ---*/
+
+  Area = new su2double [nPlane];
+  Length = new su2double [nPlane];
+  Width = new su2double [nPlane];
+  WaterLineWidth = new su2double [nPlane];
+  Height = new su2double [nPlane];
+  Curvature = new su2double [nPlane];
+
+  su2double **LeadingEdge = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    LeadingEdge[iPlane] = new su2double[nDim];
+
+  su2double **TrailingEdge = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    TrailingEdge[iPlane] = new su2double[nDim];
+
+  su2double **Plane_P0 = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    Plane_P0[iPlane] = new su2double[nDim];
+
+  su2double **Plane_Normal = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    Plane_Normal[iPlane] = new su2double[nDim];
+
+  MinPlane = config->GetStations_Bounds(0); MaxPlane = config->GetStations_Bounds(1);
+  dPlane = fabs((MaxPlane - MinPlane)/su2double(nPlane-1));
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
+    Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
+    Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
+
+    if (config->GetGeo_Description() == FUSELAGE) {
+      Plane_Normal[iPlane][0] = 1.0;
+      Plane_P0[iPlane][0] = MinPlane + iPlane*dPlane;
+    }
+
+    if (config->GetGeo_Description() == WING) {
+      Plane_Normal[iPlane][1] = 1.0;
+      Plane_P0[iPlane][1] = MinPlane + iPlane*dPlane;
+    }
+
+    if (config->GetGeo_Description() == TWOD_AIRFOIL) {
+      Plane_Normal[iPlane][2] = 1.0;
+      Plane_P0[iPlane][2] = MinPlane + iPlane*dPlane;
+    }
+
+  }
+
+  /*--- Allocate some vectors for storing airfoil coordinates ---*/
+
+  Xcoord_Airfoil   = new vector<su2double>[nPlane];
+  Ycoord_Airfoil   = new vector<su2double>[nPlane];
+  Zcoord_Airfoil   = new vector<su2double>[nPlane];
+  Variable_Airfoil = new vector<su2double>[nPlane];
+
+  /*--- Create the section slices through the geometry ---*/
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+    ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
+                           -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
+                           Variable_Airfoil[iPlane], original_surface, config);
+  }
+
+  /*--- Compute the area at each section ---*/
+
+  if (rank == MASTER_NODE) {
+
+    /*--- Write an output file---*/
+
+    if (config->GetOutput_FileFormat() == PARAVIEW) {
+      Fuselage_File.open("fuselage_description.csv", ios::out);
+      if (config->GetSystemMeasurements() == US)
+        Fuselage_File << "\"x (in)\",\"Area (in^2)\",\"Length (in)\",\"Width (in)\",\"Waterline width (in)\",\"Height (in)\",\"Curvature (1/in)\",\"Generatrix Curve X (in)\",\"Generatrix Curve Y (in)\",\"Generatrix Curve Z (in)\",\"Axis Curve X (in)\",\"Axis Curve Y (in)\",\"Axis Curve Z (in)\"" << endl;
+      else
+        Fuselage_File << "\"x (m)\",\"Area (m^2)\",\"Length (m)\",\"Width (m)\",\"Waterline width (m)\",\"Height (m)\",\"Curvature (1/in)\",\"Generatrix Curve X (m)\",\"Generatrix Curve Y (m)\",\"Generatrix Curve Z (m)\",\"Axis Curve X (m)\",\"Axis Curve Y (m)\",\"Axis Curve Z (m)\"" << endl;
+    }
+    else {
+      Fuselage_File.open("fuselage_description.dat", ios::out);
+      Fuselage_File << "TITLE = \"Fuselage description\"" << endl;
+      if (config->GetSystemMeasurements() == US)
+        Fuselage_File << "VARIABLES = \"x (in)\",\"Area (in<sup>2</sup>)\",\"Length (in)\",\"Width (in)\",\"Waterline width (in)\",\"Height (in)\",\"Curvature (1/in)\",\"Generatrix Curve X (in)\",\"Generatrix Curve Y (in)\",\"Generatrix Curve Z (in)\",\"Axis Curve X (in)\",\"Axis Curve Y (in)\",\"Axis Curve Z (in)\"" << endl;
+      else
+        Fuselage_File << "VARIABLES = \"x (m)\",\"Area (m<sup>2</sup>)\",\"Length (m)\",\"Width (m)\",\"Waterline width (m)\",\"Height (m)\",\"Curvature (1/m)\",\"Generatrix Curve X (m)\",\"Generatrix Curve Y (m)\",\"Generatrix Curve Z (m)\",\"Axis Curve X (m)\",\"Axis Curve Y (m)\",\"Axis Curve Z (m)\"" << endl;
+      Fuselage_File << "ZONE T= \"Baseline fuselage\"" << endl;
+    }
+
+
+    /*--- Evaluate  geometrical quatities that do not require any kind of filter, local to each point ---*/
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        LeadingEdge[iPlane][iDim]  = 0.0;
+        TrailingEdge[iPlane][iDim] = 0.0;
+      }
+
+      Area[iPlane]   = 0.0;
+      Length[iPlane]   = 0.0;
+      Width[iPlane]  = 0.0;
+      WaterLineWidth[iPlane]  = 0.0;
+      Height[iPlane] = 0.0;
+
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+
+        Compute_Fuselage_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Length[iPlane] = Compute_Length(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Width[iPlane] = Compute_Width(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        WaterLineWidth[iPlane] = Compute_WaterLineWidth(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Height[iPlane] = Compute_Height(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+      }
+
+    }
+
+    /*--- Evaluate  geometrical quatities that have been computed using a filtered value (they depend on more than one point) ---*/
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+      Curvature[iPlane] = 0.0;
+
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+
+        if ((iPlane == 0) || (iPlane == nPlane-1)) Curvature[iPlane] = 0.0;
+        else Curvature[iPlane] = Compute_Curvature(LeadingEdge[iPlane-1], TrailingEdge[iPlane-1],
+                                                   LeadingEdge[iPlane], TrailingEdge[iPlane],
+                                                   LeadingEdge[iPlane+1], TrailingEdge[iPlane+1]);
+
+      }
+
+    }
+
+    /*--- Set the curvature and dihedral angles at the extremes ---*/
+
+    if (nPlane > 1) {
+      if ((Xcoord_Airfoil[0].size() != 0) && (Xcoord_Airfoil[1].size() != 0)) {
+        Curvature[0] = Curvature[1];
+      }
+      if ((Xcoord_Airfoil[nPlane-1].size() != 0) && (Xcoord_Airfoil[nPlane-2].size() != 0)) {
+        Curvature[nPlane-1] = Curvature[nPlane-2];
+      }
+    }
+
+    /*--- Plot the geometrical quatities ---*/
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    	if (Xcoord_Airfoil[iPlane].size() > 1) {
+    		if (config->GetOutput_FileFormat() == PARAVIEW) {
+    			Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<", "<< Area[iPlane] <<", "<< Length[iPlane] <<", "<< Width[iPlane] <<", "<< WaterLineWidth[iPlane] <<", "<< Height[iPlane] <<", "<< Curvature[iPlane]
+    			           <<", "<< -LeadingEdge[iPlane][1] <<", "<< LeadingEdge[iPlane][0]  <<", "<< LeadingEdge[iPlane][2]
+    			           <<", "<< -TrailingEdge[iPlane][1] <<", "<< TrailingEdge[iPlane][0]  <<", "<< TrailingEdge[iPlane][2]  << endl;
+    		}
+    		else  {
+    			Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<" "<< Area[iPlane] <<" "<< Length[iPlane] <<" "<< Width[iPlane] <<" "<< WaterLineWidth[iPlane] <<" "<< Height[iPlane] <<" "<< Curvature[iPlane]
+    			           <<" "<< -LeadingEdge[iPlane][1] <<" "<< LeadingEdge[iPlane][0]  <<" "<< LeadingEdge[iPlane][2]
+    			           <<" "<< -TrailingEdge[iPlane][1] <<" "<< TrailingEdge[iPlane][0]  <<" "<< TrailingEdge[iPlane][2] << endl;
+    		}
+    	}
+    }
+
+    Fuselage_File.close();
+
+    Section_File.open("fuselage_slices.dat", ios::out);
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+      if (iPlane == 0) {
+        Section_File << "TITLE = \"Aircraft Slices\"" << endl;
+        if (config->GetSystemMeasurements() == US)
+          Section_File << "VARIABLES = \"x (in)\", \"y (in)\", \"z (in)\"" << endl;
+        else Section_File << "VARIABLES = \"x (m)\", \"y (m)\", \"z (m)\"" << endl;
+      }
+
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+
+        Section_File << "ZONE T=\"X = " << -Ycoord_Airfoil[iPlane][0] << " \", I= " << Ycoord_Airfoil[iPlane].size() << ", F=POINT" << endl;
+
+        for (iVertex = 0; iVertex < Xcoord_Airfoil[iPlane].size(); iVertex++) {
+
+          /*--- Write the file ---*/
+
+          Section_File  << -Ycoord_Airfoil[iPlane][iVertex] << " " << Xcoord_Airfoil[iPlane][iVertex] << " " << Zcoord_Airfoil[iPlane][iVertex] << endl;
+        }
+      }
+
+    }
+
+    Section_File.close();
+
+
+    /*--- Compute the fuselage volume using a composite Simpson's rule ---*/
+
+    Fuselage_Volume = 0.0;
+    for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+      	Fuselage_Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
+      }
+    }
+
+    /*--- Compute the fuselage wetted area ---*/
+
+    Fuselage_WettedArea = 0.0;
+    if (Xcoord_Airfoil[0].size() > 1) Fuselage_WettedArea += (1.0/2.0)*dPlane*Length[0];
+    for (iPlane = 1; iPlane < nPlane-1; iPlane++) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+      	Fuselage_WettedArea += dPlane*Length[iPlane];
+      }
+    }
+    if (Xcoord_Airfoil[nPlane-1].size() > 1) Fuselage_WettedArea += (1.0/2.0)*dPlane*Length[nPlane-1];
+
+    /*--- Evaluate Max and Min quantities ---*/
+
+    Fuselage_MaxWidth = -1E6; Fuselage_MinWidth = 1E6;
+    Fuselage_MaxWaterLineWidth = -1E6; Fuselage_MinWaterLineWidth = 1E6;
+    Fuselage_MaxHeight = -1E6; Fuselage_MinHeight = 1E6;
+    Fuselage_MaxCurvature = -1E6;
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      if (Width[iPlane] != 0.0) Fuselage_MinWidth = min(Fuselage_MinWidth, Width[iPlane]);
+      Fuselage_MaxWidth = max(Fuselage_MaxWidth, Width[iPlane]);
+      if (WaterLineWidth[iPlane] != 0.0) Fuselage_MinWaterLineWidth = min(Fuselage_MinWaterLineWidth, WaterLineWidth[iPlane]);
+      Fuselage_MaxWaterLineWidth = max(Fuselage_MaxWaterLineWidth, WaterLineWidth[iPlane]);
+      if (Height[iPlane] != 0.0) Fuselage_MinHeight = min(Fuselage_MinHeight, Height[iPlane]);
+      Fuselage_MaxHeight = max(Fuselage_MaxHeight, Height[iPlane]);
+      Fuselage_MaxCurvature = max(Fuselage_MaxCurvature, Curvature[iPlane]);
+    }
+
+  }
+
+  /*--- Free memory for the section cuts ---*/
+
+  delete [] Xcoord_Airfoil;
+  delete [] Ycoord_Airfoil;
+  delete [] Zcoord_Airfoil;
+  delete [] Variable_Airfoil;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] LeadingEdge[iPlane];
+  delete [] LeadingEdge;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] TrailingEdge[iPlane];
+  delete [] TrailingEdge;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] Plane_P0[iPlane];
+  delete [] Plane_P0;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] Plane_Normal[iPlane];
+  delete [] Plane_Normal;
+
+  delete [] Area;
+  delete [] Length;
+  delete [] Width;
+  delete [] WaterLineWidth;
+  delete [] Height;
+  delete [] Curvature;
 
 }
 

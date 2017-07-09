@@ -451,6 +451,9 @@ def findiff( config, state=None ):
     else:
         log_findiff = None
 
+    config.ITER_DCL_DALPHA = 0
+    config.OPT_RELAX_FACTOR= 1.0
+
     # evaluate step length or set default value
     if config.has_key('FIN_DIFF_STEP'):
         step = float(config.FIN_DIFF_STEP)
@@ -645,7 +648,8 @@ def geometry( func_name, config, state=None ):
         log_geom = None
 
     # ----------------------------------------------------    
-    #  Update Mesh (check with Trent)
+    #  Update Mesh (uncomment for geometrical objective functions                                                               
+    #  otherwise we are deforming the grid twice... not good)                                                                   
     # ----------------------------------------------------
 
     # does decomposition and deformation
