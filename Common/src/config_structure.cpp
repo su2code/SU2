@@ -485,6 +485,9 @@ void CConfig::SetPointersNull(void) {
   Marker_NRBC                  = NULL;
   Marker_Shroud                = NULL;
 
+  nBlades                      = NULL;
+  FreeStreamTurboNormal        = NULL;
+
   /*--- Variable initialization ---*/
   
   ExtIter    = 0;
@@ -2127,13 +2130,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    *--- This will allow us to define multiple physics structural problems */
 
   if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
-	  if (val_izone == 0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
+    if (val_izone == 0) {Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true;}
 
-	  else {			 	Kind_Solver = Kind_Solver_Struc_FSI;	  	FSI_Problem = true;
-	  	  	  	  	  	  	Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
-	  	  	  	  	  	  	Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
-	  	  	  	  	  	  	Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
+    else {Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
+    Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
+    Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
+    Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
+    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
   }
   else { FSI_Problem = false; }
 
@@ -2203,10 +2206,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Fluid model consistency ---*/
 
   if (standard_air) {
-	if (Gamma != 1.4 || Gas_Constant != 287.058) {
-		Gamma = 1.4;
-		Gas_Constant = 287.058;
-        }
+    if (Gamma != 1.4 || Gas_Constant != 287.058) {
+      Gamma = 1.4;
+      Gas_Constant = 287.058;
+    }
   }
   /*--- Check for Measurement System ---*/
   
@@ -2229,6 +2232,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nBlades = new su2double[nZone];
     FreeStreamTurboNormal= new su2double[3];
   }
+
+  /*--- Check if NRBC are used with turbo markers ---*/
+
+  if (nMarker_NRBC > 0 && !GetBoolTurbomachinery()){
+    cout << "NRBC Boundary conditions can only be used with turbomachinery markers" << endl;
+    exit(EXIT_FAILURE);
+  }
+
   /*--- Check for Boundary condition available for NICFD ---*/
   
   if (!ideal_gas) {
@@ -5740,6 +5751,9 @@ CConfig::~CConfig(void) {
   if (Marker_Riemann != NULL) delete [] Marker_Riemann;
   if (Marker_NRBC != NULL) delete [] Marker_NRBC;
   if (Marker_Shroud != NULL) delete [] Marker_Shroud;
+
+  if (nBlades != NULL) delete [] nBlades;
+  if (FreeStreamTurboNormal != NULL) delete [] FreeStreamTurboNormal;
 
  
 }
