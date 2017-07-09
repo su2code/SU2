@@ -3969,41 +3969,41 @@ protected:
 
   /*--- Turbomachinery Solver Variables ---*/
   su2double *** AverageFlux,
-  ***SpanTotalFlux,
-  ***AverageVelocity,
-  ***AverageTurboVelocity,
-  ***OldAverageTurboVelocity,
-  ***ExtAverageTurboVelocity,
-  **AveragePressure,
-  **OldAveragePressure,
-  **RadialEquilibriumPressure,
-  **ExtAveragePressure,
-  **AverageDensity,
-  **OldAverageDensity,
-  **ExtAverageDensity,
-  **AverageNu,
-  **AverageKine,
-  **AverageOmega,
-  **ExtAverageNu,
-  **ExtAverageKine,
-  **ExtAverageOmega;
+            ***SpanTotalFlux,
+            ***AverageVelocity,
+            ***AverageTurboVelocity,
+            ***OldAverageTurboVelocity,
+            ***ExtAverageTurboVelocity,
+             **AveragePressure,
+             **OldAveragePressure,
+             **RadialEquilibriumPressure,
+             **ExtAveragePressure,
+             **AverageDensity,
+             **OldAverageDensity,
+             **ExtAverageDensity,
+             **AverageNu,
+             **AverageKine,
+             **AverageOmega,
+             **ExtAverageNu,
+             **ExtAverageKine,
+             **ExtAverageOmega;
 
-  su2double **DensityIn,
-  **PressureIn,
-  ***TurboVelocityIn,
-  **DensityOut,
-  **PressureOut,
-  ***TurboVelocityOut,
-  **KineIn,
-  **OmegaIn,
-  **NuIn,
-  **KineOut,
-  **OmegaOut,
-  **NuOut;
+  su2double  **DensityIn,
+             **PressureIn,
+             ***TurboVelocityIn,
+             **DensityOut,
+             **PressureOut,
+             ***TurboVelocityOut,
+             **KineIn,
+             **OmegaIn,
+             **NuIn,
+             **KineOut,
+             **OmegaOut,
+             **NuOut;
   
   complex<su2double> ***CkInflow,
-  ***CkOutflow1,
-  ***CkOutflow2;
+                     ***CkOutflow1,
+                     ***CkOutflow2;
 
  /*--- End of Turbomachinery Solver Variables ---*/
 
