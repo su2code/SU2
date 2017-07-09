@@ -62,7 +62,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       }
       FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());
       TotalEnthalpyIn_BC[iMarkerTP][iSpan] = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-      EntropyIn_BC[iMarkerTP][iSpan] = FluidModel->GetEntropy();
+      EntropyIn_BC[iMarkerTP][iSpan]       = FluidModel->GetEntropy();
     }
   }
 
@@ -84,12 +84,12 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       }
       TurboVelocityIn[iMarkerTP][iSpan][nDim] = sqrt(absVel2);
 
-      TRadius[iMarkerTP][iSpan]            = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
-      area																 = geometry->GetSpanAreaIn(iMarkerTP, iSpan);
+      TRadius[iMarkerTP][iSpan]  = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
+      area                       = geometry->GetSpanAreaIn(iMarkerTP, iSpan);
 
       /*--- Compute static Inflow quantities ---*/
       FluidModel->SetTDState_Prho(PressureIn[iMarkerTP][iSpan], DensityIn[iMarkerTP][iSpan]);
-      EntropyIn[iMarkerTP][iSpan]					 = FluidModel->GetEntropy();
+      EntropyIn[iMarkerTP][iSpan]          = FluidModel->GetEntropy();
       MassFlowIn[iMarkerTP][iSpan]         = config->GetnBlades(iMarkerTP)*DensityIn[iMarkerTP][iSpan]*TurboVelocityIn[iMarkerTP][iSpan][0]*area;
       AbsFlowAngleIn[iMarkerTP][iSpan]     = atan(TurboVelocityIn[iMarkerTP][iSpan][1]/TurboVelocityIn[iMarkerTP][iSpan][0]);
       EnthalpyIn[iMarkerTP][iSpan]         = FluidModel->GetStaticEnergy() + PressureIn[iMarkerTP][iSpan]/DensityIn[iMarkerTP][iSpan];
@@ -122,13 +122,13 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       relPressureIn   = FluidModel->GetPressure();
 
       /*--- Compute kinematic relative Inflow quantities ---*/
-      FlowAngleIn[iMarkerTP][iSpan]   = atan(relVel[1]/relVel[0]);
+      FlowAngleIn[iMarkerTP][iSpan]    = atan(relVel[1]/relVel[0]);
       mach          = 0.0;
       for (iDim = 0; iDim < nDim; iDim++){
-        MachIn[iMarkerTP][iSpan][iDim]       = relVel[iDim]/soundSpeed;
-        mach 																 = MachIn[iMarkerTP][iSpan][iDim]*MachIn[iMarkerTP][iSpan][iDim];
+        MachIn[iMarkerTP][iSpan][iDim] = relVel[iDim]/soundSpeed;
+        mach = MachIn[iMarkerTP][iSpan][iDim]*MachIn[iMarkerTP][iSpan][iDim];
       }
-      MachIn[iMarkerTP][iSpan][nDim]            = sqrt(mach);
+      MachIn[iMarkerTP][iSpan][nDim]   = sqrt(mach);
 
       /*--- Compute Turbulent Inflow quantities ---*/
       if(turbulent){
@@ -154,7 +154,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       /*--- OUTFLOW ---*/
       /*--- Retrieve Outflow primitive quantities ---*/
       DensityOut[iMarkerTP][iSpan]         = solver_container->GetDensityOut(iMarkerTP, iSpan);
-      PressureOut[iMarkerTP][iSpan]         = solver_container->GetPressureOut(iMarkerTP, iSpan);
+      PressureOut[iMarkerTP][iSpan]        = solver_container->GetPressureOut(iMarkerTP, iSpan);
       absVel2 = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++){
@@ -166,17 +166,16 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 
       for (iDim = 0; iDim < 3; iDim++){
       }
-      //			TRadius[iMarkerTP][iSpan]            = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
-      area																 = geometry->GetSpanAreaOut(iMarkerTP, iSpan);
+      area   = geometry->GetSpanAreaOut(iMarkerTP, iSpan);
 
 
       /*--- Compute all the Outflow quantities ---*/
       FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
-      EntropyOut[iMarkerTP][iSpan]				 = FluidModel->GetEntropy();
+      EntropyOut[iMarkerTP][iSpan]          = FluidModel->GetEntropy();
       MassFlowOut[iMarkerTP][iSpan]         = config->GetnBlades(iMarkerTP)*DensityOut[iMarkerTP][iSpan]*TurboVelocityOut[iMarkerTP][iSpan][0]*area;
       AbsFlowAngleOut[iMarkerTP][iSpan]     = atan(TurboVelocityOut[iMarkerTP][iSpan][1]/TurboVelocityOut[iMarkerTP][iSpan][0]);
       EnthalpyOut[iMarkerTP][iSpan]         = FluidModel->GetStaticEnergy() + PressureOut[iMarkerTP][iSpan]/DensityOut[iMarkerTP][iSpan];
-      soundSpeed                           = FluidModel->GetSoundSpeed();
+      soundSpeed                            = FluidModel->GetSoundSpeed();
 
       /*--- Compute Total Outflow quantities ---*/
       TotalEnthalpyOut[iMarkerTP][iSpan]    = EnthalpyOut[iMarkerTP][iSpan] + 0.5*absVel2;
@@ -185,7 +184,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       TotalTemperatureOut[iMarkerTP][iSpan] = FluidModel->GetTemperature();
 
       /*--- Retrieve relative Outflow  quantities ---*/
-      tangVel = geometry->GetTangGridVelOut(iMarkerTP, iSpan);
+      tangVel  = geometry->GetTangGridVelOut(iMarkerTP, iSpan);
       tangVel2 = tangVel*tangVel;
 
       for (iDim = 0; iDim < nDim; iDim++){
@@ -201,22 +200,22 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       /*--- Compute Total relative Outflow quantities ---*/
       RothalpyOut[iMarkerTP][iSpan] = EnthalpyOut[iMarkerTP][iSpan] + 0.5*relVel2 - 0.5*tangVel2;
       FluidModel->SetTDState_hs(RothalpyOut[iMarkerTP][iSpan], EntropyOut[iMarkerTP][iSpan]);
-      relPressureOut    = FluidModel->GetPressure();
+      relPressureOut  = FluidModel->GetPressure();
 
       /*--- Compute isentropic Outflow quantities ---*/
       FluidModel->SetTDState_Ps(PressureOut[iMarkerTP][iSpan], EntropyIn[iMarkerTP][iSpan]);
-      enthalpyOutIs = FluidModel->GetStaticEnergy() + PressureOut[iMarkerTP][iSpan]/FluidModel->GetDensity();
-      relVelOutIs2  = 2*(RothalpyOut[iMarkerTP][iSpan] - enthalpyOutIs) + tangVel2;
+      enthalpyOutIs   = FluidModel->GetStaticEnergy() + PressureOut[iMarkerTP][iSpan]/FluidModel->GetDensity();
+      relVelOutIs2    = 2*(RothalpyOut[iMarkerTP][iSpan] - enthalpyOutIs) + tangVel2;
 
 
       /*--- Compute kinematic relative Outflow quantities ---*/
-      FlowAngleOut[iMarkerTP][iSpan]   = atan(relVel[1]/relVel[0]);
-      mach          = 0.0;
+      FlowAngleOut[iMarkerTP][iSpan] = atan(relVel[1]/relVel[0]);
+      mach   = 0.0;
       for (iDim = 0; iDim < nDim; iDim++){
-        MachOut[iMarkerTP][iSpan][iDim]       = relVel[iDim]/soundSpeed;
-        mach 																 = MachOut[iMarkerTP][iSpan][iDim]*MachOut[iMarkerTP][iSpan][iDim];
+        MachOut[iMarkerTP][iSpan][iDim] = relVel[iDim]/soundSpeed;
+        mach = MachOut[iMarkerTP][iSpan][iDim]*MachOut[iMarkerTP][iSpan][iDim];
       }
-      MachOut[iMarkerTP][iSpan][nDim]            = sqrt(mach);
+      MachOut[iMarkerTP][iSpan][nDim]   = sqrt(mach);
 
       /*--- Compute Turbulent Outflow quantities ---*/
       if(turbulent){
@@ -240,7 +239,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       }
 
       /*--- TURBO-PERFORMANCE---*/
-      EntropyGen[iMarkerTP][iSpan]				 = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
+      EntropyGen[iMarkerTP][iSpan]         = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
       EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
       TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
       KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
@@ -290,9 +289,9 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
     MassFlowIn[nBladesRow + nStages][nSpanWiseSections]             = MassFlowIn[0][config->GetnSpan_iZones(0)];
     MassFlowOut[nBladesRow + nStages][nSpanWiseSections]            = MassFlowOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)];
 
-    EntropyGen[nBladesRow + nStages][nSpanWiseSections]     = 0.0;
+    EntropyGen[nBladesRow + nStages][nSpanWiseSections]             = 0.0;
     for(iBlade = 0; iBlade < nBladesRow; iBlade++ ){
-      EntropyGen[nBladesRow + nStages][nSpanWiseSections]  += EntropyGen[iBlade][config->GetnSpan_iZones(iBlade)];
+      EntropyGen[nBladesRow + nStages][nSpanWiseSections]          += EntropyGen[iBlade][config->GetnSpan_iZones(iBlade)];
     }
   }
 

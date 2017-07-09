@@ -109,25 +109,25 @@ int main(int argc, char *argv[]) {
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-  	if (config->GetDiscrete_Adjoint()){
+    if (config->GetDiscrete_Adjoint()){
 
-  		if (config->GetBoolTurbomachinery()){
+      if (config->GetBoolTurbomachinery()){
 
-  			driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+        driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
 
-  		} else {
+      } else {
 
         driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
-  		}
+      }
 
-  	} else if (config->GetBoolTurbomachinery()){
+    } else if (config->GetBoolTurbomachinery()){
 
-  		driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+      driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
 
-  	} else {
+    } else {
 
-  		driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
-  	}
+      driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+    }
   }
 
   delete config;
