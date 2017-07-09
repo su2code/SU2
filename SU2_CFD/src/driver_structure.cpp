@@ -306,7 +306,7 @@ CDriver::CDriver(char* confFile,
     if (config_container[iZone]->GetGrid_Movement() ||
         (config_container[iZone]->GetDirectDiff() == D_DESIGN)) {
       if (rank == MASTER_NODE)
-        cout << "Setting dynamic mesh structure." << endl;
+        cout << "Setting dynamic mesh structure for zone "<< iZone<<"." << endl;
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][MESH_0], config_container[iZone]);
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
@@ -2569,7 +2569,7 @@ void CDriver::Interface_Preprocessing() {
       	nVarTransfer = 0;
       	nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
       	transfer_container[donorZone][targetZone] = new CTransfer_MixingPlaneInterface(nVar, nVarTransfer, config_container[donorZone], config_container[targetZone]);
-      	if (rank == MASTER_NODE) cout << "mixing-plane averages. "<< endl;
+        if (rank == MASTER_NODE) cout << "Set mixing-plane interface from donor zone "<< donorZone << " to target zone " << targetZone <<"."<<endl;
       }
 
     }
@@ -2661,7 +2661,6 @@ void CDriver::TurbomachineryPreprocessing(){
   int rank = MASTER_NODE;
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
-  bool mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
   bool restart   = (config_container[ZONE_0]->GetRestart() || config_container[ZONE_0]->GetRestart_Flow());
   bool discrete_adjoint = config_container[ZONE_0]->GetDiscrete_Adjoint();
   su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
@@ -3893,7 +3892,7 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
         val_nDim,
         MPICommunicator) {
 
-  mixingplane = (nZone > 1);
+  mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
 
 }
 
@@ -4514,7 +4513,7 @@ CDiscAdjTurbomachineryDriver::CDiscAdjTurbomachineryDriver(char* confFile,
                                                            unsigned short val_nDim,
                                                            SU2_Comm MPICommunicator): CDiscAdjFluidDriver(confFile, val_nZone, val_nDim, MPICommunicator){
 
-  mixingplane = (nZone > 1);
+  mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
 
 }
 CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
