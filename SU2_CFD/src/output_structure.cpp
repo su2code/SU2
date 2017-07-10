@@ -5538,7 +5538,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible) cout << "     Res[Psi_Press]";
               else cout << "     Res[Psi_Rho]";
 
-              if (!config[val_iZone]->GetFrozen_Visc()) {
+              if (!frozen_visc) {
                 cout << "      Res[Psi_nu]";
               }
               else {
