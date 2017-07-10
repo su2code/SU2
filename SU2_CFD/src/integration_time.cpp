@@ -66,11 +66,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
     FullMG = true;
   }
   
-  /*--- If low fidelity simulation ---*/
-  
-  if (config[iZone]->GetLowFidelitySim())
-    config[iZone]->SetFinestMesh(MESH_1);
-  
   /*--- If restart, update multigrid levels at the first multigrid iteration ---*/
 	/*-- Since the restart takes care of this I dont think is required, but we should check after the new restart routines are added ---*/
   
@@ -124,6 +119,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   /*--- Convergence strategy ---*/
   
   Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
+
 }
 
 void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
@@ -705,7 +701,9 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                       su2double *monitor) {
   
   const unsigned short nDim = geometry[FinestMesh]->GetnDim();
-  
+  bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
+  bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
+
   switch (RunTime_EqSystem) {
       
     case RUNTIME_FLOW_SYS:
@@ -715,6 +713,18 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
+      
+      /*--- Evaluate the engine output (after drag evaluation) ---*/
+
+      if (engine || actuator_disk) {
+        solver_container[FinestMesh][FLOW_SOL]->SetEngine_Output(geometry[FinestMesh], config);
+      }
+      
+      /*--- Evaluate the differente between the given spanload and the elliptic one ---*/
+      
+      if (config->GetPlot_Section_Forces()) {
+        solver_container[FinestMesh][FLOW_SOL]->GetEllipticSpanLoad_Diff(geometry[FinestMesh], config);
+      }
       
       /*--- Evaluate convergence monitor ---*/
       

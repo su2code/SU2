@@ -447,12 +447,13 @@ def geometry( func_name, config, state=None ):
     else:
         log_geom = None
     
-    # ----------------------------------------------------
-    #  Update Mesh (check with Trent)
-    # ----------------------------------------------------
+    # ----------------------------------------------------                                                                      
+    #  Update Mesh (uncomment for geometrical objective functions                                                               
+    #  otherwise we are deforming the grid twice... not good)                                                                   
+    # ----------------------------------------------------                                                                      
     
     # does decomposition and deformation
-    #info = update_mesh(config,state)
+    # info = update_mesh(config,state)
 
 
     # ----------------------------------------------------    

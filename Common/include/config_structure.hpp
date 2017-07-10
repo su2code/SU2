@@ -69,13 +69,15 @@ class CConfig {
 private:
   SU2_Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank;
+  unsigned short nEngine; /*!< \brief Number of engines.*/
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
   unsigned short *Kind_TurboPerformance; /*!< \brief Kind of Turbomachinery performance calculation.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
   su2double Highlite_Area; /*!< \brief Highlite area. */
-  su2double Fan_Poly_Eff; /*!< \brief Highlite area. */
+  su2double ActDisk_Poly_Eff; /*!< \brief Actuator disk polytropic efficiency. */
+  su2double ActDisk_Tang_Vel; /*!< \brief Actuator disk tangential velocity. */
   su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
   su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
   su2double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
@@ -87,8 +89,8 @@ private:
   su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
   su2double* Obj_ChainRuleCoeff; /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
-  bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   su2double* SubsonicEngine_Cyl; /*!< \brief Coordinates of the box subsonic region */
+  su2double* ActDisk_GeoDef; /*!< \brief actuator disk geometrical definition */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
   su2double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
   su2double *DistortionRack;
@@ -96,6 +98,8 @@ private:
   *DensityLimits,
   *TemperatureLimits; /*!< \brief Limits for the primitive variables */
   bool ActDisk_DoubleSurface;  /*!< \brief actuator disk double surface  */
+  bool ActDisk_Block_ReverseFlow;  /*!< \brief block the flow in the reverse direction  */
+  bool ActDisk_Uniform_Jump;  /*!< \brief Actuator disk uniform jump  */
   bool Engine_HalfModel;  /*!< \brief only half model is in the computational grid  */
   bool ActDisk_SU2_DEF;  /*!< \brief actuator disk double surface  */
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
@@ -103,7 +107,8 @@ private:
   unsigned short FFD_Blending; /*!< \brief Kind of FFD Blending function. */
   su2double* FFD_BSpline_Order; /*!< \brief BSpline order in i,j,k direction. */
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
-  su2double FFD_Scale;  	/*!< \brief Scale factor between the design variable value and the control point movement. */
+  su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
+  su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
@@ -134,7 +139,10 @@ private:
   su2double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
   su2double WeightCd; /*!< \brief Weight of the drag coefficient. */
   su2double dCD_dCL; /*!< \brief Weight of the drag coefficient. */
-  su2double dCD_dCM; /*!< \brief Weight of the drag coefficient. */
+  su2double dCMx_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCMy_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCMz_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCMy; /*!< \brief Weight of the drag coefficient. */
   su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
   su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
   su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
@@ -143,8 +151,6 @@ private:
   unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
-  su2double DVBound_Upper;		/*!< \brief Previous value of the design variable. */
-  su2double DVBound_Lower;		/*!< \brief Previous value of the design variable. */
   su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
   su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
@@ -243,9 +249,11 @@ private:
   *Marker_Neumann,					/*!< \brief Neumann flow markers. */
   *Marker_Internal,					/*!< \brief Neumann flow markers. */
   *Marker_All_TagBound;				/*!< \brief Global index for markers using grid information. */
+  unsigned short *EngineExhaust_EngineID;    /*!< \brief ID of the Engine. */
+  unsigned short *EngineInflow_EngineID;    /*!< \brief ID of the Engine. */
   su2double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
-  su2double *Exhaust_Temperature_Target;    /*!< \brief Specified total temperatures for nacelle boundaries. */
-  su2double *Exhaust_Pressure_Target;    /*!< \brief Specified total pressures for nacelle boundaries. */
+  su2double *EngineExhaust_Temperature_Target;    /*!< \brief Specified total temperatures for nacelle boundaries. */
+  su2double *EngineExhaust_Pressure_Target;    /*!< \brief Specified total pressures for nacelle boundaries. */
   su2double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
   su2double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
   su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
@@ -256,27 +264,29 @@ private:
   su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
   su2double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
-  su2double *EngineInflow_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Inflow_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Inflow_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Inflow_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Inflow_ReverseMassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Inflow_TotalPressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Inflow_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Inflow_TotalTemperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Inflow_RamDrag;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Inflow_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Inflow_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Exhaust_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Exhaust_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Exhaust_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Exhaust_TotalPressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Exhaust_TotalTemperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Exhaust_GrossThrust;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Exhaust_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Exhaust_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_MassFlow_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_Area;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_ReverseMassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_TotalPressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_TotalTemperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_RamDrag;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineInflow_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineExhaust_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineExhaust_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineExhaust_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineExhaust_TotalPressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineExhaust_TotalTemperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineExhaust_GrossThrust;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineExhaust_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *EngineExhaust_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Engine_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Engine_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Engine_InMassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Engine_OutMassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Engine_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Engine_NetThrust;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Engine_GrossThrust;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -294,6 +304,8 @@ private:
   su2double **Load_Sine_Dir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
   su2double *FlowLoad_Value;    /*!< \brief Specified force for flow load boundaries. */
   su2double *ActDiskInlet_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *ActDiskInlet_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *ActDiskInlet_Area;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDiskInlet_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDiskInlet_TotalTemperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDiskInlet_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -310,14 +322,15 @@ private:
   su2double *ActDiskOutlet_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDiskOutlet_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double **ActDisk_PressJump, **ActDisk_TempJump,  **ActDisk_Omega;
-  su2double *ActDisk_DeltaPress;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *ActDisk_DeltaTemp;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *ActDisk_StaticPressDelta;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *ActDisk_StaticTempDelta;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_TotalPressRatio;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_TotalTempRatio;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_StaticPressRatio;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_StaticTempRatio;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *ActDisk_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *ActDisk_InMassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *ActDisk_OutMassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Surface_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -388,7 +401,10 @@ private:
   unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
   *MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
-  su2double *LocationStations;   /*!< \brief Airfoil sections in wing slicing subroutine. */
+  su2double *LocationStations,   /*!< \brief Airfoil sections in wing slicing subroutine. */
+  *ActDisk_Inc_Pressure,   /*!< \brief PT distribution for the actuator disk. */
+  *ActDisk_Inc_Temperature,   /*!< \brief TT distribution for the actuator disk. */
+  *ActDisk_Inc_Radial;   /*!< \brief Radial distribution for the actuator disk. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
@@ -472,8 +488,11 @@ private:
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
   unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-  su2double *Section_WingBounds;                  /*!< \brief Airfoil section limit. */
+  su2double *Stations_Bounds;                  /*!< \brief Airfoil section limit. */
   unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
+  nActDisk_Inc_Pressure,                        /*!< \brief PT distribution for the actuator disk . */
+  nActDisk_Inc_Temperature,                       /*!< \brief TT distribution for the actuator disk . */
+  nActDisk_Inc_Radial,                    /*!< \brief Radial distribution for the actuator disk . */
   nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
   *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
@@ -484,6 +503,7 @@ private:
   Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -506,7 +526,7 @@ private:
   iH, AoS, AoA_Offset, AoS_Offset, AoA_Sens;		/*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
   bool Fixed_CM_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
-  bool Eval_dCD_dCX;			/*!< \brief Activate fixed CL mode (external flow only). */
+  bool Eval_dOF_dCX;			/*!< \brief Activate fixed CL mode (external flow only). */
   bool Discard_InFiles; /*!< \brief Discard angle of attack in solution and geometry files. */
   su2double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
   su2double Target_CM;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
@@ -517,6 +537,7 @@ private:
   unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_CM;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Iter_dCL_dAlpha;   /*!< \brief Number of iterations to evaluate dCL_dAlpha. */
   unsigned long Update_Alpha;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_iH;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_BCThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
@@ -537,7 +558,6 @@ private:
   Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
   bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
-  bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Update_Restart_Params,
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
@@ -549,7 +569,7 @@ private:
   nMarker_ZoneInterface, /*!< \brief Number of markers in the zone interface. */
   nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
-    nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
   *Marker_Designing,         /*!< \brief Markers to plot. */
@@ -581,15 +601,14 @@ private:
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
   su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
   unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
-  unsigned short Axis_Stations;	/*!< \brief Axis orientation. */
+  unsigned short Geo_Description;	/*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
-  unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
-  su2double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
+  su2double RefArea,		/*!< \brief Reference area for coefficient computation. */
   RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
-  RefLengthMoment,			/*!< \brief Reference length for moment computation. */
+  RefLength,			/*!< \brief Reference length for moment computation. */
   *RefOriginMoment,           /*!< \brief Origin for moment computation. */
   *RefOriginMoment_X,      /*!< \brief X Origin for moment computation. */
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
@@ -637,6 +656,7 @@ private:
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
   Wrt_Residuals,              /*!< \brief Write residuals to solution file */
+  Wrt_Surface,                /*!< \brief Write solution at each surface */
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
@@ -815,6 +835,7 @@ private:
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
+  *default_geo_def,           /*!< \brief Default Actuator disk geometrical definition. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
@@ -1043,8 +1064,8 @@ private:
     COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-  template <class Tenum>
   
+  template <class Tenum>
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                         su2double* & var1, su2double* & var2, su2double** & FlowDir) {
     assert(option_map.find(name) == option_map.end());
@@ -1052,6 +1073,7 @@ private:
     COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
+  
   template <class Tenum>
   void addNRBCOption(const string name, unsigned short & nMarker_NRBC, string * & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                      su2double* & var1, su2double* & var2, su2double** & FlowDir) {
@@ -1061,11 +1083,19 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
+  void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust, unsigned short* & EngineID,
                         su2double* & Ttotal, su2double* & Ptotal) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionExhaust(name, nMarker_Exhaust, Marker_Exhaust, Ttotal, Ptotal);
+    COptionBase* val = new COptionExhaust(name, nMarker_Exhaust, Marker_Exhaust, EngineID, Ttotal, Ptotal);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addInflowOption(const string name, unsigned short & nMarker_Inflow, string * & Marker_Inflow, unsigned short* & EngineID,
+                       su2double* & MassFlow) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionInflow(name, nMarker_Inflow, Marker_Inflow, EngineID, MassFlow);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -1130,25 +1160,24 @@ public:
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
-
+  
   /*!
    * \brief Destructor of the class.
    */
   ~CConfig(void);
-
-
+  
   /*!
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
    */
   SU2_Comm GetMPICommunicator();
-
+  
   /*!
    * \brief Set the MPI communicator for SU2.
    * \param[in] Communicator - MPI communicator for SU2.
    */
   void SetMPICommunicator(SU2_Comm Communicator);
-
+  
   /*!
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
@@ -1270,6 +1299,12 @@ public:
   su2double *GetSubsonicEngine_Values(void);
   
   /*!
+   * \brief Get the geometrical definiton of the actuator disk.
+   * \return Coordiantes and radious of the actuator disk.
+   */
+  su2double *GetActDisk_GeoDef(void);
+  
+  /*!
    * \brief Get the the coordinates where of the box where a subsonic region is imposed.
    * \return Coordinates where of the box where the grid is going to be a subsonic region.
    */
@@ -1296,12 +1331,9 @@ public:
   unsigned short GetAnalytical_Surface(void);
   
   /*!
-   * \brief Get Information about if there is an analytical definition of the surface for doing the
-   *        grid adaptation.
-   * \return Definition of the surfaces. NONE implies that there isn't any analytical definition
-   *         and it will use and interpolation.
+   * \brief Get Description of the geometry to be analyzed
    */
-  unsigned short GetAxis_Stations(void);
+  unsigned short GetGeo_Description(void);
   
   /*!
    * \brief Creates a tecplot file to visualize the partition made by the DDC software.
@@ -1343,7 +1375,7 @@ public:
    * \brief Get the value of the limits for the sections.
    * \return Value of the limits for the sections.
    */
-  su2double GetSection_WingBounds(unsigned short val_var);
+  su2double GetStations_Bounds(unsigned short val_var);
   
   /*!
    * \brief Get the value of the vector that connects the cartesian axis with a sherical or cylindrical one.
@@ -1511,10 +1543,16 @@ public:
   su2double GetHighlite_Area(void);
   
   /*!
-   * \brief Get the value of the reference viscosity for non-dimensionalization.
-   * \return Reference viscosity for non-dimensionalization.
+   * \brief Get the value of polytropic efficiency for the actuator disk.
+   * \return Polytropic efficiency of the actuator disk.
    */
-  su2double GetFan_Poly_Eff(void);
+  su2double GetActDisk_Poly_Eff(void);
+  
+  /*!
+   * \brief Get coeff that multiply the tangential velocity.
+   * \return Tangential velocity coefficient.
+   */
+  su2double GetActDisk_Tang_Vel(void);
   
   /*!
    * \brief Get the value of the reference conductivity for non-dimensionalization.
@@ -1678,7 +1716,7 @@ public:
    *        the z plane (3D) or the x plane (2D).
    * \return Value of the reference area for coefficient computation.
    */
-  su2double GetRefAreaCoeff(void);
+  su2double GetRefArea(void);
   
   /*!
    * \brief Get the wave speed.
@@ -1757,7 +1795,7 @@ public:
    * \brief Get the reference length for computing moment (the default value is 1).
    * \return Reference length for moment computation.
    */
-  su2double GetRefLengthMoment(void);
+  su2double GetRefLength(void);
   
   /*!
    * \brief Get the reference element length for computing the slope limiting epsilon.
@@ -1779,11 +1817,11 @@ public:
   su2double GetDomainVolume(void);
   
   /*!
-   * \brief In case the <i>RefAreaCoeff</i> is equal to 0 then, it is necessary to compute a reference area,
+   * \brief In case the <i>RefArea</i> is equal to 0 then, it is necessary to compute a reference area,
    *        with this function we set the value of the reference area.
    * \param[in] val_area - Value of the reference area for non dimensional coefficient computation.
    */
-  void SetRefAreaCoeff(su2double val_area);
+  void SetRefArea(su2double val_area);
   
   /*!
    * \brief Set the value of the domain volume computed on the finest grid.
@@ -2258,12 +2296,12 @@ public:
    */
   unsigned short GetFFD_CoordSystem(void);
   
-    /*!
+  /*!
    * \brief Get the kind of FFD Blending function.
    * \return Kind of FFD Blending function.
    */
   unsigned short GetFFD_Blending(void);
-
+  
   /*!
    * \brief Get the kind BSpline Order in i,j,k direction.
    * \return The kind BSpline Order in i,j,k direction.
@@ -2508,12 +2546,6 @@ public:
   bool GetWrt_Unsteady(void);
   
   /*!
-   * \brief Get information about performing a low fidelity simulation.
-   * \return 	<code>TRUE</code> means that a low fidelity simulation will be performed.
-   */
-  bool GetLowFidelitySim(void);
-  
-  /*!
    * \brief Get information about writing a volume solution file.
    * \return <code>TRUE</code> means that a volume solution file will be written.
    */
@@ -2548,6 +2580,12 @@ public:
    * \return <code>TRUE</code> means that residuals will be written to the solution file.
    */
   bool GetWrt_Limiters(void);
+  
+  /*!
+   * \brief Write solution at each surface.
+   * \return <code>TRUE</code> means that the solution at each surface will be written.
+   */
+  bool GetWrt_Surface(void);
   
   /*!
    * \brief Get information about writing residuals to volume solution file.
@@ -2842,7 +2880,7 @@ public:
    * \return Coordinate of the airfoil to slice.
    */
   su2double GetLocationStations(unsigned short val_section);
-
+  
   /*!
    * \brief Get the number of pre-smoothings in a multigrid strategy.
    * \param[in] val_mesh - Index of the grid.
@@ -3128,7 +3166,7 @@ public:
    * \return value of the wing semi span.
    */
   su2double GetSemiSpan(void);
-
+  
   /*!
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
@@ -3253,6 +3291,12 @@ public:
    * \return Kind of the SU2 software component.
    */
   unsigned short GetKind_SU2(void);
+  
+  /*!
+   * \brief Get the number of engines.
+   * \return Number of engines.
+   */
+  unsigned short GetnEngine(void);
   
   /*!
    * \brief Get the kind of non-dimensionalization.
@@ -3767,6 +3811,12 @@ public:
   unsigned short GetnWingStations(void);
   
   /*!
+   * \brief Get the location of the waterline.
+   * \return Z location of the waterline.
+   */
+  su2double GetGeo_Waterline_Location(void);
+  
+  /*!
    * \brief Provides information about the the nodes that are going to be moved on a deformation
    *        volumetric grid deformation.
    * \return <code>TRUE</code> means that only the points on the FFD box will be moved.
@@ -4095,12 +4145,6 @@ public:
   unsigned short GetOutput_FileFormat(void);
   
   /*!
-   * \brief Get the format of the output solution.
-   * \return Format of the output solution.
-   */
-  unsigned short GetActDisk_Jump(void);
-  
-  /*!
    * \brief Get the name of the file with the convergence history of the problem.
    * \return Name of the file with convergence history of the problem.
    */
@@ -4348,6 +4392,18 @@ public:
    * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
    */
   bool GetActDisk_DoubleSurface(void);
+  
+  /*!
+   * \brief Block the flow in the reverse direction.
+   * \return <code>TRUE</code> if the block inm the reverse direction should be blocked; otherwise <code>FALSE</code>.
+   */
+  bool GetActDisk_Block_ReverseFlow(void);
+  
+  /*!
+   * \brief Actuator disk uniform jump.
+   * \return <code>TRUE</code> if the uniform jump; otherwise <code>FALSE</code>.
+   */
+  bool GetActDisk_Uniform_Jump(void);
   
   /*!
    * \brief Only halg of the engine is in the compputational grid.
@@ -4918,7 +4974,7 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  su2double GetdCD_dCM(void);
+  su2double GetdCD_dCMy(void);
   
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -4942,6 +4998,42 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
+  su2double GetdCMx_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCMx_dCL(su2double val_dcmx_dcl);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCMy_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCMy_dCL(su2double val_dcmy_dcl);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCMz_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCMz_dCL(su2double val_dcmz_dcl);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
   void SetdCL_dAlpha(su2double val_dcl_dalpha);
   
   /*!
@@ -4954,7 +5046,7 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  void SetdCD_dCM(su2double val_dcd_dcm);
+  void SetdCD_dCMy(su2double val_dcd_dcmy);
   
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -5003,7 +5095,13 @@ public:
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_MassFlow(string val_marker);
+  su2double GetActDisk_InMassFlow(string val_marker);
+  
+  /*!
+   * \brief Get the origin of the actuator disk.
+   */
+  su2double GetActDisk_OutMassFlow(string val_marker);
+  
   /*!
    * \brief Get the origin of the actuator disk.
    */
@@ -5141,7 +5239,14 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total temperature.
    */
-  su2double GetExhaust_Temperature_Target(string val_index);
+  su2double GetEngineExhaust_Temperature_Target(string val_index);
+  
+  /*!
+   * \brief Get the ID of the engine for the exhaust.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return Engine ID.
+   */
+  unsigned short GetEngineExhaust_EngineID(string val_index);
   
   /*!
    * \brief Get the total temperature at an inlet boundary.
@@ -5197,7 +5302,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
    */
-  su2double GetExhaust_Pressure_Target(string val_index);
+  su2double GetEngineExhaust_Pressure_Target(string val_index);
   
   /*!
    * \brief Value of the CFL reduction in LevelSet problems.
@@ -5256,6 +5361,20 @@ public:
   su2double GetNRBC_Var1(string val_marker);
   
   /*!
+   * \brief Get the PT at a particular radial station.
+   * \param[in] val_radial - Radial location.
+   * \return Value of the PT
+   */
+  su2double GetActDisk_IncPT(su2double val_radial);
+  
+  /*!
+   * \brief Get the TT at a particular radial station.
+   * \param[in] val_radial - Radial location.
+   * \return Value of the TT
+   */
+  su2double GetActDisk_IncTT(su2double val_radial);
+  
+  /*!
    * \brief Get the var 2 at NRBC boundary.
    * \param[in] val_marker - Index corresponding to the NRBC boundary.
    * \return The var2
@@ -5296,329 +5415,357 @@ public:
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \return Target (pressure, massflow, etc) .
    */
-  su2double GetEngineInflow_Target(string val_marker);
+  su2double GetEngineInflow_MassFlow_Target(string val_marker);
+  
+  /*!
+   * \brief Get the engine ID of the inflow.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \return Engine ID.
+   */
+  unsigned short GetEngineInflow_EngineID(string val_marker);
   
   /*!
    * \brief Get the fan face Mach number at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The fan face Mach number.
    */
-  su2double GetInflow_Mach(string val_marker);
+  su2double GetEngineInflow_Mach(string val_marker);
+  
+  /*!
+   * \brief Get the fan face Mach number at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The fan face Mach number.
+   */
+  su2double GetEngineInflow_Area(string val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow pressure.
    */
-  su2double GetInflow_Pressure(string val_marker);
+  su2double GetEngineInflow_Pressure(string val_marker);
   
   /*!
    * \brief Get the mass flow rate at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine mass flow rate.
    */
-  su2double GetInflow_MassFlow(string val_marker);
+  su2double GetEngineInflow_MassFlow(string val_marker);
   
   /*!
    * \brief Get the percentage of reverse flow at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The percentage of reverse flow.
    */
-  su2double GetInflow_ReverseMassFlow(string val_marker);
+  su2double GetEngineInflow_ReverseMassFlow(string val_marker);
   
   /*!
    * \brief Get the percentage of reverse flow at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \return The percentage of reverse flow.
    */
-  su2double GetInflow_ReverseMassFlow(unsigned short val_marker);
+  su2double GetEngineInflow_ReverseMassFlow(unsigned short val_marker);
   
   /*!
    * \brief Get the total pressure at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The total pressure.
    */
-  su2double GetInflow_TotalPressure(string val_marker);
+  su2double GetEngineInflow_TotalPressure(string val_marker);
   
   /*!
    * \brief Get the temperature (static) at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow temperature.
    */
-  su2double GetInflow_Temperature(string val_marker);
+  su2double GetEngineInflow_Temperature(string val_marker);
   
   /*!
    * \brief Get the total temperature at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow total temperature.
    */
-  su2double GetInflow_TotalTemperature(string val_marker);
+  su2double GetEngineInflow_TotalTemperature(string val_marker);
   
   /*!
    * \brief Get the ram drag at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow ram drag.
    */
-  su2double GetInflow_RamDrag(string val_marker);
+  su2double GetEngineInflow_RamDrag(string val_marker);
   
   /*!
    * \brief Get the force balance at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow force balance.
    */
-  su2double GetInflow_Force(string val_marker);
+  su2double GetEngineInflow_Force(string val_marker);
   
   /*!
    * \brief Get the power at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow power.
    */
-  su2double GetInflow_Power(string val_marker);
+  su2double GetEngineInflow_Power(string val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust pressure.
    */
-  su2double GetExhaust_Pressure(string val_marker);
+  su2double GetEngineExhaust_Pressure(string val_marker);
   
   /*!
    * \brief Get the temperature (static) at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust temperature.
    */
-  su2double GetExhaust_Temperature(string val_marker);
+  su2double GetEngineExhaust_Temperature(string val_marker);
   
   /*!
    * \brief Get the massflow at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust massflow.
    */
-  su2double GetExhaust_MassFlow(string val_marker);
+  su2double GetEngineExhaust_MassFlow(string val_marker);
   
   /*!
    * \brief Get the total pressure at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust total pressure.
    */
-  su2double GetExhaust_TotalPressure(string val_marker);
+  su2double GetEngineExhaust_TotalPressure(string val_marker);
   
   /*!
    * \brief Get the total temperature at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The total temperature.
    */
-  su2double GetExhaust_TotalTemperature(string val_marker);
+  su2double GetEngineExhaust_TotalTemperature(string val_marker);
   
   /*!
    * \brief Get the gross thrust at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return Gross thrust.
    */
-  su2double GetExhaust_GrossThrust(string val_marker);
+  su2double GetEngineExhaust_GrossThrust(string val_marker);
   
   /*!
    * \brief Get the force balance at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return Force balance.
    */
-  su2double GetExhaust_Force(string val_marker);
+  su2double GetEngineExhaust_Force(string val_marker);
   
   /*!
    * \brief Get the power at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return Power.
    */
-  su2double GetExhaust_Power(string val_marker);
+  su2double GetEngineExhaust_Power(string val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetInflow_Mach(unsigned short val_imarker, su2double val_fanface_mach);
+  void SetEngineInflow_Mach(unsigned short val_imarker, su2double val_fanface_mach);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetEngineInflow_Area(unsigned short val_imarker, su2double val_area);
   
   /*!
    * \brief Set the fan face static pressure at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \param[in] val_fanface_pressure - Fan face static pressure.
    */
-  void SetInflow_Pressure(unsigned short val_imarker, su2double val_fanface_pressure);
+  void SetEngineInflow_Pressure(unsigned short val_imarker, su2double val_fanface_pressure);
   
   /*!
    * \brief Set the massflow at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \param[in] val_fanface_massflow - Massflow.
    */
-  void SetInflow_MassFlow(unsigned short val_imarker, su2double val_fanface_massflow);
-  
-  /*!
-   * \brief Set the reverse flow at an engine inflow boundary.
-   * \param[in] val_index - Index corresponding to the engine inflow boundary.
-   * \param[in] val_fanface_reversemassflow - reverse flow.
-   */
-  void SetInflow_ReverseMassFlow(unsigned short val_imarker, su2double val_fanface_reversemassflow);
+  void SetEngineInflow_MassFlow(unsigned short val_imarker, su2double val_fanface_massflow);
   
   /*!
    * \brief Set the fan face total pressure at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \param[in] val_fanface_totalpressure - Fan face total pressure.
    */
-  void SetInflow_TotalPressure(unsigned short val_imarker, su2double val_fanface_totalpressure);
+  void SetEngineInflow_TotalPressure(unsigned short val_imarker, su2double val_fanface_totalpressure);
   
   /*!
    * \brief Set the fan face static temperature at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \param[in] val_fanface_pressure - Fan face static temperature.
    */
-  void SetInflow_Temperature(unsigned short val_imarker, su2double val_fanface_temperature);
+  void SetEngineInflow_Temperature(unsigned short val_imarker, su2double val_fanface_temperature);
   
   /*!
    * \brief Set the fan face total temperature at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \param[in] val_fanface_totaltemperature - Fan face total temperature.
    */
-  void SetInflow_TotalTemperature(unsigned short val_imarker, su2double val_fanface_totaltemperature);
+  void SetEngineInflow_TotalTemperature(unsigned short val_imarker, su2double val_fanface_totaltemperature);
   
   /*!
    * \brief Set the ram drag temperature at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \param[in] val_fanface_ramdrag - Ram drag value.
    */
-  void SetInflow_RamDrag(unsigned short val_imarker, su2double val_fanface_ramdrag);
+  void SetEngineInflow_RamDrag(unsigned short val_imarker, su2double val_fanface_ramdrag);
   
   /*!
    * \brief Set the force balance at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \param[in] val_fanface_force - Fan face force.
    */
-  void SetInflow_Force(unsigned short val_imarker, su2double val_fanface_force);
+  void SetEngineInflow_Force(unsigned short val_imarker, su2double val_fanface_force);
   
   /*!
    * \brief Set the power at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \param[in] val_fanface_force - Power.
    */
-  void SetInflow_Power(unsigned short val_imarker, su2double val_fanface_power);
+  void SetEngineInflow_Power(unsigned short val_imarker, su2double val_fanface_power);
   
   /*!
    * \brief Set the back pressure (static) at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \param[in] val_exhaust_pressure - Exhaust static pressure.
    */
-  void SetExhaust_Pressure(unsigned short val_imarker, su2double val_exhaust_pressure);
+  void SetEngineExhaust_Pressure(unsigned short val_imarker, su2double val_exhaust_pressure);
   
   /*!
    * \brief Set the temperature (static) at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \param[in] val_exhaust_temp - Exhaust static temperature.
    */
-  void SetExhaust_Temperature(unsigned short val_imarker, su2double val_exhaust_temp);
+  void SetEngineExhaust_Temperature(unsigned short val_imarker, su2double val_exhaust_temp);
   
   /*!
    * \brief Set the back pressure (static) at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \param[in] val_exhaust_temp - Exhaust static temperature.
    */
-  void SetExhaust_MassFlow(unsigned short val_imarker, su2double val_exhaust_massflow);
+  void SetEngineExhaust_MassFlow(unsigned short val_imarker, su2double val_exhaust_massflow);
   
   /*!
    * \brief Set the back pressure (total) at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \param[in] val_exhaust_totalpressure - Exhaust total pressure.
    */
-  void SetExhaust_TotalPressure(unsigned short val_imarker, su2double val_exhaust_totalpressure);
+  void SetEngineExhaust_TotalPressure(unsigned short val_imarker, su2double val_exhaust_totalpressure);
   
   /*!
    * \brief Set the total temperature at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \param[in] val_exhaust_totaltemp - Exhaust total temperature.
    */
-  void SetExhaust_TotalTemperature(unsigned short val_imarker, su2double val_exhaust_totaltemp);
+  void SetEngineExhaust_TotalTemperature(unsigned short val_imarker, su2double val_exhaust_totaltemp);
   
   /*!
    * \brief Set the gross thrust at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \param[in] val_exhaust_grossthrust - Exhaust gross thrust temperature.
    */
-  void SetExhaust_GrossThrust(unsigned short val_imarker, su2double val_exhaust_grossthrust);
+  void SetEngineExhaust_GrossThrust(unsigned short val_imarker, su2double val_exhaust_grossthrust);
   
   /*!
    * \brief Set the force balance at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \param[in] val_exhaust_force - Exhaust force balance.
    */
-  void SetExhaust_Force(unsigned short val_imarker, su2double val_exhaust_force);
+  void SetEngineExhaust_Force(unsigned short val_imarker, su2double val_exhaust_force);
   
   /*!
    * \brief Set the power at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \param[in] val_exhaust_power - Exhaust power.
    */
-  void SetExhaust_Power(unsigned short val_imarker, su2double val_exhaust_power);
+  void SetEngineExhaust_Power(unsigned short val_imarker, su2double val_exhaust_power);
   
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \param[in] val_engine_mach - Exhaust power.
    */
-  void SetEngine_Mach(unsigned short val_imarker, su2double val_engine_mach);
+  void SetEngine_InMassFlow(unsigned short val_iengine, su2double val_engine_inmassflow);
+  
+  /*!
+   * \brief Set the back pressure (static) at an outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
+   * \param[in] val_engine_mach - Exhaust power.
+   */
+  void SetEngine_OutMassFlow(unsigned short val_iengine, su2double val_engine_outmassflow);
   
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \param[in] val_engine_force - Exhaust power.
    */
-  void SetEngine_Force(unsigned short val_imarker, su2double val_engine_force);
+  void SetEngine_Force(unsigned short val_iengine, su2double val_engine_force);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \param[in] val_engine_power - Exhaust power.
    */
-  void SetEngine_Power(unsigned short val_imarker, su2double val_engine_power);
+  void SetEngine_Power(unsigned short val_iengine, su2double val_engine_power);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \param[in] val_engine_netthrust - Exhaust power.
    */
-  void SetEngine_NetThrust(unsigned short val_imarker, su2double val_engine_netthrust);
+  void SetEngine_NetThrust(unsigned short val_iengine, su2double val_engine_netthrust);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \param[in] val_engine_grossthrust - Exhaust power.
    */
-  void SetEngine_GrossThrust(unsigned short val_imarker, su2double val_engine_grossthrust);
+  void SetEngine_GrossThrust(unsigned short val_iengine, su2double val_engine_grossthrust);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \param[in] val_engine_area - Exhaust power.
    */
-  void SetEngine_Area(unsigned short val_imarker, su2double val_engine_area);
+  void SetEngine_Area(unsigned short val_iengine, su2double val_engine_area);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
-  su2double GetEngine_Mach(unsigned short val_imarker);
+  su2double GetEngine_InMassFlow(unsigned short val_iengine);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
-  su2double GetEngine_Force(unsigned short val_imarker);
+  su2double GetEngine_OutMassFlow(unsigned short val_iengine);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
-  su2double GetEngine_Power(unsigned short val_imarker);
+  su2double GetEngine_Force(unsigned short val_iengine);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetEngine_Power(unsigned short val_iengine);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -5626,21 +5773,21 @@ public:
    * \return The outlet pressure.
    */
   
-  su2double GetEngine_NetThrust(unsigned short val_imarker);
+  su2double GetEngine_NetThrust(unsigned short val_iengine);
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
   
-  su2double GetEngine_GrossThrust(unsigned short val_imarker);
+  su2double GetEngine_GrossThrust(unsigned short val_iengine);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
-  su2double GetEngine_Area(unsigned short val_imarker);
+  su2double GetEngine_Area(unsigned short val_iengine);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -5710,7 +5857,35 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
+  su2double GetActDiskInlet_Mach(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetActDiskInlet_Area(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
   void SetActDiskInlet_MassFlow(unsigned short val_imarker, su2double val_actdisk_massflow);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetActDiskInlet_Mach(unsigned short val_imarker, su2double val_actdisk_mach);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetActDiskInlet_Area(unsigned short val_imarker, su2double val_actdisk_area);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -5745,14 +5920,14 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDisk_DeltaPress(unsigned short val_marker);
+  su2double GetActDisk_StaticPressDelta(unsigned short val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDisk_DeltaTemp(unsigned short val_marker);
+  su2double GetActDisk_StaticTempDelta(unsigned short val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -5864,7 +6039,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_DeltaPress(unsigned short val_imarker, su2double val_actdisk_deltapress);
+  void SetActDisk_StaticPressDelta(unsigned short val_imarker, su2double val_actdisk_deltapress);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -5878,7 +6053,14 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_MassFlow(unsigned short val_imarker, su2double val_actdisk_massflow);
+  void SetActDisk_InMassFlow(unsigned short val_imarker, su2double val_actdisk_inmassflow);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetActDisk_OutMassFlow(unsigned short val_imarker, su2double val_actdisk_outmassflow);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -5934,7 +6116,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_DeltaTemp(unsigned short val_imarker, su2double val_actdisk_deltatemp);
+  void SetActDisk_StaticTempDelta(unsigned short val_imarker, su2double val_actdisk_deltatemp);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -6053,7 +6235,15 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDisk_MassFlow(unsigned short val_imarker);
+  su2double GetActDisk_InMassFlow(unsigned short val_imarker);
+  
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetActDisk_OutMassFlow(unsigned short val_imarker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -6445,10 +6635,22 @@ public:
   su2double GetFFD_Tol(void);
   
   /*!
-   * \brief Get the scale factor between the input design variable and the final movement of the control point.
-   * \return Scale factor between the input design variable and the final movement of the control point.
+   * \brief Get the scale factor for the line search.
+   * \return Scale factor for the line search.
    */
-  su2double GetFFD_Scale(void);
+  su2double GetOpt_RelaxFactor(void);
+  
+  /*!
+   * \brief Get the bound for the line search.
+   * \return Bound for the line search.
+   */
+  su2double GetOpt_LineSearch_Bound(void);
+  
+  /*!
+   * \brief Set the scale factor for the line search.
+   * \return Scale factor for the line search.
+   */
+  void SetOpt_RelaxFactor(su2double val_scale);
   
   /*!
    * \brief Get the node number of the CV to visualize.
@@ -6472,7 +6674,7 @@ public:
    * \brief Get information about whether to use fixed CL mode.
    * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
    */
-  bool GetEval_dCD_dCX(void);
+  bool GetEval_dOF_dCX(void);
   
   /*!
    * \brief Get information about whether to use fixed CL mode.
@@ -6497,6 +6699,12 @@ public:
    * \return Number of iterations.
    */
   unsigned long GetUpdate_Alpha(void);
+  
+  /*!
+   * \brief Number of iterations to evaluate dCL_dAlpha.
+   * \return Number of iterations.
+   */
+  unsigned long GetIter_dCL_dAlpha(void);
   
   /*!
    * \brief Get the value of the damping coefficient for fixed CL mode.

@@ -87,7 +87,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     
     # number of design variables
     dv_size = project.config['DEFINITION_DV']['SIZE']
-    n_dv = sum( dv_size)
+    n_dv = sum(dv_size)
     project.n_dv = n_dv
     
     # Initial guess
@@ -98,7 +98,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     k = 0
     for i, dv_scl in enumerate(dv_scales):
         for j in range(dv_size[i]):
-            x0[k] =x0[k]/dv_scl;
+            x0[k] = x0[k]/dv_scl;
             k = k + 1
 
     # scale accuracy
@@ -116,8 +116,8 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
 
     # optimizer summary
     sys.stdout.write('Sequential Least SQuares Programming (SLSQP) parameters:\n')
-    sys.stdout.write('Number of design variables: ' + str(len(dv_size)) + ' ( ' + str(n_dv) + ' ) \n' )
-    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
+    sys.stdout.write('Number of design variables: ' + str(n_dv) + '\n')                                                         
+    sys.stdout.write('Objective function scaling factor (scale accuracy): ' + str(obj_scale) + '\n')                            
     sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
     sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
     sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
@@ -201,7 +201,7 @@ def scipy_cg(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     # optimizer summary
     sys.stdout.write('Conjugate gradient (CG) parameters:\n')
     sys.stdout.write('Number of design variables: ' + str(n_dv) + '\n')
-    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
+    sys.stdout.write('Objective function scaling factor (scale accuracy): ' + str(obj_scale) + '\n')
     sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
     sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
     sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
@@ -285,11 +285,10 @@ def scipy_bfgs(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     # optimizer summary
     sys.stdout.write('Broyden-Fletcher-Goldfarb-Shanno (BFGS) parameters:\n')
     sys.stdout.write('Number of design variables: ' + str(n_dv) + '\n')
-    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
+    sys.stdout.write('Objective function scaling factor (scale accuracy): ' + str(obj_scale) + '\n')
     sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
     sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
     sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
-    sys.stdout.write('Lower and upper bound for each independent variable: ' + str(xb) + '\n\n')
 
     # Evaluate the objective function (only 1st iteration)
     obj_f(x0,project)
@@ -357,7 +356,7 @@ def scipy_powell(project,x0=None,xb=None,its=100,accu=1e-10,grads=False):
     # optimizer summary
     sys.stdout.write('Powells method parameters:\n')
     sys.stdout.write('Number of design variables: ' + str(n_dv) + '\n')
-    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
+    sys.stdout.write('Objective function scaling factor (scale accuracy): ' + str(obj_scale) + '\n')
     sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
     sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
 
