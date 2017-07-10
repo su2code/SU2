@@ -631,8 +631,6 @@ public:
 
   void SetRecording(unsigned short kind_recording);
 
-  void SetSensitivity(unsigned short kind_sensitivity);
-
   virtual void DirectRun();
 
   virtual void SetObjFunction();
