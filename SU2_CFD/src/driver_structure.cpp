@@ -2485,9 +2485,15 @@ void CDriver::Iteration_Preprocessing() {
     break;
 
   case TWO_PHASE_EULER: case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
-    if (rank == MASTER_NODE)
-      cout << ": 2phase Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration_container[iZone] = new CFluidIteration(config_container[iZone]);
+    if(config_container[iZone]->GetBoolTurbomachinery()){
+      if (rank == MASTER_NODE)
+        cout << ": Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
+      iteration_container[iZone] = new CTurboIteration(config_container[iZone]);
+    }else{
+      if (rank == MASTER_NODE)
+        cout << ": 2phase Euler/Navier-Stokes/RANS fluid iteration." << endl;
+        iteration_container[iZone] = new CFluidIteration(config_container[iZone]);
+    }
     break;
 
    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:

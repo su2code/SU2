@@ -5865,7 +5865,25 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
               cout.width(14); cout << log10(max(residual_2phase[0], 1e-40));
               cout.width(15); cout << log10(max(residual_2phase[3], 1e-40));
-              cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD));
+              if (turbo) {
+                cout.setf(ios::scientific, ios::floatfield);
+                if (nZone < 2){
+                  /*--- single zone output ---*/
+                  cout.width(15); cout << TotalPressureLoss[0][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << EntropyGen[0][nSpanWiseSections]*100.0;
+                }
+                else{
+                  /*--- multi zone output ---*/
+                  cout.width(15); cout << TotalTotalEfficiency[nTurboPerf - 1][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << EntropyGen[nTurboPerf -1][nSpanWiseSections]*100.0;
+                  if (direct_diff){
+                    cout.width(15); cout << D_EntropyGen;
+                  }
+                }
+                cout.unsetf(ios_base::floatfield);
+              }else{
+                cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD));
+              }
               cout << endl;
             }
 
@@ -5921,7 +5939,26 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.precision(4);
               cout.setf(ios::scientific, ios::floatfield);
               cout << Total_CNearFieldOF; }
-              else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
+              else if (turbo) {
+                cout.setf(ios::scientific, ios::floatfield);
+                if (nZone < 2){
+                  /*--- single zone output ---*/
+                  cout.width(15); cout << TotalPressureLoss[0][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << EntropyGen[0][nSpanWiseSections]*100.0;
+                }
+                else{
+                  /*--- multi zone output ---*/
+                  cout.width(15); cout << TotalTotalEfficiency[nTurboPerf - 1][nSpanWiseSections]*100.0;
+                  cout.width(15); cout << EntropyGen[nTurboPerf -1][nSpanWiseSections]*100.0;
+                  if (direct_diff){
+                    cout.width(15); cout << D_EntropyGen;
+                  }
+                }
+                cout.unsetf(ios_base::floatfield);
+              }
+              else {
+                cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD));
+              }
 
               if (aeroelastic) {
                 cout.setf(ios::scientific, ios::floatfield);

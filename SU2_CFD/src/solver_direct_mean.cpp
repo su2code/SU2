@@ -15588,6 +15588,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassPressure, MyTotalMassDensity, *MyTotalFluxes = NULL;
   su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
   su2double MyTotalNu, MyTotalKine, MyTotalOmega, MyTotalAreaNu, MyTotalAreaKine, MyTotalAreaOmega, MyTotalMassNu, MyTotalMassKine, MyTotalMassOmega;
+  su2double MyTotalMom0, MyTotalMom3, MyTotalAreaMom0, MyTotalAreaMom3, MyTotalMassMom0, MyTotalMassMom3;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -15867,6 +15868,15 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
                     }
 
+                    TotalMom0 += Mom0;
+                    TotalMom3 += Mom3;
+
+                    TotalAreaMom0  += Area*Mom0;
+                    TotalAreaMom3  += Area*Mom3;
+
+                    TotalMassMom0  += Area*(Density*TurboVelocity[0] )*Mom0;
+                    TotalMassMom3  += Area*(Density*TurboVelocity[0] )*Mom3;
+
                   }
                 }
               }
@@ -15898,6 +15908,12 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     MyTotalMassKine      = TotalMassKine;             TotalMassKine        = 0;
     MyTotalMassOmega     = TotalMassOmega;            TotalMassOmega       = 0;
 
+    MyTotalMom0          = TotalMom0;                 TotalMom0            = 0;
+    MyTotalMom3          = TotalMom3;                 TotalMom3            = 0;
+    MyTotalAreaMom0      = TotalAreaMom0;             TotalAreaMom0        = 0;
+    MyTotalAreaMom3      = TotalAreaMom3;             TotalAreaMom3        = 0;
+    MyTotalMassMom0      = TotalMassMom0;             TotalMassMom0        = 0;
+    MyTotalMassMom3      = TotalMassMom3;             TotalMassMom3        = 0;
 
 
 
@@ -15916,6 +15932,13 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     SU2_MPI::Allreduce(&MyTotalMassNu, &TotalMassNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalMassKine, &TotalMassKine, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalMassOmega, &TotalMassOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    SU2_MPI::Allreduce(&MyTotalMom0, &TotalMom0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMom3, &TotalMom3, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalAreaMom0, &TotalAreaMom0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalAreaMom3, &TotalAreaMom3, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMassMom0, &TotalMassMom0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMassMom3, &TotalMassMom3, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 
     MyTotalFluxes          = new su2double[nVar];
@@ -16373,7 +16396,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
   int markerTP;
   su2double     densityIn, pressureIn, normalVelocityIn, tangVelocityIn, radialVelocityIn;
   su2double     densityOut, pressureOut, normalVelocityOut, tangVelocityOut, radialVelocityOut;
-  su2double     kineIn, omegaIn, nuIn, kineOut, omegaOut, nuOut;
+  su2double     kineIn, omegaIn, nuIn, kineOut, omegaOut, nuOut, mom0In, mom3In, mom0Out, mom3Out;
   //TODO (turbo) implement interpolation so that Inflow and Outflow spanwise section can be different
 
   for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
@@ -16384,8 +16407,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
     int *TotMarkerTP = NULL;
 
-    n1          = 8;
-    n2          = 8;
+    n1          = 10;
+    n2          = 10;
     n1t         = n1*size;
     n2t         = n2*size;
     TurbPerfIn  = new su2double[n1];
@@ -16414,6 +16437,10 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     kineOut              = -1.0;
     omegaOut             = -1.0;
     nuOut                = -1.0;
+    mom0In               = -1.0;
+    mom3In               = -1.0;
+    mom0Out              = -1.0;
+    mom3Out              = -1.0;
 
 
     markerTP             = -1;
@@ -16433,6 +16460,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             kineIn              = KineIn[iMarkerTP -1][iSpan];
             omegaIn             = OmegaIn[iMarkerTP -1][iSpan];
             nuIn                = NuIn[iMarkerTP -1][iSpan];
+            mom0In              = Mom0In[iMarkerTP -1][iSpan];
+            mom3In              = Mom3In[iMarkerTP -1][iSpan];
 
 
 #ifdef HAVE_MPI
@@ -16444,6 +16473,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfIn[5]  = kineIn;
             TurbPerfIn[6]  = omegaIn;
             TurbPerfIn[7]  = nuIn;
+            TurbPerfIn[8]  = mom0In;
+            TurbPerfIn[9]  = mom3In;
 #endif
           }
 
@@ -16459,6 +16490,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             kineOut              = KineOut[iMarkerTP -1][iSpan];
             omegaOut             = OmegaOut[iMarkerTP -1][iSpan];
             nuOut                = NuOut[iMarkerTP -1][iSpan];
+            mom0Out              = Mom0Out[iMarkerTP -1][iSpan];
+            mom3Out              = Mom3Out[iMarkerTP -1][iSpan];
 
 
 
@@ -16471,6 +16504,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfOut[5]  = kineOut;
             TurbPerfOut[6]  = omegaOut;
             TurbPerfOut[7]  = nuOut;
+            TurbPerfOut[8]  = mom0Out;
+            TurbPerfOut[9]  = mom3Out;
 #endif
           }
         }
@@ -16516,6 +16551,10 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
           omegaIn          = TotTurbPerfIn[n1*i+6];
           nuIn             = 0.0;
           nuIn             = TotTurbPerfIn[n1*i+7];
+          mom0In           = 0.0;
+          mom0In           = TotTurbPerfIn[n1*i+8];
+          mom3In           = 0.0;
+          mom3In           = TotTurbPerfIn[n1*i+9];
 
           markerTP         = -1;
           markerTP         = TotMarkerTP[i];
@@ -16538,6 +16577,10 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
           omegaOut          = TotTurbPerfOut[n1*i+6];
           nuOut             = 0.0;
           nuOut             = TotTurbPerfOut[n1*i+7];
+          mom0Out           = 0.0;
+          mom0Out           = TotTurbPerfOut[n1*i+8];
+          mom3Out           = 0.0;
+          mom3Out           = TotTurbPerfOut[n1*i+9];
         }
       }
 
@@ -16557,6 +16600,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       KineIn[markerTP -1][iSpan]                 = kineIn;
       OmegaIn[markerTP -1][iSpan]                = omegaIn;
       NuIn[markerTP -1][iSpan]                   = nuIn;
+      Mom0In[markerTP -1][iSpan]                 = mom0In;
+      Mom3In[markerTP -1][iSpan]                 = mom3In;
 
       DensityOut[markerTP -1][iSpan]             = densityOut;
       PressureOut[markerTP -1][iSpan]            = pressureOut;
@@ -16567,6 +16612,9 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       KineOut[markerTP -1][iSpan]                = kineOut;
       OmegaOut[markerTP -1][iSpan]               = omegaOut;
       NuOut[markerTP -1][iSpan]                  = nuOut;
+      Mom0Out[markerTP -1][iSpan]                = mom0Out;
+      Mom3Out[markerTP -1][iSpan]                = mom3Out;
+
     }
   }
 }
