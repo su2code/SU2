@@ -599,11 +599,9 @@ public:
 class CDiscAdjFluidDriver : public CFluidDriver {
 
 protected:
-  unsigned short RecordingState;
-
-  su2double ObjFunc;
-
-  CIteration** direct_iteration;
+  unsigned short RecordingState; /*!< \brief The kind of recording the tape currently holds.*/
+  su2double ObjFunc;             /*!< \brief The value of the objective function.*/
+  CIteration** direct_iteration; /*!< \brief A pointer to the direct iteration.*/
 
 public:
 
@@ -624,17 +622,31 @@ public:
   ~CDiscAdjFluidDriver(void);
 
   /*!
-   * \brief Run a single iteration of the physics within multiple zones.
+   * \brief Run a single iteration of the discrete adjoint solver within multiple zones.
    */
 
   void Run();
 
+  /*!
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (either CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   */
+
   void SetRecording(unsigned short kind_recording);
 
+  /*!
+   * \brief Run one iteration of the solver. It is virtual because it depends on the kind of physics.
+   */
   virtual void DirectRun();
 
+  /*!
+   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
+   */
   virtual void SetObjFunction();
 
+  /*!
+   * \brief Initialize the adjoint value of the objective function.
+   */
   void SetAdj_ObjFunction();
 };
 
