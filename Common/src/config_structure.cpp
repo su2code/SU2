@@ -3051,16 +3051,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   AD_Mode = YES;
 #else
   if (AD_Mode == YES) {
-    cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
-    cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
+    if (rank == MASTER_NODE){
+      cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
+      cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
+    }
   }
 #endif
 
   if (DiscreteAdjoint) {
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD) {
-      cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
-      cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
+      if (rank == MASTER_NODE){
+        cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
+        cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
+      }
       exit(EXIT_FAILURE);
     }
 #endif
@@ -3074,6 +3078,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       if (Grid_Movement) {
         cout << "Dynamic mesh movement currently not supported for the discrete adjoint solver." << endl;
+        exit(EXIT_FAILURE);
+      }
+
+      if (Unst_AdjointIter- long(nExtIter) < 0){
+        if (rank == MASTER_NODE){
+          cout << "Invalid iteration number requested for unsteady adjoint. " << endl;
+          cout << "Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER." << endl;
+        }
         exit(EXIT_FAILURE);
       }
 
