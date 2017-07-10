@@ -1585,21 +1585,9 @@ void CAdjFluidIteration::Postprocess(CConfig **config_container,
                                      CSolver ****solver_container,
                                      unsigned short val_iZone) { }
 
-<<<<<<< HEAD
 CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(config) {
   
   turbulent = ( config->GetKind_Solver() == DISC_ADJ_RANS);
-||||||| merged common ancestors
-CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE) {
-  
-  fluid_iteration = new CFluidIteration(config);
-  
-  turbulent = config->GetKind_Solver() == DISC_ADJ_RANS;
-=======
-CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(config) {
-  
-  turbulent = ( config->GetKind_Solver() == DISC_ADJ_RANS);
->>>>>>> feature_adjoint_iteration
   
 }
 
@@ -1642,15 +1630,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       Direct_Iter += 1;
     }
 
-<<<<<<< HEAD
     if (ExtIter == 0){
-||||||| merged common ancestors
-    if (dual_time_2nd) {
-=======
-    if (ExtIter == 0){
-
-    if (dual_time_2nd) {
->>>>>>> feature_adjoint_iteration
 
       if (dual_time_2nd) {
 

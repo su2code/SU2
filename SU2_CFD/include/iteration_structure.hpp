@@ -188,31 +188,6 @@ public:
                               COutput* output,
                               unsigned short iZone){}
 
-
-  virtual void InitializeAdjoint(CSolver ****solver_container,
-                                 CGeometry ***geometry_container,
-                                 CConfig **config_container,
-                                 unsigned short iZone){}
-
-  virtual void RegisterInput(CSolver ****solver_container,
-                             CGeometry*** geometry_container,
-                             CConfig** config_container,
-                             unsigned short iZone,
-                             unsigned short kind_recording){}
-
-  virtual void SetDependencies(CSolver ****solver_container,
-                               CGeometry ***geometry_container,
-                               CConfig **config_container,
-                               unsigned short iZone,
-                               unsigned short kind_recording){}
-
-  virtual void RegisterOutput(CSolver ****solver_container,
-                              CGeometry*** geometry_container,
-                              CConfig** config_container,
-                              COutput* output,
-                              unsigned short iZone){}
-
-
 };
 
 
