@@ -50,7 +50,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.606963, -9.034619, -0.000000, 0.005688] #last 4 columns
+    discadj_naca0012.test_vals = [-3.606841, -9.035214, -0.000000, 0.005688] #last 4 columns
     discadj_naca0012.su2_exec  = "parallel_computation.py -f"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
@@ -65,7 +65,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-1.751997, 0.485368, 0.182890, -0.000018] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-1.751959, 0.485790, 0.182890, -0.000018] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -76,7 +76,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-1.655243, -0.507187, 0.129010, -0.000013] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-1.655287, -0.497784, 0.129010, -0.000013] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
@@ -91,7 +91,7 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder.cfg" 
     discadj_cylinder.test_iter = 10
-    discadj_cylinder.test_vals = [3.522085, -1.787791, -0.012031, 0.000017] #last 4 columns
+    discadj_cylinder.test_vals = [3.527834, -1.781737, -0.012030, 0.000017] #last 4 columns
     discadj_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.00001
