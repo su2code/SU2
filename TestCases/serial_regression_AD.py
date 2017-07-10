@@ -91,7 +91,7 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder.cfg" 
     discadj_cylinder.test_iter = 9
-    discadj_cylinder.test_vals = [3.522068, -1.787841, -0.012030, 0.000017] #last 4 columns
+    discadj_cylinder.test_vals = [3.746900, -1.544893, -0.008345, 0.000014] #last 4 columns
     discadj_cylinder.su2_exec  = "SU2_CFD_AD"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.00001
