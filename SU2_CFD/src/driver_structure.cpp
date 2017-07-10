@@ -2662,6 +2662,7 @@ void CDriver::TurbomachineryPreprocessing(){
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
   bool restart   = (config_container[ZONE_0]->GetRestart() || config_container[ZONE_0]->GetRestart_Flow());
+  mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
   bool discrete_adjoint = config_container[ZONE_0]->GetDiscrete_Adjoint();
   su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
 #ifdef HAVE_MPI
@@ -3890,11 +3891,7 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
     unsigned short val_nDim, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
         val_nZone,
         val_nDim,
-        MPICommunicator) {
-
-  mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
-
-}
+        MPICommunicator) { }
 
 CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 
@@ -4511,11 +4508,7 @@ void CDiscAdjFluidDriver::DirectRun(){
 CDiscAdjTurbomachineryDriver::CDiscAdjTurbomachineryDriver(char* confFile,
                                                            unsigned short val_nZone,
                                                            unsigned short val_nDim,
-                                                           SU2_Comm MPICommunicator): CDiscAdjFluidDriver(confFile, val_nZone, val_nDim, MPICommunicator){
-
-  mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
-
-}
+                                                           SU2_Comm MPICommunicator): CDiscAdjFluidDriver(confFile, val_nZone, val_nDim, MPICommunicator){ }
 CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
 
 }

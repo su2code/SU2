@@ -112,16 +112,16 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 
   /*--- Initialize quantities for the average process for internal flow ---*/
   
-  AverageVelocity 		     = NULL;
-  AverageTurboVelocity 		 = NULL;
-  ExtAverageTurboVelocity 	 = NULL;
-  AverageFlux 			     = NULL;
-  SpanTotalFlux 		     = NULL;
-  AveragePressure  		     = NULL;
+  AverageVelocity            = NULL;
+  AverageTurboVelocity       = NULL;
+  ExtAverageTurboVelocity    = NULL;
+  AverageFlux                = NULL;
+  SpanTotalFlux              = NULL;
+  AveragePressure            = NULL;
   RadialEquilibriumPressure  = NULL;
-  ExtAveragePressure  		 = NULL;
-  AverageDensity   		     = NULL;
-  ExtAverageDensity   		 = NULL;
+  ExtAveragePressure         = NULL;
+  AverageDensity             = NULL;
+  ExtAverageDensity          = NULL;
   AverageNu                  = NULL;
   AverageKine                = NULL;
   AverageOmega               = NULL;
@@ -138,13 +138,19 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   DensityOut                    = NULL;
   PressureOut                   = NULL;
   TurboVelocityOut              = NULL;
+  KineIn                        = NULL;
+  OmegaIn                       = NULL;
+  NuIn                          = NULL;
+  KineOut                       = NULL;
+  OmegaOut                      = NULL;
+  NuOut                         = NULL;
 
 
   /*--- Initialize quantities for NRBC ---*/
 
-  CkInflow			    = NULL;
-  CkOutflow1			= NULL;
-  CkOutflow2			= NULL;
+  CkInflow                      = NULL;
+  CkOutflow1                    = NULL;
+  CkOutflow2                    = NULL;
  
 }
 
@@ -278,15 +284,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initialize quantities for the average process for internal flow ---*/
 
-  AverageVelocity 					= NULL;
-  AverageTurboVelocity 				= NULL;
-  ExtAverageTurboVelocity 			= NULL;
-  AverageFlux 					    = NULL;
-  SpanTotalFlux 					= NULL;
-  AveragePressure  					= NULL;
+  AverageVelocity                   = NULL;
+  AverageTurboVelocity              = NULL;
+  ExtAverageTurboVelocity           = NULL;
+  AverageFlux                       = NULL;
+  SpanTotalFlux                     = NULL;
+  AveragePressure                   = NULL;
   RadialEquilibriumPressure         = NULL;
-  ExtAveragePressure  				= NULL;
-  AverageDensity   					= NULL;
+  ExtAveragePressure                = NULL;
+  AverageDensity                    = NULL;
   ExtAverageDensity                 = NULL;
   AverageNu                         = NULL;
   AverageKine                       = NULL;
@@ -304,13 +310,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   DensityOut                    = NULL;
   PressureOut                   = NULL;
   TurboVelocityOut              = NULL;
+  KineIn                        = NULL;
+  OmegaIn                       = NULL;
+  NuIn                          = NULL;
+  KineOut                       = NULL;
+  OmegaOut                      = NULL;
+  NuOut                         = NULL;
 
 
   /*--- Initialize quantities for NRBC ---*/
 
-  CkInflow				= NULL;
-  CkOutflow1			= NULL;
-  CkOutflow2			= NULL;
+  CkInflow                      = NULL;
+  CkOutflow1                    = NULL;
+  CkOutflow2                    = NULL;
 
   /*--- Set the gamma value ---*/
   
