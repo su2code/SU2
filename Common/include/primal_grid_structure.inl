@@ -43,7 +43,7 @@ inline su2double inline_dot_prod(vector<su2double> v, vector<su2double> w) {
 }
 
 inline su2double inline_magnitude(vector<su2double> v) {
-  return std::sqrt(inline_dot_prod(v,v));
+  return sqrt(inline_dot_prod(v,v));
 }
 
 inline unsigned short CPrimalGrid::GetnNodesFace(unsigned short val_face) { return 0; }
