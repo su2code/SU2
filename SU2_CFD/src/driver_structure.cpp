@@ -793,10 +793,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -899,7 +899,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     
     if (disc_adj) {
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
-      if (turbulent)
+      if (adj_turb)
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
     }
   }
@@ -936,12 +936,12 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (adj_euler || adj_ns) {
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
-    if (adj_turb) {
+    if (adj_turb && !disc_adj) {
       no_restart = true;
     }
     if (disc_adj) {
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
-      if (turbulent)
+      if (adj_turb)
         solver_container[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
   }
@@ -1001,7 +1001,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
@@ -1097,7 +1097,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
@@ -1154,7 +1154,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
@@ -1236,7 +1236,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -1919,7 +1919,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -4247,9 +4247,11 @@ void CDiscAdjFluidDriver::Run() {
 
   }
 
+  /*--- Compute the geometrical sensitivities ---*/
+
   if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
       integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence() ||
-      (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0)){
+      (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) || unsteady){
 
     /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
      * as argument ensures that all information from a previous recording is removed. ---*/
@@ -4293,12 +4295,8 @@ void CDiscAdjFluidDriver::Run() {
 
 
 void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
-  unsigned short iZone;
+  unsigned short iZone, iMesh;
   int rank = MASTER_NODE;
-
-  unsigned short Kind_Solver = config_container[ZONE_0]->GetKind_Solver();
-
-
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -4306,24 +4304,30 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
 
   AD::Reset();
 
-  /*--- Prepare for recording ---*/
+  /*--- Prepare for recording by resetting the flow solution to the initial converged solution---*/
+
   for (iZone = 0; iZone < nZone; iZone++) {
-    solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
-    if ((Kind_Solver == DISC_ADJ_RANS)) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+      solver_container[iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][iMesh], config_container[iZone]);
+    }
+    if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
 
 
+  /*---Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
+
   if (kind_recording != NONE){
 
     AD::StartRecording();
 
-    if ((rank == MASTER_NODE)){
-       if (kind_recording == CONS_VARS  && (config_container[ZONE_0]->GetExtIter() == 0))
-         cout << endl << "Direct iteration to store computational graph." << endl;
+    if (rank == MASTER_NODE && ((ExtIter == 0)) && kind_recording == CONS_VARS) {
+      cout << endl << "-------------------------------------------------------------------------" << endl;
+      cout << "Direct iteration to store computational graph." << endl;
+      cout << "Compute residuals to check the convergence of the direct problem." << endl;
+      cout << "-------------------------------------------------------------------------" << endl << endl;
     }
-
     for (iZone = 0; iZone < nZone; iZone++) {
       iteration_container[iZone]->RegisterInput(solver_container, geometry_container, config_container, iZone, kind_recording);
     }
@@ -4334,13 +4338,28 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     iteration_container[iZone]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
   }
 
+  /*--- Do one iteration of the direct flow solver ---*/
+
   DirectRun();
+
+  /*--- Print residuals in the first iteration ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
+      cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+      }
+    }
+  }
 
   RecordingState = kind_recording;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->RegisterOutput(solver_container, geometry_container, config_container, output, iZone);
   }
+
+  /*--- Extract the objective function and store it --- */
 
   SetObjFunction();
 
@@ -4388,7 +4407,11 @@ void CDiscAdjFluidDriver::SetObjFunction(){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
+  ObjFunc = 0.0;
+
+  for (iZone = 0; iZone < nZone; iZone++){
+    solver_container[iZone][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
+  }
 
   for (iZone = 0; iZone < nZone; iZone++){
     if (output_1d) {
@@ -4413,17 +4436,10 @@ void CDiscAdjFluidDriver::SetObjFunction(){
 
   /*--- Surface based obj. function ---*/
 
-  solver_container[ZONE_0][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[ZONE_0]);
-
-  switch (config_container[ZONE_0]->GetKind_ObjFunc()){
-    case ENTROPY_GENERATION:
-      solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, 0));
-      break;
-    default:
-      break;
+  for (iZone = 0; iZone < nZone; iZone++){
+    solver_container[iZone][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[iZone]);
+    ObjFunc += solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
   }
-
-  ObjFunc = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
 
   if (rank == MASTER_NODE){
     AD::RegisterOutput(ObjFunc);
@@ -4437,12 +4453,16 @@ void CDiscAdjFluidDriver::DirectRun(){
 
 
   unsigned short iZone, jZone;
-  bool unsteady;
+  bool unsteady = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
   int rank = MASTER_NODE;
+  bool turbulent = config_container[ZONE_0]->GetKind_Turb_Model() != NONE;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+
+
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
@@ -4482,28 +4502,7 @@ void CDiscAdjFluidDriver::DirectRun(){
     direct_iteration[iZone]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
   }
 
-
-  /*--- Print residuals in the first iteration ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    if ((rank == MASTER_NODE) && ((config_container[iZone]->GetExtIter() == 0) || (unsteady))){
-      cout << "Convergence of direct solver for Zone " << iZone << ": " << endl;
-
-      cout << "  log10[RMS Density]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-           <<", Drag: " <<solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CD()
-          <<", Lift: " << solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CL() << "." << endl;
-
-      if (config_container[iZone]->GetKind_Turb_Model() != NONE){
-        cout << "  log10[RMS k]:       " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
-        if (config_container[iZone]->GetKind_Turb_Model() == SST){
-          cout << "  log10[RMS omega]:   " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(1)) << endl;
-        }
-      }
-    }
-  }
-
 }
-
 
 CDiscAdjTurbomachineryDriver::CDiscAdjTurbomachineryDriver(char* confFile,
                                                            unsigned short val_nZone,
@@ -4642,7 +4641,6 @@ void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone
   output->ComputeTurboPerformance(solver_container[targetZone][MESH_0][FLOW_SOL], geometry_container[targetZone][MESH_0], config_container[targetZone]);
 
 }
-
 CHBDriver::CHBDriver(char* confFile,
     unsigned short val_nZone,
     unsigned short val_nDim,
