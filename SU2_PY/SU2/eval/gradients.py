@@ -844,7 +844,10 @@ def directdiff( config, state=None ):
                     if key == 'VARIABLE':
                         grads[key].append(i_dv)
                     else:
-                        this_grad = func_step[su2io.grad_names_map[key]]
+                        if su2io.grad_names_map[key] in func_step:
+                          this_grad = func_step[su2io.grad_names_map[key]]
+                        else:
+                          this_grad = 0.0
                         grads[key].append(this_grad)
                 #: for each grad name
 
