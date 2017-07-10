@@ -188,7 +188,6 @@ public:
                               COutput* output,
                               unsigned short iZone){}
 
-
 };
 
 

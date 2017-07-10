@@ -112,16 +112,16 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 
   /*--- Initialize quantities for the average process for internal flow ---*/
   
-  AverageVelocity 		     = NULL;
-  AverageTurboVelocity 		 = NULL;
-  ExtAverageTurboVelocity 	 = NULL;
-  AverageFlux 			     = NULL;
-  SpanTotalFlux 		     = NULL;
-  AveragePressure  		     = NULL;
+  AverageVelocity            = NULL;
+  AverageTurboVelocity       = NULL;
+  ExtAverageTurboVelocity    = NULL;
+  AverageFlux                = NULL;
+  SpanTotalFlux              = NULL;
+  AveragePressure            = NULL;
   RadialEquilibriumPressure  = NULL;
-  ExtAveragePressure  		 = NULL;
-  AverageDensity   		     = NULL;
-  ExtAverageDensity   		 = NULL;
+  ExtAveragePressure         = NULL;
+  AverageDensity             = NULL;
+  ExtAverageDensity          = NULL;
   AverageNu                  = NULL;
   AverageKine                = NULL;
   AverageOmega               = NULL;
@@ -138,13 +138,23 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   DensityOut                    = NULL;
   PressureOut                   = NULL;
   TurboVelocityOut              = NULL;
+  KineIn                        = NULL;
+  OmegaIn                       = NULL;
+  NuIn                          = NULL;
+  KineOut                       = NULL;
+  OmegaOut                      = NULL;
+  NuOut                         = NULL;
+  Mom0In                        = NULL;
+  Mom3In                        = NULL;
+  Mom0Out                       = NULL;
+  Mom3Out                       = NULL;
 
 
   /*--- Initialize quantities for NRBC ---*/
 
-  CkInflow			    = NULL;
-  CkOutflow1			= NULL;
-  CkOutflow2			= NULL;
+  CkInflow                      = NULL;
+  CkOutflow1                    = NULL;
+  CkOutflow2                    = NULL;
  
 }
 
@@ -280,15 +290,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initialize quantities for the average process for internal flow ---*/
 
-  AverageVelocity 					= NULL;
-  AverageTurboVelocity 				= NULL;
-  ExtAverageTurboVelocity 			= NULL;
-  AverageFlux 					    = NULL;
-  SpanTotalFlux 					= NULL;
-  AveragePressure  					= NULL;
+  AverageVelocity                   = NULL;
+  AverageTurboVelocity              = NULL;
+  ExtAverageTurboVelocity           = NULL;
+  AverageFlux                       = NULL;
+  SpanTotalFlux                     = NULL;
+  AveragePressure                   = NULL;
   RadialEquilibriumPressure         = NULL;
-  ExtAveragePressure  				= NULL;
-  AverageDensity   					= NULL;
+  ExtAveragePressure                = NULL;
+  AverageDensity                    = NULL;
   ExtAverageDensity                 = NULL;
   AverageNu                         = NULL;
   AverageKine                       = NULL;
@@ -296,6 +306,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ExtAverageNu                      = NULL;
   ExtAverageKine                    = NULL;
   ExtAverageOmega                   = NULL;
+  AverageMom0                       = NULL;
+  AverageMom3                       = NULL;
 
 
   /*--- Initialize primitive quantities for turboperformace ---*/
@@ -306,13 +318,23 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   DensityOut                    = NULL;
   PressureOut                   = NULL;
   TurboVelocityOut              = NULL;
+  KineIn                        = NULL;
+  OmegaIn                       = NULL;
+  NuIn                          = NULL;
+  KineOut                       = NULL;
+  OmegaOut                      = NULL;
+  NuOut                         = NULL;
+  Mom0In                        = NULL;
+  Mom3In                        = NULL;
+  Mom0Out                       = NULL;
+  Mom3Out                       = NULL;
 
 
   /*--- Initialize quantities for NRBC ---*/
 
-  CkInflow				= NULL;
-  CkOutflow1			= NULL;
-  CkOutflow2			= NULL;
+  CkInflow                      = NULL;
+  CkOutflow1                    = NULL;
+  CkOutflow2                    = NULL;
 
   /*--- Set the gamma value ---*/
   
@@ -4478,12 +4500,13 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 #endif
   
   unsigned long ExtIter = config->GetExtIter();
-  bool adjoint          = config->GetContinuous_Adjoint();
+  bool cont_adjoint     = config->GetContinuous_Adjoint();
+  bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-  bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (!low_fidelity) && (ExtIter <= config->GetLimiterIter()));
-  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
+  bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (!low_fidelity) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
@@ -17371,13 +17394,14 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
     
   unsigned long ExtIter     = config->GetExtIter();
-  bool adjoint              = config->GetContinuous_Adjoint();
+  bool cont_adjoint         = config->GetContinuous_Adjoint();
+  bool disc_adjoint         = config->GetDiscrete_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
-  bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
-  bool limiter_adjflow      = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_adjflow      = (cont_adjoint && (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool limiter_visc         = config->GetViscous_Limiter_Flow();
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));

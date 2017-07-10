@@ -82,7 +82,6 @@ protected:
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CTransfer ***transfer_container;              /*!< \brief Definition of the transfer of information and the physics involved in the interface. */
-  CTransfer ***transfer_performance_container;  /*!< \brief Definition of the transfer of performance involved in the interface. */
   su2double APIVarCoord[3];                     /*!< \brief This is used to store the VarCoord of each node. */
   su2double APINodalForce[3];                   /*!< \brief This is used to store the force at each node. */
   su2double APINodalForceDensity[3];            /*!< \brief This is used to store the force density at each node. */
@@ -662,11 +661,9 @@ public:
 class CDiscAdjFluidDriver : public CFluidDriver {
 
 protected:
-  unsigned short RecordingState;
-
-  su2double ObjFunc;
-
-  CIteration** direct_iteration;
+  unsigned short RecordingState; /*!< \brief The kind of recording the tape currently holds.*/
+  su2double ObjFunc;             /*!< \brief The value of the objective function.*/
+  CIteration** direct_iteration; /*!< \brief A pointer to the direct iteration.*/
 
 public:
 
@@ -687,23 +684,36 @@ public:
   ~CDiscAdjFluidDriver(void);
 
   /*!
-   * \brief Run a single iteration of the physics within multiple zones.
+   * \brief Run a single iteration of the discrete adjoint solver within multiple zones.
    */
 
   void Run();
 
+  /*!
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (either CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   */
+
   void SetRecording(unsigned short kind_recording);
 
+  /*!
+   * \brief Run one iteration of the solver. It is virtual because it depends on the kind of physics.
+   */
   virtual void DirectRun();
 
+  /*!
+   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
+   */
   virtual void SetObjFunction();
 
+  /*!
+   * \brief Initialize the adjoint value of the objective function.
+   */
   void SetAdj_ObjFunction();
 };
 
-
 /*!
- * \class CDiscAdjMultiZoneDriver
+ * \class CDiscAdjTurbomachineryDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author S. Vitale, T. Albring
  * \version 5.0.0 "Raven"
@@ -749,9 +759,6 @@ public:
 
 
 };
-
-
-
 /*!
  * \class CHBDriver
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
