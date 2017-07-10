@@ -3860,8 +3860,7 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   /*--- Print residuals in the first iteration ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    //if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
-    if (rank == MASTER_NODE ) {
+    if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
       cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
       if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
         cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
