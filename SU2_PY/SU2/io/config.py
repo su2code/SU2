@@ -604,6 +604,8 @@ def read_config(filename):
         data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
     if not data_dict.has_key('GRAD_OBJFUNC_FILENAME'):
         data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
+    if not data_dict.has_key('AOA'):
+        data_dict['AOA'] = 0.0
     if not data_dict.has_key('SIDESLIP_ANGLE'):
         data_dict['SIDESLIP_ANGLE'] = 0.0
     if not data_dict.has_key('MACH_NUMBER'):
