@@ -471,7 +471,7 @@ void CDriver::Postprocessing() {
   if (interpolator_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
     if (interpolator_container[iZone] != NULL){
-            delete interpolator_container[iZone];
+            delete [] interpolator_container[iZone];
       }
     }
     delete [] interpolator_container;
@@ -481,7 +481,7 @@ void CDriver::Postprocessing() {
   if (transfer_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
         if (transfer_container[iZone] != NULL)
-          delete transfer_container[iZone];
+          delete [] transfer_container[iZone];
     }
     delete [] transfer_container;
     if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
@@ -500,7 +500,7 @@ void CDriver::Postprocessing() {
 
   /*--- Free-form deformation class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    delete FFDBox[iZone];
+    delete [] FFDBox[iZone];
   }
   delete [] FFDBox;
   if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;

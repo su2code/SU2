@@ -3990,14 +3990,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
     else {
-      cout << "Reference origin (moment computation) is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
-      cout << "Surface(s) where the force coefficients are evaluated: ";
-      for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-        cout << Marker_Monitoring[iMarker_Monitoring];
-        if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
-        else cout <<"."<< endl;
+      if (nMarker_Monitoring != 0){
+        cout << "Reference origin (moment computation) is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
+        cout << "Surface(s) where the force coefficients are evaluated: ";
+        for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+          cout << Marker_Monitoring[iMarker_Monitoring];
+          if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
+          else cout <<"."<< endl;
+        }
+        cout<< endl;
       }
-      cout<< endl;
     }
     
     if (nMarker_Designing != 0) {
