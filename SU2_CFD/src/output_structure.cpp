@@ -4307,6 +4307,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char wave_coeff[]= ",\"CWave\"";
   char fem_coeff[]= ",\"VM_Stress\"";
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
+  char adj_turbo_coeff[]=",\"Sens_Geo\",\"Sens_PressOut\",\"Sens_TotTempIn\"";
   char oneD_outputs[]= ",\"AreaAvg_TotalPress\",\"AreaAvg_Mach\",\"AreaAvg_Temperature\",\"MassFlowRate\",\"Avg_Pressure\",\"Avg_Density\",\"Avg_Velocity\",\"Avg_Enthalpy\"";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
@@ -4422,7 +4423,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       
     case ADJ_EULER      : case ADJ_NAVIER_STOKES      : case ADJ_RANS:
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
+      if (!turbo) ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
+      else ConvHist_file[0] << begin << adj_turbo_coeff << adj_flow_resid;
       if ((turbulent) && (!frozen_visc)) ConvHist_file[0] << adj_turb_resid;
       ConvHist_file[0] << end;
       break;
@@ -4587,6 +4589,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
     su2double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
+
+    su2double Total_Sens_BPressure = 0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
     su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0,
@@ -4864,6 +4868,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_Sens_AoA   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0;
           Total_Sens_Press = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
           Total_Sens_Temp  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
+          Total_Sens_BPressure = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
           
           /*--- Adjoint flow residuals ---*/
           
@@ -5177,9 +5182,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (adjoint) {
               
               /*--- Adjoint coefficients ---*/
-              
-              SPRINTF (adjoint_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
-              
+              if (!turbo)
+                SPRINTF (adjoint_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
+              else
+                SPRINTF (adjoint_coeff, ", %14.8e, %14.8e, %14.8e", Total_Sens_Geo, Total_Sens_BPressure, Total_Sens_Temp);
+
               /*--- Adjoint flow residuals ---*/
               if (nDim == 2) {
                 if (compressible) SPRINTF (adj_flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]) );
@@ -5505,7 +5512,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
               else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
               if (disc_adj) {
-                cout << "    Sens_Press" << "      Sens_AoA" << endl;
+                if (!turbo){
+                  cout << "    Sens_Press" << "      Sens_AoA" << endl;
+                } else {
+                  cout << " Sens_PressOut" << " Sens_TotTempIn" << endl;
+                }
               } else {
                 cout << "      Sens_Geo" << "      Sens_AoA" << endl;
               }
@@ -5546,7 +5557,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 else cout << "     Res[Psi_E]";
               }
               if (disc_adj) {
-                cout << "    Sens_Press" << "      Sens_AoA" << endl;
+                if (!turbo){
+                  cout << "    Sens_Press" << "      Sens_AoA" << endl;
+                } else {
+                  cout << " Sens_PressOut" << " Sens_TotTempIn" << endl;                }
               } else {
                 cout << "      Sens_Geo" << "      Sens_AoA" << endl;
               }
@@ -5808,8 +5822,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (disc_adj) {
                 cout.precision(4);
                 cout.setf(ios::scientific, ios::floatfield);
-                cout.width(14); cout << Total_Sens_Press;
-                cout.width(14); cout << Total_Sens_AoA;
+                if (!turbo){
+                  cout.width(14); cout << Total_Sens_Press;
+                  cout.width(14); cout << Total_Sens_AoA;
+                } else {
+                  cout.width(14); cout << Total_Sens_BPressure;
+                  cout.width(15); cout << Total_Sens_Temp;
+                }
               }else {
                 cout.precision(4);
                 cout.setf(ios::scientific, ios::floatfield);
@@ -5849,10 +5868,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 }
               }
               if (disc_adj) {
-                cout.precision(4);
-                cout.setf(ios::scientific, ios::floatfield);
-                cout.width(14); cout << Total_Sens_Press;
-                cout.width(14); cout << Total_Sens_AoA;
+                if (!turbo){
+                  cout.width(14); cout << Total_Sens_Press;
+                  cout.width(14); cout << Total_Sens_AoA;
+                } else {
+                  cout.width(14); cout << Total_Sens_BPressure;
+                  cout.width(15); cout << Total_Sens_Temp;
+                }
               }else {
                 cout.precision(4);
                 cout.setf(ios::scientific, ios::floatfield);

@@ -5609,6 +5609,12 @@ public:
   su2double GetPressureOut_BC();
 
   /*!
+   * \brief Set the outlet pressure imposed as BC for internal flow.
+   * \param[in] val_temp - New value of the outlet pressure.
+   */
+  void SetPressureOut_BC(su2double val_press);
+
+  /*!
    * \brief Get the inlet total pressure imposed as BC for internal flow.
    * \return inlet total pressure
    */
@@ -5619,6 +5625,12 @@ public:
    * \return inlet total temperature
    */
   su2double GetTotalTemperatureIn_BC();
+
+  /*!
+   * \brief Set the inlet total temperature imposed as BC for internal flow.
+   * \param[in] val_temp - New value of the total temperature.
+   */
+  void SetTotalTemperatureIn_BC(su2double val_temp);
 
   /*!
    * \brief Get the inlet flow angle imposed as BC for internal flow.
