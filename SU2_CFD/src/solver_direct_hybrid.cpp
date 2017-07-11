@@ -548,6 +548,10 @@ void CHybridConvSolver::Source_Residual(CGeometry *geometry,
 
     numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
 
+    /*--- Set volume ---*/
+
+    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
     /*--- Hybrid method ---*/
 
     HybridMediator->SetupHybridParamNumerics(geometry, solver_container, numerics, iPoint, iPoint);
@@ -675,7 +679,7 @@ void CHybridSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
     /*--- Update and clip hybrid solution ---*/
 
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        node[iPoint]->AddSolution(0, LinSysSol[iPoint]);
+        node[iPoint]->AddClippedSolution(0, LinSysSol[iPoint], lower_limit, upper_limit);
       }
   }
 
@@ -1214,70 +1218,110 @@ CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config,
     long iPoint_Local; unsigned long iPoint_Global = 0; string text_line; unsigned long iPoint_Global_Local = 0;
     unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-    /*--- The first line is the header ---*/
+    /*--- The first line is the header. Check to see if this is a hybrid restart
+     * file, or if it is a RANS restart ---*/
 
     getline (restart_file, text_line);
-
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-      getline (restart_file, text_line);
-
-      istringstream point_line(text_line);
-
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-
-        iPoint_Local = Global2Local[iPoint_Global];
-
-        if (compressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> Solution[0];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> U[4] >> Solution[0];
-
-          Density = U[0];
+    bool isRANS = false;
+    unsigned short nVarTotal = nDim+1; // Velocities plus a state variable
+    if (compressible) nVarTotal += 1;
+    nVarTotal += nVar; // Hybrid variable(s)
+    switch(config->GetKind_Turb_Model()) {
+      case SA:
+        nVarTotal += 1;
+        break;
+      case SST:
+        nVarTotal += 2;
+        break;
+      default:
+        if (rank == MASTER_NODE) {
+          cout << "WARNING: Restarts have not been implemented for hybridization" << endl;
+          cout << "    with your RANS model. Implemented models include: SA, SST" << endl;
+          cout << "    Restart file will not be loaded correctly if you are" << endl;
+          cout << "    starting your hybrid solution from a RANS restart file." << endl;
         }
-        if (incompressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-        }
-
-        /*--- Instantiate the solution at this node  ---*/
-        node[iPoint_Local] = new CHybridConvVariable(alpha_Inf, nDim, nVar, config);
-        iPoint_Global_Local++;
-      }
-
+        break;
     }
+    ostringstream header_name;
+    header_name << "Conservative_" << nVarTotal;
+    if (text_line.find(header_name.str()) == string::npos) isRANS = true;
 
-    /*--- Detect a wrong solution file ---*/
+    if (isRANS) {
 
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    if (rbuf_NotMatching != 0) {
+      /*--- Restart file is RANS, not hybrid.  Restart with initial values
+       * of hybrid parameter ---*/
       if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
+        cout << "Restart file does not appear to contain hybrid variable(s)." << endl;
+        cout << "Starting solution using RANS variables and initial conditions for hybrid variable(s)." << endl;
       }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
+      for (iPoint = 0; iPoint < nPoint; iPoint++)
+        node[iPoint] = new CHybridConvVariable(alpha_Inf, nDim, nVar, config);
 
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CHybridConvVariable(alpha_Inf, nDim, nVar, config);
+    } else {
+
+      /*--- Restart file *should* contain hybrid parameter. Load normally ---*/
+
+      for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+        getline (restart_file, text_line);
+
+        istringstream point_line(text_line);
+
+        /*--- Retrieve local index. If this node from the restart file lives
+         on the current processor, we will load and instantiate the vars. ---*/
+
+        MI = Global2Local.find(iPoint_Global);
+        if (MI != Global2Local.end()) {
+
+          iPoint_Local = Global2Local[iPoint_Global];
+
+          if (compressible) {
+            if (nDim == 2) point_line >> index >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> Solution[0];
+            if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> U[4] >> Solution[0];
+
+            Density = U[0];
+          }
+          if (incompressible) {
+            if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+            if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+          }
+
+          /*--- Instantiate the solution at this node  ---*/
+          node[iPoint_Local] = new CHybridConvVariable(alpha_Inf, nDim, nVar, config);
+          iPoint_Global_Local++;
+        }
+
+      }
+
+      /*--- Detect a wrong solution file ---*/
+
+      if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+      rbuf_NotMatching = sbuf_NotMatching;
+#else
+      SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+      if (rbuf_NotMatching != 0) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+          cout << "It could be empty lines at the end of the file." << endl << endl;
+        }
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      /*--- Instantiate the variable class with an arbitrary solution
+       at any halo/periodic nodes. The initial solution can be arbitrary,
+       because a send/recv is performed immediately in the solver. ---*/
+      for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+        node[iPoint] = new CHybridConvVariable(alpha_Inf, nDim, nVar, config);
+      }
     }
 
     /*--- Close the restart file ---*/
@@ -1324,7 +1368,7 @@ void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Upwind second order reconstruction ---*/
 
-  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
+  //if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
 
 }
 
@@ -1334,11 +1378,6 @@ void CHybridConvSolver::Postprocessing(CGeometry *geometry, CSolver **solver_con
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetSolution_Gradient_LS(geometry, config);
-  }
-
-  /*--- Limit alpha to be between 0 and 1 ---*/
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-    Solution[iPoint] = min(max(0.0, Solution[0]), 1.0);
   }
 }
 

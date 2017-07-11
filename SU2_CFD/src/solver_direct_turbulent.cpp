@@ -2747,10 +2747,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       int Unst_RestartIter;
       if (adjoint) {
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-      Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
+                 config->GetUnsteady_Simulation() == TIME_STEPPING)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else
-      Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
 
@@ -2758,7 +2759,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     /*--- Open the restart file, throw an error if this fails. ---*/
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
-      cout << "There is no turbulent restart file!!" << endl;
+      cout << "There is no turbulent restart file!! " << filename.data() << "."<< endl;
       exit(EXIT_FAILURE);
     }
     
@@ -2934,8 +2935,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     /*--- Calculate the relevant length and timescales ---*/
 
     timescale = min(1.0/(omega), a1/(strMag*F2));
-    timescale = max(timescale, 0.0);
+    timescale = max(timescale, EPS);
     lengthscale = sqrt(max(kine, 0.0))*timescale;
+    lengthscale = max(lengthscale, EPS);
     node[iPoint]->SetTurbScales(timescale, lengthscale);
 
     /*--- Compute the eddy viscosity ---*/

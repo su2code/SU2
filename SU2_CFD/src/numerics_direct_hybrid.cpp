@@ -96,10 +96,6 @@ void CUpwSca_HybridConv::ComputeResidual(su2double *val_residual, su2double **va
 CSourcePieceWise_HybridConv::CSourcePieceWise_HybridConv(unsigned short val_nDim, unsigned short val_nVar,
                                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  rotating_frame = config->GetRotating_Frame();
-  transition = (config->GetKind_Trans_Model() == BC);
-
 }
 
 CSourcePieceWise_HybridConv::~CSourcePieceWise_HybridConv(void) { }
@@ -114,7 +110,15 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
             S_c, // Source for removing turbulent scales
             T_c; // Timescale for removal of turbulent scales
 
-  if (Resolution_Adequacy >=1.0)
+#ifndef NDEBUG
+  if (Resolution_Adequacy < 0) {
+    cout << "ERROR: Resolution adequacy was less than zero!" << endl;
+    cout << "       Resolution adequacy: " << Resolution_Adequacy << endl;
+    exit(EXIT_FAILURE);
+  }
+#endif
+
+  if (Resolution_Adequacy >= 1.0)
     S_r = tanh(Resolution_Adequacy - 1.0);
   else
     S_r = tanh(1.0 - 1.0/Resolution_Adequacy);
@@ -123,7 +127,7 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
   for (unsigned int iDim = 0; iDim < nDim; iDim++) {
     for (unsigned int jDim = 0; jDim < nDim; jDim++) {
       udMdx = 0.0;
-      for (unsigned int kDim = 0; kDim < nDim; nDim++) {
+      for (unsigned int kDim = 0; kDim < nDim; kDim++) {
         // XXX: This is NOT upwinded.  It could be improved to upwind the product.
         udMdx += V_i[kDim+1] * Resolution_Tensor_Gradient[kDim][iDim][jDim];
       }
@@ -132,14 +136,17 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
     }
   }
 
-  T_c = TurbL/max_udMdx;
-
-  if (S_r >= 0.0 && T_c >= 0.0)
-    S_c = 1.0;
-  else
-    S_c = 0.0;
-
-  val_residual[0] = (S_r/TurbT + S_c/T_c) * Volume;
+  if (abs(max_udMdx) > EPS) {
+    T_c = TurbL/max_udMdx;
+    if (S_r >= 0.0 && T_c >= 0.0)
+      S_c = 1.0;
+    else
+      S_c = 0.0;
+    val_residual[0] = (S_r/TurbT + S_c/T_c) * Volume;
+  } else {
+    // No grid gradients are aligned with nonzero velocities; ignore S_c/Tc
+    val_residual[0] = S_r/TurbT * Volume;
+  }
 
   // Jacobian of \alpha with respect to \alpha
   val_Jacobian_i[0][0] = 0.0;

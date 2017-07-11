@@ -424,8 +424,8 @@ AC_SUBST([JSONCPP_LD])
 ##########################
 
 # check for lib
-LAPACKlib=liblapacke.a
-LAPACKheader=lapacke.h
+LAPACKlib=libmkl_lapack95_lp64.a
+LAPACKheader=mkl_lapack.h
 have_LAPACK="no"
 
 if test "$with_LAPACK_lib" != "no"
@@ -455,7 +455,7 @@ fi
 if test "$have_LAPACK" != "no"
 then
 AM_CONDITIONAL(BUILD_LAPACK,true)
-LAPACK_CXX="-DHAVE_LAPACK -I"$with_LAPACK_include""
+LAPACK_CXX="-DHAVE_LAPACK -I"$with_LAPACK_include" -mkl"
 LAPACK_LD="$with_LAPACK_lib"/$LAPACKlib
 else
 AM_CONDITIONAL(BUILD_LAPACK,false)

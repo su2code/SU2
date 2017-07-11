@@ -35,6 +35,7 @@
 #include "../include/numerics_structure.hpp"
 #include "../include/solver_structure.hpp"
 #ifdef HAVE_LAPACK
+#include "mkl.h"
 #include "mkl_lapacke.h"
 #endif
 
@@ -78,6 +79,13 @@ CHybrid_Aniso_Q::CHybrid_Aniso_Q(unsigned short nDim)
 void CHybrid_Aniso_Q::CalculateViscAnisotropy() {
   // TODO: Update this with new anisotropy model.
   su2double w_RANS = CalculateIsotropyWeight(resolution_adequacy);
+#ifndef NDEBUG
+  if (w_RANS < 0 || w_RANS > 1) {
+    cout << "ERROR: Isotropic weighting in hybrid RANS/LES was not in range [0,1]" << endl;
+    cout << "       weight = " << w_RANS << endl;
+    exit(EXIT_FAILURE);
+  }
+#endif
   su2double w_LES = (1.0 - w_RANS);
 
   unsigned short iDim, jDim;
@@ -93,10 +101,12 @@ void CHybrid_Aniso_Q::CalculateViscAnisotropy() {
 }
 
 inline su2double CHybrid_Aniso_Q::CalculateIsotropyWeight(su2double r_k) {
+#ifndef NDEBUG
   if (r_k < 0.0) {
     cout << "ERROR: Resolution adequacy was negative! Value: " << r_k << endl;
     exit(EXIT_FAILURE);
   }
+#endif
   return 1.0 - min(1.0/r_k, su2double(1.0));
 }
 
@@ -126,17 +136,77 @@ CHybrid_Mediator::CHybrid_Mediator(int nDim, CConfig* config, string filename)
 
   if (filename == "") {
     cout << "WARNING: No file given for hybrid RANS/LES constants." << endl;
+    cout << "         Default (hardcoded) values used." << endl;
+    constants.resize(3, vector<su2double>(15));
+    constants[0][0]  = -1.3441989500430;
+    constants[0][1]  = -1.2997962353961;
+    constants[0][2]  =  0.3624921526914;
+    constants[0][3]  = -0.0114257653000;
+    constants[0][4]  = -0.0002359408737;
+    constants[0][5]  =  0.2314555700009;
+    constants[0][6]  =  0.0016951253508;
+    constants[0][7]  = -0.0002866338640;
+    constants[0][8]  = -0.0009095648353;
+    constants[0][9]  =  0.0617742005401;
+    constants[0][10] = -0.0000918936400;
+    constants[0][11] =  0.0000544349543;
+    constants[0][12] =  0.0001553623566;
+    constants[0][13] =  0.0001159449506;
+    constants[0][14] =  0.0059904950363;
+
+    constants[1][0]  =  1.9527214390792;
+    constants[1][1]  =  0.0387097819862;
+    constants[1][2]  = -0.0035236439484;
+    constants[1][3]  = -0.0090288063753;
+    constants[1][4]  =  0.0074191857589;
+    constants[1][5]  =  0.0012129089188;
+    constants[1][6]  =  0.0010376720357;
+    constants[1][7]  = -0.0011418423755;
+    constants[1][8]  =  0.0008778876148;
+    constants[1][9]  =  0.0006097328257;
+    constants[1][10] = -0.0000471680743;
+    constants[1][11] =  0.0000668786855;
+    constants[1][12] = -0.0000477449682;
+    constants[1][13] =  0.0000549683602;
+    constants[1][14] =  0.0000759797725;
+
+    constants[2][0]  = -0.0149586909340;
+    constants[2][1]  =  0.0021107470732;
+    constants[2][2]  = -0.0057740374642;
+    constants[2][3]  =  0.0002190519772;
+    constants[2][4]  =  0.0006652247252;
+    constants[2][5]  = -0.0017709687027;
+    constants[2][6]  = -0.0000860428032;
+    constants[2][7]  =  0.0000032821371;
+    constants[2][8]  =  0.0001955198753;
+    constants[2][9]  = -0.0002762253983;
+    constants[2][10] =  0.0000061997774;
+    constants[2][11] = -0.0000041785763;
+    constants[2][12] = -0.0000092567404;
+    constants[2][13] =  0.0000125295721;
+    constants[2][14] = -0.0000180552959;
+  
   } else {
     constants = LoadConstants(filename);
   }
+
+  /*--- Calculate scaling constants so that zeta -> kroneckor delta for
+   * isotropic cells ---*/
+  vector<su2double> temp_values = GetEigValues_Q(vector<su2double>(3, 1.0));
+  C_zeta = pow(temp_values[0],0.5);
 }
 
 CHybrid_Mediator::~CHybrid_Mediator() {
-  for (unsigned int iDim = 0; iDim < nDim; iDim++)
+  for (unsigned int iDim = 0; iDim < nDim; iDim++) {
     delete [] Q[iDim];
     delete [] Qapprox[iDim];
+  }
   delete [] Q;
   delete [] Qapprox;
+
+#ifdef HAVE_LAPACK
+  mkl_free_buffers();
+#endif
 }
 
 void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
@@ -195,6 +265,7 @@ void CHybrid_Mediator::SetupHybridParamNumerics(CGeometry* geometry,
   su2double turb_L =
       solver_container[TURB_SOL]->node[iPoint]->GetTurbLengthscale();
 
+#ifndef NDEBUG
   if (turb_T <= 0) {
     cout << "Error: Turbulent timescale was " << turb_T << std::endl;
     exit(EXIT_FAILURE);
@@ -203,6 +274,7 @@ void CHybrid_Mediator::SetupHybridParamNumerics(CGeometry* geometry,
     cout << "Error: Turbulent timescale was " << turb_L << std::endl;
     exit(EXIT_FAILURE);
   }
+#endif
 
   hybrid_param_numerics->SetTurbTimescale(turb_T);
   hybrid_param_numerics->SetTurbLengthscale(turb_L);
@@ -228,12 +300,11 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
   su2double total= 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
-      // iDim+1 to capture velocities, indexed in 1,2,3 (not 0,1,2)
       total += abs(Q[iDim][jDim]);
     }
   }
   if (total < EPS) {
-    /*--- If there are negligible velocity gradients at the resolution scale,
+    /*--- If there are negligible velocity differences at the resolution scale,
      * set the tensor to the Kroneckor delta ---*/
     for (iDim = 0; iDim < nDim; iDim++) {
       for (jDim = 0; jDim < nDim; jDim++) {
@@ -246,7 +317,7 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
     vector<vector<su2double> > eigvectors_Q;
     SolveEigen(Q, eigvalues_Q, eigvectors_Q);
     vector<vector<su2double> > D(3, vector<su2double>(3));
-    su2double max_eigvalue = *min_element(eigvalues_Q.begin(), eigvalues_Q.end());
+    su2double max_eigvalue = *max_element(eigvalues_Q.begin(), eigvalues_Q.end());
     for (iDim=0; iDim < nDim; iDim++) {
       D[iDim][iDim] = eigvalues_Q[iDim]/max_eigvalue;
     }
@@ -300,7 +371,8 @@ su2double CHybrid_Mediator::CalculateRk(su2double** Q,
     }
   }
   if (total < EPS) {
-    /*--- If the velocity gradients are negligible, return 0 ---*/
+    /*--- If the velocity differences at resolution scale are negligible,
+     * return 0 ---*/
     return 0.0;
   } else {
     /*--- Compare resolved and unresolved turbulence ---*/
@@ -396,13 +468,13 @@ vector<vector<su2double> > CHybrid_Mediator::BuildZeta(su2double* values_M) {
 #ifdef HAVE_LAPACK
   unsigned short iDim;
 
-  vector<su2double> eigvalues_M(nDim);
+  vector<su2double> eigvalues_M;
   for (iDim = 0; iDim < nDim; iDim++)
-    eigvalues_M[iDim] = values_M[iDim];
+    eigvalues_M.push_back(values_M[iDim]);
 
   /*--- Solve for the modified resolution tensor  ---*/
-  vector<su2double> eigvalues_Mtilde = GetEigValues_Zeta(eigvalues_M);
-  vector<vector<su2double> > D(3, vector<su2double>(3));
+  vector<su2double> eigvalues_Zeta = GetEigValues_Zeta(eigvalues_M);
+  vector<vector<su2double> > zeta(3, vector<su2double>(3));
   for (iDim = 0; iDim < nDim; iDim++) {
     zeta[iDim][iDim] = eigvalues_Zeta[iDim];
   }
@@ -415,8 +487,6 @@ vector<vector<su2double> > CHybrid_Mediator::BuildZeta(su2double* values_M) {
 }
 
 vector<su2double> CHybrid_Mediator::GetEigValues_Zeta(vector<su2double> eigvalues_M) {
-  su2double C_zeta = 0.46120398645; // Overall scaling constant
-
   /*--- Find the minimum eigenvalue ---*/
 
   su2double dnorm = *min_element(eigvalues_M.begin(), eigvalues_M.end());
@@ -424,6 +494,14 @@ vector<su2double> CHybrid_Mediator::GetEigValues_Zeta(vector<su2double> eigvalue
   /*--- Get eigenvalues to the normalized gradient-gradien tensor ---*/
 
   vector<su2double> eigvalues_Q = GetEigValues_Q(eigvalues_M);
+#ifndef NDEBUG
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    if (eigvalues_Q[iDim] != eigvalues_Q[iDim]) {
+      cout << "ERROR: At least one computed eigenvalue was NaN!" << endl;
+      exit(EXIT_FAILURE);
+    }
+  }
+#endif
 
   /*--- Use eigenvalues from M and G to find eigenvalues for modified M ---*/
 
@@ -460,8 +538,25 @@ unsigned short iDim, jDim;
     cout << "ERROR: SolveEigen received an empty matrix!" << endl;
     exit(EXIT_FAILURE);
   }
-#endif
 
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      if (iDim == jDim) continue;
+      if (abs(M[iDim][jDim] - M[jDim][iDim]) > 1e-10 &&
+          abs(M[iDim][jDim] - M[jDim][iDim])/abs(M[iDim][jDim]) > 1e-6) {
+        cout << "ERROR: SolveEigen received a non-symmetric matrix!" << endl;
+        cout << "    The difference between elements" << endl;
+        cout << "      [" << iDim << ", " << jDim << "] and [" << jDim << ", " << iDim << "]" << endl;
+        cout << "      was: " << M[iDim][jDim] - M[jDim][iDim] << endl;
+        cout << "    Matrix:" << endl;
+        cout << "      [[" << M[0][0] << ", " << M[0][1] << ", " << M[0][2] << "]" << endl;
+        cout << "       [" << M[1][0] << ", " << M[1][1] << ", " << M[1][2] << "]" << endl;
+        cout << "       [" << M[2][0] << ", " << M[2][1] << ", " << M[2][2] << "]]" << endl;
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
+#endif
 
   eigvalues.resize(nDim);
   eigvectors.resize(nDim, std::vector<su2double>(nDim));
@@ -474,41 +569,48 @@ unsigned short iDim, jDim;
   }
 
   /*--- Call LAPACK routines ---*/
-  info = LAPACKE_dgeev(LAPACK_ROW_MAJOR, 'N', 'V', nDim, mat, nDim, wr, wi, vl, nDim, vr, nDim);
+
+  info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U', nDim, mat, nDim, eigval);
   if (info != 0) {
     cout << "ERROR: The solver failed to compute eigenvalues." << endl;
     exit(EXIT_FAILURE);
   }
 
+  /*--- Rewrite arrays to eigenvalues output ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    eigvalues[iDim] = eigval[iDim];
+
   /*--- Check the values ---*/
+
   for (iDim = 0; iDim < nDim; iDim++) {
-    if (wr[iDim] < 0.0) {
-      if (wr[iDim] > -1e-6) {
-        wr[iDim] = 0.0;
+    if (eigval[iDim] < 0.0) {
+      if (eigval[iDim] > -1e-6) {
+        eigvalues[iDim] = 0.0;
       } else {
-        cout << "ERROR: The solver return a large negative eigenvalue!" << endl;
-        cout << "    Eigenvalues:" << endl;
-        cout << "    [" << endl;
-        cout << wr[0] << ", " << endl;
-        cout << wr[1] << ", " << endl;
-        cout << wr[2] << "]" << endl;
-        exit(EXIT_FAILURE);
+        su2double max_val = max(eigval[0], max(eigval[1], eigval[2]));
+        if (log10(max_val/abs(eigval[iDim])) > 10) {
+          // If the condition number is bad...
+          eigvalues[iDim] = 0.0;
+        } else {
+          cout << "ERROR: The solver returned a large negative eigenvalue!" << endl;
+          cout << "    Eigenvalues: [";
+          cout << eigval[0] << ", ";
+          cout << eigval[1] << ", ";
+          cout << eigval[2] << "]" << endl;
+          exit(EXIT_FAILURE);
+        }
       }
     }
   }
 
-  /*--- Rewrite arrays to eigenvalues/vectors output ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    eigvalues[iDim] = wr[iDim];
-
   for (iDim = 0; iDim < nDim; iDim++) {
     su2double norm = 0.0;
     for (jDim = 0; jDim < nDim; jDim++)
-      norm += vr[iDim*nDim+jDim]*vr[iDim*nDim+jDim];
+      norm += mat[iDim*nDim+jDim]*mat[iDim*nDim+jDim];
     norm = sqrt(norm);
     for (jDim = 0; jDim < nDim; jDim++) {
-      eigvectors[iDim][jDim] = vr[iDim*nDim+jDim]/norm;
+      eigvectors[iDim][jDim] = mat[iDim*nDim+jDim]/norm;
     }
   }
 #else

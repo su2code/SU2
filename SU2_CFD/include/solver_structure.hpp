@@ -8603,7 +8603,7 @@ public:
    */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
-  
+
   /*!
    * \brief Get the constants for the SST model.
    * \return A pointer to an array containing a set of constants
@@ -8808,6 +8808,8 @@ class CHybridSolver: public CSolver {
    su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
    *FlowPrimVar_j;         /*!< \brief Store the flow solution at point j. */
   CAbstract_Hybrid_Mediator *HybridMediator; /*!< \brief A mediator object for a hybrid RANS/LES model. */
+  static const su2double lower_limit = 0.0;
+  static const su2double upper_limit = 1.0;
 
  public:
 

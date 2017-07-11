@@ -1989,6 +1989,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef HAVE_MPI
   int size = SINGLE_NODE;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = MASTER_NODE;
 #endif
   
 #ifndef HAVE_TECIO

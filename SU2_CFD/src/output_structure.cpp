@@ -4362,7 +4362,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     unsigned long iExtIter = config[val_iZone]->GetExtIter();
     unsigned long ExtIter_OffSet = config[val_iZone]->GetExtIter_OffSet();
     if (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
-        config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+        config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND ||
+        config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING)
       ExtIter_OffSet = 0;
 
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
@@ -14985,7 +14986,7 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
     restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
     restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
     if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-    if (dual_time)
+    if (dual_time || config->GetUnsteady_Simulation() == TIME_STEPPING)
       restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
     else
       restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;

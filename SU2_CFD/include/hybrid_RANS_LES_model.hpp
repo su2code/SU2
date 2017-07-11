@@ -290,6 +290,7 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
 
   unsigned short nDim;
   const su2double C_sf; /*!> \brief Model constant relating the structure function to the unresolved turbulent kinetic energy  */
+  su2double C_zeta; /*!> \brief Scaling constant for the transformation tensor zeta */
   su2double **Q,        /*!> \brief An approximate 2nd order structure function tensor */
             **Qapprox;  /*!> \brief An approximate 2nd order structure function tensor (used for temporary calculations) */
   su2double r_k;        /*!> \brief The resolution adequacy parameter */
@@ -300,8 +301,10 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   int info, lwork;
   su2double wkopt;
   su2double* work;
-  su2double wr[3], wi[3], vl[3*3], vr[3];
-  su2double mat[3*3];
+  su2double eigval[3], eigvec[9], vr[9], wi[3];
+  su2double mat[9];
+  int num_found;
+  int isupp[3];
 #endif
 
   /*!
@@ -353,15 +356,14 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
    */
   vector<su2double> GetEigValues_Zeta(vector<su2double> eig_values_M);
 
+ public:
   /*!
    * \brief Builds a transformation for the approximate structure function.
-   * \param[in] eigvalues_M - The cell-to-cell distances in the "principal
+   * \param[in] values_M - The cell-to-cell distances in the "principal
    *            "directions"
-   * \param[in] eigvectors_M - The "principal directions" of the cell.
    */
   vector<vector<su2double> > BuildZeta(su2double* values_M);
 
- public:
 
   /**
    * \brief Constructor for the hybrid mediator object.

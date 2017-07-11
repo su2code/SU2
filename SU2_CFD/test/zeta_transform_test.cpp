@@ -1,6 +1,6 @@
 /*!
- * \file load_hybrid_constants_test.cpp
- * \brief 
+ * \file zeta_transform_test.cpp
+ * \brief Checks the zeta transformation for the hybrid filtering
  * \author C. Pederson
  * \version 5.0.0 "Raven"
  *
@@ -35,8 +35,6 @@
 #include <mpi.h>
 #endif
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <iomanip>
 #include <iostream>
 #include <limits> // used to find machine epsilon
@@ -44,10 +42,17 @@
 
 #include "../include/hybrid_RANS_LES_model.hpp"
 
-const std::string filename = "test_constants";
-const std::string extension = ".dat";
-
-
+void print_matrix(vector<vector<su2double> > M) {
+  std::cout << "  [[";
+  for (unsigned int i = 0; i < M.size(); i++) {
+    for (unsigned int j = 0; j < M[i].size(); j++) {
+      std::cout << M[i][j];
+      if (j<M[i].size()-1) std::cout << ", ";
+    }
+    if (i < M.size()-1) std::cout << "]" << std::endl << "   [";
+  }
+  std::cout << "]]" << std::endl;
+}
 
 int main() {
 
@@ -62,41 +67,42 @@ int main() {
 
   int return_flag=0;
 
+  int nDim = 3;
+  int nConstants = 15;
+
   CConfig* test_config = new CConfig();
 
-  const int nConstants = 15;
-
-  /*--- Create constants files ---*/
-  std::ofstream testfile;
-  for (int i=0; i<3; i++) {
-    std::stringstream temp_stream;
-    temp_stream << filename << i << extension;
-    testfile.open(temp_stream.str().c_str());
-    for (int j=0; j<nConstants; j++) {
-      testfile << j << std::endl;
-    }
-    testfile.close();
-  }
+  su2double eigvalues_M[nDim];
+  eigvalues_M[0] = 2.0;
+  eigvalues_M[1] = 2.0;
+  eigvalues_M[2] = 2.0;
 
   /**-------------------------------------------------------------------------
    * TEST
    *
    *--------------------------------------------------------------------------
    */
+  CHybrid_Mediator mediator(nDim, test_config);
 
-  CHybrid_Mediator mediator(3, test_config, filename);
-  for (int i=0; i<3; i++) {
-    for (int j=0; j<nConstants; j++) {
-      if (mediator.GetConstants().at(i).at(j) != j) {
-        cout << "ERROR: Constant at [" << i << "][" << j << "]";
-        cout << "was wrong!" << endl;
-        cout << "    Expected: " << j << endl;
-        cout << "    Found;    " << mediator.GetConstants().at(i).at(j) << endl;
+  vector<vector<su2double> > zeta = mediator.BuildZeta(eigvalues_M);
+
+  su2double tol = 1e-8;
+
+  // Check the eigenvectors
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    for (int jDim = 0; jDim < nDim; jDim++) {
+      if (abs(zeta[iDim][jDim] - (iDim == jDim)) > tol) {
+        cout.precision(16);
+        cout << "ERROR: Zeta was not calculated correctly." << endl;
+        cout << "    Calculated:" << endl;
+        print_matrix(zeta);
         return_flag = 1;
         break;
       }
     }
+    if (return_flag != 0) break;
   }
+
 
   /**-------------------------------------------------------------------------
    * TEARDOWN
@@ -104,8 +110,6 @@ int main() {
    *--------------------------------------------------------------------------
    */
    delete test_config;
-    
-
 
 #ifdef HAVE_MPI
   MPI_Finalize();

@@ -4508,10 +4508,6 @@ public:
  * \version 5.0.0 "Raven"
  */
 class CSourcePieceWise_HybridConv : public CNumerics {
-private:
-  bool incompressible;
-  bool rotating_frame;
-  bool transition;
 public:
 
   /*!
