@@ -11205,7 +11205,9 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
           /*--- retrieve outlet information ---*/
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
-            pitchIn         = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
+            if (iSpan < nSpanWiseSections){
+              pitchIn       = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
+            }
             areaOut         = SpanArea[iMarker][iSpan];
             tangGridVelOut  = AverageTangGridVel[iMarker][iSpan];
             radiusOut       = TurboRadius[iMarker][iSpan];

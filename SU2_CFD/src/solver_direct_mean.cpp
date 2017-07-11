@@ -5442,7 +5442,10 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
   su2double RefLengthMoment = config->GetRefLengthMoment();
   su2double Gas_Constant    = config->GetGas_ConstantND();
-  su2double *Origin         = config->GetRefOriginMoment(0);
+  su2double *Origin;
+  if (config->GetnMarker_Monitoring() != 0){
+    Origin = config->GetRefOriginMoment(0);
+  }
   bool grid_movement        = config->GetGrid_Movement();
   bool axisymmetric         = config->GetAxisymmetric();
 
@@ -5812,7 +5815,10 @@ MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
   su2double RefAreaCoeff     = config->GetRefAreaCoeff();
   su2double RefLengthMoment  = config->GetRefLengthMoment();
   su2double Gas_Constant     = config->GetGas_ConstantND();
-  su2double *Origin          = config->GetRefOriginMoment(0);
+  su2double *Origin;
+  if (config->GetnMarker_Monitoring() != 0){
+    Origin = config->GetRefOriginMoment(0);
+  }
   bool grid_movement         = config->GetGrid_Movement();
   bool axisymmetric          = config->GetAxisymmetric();
 
@@ -17541,7 +17547,10 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
   su2double RefLengthMoment = config->GetRefLengthMoment();
   su2double Gas_Constant    = config->GetGas_ConstantND();
-  su2double *Origin         = config->GetRefOriginMoment(0);
+  su2double *Origin;
+  if (config->GetnMarker_Monitoring() != 0){
+    Origin = config->GetRefOriginMoment(0);
+  }
   bool grid_movement        = config->GetGrid_Movement();
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
   bool axisymmetric         = config->GetAxisymmetric();
@@ -17640,7 +17649,6 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         for (iDim = 0; iDim < nDim; iDim++) {
           UnitNormal[iDim] = Normal[iDim]/Area;
-          MomentDist[iDim] = Coord[iDim] - Origin[iDim];
         }
         
         /*--- Evaluate Tau ---*/
@@ -17710,6 +17718,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           for (iDim = 0; iDim < nDim; iDim++) {
             Force[iDim] = TauElem[iDim] * Area * factor * AxiFactor;
             ForceViscous[iDim] += Force[iDim];
+            MomentDist[iDim] = Coord[iDim] - Origin[iDim];
           }
           
           /*--- Moment with respect to the reference axis ---*/
