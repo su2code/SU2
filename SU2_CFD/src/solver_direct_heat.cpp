@@ -973,6 +973,16 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
   laminar_viscosity = config->GetViscosity_FreeStreamND();
   rho_cp = rho_cp = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
 
+  if ((InterfaceOutputCounter == InterfaceOutputNext) && (flow) ) {
+
+    strcpy(cstr, FluidInterfaceFileName.data());
+    FluidInterfaceData_file.open(cstr, ios::out | std::ios::trunc);
+    FluidInterfaceData_file.precision(15);
+    FluidInterfaceData_file << "TITLE = \"Temperature interface data of fluid zone\"" << endl << "VARIABLES = " << "\"x\",\"y\",\"Interface_Temperature\"" << endl;
+    FluidInterfaceData_file.flush();
+  }
+  char interface_data[1000];
+
   if(flow) {
 
     //cout << "                             TFFB Interface report for fluid zone - ";
@@ -1033,6 +1043,11 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
             LinSysRes.SubtractBlock(iPoint, Res_Visc);
             Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
+            if(nDim == 2 && CurrentMesh == MESH_0 && InterfaceOutputCounter == InterfaceOutputNext) {
+              SPRINTF(interface_data,"%14.8e, %14.8e, %14.8e",Coord_i[0],Coord_i[1],Twall);
+              FluidInterfaceData_file << interface_data << endl;
+              FluidInterfaceData_file.flush();
+            }
           }
         }
         //cout << "max. Heat Flux Density: " << maxHeatFluxDensity << ", max. Temperature (used to compute heat fluxes): " << maxTemperature <<  endl;
@@ -1082,6 +1097,9 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
     }
     //cout << "Heat Flux (to check): " << HeatFluxIntegral << endl;
   }
+  FluidInterfaceData_file.close();
+  if (InterfaceOutputCounter == InterfaceOutputNext) InterfaceOutputNext+=10;
+  InterfaceOutputCounter+=1;
 }
 
 
