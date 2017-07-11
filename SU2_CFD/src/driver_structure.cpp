@@ -2670,7 +2670,7 @@ void CDriver::TurbomachineryPreprocessing(){
 #endif
 
   /*--- Create turbovertex structure ---*/
-  if (rank == MASTER_NODE) cout<<endl<<"Initiliaze Turbo Vertex Structure." << endl;
+  if (rank == MASTER_NODE) cout<<endl<<"Initialize Turbo Vertex Structure." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config_container[iZone]->GetBoolTurbomachinery()){
       geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
@@ -4554,24 +4554,6 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
 
   if (rank == MASTER_NODE){
     SetTurboPerformance(ZONE_0);
-  }
-  /*--- Print residuals in the first iteration ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    if ((rank == MASTER_NODE) && ((config_container[iZone]->GetExtIter() == 0) || (unsteady))){
-      cout << "Convergence of direct solver for Zone " << iZone << ": " << endl;
-
-      cout << "  log10[RMS Density]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-           <<", Entropy Generation: " << output->GetEntropyGen(config_container[iZone]->GetnMarker_Turbomachinery() -1, config_container[ZONE_0]->GetnSpan_iZones(config_container[iZone]->GetnMarker_Turbomachinery() -1)) << endl;
-
-      if (config_container[iZone]->GetKind_Turb_Model() != NONE){
-        cout << "  log10[RMS k]:       " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
-        if (config_container[iZone]->GetKind_Turb_Model() == SST){
-          cout << "  log10[RMS omega]:   " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(1)) << endl;
-        }
-      }
-    }
   }
 
 }
