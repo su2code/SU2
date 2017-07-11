@@ -90,11 +90,7 @@ class CMPIWrapper {
 public:
   static void Init(int *argc, char***argv);
 
-#ifdef CODI_REVERSE_TYPE
   static inline MPI_Request* convertRequest(SU2_MPI_Request* request);
-#else
-  static inline MPI_Request* convertRequest(SU2_MPI_Request* request);
-#endif
 
   static void Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count);
 

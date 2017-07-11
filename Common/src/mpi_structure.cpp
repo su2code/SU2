@@ -516,9 +516,5 @@ void CAuxMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatype,
 #ifdef CODI_REVERSE_TYPE
 AMPI_ADOUBLE_TYPE* AMPI_ADOUBLE;
 #include <medi/medi.cpp>
-
-void MPIErrorHandler::convertToException( MPI_Comm *comm, int *err, ... ) {
-  throw Exception(std::string("MPI Error."));
-}
 #endif
 #endif
