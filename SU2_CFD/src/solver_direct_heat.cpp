@@ -973,7 +973,7 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
   laminar_viscosity = config->GetViscosity_FreeStreamND();
   rho_cp = rho_cp = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
 
-  if ((InterfaceOutputCounter == InterfaceOutputNext) && (flow) ) {
+  if ((InterfaceOutputCounter == InterfaceOutputNext) && (flow) && CurrentMesh == MESH_0) {
 
     strcpy(cstr, FluidInterfaceFileName.data());
     FluidInterfaceData_file.open(cstr, ios::out | std::ios::trunc);
@@ -1098,7 +1098,7 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
     //cout << "Heat Flux (to check): " << HeatFluxIntegral << endl;
   }
   FluidInterfaceData_file.close();
-  if (InterfaceOutputCounter == InterfaceOutputNext) InterfaceOutputNext+=10;
+  if (InterfaceOutputCounter == InterfaceOutputNext) InterfaceOutputNext+=100;
   InterfaceOutputCounter+=1;
 }
 
