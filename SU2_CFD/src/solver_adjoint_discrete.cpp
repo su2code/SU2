@@ -4,8 +4,8 @@
  * \author T. Albring
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -328,10 +328,13 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       ObjFunc_Value = direct_solver->GetOneD_TotalPress();
       break;
     case AVG_OUTLET_PRESSURE:
-      ObjFunc_Value = direct_solver->GetOneD_FluxAvgPress();
+      ObjFunc_Value = direct_solver->GetOneD_AvgPress();
       break;
     case MASS_FLOW_RATE:
       ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
+      break;
+    case CUSTOM_OBJFUNC:
+      ObjFunc_Value = direct_solver->GetTotal_Custom_ObjFunc();
       break;
     }
 
@@ -678,7 +681,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[0] + skipVars;
+      index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
