@@ -5,8 +5,8 @@
 #  \author F. Palacios, T. Economon, T. Lukaczyk
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -105,10 +105,6 @@ def discrete_adjoint( filename           ,
         SU2.io.restart2solution(config,state)
     
     # Adjoint Solution
-
-    # If using chain rule update coefficients using gradients as defined in downstream_function (local file)
-    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:
-        raise Exception('Generalized outflow functionals not implemented for discrete adjoint.')
 
     # Run all-at-once 
     if compute:

@@ -5,8 +5,8 @@
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -135,7 +135,7 @@ def main():
     # test continuous_adjoint.py, with multiple objectives
     discadj_multi_py            = TestCase('discadj_multi_py')
     discadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
-    discadj_multi_py.cfg_file   = "inv_wedge_ROE_disc_multiobj.cfg"
+    discadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
     discadj_multi_py.test_iter  = 10
     discadj_multi_py.su2_exec   = "discrete_adjoint.py"
     discadj_multi_py.timeout    = 1600

@@ -5,8 +5,8 @@
 #  \author T. Lukaczyk, F. Palacios
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -81,6 +81,7 @@ def function( func_name, config, state=None ):
     
     # check for multiple objectives
     multi_objective = (type(func_name)==list)
+
     # func_name_string is only used to check whether the function has already been evaluated. 
     func_name_string = func_name
     if multi_objective:   func_name_string = func_name[0]  
@@ -96,6 +97,10 @@ def function( func_name, config, state=None ):
         elif func_name in su2io.optnames_stab:
             stability( config, state )
         
+        # Multipoint
+        elif func_name in su2io.optnames_multi:
+          multipoint( config, state )
+
         # Geometry
         elif func_name in su2io.optnames_geo:
             geometry( func_name, config, state )
@@ -110,15 +115,17 @@ def function( func_name, config, state=None ):
         func_out = state['FUNCTIONS']
     elif (multi_objective):
         # If combine_objective is true, use the 'combo' output.
-        objectives=config.OPT_OBJECTIVE
-        func_out = 0.0
-        for func in func_name:
-            sign = su2io.get_objectiveSign(func)
-            func_out+=state['FUNCTIONS'][func]*objectives[func]['SCALE']*sign
-        state['FUNCTIONS']['COMBO'] = func_out
+        func_out = state['FUNCTIONS']['COMBO']
     else:
         func_out = state['FUNCTIONS'][func_name]
-        
+
+    if config['OPT_OBJECTIVE'].has_key(func_name_string):
+        marker = config['OPT_OBJECTIVE'][func_name_string]['MARKER']
+        if su2io.per_surface_map.has_key(func_name_string):
+            name = su2io.per_surface_map[func_name_string]+'_'+marker
+            if state['FUNCTIONS'].has_key(name):
+                func_out = state['FUNCTIONS'][name]
+
     
     return copy.deepcopy(func_out)
 
@@ -260,16 +267,13 @@ def aerodynamics( config, state=None ):
                 push.append(info.FILES['TARGET_HEATFLUX'])
                 
     #: with output redirection
+    su2io.update_persurface(config,state)
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_aero + su2io.grad_names_directdiff:
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
             
-    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:    
-        import downstream_function
-        state['FUNCTIONS']['OUTFLOW_GENERALIZED']=downstream_function.downstream_function(config,state)
-
     return funcs
 
 #: def aerodynamics()
@@ -361,7 +365,7 @@ def stability( config, state=None, step=1e-2 ):
             ztate  = copy.deepcopy(state)
             
             # TODO: GENERALIZE
-            konfig.AoA = konfig.AoA + step
+            konfig.AOA = konfig.AOA + step
             ztate.FUNCTIONS.clear()
             
             func_1 = aerodynamics(konfig,ztate)
@@ -398,10 +402,166 @@ def stability( config, state=None, step=1e-2 ):
             funcs[key] = state['FUNCTIONS'][key]    
     
     return funcs
+
+
+# ----------------------------------------------------------------------
+#  Multipoint Functions
+# ----------------------------------------------------------------------
+
+def multipoint( config, state=None, step=1e-2 ):
+
+    mach_list = config['MULTIPOINT_MACH_NUMBER'].replace("(", "").replace(")", "").split(',')
+    reynolds_list = config['MULTIPOINT_REYNOLDS_NUMBER'].replace("(", "").replace(")", "").split(',')
+    freestream_temp_list = config['MULTIPOINT_FREESTREAM_TEMPERATURE'].replace("(", "").replace(")", "").split(',')
+    freestream_press_list = config['MULTIPOINT_FREESTREAM_PRESSURE'].replace("(", "").replace(")", "").split(',')
+    aoa_list = config['MULTIPOINT_AOA'].replace("(", "").replace(")", "").split(',')
+    sideslip_list = config['MULTIPOINT_SIDESLIP_ANGLE'].replace("(", "").replace(")", "").split(',')
+    target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
+    weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
+
+    func = []
+    folder = []
+    for i in range(len(weight_list)):
+      func.append(0)
+      folder.append(0)
+
+    for i in range(len(weight_list)):
+      folder[i] = 'MULTIPOINT_' + str(i)
+
+    # ----------------------------------------------------
+    #  Initialize
+    # ----------------------------------------------------
     
+    # initialize
+    state = su2io.State(state)
+    if not state.FILES.has_key('MESH'):
+      state.FILES.MESH = config['MESH_FILENAME']
+    special_cases = su2io.get_specialCases(config)
     
+    # console output
+    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+      log_direct = 'log_Direct.out'
+    else:
+      log_direct = None
+
+    # ----------------------------------------------------
+    #  Update Mesh
+    # ----------------------------------------------------
+
+    # does decomposition and deformation
+    info = update_mesh(config,state)
+  
+    # ----------------------------------------------------
+    #  FIRST POINT
+    # ----------------------------------------------------
+  
+    # will run in DIRECT/
+
+    config.AOA = aoa_list[0]
+    config.SIDESLIP_ANGLE = sideslip_list[0]
+    config.MACH_NUMBER = mach_list[0]
+    config.REYNOLDS_NUMBER = reynolds_list[0]
+    config.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
+    config.FREESTREAM_PRESSURE = freestream_press_list[0]
+    config.TARGET_CL = target_cl_list[0]
+
+    func[0] = aerodynamics(config,state)
+
+    src = os.getcwd()
+    src = os.path.abspath(src).rstrip('/')+'/DIRECT/'
+
+    # files to pull
+    files = state.FILES
+    pull = []; link = []
     
+    # files: mesh
+    name = files['MESH']
+    name = su2io.expand_part(name,config)
+    link.extend(name)
     
+    # files: direct solution
+    if files.has_key('DIRECT'):
+      name = files['DIRECT']
+      name = su2io.expand_time(name,config)
+      link.extend( name )
+    else:
+      config['RESTART_SOL'] = 'NO'
+    
+    # files: target equivarea distribution
+    if ( 'EQUIV_AREA' in special_cases and
+        'TARGET_EA' in files ) :
+      pull.append( files['TARGET_EA'] )
+
+    # files: target pressure distribution
+    if ( 'INV_DESIGN_CP' in special_cases and
+        'TARGET_CP' in files ) :
+      pull.append( files['TARGET_CP'] )
+    
+    # files: target heat flux distribution
+    if ( 'INV_DESIGN_HEATFLUX' in special_cases and
+        'TARGET_HEATFLUX' in files ) :
+      pull.append( files['TARGET_HEATFLUX'] )
+
+    # pull needed files, start folder_0
+    with redirect_folder( folder[0], pull, link ) as push:
+      with redirect_output(log_direct):
+
+        konfig = copy.deepcopy(config)
+        ztate  = copy.deepcopy(state)
+
+        dst = os.getcwd()
+        dst = os.path.abspath(dst).rstrip('/')+'/'
+
+        # make unix link
+        string = "ln -s " + src + " " + dst
+        os.system(string)
+
+    for i in range(len(weight_list)-1):
+
+      # pull needed files, start folder_1
+      with redirect_folder( folder[i+1], pull, link ) as push:
+        with redirect_output(log_direct):
+          
+          konfig = copy.deepcopy(config)
+          ztate  = copy.deepcopy(state)
+
+          konfig.AOA = aoa_list[i+1]
+          konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
+          konfig.MACH_NUMBER = mach_list[i+1]
+          konfig.REYNOLDS_NUMBER = reynolds_list[i+1]
+          konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[i+1]
+          konfig.FREESTREAM_PRESSURE = freestream_press_list[i+1]
+          konfig.TARGET_CL = target_cl_list[i+1]
+          ztate.FUNCTIONS.clear()
+            
+          func[i+1] = aerodynamics(konfig,ztate)
+      
+    # ----------------------------------------------------
+    #  WEIGHT FUNCTIONS
+    # ----------------------------------------------------
+        
+    for derv_name in su2io.optnames_multi:
+        
+      matches = [ k for k in su2io.optnames_aero if k in derv_name ]
+      if not len(matches) == 1: continue
+      func_name = matches[0]
+        
+      obj_func = 0.0
+      for i in range(len(weight_list)):
+        obj_func = obj_func + float(weight_list[i])*func[i][func_name]
+        
+      state.FUNCTIONS[derv_name] = obj_func
+
+
+    # return output
+    funcs = su2util.ordered_bunch()
+    for key in su2io.optnames_multi:
+      if state['FUNCTIONS'].has_key(key):
+        funcs[key] = state['FUNCTIONS'][key]
+    
+    return funcs
+
+
 # ----------------------------------------------------------------------
 #  Geometric Functions
 # ----------------------------------------------------------------------
