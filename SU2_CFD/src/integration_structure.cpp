@@ -456,7 +456,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     
     bool Already_Converged = Convergence;
     
-    /*--- Cauchi based convergence criteria ---*/
+    /*--- Cauchy based convergence criteria ---*/
     
     if (config->GetConvCriteria() == CAUCHY) {
       
@@ -568,7 +568,6 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   }
   
 }
-
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
