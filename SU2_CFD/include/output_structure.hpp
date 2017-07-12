@@ -126,8 +126,11 @@ class COutput {
   unsigned short wrote_base_file;
   su2double RhoRes_New, RhoRes_Old;
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
-  su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
 
+  su2double Ave_Total_IDR, Ave_Total_IDC; // Average distortion values
+  unsigned short iCounter, iCounter_Total_IDR, iCounter_Total_IDC; // Index used in the local serie counter.
+  unsigned short nCounter_Total_IDR, nCounter_Total_IDC; // Total number of elements in the serie.
+  su2double Serie_Total_IDR[100], Serie_Total_IDC[100]; // Serie that stores the elements.
   
 protected:
 
@@ -409,12 +412,28 @@ public:
   void SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+   * \brief Write the nodal coordinates and connectivity to a Tecplot ASCII mesh file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+  void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a stl ASCII mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetSTL_MeshASCII(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetCSV_MeshASCII(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Write the solution data and connectivity to a Tecplot ASCII mesh file in parallel.
