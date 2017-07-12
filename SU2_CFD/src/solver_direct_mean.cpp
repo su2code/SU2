@@ -10721,7 +10721,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
       
       /*--- Build the external state u_e from boundary data and internal node ---*/
-      
       switch(config->GetKind_Data_Riemann(Marker_Tag))
       {
       case TOTAL_CONDITIONS_PT:
@@ -11348,6 +11347,21 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
             break;
 
+          case SUPERSONIC_OUTFLOW:
+
+                Pressure_e = Pressure_i;
+                Density_e = Density_i;
+
+                /*--- Compute the boundary state u_e ---*/
+                FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+                Velocity2_e = 0.0;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                  Velocity_e[iDim] = Velocity_i[iDim];
+                  Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+                }
+                Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+
+                break;
 
           case RADIAL_EQUILIBRIUM:
 
@@ -11416,6 +11430,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         }
 
         /*--- Compute the boundary state u_b using characteristics ---*/
+        if (config->GetKind_Data_Riemann(Marker_Tag) != SUPERSONIC_OUTFLOW) {
         for (iVar = 0; iVar < nVar; iVar++)
         {
           u_b[iVar] = u_i[iVar];
@@ -11429,7 +11444,10 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             }
           }
         }
-
+        } else {
+      	  for (iVar = 0; iVar < nVar; iVar++)
+      	          u_b[iVar] = u_i[iVar];
+        }
 
         /*--- Compute the thermodynamic state in u_b ---*/
         Density_b = u_b[0];
