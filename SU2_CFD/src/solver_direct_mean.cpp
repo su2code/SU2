@@ -12913,7 +12913,9 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
         if (geometry->node[iPoint]->GetDomain()) {
 
@@ -12927,8 +12929,6 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
           for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
-
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             for (iVar = 0; iVar < nPrimVar; iVar++) {
               PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
