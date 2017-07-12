@@ -987,17 +987,17 @@ def main():
     pass_list.append(contadj_euler_py.run_filediff())
     test_list.append(contadj_euler_py)
 
-    # test finite_difference.py
-    findiff_euler_py = TestCase('findiff_euler_py')
-    findiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
-    findiff_euler_py.cfg_file  = "inv_NACA0012_FD.cfg"
-    findiff_euler_py.test_iter = 10
-    findiff_euler_py.su2_exec  = "finite_differences.py"
-    findiff_euler_py.timeout   = 1600
-    findiff_euler_py.reference_file = "of_grad_findiff.dat.ref"
-    findiff_euler_py.test_file = "FINDIFF/of_grad_findiff.dat"
-    pass_list.append(findiff_euler_py.run_filediff())
-    test_list.append(findiff_euler_py)
+#    # test finite_difference.py
+#    findiff_euler_py = TestCase('findiff_euler_py')
+#    findiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
+#    findiff_euler_py.cfg_file  = "inv_NACA0012_FD.cfg"
+#    findiff_euler_py.test_iter = 10
+#    findiff_euler_py.su2_exec  = "finite_differences.py"
+#    findiff_euler_py.timeout   = 1600
+#    findiff_euler_py.reference_file = "of_grad_findiff.dat.ref"
+#    findiff_euler_py.test_file = "FINDIFF/of_grad_findiff.dat"
+#    pass_list.append(findiff_euler_py.run_filediff())
+#    test_list.append(findiff_euler_py)
     
     # test shape_optimization.py
     shape_opt_euler_py           = TestCase('shape_opt_euler_py')
