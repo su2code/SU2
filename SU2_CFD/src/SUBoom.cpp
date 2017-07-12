@@ -105,25 +105,37 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   /*---Walk through neighbors to determine all points containing line---*/
   if(rank == MASTER_NODE)
     cout << "Extract line." << endl;
+  cout << "Rank " << rank << " before extract line." << endl;
   for(int i = 0; i < ray_N_phi; i++){
     if(startline[i]){
+      cout << "Rank " << rank << " contains line." << endl;
       ExtractLine(geometry, ray_r0, ray_phi, ray_N_phi);
+      cout << "nPanel[" << rank << "] = " << nPanel << endl;
+    }
+    else{
+      nPanel = 0;
     }
   }
 
   /*---Interpolate pressures along line---*/
   if(rank == MASTER_NODE)
     cout << "Extract pressure signature." << endl;
+  cout << "Rank " << rank << " before extract pressure" << endl;
   for(int i = 0; i < ray_N_phi; i++){
     if(startline[i]){
+      cout << "Rank " << rank << " beginning pressure extraction." << endl;
       ExtractPressure(solver, config, geometry);
     }
   }
+
+  cout << "Rank " << rank << " after pressure extraction." << endl;
 
   unsigned long iPanel;
   for(iPanel = 0; iPanel < nPanel; iPanel++){
     signal.original_p[iPanel] = signal.original_p[iPanel]*Pressure_Ref - Pressure_FreeStream;
   }
+
+  cout << "Rank " << rank << " after modifying signal.original_p with reference pressure." << endl;
 
   unsigned long totSig = 0;
   unsigned long maxSig = 0;
@@ -585,6 +597,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
         }
         if(inside) break;
       }
+      if(!inside) startline[0] = false;
     }
   }
 

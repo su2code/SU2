@@ -576,6 +576,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
          }
     }
     }
+    // Boom
     else if(config->GetKind_ObjFunc()==BOOM){
     if (LocalPointIndex[iPoint] >= 0){
         for (iVar = 0; iVar < nVar; iVar++){
