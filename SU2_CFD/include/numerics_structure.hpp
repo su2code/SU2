@@ -1442,9 +1442,11 @@ public:
    * additional routines from CNucleationModel
    */
 
-  su2double  GetNucleation_Rate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double CpoCv, su2double *V_Liquid);
+  su2double  GetNucleation_Rate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu,
+		  su2double CpoCv, su2double HeatCapP, su2double *V_Liquid);
 
-  su2double  GetGrowth_Rate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double CpoCv, su2double *V_Liquid);
+  su2double  GetGrowth_Rate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double CpoCv,
+		  su2double HeatCapP, su2double *V_Liquid);
 
 
   virtual void       ComputeResidual_HeatMassTransfer(su2double S, su2double h, su2double Y, su2double *Residual, su2double **Jacobian_i);

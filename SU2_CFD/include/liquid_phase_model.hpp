@@ -62,7 +62,9 @@ class CLiquidModel {
 protected:
 
 	su2double rho_l, rho_m, h_l, dGibbs, Tsat, Psat, y, R, T_l, sigma, Rc;
-	su2double Tstar, Gas_Constant;
+	su2double Tstar, Gas_Constant, Pstar, Fluid;
+
+	su2double Ptriple, Ttriple;
 
 CConfig *config;
 
@@ -133,7 +135,9 @@ public:
 
     void SetRadius(su2double *Two_Phase_Var);
 
-    void SetRCritical (su2double P, su2double T);
+    virtual void SetRCritical (su2double P, su2double T);
+
+    virtual void  SetRCritical (su2double h_v, su2double h_l, su2double T);
 
     void SetDensity_Mixture (su2double rho, su2double mom3);
 
@@ -188,6 +192,8 @@ public:
 
   void SetLiquidDensity();
 
+  void SetRCritical (su2double P, su2double T);
+
   void SetTLiquid( su2double T, su2double Rcritical, su2double Rdroplet);
 
   void SetLiquidEnthalpy(su2double h_v);
@@ -201,8 +207,9 @@ public:
 class CCO2 : public CLiquidModel {
 protected:
 
-  su2double *Ei;
+  su2double *Ei, *ac, *tc, *as, *ts, MolMass;
   unsigned short i;
+
 
 public:
 
@@ -224,6 +231,10 @@ public:
   void SetTsat(su2double P);
 
   void SetPsat (su2double T);
+
+  void SetRCritical(su2double P, su2double rho);
+
+  void SetRCritical (su2double h_v, su2double h_l, su2double T);
 
   void SetLiquidDensity();
 

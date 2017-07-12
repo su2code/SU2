@@ -673,6 +673,8 @@ inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel
 
 inline su2double* CConfig::GetCoeff_HeatCapacity(void) { return Coeff_HeatCapacity; }
 
+inline su2double  CConfig::GetMolecular_Mass(void) { return Molecular_Mass; }
+
 inline bool           CConfig::Get_ConstantGamma(void) { return Constant_Gamma; }
 
 inline bool           CConfig::Get_AutoReset_NegativeSol(void) { return AutoReset_NegativeSol; }

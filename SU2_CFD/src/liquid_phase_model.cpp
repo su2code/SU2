@@ -50,6 +50,7 @@ CLiquidModel::CLiquidModel(CConfig *config) {
 
   Gas_Constant = config->GetGas_Constant();
   Tstar = config->GetTemperature_Critical();
+  Fluid = config->GetKind_Liquid_Model();
 
 }
 
@@ -74,7 +75,11 @@ void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2do
 
 		SetLiquidEnthalpy(h_v);
 
-		SetRCritical(P, T);
+		if (Fluid == WATER)
+			SetRCritical(P, T);
+		else
+//			SetRCritical(P, T);
+			SetRCritical(h_v-h_l, P, T);
 
 		//Rc = min(Rc, Rdroplet);
 
@@ -87,27 +92,12 @@ void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2do
 		Rc = 0;
 		h_l = h_v;
 		rho_m = rho;
-		Rdroplet = 0;
 
 	}
 
-}
-
-void CLiquidModel::SetRCritical(su2double P, su2double T) {
-
-    if (Psat < P) {
-		dGibbs = T * Gas_Constant * log(P/Psat);
-		Rc = 2.0*sigma / (rho_l * dGibbs);
-    }
-
-/*    if (Tsat > T) {
-		dGibbs = P * (Tsat - T) / Tsat;
-		Rc = 2.0*sigma / (rho_l * dGibbs);
-    }
-*/
-    else { Rc = 0.0;}
 
 }
+
 
 void CLiquidModel::SetDensity_Mixture(su2double rho, su2double mom3) {
 
@@ -159,6 +149,9 @@ CWater::CWater(CConfig *config) : CLiquidModel(config) {
     Gas_Constant = config->GetGas_Constant();
     Tstar = config->GetTemperature_Critical();
 
+    Ptriple = 611;
+    Ttriple = 273.15;
+
 }
 
 
@@ -184,6 +177,13 @@ void CWater::SetTsat(su2double P) {
 
     Tsat =  Tsat * 0.5;
 
+/*	if (P < Ptriple) {
+		cout << "Warning: Pressure lower than triple point" << endl;
+		cout << "Saturation conditions are not reliable" << endl;
+	}
+*/
+
+
 }
 
 void CWater::SetPsat(su2double T) {
@@ -203,6 +203,24 @@ void CWater::SetPsat(su2double T) {
 
 }
 
+void CWater::SetRCritical(su2double P, su2double T) {
+
+    if (Psat < P) {
+
+		dGibbs = T * Gas_Constant * log(P/Psat);
+		Rc = 2.0*sigma / (rho_l * dGibbs);
+    }
+    else { Rc = 0.0;}
+
+ /*   if (Tsat > T) {
+		dGibbs = P * (Tsat - T) / Tsat;
+		Rc = 2.0*sigma / (rho_l * dGibbs);
+   }
+*/
+
+
+}
+
 void CWater::SetSurfaceTension(su2double T, su2double Rdroplet) {
 
     su2double  T_limited = min(T, Tstar);
@@ -210,15 +228,6 @@ void CWater::SetSurfaceTension(su2double T, su2double Rdroplet) {
 	sigma =  1.0 - T/Tstar;
 	sigma =  235.8e-3 * (0.375 + 0.625*(1.0-sigma)) * pow(sigma,1.256);
 
-    /*if (T < 373.15) sigma = 0.122 -0.17e-3*T;
-    else sigma = 0.138- 0.212e-3 * T;
-
-
-	sigma = sigma*0.87;
-    */
-
-
-	//if (Rdroplet > 0) sigma = sigma / (1 + 2e-10/Rdroplet);
 
 
 }
@@ -246,12 +255,17 @@ void CWater::SetLiquidEnthalpy(su2double h_v) {
 		h_l = h_l + coeff_latent_heat[2]*pow((T_l/Tstar), 2) +
 					coeff_latent_heat[3]*pow((T_l/Tstar), 3);
 		h_l = h_v - h_l;
+
 }
 
 
 CCO2::CCO2(CConfig *config) : CLiquidModel(config) {
 
 	Ei = new su2double [8];
+	ac = new su2double [4];
+	tc = new su2double [4];
+	as = new su2double [3];
+    ts = new su2double [3];
 
     Ei[0] =  0.9287838;
     Ei[1] = -0.5910856e-2;
@@ -262,8 +276,32 @@ CCO2::CCO2(CConfig *config) : CLiquidModel(config) {
     Ei[6] = -0.6854221e-11;
     Ei[7] = -0.3503978e-13;
 
+    ac[0] = -7.0602087;
+    ac[1] =  1.9391218;
+    ac[2] = -1.6463597;
+    ac[3] = -3.2995634;
+
+    tc[0] =  1.0;
+    tc[1] =  1.5;
+    tc[2] =  2.0;
+    tc[3] =  4.0;
+
+    as[0] = -14.740846;
+    as[1] =  2.4327015;
+    as[2] = -5.3061778;
+
+    ts[0] =  1.0;
+    ts[1] =  1.9;
+    ts[2] =  2.9;
+
     Gas_Constant = config->GetGas_Constant();
     Tstar = config->GetTemperature_Critical();
+    Pstar = config->GetPressure_Critical();
+
+    MolMass   = config->GetMolecular_Mass() * 1.66054e-27;
+
+    Ptriple = 5.12e5;
+    Ttriple = 216.57;
 
 }
 
@@ -272,7 +310,10 @@ CCO2::CCO2(CConfig *config) : CLiquidModel(config) {
 CCO2::~CCO2(void) {
 
 	delete [] Ei;
-
+    delete [] ac;
+    delete [] tc;
+    delete [] as;
+    delete [] ts;
 }
 
 
@@ -280,18 +321,118 @@ void CCO2::SetTsat(su2double P) {
 
 	su2double P_limited;
 
-	P_limited = P/1e5;
-	Tsat = -6E-06 * pow(P_limited, 4)  + 0.0013 * pow(P_limited,3)
-	       -0.0981 * pow(P_limited,2) + 4.2985 * P_limited + 198.22;
+	P_limited = P/Pstar;
 
+	if (P > Pstar)
+		Tsat = 0; //outside two phase region
+	else {
+
+		Tsat = -6.2185E-01 * pow(P_limited, 4)  + 1.6817 * pow(P_limited,3)
+		- 1.7566 * pow(P_limited,2) + 1.0431 * P_limited + 6.5160E-01;
+
+		Tsat = Tsat*Tstar;
+
+		if (P < Ptriple) {
+			cout << "Warning: Pressure lower than triple point" << endl;
+			cout << "Saturation conditions are not reliable" << endl;
+		}
+	}
 }
 
 void CCO2::SetPsat(su2double T) {
 
-	su2double  T_limited = T;
+	su2double  T_limited;
 
-	Psat = 4E-05 * pow(T_limited,3) -0.0213 * pow(T_limited,2) + 4.1933 * T_limited - 284.83;
-	Psat = Psat * 1e5;
+	if (T > Tstar)
+		Psat = 0; //outside two phase region
+
+	else if (T < Tstar && T > Ttriple) {
+
+		T_limited = T/Tstar;
+		Psat = 0.0;
+		for (i=0 ; i<4 ; i++) Psat += ac[i] * pow((1- T_limited), tc[i]);
+
+		Psat = Psat / T_limited;
+		Psat = exp(Psat) * Pstar;
+
+	} else {
+
+		T_limited = T/Ttriple;
+
+		Psat = 0.0;
+		for (i=0 ;i<3; i++) Psat += as[i] * pow((1- T_limited), ts[i]);
+
+		Psat = Psat / T_limited;
+		Psat = exp(Psat) * Ptriple;
+
+	}
+
+}
+
+void CCO2::SetRCritical(su2double dh, su2double P, su2double T) {
+
+
+	su2double dG, dGsat;
+
+	if (Psat < P) {
+		dGibbs = T * Gas_Constant * log(P/Psat);
+		Rc = sigma / (rho_l * dGibbs);
+		Rc = Rc * (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
+		Rc = max(Rc, 0.0);
+
+	} else
+		Rc = 0;
+
+/*	if (Psat < P) {
+		dGibbs = T * Gas_Constant * log(P/Psat);
+		Rc = sigma / (rho_l * dGibbs);
+		Rc = Rc * (1 + sqrt( pow(MolMass/36/3.1415/rho_l, 1.0/3.0)*dGibbs*rho_l/sigma ));
+		Rc = max(Rc, 0.0);
+
+	} else
+		Rc = 0;
+*/
+
+
+/*    if (Tsat > T) {
+		dGibbs = (dh) * (Tsat - T) / Tsat;
+		Rc = 2.0*sigma / (rho_l * dGibbs);
+   } else
+	    Rc = 0;
+*/
+    su2double a = 204.3918, b = 6.06e-4;
+
+//    if (Tsat > T) {
+/*		dG = -Gas_Constant*T*log(P*(1/rho - b)/Gas_Constant/T) + a/2/sqrt(2)*log( (1/rho+(1-sqrt(2))*b) / (1/rho+(1+sqrt(2))*b));
+		dG = dG + P/rho - Gas_Constant*T;
+		dG = dG + T * Gas_Constant * log(P);
+
+		dGsat = - Gas_Constant*T*log(Psat*(1/rho - b)/Gas_Constant/T) - a/2/sqrt(2)*log( (1/rho+(1-sqrt(2))*b)/(1/rho+(1+sqrt(2))*b));
+		dGsat = dGsat + Psat/rho - Gas_Constant*T;
+		dGsat = dGsat + T * Gas_Constant * log(Psat);
+*/
+/*    	dG = a/b * log(sqrt(2)-1)/2 + P/rho - Gas_Constant*T;
+    	dG = dG + T * Gas_Constant * log(P);
+
+    	dGsat = a/b * log(sqrt(2)-1)/2 + Psat/rho - Gas_Constant*T;
+    	dG = dG + T * Gas_Constant * log(Psat);
+
+		dGibbs = dG - dGsat;
+
+		Rc = abs(2.0*sigma / (rho_l * dGibbs));
+*/
+//   } else
+//	    Rc = 0;
+
+}
+
+void CCO2::SetRCritical(su2double P, su2double T) {
+
+	if (Psat < P) {
+		dGibbs = T * Gas_Constant * log(P/Psat);
+		Rc = sigma / (rho_l * dGibbs)*2;
+	} else
+		Rc = 0;
 
 }
 
@@ -299,16 +440,19 @@ void CCO2::SetSurfaceTension(su2double T, su2double Rdroplet) {
 
     su2double  T_limited = min(T, Tstar);
 
-    sigma = 1.0 - 1.0 * T_limited/Tstar;
+    sigma = 1.0 - T_limited/Tstar;
     sigma = 84.72 * pow(sigma, 1.281);
     sigma = sigma * 1.0e-3;
+
+    //if (Rdroplet > 0) sigma = sigma / (1 + 2e-10/Rdroplet);
 }
 
 void CCO2::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
 
 		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
-		else      T_l = T;
+		else T_l = Tsat;
 
+		if (T_l > Tsat) T_l = Tsat;
 }
 
 void CCO2::SetLiquidDensity() {
@@ -318,7 +462,8 @@ void CCO2::SetLiquidDensity() {
         rho_l = 0.0;
 
         for ( i=0; i< 8; i++) {
-             rho_l += 1000.0 * Ei[i] * pow(T_limited-273.15,i);
+             rho_l = rho_l + 1000.0 * Ei[i] * pow(T_limited-273.15, i);
+
         }
 
 }
@@ -327,11 +472,31 @@ void CCO2::SetLiquidEnthalpy(su2double h_v) {
 
 	su2double T_limited = T_l;
 
-	h_l = -8E-09 * pow(T_limited, 6) + 1E-05 * pow(T_limited, 5) -0.0078 * pow(T_limited, 4)
-	      + 2.6673 * pow(T_limited, 3) - 508.95 *pow(T_limited, 2) + 51679 * T_limited - 2E+06;
+//	if (T_l > Tstar) {
+//		h_l = 0;
+//	} else  {
 
-    h_l = h_l * 1e3 + 252943.0559;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
+//	    h_l = 8.9641E-06 * pow(T_limited, 4) - 9.0172E-03 * pow(T_limited, 3) + 3.3989 *pow(T_limited, 2)
+//	      - 5.6672E+02 * T_limited + 3.5023E+04;
+//	    h_l = h_l * 1e3;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
 
+
+	    h_l = -5.1612E-07 * pow(T_limited, 5) + 6.5716E-04 *pow(T_limited, 4)
+	          - 3.3400E-01 * pow(T_limited, 3) + 8.4682E+01 *pow(T_limited, 2)
+	          - 1.0710E+04 * T_limited + 5.4085E+05;
+
+	    h_l = h_v - h_l * 1000;
+
+//		if (T_l < Ttriple) {
+//
+//		    h_l = 8.9641E-06 * pow(Ttriple, 4) - 9.0172E-03 * pow(Ttriple, 3) + 3.3989 *pow(Ttriple, 2)
+//		      - 5.6672E+02 * Ttriple + 3.5023E+04;
+//		    h_l = h_l * 1e3;
+//			cout << "Warning: Temperature lower than triple point" << endl;
+//			cout << "Liquid enthalpy is not reliable" << endl;
+//		}
+//
+//	}
 
 }
 

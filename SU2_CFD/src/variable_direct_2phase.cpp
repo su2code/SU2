@@ -134,7 +134,7 @@ su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *
 
 	su2double rho_l, rho_m, T_l, h_l, Psat, Tsat, sigma, Rc, Rdroplet, mom3;
 
-	if (Two_Phase_Var[0] != 0 && Two_Phase_Var[3] != 0) Rdroplet = pow(Two_Phase_Var[3]/Two_Phase_Var[0], 1.0/3.0) * config->GetLength_Ref();
+	if (Two_Phase_Var[0] != 0 ) Rdroplet = Two_Phase_Var[1]/Two_Phase_Var[0] * config->GetLength_Ref();
 	else Rdroplet = 0;
 
     mom3 = Two_Phase_Var[3];
@@ -145,24 +145,34 @@ su2double* C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *
 	Rc   = Rcritical         * config->GetLength_Ref();
 
 	FluidModel->SetLiquidProp(P, T, rho, h, Rc, Rdroplet, mom3);
+/*
+	if (FluidModel->GetTsat() > T){
+	cout << FluidModel->GetLiquidTemperature() << " " << FluidModel->GetLiquidDensity() << " " << P << " " << T << " " << rho << endl;
+	cout << Rc << endl;
+	cout << FluidModel->GetLiquidEnthalpy() << " " << FluidModel->GetPsat() << " " << FluidModel->GetTsat() << endl;
+	cout << FluidModel->GetSurfaceTension() << " " << FluidModel->GetCriticalRadius() << " " << Rdroplet<<endl;
+	cout <<  FluidModel->GetMixtureDensity()<<endl;
+	getchar();
+	}
+	*/
+	T_l      = FluidModel->GetLiquidTemperature()/config->GetTemperature_Ref();
 
-	T_l = FluidModel->GetLiquidTemperature()/config->GetTemperature_Ref();
+	rho_l    = FluidModel->GetLiquidDensity()/config->GetDensity_Ref();
 
-	rho_l = FluidModel->GetLiquidDensity()/config->GetDensity_Ref();
+	h_l      = FluidModel->GetLiquidEnthalpy()/config->GetEnergy_Ref();
 
-	h_l = FluidModel->GetLiquidEnthalpy()/config->GetEnergy_Ref();
+	Psat     = FluidModel->GetPsat()/config->GetPressure_Ref();
 
-	Psat = FluidModel->GetPsat()/config->GetPressure_Ref();
+	Tsat     = FluidModel->GetTsat()/config->GetTemperature_Ref();
 
-	Tsat = FluidModel->GetTsat()/config->GetTemperature_Ref();
+	sigma    = FluidModel->GetSurfaceTension()/config->GetSurfTension_Ref();
 
-	sigma = FluidModel->GetSurfaceTension()/config->GetSurfTension_Ref();
-
-	Rc = FluidModel->GetCriticalRadius()/config->GetLength_Ref();
+	Rc       = FluidModel->GetCriticalRadius()/config->GetLength_Ref();
 
 	Rdroplet = Rdroplet/config->GetLength_Ref();
 
-	rho_m = FluidModel->GetMixtureDensity()/config->GetDensity_Ref();
+	rho_m    = FluidModel->GetMixtureDensity()/config->GetDensity_Ref();
+
 
 
 	Primitive_Liquid[0] = T_l;

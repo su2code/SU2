@@ -1476,9 +1476,10 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
      if (mom0 != 0.0 && mom1!=0.0 && Liquid_vec[1]!=0) {
     	 r = mom1 / mom0;
 
-    	 y = mom3*(Liquid_vec[1] - rho_v);
+    	 y = mom0*pow(r,3)*(Liquid_vec[1] - rho_v);
      	 y = y + 0.75 * rho_v / 3.1415;
      	 y = mom3*Liquid_vec[1] / y;
+
 
      	 rho_m = y/ Liquid_vec[1] + (1.0 - y)/ rho_v;
      	 rho_m = 1.0/ rho_m;

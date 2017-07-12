@@ -4368,6 +4368,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
     if (two_phase != NONE) {
     	node[iPoint]->SetLaminarViscosity(FluidModel->GetLaminarViscosity());
     	node[iPoint]->SetThermalConductivity(FluidModel->GetThermalConductivity());
+    	node[iPoint]->SetSpecificHeatCp(FluidModel->GetCp());
     }
 
 
@@ -5071,7 +5072,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     }
 
   }
-
 
 }
 

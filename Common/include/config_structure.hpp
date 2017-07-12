@@ -91,6 +91,7 @@ private:
   su2double* SubsonicEngine_Cyl; /*!< \brief Coordinates of the box subsonic region */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
   su2double* Coeff_HeatCapacity; /*!< \brief Values of the box subsonic region */
+  su2double  Molecular_Mass;    /*!<\brief mol mass of the fluid (default water 18.0 (in amu))*/
   su2double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
   su2double *DistortionRack;
   su2double *PressureLimits,
@@ -2998,9 +2999,14 @@ public:
   unsigned short GetKind_FluidModel(void);
   
   /*!
-    * \brief Fluid name for heat capacity
+    * \brief coefficients for heat capacity
     */
    su2double* GetCoeff_HeatCapacity(void);
+
+   /*!
+     * \brief molecular mass (amu)
+     */
+   su2double GetMolecular_Mass(void);
 
   /*!
     * \brief constant gamma option for polytropic gas

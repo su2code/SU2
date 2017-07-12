@@ -473,11 +473,13 @@ inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *va
                   su2double **val_Jacobian_j, su2double *val_Jacobian_muj, su2double ***val_Jacobian_gradj, CConfig *config) { }
                                    
 
- inline su2double CNumerics::GetNucleation_Rate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double CpoCv, su2double *V_Liquid) {
-        return nucleation_model->SetNucleationRate(P, T, rho, h, k, mu, CpoCv, V_Liquid);
+ inline su2double CNumerics::GetNucleation_Rate (su2double P, su2double T, su2double rho, su2double h, su2double k, 
+ su2double mu, su2double CpoCv, su2double HeatCapP, su2double *V_Liquid) {
+        return nucleation_model->SetNucleationRate(P, T, rho, h, k, mu, CpoCv, HeatCapP, V_Liquid);
 }
 
- inline su2double CNumerics::GetGrowth_Rate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double CpoCv, su2double *V_Liquid) {
-        return nucleation_model->SetGrowthRate(P, T, rho, h, k, mu, CpoCv, V_Liquid);
+ inline su2double CNumerics::GetGrowth_Rate (su2double P, su2double T, su2double rho, su2double h, su2double k, 
+ su2double mu, su2double CpoCv, su2double HeatCapP, su2double *V_Liquid) {
+        return nucleation_model->SetGrowthRate(P, T, rho, h, k, mu, CpoCv, HeatCapP, V_Liquid);
 }
 

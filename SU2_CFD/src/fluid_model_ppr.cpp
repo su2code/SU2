@@ -49,7 +49,7 @@ CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2d
 
   if (w <= 0.49)
         k = 0.37464 + 1.54226 * w - 0.26992 * w*w;
-        else
+  else
         k = 0.379642 + 1.48503 * w - 0.164423 * w*w + 0.016666 * w*w*w;
 
 
@@ -560,10 +560,11 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
     su2double DpDd_T, DpDT_d, DeDd_T, der, Temperature_new;
     su2double error = 1, toll = 1e-9;
     su2double A, B, C, sqrt2, fv, a2T, rho2, atanh;
-    unsigned int count_T = 0, ITMAX = 100;
+    unsigned int count_T = 0, ITMAX = 1000;
 
     Density = rho;
     StaticEnergy = e;
+
 
     rho2 = rho*rho;
     sqrt2=sqrt(2.0);
@@ -574,6 +575,8 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 	A = HeatCapacity->Get_Cv0();
 	B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
 	C = a*(k+1)*(k+1)*fv/(b*sqrt2) + e;
+
+
 
 	Temperature_new = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
 	Temperature_new *= Temperature_new;
@@ -597,14 +600,14 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
     if (count_T == ITMAX) {
     	cout << "Too many iterations in rho_e call" << endl;
     	cout << "Error on Temperature: " << error << endl;
+    	cout << "Density: " << rho << endl;
+    	getchar();
     }
 
     Temperature = Temperature_new;
 	HeatCapacity->Set_Cv0(Temperature);
 	Cv0 = HeatCapacity->Get_Cv0();
 	Set_Cv( Temperature, 1/rho);
-
-
 
 
     a2T = alpha2(Temperature);
@@ -623,7 +626,7 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
      	Cp = Cv + Gas_Constant;
     	Gamma = Cp/Cv;
     	Gamma_Minus_One = Gamma - 1;
-//		getchar();
+
     }
 
     if 	( Gamma < 1) {
@@ -913,6 +916,8 @@ void CPengRobinson_Generic::SetEnergy_Prho (su2double P, su2double rho) {
     StaticEnergy = T * Cv - ad;
 
 
+
+
 }
 
 void CPengRobinson_Generic::SetTDState_rhoT (su2double rho, su2double T) {
@@ -993,6 +998,7 @@ void CPengRobinson_Generic::SetGamma_Trho () {
 // Gamma call corrected
 
   su2double dPodT, dPodv, CpmCv, daT, a2T;
+
 
   daT = dalphadT(Temperature);
   a2T = alpha2(Temperature);
