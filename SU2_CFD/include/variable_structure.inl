@@ -1127,7 +1127,11 @@ inline  void      C2phaseVariable::SetRadius(su2double R)   {Radius = R;}
 
 inline  su2double C2phaseVariable::GetLiquidFraction()    {return Liquid_Fraction;}       
 
+inline  su2double C2phaseVariable::GetMixtureDensity()    {return Mixture_Density;}       
+
 inline  void      C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction = Y; }
+
+inline  void      C2phaseVariable::SetMixtureDensity(su2double rhom) {Mixture_Density = rhom; }
 
 inline su2double*  C2phaseVariable::GetLiquidPrim() {return Primitive_Liquid;}
 
@@ -1159,8 +1163,9 @@ inline su2double  CVariable::GetMassSource() { }
 
 inline su2double  CVariable::GetLiquidFraction() { } 
 
-inline su2double  CVariable::GetLiquidEnthalpy() { }   
+inline su2double  CVariable::GetMixtureDensity() { return 0;} 
 
+inline su2double  CVariable::GetLiquidEnthalpy() { }   
 
 inline su2double* CVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, su2double Rcritical, CFluidModel *FluidModel, CConfig *config) {}
 
@@ -1171,6 +1176,8 @@ inline  void      CVariable::SetLiqEnthalpy(su2double h) {}
 inline  void      CVariable::SetRadius(su2double R)   {}   
 
 inline  void      CVariable::SetLiquidFrac(su2double Y) {}
+
+inline  void      CVariable::SetMixtureDensity(su2double rhom) {}
 
 inline su2double*  CVariable::GetLiquidPrim() { return 0;}
 

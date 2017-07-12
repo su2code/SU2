@@ -15551,7 +15551,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   su2double TotalNu, TotalOmega, TotalKine, TotalMassNu, TotalMassOmega, TotalMassKine, TotalAreaNu, TotalAreaOmega, TotalAreaKine;
   su2double TotalMom0, TotalMom3, TotalAreaMom0, TotalAreaMom3, TotalMassMom0, TotalMassMom3;
   su2double Nu, Kine, Omega;
-  su2double y, *Liquid_vec, rho_v, rho_m, Mom0, Mom3;
+  su2double y, rho_v, rho_m, Mom0, Mom3;
   su2double MachTest, soundSpeed;
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
@@ -15727,24 +15727,11 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
                   Mom3 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3);
 
-                  rho_v = solver[FLOW_SOL]->node[iPoint]->GetDensity();
-                  Liquid_vec = node[iPoint]->GetLiquidPrim();
+                  y = solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction();
+                  rho_m = solver[TWO_PHASE_SOL]->node[iPoint]->GetMixtureDensity();
 
-                  if (Mom0 != 0.0 && Liquid_vec[1]!=0) {
-                    y = Mom3*(Liquid_vec[1] - rho_v);
-                    y = y + 0.75 * rho_v / 3.1415;
-                    y = Mom3*Liquid_vec[1] / y;
-
-                    rho_m = y/ Liquid_vec[1] + (1.0 - y)/ rho_v;
-                    rho_m = 1.0/ rho_m;
-
-                    Mom0 = Mom0/rho_m;
-                    Mom3 = Mom3/rho_m;
-                  }
-                  else{
-                    Mom0 = 0.0;
-                    Mom3 = 0.0;
-                  }
+                  Mom0 = Mom0/rho_m;
+                  Mom3 = Mom3/rho_m;
 
                   TotalMom0 += Mom0;
                   TotalMom3 += Mom3;
@@ -15847,26 +15834,11 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                     Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
                     Mom3 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3);
 
-                    rho_v = solver[FLOW_SOL]->node[iPoint]->GetDensity();
-                    Liquid_vec = node[iPoint]->GetLiquidPrim();
+                    y = solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction();
+                    rho_m = solver[TWO_PHASE_SOL]->node[iPoint]->GetMixtureDensity();
 
-                    if (Mom0 != 0.0 && Liquid_vec[1]!=0) {
-                      y = Mom3*(Liquid_vec[1] - rho_v);
-                      y = y + 0.75 * rho_v / 3.1415;
-                      y = Mom3*Liquid_vec[1] / y;
-
-                      rho_m = y/ Liquid_vec[1] + (1.0 - y)/ rho_v;
-                      rho_m = 1.0/ rho_m;
-
-                      Mom0 = Mom0/rho_m;
-                      Mom3 = Mom3/rho_m;
-                    }
-                    else{
-
-                      Mom0 = 0.0;
-                      Mom3 = 0.0;
-
-                    }
+                    Mom0 = Mom0/rho_m;
+                    Mom3 = Mom3/rho_m;
 
                     TotalMom0 += Mom0;
                     TotalMom3 += Mom3;

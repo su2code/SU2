@@ -58,7 +58,7 @@ protected:
   
   su2double *Solution,    /*!< \brief Solution of the problem. */
   *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
-  su2double *Primitive_Liquid, Source, Radius, Entyhalpy_Liquid, Liquid_Fraction;
+  su2double *Primitive_Liquid, Source, Radius, Entyhalpy_Liquid, Liquid_Fraction, Mixture_Density;
   bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
@@ -2048,6 +2048,8 @@ public:
 
   virtual su2double GetLiquidFraction( )         ;
 
+  virtual su2double GetMixtureDensity( )         ;
+
   virtual void      SetSource(su2double S)   ;
 
   virtual void      SetLiqEnthalpy(su2double h);
@@ -2055,6 +2057,8 @@ public:
   virtual void      SetRadius(su2double R);
 
   virtual void      SetLiquidFrac(su2double Y);
+
+  virtual void      SetMixtureDensity(su2double rhom);
 
   virtual su2double* GetLiquidPrim();
 
@@ -3724,6 +3728,8 @@ public:
 
   su2double GetLiquidFraction( )         ;
 
+  su2double GetMixtureDensity( )         ;
+
   void      SetSource(su2double S)   ;
 
   void      SetLiqEnthalpy(su2double h);
@@ -3731,6 +3737,8 @@ public:
   void      SetRadius(su2double R);
 
   void      SetLiquidFrac(su2double Y);
+
+  void      SetMixtureDensity(su2double rhom);
 
   su2double* GetLiquidPrim();
 

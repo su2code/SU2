@@ -1494,6 +1494,7 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
 	 node[iPoint]->SetLiqEnthalpy(Liquid_vec[2]);
 	 node[iPoint]->SetRadius(r);
      node[iPoint]->SetLiquidFrac(y);
+     node[iPoint]->SetMixtureDensity(rho_m);
     
   }
 
