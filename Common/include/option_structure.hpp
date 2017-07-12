@@ -1040,7 +1040,8 @@ enum ENUM_OBJECTIVE {
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
   AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
   RADIAL_DISTORTION = 36, 	      /*!< \brief Radial Distortion objective function definition. */
-  CIRCUMFERENTIAL_DISTORTION = 37  /*!< \brief Circumferential Distortion objective function definition. */
+  CIRCUMFERENTIAL_DISTORTION = 37,  /*!< \brief Circumferential Distortion objective function definition. */
+  CUSTOM_OBJFUNC = 38 	           /*!< \brief Custom objective function definition. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1075,7 +1076,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MASS_FLOW_RATE", MASS_FLOW_RATE)
 ("AERO_DRAG", AERO_DRAG_COEFFICIENT)
 ("RADIAL_DISTORTION", RADIAL_DISTORTION)
-("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION);
+("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION)
+("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC);
 
 /*!
  * \brief types of residual criteria equations

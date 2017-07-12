@@ -1824,7 +1824,31 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
-
+  
+  /* DESCRIPTION: Multipoint design Mach number*/
+  addPythonOption("MULTIPOINT_MACH_NUMBER");
+  
+  /* DESCRIPTION: Multipoint design Weight */
+  addPythonOption("MULTIPOINT_WEIGHT");
+  
+  /* DESCRIPTION: Multipoint design Angle of Attack */
+  addPythonOption("MULTIPOINT_AOA");
+  
+  /* DESCRIPTION: Multipoint design Sideslip angle */
+  addPythonOption("MULTIPOINT_SIDESLIP_ANGLE");
+  
+  /* DESCRIPTION: Multipoint design target CL*/
+  addPythonOption("MULTIPOINT_TARGET_CL");
+  
+  /* DESCRIPTION: Multipoint design Reynolds number */
+  addPythonOption("MULTIPOINT_REYNOLDS_NUMBER");
+  
+  /* DESCRIPTION: Multipoint design freestream temperature */
+  addPythonOption("MULTIPOINT_FREESTREAM_TEMPERATURE");
+  
+  /* DESCRIPTION: Multipoint design freestream pressure */
+  addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
+  
   /* END_CONFIG_OPTIONS */
 
 }
@@ -4251,7 +4275,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AERO_DRAG_COEFFICIENT:   cout << "Aero CD objective function." << endl; break;
         case RADIAL_DISTORTION:       cout << "Radial distortion objective function." << endl; break;
         case CIRCUMFERENTIAL_DISTORTION:   cout << "Circumferential distortion objective function." << endl; break;
-
+        case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
       }
 		}
 		else {
@@ -5882,6 +5906,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AERO_DRAG_COEFFICIENT:   AdjExt = "_acd";       break;
       case RADIAL_DISTORTION:           AdjExt = "_rdis";      break;
       case CIRCUMFERENTIAL_DISTORTION:  AdjExt = "_cdis";      break;
+      case CUSTOM_OBJFUNC:        		AdjExt = "_custom";   break;
       }
     }
     else{
