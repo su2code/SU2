@@ -1166,7 +1166,6 @@ CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config,
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
-    su2double Density, U[5];
     int Unst_RestartIter;
 
     /*--- Modify file name for multizone problems ---*/
@@ -1235,10 +1234,9 @@ CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config,
         break;
       default:
         if (rank == MASTER_NODE) {
-          cout << "WARNING: Restarts have not been implemented for hybridization" << endl;
-          cout << "    with your RANS model. Implemented models include: SA, SST" << endl;
-          cout << "    Restart file will not be loaded correctly if you are" << endl;
-          cout << "    starting your hybrid solution from a RANS restart file." << endl;
+          cout << "ERROR: Restarts have not been implemented for your" << endl;
+          cout << "   combination of RANS model and hybrid RANS/LES."  << endl;
+          exit(EXIT_FAILURE);
         }
         break;
     }
@@ -1275,16 +1273,12 @@ CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config,
 
           iPoint_Local = Global2Local[iPoint_Global];
 
-          if (compressible) {
-            if (nDim == 2) point_line >> index >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> Solution[0];
-            if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> U[4] >> Solution[0];
-
-            Density = U[0];
+          unsigned short nSkipVars = nVarTotal - 1;
+          point_line >> index;
+          for (iVar = 0; iVar < nSkipVars; iVar++) {
+            point_line >> dull_val;
           }
-          if (incompressible) {
-            if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-            if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-          }
+          point_line >> Solution[0];
 
           /*--- Instantiate the solution at this node  ---*/
           node[iPoint_Local] = new CHybridConvVariable(alpha_Inf, nDim, nVar, config);

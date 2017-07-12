@@ -2935,9 +2935,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     /*--- Calculate the relevant length and timescales ---*/
 
     timescale = min(1.0/(omega), a1/(strMag*F2));
-    timescale = max(timescale, EPS);
     lengthscale = sqrt(max(kine, 0.0))*timescale;
-    lengthscale = max(lengthscale, EPS);
     node[iPoint]->SetTurbScales(timescale, lengthscale);
 
     /*--- Compute the eddy viscosity ---*/

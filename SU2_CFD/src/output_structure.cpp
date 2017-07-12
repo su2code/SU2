@@ -2122,7 +2122,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       nVar_Total += 2;
     }
     
-    /*--- Add Eddy Viscosity to the output ---*/
+    /*--- Add Eddy Viscosity to the restart file ---*/
     
     if (Kind_Solver == RANS) {
       iVar_Eddy = nVar_Total; nVar_Total += 1;
