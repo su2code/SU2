@@ -336,7 +336,7 @@ inline su2double CSolver::GetTotal_IDR() { return 0; }
 
 inline su2double CSolver::GetTotal_DC60() { return 0; }
 
-inline su2double CSolver::GetTotal_Custom() { return 0; }
+inline su2double CSolver::GetTotal_Custom_ObjFunc() { return 0; }
 
 inline su2double CSolver::GetTotal_CMx() { return 0; }
 
@@ -454,9 +454,9 @@ inline void CSolver::SetTotal_IDR(su2double val_Total_IDR) { }
 
 inline void CSolver::SetTotal_DC60(su2double val_Total_DC60) { }
 
-inline void CSolver::SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff) { }
+inline void CSolver::SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { }
 
-inline void CSolver::AddTotal_Custom(su2double val_Total_Custom, su2double val_coeff) { }
+inline void CSolver::AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { }
 
 inline su2double CSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
@@ -1193,7 +1193,7 @@ inline su2double CEulerSolver::GetTotal_IDR() { return Total_IDR; }
 
 inline su2double CEulerSolver::GetTotal_DC60() { return Total_DC60; }
 
-inline su2double CEulerSolver::GetTotal_Custom() { return Total_Custom; }
+inline su2double CEulerSolver::GetTotal_Custom_ObjFunc() { return Total_Custom_ObjFunc; }
 
 inline su2double CEulerSolver::GetTotal_CMx() { return Total_CMx; }
 
@@ -1289,9 +1289,9 @@ inline void CEulerSolver::SetTotal_IDR(su2double val_Total_IDR) { Total_IDR = va
 
 inline void CEulerSolver::SetTotal_DC60(su2double val_Total_DC60) { Total_DC60 = val_Total_DC60; }
 
-inline void CEulerSolver::SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff) { Total_Custom = val_Total_Custom*val_coeff; }
+inline void CEulerSolver::SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { Total_Custom_ObjFunc = val_total_custom_objfunc*val_weight; }
 
-inline void CEulerSolver::AddTotal_Custom(su2double val_Total_Custom, su2double val_coeff) { Total_Custom += val_Total_Custom*val_coeff; }
+inline void CEulerSolver::AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { Total_Custom_ObjFunc += val_total_custom_objfunc*val_weight; }
 
 inline su2double CEulerSolver::GetAllBound_CL_Inv() { return AllBound_CL_Inv; }
 
