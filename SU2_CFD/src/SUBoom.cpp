@@ -15,15 +15,16 @@ SUBoom::SUBoom(){
 
 SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
+  int rank, nProcessor = 1;
+
 #ifdef HAVE_MPI
-  int rank, iProcessor, nProcessor;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
 
   /*---Make sure to read in hard-coded values in the future!---*/
 
-  if (rank == MASTER_NODE){
+////  if (rank == MASTER_NODE){
   nDim = geometry->GetnDim();
 
   /*---Flight variables---*/
@@ -40,10 +41,10 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   scale_L = config->GetRefLengthMoment();
 
   /*---Ray variables---*/
-  unsigned short N_phi = 1;
-  ray_N_phi = N_phi;
+  if(nDim == 2) ray_N_phi = 1;
+  else ray_N_phi = 1; // TODO: read in for 3D
   ray_phi = new su2double[ray_N_phi];
-  for(int i = 0; i < N_phi; i++){
+  for(unsigned int i = 0; i < ray_N_phi; i++){
     //ray_phi[i] = phi[i];
     ray_phi[i] = 0.0;
   }
@@ -55,12 +56,14 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   tolfile.open("boom.in", ios::in);
   if (tolfile.fail()) {
-    cout << "There is no boom.in file. Using default tolerances for boom propagation. " << endl;
-    ray_r0 = 5.0;
+    if(rank == MASTER_NODE)
+      cout << "There is no boom.in file. Using default tolerances for boom propagation. " << endl;
+    ray_r0 = 1.0;
     n_prof = 100001;
     tol_dphi = 1.0E-3;
     tol_dr = 1.0E-3;
     tol_m = 1.0E6;
+
     tol_dp = 1.0E-6;
     tol_l = 1.0E-4;
   }
@@ -73,7 +76,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     tolfile >> str >> tol_dp;
     tolfile >> str >> tol_l;
   }
-  }
+////  }
 
   /*---Set reference pressure, make sure signal is dimensional---*/
   su2double Pressure_FreeStream=config->GetPressure_FreeStream();
@@ -94,168 +97,141 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   if(rank == MASTER_NODE)
     cout << "Pressure_Ref = " << Pressure_Ref << ", Pressure_FreeStream = " << Pressure_FreeStream << endl;
 
-  /*---Loop over boundary markers to select those to extract pressure signature---*/
-  cout << "ray_r0 = " << ray_r0 << endl;
-  cout << "n_prof = " << n_prof << endl;
-  cout << "tol_m = " << tol_m << endl;
-  SearchLinear(solver, config, geometry, ray_r0, ray_phi, ray_N_phi);
-  ExtractLine(solver, config, geometry, ray_r0, ray_phi, ray_N_phi);
-  unsigned long nMarker = config->GetnMarker_All();
-  unsigned long sigCount=0;
-  unsigned long panelCount=0;
-  unsigned long iMarker, iVertex, iPoint;
-  su2double x, y;
-  su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
-  su2double ux, uy, uz, StaticEnergy, p;
-  su2double *Coord;
+  /*---Perform search on domain to determine where line intersects boundary---*/
+  if(rank == MASTER_NODE)
+    cout << "Search for start of line." << endl;
+  SearchLinear(config, geometry, ray_r0, ray_phi, ray_N_phi);
 
-  nSig = 0;
-  for(iMarker = 0; iMarker < nMarker; iMarker++){
-    if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
-      sigCount++;
-      for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if(geometry->node[iPoint]->GetDomain()){
-          Coord = geometry->node[iPoint]->GetCoord();
-          y = SU2_TYPE::GetValue(Coord[1]);
-          if(nDim == 2 || (nDim == 3 && y < 1E-10)) panelCount++;
-        }
-      }
-      nSig = panelCount;
+  /*---Walk through neighbors to determine all points containing line---*/
+  if(rank == MASTER_NODE)
+    cout << "Extract line." << endl;
+  for(int i = 0; i < ray_N_phi; i++){
+    if(startline[i]){
+      ExtractLine(geometry, ray_r0, ray_phi, ray_N_phi);
     }
   }
 
-  unsigned long Buffer_Send_sigCount[1], *Buffer_Recv_sigCount = NULL;
-  unsigned long totSig, iPanel;
-  if (rank == MASTER_NODE) Buffer_Recv_sigCount= new unsigned long [nProcessor];
+  /*---Interpolate pressures along line---*/
+  if(rank == MASTER_NODE)
+    cout << "Extract pressure signature." << endl;
+  for(int i = 0; i < ray_N_phi; i++){
+    if(startline[i]){
+      ExtractPressure(solver, config, geometry);
+    }
+  }
 
-  Buffer_Send_sigCount[0]=nSig;
+  unsigned long iPanel;
+  for(iPanel = 0; iPanel < nPanel; iPanel++){
+    signal.original_p[iPanel] = signal.original_p[iPanel]*Pressure_Ref - Pressure_FreeStream;
+  }
+
+  unsigned long totSig = 0;
+  unsigned long maxSig = 0;
+  unsigned long *nPanel_loc = new unsigned long[nProcessor];
 #ifdef HAVE_MPI
-   SU2_MPI::Gather(&Buffer_Send_sigCount, 1, MPI_UNSIGNED_LONG, Buffer_Recv_sigCount, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
-   SU2_MPI::Allreduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD); //find the max num of vertices over all processes
-//   SU2_MPI::Reduce(&nSig,&totSig,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+  SU2_MPI::Allreduce(&nPanel, &totSig, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nPanel, &maxSig, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Gather(&nPanel, 1, MPI_UNSIGNED_LONG, nPanel_loc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-  if (rank == MASTER_NODE) cout << "Tot_nSig = " << totSig << endl;
-
-  su2double *Buffer_Send_Press = new su2double [totSig];
-  su2double *Buffer_Send_x = new su2double [totSig];
-  //zero send buffers
-  for (int i=0; i <totSig; i++){
-   Buffer_Send_Press[i]=0.0;
-   Buffer_Send_x[i] = 0.0;
+  su2double* Buffer_Recv_Press = NULL;
+  su2double* Buffer_Recv_x = NULL;
+  su2double* Buffer_Send_Press = new su2double[maxSig];
+  su2double* Buffer_Send_x = new su2double[maxSig];
+  if(rank == MASTER_NODE){
+    Buffer_Recv_Press = new su2double[nProcessor*maxSig];
+    Buffer_Recv_x = new su2double[nProcessor*maxSig];
   }
-
-  su2double *Buffer_Recv_Press = NULL;
-  su2double *Buffer_Recv_x = NULL;
-
-  if (rank == MASTER_NODE) {
-   Buffer_Recv_Press = new su2double [nProcessor*totSig];
-   Buffer_Recv_x = new su2double [nProcessor*totSig];
+  
+  for(iPanel = 0; iPanel < nPanel; iPanel++){
+    Buffer_Send_x[iPanel] = signal.x[iPanel];
+    Buffer_Send_Press[iPanel] = signal.original_p[iPanel];
   }
-
-  /*---Extract signature---*/
-  panelCount = 0;
-  PointID = new unsigned long [nSig];
-  for(iMarker = 0; iMarker < nMarker; iMarker++){
-    if(config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
-      for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if(geometry->node[iPoint]->GetDomain()){
-          Coord = geometry->node[iPoint]->GetCoord();
-          x = SU2_TYPE::GetValue(Coord[0]);
-          y = SU2_TYPE::GetValue(Coord[1]);
-          
-          if(nDim == 2 || (nDim == 3 && y < 1E-10)){
-//          z = 0.0;
-//          if (nDim==3) z = SU2_TYPE::GetValue(Coord[2]);
-
-          /*---Extract conservative flow data---*/
-          rho = solver->node[iPoint]->GetSolution(nDim);
-          rho_ux = solver->node[iPoint]->GetSolution(nDim+1);
-          rho_uy = solver->node[iPoint]->GetSolution(nDim+2);
-          if(nDim == 3) rho_uz = solver->node[iPoint]->GetSolution(nDim+3);
-          rho_E = solver->node[iPoint]->GetSolution(2*nDim+1);
-          TKE = 0.0;
-
-          //Register conservative variables as input for adjoint computation
-          if (config->GetAD_Mode()){
-            AD::RegisterInput(rho );
-            AD::RegisterInput(rho_ux );
-            AD::RegisterInput(rho_uy );
-            if (nDim==3) AD::RegisterInput(rho_uz );
-            AD::RegisterInput(rho_E );
-            AD::RegisterInput(TKE );
-          }
-
-          /*---Compute pressure---*/
-          ux = rho_ux/rho;
-          uy = rho_uy/rho;
-          uz = 0.0;
-          if(nDim == 3) uz= rho_uz/rho;
-          StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
-          p = (config->GetGamma()-1)*rho*StaticEnergy*Pressure_Ref - Pressure_FreeStream;
-
-          Buffer_Send_Press[panelCount] = p;
-          Buffer_Send_x[panelCount] = x;
-          PointID[panelCount] = geometry->node[iPoint]->GetGlobalIndex();
-
-          panelCount++;
-          }
-        }
-      }
-    }
-  }
-
-  if(rank == MASTER_NODE)
-    cout << "Pressure signal extracted." << endl;
 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Press, totSig, MPI_DOUBLE, Buffer_Recv_Press,  totSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_x, totSig, MPI_DOUBLE, Buffer_Recv_x,  totSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Press, maxSig, MPI_DOUBLE, Buffer_Recv_Press,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_x, maxSig, MPI_DOUBLE, Buffer_Recv_x,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
   if (rank == MASTER_NODE)
     cout << "Gathered signal data to MASTER_NODE." << endl;
 
   if (rank == MASTER_NODE){
-  ofstream sigFile;
-  sigFile.precision(15);
-  sigFile.open("signal_original.dat");
-  sigFile << "# x, p" << endl;
-  panelCount = 0;
-  nPanel = totSig;
-  signal.original_len = totSig;
-  signal.x = new su2double[nPanel];
-  signal.original_p = new su2double[nPanel];
-  signal.original_T = new su2double[nPanel];
+    ofstream sigFile;
+    sigFile.precision(15);
+    sigFile.open("signal_original.dat");
+    sigFile << "# x, p" << endl;
 
-  unsigned long Total_Index;
+  ////  unsigned long Total_Index;
 
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-    for (iPanel = 0; iPanel < Buffer_Recv_sigCount[iProcessor]; iPanel++) {
-      /*--- Current index position and global index ---*/
-      Total_Index  = iProcessor*totSig + iPanel;
+  ////  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+  ////    for (iPanel = 0; iPanel < Buffer_Recv_sigCount[iProcessor]; iPanel++) {
+  ////      /*--- Current index position and global index ---*/
+  ////      Total_Index  = iProcessor*totSig + iPanel;
 
-      signal.x[panelCount] = Buffer_Recv_x[Total_Index];
-      signal.original_p[panelCount] = Buffer_Recv_Press[Total_Index];
+  ////      signal.x[panelCount] = Buffer_Recv_x[Total_Index];
+  ////      signal.original_p[panelCount] = Buffer_Recv_Press[Total_Index];
 
-      panelCount++;
+  ////      panelCount++;
+  ////    }
+  ////  }
+
+    unsigned long panelCount = 0;
+    nPanel = totSig;
+    signal.original_len = nPanel;
+    signal.x = new su2double[nPanel];
+    signal.original_p = new su2double[nPanel];
+    signal.original_T = new su2double[nPanel];
+    for(unsigned int iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+      for(iPanel = 0; iPanel < nPanel_loc[iProcessor]; iPanel++){
+        signal.x[panelCount] = Buffer_Recv_x[iProcessor*maxSig+iPanel];
+        signal.original_p[panelCount] = Buffer_Recv_Press[iProcessor*maxSig+iPanel];
+        panelCount++;
+      }
     }
-  }
 
-  /*---Sort signal in order of x-coordinate---*/
-  cout << "Sorting signal data." << endl;
-  MergeSort(signal.x, signal.original_p, 0, totSig-1);
+    /*---Sort signal in order of x-coordinate---*/
+    cout << "Sorting signal data." << endl;
+    MergeSort(signal.x, signal.original_p, 0, totSig-1);
 
-  /*---Now write to file---*/
-  for(iPanel = 0; iPanel < nPanel; iPanel++){
-    sigFile << scientific << signal.x[iPanel] << "\t";
-    sigFile << scientific << signal.original_p[iPanel]   << "\t";
-    sigFile << endl;
-  }
-  sigFile.close();
-  cout << "Signal written." << endl;
+    /*---Check for duplicate points---*/
+    for(iPanel = 1; iPanel < nPanel; iPanel++){
+      if(abs(signal.x[iPanel-1]-signal.x[iPanel]) < 1.0E-8){
+        for(unsigned long jPanel = iPanel; jPanel < nPanel; jPanel++){
+          signal.x[jPanel-1] = signal.x[jPanel];
+          signal.original_p[jPanel-1] = signal.original_p[jPanel];
+        }
+        iPanel--;
+        nPanel--;
+      }
+    }
+
+    if(nPanel != totSig){
+      cout << "Eliminating duplicate points." << endl;
+      su2double *xtmp = new su2double[nPanel], *ptmp = new su2double[nPanel];
+      for(iPanel = 0; iPanel < nPanel; iPanel++){
+        xtmp[iPanel] = signal.x[iPanel];
+        ptmp[iPanel] = signal.original_p[iPanel];
+      }
+      signal.x = new su2double[nPanel];
+      signal.original_p = new su2double[nPanel];
+      for(iPanel = 0; iPanel < nPanel; iPanel++){
+        signal.x[iPanel] = xtmp[iPanel];
+        signal.original_p[iPanel] = ptmp[iPanel];
+      }
+      delete [] xtmp;
+      delete [] ptmp;
+      totSig = nPanel;
+    }
+
+    /*---Now write to file---*/
+    for(iPanel = 0; iPanel < nPanel; iPanel++){
+      sigFile << scientific << signal.x[iPanel] << "\t";
+      sigFile << scientific << signal.original_p[iPanel]   << "\t";
+      sigFile << endl;
+    }
+    sigFile.close();
+    cout << "Signal written. nPanel = " << nPanel << "." << endl;
 
   }
 
@@ -263,16 +239,15 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   if(config->GetAD_Mode()){
     dJdU = new su2double* [nDim+3];
     for(int iDim = 0; iDim < nDim+3 ; iDim++){
-      dJdU[iDim] = new su2double[nSig];
-      for(iPanel = 0;  iPanel< nSig; iPanel++){
+      dJdU[iDim] = new su2double[nPointID];
+      for(iPanel = 0;  iPanel< nPointID; iPanel++){
         dJdU[iDim][iPanel] = 0.0;
       }
     }
-  }
 
-  if (rank==MASTER_NODE)
+    if (rank==MASTER_NODE)
       cout << "Sensitivities initialized." << endl;
-
+  }
 
 }
 
@@ -289,12 +264,12 @@ void MergeSort(su2double x[], su2double p[], int l, int r){
   }
 }
 
-void MergeSort(su2double y[], int kNN[], int l, int r){
+void MergeSort(su2double y[], unsigned long k[], int l, int r){
   if(l < r){
     int m = l + (r-l)/2;
-    MergeSort(y, kNN, l, m);
-    MergeSort(y, kNN, m+1, r);
-    merge(y, kNN, l, m, r);
+    MergeSort(y, k, l, m);
+    MergeSort(y, k, m+1, r);
+    merge(y, k, l, m, r);
   }
 }
 
@@ -350,13 +325,13 @@ void merge(su2double x[], su2double p[], int l, int m, int r){
   }
 }
 
-void merge(su2double x[], int p[], int l, int m, int r){
+void merge(su2double x[], unsigned long p[], int l, int m, int r){
   int i, j, k;
   int n1 = m-l+1;
   int n2 = r-m;
 
   su2double L[n1], R[n2];
-  int Lp[n1], Rp[n2];
+  unsigned long Lp[n1], Rp[n2];
 
   /*--- Temporary arrays ---*/
   for(i = 0; i < n1; i++){
@@ -425,52 +400,80 @@ void QuickSort(su2double x[], su2double p[], int l, int r){
   if(i < r) QuickSort(x, p, i, r);
 }
 
-void SUBoom::SearchLinear(CSolver *solver, CConfig *config, CGeometry *geometry, 
+void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry, 
                const su2double r0, const su2double *phi, unsigned short nPhi){
   
   /*--- Loop over boundary markers ---*/
   unsigned long nMarker = config->GetnMarker_All();
-  unsigned long nPoint = geometry->GetnPoint();
-  unsigned long iMarker, iVertex, iPoint, *iPointmin;
+  unsigned long iMarker, iVertex, iPoint, *iPointmin, itmp;
   unsigned long jElem;
-  unsigned short iElem, nElem;
+  unsigned short iElem, nElem, nNearest, *iPointmax, *ixmin;
 
-  bool inside;
+  bool inside=false;
 
   su2double Minf = config->GetMach();
   su2double x = 0.0, y = 0.0, z = 0.0;
   su2double *Coord;
   su2double *y0, *z0;
   su2double yy, zz;
-  su2double r2, r02 = r0*r0, *r2min;
+  su2double r2, r02 = r0*r0, *r2min, *xmin, mintmp;
   su2double sq2 = sqrt(2.0), sq2_2 = sq2/2.0;
   su2double mu = asin(1.0/Minf), cotmu = 1.0/tan(mu);
-  su2double xwave = r0*cotmu;
   su2double *p0, *p1;
 
 
   if(nDim == 2){
+    nNearest = 4;
     y0 = new su2double[1];
-    r2min = new su2double[1];
-    iPointmin = new unsigned long[1];
+    r2min = new su2double[nNearest];
+    xmin = new su2double[nNearest];
+    iPointmin = new unsigned long[nNearest];
+    iPointmax = new unsigned short[1];
+    ixmin = new unsigned short[1];
+    startline = new bool[1];
+    endline = new bool[1];
+    p0 = new su2double[2];
+    p1 = new su2double[2];
     y0[0] = r0;
-    r2min[0] = 1E6;
+    for(unsigned short j = 0; j < nNearest; j++){
+      r2min[j] = 1.0E6;
+      xmin[j] = 1.0E6;
+    }
+    iPointmax[0] = 0;
+    ixmin[0] = 0;
+    startline[0] = false;
+    endline[0] = false;
   }
   else{
+    nNearest = 8;
     y0 = new su2double[nPhi];
     z0 = new su2double[nPhi];
-    r2min = new su2double[nPhi];
-    iPointmin = new unsigned long[nPhi];
+    r2min = new su2double[nNearest*nPhi];
+    xmin = new su2double[nNearest*nPhi];
+    iPointmin = new unsigned long[nNearest*nPhi];
+    iPointmax = new unsigned short[nPhi];
+    ixmin = new unsigned short[nPhi];
+    startline = new bool[nPhi];
+    endline = new bool[nPhi];
+    p0 = new su2double[3];
+    p1 = new su2double[3];
     for(int i = 0; i < nPhi; i++){
       y0[i] = r0*sin(phi[i]);
       z0[i] = r0*cos(phi[i]);
-      r2min[i] = 1.0E6;
+      for(unsigned short j = 0; j < nNearest; j++){
+        r2min[nNearest*i+j] = 1.0E6;
+        xmin[nNearest*i+j] = 1.0E6;
+      }
+      iPointmax[i] = 0;
+      ixmin[i] = 0;
+      startline[i] = false;
+      endline[i] = false;
     }
   }
 
   for(iMarker = 0; iMarker < nMarker; iMarker++){
-    /*--- Only look at farfield boundary ---*/
-    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD){
+    /*--- Only look at farfield boundary (or send/recv for parallel computations) ---*/
+    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         /*--- Make sure point is in domain ---*/
@@ -485,28 +488,68 @@ void SUBoom::SearchLinear(CSolver *solver, CConfig *config, CGeometry *geometry,
             /*--- Limit search to points within strip ---*/
             if(r2 > r02*sq2_2 && r2 < r02*sq2){
               x = SU2_TYPE::GetValue(Coord[0]);
-              /*--- Make sure point is at "front" of domain ---*/
-              if(x < xwave){
-                if(nDim == 2){
-                  yy = abs(y);
-                  r2 = (yy-y0[0])*(yy-y0[0]);
-                  if(r2 < r2min[0]){
-                    iPointmin[0] = iPoint;
-                    r2min[0] = r2;
-                  }
+
+              if(nDim == 2){
+                yy = abs(y);
+                r2 = (yy-y0[0])*(yy-y0[0]);
+                //if(r2 < r2min[1]){
+                //  iPointmin[1] = iPoint;
+                //  r2min[1] = r2;
+                //  xmin[1] = x;
+                //  startline[0] = true;
+                //  /*--- Now sort min values based on r2 ---*/
+                //  if(r2min[1] < r2min[0]){
+                //    itmp = iPointmin[1];
+                //    iPointmin[1] = iPointmin[0];
+                //    iPointmin[0] = itmp;
+                //
+                //    mintmp = r2min[1];
+                //    r2min[1] = r2min[0];
+                //    r2min[0] = mintmp;
+                //
+                //    mintmp = xmin[1];
+                //    xmin[1] = xmin[0];
+                //    xmin[0] = mintmp;
+                //  }
+                if(r2 < r2min[iPointmax[0]]){
+                  iPointmin[iPointmax[0]] = iPoint;
+                  r2min[iPointmax[0]] = r2;
+                  xmin[iPointmax[0]] = x;
+                  startline[0] = true;
                 }
-                else{
-                  yy = abs(y);
-                  zz = abs(z);
-                  for(int i = 0; i < nPhi; i++){
-                    r2 = (yy-y0[i])*(yy-y0[i]) + (zz-z0[i])*(zz-z0[i]);
-                    if(r2 < r2min[i]){
-                      iPointmin[i] = iPoint;
-                      r2min[i] = r2;
+                for(unsigned short j = 0; j < nNearest; j++){
+                  if(r2min[j] > r2min[iPointmax[0]]) iPointmax[0] = j;
+                }
+              }
+
+              else{
+                yy = abs(y);
+                zz = abs(z);
+                for(int i = 0; i < nPhi; i++){
+                  r2 = (yy-y0[i])*(yy-y0[i]) + (zz-z0[i])*(zz-z0[i]);
+                  if(r2 < r2min[2*i+1]){
+                    iPointmin[2*i+1] = iPoint;
+                    r2min[2*i+1] = r2;
+                    xmin[2*i+1] = x;
+                    startline[i] = true;
+                    /*--- Now sort min values based on r2 ---*/
+                    if(r2min[2*i+1] < r2min[2*i]){
+                      itmp = iPointmin[2*i+1];
+                      iPointmin[2*i+1] = iPointmin[2*i];
+                      iPointmin[2*i] = itmp;
+
+                      mintmp = r2min[2*i+1];
+                      r2min[2*i+1] = r2min[2*i];
+                      r2min[2*i] = mintmp;
+
+                      mintmp = xmin[2*i+1];
+                      xmin[2*i+1] = xmin[2*i];
+                      xmin[2*i] = mintmp;
                     }
                   }
                 }
               }
+
             }
           }
         }
@@ -514,35 +557,18 @@ void SUBoom::SearchLinear(CSolver *solver, CConfig *config, CGeometry *geometry,
     }
   }
 
-  Coord = geometry->node[iPointmin[0]]->GetCoord();
+  /*--- Reorder iPointmin by x location ---*/
+  for(int i = 0; i < nPhi; i++){
+    MergeSort(xmin, iPointmin, i*nNearest, i*nNearest+nNearest-1);
+  }
 
   if(nDim == 2){
-    p0 = new su2double[2];
-    p1 = new su2double[2];
-    nElem = geometry->node[iPointmin[0]]->GetnElem();
-    for(iElem = 0; iElem < nElem; iElem++){
-      jElem = geometry->node[iPointmin[0]]->GetElem(iElem);
-      inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
-      if(inside){
-        nPanel = 1;
-        pointID_original = new unsigned long[nPanel];
-        Coord_original = new su2double*[nPanel];
-        Coord_original[0] = new su2double[nDim];
-
-        pointID_original[0] = jElem;
-        Coord_original[0][0] = (p0[0] + p1[0])/2.0;
-        Coord_original[0][1] = -r0;
-
-        break;
-      }
-    }
-
-    if(!inside){
-      unsigned short nPoint = geometry->node[iPointmin[0]]->GetnPoint();
-      for(iPoint = 0; iPoint < nPoint; iPoint++){
-        unsigned long jPoint = geometry->node[iPointmin[0]]->GetPoint(iPoint);
-        nElem = geometry->node[jPoint]->GetnElem();
+    if(startline[0]){
+      for(unsigned short iNearest = 0; iNearest < nNearest; iNearest++){
+        Coord = geometry->node[iPointmin[iNearest]]->GetCoord();
+        nElem = geometry->node[iPointmin[iNearest]]->GetnElem();
         for(iElem = 0; iElem < nElem; iElem++){
+          jElem = geometry->node[iPointmin[iNearest]]->GetElem(iElem);
           inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
           if(inside){
             nPanel = 1;
@@ -565,6 +591,7 @@ void SUBoom::SearchLinear(CSolver *solver, CConfig *config, CGeometry *geometry,
   else if(nDim == 3){
 
   }
+ 
 
   delete [] iPointmin;
   delete [] Coord;
@@ -576,8 +603,7 @@ void SUBoom::SearchLinear(CSolver *solver, CConfig *config, CGeometry *geometry,
 
 }
 
-void SUBoom::ExtractLine(CSolver *solver, CConfig *config, CGeometry *geometry, 
-               const su2double r0, const su2double *phi, unsigned short nPhi){
+void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, const su2double *phi, unsigned short nPhi){
   bool inside, end = false;
   unsigned short iElem, nElem;
   unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem();
@@ -647,8 +673,105 @@ void SUBoom::ExtractLine(CSolver *solver, CConfig *config, CGeometry *geometry,
     }
   }
 
-  cout << "nPanel extracted = " << nPanel << endl;
+}
 
+void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geometry){
+  unsigned short iDim, iNode, nNode;
+  unsigned long jElem, jNode;
+  unsigned long pointCount = 0;
+  su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
+  su2double rho_i, rho_ux_i, rho_uy_i, rho_uz_i, rho_E_i, TKE_i;
+  su2double ux, uy, uz, StaticEnergy, p;
+
+  su2double isoparams[10];
+  su2double *X_donor;
+  su2double *Coord = new su2double[nDim];
+
+  nPointID = 0;
+  for(unsigned long i = 0; i < nPanel; i++){
+    jElem = pointID_original[i];
+    nPointID += geometry->elem[jElem]->GetnNodes();
+  }
+  PointID = new unsigned long[nPointID];
+
+  signal.original_len = nPanel;
+  signal.x = new su2double[nPanel];
+  signal.original_p = new su2double[nPanel];
+  for(unsigned long i = 0; i < nPanel; i++){
+    /*--- Get info needed for isoparameter computation ---*/
+    jElem = pointID_original[i];
+    nNode = geometry->elem[jElem]->GetnNodes();
+    for(unsigned short j = 0; j < nDim; j++){
+      Coord[j] = Coord_original[i][j];
+    }
+    X_donor = new su2double[nDim*nNode];
+    for(iNode = 0; iNode < nNode; iNode++){
+      jNode = geometry->elem[jElem]->GetNode(iNode);
+      for(iDim = 0; iDim < nDim; iDim++){  
+        X_donor[iDim*nNode + iNode] = geometry->node[jNode]->GetCoord(iDim);
+      }
+    }
+
+    /*--- Compute isoparameters ---*/
+    Isoparameters(nDim, nNode, X_donor, Coord, isoparams);
+
+    /*--- Now interpolate pressure ---*/
+    p = 0.0;
+    rho_i = 0.0;
+    rho_ux_i = 0.0; rho_uy_i = 0.0; rho_uz_i = 0.0;
+    rho_E_i = 0.0; TKE_i = 0.0;
+    for(iNode = 0; iNode < nNode; iNode++){
+      jNode = geometry->elem[jElem]->GetNode(iNode);
+
+      /*---Extract conservative flow data---*/
+      rho = solver->node[jNode]->GetSolution(nDim);
+      rho_ux = solver->node[jNode]->GetSolution(nDim+1);
+      rho_uy = solver->node[jNode]->GetSolution(nDim+2);
+      if(nDim == 3) rho_uz = solver->node[jNode]->GetSolution(nDim+3);
+      rho_E = solver->node[jNode]->GetSolution(2*nDim+1);
+      TKE = 0.0;
+
+      //Register conservative variables as input for adjoint computation
+      if (config->GetAD_Mode()){
+        AD::RegisterInput(rho );
+        AD::RegisterInput(rho_ux );
+        AD::RegisterInput(rho_uy );
+        if (nDim==3) AD::RegisterInput(rho_uz );
+        AD::RegisterInput(rho_E );
+        AD::RegisterInput(TKE );
+      }
+
+      /*---Compute pressure---*/
+      rho_i += rho*isoparams[iNode];
+      rho_ux_i += rho_ux*isoparams[iNode];
+      rho_uy_i += rho_uy*isoparams[iNode];
+      if(nDim == 3) rho_uz_i += rho_uz*isoparams[iNode];
+      rho_E_i += rho_E*isoparams[iNode];
+      TKE_i += TKE*isoparams[iNode];
+
+      /*ux = rho_ux/rho;
+      uy = rho_uy/rho;
+      uz = 0.0;
+      if(nDim == 3) uz= rho_uz/rho;
+      StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
+      p += (config->GetGamma()-1)*rho*StaticEnergy*isoparams[iNode];*/
+
+      PointID[pointCount] = geometry->node[jNode]->GetGlobalIndex();
+      pointCount++;
+    }
+
+    ux = rho_ux_i/rho_i;
+    uy = rho_uy_i/rho_i;
+    uz = 0.0;
+    if(nDim == 3) uz= rho_uz_i/rho_i;
+    StaticEnergy =  rho_E_i/rho_i-0.5*(ux*ux+uy*uy+uz*uz)-TKE_i;
+    p = (config->GetGamma()-1)*rho_i*StaticEnergy;
+
+    signal.x[i] = Coord[0];
+    signal.original_p[i] = p;
+
+  }
+  
 }
 
 bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1){
@@ -662,7 +785,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
   su2double *pp0 = new su2double[nDim];
   su2double *pp1 = new su2double[nDim];
 
-  /*--- Compute element CG ---*/
+  /*--- Store node coordinates ---*/
   for(iNode = 0; iNode < nNode; iNode++){
     iPoint = geometry->elem[jElem]->GetNode(iNode);
     Coord_elem[iNode] = new su2double[nDim];
@@ -769,6 +892,188 @@ int SUBoom::Intersect3D(){
   
 }
 
+void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj, su2double *isoparams) {
+  short iDonor,iDim,k; // indices
+  su2double tmp, tmp2;
+  
+  su2double x[nDim+1];
+  su2double x_tmp[nDim+1];
+  su2double Q[nDonor*nDonor];
+  su2double R[nDonor*nDonor];
+  su2double A[(nDim+1)*nDonor];
+  su2double *A2    = NULL;
+  su2double x2[nDim+1];
+  
+  bool test[nDim+1];
+  bool testi[nDim+1];
+  
+  su2double eps = 1E-10;
+  
+  short n = nDim+1;
+
+  if (nDonor>2) {
+    /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
+    /*--- Right hand side is [1, \vec{x}']'---*/
+    for (iDonor=0; iDonor<nDonor; iDonor++) {
+      isoparams[iDonor]=0;
+      A[iDonor] = 1.0;
+      for (iDim=0; iDim<n; iDim++)
+        A[(iDim+1)*nDonor+iDonor]=X[iDim*nDonor+iDonor];
+    }
+
+    x[0] = 1.0;
+    for (iDim=0; iDim<nDim; iDim++)
+      x[iDim+1]=xj[iDim];
+
+    /*--- Eliminate degenerate rows:
+     * for example, if z constant including the z values will make the system degenerate
+     * TODO: improve efficiency of this loop---*/
+    test[0]=true; // always keep the 1st row
+    for (iDim=1; iDim<nDim+1; iDim++) {
+      // Test this row against all previous
+      test[iDim]=true; // Assume that it is not degenerate
+      for (k=0; k<iDim; k++) {
+        tmp=0; tmp2=0;
+        for (iDonor=0;iDonor<nDonor;iDonor++) {
+          tmp+= A[iDim*nDonor+iDonor]*A[iDim*nDonor+iDonor];
+          tmp2+=A[k*nDonor+iDonor]*A[k*nDonor+iDonor];
+        }
+        tmp  = pow(tmp,0.5);
+        tmp2 = pow(tmp2,0.5);
+        testi[k]=false;
+        for (iDonor=0; iDonor<nDonor; iDonor++) {
+          // If at least one ratio is non-matching row iDim is not degenerate w/ row k
+          if (A[iDim*nDonor+iDonor]/tmp != A[k*nDonor+iDonor]/tmp2)
+            testi[k]=true;
+        }
+        // If any of testi (k<iDim) are false, row iDim is degenerate
+        test[iDim]=(test[iDim] && testi[k]);
+      }
+      if (!test[iDim]) n--;
+    }
+
+    /*--- Initialize A2 now that we might have a smaller system --*/
+    A2 = new su2double[n*nDonor];
+    iDim=0;
+    /*--- Copy only the rows that are non-degenerate ---*/
+    for (k=0; k<nDim+1; k++) {
+      if (test[k]) {
+        for (iDonor=0;iDonor<nDonor;iDonor++ ) {
+          A2[nDonor*iDim+iDonor]=A[nDonor*k+iDonor];
+        }
+        x2[iDim]=x[k];
+        iDim++;
+      }
+    }
+    /*--- Initialize Q,R to 0 --*/
+    for (k=0; k<nDonor*nDonor; k++) {
+      Q[k]=0;
+      R[k]=0;
+    }
+    /*--- TODO: make this loop more efficient ---*/
+    /*--- Solve for rectangular Q1 R1 ---*/
+    for (iDonor=0; iDonor<nDonor; iDonor++) {
+      tmp=0;
+      for (iDim=0; iDim<n; iDim++)
+        tmp += (A2[iDim*nDonor+iDonor])*(A2[iDim*nDonor+iDonor]);
+
+      R[iDonor*nDonor+iDonor]= pow(tmp,0.5);
+      if (tmp>eps && iDonor<n) {
+        for (iDim=0; iDim<n; iDim++)
+          Q[iDim*nDonor+iDonor]=A2[iDim*nDonor+iDonor]/R[iDonor*nDonor+iDonor];
+      }
+      else if (tmp!=0) {
+        for (iDim=0; iDim<n; iDim++)
+          Q[iDim*nDonor+iDonor]=A2[iDim*nDonor+iDonor]/tmp;
+      }
+      for (iDim=iDonor+1; iDim<nDonor; iDim++) {
+        tmp=0;
+        for (k=0; k<n; k++)
+          tmp+=A2[k*nDonor+iDim]*Q[k*nDonor+iDonor];
+
+        R[iDonor*nDonor+iDim]=tmp;
+
+        for (k=0; k<n; k++)
+          A2[k*nDonor+iDim]=A2[k*nDonor+iDim]-Q[k*nDonor+iDonor]*R[iDonor*nDonor+iDim];
+      }
+    }
+    /*--- x_tmp = Q^T * x2 ---*/
+    for (iDonor=0; iDonor<nDonor; iDonor++)
+      x_tmp[iDonor]=0.0;
+    for (iDonor=0; iDonor<nDonor; iDonor++) {
+      for (iDim=0; iDim<n; iDim++)
+        x_tmp[iDonor]+=Q[iDim*nDonor+iDonor]*x2[iDim];
+    }
+
+    /*--- solve x_tmp = R*isoparams for isoparams: upper triangular system ---*/
+    for (iDonor = n-1; iDonor>=0; iDonor--) {
+      if (R[iDonor*nDonor+iDonor]>eps)
+        isoparams[iDonor]=x_tmp[iDonor]/R[iDonor*nDonor+iDonor];
+      else
+        isoparams[iDonor]=0;
+      for (k=0; k<iDonor; k++)
+        x_tmp[k]=x_tmp[k]-R[k*nDonor+iDonor]*isoparams[iDonor];
+    }
+  }
+  else {
+    /*-- For 2-donors (lines) it is simpler: */
+    tmp =  pow(X[0*nDonor+0]- X[0*nDonor+1],2.0);
+    tmp += pow(X[1*nDonor+0]- X[1*nDonor+1],2.0);
+    tmp = sqrt(tmp);
+
+    tmp2 = pow(X[0*nDonor+0] - xj[0],2.0);
+    tmp2 += pow(X[1*nDonor+0] - xj[1],2.0);
+    tmp2 = sqrt(tmp2);
+    isoparams[1] = tmp2/tmp;
+
+    tmp2 = pow(X[0*nDonor+1] - xj[0],2.0);
+    tmp2 += pow(X[1*nDonor+1] - xj[1],2.0);
+    tmp2 = sqrt(tmp2);
+    isoparams[0] = tmp2/tmp;
+  }
+
+  /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
+  if (nDonor==4) {
+    //-- Bilinear coordinates, bounded by [-1,1] ---
+    su2double xi, eta;
+    xi = (1.0-isoparams[0]/isoparams[1])/(1.0+isoparams[0]/isoparams[1]);
+    eta = 1- isoparams[2]*4/(1+xi);
+    if (xi>1.0) xi=1.0;
+    if (xi<-1.0) xi=-1.0;
+    if (eta>1.0) eta=1.0;
+    if (eta<-1.0) eta=-1.0;
+    isoparams[0]=0.25*(1-xi)*(1-eta);
+    isoparams[1]=0.25*(1+xi)*(1-eta);
+    isoparams[2]=0.25*(1+xi)*(1+eta);
+    isoparams[3]=0.25*(1-xi)*(1+eta);
+
+  }
+  if (nDonor<4) {
+    tmp = 0.0; // value for normalization
+    tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
+    k=0; // index for maximum value
+    for (iDonor=0; iDonor< nDonor; iDonor++) {
+      if (isoparams[iDonor]>tmp2) {
+        k=iDonor;
+        tmp2=isoparams[iDonor];
+      }
+      // [0,1]
+      if (isoparams[iDonor]<0) isoparams[iDonor]=0;
+      if (isoparams[iDonor]>1) isoparams[iDonor] = 1;
+      tmp +=isoparams[iDonor];
+    }
+    if (tmp>0)
+      for (iDonor=0; iDonor< nDonor; iDonor++)
+        isoparams[iDonor]=isoparams[iDonor]/tmp;
+    else {
+      isoparams[k] = 1.0;
+    }
+  }
+  
+  if (A2 != NULL) delete [] A2;
+
+}
+
 void SUBoom::AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
                       su2double& rho, su2double& g){
   /*---Calculate temperature, speed of sound, pressure, and density at a given
@@ -833,7 +1138,7 @@ void SUBoom::ConditionAtmosphericData(){
   z = new su2double[n_prof];
   a_of_z = new su2double[n_prof];
   rho_of_z = new su2double[n_prof];
-  for(int i = 0; i < n_prof; i++){
+  for(unsigned int i = 0; i < n_prof; i++){
     z[i] = h0*su2double(i)/(su2double(n_prof)-1.);
     AtmosISA(z[i], T, a_of_z[i], p, rho_of_z[i], g);
   }
@@ -1097,7 +1402,7 @@ void SUBoom::RayTracer(){
   dydt = new su2double**[ray_N_phi];
   dzdt = new su2double**[ray_N_phi];
   theta = new su2double**[ray_N_phi];
-  for(int i = 0; i < ray_N_phi; i++){
+  for(unsigned int i = 0; i < ray_N_phi; i++){
     x_of_z[i] = new su2double*[4];
     y_of_z[i] = new su2double*[4];
     t_of_z[i] = new su2double*[4];
@@ -1105,7 +1410,7 @@ void SUBoom::RayTracer(){
     dydt[i] = new su2double*[4];
     dzdt[i] = new su2double*[4];
     theta[i] = new su2double*[4];
-    for(int j = 0; j < 4; j++){
+    for(unsigned short j = 0; j < 4; j++){
       x_of_z[i][j] = new su2double[n_prof];
       y_of_z[i][j] = new su2double[n_prof];
       t_of_z[i][j] = new su2double[n_prof];
@@ -1116,7 +1421,7 @@ void SUBoom::RayTracer(){
     }
   }
 
-   for(int i = 0; i < ray_N_phi; i++){
+   for(unsigned int i = 0; i < ray_N_phi; i++){
 
     /*---Primary ray---*/
     data.c0 = ray_c0[i][0];
@@ -1141,7 +1446,7 @@ void SUBoom::RayTracer(){
     kx = SplineGetDerivs(t, x, n_prof);
     ky = SplineGetDerivs(t, y, n_prof);
     kz = SplineGetDerivs(t, z, n_prof);
-    for(int ik = 0; ik < n_prof; ik++){
+    for(unsigned int ik = 0; ik < n_prof; ik++){
       dxdt[i][0][ik] = kx[ik];
       dydt[i][0][ik] = ky[ik];
       dzdt[i][0][ik] = kz[ik];
@@ -1168,7 +1473,7 @@ void SUBoom::RayTracer(){
 
     kx = SplineGetDerivs(t, x, n_prof);
     ky = SplineGetDerivs(t, y, n_prof);
-    for(int ik = 0; ik < n_prof; ik++){
+    for(unsigned int ik = 0; ik < n_prof; ik++){
       dxdt[i][1][ik] = kx[ik];
       dydt[i][1][ik] = ky[ik];
     }
@@ -1196,7 +1501,7 @@ void SUBoom::RayTracer(){
     kx = SplineGetDerivs(t, x, n_prof);
     ky = SplineGetDerivs(t, y, n_prof);
     kz = SplineGetDerivs(t, z, n_prof);
-    for(int ik = 0; ik < n_prof; ik++){
+    for(unsigned int ik = 0; ik < n_prof; ik++){
       dxdt[i][2][ik] = kx[ik];
       dydt[i][2][ik] = ky[ik];
       dzdt[i][2][ik] = kz[ik];
@@ -1223,7 +1528,7 @@ void SUBoom::RayTracer(){
 
     kx = SplineGetDerivs(t, x, n_prof);
     ky = SplineGetDerivs(t, y, n_prof);
-    for(int ik = 0; ik < n_prof; ik++){
+    for(unsigned int ik = 0; ik < n_prof; ik++){
       dxdt[i][3][ik] = kx[ik];
       dydt[i][3][ik] = ky[ik];
     }
@@ -1267,11 +1572,11 @@ void SUBoom::RayTubeArea(){
       }
       z_int = z[j]/scale_z;
       for(int k = 0; k < 4; k++){
-	  x_int = x_of_z[i][k][j];
-	  y_int = y_of_z[i][k][j];
-	  corners[k][0] = x_int;
-	  corners[k][1] = y_int;
-	  corners[k][2] = z_int;
+    	  x_int = x_of_z[i][k][j];
+	      y_int = y_of_z[i][k][j];
+	      corners[k][0] = x_int;
+	      corners[k][1] = y_int;
+	      corners[k][2] = z_int;
       }
       su2double u[3] = {corners[3][0]-corners[0][0], corners[3][1]-corners[0][1], corners[3][2]-corners[0][2]};
       su2double v[3] = {corners[2][0]-corners[1][0], corners[2][1]-corners[1][1], corners[2][2]-corners[1][2]};
@@ -1306,8 +1611,8 @@ void SUBoom::FindInitialRayTime(){
 
   ks = new su2double[n_prof];
 
-  for(int i = 0; i < ray_N_phi; i++){
-    for(int j = 0; j < n_prof; j++){
+  for(unsigned int i = 0; i < ray_N_phi; i++){
+    for(unsigned int j = 0; j < n_prof; j++){
       t[j] = t_of_z[i][0][j];
       f[j] = matchr(i, j, h_L, ray_r0);
     }
@@ -1327,7 +1632,7 @@ void SUBoom::FindInitialRayTime(){
       t1 = tmp;
       f0 = f1;
       // Find interval which contains t1
-      int j_sp = n_prof-1;
+      unsigned int j_sp = n_prof-1;
       for(int j = n_prof-1; j > -1; j--){
 	    if(t1 < t[j]){
 	      j_sp = j+1;
@@ -1372,8 +1677,8 @@ void SUBoom::ODETerms(){
   ray_C2 = new su2double*[ray_N_phi];
   ray_dC1 = new su2double*[ray_N_phi];
   ray_dC2 = new su2double*[ray_N_phi];
-  for(int i = 0; i < ray_N_phi; i++){
-    for (int j = 0; j < n_prof; j++){
+  for(unsigned int i = 0; i < ray_N_phi; i++){
+    for (unsigned int j = 0; j < n_prof; j++){
       t[j] = t_of_z[i][0][j];
       A[j] = ray_A[i][j];
       cn[j] = ray_c0[i][0]*cos(theta[i][0][j]);
@@ -1387,7 +1692,7 @@ void SUBoom::ODETerms(){
 
     ray_C1[i] = new su2double[n_prof];
     ray_C2[i] = new su2double[n_prof];
-    for(int j = 0; j < n_prof; j++){
+    for(unsigned int j = 0; j < n_prof; j++){
       ray_C1[i][j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];
       //if(A[j] > 1E-16){
           ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./A[j])*dAdt[j]);
@@ -1482,13 +1787,13 @@ void SUBoom::CreateSignature(){
 
 }
 
-su2double **WaveformToPressureSignal(su2double fvec[], int M, int &Msig){
+su2double **WaveformToPressureSignal(su2double fvec[], unsigned int M, int &Msig){
   su2double TT[2][M], pp[2][M];
   su2double m[M], dp[M], l[M];
   su2double **sig;
 
   /*---Get m, dp, l from fvec---*/
-  for(int i = 0; i < M; i++){
+  for(unsigned int i = 0; i < M; i++){
     m[i] = fvec[i];
     dp[i] = fvec[i+M];
     l[i] = fvec[i+2*M];
@@ -1501,7 +1806,7 @@ su2double **WaveformToPressureSignal(su2double fvec[], int M, int &Msig){
   pp[1][0] = pp[0][0] + m[0]*l[0];
 
   /*---Build signal---*/
-  for(int seg = 1; seg < M; seg++){
+  for(unsigned int seg = 1; seg < M; seg++){
     /*---First node---*/
     TT[0][seg] = TT[1][seg-1];
     pp[0][seg] = pp[1][seg-1] + dp[seg];
@@ -1514,9 +1819,9 @@ su2double **WaveformToPressureSignal(su2double fvec[], int M, int &Msig){
   if(Msig < 0){
     /*---Just return pressure value at segments---*/
     sig = new su2double*[2];
-    for(int j = 0; j < 2; j++){sig[j] = new su2double[M];}
+    for(unsigned short j = 0; j < 2; j++){sig[j] = new su2double[M];}
 
-    for(int j = 0; j < M; j++){
+    for(unsigned int j = 0; j < M; j++){
         sig[0][j] = pp[0][j];
         sig[1][j] = pp[1][j];
 
@@ -1525,7 +1830,7 @@ su2double **WaveformToPressureSignal(su2double fvec[], int M, int &Msig){
   else{
     /*---Build 2-D vector---*/
     sig = new su2double*[2];
-    for(int j = 0; j < 2; j++){sig[j] = new su2double[2*M];}
+    for(unsigned int j = 0; j < 2; j++){sig[j] = new su2double[2*M];}
 
     /*---First segment---*/
     sig[0][0] = TT[0][0];
@@ -1534,7 +1839,7 @@ su2double **WaveformToPressureSignal(su2double fvec[], int M, int &Msig){
     sig[1][1] = pp[1][0];
 
     int i = 2;
-    for(int seg = 1; seg < M; seg++){
+    for(unsigned int seg = 1; seg < M; seg++){
       /*---First node---*/
       if(pp[0][seg] != pp[1][seg-1]){  // pressure jump at this juncture
         sig[0][i] = TT[0][seg];
@@ -1622,15 +1927,15 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
 
   /*---Decompose f vector---*/
   for(int j = 0; j < 3*M; j++){
-      if(j < M){
-	m[j] = fvec[j];
-      }
-      else if(j < 2*M){
-	dp[j-M] = fvec[j];
-      }
-      else{
-	l[j-2*M] = fvec[j];
-      }
+    if(j < M){
+	    m[j] = fvec[j];
+    }
+    else if(j < 2*M){
+	    dp[j-M] = fvec[j];
+    }
+    else{
+	    l[j-2*M] = fvec[j];
+    }
   }
   /*---Remove segments with l = 0---*/
   int i = 0;
@@ -1721,27 +2026,27 @@ su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2
 
 void SUBoom::PropagateSignal(){
   su2double t0, tf, dt;
-  int j0;
+  unsigned int j0;
   RayData data;
   su2double *fvec;
   su2double *f;
   su2double **ground_signal;
   int M = signal.M;
 
-  for(int i = 0; i < ray_N_phi; i++){
+  for(unsigned int i = 0; i < ray_N_phi; i++){
     t0 = ray_t0[i];
 
     /*---Assemble f vector and ray data for integration---*/
     signal.fvec = new su2double[3*signal.M];
-    for(int j = 0; j < 3*signal.M; j++){
+    for(unsigned int j = 0; j < 3*signal.M; j++){
       if(j < signal.M){
-	signal.fvec[j] = signal.m[j];
+	      signal.fvec[j] = signal.m[j];
       }
       else if(j < 2*signal.M){
-	signal.fvec[j] = signal.dp[j-signal.M];
+	      signal.fvec[j] = signal.dp[j-signal.M];
       }
       else{
-	signal.fvec[j] = signal.l[j-2*signal.M];
+	      signal.fvec[j] = signal.l[j-2*signal.M];
       }
     }
     data.t = new su2double[9];
@@ -1755,19 +2060,19 @@ void SUBoom::PropagateSignal(){
     data.scale_C2 = scale_C2;
 
     fvec = signal.fvec;
-    for(int j = n_prof-1; j > 0; j--){
+    for(int j = n_prof-1; j > -1; j--){
         if(t_of_z[i][0][j] >= ray_t0[i]){
             j0 = j+1;
             break;
         }
     }
-    for(int j = j0; j > 0; j--){
+    for(unsigned int j = j0; j > 0; j--){
       /*---Integrate---*/
       int j0_dat;
       if(j >= n_prof-4) j0_dat = n_prof-4;
       else if(j < 4) j0_dat = 4;
       else j0_dat = j;
-      for(int jj = 0; jj < 9; jj++){
+      for(unsigned short jj = 0; jj < 9; jj++){
           data.t[jj] = t_of_z[i][0][j0_dat-4+jj];
           data.C1[jj] = ray_C1[i][j0_dat-4+jj];
           data.C2[jj] = ray_C2[i][j0_dat-4+jj];
@@ -1784,7 +2089,7 @@ void SUBoom::PropagateSignal(){
 
     /*---Waveform to pressure signal---*/
     ground_signal = new su2double*[2];
-    for(int ii = 0; ii < 2; ii++){
+    for(unsigned short ii = 0; ii < 2; ii++){
       ground_signal[ii] = new su2double[2*M];
     }
     int Msig = M;
@@ -1822,8 +2127,8 @@ void SUBoom::PropagateSignal(){
   }
 
   /*---Clean up---*/
-  for(int i = 0; i < ray_N_phi; i++){
-  for(int j = 0; j < 4; j++){
+  for(unsigned int i = 0; i < ray_N_phi; i++){
+  for(unsigned short j = 0; j < 4; j++){
       delete [] x_of_z[i][j];
       delete [] y_of_z[i][j];
       delete [] t_of_z[i][j];
@@ -1870,56 +2175,56 @@ void SUBoom::PropagateSignal(){
 }
 
 void SUBoom::WriteSensitivities(){
-  unsigned long iVar, iSig, Max_nSig, nVar, Global_Index, Total_Index;
+  unsigned long iVar, iSig, Max_nPointID, nVar, Global_Index, Total_Index;
   ofstream Boom_AdjointFile;
 
   int rank, iProcessor, nProcessor;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  unsigned long Buffer_Send_nSig[1], *Buffer_Recv_nSig = NULL;
+  unsigned long Buffer_Send_nPointID[1], *Buffer_Recv_nPointID = NULL;
 
-  if (rank == MASTER_NODE) Buffer_Recv_nSig= new unsigned long [nProcessor];
+  if (rank == MASTER_NODE) Buffer_Recv_nPointID= new unsigned long [nProcessor];
 
-  Buffer_Send_nSig[0]=nSig;
+  Buffer_Send_nPointID[0]=nPointID; 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(&Buffer_Send_nSig, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nSig, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
-  SU2_MPI::Allreduce(&nSig,&Max_nSig,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+  SU2_MPI::Gather(&Buffer_Send_nPointID, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPointID, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+  SU2_MPI::Allreduce(&nPointID,&Max_nPointID,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
 #endif
 
   nVar = nDim+3;
 
   /* pack sensitivity values in each processor and send to root */
-  su2double *Buffer_Send_dJdU = new su2double [Max_nSig*nVar];
-  unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nSig];
+  su2double *Buffer_Send_dJdU = new su2double [Max_nPointID*nVar];
+  unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nPointID];
   /*---Zero send buffers---*/
-  for (int i=0; i <Max_nSig*nVar; i++){
+  for (unsigned int i=0; i <Max_nPointID*nVar; i++){
     Buffer_Send_dJdU[i]=0.0;
   }
-  for (int i=0; i <Max_nSig; i++){
+  for (unsigned int i=0; i <Max_nPointID; i++){
     Buffer_Send_GlobalIndex[i]=0;
   }
   su2double *Buffer_Recv_dJdU = NULL;
   unsigned long *Buffer_Recv_GlobalIndex = NULL;
 
   if (rank == MASTER_NODE) {
-    Buffer_Recv_dJdU = new su2double [nProcessor*Max_nSig*nVar];
-    Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nSig];
+    Buffer_Recv_dJdU = new su2double [nProcessor*Max_nPointID*nVar];
+    Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nPointID];
   }
 
   /*---Fill send buffers with dJ/dU---*/
   for (iVar=0; iVar<nVar; iVar++){
-      for(iSig=0; iSig<nSig; iSig++){
-          Buffer_Send_dJdU[iVar*nSig+iSig] = dJdU[iVar][iSig];
+      for(iSig=0; iSig<nPointID; iSig++){
+          Buffer_Send_dJdU[iVar*nPointID+iSig] = dJdU[iVar][iSig];
         }
     }
 
-  for (iSig=0; iSig<nSig; iSig++){
+  for (iSig=0; iSig<nPointID; iSig++){
      Buffer_Send_GlobalIndex[iSig] = PointID[iSig];
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_dJdU, Max_nSig*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nSig*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nSig, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nSig , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_dJdU, Max_nPointID*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nPointID*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nPointID, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nPointID , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
   if (rank == MASTER_NODE){
@@ -1928,13 +2233,13 @@ void SUBoom::WriteSensitivities(){
 
   /*--- Loop through all of the collected data and write each node's values ---*/
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-    for (iSig = 0; iSig < Buffer_Recv_nSig[iProcessor]; iSig++) {
-        Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nSig+iSig];
+    for (iSig = 0; iSig < Buffer_Recv_nPointID[iProcessor]; iSig++) {
+        Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPointID+iSig];
         Boom_AdjointFile  << scientific << Global_Index << "\t";
 
        for (iVar = 0; iVar < nVar; iVar++){
          /*--- Current index position and global index ---*/
-         Total_Index  = iProcessor*Max_nSig*nVar + iVar*Buffer_Recv_nSig[iProcessor]  + iSig;
+         Total_Index  = iProcessor*Max_nPointID*nVar + iVar*Buffer_Recv_nPointID[iProcessor]  + iSig;
 
          /*--- Write to file---*/
          Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
@@ -1953,7 +2258,7 @@ void SUBoom::WriteSensitivities(){
   delete [] Buffer_Send_GlobalIndex;
 
   /*---Clear up  memory from dJdU---*/
-  for (int i=0; i<nDim+3; i++){
+  for (unsigned short i=0; i<nDim+3; i++){
     delete [] dJdU[i];
   }
   delete [] dJdU;
@@ -2346,13 +2651,13 @@ void searchTree::kNNRB(long i, int k, const su2double r0){
     kNN[0][count[0]] = i;
     yNN[0][count[0]] = abs(r0-nodes.y[i]);
     count++;
-    MergeSort(yNN[0], kNN[0], 0, count[0]-1);
+//    MergeSort(yNN[0], kNN[0], 0, count[0]-1);
   }
   else{
     if(abs(r0-nodes.y[i]) < abs(r0-yNN[0][count[0]-1])){
       kNN[0][count[0]] = i;
       yNN[0][count[0]] = abs(r0-nodes.y[i]);
-      MergeSort(yNN[0], kNN[0], 0, count[0]-1);
+//      MergeSort(yNN[0], kNN[0], 0, count[0]-1);
     }
   }
 

@@ -23,6 +23,7 @@ public:
   unsigned long n_prof;
   unsigned long *pointID_original;
   su2double **Coord_original;
+  bool *startline, *endline;
 
   /*---Flight variables---*/
   su2double flt_h;
@@ -65,7 +66,7 @@ public:
 
   /*---Sensitivity---*/
   unsigned short nDim;
-  unsigned long nPanel, nSig;
+  unsigned long nPanel, nSig, nPointID;
   unsigned long *PointID;
   su2double **dJdU;
 
@@ -103,10 +104,10 @@ public:
 
   void AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
                 su2double& rho, su2double& g);
-  void SearchLinear(CSolver *solver, CConfig *config, CGeometry *geometry, 
+  void SearchLinear(CConfig *config, CGeometry *geometry, 
                     const su2double r0, const su2double *phi, unsigned short nPhi);
-  void ExtractLine(CSolver *solver, CConfig *config, CGeometry *geometry, 
-                   const su2double r0, const su2double *phi, unsigned short nPhi);
+  void ExtractLine(CGeometry *geometry, const su2double r0, const su2double *phi, unsigned short nPhi);
+  void ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geometry);
   bool InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1);
   int Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *p0, su2double *p1);
   int Intersect3D();
@@ -132,11 +133,13 @@ public:
   su2double *ClipLambdaZeroSegment(su2double fvec[], int &M);
 };
 void MergeSort(su2double x[], su2double p[], int l, int r);
+void MergeSort(su2double y[], unsigned long k[], int l, int r);
 void merge(su2double x[], su2double p[], int l, int m, int r);
+void merge(su2double y[], unsigned long p[], int l, int m, int r);
 void QuickSort(su2double x[], su2double p[], int l, int r);
 su2double *derivs(su2double x, int m, su2double y[], SUBoom::RayData data);
 su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data);
-su2double **WaveformToPressureSignal(su2double fvec[], int M, int &Msig);
+su2double **WaveformToPressureSignal(su2double fvec[], unsigned int M, int &Msig);
 su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2double coeffs[]);
 
 class searchTree{
@@ -179,6 +182,5 @@ public:
 
 };
 void MergeSort(searchTree::treeNode nodes, int l, int r, unsigned short nDimTree);
-void MergeSort(su2double y[], int kNN[], int l, int r);
 void merge(searchTree::treeNode nodes, int l, int m, int r, unsigned short nDimTree);
-void merge(su2double y[], int kNN[], int l, int m, int r);
+void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj, su2double *isoparams);

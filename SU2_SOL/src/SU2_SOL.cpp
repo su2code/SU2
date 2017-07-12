@@ -204,7 +204,7 @@ geometry_container[ZONE_0]->SetCoord_CG();
 ////////if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
 ////////geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
-////////  geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
+////////geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
 ////////      FWH_container = new FWHSolver* [nZone];
 ////////for (iZone = 0; iZone < nZone; iZone++) {
@@ -583,8 +583,8 @@ geometry_container[ZONE_0]->SetCoord_CG();
 
             su2double extracted_derivative;
 
-             for (int iSig=0; iSig<boom.nSig; iSig++){
-                for (int i =0; i< boom.nDim+3; i++){
+             for (unsigned int iSig=0; iSig<boom.nPointID; iSig++){
+                for (unsigned short i =0; i< boom.nDim+3; i++){
                     boom.dJdU[i][iSig]=SU2_TYPE::GetDerivative(extracted_derivative);
 //                    cout << "dJdU = " << boom.dJdU[i][iSig] << endl;
                 }
