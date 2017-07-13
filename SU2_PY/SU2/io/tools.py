@@ -182,9 +182,9 @@ def get_headerMap(nZones = 1):
     """
     # header name to config file name map
     history_header_map = { "Iteration"       : "ITERATION"               ,
-                 "CLift"           : "LIFT"                    ,
-                 "CDrag"           : "DRAG"                    ,
-                 "CSideForce"      : "SIDEFORCE"               ,
+                 "CL"              : "LIFT"                    ,
+                 "CD"              : "DRAG"                    ,
+                 "CSF"             : "SIDEFORCE"               ,
                  "Cp_Diff"         : "INVERSE_DESIGN_PRESSURE" ,
                  "HeatFlux_Diff"   : "INVERSE_DESIGN_HEATFLUX" ,
                  "HeatFlux_Total"  : "TOTAL_HEATFLUX"          ,
