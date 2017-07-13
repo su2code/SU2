@@ -86,11 +86,7 @@ C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction = Y; };
 */
 
 
-C2phaseVariable::~C2phaseVariable(void) {
-
-	if (Primitive_Liquid != NULL) delete [] Primitive_Liquid;
-
-}
+C2phaseVariable::~C2phaseVariable(void) {}
 
 
 
