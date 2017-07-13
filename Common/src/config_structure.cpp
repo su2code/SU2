@@ -436,25 +436,25 @@ void CConfig::SetPointersNull(void) {
     
   /*--- Initialize some default arrays to NULL. ---*/
   
-  default_vel_inf       = NULL;
-  default_ffd_axis      = NULL;
-  default_eng_cyl       = NULL;
-  default_eng_val       = NULL;
-  default_cfl_adapt     = NULL;
-  default_ad_coeff_flow = NULL;
-  default_mixedout_coeff = NULL;
-  default_extrarelfac   = NULL;
+  default_vel_inf            = NULL;
+  default_ffd_axis           = NULL;
+  default_eng_cyl            = NULL;
+  default_eng_val            = NULL;
+  default_cfl_adapt          = NULL;
+  default_ad_coeff_flow      = NULL;
+  default_mixedout_coeff     = NULL;
+  default_extrarelfac        = NULL;
   default_rampRotFrame_coeff = NULL;
-  default_rampOutPres_coeff = NULL;
-  default_ad_coeff_adj  = NULL;
-  default_obj_coeff     = NULL;
-  default_geo_loc       = NULL;
-  default_distortion    = NULL;
-  default_ea_lim        = NULL;
-  default_grid_fix      = NULL;
-  default_inc_crit      = NULL;
-  default_htp_axis      = NULL;
-  default_body_force    = NULL;
+  default_rampOutPres_coeff  = NULL;
+  default_ad_coeff_adj       = NULL;
+  default_obj_coeff          = NULL;
+  default_geo_loc            = NULL;
+  default_distortion         = NULL;
+  default_ea_lim             = NULL;
+  default_grid_fix           = NULL;
+  default_inc_crit           = NULL;
+  default_htp_axis           = NULL;
+  default_body_force         = NULL;
 
   Riemann_FlowDir       = NULL;
   NRBC_FlowDir          = NULL;
@@ -1836,6 +1836,30 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
+  
+  /* DESCRIPTION: Multipoint design Mach number*/
+  addPythonOption("MULTIPOINT_MACH_NUMBER");
+  
+  /* DESCRIPTION: Multipoint design Weight */
+  addPythonOption("MULTIPOINT_WEIGHT");
+  
+  /* DESCRIPTION: Multipoint design Angle of Attack */
+  addPythonOption("MULTIPOINT_AOA");
+  
+  /* DESCRIPTION: Multipoint design Sideslip angle */
+  addPythonOption("MULTIPOINT_SIDESLIP_ANGLE");
+  
+  /* DESCRIPTION: Multipoint design target CL*/
+  addPythonOption("MULTIPOINT_TARGET_CL");
+  
+  /* DESCRIPTION: Multipoint design Reynolds number */
+  addPythonOption("MULTIPOINT_REYNOLDS_NUMBER");
+  
+  /* DESCRIPTION: Multipoint design freestream temperature */
+  addPythonOption("MULTIPOINT_FREESTREAM_TEMPERATURE");
+  
+  /* DESCRIPTION: Multipoint design freestream pressure */
+  addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
   
   /* END_CONFIG_OPTIONS */
 
@@ -4286,7 +4310,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AERO_DRAG_COEFFICIENT:   cout << "Aero CD objective function." << endl; break;
         case RADIAL_DISTORTION:       cout << "Radial distortion objective function." << endl; break;
         case CIRCUMFERENTIAL_DISTORTION:   cout << "Circumferential distortion objective function." << endl; break;
-
+        case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
       }
 		}
 		else {
@@ -5868,6 +5892,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AERO_DRAG_COEFFICIENT:   AdjExt = "_acd";       break;
       case RADIAL_DISTORTION:           AdjExt = "_rdis";      break;
       case CIRCUMFERENTIAL_DISTORTION:  AdjExt = "_cdis";      break;
+      case CUSTOM_OBJFUNC:        		AdjExt = "_custom";   break;
       case KINETIC_ENERGY_LOSS:     AdjExt = "_ke";        break;
       case TOTAL_PRESSURE_LOSS:     AdjExt = "_pl";        break;
       case FLOW_ANGLE_OUT:          AdjExt = "_fao";       break;
@@ -5877,7 +5902,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case EULERIAN_WORK:           AdjExt = "_ew";        break;
       case MASS_FLOW_IN:            AdjExt = "_mfi";       break;
       case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
-      case ENTROPY_GENERATION:      AdjExt = "_entg";       break;
+      case ENTROPY_GENERATION:      AdjExt = "_entg";      break;
       }
     }
     else{
