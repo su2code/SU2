@@ -15742,6 +15742,16 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 /*--- Compute two phase integral quantities for the boundary of interest ---*/
                 if (two_phase) {
 
+                  // pseudo code for computing the entropy generation
+                  // loop over the mesh volumes and do...
+                  //    liquid_mass_rate = solver[TWO_PHASE_SOL]->node[iPoint]->GetMassSource()
+                  //    cell_volume = geometry->turbovertex[iMarker][iSpan][iVertex]->GetVolume();
+                  //    vapor_temp = node[iPoint]->GetTemperature();
+                  //    liquid_temp = Liquid_vec[0];
+                  //    dt_subcooling = liquid_temp - vapor_temp;
+                  //    deltaH_ev = Enthalpy - node[iPoint]->GetPrimitive(nDim+?);
+                  //	s_gen = liquid_mass_rate*volume*deltaH_ev*(dt_subcooling/(vapor_temp*liquid_temp));
+
                   Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
                   Mom3 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3);
 
