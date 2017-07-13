@@ -49,7 +49,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
   bool menter_sst = (config->GetKind_Turb_Model() == SST);
   bool two_phase = ((config->GetKind_Solver() == TWO_PHASE_EULER) ||
 		             (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-					 (config->GetKind_Solver() == TWO_PHASE_RANS) );
+					 (config->GetKind_Solver() == TWO_PHASE_RANS));
 
   unsigned short nBladesRow, nStages;
 

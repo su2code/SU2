@@ -49,6 +49,7 @@ C2phaseVariable::C2phaseVariable(unsigned short val_nDim, unsigned short val_nva
   
   unsigned short iVar;
 
+
   /*--- Allocate space for the limiter ---*/
   
   Limiter = new su2double [nVar];

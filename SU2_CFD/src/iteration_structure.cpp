@@ -1665,6 +1665,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   bool dual_time = (dual_time_1st || dual_time_2nd);
   unsigned short iMesh;
   int Direct_Iter;
+  bool two_phase = ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) || (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+                   (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS));
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -1804,6 +1806,12 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
         solver_container[val_iZone][MESH_0][ADJTURB_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][TURB_SOL]->node[iPoint]->GetSolution());
       }
     }
+
+    if(two_phase){
+      for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
+        solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetSolution());
+      }
+    }
   }
 
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
@@ -1811,6 +1819,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
     solver_container[val_iZone][MESH_0][ADJTURB_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJTURB_SYS, false);
   }
 
+  if (two_phase){
+    solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJTWO_PHASE_SYS, false);
+  }
 
 }
 
@@ -1920,6 +1931,9 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
+  bool two_phase = ((config_container[iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
+                   (config_container[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+                   (config_container[iZone]->GetKind_Solver() == TWO_PHASE_RANS));
 
   if (kind_recording == CONS_VARS || kind_recording == COMBINED){
     
@@ -1935,7 +1949,12 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
     if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
+
+    if (two_phase){
+      solver_container[iZone][MESH_0][ADJTWO_PHASE_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
   }
+
   if (kind_recording == MESH_COORDS){
 
     /*--- Register node coordinates as input ---*/
@@ -1950,6 +1969,9 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeom
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
+  bool two_phase = ((config_container[iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
+             (config_container[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+ (config_container[iZone]->GetKind_Solver() == TWO_PHASE_RANS));
   if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
@@ -1966,6 +1988,14 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeom
     solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     solver_container[iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
     solver_container[iZone][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
+  }
+  // check if for 2phase is needed both pre and pro
+  if(two_phase){
+    solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+    solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_2PHASE_SYS, true);
+    solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
+    solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
+
   }
 
 }

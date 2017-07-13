@@ -372,7 +372,8 @@ enum RUNTIME_TYPE {
   RUNTIME_MULTIGRID_SYS = 14,   	/*!< \brief Full Approximation Storage Multigrid system of equations. */
   RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
-  RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_TRANS_SYS = 22,               /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_ADJTWO_PHASE_SYS = 23,        /*!< \brief One-physics case, the code is solving the adjoint for the 2 phase model. */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
@@ -382,7 +383,7 @@ const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution i
 
 const int TWO_PHASE_SOL = 5;/*!< \brief Position of the phase model solution in the solver container array. */
 
-
+const int ADJTWO_PHASE_SOL = 6; /*!< \brief Position of the two phase model adjoint solution in the solver container array. */
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */

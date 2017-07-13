@@ -4497,6 +4497,8 @@ void CDiscAdjFluidDriver::Run() {
 void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   unsigned short iZone, iMesh;
   int rank = MASTER_NODE;
+  bool two_phase = ((config_container[ZONE_0]->GetKind_Solver() == TWO_PHASE_EULER) || (config_container[ZONE_0]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+                   (config_container[ZONE_0]->GetKind_Solver() == TWO_PHASE_RANS));
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -4512,6 +4514,9 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     }
     if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
+    if(two_phase){
+      solver_container[iZone][MESH_0][ADJTWO_PHASE_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
 
