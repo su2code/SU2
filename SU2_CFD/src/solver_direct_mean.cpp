@@ -9785,98 +9785,99 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   
 }
 
-void CEulerSolver::Compute_ComboObj(CConfig *config) {
+void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
+  
   unsigned short iMarker_Monitoring;
   su2double Weight_ObjFunc;
-
+  
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
+  
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    
     Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-    switch(config->GetKind_ObjFunc(iMarker_Monitoring))
-    {
-    case DRAG_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
-      break;
-    case LIFT_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
-      break;
-    case SIDEFORCE_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*(Surface_CSF[iMarker_Monitoring]);
-      break;
-    case EFFICIENCY:
-      Total_ComboObj+=Weight_ObjFunc*(Surface_CEff[iMarker_Monitoring]);
-      break;
-    case MOMENT_X_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*(Surface_CMx[iMarker_Monitoring]);
-      break;
-    case MOMENT_Y_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*(Surface_CMy[iMarker_Monitoring]);
-      break;
-    case MOMENT_Z_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*(Surface_CMz[iMarker_Monitoring]);
-      break;
-    case FORCE_X_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*Surface_CFx[iMarker_Monitoring];
-      break;
-    case FORCE_Y_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*Surface_CFy[iMarker_Monitoring];
-      break;
-    case FORCE_Z_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*Surface_CFz[iMarker_Monitoring];
-      break;
-    case TOTAL_HEATFLUX:
-      Total_ComboObj+=Weight_ObjFunc*Surface_HF_Visc[iMarker_Monitoring];
-      break;
-    case MAXIMUM_HEATFLUX:
-      Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
-      break;
-    /*--- The following are not per-surface, and as a result will be
-     * double-counted iff multiple surfaces are specified as well as multi-objective
-     * TODO: print a warning to the user about that possibility. ---*/
-    case EQUIVALENT_AREA:
-      Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
-      break;
-    case AERO_DRAG_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*Total_AeroCD;
-      break;
-    case RADIAL_DISTORTION:
-      Total_ComboObj+=Weight_ObjFunc*Total_RadialDistortion;
-      break;
-    case CIRCUMFERENTIAL_DISTORTION:
-      Total_ComboObj+=Weight_ObjFunc*Total_CircumferentialDistortion;
-      break;
-    case NEARFIELD_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
-      break;
-    case INVERSE_DESIGN_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
-      break;
-    case INVERSE_DESIGN_HEATFLUX:
-      Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
-      break;
-    case THRUST_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*Total_CT;
-      break;
-    case TORQUE_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*Total_CQ;
-      break;
-    case FIGURE_OF_MERIT:
-      Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
-      break;
-    case AVG_TOTAL_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*OneD_TotalPress;
-      break;
-    case AVG_OUTLET_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*OneD_Pressure1D;
-      break;
-    case MASS_FLOW_RATE:
-      Total_ComboObj+=Weight_ObjFunc*OneD_MassFlowRate;
-      break;
-    default:
-      break;
+    
+    switch(config->GetKind_ObjFunc(iMarker_Monitoring)) {
+      case DRAG_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
+        if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCM()*(Surface_CMy[iMarker_Monitoring]);
+        break;
+      case LIFT_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case SIDEFORCE_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CSF[iMarker_Monitoring]);
+        break;
+      case EFFICIENCY:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CEff[iMarker_Monitoring]);
+        break;
+      case MOMENT_X_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMx[iMarker_Monitoring]);
+        break;
+      case MOMENT_Y_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMy[iMarker_Monitoring]);
+        break;
+      case MOMENT_Z_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMz[iMarker_Monitoring]);
+        break;
+      case FORCE_X_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFx[iMarker_Monitoring];
+        break;
+      case FORCE_Y_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFy[iMarker_Monitoring];
+        break;
+      case FORCE_Z_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFz[iMarker_Monitoring];
+        break;
+      case TOTAL_HEATFLUX:
+        Total_ComboObj+=Weight_ObjFunc*Surface_HF_Visc[iMarker_Monitoring];
+        break;
+      case MAXIMUM_HEATFLUX:
+        Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
+        break;
+        
+        /*--- The following are not per-surface, and as a result will be
+         * double-counted iff multiple surfaces are specified as well as multi-objective
+         * TODO: print a warning to the user about that possibility. ---*/
+        
+      case EQUIVALENT_AREA:
+        Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
+        break;
+      case NEARFIELD_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
+        break;
+      case INVERSE_DESIGN_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
+        break;
+      case INVERSE_DESIGN_HEATFLUX:
+        Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
+        break;
+      case THRUST_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Total_CT;
+        break;
+      case TORQUE_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Total_CQ;
+        break;
+      case FIGURE_OF_MERIT:
+        Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
+        break;
+      case AVG_TOTAL_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*OneD_TotalPress;
+        break;
+      case AVG_OUTLET_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*OneD_Pressure1D;
+        break;
+      case MASS_FLOW_RATE:
+        Total_ComboObj+=Weight_ObjFunc*OneD_MassFlowRate;
+        break;
+      case CUSTOM_OBJFUNC:
+        Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
+        break;
+      default:
+        break;
     }
   }
-
+  
 }
 
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
@@ -12914,7 +12915,9 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
         if (geometry->node[iPoint]->GetDomain()) {
 
@@ -12928,8 +12931,6 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
           for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
-
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             for (iVar = 0; iVar < nPrimVar; iVar++) {
               PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);

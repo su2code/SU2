@@ -3952,7 +3952,7 @@ void CDiscAdjFluidDriver::SetObjFunction(){
   /*--- Surface based obj. function ---*/
 
   for (iZone = 0; iZone < nZone; iZone++){
-    solver_container[iZone][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[iZone]);
+    solver_container[iZone][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(config_container[iZone]);
     ObjFunc += solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
   }
 
