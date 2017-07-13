@@ -608,7 +608,7 @@ inline void CSolver::SetTotal_ComboObj(su2double ComboObj) {}
 
 inline su2double CSolver::GetTotal_ComboObj(void) { return 0;}
 
-inline void CSolver::Compute_ComboObj(CConfig *config) {};
+inline void CSolver::Evaluate_ObjFunc(CConfig *config) {};
 
 inline void CSolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
@@ -972,7 +972,7 @@ inline void CSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){}
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 
-inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording){}
+inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetPressure_Inf(su2double p_inf){}
 
