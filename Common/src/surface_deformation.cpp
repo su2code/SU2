@@ -586,7 +586,6 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   su2double *CartCoordNew, *ParamCoord, CartCoord[3], ParamCoordGuess[3], MaxDiff, my_MaxDiff = 0.0, Diff, *Coord;
   int rank;
   unsigned short nDim = geometry->GetnDim();
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
 
   unsigned short BoxFFD = true;
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
@@ -897,7 +896,6 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   bool IPlane_Intersect_A = false, IPlane_Intersect_B = false;
   bool JPlane_Intersect_A = false, JPlane_Intersect_B = false;
   bool KPlane_Intersect_A = false, KPlane_Intersect_B = false;
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
 
   unsigned short Kind_SU2 = config->GetKind_SU2();
   bool FFD_Symmetry_Plane = config->GetFFD_Symmetry_Plane();
@@ -5424,7 +5422,6 @@ void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config, CFr
   unsigned short nGroups = 0, iGroup;
   vector<string> PilotGroupNames;
   vector<string> PilotFFD;
-  unsigned short iFFD;
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
@@ -5945,9 +5942,6 @@ void CFreeFormDefBox::SetCart2Cyl_CornerPoints(CConfig *config) {
 
   unsigned short iCornerPoint;
   su2double *CartCoord;
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
-
-  X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
 
   for (iCornerPoint = 0; iCornerPoint < 8; iCornerPoint++) {
 
@@ -5964,9 +5958,6 @@ void CFreeFormDefBox::SetCyl2Cart_CornerPoints(CConfig *config) {
 
   unsigned short iCornerPoint;
   su2double *PolarCoord;
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
-
-  X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
 
   for (iCornerPoint = 0; iCornerPoint < 8; iCornerPoint++) {
 
@@ -6016,9 +6007,6 @@ void CFreeFormDefBox::SetCart2Sphe_CornerPoints(CConfig *config) {
 
   unsigned short iCornerPoint;
   su2double *CartCoord;
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
-
-  X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
 
   for (iCornerPoint = 0; iCornerPoint < 8; iCornerPoint++) {
 
@@ -6035,10 +6023,7 @@ void CFreeFormDefBox::SetSphe2Cart_CornerPoints(CConfig *config) {
 
   unsigned short iCornerPoint;
   su2double *PolarCoord;
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
-
-  X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-
+  
   for (iCornerPoint = 0; iCornerPoint < 8; iCornerPoint++) {
 
     PolarCoord = GetCoordCornerPoints(iCornerPoint);

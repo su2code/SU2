@@ -4004,14 +4004,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
           case FFD_THICKNESS:         cout << "FFD (thickness) -> "; break;
           case FFD_ANGLE_OF_ATTACK:   cout << "FFD (angle of attack) <-> "; break;
-<<<<<<< HEAD
           case FFD_DIRECT_MANIPULATION:    cout << "FFD (direct) <-> "; break;
           case FFD_DIRECT_MANIPULATION_2D: cout << "FFD (direct) <-> "; break;
-          case CUSTOM:                cout << "Custom DV <-> "; break;
-||||||| merged common ancestors
-          case CUSTOM:                cout << "Custom DV <-> "; break;
-=======
->>>>>>> github/develop
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
