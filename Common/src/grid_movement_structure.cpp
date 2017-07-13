@@ -238,61 +238,63 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     CSysSolve *system  = new CSysSolve();
     
-    switch (config->GetKind_Deform_Linear_Solver()) {
+    if (LinSysRes.norm() != 0.0){
+      switch (config->GetKind_Deform_Linear_Solver()) {
         
         /*--- Solve the linear system (GMRES with restart) ---*/
         
-      case RESTARTED_FGMRES:
-        
-        Tot_Iter = 0; MaxIter = RestartIter;
-        
-        system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
-        
-        if ((rank == MASTER_NODE) && Screen_Output) {
-          cout << "\n# FGMRES (with restart) residual history" << endl;
-          cout << "# Residual tolerance target = " << NumError << endl;
-          cout << "# Initial residual norm     = " << Residual_Init << endl;
-        }
-        
-        if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
-        
-        while (Tot_Iter < Smoothing_Iter) {
-          
-          if (IterLinSol + RestartIter > Smoothing_Iter)
-            MaxIter = Smoothing_Iter - IterLinSol;
-          
-          IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
-          Tot_Iter += IterLinSol;
-          
-          if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
-          
-          if (Residual < Residual_Init*NumError) { break; }
-          
-        }
-        
-        if ((rank == MASTER_NODE) && Screen_Output) {
-          cout << "# FGMRES (with restart) final (true) residual:" << endl;
-          cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
-        }
-        
-        break;
-        
-        /*--- Solve the linear system (GMRES) ---*/
-        
-      case FGMRES:
-        
-        Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-        
-        break;
-        
-        /*--- Solve the linear system (BCGSTAB) ---*/
-        
-      case BCGSTAB:
-        
-        Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-        
-        break;
-        
+        case RESTARTED_FGMRES:
+
+          Tot_Iter = 0; MaxIter = RestartIter;
+
+          system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
+
+          if ((rank == MASTER_NODE) && Screen_Output) {
+            cout << "\n# FGMRES (with restart) residual history" << endl;
+            cout << "# Residual tolerance target = " << NumError << endl;
+            cout << "# Initial residual norm     = " << Residual_Init << endl;
+          }
+
+          if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
+
+          while (Tot_Iter < Smoothing_Iter) {
+
+            if (IterLinSol + RestartIter > Smoothing_Iter)
+              MaxIter = Smoothing_Iter - IterLinSol;
+
+            IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
+            Tot_Iter += IterLinSol;
+
+            if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
+
+            if (Residual < Residual_Init*NumError) { break; }
+
+          }
+
+          if ((rank == MASTER_NODE) && Screen_Output) {
+            cout << "# FGMRES (with restart) final (true) residual:" << endl;
+            cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
+          }
+
+          break;
+
+          /*--- Solve the linear system (GMRES) ---*/
+
+        case FGMRES:
+
+          Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+
+          break;
+
+          /*--- Solve the linear system (BCGSTAB) ---*/
+
+        case BCGSTAB:
+
+          Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+
+          break;
+
+      }
     }
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/

@@ -436,41 +436,58 @@ void CConfig::SetPointersNull(void) {
     
   /*--- Initialize some default arrays to NULL. ---*/
   
-  default_vel_inf       = NULL;
-  default_ffd_axis      = NULL;
-  default_eng_cyl       = NULL;
-  default_eng_val       = NULL;
-  default_cfl_adapt     = NULL;
-  default_ad_coeff_flow = NULL;
-  default_ad_coeff_adj  = NULL;
-  default_obj_coeff     = NULL;
-  default_geo_loc       = NULL;
-  default_distortion    = NULL;
-  default_ea_lim        = NULL;
-  default_grid_fix      = NULL;
-  default_inc_crit      = NULL;
-  default_htp_axis      = NULL;
-  default_body_force    = NULL;
+  default_vel_inf            = NULL;
+  default_ffd_axis           = NULL;
+  default_eng_cyl            = NULL;
+  default_eng_val            = NULL;
+  default_cfl_adapt          = NULL;
+  default_ad_coeff_flow      = NULL;
+  default_mixedout_coeff     = NULL;
+  default_extrarelfac        = NULL;
+  default_rampRotFrame_coeff = NULL;
+  default_rampOutPres_coeff  = NULL;
+  default_ad_coeff_adj       = NULL;
+  default_obj_coeff          = NULL;
+  default_geo_loc            = NULL;
+  default_distortion         = NULL;
+  default_ea_lim             = NULL;
+  default_grid_fix           = NULL;
+  default_inc_crit           = NULL;
+  default_htp_axis           = NULL;
+  default_body_force         = NULL;
 
-  Riemann_FlowDir= NULL;
-  NRBC_FlowDir = NULL;
-  CoordFFDBox= NULL;
-  DegreeFFDBox= NULL;
-  FFDTag = NULL;
-  nDV_Value = NULL;
-  TagFFDBox = NULL;
+  Riemann_FlowDir       = NULL;
+  NRBC_FlowDir          = NULL;
+  CoordFFDBox           = NULL;
+  DegreeFFDBox          = NULL;
+  FFDTag                = NULL;
+  nDV_Value             = NULL;
+  TagFFDBox             = NULL;
  
-  Kind_Data_Riemann     = NULL;
-  Riemann_Var1          = NULL;
-  Riemann_Var2          = NULL;
-  Kind_Data_NRBC        = NULL;
-  NRBC_Var1             = NULL;
-  NRBC_Var2             = NULL;
-  Marker_TurboBoundIn   = NULL;
-  Marker_TurboBoundOut  = NULL;
-  Kind_TurboPerformance = NULL;
-  Marker_NRBC           = NULL;
-  
+  Kind_Data_Riemann        = NULL;
+  Riemann_Var1             = NULL;
+  Riemann_Var2             = NULL;
+  Kind_Data_NRBC           = NULL;
+  NRBC_Var1                = NULL;
+  NRBC_Var2                = NULL;
+  RelaxFactorAverage       = NULL;
+  RelaxFactorFourier       = NULL;
+  nSpan_iZones             = NULL;
+  ExtraRelFacNRBC          = NULL;
+  Mixedout_Coeff           = NULL;
+  RampRotatingFrame_Coeff  = NULL;
+  RampOutletPressure_Coeff = NULL;
+  Kind_TurboMachinery      = NULL;
+
+  Marker_MixingPlaneInterface  = NULL;
+  Marker_TurboBoundIn          = NULL;
+  Marker_TurboBoundOut         = NULL;
+  Marker_NRBC                  = NULL;
+  Marker_Shroud                = NULL;
+
+  nBlades                      = NULL;
+  FreeStreamTurboNormal        = NULL;
+
   /*--- Variable initialization ---*/
   
   ExtIter    = 0;
@@ -486,6 +503,8 @@ void CConfig::SetPointersNull(void) {
 
   Grid_Movement = false;
   Aeroelastic_Simulation = false;
+
+  nSpanMaxAllZones = 1;
   
 }
 
@@ -504,21 +523,25 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*--- Allocate some default arrays needed for lists of doubles. ---*/
   
-  default_vel_inf       = new su2double[3];
-  default_ffd_axis      = new su2double[3];
-  default_eng_cyl       = new su2double[7];
-  default_eng_val       = new su2double[5];
-  default_cfl_adapt     = new su2double[4];
-  default_ad_coeff_flow = new su2double[3];
-  default_ad_coeff_adj  = new su2double[3];
-  default_obj_coeff     = new su2double[5];
-  default_geo_loc       = new su2double[2];
-  default_distortion    = new su2double[2];
-  default_ea_lim        = new su2double[3];
-  default_grid_fix      = new su2double[6];
-  default_inc_crit      = new su2double[3];
-  default_htp_axis      = new su2double[2];
-  default_body_force    = new su2double[3];
+  default_vel_inf            = new su2double[3];
+  default_ffd_axis           = new su2double[3];
+  default_eng_cyl            = new su2double[7];
+  default_eng_val            = new su2double[5];
+  default_cfl_adapt          = new su2double[4];
+  default_ad_coeff_flow      = new su2double[3];
+  default_mixedout_coeff     = new su2double[3];
+  default_extrarelfac        = new su2double[2];
+  default_rampRotFrame_coeff = new su2double[3];
+  default_rampOutPres_coeff  = new su2double[3];
+  default_ad_coeff_adj       = new su2double[3];
+  default_obj_coeff          = new su2double[5];
+  default_geo_loc            = new su2double[2];
+  default_distortion         = new su2double[2];
+  default_ea_lim             = new su2double[3];
+  default_grid_fix           = new su2double[6];
+  default_inc_crit           = new su2double[3];
+  default_htp_axis           = new su2double[2];
+  default_body_force         = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -799,15 +822,58 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
-  /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. \ingroup Config*/
-  addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir);
-  /*!\brief MIXING_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
+  /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
+  addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
+  /*!\brief SPATIAL_FOURIER \n DESCRIPTION: Option to compute the spatial fourier trasformation for the NRBC. */
+  addBoolOption("SPATIAL_FOURIER", SpatialFourier, false);
+  /*!\brief NRBC_EXTRA_RELAXFACTOR \n DESCRIPTION: the 1st coeff the value of the under relaxation factor to apply to the shroud and hub,
+   * the 2nd coefficient is the the percentage of span-wise height influenced by this extra under relaxation factor.*/
+  default_extrarelfac[0] = 0.1; default_extrarelfac[1] = 0.1;
+  addDoubleArrayOption("NRBC_EXTRA_RELAXFACTOR", 2, ExtraRelFacNRBC, default_extrarelfac);
+  /*!\brief AVERAGE_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
     \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
-  addEnumOption("MIXING_PROCESS_TYPE", Kind_MixingProcess, MixingProcess_Map, AREA_AVERAGE);
+  addEnumOption("MIXINGPLANE_INTERFACE_KIND", Kind_MixingPlaneInterface, MixingPlaneInterface_Map, NEAREST_SPAN);
+  /*!\brief AVERAGE_PROCESS_KIND \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
+    \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
+  addEnumOption("AVERAGE_PROCESS_KIND", Kind_AverageProcess, AverageProcess_Map, AREA);
+  /*!\brief PERFORMANCE_AVERAGE_PROCESS_KIND \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries for performance computation.
+      \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
+  addEnumOption("PERFORMANCE_AVERAGE_PROCESS_KIND", Kind_PerformanceAverageProcess, AverageProcess_Map, AREA);
+  default_mixedout_coeff[0] = 1.0; default_mixedout_coeff[1] = 1.0E-05; default_mixedout_coeff[2] = 15.0;
+  /*!\brief MIXEDOUT_COEFF \n DESCRIPTION: the 1st coeff is an under relaxation factor for the Newton method,
+   * the 2nd coefficient is the tolerance for the Newton method, 3rd coefficient is the maximum number of
+   * iteration for the Newton Method.*/
+  addDoubleArrayOption("MIXEDOUT_COEFF", 3, Mixedout_Coeff, default_mixedout_coeff);
+  /*!\brief RAMP_ROTATING_FRAME\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
+  addBoolOption("RAMP_ROTATING_FRAME", RampRotatingFrame, false);
+  default_rampRotFrame_coeff[0] = 0; default_rampRotFrame_coeff[1] = 1.0; default_rampRotFrame_coeff[2] = 1000.0;
+      /*!\brief RAMP_ROTATING_FRAME_COEFF \n DESCRIPTION: the 1st coeff is the staring velocity,
+   * the 2nd coeff is the number of iterations for the update, 3rd is the number of iteration */
+  addDoubleArrayOption("RAMP_ROTATING_FRAME_COEFF", 3, RampRotatingFrame_Coeff, default_rampRotFrame_coeff);
+  /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
+  addDoubleOption("AVERAGE_MACH_LIMIT", AverageMachLimit, 0.03);
+  /*!\brief RAMP_OUTLET_PRESSURE\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
+  addBoolOption("RAMP_OUTLET_PRESSURE", RampOutletPressure, false);
+  default_rampOutPres_coeff[0] = 100000.0; default_rampOutPres_coeff[1] = 1.0; default_rampOutPres_coeff[2] = 1000.0;
+  /*!\brief RAMP_OUTLET_PRESSURE_COEFF \n DESCRIPTION: the 1st coeff is the staring outlet pressure,
+   * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet pressure value */
+  addDoubleArrayOption("RAMP_OUTLET_PRESSURE_COEFF", 3, RampOutletPressure_Coeff, default_rampOutPres_coeff);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
-  addMixingPlaneOption("MARKER_MIXINGPLANE", nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
+  addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
+  /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
+  addBoolOption("TURBULENT_MIXINGPLANE", turbMixingPlane, false);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
-  addTurboPerfOption("MARKER_TURBO_PERFORMANCE", nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map);
+  addTurboPerfOption("MARKER_TURBOMACHINERY", nMarker_Turbomachinery, Marker_TurboBoundIn, Marker_TurboBoundOut);
+  /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
+  addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections_User, 1);
+  /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
+  addEnumOption("SPANWISE_KIND", Kind_SpanWise, SpanWise_Map, AUTOMATIC);
+  /*!\brief TURBOMACHINERY_TYPE \n DESCRIPTION: types of turbomachynery architecture.
+      \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
+  addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
+  /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0 .
+   * \n Format: (shroud1, shroud2, ...)*/
+  addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s)
    * \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet, Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
@@ -1775,6 +1841,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flag specifying if the mesh was decomposed */
   addPythonOption("DECOMPOSED");
 
+  /* DESCRIPTION: Number of zones of the problem */
+  addPythonOption("NZONES");
+
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
   
@@ -2099,13 +2168,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    *--- This will allow us to define multiple physics structural problems */
 
   if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
-	  if (val_izone == 0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
+    if (val_izone == 0) {Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true;}
 
-	  else {			 	Kind_Solver = Kind_Solver_Struc_FSI;	  	FSI_Problem = true;
-	  	  	  	  	  	  	Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
-	  	  	  	  	  	  	Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
-	  	  	  	  	  	  	Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
+    else {Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
+    Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
+    Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
+    Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
+    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
   }
   else { FSI_Problem = false; }
 
@@ -2175,10 +2244,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Fluid model consistency ---*/
 
   if (standard_air) {
-	if (Gamma != 1.4 || Gas_Constant != 287.058) {
-		Gamma = 1.4;
-		Gas_Constant = 287.058;
-        }
+    if (Gamma != 1.4 || Gas_Constant != 287.058) {
+      Gamma = 1.4;
+      Gas_Constant = 287.058;
+    }
   }
   /*--- Check for Measurement System ---*/
   
@@ -2190,18 +2259,25 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Convective scheme available for NICFD ---*/
   
   if (!ideal_gas) {
-    if (Kind_ConvNumScheme_Flow != SPACE_UPWIND) {
-      cout << "Only ROE Upwind and HLLC Upwind scheme can be used for Non-Ideal Compressible Fluids" << endl;
+    if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
+      cout << "Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids" << endl;
       exit(EXIT_FAILURE);
     }
-    else {
-      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC) {
-        cout << "Only ROE Upwind and HLLC Upwind scheme can be used for Non-Ideal Compressible Fluids" << endl;
-        exit(EXIT_FAILURE);
-      }
-    }
+
   }
   
+  if(GetBoolTurbomachinery()){
+    nBlades = new su2double[nZone];
+    FreeStreamTurboNormal= new su2double[3];
+  }
+
+  /*--- Check if NRBC are used with turbo markers ---*/
+
+  if (nMarker_NRBC > 0 && !GetBoolTurbomachinery()){
+    cout << "NRBC Boundary conditions can only be used with turbomachinery markers" << endl;
+    exit(EXIT_FAILURE);
+  }
+
   /*--- Check for Boundary condition available for NICFD ---*/
   
   if (!ideal_gas) {
@@ -2237,6 +2313,61 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
+  /*--- Force number of span-wise section to 1 if 2D case ---*/
+  if(val_nDim ==2){
+    nSpanWiseSections_User=1;
+    Kind_SpanWise= EQUISPACED;
+  }
+
+  /*--- Set number of TurboPerformance markers ---*/
+  if(nMarker_Turbomachinery > 0){
+    if(nMarker_Turbomachinery > 1){
+      nMarker_TurboPerformance = nMarker_Turbomachinery + int(nMarker_Turbomachinery/2) + 1;
+    }else{
+      nMarker_TurboPerformance = nMarker_Turbomachinery;
+    }
+  } else {
+    nMarker_TurboPerformance = 0;
+    nSpanWiseSections =1;
+  }
+
+  /*--- Set number of TurboPerformance markers ---*/
+  if(nMarker_Turbomachinery != 0){
+    nSpan_iZones = new unsigned short[nZone];
+  }
+
+  /*--- Set number of TurboPerformance markers ---*/
+  if(RampRotatingFrame && !DiscreteAdjoint){
+    FinalRotation_Rate_Z = new su2double[nZone];
+    for(iZone=0; iZone <nZone; iZone ++){
+      FinalRotation_Rate_Z[iZone] = Rotation_Rate_Z[iZone];
+      if(abs(FinalRotation_Rate_Z[iZone]) > 0.0){
+        Rotation_Rate_Z[iZone] = RampRotatingFrame_Coeff[0];
+      }
+    }
+  }
+
+  if(RampOutletPressure && !DiscreteAdjoint){
+    for (iMarker = 0; iMarker < nMarker_NRBC; iMarker++){
+      if (Kind_Data_NRBC[iMarker] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker] == STATIC_PRESSURE_1D || Kind_Data_NRBC[iMarker] == RADIAL_EQUILIBRIUM ){
+        FinalOutletPressure   = NRBC_Var1[iMarker];
+        NRBC_Var1[iMarker] = RampOutletPressure_Coeff[0];
+      }
+    }
+    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
+      if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
+        FinalOutletPressure      = Riemann_Var1[iMarker];
+        Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
+      }
+    }
+  }
+
+  /*--- Check on extra Relaxation factor for NRBC---*/
+  if(ExtraRelFacNRBC[1] > 0.5){
+    ExtraRelFacNRBC[1] = 0.5;
+  }
+
+
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
    that we also set the Grid_Movement flag to false. We initialize to the
    number of zones here, because we are guaranteed to at least have one. ---*/
@@ -3143,6 +3274,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       default:
         break;
     }
+
+    RampOutletPressure = false;
+    RampRotatingFrame = false;
   }
 
   /*--- Check for 2nd order w/ limiting for JST and correct ---*/
@@ -3168,7 +3302,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Load_Sine,
-  iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D;
+  iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D,
+  iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
 
   int size = SINGLE_NODE;
   
@@ -3199,65 +3334,77 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Allocate the memory (markers in each domain) ---*/
   
-  Marker_All_TagBound       = new string[nMarker_All];			    // Store the tag that correspond with each marker.
-  Marker_All_SendRecv       = new short[nMarker_All];						// +#domain (send), -#domain (receive).
-  Marker_All_KindBC         = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
-  Marker_All_Monitoring     = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
-  Marker_All_Designing      = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
-  Marker_All_Plotting       = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_Analyze  = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_ZoneInterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
-  Marker_All_GeoEval        = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
-  Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
-  Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
-  Marker_All_PerBound       = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Out_1D         = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
-
+  Marker_All_TagBound             = new string[nMarker_All];			// Store the tag that correspond with each marker.
+  Marker_All_SendRecv             = new short[nMarker_All];				// +#domain (send), -#domain (receive).
+  Marker_All_KindBC               = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
+  Marker_All_Monitoring           = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
+  Marker_All_Designing            = new unsigned short[nMarker_All];    // Store whether the boundary should be designed.
+  Marker_All_Plotting             = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_Analyze              = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_ZoneInterface        = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
+  Marker_All_GeoEval              = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
+  Marker_All_DV                   = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
+  Marker_All_Moving               = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
+  Marker_All_PerBound             = new short[nMarker_All];				// Store whether the boundary belongs to a periodic boundary.
+  Marker_All_Out_1D               = new unsigned short[nMarker_All];    // Store whether the boundary belongs to a 1-d output boundary.
+  Marker_All_Turbomachinery       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
+  Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbomachinery computations.
+  Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All];	// Store whether the boundary has a in the MixingPlane interface.
+  
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
-    Marker_All_TagBound[iMarker_All]      = "SEND_RECEIVE";
-    Marker_All_SendRecv[iMarker_All]      = 0;
-    Marker_All_KindBC[iMarker_All]        = 0;
-    Marker_All_Monitoring[iMarker_All]    = 0;
-    Marker_All_GeoEval[iMarker_All]       = 0;
-    Marker_All_Designing[iMarker_All]     = 0;
-    Marker_All_Plotting[iMarker_All]      = 0;
-    Marker_All_Analyze[iMarker_All]       = 0;
-    Marker_All_ZoneInterface[iMarker_All] = 0;
-    Marker_All_DV[iMarker_All]            = 0;
-    Marker_All_Moving[iMarker_All]        = 0;
-    Marker_All_PerBound[iMarker_All]      = 0;
-    Marker_All_Out_1D[iMarker_All]        = 0;
+    Marker_All_TagBound[iMarker_All]             = "SEND_RECEIVE";
+    Marker_All_SendRecv[iMarker_All]             = 0;
+    Marker_All_KindBC[iMarker_All]               = 0;
+    Marker_All_Monitoring[iMarker_All]           = 0;
+    Marker_All_GeoEval[iMarker_All]              = 0;
+    Marker_All_Designing[iMarker_All]            = 0;
+    Marker_All_Plotting[iMarker_All]             = 0;
+    Marker_All_Analyze[iMarker_All]              = 0;
+    Marker_All_ZoneInterface[iMarker_All]        = 0;
+    Marker_All_DV[iMarker_All]                   = 0;
+    Marker_All_Moving[iMarker_All]               = 0;
+    Marker_All_PerBound[iMarker_All]             = 0;
+    Marker_All_Out_1D[iMarker_All]               = 0;
+    Marker_All_Turbomachinery[iMarker_All]       = 0;
+    Marker_All_TurbomachineryFlag[iMarker_All]   = 0;
+    Marker_All_MixingPlaneInterface[iMarker_All] = 0;
   }
 
   /*--- Allocate the memory (markers in the config file) ---*/
 
-  Marker_CfgFile_TagBound      = new string[nMarker_CfgFile];
-  Marker_CfgFile_KindBC        = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Monitoring    = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Designing     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Plotting      = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Analyze       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_GeoEval       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_ZoneInterface = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_DV            = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Moving        = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PerBound      = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Out_1D        = new unsigned short[nMarker_CfgFile];
-
+  Marker_CfgFile_TagBound             = new string[nMarker_CfgFile];
+  Marker_CfgFile_KindBC               = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Monitoring           = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Designing            = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Plotting             = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Analyze              = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_GeoEval              = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_ZoneInterface        = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Out_1D               = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile];
+  
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile]      = "SEND_RECEIVE";
-    Marker_CfgFile_KindBC[iMarker_CfgFile]        = 0;
-    Marker_CfgFile_Monitoring[iMarker_CfgFile]    = 0;
-    Marker_CfgFile_GeoEval[iMarker_CfgFile]       = 0;
-    Marker_CfgFile_Designing[iMarker_CfgFile]     = 0;
-    Marker_CfgFile_Plotting[iMarker_CfgFile]      = 0;
-    Marker_CfgFile_Analyze[iMarker_CfgFile]       = 0;
-    Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = 0;
-    Marker_CfgFile_DV[iMarker_CfgFile]            = 0;
-    Marker_CfgFile_Moving[iMarker_CfgFile]        = 0;
-    Marker_CfgFile_PerBound[iMarker_CfgFile]      = 0;
-    Marker_CfgFile_Out_1D[iMarker_CfgFile]        = 0;
+    Marker_CfgFile_TagBound[iMarker_CfgFile]             = "SEND_RECEIVE";
+    Marker_CfgFile_KindBC[iMarker_CfgFile]               = 0;
+    Marker_CfgFile_Monitoring[iMarker_CfgFile]           = 0;
+    Marker_CfgFile_GeoEval[iMarker_CfgFile]              = 0;
+    Marker_CfgFile_Designing[iMarker_CfgFile]            = 0;
+    Marker_CfgFile_Plotting[iMarker_CfgFile]             = 0;
+    Marker_CfgFile_Analyze[iMarker_CfgFile]              = 0;
+    Marker_CfgFile_ZoneInterface[iMarker_CfgFile]        = 0;
+    Marker_CfgFile_DV[iMarker_CfgFile]                   = 0;
+    Marker_CfgFile_Moving[iMarker_CfgFile]               = 0;
+    Marker_CfgFile_PerBound[iMarker_CfgFile]             = 0;
+    Marker_CfgFile_Out_1D[iMarker_CfgFile]               = 0;
+    Marker_CfgFile_Turbomachinery[iMarker_CfgFile]       = 0;
+    Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]   = 0;
+    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = 0;
   }
 
   /*--- Allocate memory to store surface information (Analyze BC) ---*/
@@ -3631,6 +3778,37 @@ void CConfig::SetMarkers(unsigned short val_software) {
       Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
   }
 
+/*--- Identification of Turbomachinery markers and flag them---*/
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    unsigned short indexMarker=0;
+    Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = NO;
+    Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = NO;
+    for (iMarker_Turbomachinery = 0; iMarker_Turbomachinery < nMarker_Turbomachinery; iMarker_Turbomachinery++){
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundIn[iMarker_Turbomachinery]){
+        indexMarker=(iMarker_Turbomachinery+1);
+        Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
+        Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = INFLOW;
+      }
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_Turbomachinery]){
+        indexMarker=(iMarker_Turbomachinery+1);
+        Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
+        Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = OUTFLOW;
+      }
+    }
+  }
+
+  /*--- Identification of MixingPlane interface markers ---*/
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+  	unsigned short indexMarker=0;
+    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = NO;
+    for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface])
+      	indexMarker=(int)(iMarker_MixingPlaneInterface/2+1);
+    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = indexMarker;
+  }
+
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_DV[iMarker_CfgFile] = NO;
     for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++)
@@ -3659,13 +3837,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
   iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
-  iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
+  iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement,
-  iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
+  iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
   iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
-  iMarker_ActDiskOutlet;
+  iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
   
   
   /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
@@ -3846,14 +4024,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
     else {
-      cout << "Reference origin (moment computation) is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
-      cout << "Surface(s) where the force coefficients are evaluated: ";
-      for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-        cout << Marker_Monitoring[iMarker_Monitoring];
-        if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
-        else cout <<"."<< endl;
+      if (nMarker_Monitoring != 0){
+        cout << "Reference origin (moment computation) is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
+        cout << "Surface(s) where the force coefficients are evaluated: ";
+        for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+          cout << Marker_Monitoring[iMarker_Monitoring];
+          if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
+          else cout <<"."<< endl;
+        }
+        cout<< endl;
       }
-      cout<< endl;
     }
     
     if (nMarker_Designing != 0) {
@@ -4810,11 +4990,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (nMarker_MixBound != 0) {
+  if (nMarker_MixingPlaneInterface != 0) {
       cout << "MixingPlane boundary marker(s): ";
-      for (iMarker_MixBound = 0; iMarker_MixBound < nMarker_MixBound; iMarker_MixBound++) {
-        cout << Marker_MixBound[iMarker_MixBound];
-        if (iMarker_MixBound < nMarker_MixBound-1) cout << ", ";
+      for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++) {
+        cout << Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface];
+        if (iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface-1) cout << ", ";
         else cout <<"."<< endl;
     }
   }
@@ -4946,22 +5126,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (nMarker_ActDiskInlet != 0) {
-		cout << "Actuator disk (inlet) boundary marker(s): ";
-		for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
-			cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
-			if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
-			else cout <<"."<< endl;
-		}
-	}
+    cout << "Actuator disk (inlet) boundary marker(s): ";
+    for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+      cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
+      if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
 
   if (nMarker_ActDiskOutlet != 0) {
-		cout << "Actuator disk (outlet) boundary marker(s): ";
-		for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
-			cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
-			if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
-			else cout <<"."<< endl;
-		}
-	}
+    cout << "Actuator disk (outlet) boundary marker(s): ";
+    for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+      cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
+      if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
 
 }
 
@@ -5183,6 +5363,27 @@ unsigned short CConfig::GetMarker_CfgFile_ZoneInterface(string val_marker) {
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_Turbomachinery(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_Turbomachinery[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_TurbomachineryFlag(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_MixingPlaneInterface(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_Out_1D(string val_marker) {
@@ -5572,6 +5773,10 @@ CConfig::~CConfig(void) {
   if (default_eng_val       != NULL) delete [] default_eng_val;
   if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
   if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
+  if (default_mixedout_coeff!= NULL) delete [] default_mixedout_coeff;
+  if (default_extrarelfac!= NULL) delete [] default_extrarelfac;
+  if (default_rampRotFrame_coeff!= NULL) delete [] default_rampRotFrame_coeff;
+  if (default_rampOutPres_coeff!= NULL) delete[] default_rampOutPres_coeff;
   if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;
   if (default_obj_coeff     != NULL) delete [] default_obj_coeff;
   if (default_geo_loc       != NULL) delete [] default_geo_loc;
@@ -5592,11 +5797,21 @@ CConfig::~CConfig(void) {
   if (Kind_Data_NRBC != NULL) delete [] Kind_Data_NRBC;
   if (NRBC_Var1 != NULL) delete [] NRBC_Var1;
   if (NRBC_Var2 != NULL) delete [] NRBC_Var2;
+  if (RelaxFactorAverage != NULL) delete [] RelaxFactorAverage;
+  if (RelaxFactorFourier != NULL) delete [] RelaxFactorFourier;
+  if (nSpan_iZones != NULL) delete [] nSpan_iZones;
+  if (Kind_TurboMachinery != NULL) delete [] Kind_TurboMachinery;
+
+  if (Marker_MixingPlaneInterface !=NULL) delete [] Marker_MixingPlaneInterface;
   if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
   if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
-  if (Kind_TurboPerformance != NULL) delete [] Kind_TurboPerformance;
   if (Marker_Riemann != NULL) delete [] Marker_Riemann;
   if (Marker_NRBC != NULL) delete [] Marker_NRBC;
+  if (Marker_Shroud != NULL) delete [] Marker_Shroud;
+
+  if (nBlades != NULL) delete [] nBlades;
+  if (FreeStreamTurboNormal != NULL) delete [] FreeStreamTurboNormal;
+
  
 }
 
@@ -5640,7 +5855,20 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
         SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
-    
+    return multizone_filename;
+}
+
+string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+    if (GetnZone() > 1 ) {
+        unsigned short lastindex = multizone_filename.find_last_of(".");
+        multizone_filename = multizone_filename.substr(0, lastindex);
+        SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
+        multizone_filename.append(string(buffer));
+    }
     return multizone_filename;
 }
 
@@ -5681,6 +5909,16 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case RADIAL_DISTORTION:           AdjExt = "_rdis";      break;
       case CIRCUMFERENTIAL_DISTORTION:  AdjExt = "_cdis";      break;
       case CUSTOM_OBJFUNC:        		AdjExt = "_custom";   break;
+      case KINETIC_ENERGY_LOSS:     AdjExt = "_ke";        break;
+      case TOTAL_PRESSURE_LOSS:     AdjExt = "_pl";        break;
+      case FLOW_ANGLE_OUT:          AdjExt = "_fao";       break;
+      case FLOW_ANGLE_IN:           AdjExt = "_fai";       break;
+      case TOTAL_EFFICIENCY:        AdjExt = "_teff";      break;
+      case TOTAL_STATIC_EFFICIENCY: AdjExt = "_tseff";     break;
+      case EULERIAN_WORK:           AdjExt = "_ew";        break;
+      case MASS_FLOW_IN:            AdjExt = "_mfi";       break;
+      case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
+      case ENTROPY_GENERATION:      AdjExt = "_entg";      break;
       }
     }
     else{
@@ -6184,11 +6422,32 @@ su2double CConfig::GetNRBC_Var1(string val_marker) {
   return NRBC_Var1[iMarker_NRBC];
 }
 
+void CConfig::SetNRBC_Var1(su2double newVar1, string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  NRBC_Var1[iMarker_NRBC] = newVar1;
+}
+
 su2double CConfig::GetNRBC_Var2(string val_marker) {
   unsigned short iMarker_NRBC;
   for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
     if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
   return NRBC_Var2[iMarker_NRBC];
+}
+
+su2double CConfig::GetNRBC_RelaxFactorAverage(string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  return RelaxFactorAverage[iMarker_NRBC];
+}
+
+su2double CConfig::GetNRBC_RelaxFactorFourier(string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  return RelaxFactorFourier[iMarker_NRBC];
 }
 
 su2double* CConfig::GetNRBC_FlowDir(string val_marker) {
@@ -6205,6 +6464,115 @@ unsigned short CConfig::GetKind_Data_NRBC(string val_marker) {
   return Kind_Data_NRBC[iMarker_NRBC];
 }
 
+
+su2double CConfig::GetPressureOut_BC() {
+  unsigned short iMarker_BC;
+  su2double pres_out = 0.0;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+    if (Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_NRBC[iMarker_BC] == RADIAL_EQUILIBRIUM ){
+      pres_out = NRBC_Var1[iMarker_BC];
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+    if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker_BC] == RADIAL_EQUILIBRIUM){
+      pres_out = Riemann_Var1[iMarker_BC];
+    }
+  }
+  return pres_out/Pressure_Ref;
+}
+
+
+void CConfig::SetPressureOut_BC(su2double val_press) {
+  unsigned short iMarker_BC;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+    if (Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_NRBC[iMarker_BC] == RADIAL_EQUILIBRIUM ){
+      NRBC_Var1[iMarker_BC] = val_press*Pressure_Ref;
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+    if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker_BC] == RADIAL_EQUILIBRIUM){
+      Riemann_Var1[iMarker_BC] = val_press*Pressure_Ref;
+    }
+  }
+}
+
+su2double CConfig::GetTotalPressureIn_BC() {
+  unsigned short iMarker_BC;
+  su2double tot_pres_in = 0.0;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+    if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+      tot_pres_in = NRBC_Var1[iMarker_BC];
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+      tot_pres_in = Riemann_Var1[iMarker_BC];
+    }
+  }
+  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+    tot_pres_in = Inlet_Ptotal[0];
+  }
+  return tot_pres_in/Pressure_Ref;
+}
+
+su2double CConfig::GetTotalTemperatureIn_BC() {
+  unsigned short iMarker_BC;
+  su2double tot_temp_in = 0.0;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+    if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+      tot_temp_in = NRBC_Var2[iMarker_BC];
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+      tot_temp_in = Riemann_Var2[iMarker_BC];
+    }
+  }
+
+  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+    tot_temp_in = Inlet_Ttotal[0];
+  }
+  return tot_temp_in/Temperature_Ref;
+}
+
+void CConfig::SetTotalTemperatureIn_BC(su2double val_temp) {
+  unsigned short iMarker_BC;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+    if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+      NRBC_Var2[iMarker_BC] = val_temp*Temperature_Ref;
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+      Riemann_Var2[iMarker_BC] = val_temp*Temperature_Ref;
+    }
+  }
+
+  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+    Inlet_Ttotal[0] = val_temp*Temperature_Ref;
+  }
+}
+
+su2double CConfig::GetFlowAngleIn_BC() {
+  unsigned short iMarker_BC;
+  su2double alpha_in = 0.0;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+    if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+    	alpha_in = atan(NRBC_FlowDir[iMarker_BC][1]/NRBC_FlowDir[iMarker_BC][0]);
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+  	if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+  		alpha_in = atan(Riemann_FlowDir[iMarker_BC][1]/Riemann_FlowDir[iMarker_BC][0]);
+  	}
+  }
+
+  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  	alpha_in = atan(Inlet_FlowDir[0][1]/Inlet_FlowDir[0][0]);
+  }
+
+  return alpha_in;
+}
 
 su2double CConfig::GetIsothermal_Temperature(string val_marker) {
 
@@ -6591,4 +6959,12 @@ su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<
   y=a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
 
   return y;
+}
+
+void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
+
+  FreeStreamTurboNormal[0] = turboNormal[0];
+  FreeStreamTurboNormal[1] = turboNormal[1];
+  FreeStreamTurboNormal[2] = 0.0;
+
 }
