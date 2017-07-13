@@ -1467,8 +1467,8 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
   nMarkerTarget  = target_geometry->GetnMarker();
   //TODO turbo this approach only works if all the turboamchinery marker of all zones have the same amount of span wise sections.
   //TODO turbo initialization needed for the MPI routine should be place somewhere else.
-  nSpanDonor     = donor_config->GetnSpanWiseSections()  + 1;
-  nSpanTarget		 = target_config->GetnSpanWiseSections() + 1;
+  nSpanDonor     = donor_config->GetnSpanWiseSections();
+  nSpanTarget    = target_config->GetnSpanWiseSections();
 
   /*--- On the donor side ---*/
   for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
@@ -1491,10 +1491,10 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
   }
 
 #ifdef HAVE_MPI
-  BuffMarkerDonor						 = new int[size];
+  BuffMarkerDonor          = new int[size];
   BuffDonorFlag            = new int[size];
   for (iSize=0; iSize<size;iSize++){
-    BuffMarkerDonor[iSize]							= -1;
+    BuffMarkerDonor[iSize]            = -1;
     BuffDonorFlag[iSize]              = -1;
   }
 
@@ -1544,7 +1544,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
     SpanValuesTarget = target_geometry->GetSpanWiseValue(Target_Flag);
 
 
-    for(iSpan = 1; iSpan <nSpanTarget-2; iSpan++){
+    for(iSpan = 1; iSpan <nSpanTarget-1; iSpan++){
       dist  = 10E+06;
       dist2 = 10E+06;
       for(jSpan = 0; jSpan < nSpanDonor;jSpan++){
@@ -1610,59 +1610,53 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
-  //TODO turbo this approach only works if all the turboamchinery marker of all zones have the same amount of span wise sections.
-  //TODO turbo initialization needed for the MPI routine should be place somewhere else.
   nSpanDonor     = donor_config->GetnSpanWiseSections() +1;
-  nSpanTarget		 = target_config->GetnSpanWiseSections() +1;
+  nSpanTarget    = target_config->GetnSpanWiseSections() +1;
 
-  // here the number of span should be already known
-  // so perhaps when this option would be different for boundary markers then this should be done after the loop
-  avgDensityDonor   		   =  new su2double[nSpanDonor];
-  avgPressureDonor  		   =  new su2double[nSpanDonor];
-  avgNormalVelDonor 		   =  new su2double[nSpanDonor];
-  avgTangVelDonor   		   =  new su2double[nSpanDonor];
-  avg3DVelDonor			       =  new su2double[nSpanDonor];
-  avgNuDonor        		   =  new su2double[nSpanDonor];
-  avgKineDonor   		       =  new su2double[nSpanDonor];
-  avgOmegaDonor			       =  new su2double[nSpanDonor];
+
+  avgDensityDonor                  = new su2double[nSpanDonor];
+  avgPressureDonor                 = new su2double[nSpanDonor];
+  avgNormalVelDonor                = new su2double[nSpanDonor];
+  avgTangVelDonor                  = new su2double[nSpanDonor];
+  avg3DVelDonor                    = new su2double[nSpanDonor];
+  avgNuDonor                       = new su2double[nSpanDonor];
+  avgKineDonor                     = new su2double[nSpanDonor];
+  avgOmegaDonor                    = new su2double[nSpanDonor];
 
   for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
-    avgDensityDonor[iSpan]   			= -1.0;
-    avgPressureDonor[iSpan]  			= -1.0;
-    avgNormalVelDonor[iSpan] 			= -1.0;
-    avgTangVelDonor[iSpan]   			= -1.0;
-    avg3DVelDonor[iSpan]   			    = -1.0;
-    avgNuDonor[iSpan]        		    = -1.0;
-    avgKineDonor[iSpan]   		        = -1.0;
-    avgOmegaDonor[iSpan]				= -1.0;
+    avgDensityDonor[iSpan]         = -1.0;
+    avgPressureDonor[iSpan]        = -1.0;
+    avgNormalVelDonor[iSpan]       = -1.0;
+    avgTangVelDonor[iSpan]         = -1.0;
+    avg3DVelDonor[iSpan]           = -1.0;
+    avgNuDonor[iSpan]              = -1.0;
+    avgKineDonor[iSpan]            = -1.0;
+    avgOmegaDonor[iSpan]           = -1.0;
   }
 
-  avgDensityTarget   				=  new su2double[nSpanTarget];
-  avgPressureTarget  				=  new su2double[nSpanTarget];
-  avgNormalVelTarget 				=  new su2double[nSpanTarget];
-  avgTangVelTarget   				=  new su2double[nSpanTarget];
-  avg3DVelTarget					=  new su2double[nSpanTarget];
-  avgNuTarget        		        =  new su2double[nSpanTarget];
-  avgKineTarget   		            =  new su2double[nSpanTarget];
-  avgOmegaTarget					=  new su2double[nSpanTarget];
+  avgDensityTarget                 = new su2double[nSpanTarget];
+  avgPressureTarget                = new su2double[nSpanTarget];
+  avgNormalVelTarget               = new su2double[nSpanTarget];
+  avgTangVelTarget                 = new su2double[nSpanTarget];
+  avg3DVelTarget                   = new su2double[nSpanTarget];
+  avgNuTarget                      = new su2double[nSpanTarget];
+  avgKineTarget                    = new su2double[nSpanTarget];
+  avgOmegaTarget                   = new su2double[nSpanTarget];
 
 
   for (iSpan = 0; iSpan < nSpanTarget; iSpan++){
-    avgDensityTarget[iSpan]          = -1.0;
-    avgPressureTarget[iSpan]         = -1.0;
-    avgNormalVelTarget[iSpan]        = -1.0;
-    avgTangVelTarget[iSpan]          = -1.0;
-    avg3DVelTarget[iSpan]     		 = -1.0;
-    avgNuTarget[iSpan]        		 = -1.0;
-    avgKineTarget[iSpan]   		     = -1.0;
-    avgOmegaTarget[iSpan]			 = -1.0;
+    avgDensityTarget[iSpan]        = -1.0;
+    avgPressureTarget[iSpan]       = -1.0;
+    avgNormalVelTarget[iSpan]      = -1.0;
+    avgTangVelTarget[iSpan]        = -1.0;
+    avg3DVelTarget[iSpan]          = -1.0;
+    avgNuTarget[iSpan]             = -1.0;
+    avgKineTarget[iSpan]           = -1.0;
+    avgOmegaTarget[iSpan]          = -1.0;
   }
 
   /*--- Outer loop over the markers on the Mixing-Plane interface: compute one by one ---*/
   /*--- The tags are always an integer greater than 1: loop from 1 to nMarkerMixingPlane ---*/
-
-
-
   Marker_Donor = -1;
   Marker_Target = -1;
 
@@ -1692,29 +1686,28 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   if (Marker_Donor != -1){
     for(iSpan = 0; iSpan < nSpanDonor; iSpan++){
       GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iSpan, rank);
-      avgDensityDonor[iSpan]  	 		= Donor_Variable[0];
-      avgPressureDonor[iSpan]  			= Donor_Variable[1];
-      avgNormalVelDonor[iSpan] 			= Donor_Variable[2];
-      avgTangVelDonor[iSpan]   			= Donor_Variable[3];
-      avg3DVelDonor[iSpan]				= Donor_Variable[4];
-      avgNuDonor[iSpan]        		    = Donor_Variable[5];
-      avgKineDonor[iSpan]   		    = Donor_Variable[6];
-      avgOmegaDonor[iSpan]				= Donor_Variable[7];
+      avgDensityDonor[iSpan]          = Donor_Variable[0];
+      avgPressureDonor[iSpan]         = Donor_Variable[1];
+      avgNormalVelDonor[iSpan]        = Donor_Variable[2];
+      avgTangVelDonor[iSpan]          = Donor_Variable[3];
+      avg3DVelDonor[iSpan]            = Donor_Variable[4];
+      avgNuDonor[iSpan]               = Donor_Variable[5];
+      avgKineDonor[iSpan]             = Donor_Variable[6];
+      avgOmegaDonor[iSpan]            = Donor_Variable[7];
     }
   }
 
-  // for the moment is not needed but then i have to share among all processor the number of span to initilize the buffer vector
 #ifdef HAVE_MPI
   nSpanSize = size*nSpanDonor;
-  BuffAvgDensityDonor    		 = new su2double[nSpanSize];
-  BuffAvgPressureDonor   		 = new su2double[nSpanSize];
-  BuffAvgNormalVelDonor  		 = new su2double[nSpanSize];
-  BuffAvgTangVelDonor            = new su2double[nSpanSize];
-  BuffAvg3DVelDonor              = new su2double[nSpanSize];
-  BuffAvgNuDonor  				 = new su2double[nSpanSize];
-  BuffAvgKineDonor        		 = new su2double[nSpanSize];
-  BuffAvgOmegaDonor              = new su2double[nSpanSize];
-  BuffMarkerDonor			     = new int[size];
+  BuffAvgDensityDonor                 = new su2double[nSpanSize];
+  BuffAvgPressureDonor                = new su2double[nSpanSize];
+  BuffAvgNormalVelDonor               = new su2double[nSpanSize];
+  BuffAvgTangVelDonor                 = new su2double[nSpanSize];
+  BuffAvg3DVelDonor                   = new su2double[nSpanSize];
+  BuffAvgNuDonor                      = new su2double[nSpanSize];
+  BuffAvgKineDonor                    = new su2double[nSpanSize];
+  BuffAvgOmegaDonor                   = new su2double[nSpanSize];
+  BuffMarkerDonor                     = new int[size];
 
   for (iSpan=0;iSpan<nSpanSize;iSpan++){
     BuffAvgDensityDonor[iSpan]        = -1.0;
@@ -1728,7 +1721,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   }
 
   for (iSize=0; iSize<size;iSize++){
-    BuffMarkerDonor[iSize]			  = -1;
+    BuffMarkerDonor[iSize]            = -1;
   }
 
   SU2_MPI::Allgather(avgDensityDonor, nSpanDonor , MPI_DOUBLE, BuffAvgDensityDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
@@ -1741,21 +1734,18 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   SU2_MPI::Allgather(avgOmegaDonor, nSpanDonor , MPI_DOUBLE, BuffAvgOmegaDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
   SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
 
-
-
   for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
-    avgDensityDonor[iSpan]        = -1.0;
-    avgPressureDonor[iSpan]       = -1.0;
-    avgNormalVelDonor[iSpan]      = -1.0;
-    avgTangVelDonor[iSpan]        = -1.0;
-    avg3DVelDonor[iSpan]          = -1.0;
-    avgNuDonor[iSpan]             = -1.0;
-    avgKineDonor[iSpan]           = -1.0;
-    avgOmegaDonor[iSpan]          = -1.0;
+    avgDensityDonor[iSpan]            = -1.0;
+    avgPressureDonor[iSpan]           = -1.0;
+    avgNormalVelDonor[iSpan]          = -1.0;
+    avgTangVelDonor[iSpan]            = -1.0;
+    avg3DVelDonor[iSpan]              = -1.0;
+    avgNuDonor[iSpan]                 = -1.0;
+    avgKineDonor[iSpan]               = -1.0;
+    avgOmegaDonor[iSpan]              = -1.0;
   }
 
   Marker_Donor= -1;
-
 
   for (iSize=0; iSize<size;iSize++){
     if(BuffAvgDensityDonor[nSpanDonor*iSize] > 0.0){
@@ -1786,14 +1776,11 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 #endif
 
   /*--- On the target side we have to identify the marker as well ---*/
-
   for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
     /*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
     if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
-      
       /*--- Store the identifier for the fluid marker ---*/
       Marker_Target = iMarkerTarget;
-      
       /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
       break;
     }
@@ -1808,35 +1795,34 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
     /*--- linear interpolation of the average value of for the internal span-wise levels ---*/
     for(iSpan = 1; iSpan < nSpanTarget -2 ; iSpan++){
-      //			cout << iSpan << " " << SpanLevelDonor[iSpan]<<endl;
-      avgDensityTarget[iSpan]          = SpanValueCoeffTarget[iSpan]*(avgDensityDonor[SpanLevelDonor[iSpan] + 1] - avgDensityDonor[SpanLevelDonor[iSpan]]);
-      avgDensityTarget[iSpan]         += avgDensityDonor[SpanLevelDonor[iSpan]];
-      avgPressureTarget[iSpan]         = SpanValueCoeffTarget[iSpan]*(avgPressureDonor[SpanLevelDonor[iSpan] + 1] - avgPressureDonor[SpanLevelDonor[iSpan]]);
-      avgPressureTarget[iSpan]        += avgPressureDonor[SpanLevelDonor[iSpan]];
-      avgNormalVelTarget[iSpan]        = SpanValueCoeffTarget[iSpan]*(avgNormalVelDonor[SpanLevelDonor[iSpan] + 1] - avgNormalVelDonor[SpanLevelDonor[iSpan]]);
-      avgNormalVelTarget[iSpan]       += avgNormalVelDonor[SpanLevelDonor[iSpan]];
-      avgTangVelTarget[iSpan]          = SpanValueCoeffTarget[iSpan]*(avgTangVelDonor[SpanLevelDonor[iSpan] + 1] - avgTangVelDonor[SpanLevelDonor[iSpan]]);
-      avgTangVelTarget[iSpan]         += avgTangVelDonor[SpanLevelDonor[iSpan]];
-      avg3DVelTarget[iSpan]            = SpanValueCoeffTarget[iSpan]*(avg3DVelDonor[SpanLevelDonor[iSpan] + 1] - avg3DVelDonor[SpanLevelDonor[iSpan]]);
-      avg3DVelTarget[iSpan]           += avg3DVelDonor[SpanLevelDonor[iSpan]];
-      avgNuTarget[iSpan]               = SpanValueCoeffTarget[iSpan]*(avgNuDonor[SpanLevelDonor[iSpan] + 1] - avgNuDonor[SpanLevelDonor[iSpan]]);
-      avgNuTarget[iSpan]              += avgNuDonor[SpanLevelDonor[iSpan]];
-      avgKineTarget[iSpan]             = SpanValueCoeffTarget[iSpan]*(avgKineDonor[SpanLevelDonor[iSpan] + 1] - avgKineDonor[SpanLevelDonor[iSpan]]);
-      avgKineTarget[iSpan]            += avgKineDonor[SpanLevelDonor[iSpan]];
-      avgOmegaTarget[iSpan]            = SpanValueCoeffTarget[iSpan]*(avgOmegaDonor[SpanLevelDonor[iSpan] + 1] - avgOmegaDonor[SpanLevelDonor[iSpan] ]);
-      avgOmegaTarget[iSpan]           += avgOmegaDonor[SpanLevelDonor[iSpan]];
+      avgDensityTarget[iSpan]                = SpanValueCoeffTarget[iSpan]*(avgDensityDonor[SpanLevelDonor[iSpan] + 1] - avgDensityDonor[SpanLevelDonor[iSpan]]);
+      avgDensityTarget[iSpan]               += avgDensityDonor[SpanLevelDonor[iSpan]];
+      avgPressureTarget[iSpan]               = SpanValueCoeffTarget[iSpan]*(avgPressureDonor[SpanLevelDonor[iSpan] + 1] - avgPressureDonor[SpanLevelDonor[iSpan]]);
+      avgPressureTarget[iSpan]              += avgPressureDonor[SpanLevelDonor[iSpan]];
+      avgNormalVelTarget[iSpan]              = SpanValueCoeffTarget[iSpan]*(avgNormalVelDonor[SpanLevelDonor[iSpan] + 1] - avgNormalVelDonor[SpanLevelDonor[iSpan]]);
+      avgNormalVelTarget[iSpan]             += avgNormalVelDonor[SpanLevelDonor[iSpan]];
+      avgTangVelTarget[iSpan]                = SpanValueCoeffTarget[iSpan]*(avgTangVelDonor[SpanLevelDonor[iSpan] + 1] - avgTangVelDonor[SpanLevelDonor[iSpan]]);
+      avgTangVelTarget[iSpan]               += avgTangVelDonor[SpanLevelDonor[iSpan]];
+      avg3DVelTarget[iSpan]                  = SpanValueCoeffTarget[iSpan]*(avg3DVelDonor[SpanLevelDonor[iSpan] + 1] - avg3DVelDonor[SpanLevelDonor[iSpan]]);
+      avg3DVelTarget[iSpan]                 += avg3DVelDonor[SpanLevelDonor[iSpan]];
+      avgNuTarget[iSpan]                     = SpanValueCoeffTarget[iSpan]*(avgNuDonor[SpanLevelDonor[iSpan] + 1] - avgNuDonor[SpanLevelDonor[iSpan]]);
+      avgNuTarget[iSpan]                    += avgNuDonor[SpanLevelDonor[iSpan]];
+      avgKineTarget[iSpan]                   = SpanValueCoeffTarget[iSpan]*(avgKineDonor[SpanLevelDonor[iSpan] + 1] - avgKineDonor[SpanLevelDonor[iSpan]]);
+      avgKineTarget[iSpan]                  += avgKineDonor[SpanLevelDonor[iSpan]];
+      avgOmegaTarget[iSpan]                  = SpanValueCoeffTarget[iSpan]*(avgOmegaDonor[SpanLevelDonor[iSpan] + 1] - avgOmegaDonor[SpanLevelDonor[iSpan] ]);
+      avgOmegaTarget[iSpan]                 += avgOmegaDonor[SpanLevelDonor[iSpan]];
     }
 
 
     /*--- transfer values at the hub ---*/
-    avgDensityTarget[0]        = avgDensityDonor[0];
-    avgPressureTarget[0]       = avgPressureDonor[0];
-    avgNormalVelTarget[0]      = avgNormalVelDonor[0];
-    avgTangVelTarget[0]        = avgTangVelDonor[0];
-    avg3DVelTarget[0]          = avg3DVelDonor[0];
-    avgNuTarget[0]             = avgNuDonor[0];
-    avgKineTarget[0]           = avgKineDonor[0];
-    avgOmegaTarget[0]          = avgOmegaDonor[0];
+    avgDensityTarget[0]                      = avgDensityDonor[0];
+    avgPressureTarget[0]                     = avgPressureDonor[0];
+    avgNormalVelTarget[0]                    = avgNormalVelDonor[0];
+    avgTangVelTarget[0]                      = avgTangVelDonor[0];
+    avg3DVelTarget[0]                        = avg3DVelDonor[0];
+    avgNuTarget[0]                           = avgNuDonor[0];
+    avgKineTarget[0]                         = avgKineDonor[0];
+    avgOmegaTarget[0]                        = avgOmegaDonor[0];
 
     /*--- transfer values at the shroud ---*/
     avgDensityTarget[nSpanTarget - 2]        = avgDensityDonor[nSpanDonor - 2];
@@ -1859,17 +1845,16 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     avgOmegaTarget[nSpanTarget - 1]          = avgOmegaDonor[nSpanDonor - 1];
 
 
-    /*--- after interpolating the average value span-wise is set in the target zone ---*/
-
+    /*---finally, the interpolated value is sent  to the target zone ---*/
     for(iSpan = 0; iSpan < nSpanTarget ; iSpan++){
-      Target_Variable[0] = avgDensityTarget[iSpan];
-      Target_Variable[1] = avgPressureTarget[iSpan];
-      Target_Variable[2] = avgNormalVelTarget[iSpan];
-      Target_Variable[3] = avgTangVelTarget[iSpan];
-      Target_Variable[4] = avg3DVelTarget[iSpan];
-      Target_Variable[5] = avgNuTarget[iSpan];
-      Target_Variable[6] = avgKineTarget[iSpan];
-      Target_Variable[7] = avgOmegaTarget[iSpan];
+      Target_Variable[0]                     = avgDensityTarget[iSpan];
+      Target_Variable[1]                     = avgPressureTarget[iSpan];
+      Target_Variable[2]                     = avgNormalVelTarget[iSpan];
+      Target_Variable[3]                     = avgTangVelTarget[iSpan];
+      Target_Variable[4]                     = avg3DVelTarget[iSpan];
+      Target_Variable[5]                     = avgNuTarget[iSpan];
+      Target_Variable[6]                     = avgKineTarget[iSpan];
+      Target_Variable[7]                     = avgOmegaTarget[iSpan];
 
 
       SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iSpan, rank);
