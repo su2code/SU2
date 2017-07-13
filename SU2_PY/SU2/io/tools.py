@@ -224,6 +224,7 @@ def get_headerMap(nZones = 1):
                  "D(CFz)"          : "D_FORCE_Z"               ,
                  "D(CL/CD)"        : "D_EFFICIENCY"            ,
                  "ComboObj"        : "COMBO"                   ,
+                 "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC"      ,
                  "TotalPressureLoss_1"     : "TOTAL_PRESSURE_LOSS"    ,
                  "KineticEnergyLoss_1"     : "KINETIC_ENERGY_LOSS"    ,
                  "EntropyGen_" + str(getTurboPerfIndex(nZones)) : "ENTROPY_GENERATION"     ,                   
@@ -266,6 +267,7 @@ def getTurboPerfIndex(nZones = 1):
 # -------------------------------------------------------------------
 
 # Aerodynamic Optimizer Function Names
+
 optnames_aero = [ "LIFT"                    ,
                   "DRAG"                    ,
                   "SIDEFORCE"               ,
@@ -276,7 +278,6 @@ optnames_aero = [ "LIFT"                    ,
                   "FORCE_Y"                 ,
                   "FORCE_Z"                 ,
                   "EFFICIENCY"              ,
-                  "FREE_SURFACE"            ,
                   "FIGURE_OF_MERIT"         ,
                   "TORQUE"                  ,
                   "THRUST"                  ,
@@ -292,8 +293,9 @@ optnames_aero = [ "LIFT"                    ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ,
                   "AERO_DRAG"               ,
-                  "RADIAL_DISTORTION"              ,
-                  "CIRCUMFERENTIAL_DISTORTION"              ,
+                  "RADIAL_DISTORTION"          ,
+                  "CIRCUMFERENTIAL_DISTORTION" ,
+                  "CUSTOM_OBJFUNC"             ,
                   "COMBO"]
 
 # Turbo performance optimizer Function Names
@@ -318,6 +320,18 @@ optnames_stab = [ "D_LIFT_D_ALPHA"               ,
                   "D_MOMENT_Y_D_ALPHA"           ,
                   "D_MOMENT_Z_D_ALPHA"           ,
                 ]
+
+#: Multipoint Optimizer Function Names
+
+# optnames_multi = ['{}_{}'.format('MULTIPOINT', a) for a in optnames_aero]
+
+optnames_multi = [ "MULTIPOINT_LIFT"               ,
+                   "MULTIPOINT_DRAG"               ,
+                   "MULTIPOINT_SIDEFORCE"          ,
+                   "MULTIPOINT_MOMENT_X"           ,
+                   "MULTIPOINT_MOMENT_Y"           ,
+                   "MULTIPOINT_MOMENT_Z"           ,
+                   "MULTIPOINT_CUSTOM_OBJFUNC"]
 
 # Geometric Optimizer Function Names
 optnames_geo = [ "MAX_THICKNESS"      ,
@@ -431,9 +445,9 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "TOTAL_ENTHALPY_OUT"      : "D_TOTAL_ENTHALPY_OUT"}
 
 # per-surface functions
-per_surface_map = {"LIFT"       :   "CLift" ,
-                  "DRAG"        :   "CDrag" ,
-                  "SIDEFORCE"   :   "CSideForce"  ,
+per_surface_map = {"LIFT"       :   "CL" ,
+                  "DRAG"        :   "CD" ,
+                  "SIDEFORCE"   :   "CSF"  ,
                   "MOMENT_X"    :   "CMx"   ,
                   "MOMENT_Y"    :   "CMy"   ,
                   "MOMENT_Z"    :   "CMz"   ,
@@ -589,7 +603,6 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
-                 "FREE_SURFACE"            : "fs"        ,
                  "AERO_DRAG"               : "acd"       ,
                  "RADIAL_DISTORTION"              : "rdis"       ,
                  "CIRCUMFERENTIAL_DISTORTION"              : "cdis"       ,
@@ -726,9 +739,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         
     # Case: finite difference  
     elif grad_type == 'FINITE_DIFFERENCE':
-        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
-        write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
-        
+        header.append(r'"iVar","Grad_CL","Grad_CD","Grad_CSF","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_CL/CD","Grad_Custom_ObjFunc","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
+        write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
+
         for key in special_cases: 
             if key == "ROTATING_FRAME" : 
                 header.append(r',"Grad_CMerit","Grad_CT","Grad_CQ"')
@@ -846,8 +859,8 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     else: raise Exception('output plot format not recognized')
 
     # start header
-    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CEff","HeatFlux_Total","HeatFlux_Maximum"])
-    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
+    header_list.extend(["Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","HeatFlux_Total","HeatFlux_Maximum"])
+    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
     # special cases
     for key in special_cases: 
@@ -916,8 +929,7 @@ def get_specialCases(config):
         specified in the config file, and set to 'yes'
     """
     
-    all_special_cases = [ 'FREE_SURFACE'                     ,
-                          'ROTATING_FRAME'                   ,
+    all_special_cases = [ 'ROTATING_FRAME'                   ,
                           'EQUIV_AREA'                       ,
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
