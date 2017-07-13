@@ -396,7 +396,7 @@ def read_config(filename):
 
             # float parameters
             if case("MACH_NUMBER")            or\
-               case("AoA")                    or\
+               case("AOA")                    or\
                case("FIN_DIFF_STEP")          or\
                case("CFL_NUMBER")             or\
                case("HB_PERIOD")              or\
@@ -581,7 +581,9 @@ def read_config(filename):
         
     #: for line
 
-    #hack - twl
+    #
+    # Default values for simulation parameters
+    #
     if not data_dict.has_key('DV_VALUE_NEW'):
         data_dict['DV_VALUE_NEW'] = [0]
     if not data_dict.has_key('DV_VALUE_OLD'):
@@ -603,10 +605,97 @@ def read_config(filename):
     if not data_dict.has_key('OPT_CONSTRAINT'):
         data_dict['OPT_CONSTRAINT'] =  {'INEQUALITY': OrderedDict(), 'EQUALITY': OrderedDict()}
     if not data_dict.has_key('VALUE_OBJFUNC_FILENAME'):
-      data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
+        data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
     if not data_dict.has_key('GRAD_OBJFUNC_FILENAME'):
-      data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
- 
+        data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
+    if not data_dict.has_key('AOA'):
+        data_dict['AOA'] = 0.0
+    if not data_dict.has_key('SIDESLIP_ANGLE'):
+        data_dict['SIDESLIP_ANGLE'] = 0.0
+    if not data_dict.has_key('MACH_NUMBER'):
+        data_dict['MACH_NUMBER'] = 0.0
+    if not data_dict.has_key('REYNOLDS_NUMBER'):
+        data_dict['REYNOLDS_NUMBER'] = 0.0
+    if not data_dict.has_key('TARGET_CL'):
+        data_dict['TARGET_CL'] = 0.0
+    if not data_dict.has_key('FREESTREAM_PRESSURE'):
+        data_dict['FREESTREAM_PRESSURE'] = 101325.0
+    if not data_dict.has_key('FREESTREAM_TEMPERATURE'):
+        data_dict['FREESTREAM_TEMPERATURE'] = 288.15
+
+    #
+    # Multipoints requires some particular default values
+    #
+    multipoints = 1
+    if not data_dict.has_key('MULTIPOINT_WEIGHT'):
+      data_dict['MULTIPOINT_WEIGHT'] = "(1.0)"
+      multipoints = 1
+    else:
+      multipoints = len(data_dict['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(','))
+
+    if not data_dict.has_key('MULTIPOINT_MACH_NUMBER'):
+      Mach_Value = data_dict['MACH_NUMBER']
+      Mach_List = "("
+      for i in range(multipoints):
+        if i != 0: Mach_List +=  ", "
+        Mach_List +=  str(Mach_Value)
+      Mach_List += ")"
+      data_dict['MULTIPOINT_MACH_NUMBER'] = Mach_List
+      
+    if not data_dict.has_key('MULTIPOINT_AOA'):
+      Alpha_Value = data_dict['AOA']
+      Alpha_List = "("
+      for i in range(multipoints):
+        if i != 0: Alpha_List +=  ", "
+        Alpha_List +=  str(Alpha_Value)
+      Alpha_List += ")"
+      data_dict['MULTIPOINT_AOA'] = Alpha_List
+
+    if not data_dict.has_key('MULTIPOINT_SIDESLIP_ANGLE'):
+      Beta_Value = data_dict['SIDESLIP_ANGLE']
+      Beta_List = "("
+      for i in range(multipoints):
+        if i != 0: Beta_List +=  ", "
+        Beta_List +=  str(Beta_Value)
+      Beta_List += ")"
+      data_dict['MULTIPOINT_SIDESLIP_ANGLE'] = Beta_List
+      
+    if not data_dict.has_key('MULTIPOINT_REYNOLDS_NUMBER'):
+      Reynolds_Value = data_dict['REYNOLDS_NUMBER']
+      Reynolds_List = "("
+      for i in range(multipoints):
+        if i != 0: Reynolds_List +=  ", "
+        Reynolds_List +=  str(Reynolds_Value)
+      Reynolds_List += ")"
+      data_dict['MULTIPOINT_REYNOLDS_NUMBER'] = Reynolds_List
+
+    if not data_dict.has_key('MULTIPOINT_TARGET_CL'):
+      TargetCLValue = data_dict['TARGET_CL']
+      TargetCL_List = "("
+      for i in range(multipoints):
+        if i != 0: TargetCL_List +=  ", "
+        TargetCL_List +=  str(TargetCLValue)
+      TargetCL_List += ")"
+      data_dict['MULTIPOINT_TARGET_CL'] = TargetCL_List
+
+    if not data_dict.has_key('MULTIPOINT_FREESTREAM_PRESSURE'):
+      Pressure_Value = data_dict['FREESTREAM_PRESSURE']
+      Pressure_List = "("
+      for i in range(multipoints):
+        if i != 0: Pressure_List +=  ", "
+        Pressure_List +=  str(Pressure_Value)
+      Pressure_List += ")"
+      data_dict['MULTIPOINT_FREESTREAM_PRESSURE'] = Pressure_List
+
+    if not data_dict.has_key('MULTIPOINT_FREESTREAM_TEMPERATURE'):
+      Temperature_Value = data_dict['FREESTREAM_TEMPERATURE']
+      Temperature_List = "("
+      for i in range(multipoints):
+        if i != 0: Temperature_List +=  ", "
+        Temperature_List +=  str(Temperature_Value)
+      Temperature_List += ")"
+      data_dict['MULTIPOINT_FREESTREAM_TEMPERATURE'] = Temperature_List
+
     #
     # Default values for optimization parameters (needed for some eval functions
     # that can be called outside of an opt. context.

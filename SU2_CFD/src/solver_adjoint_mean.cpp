@@ -2257,26 +2257,6 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               ForceProj_Vector[2] +=  Weight_ObjFunc*CTRCQ2*(y - y_origin);
             }
             break;
-          case AERO_DRAG_COEFFICIENT :
-            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
-              exit(EXIT_FAILURE);
-            }
-            break;
-          case SOLID_DRAG_COEFFICIENT :
-            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
-              exit(EXIT_FAILURE);
-            }
-            break;
-          case RADIAL_DISTORTION :
-            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
-              exit(EXIT_FAILURE);
-            }
-            break;
-          case CIRCUMFERENTIAL_DISTORTION :
-            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
-              exit(EXIT_FAILURE);
-            }
-            break;
 
           default :
             break;
