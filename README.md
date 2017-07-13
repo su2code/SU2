@@ -56,10 +56,10 @@ Thanks for building, and happy optimizing!
 
 SU2 is being developed by individuals and organized teams all around the world. 
 
-The SU2 Lead Developers are:
+The SU2 Original Developers are:
 
-   - Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com)
-   - Dr. Thomas D. Economon (economon@stanford.edu)
+   - Dr. Francisco D. Palacios.
+   - Dr. Thomas D. Economon.
 
 and the most active groups developing SU2 are:
 

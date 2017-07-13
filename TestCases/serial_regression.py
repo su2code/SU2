@@ -5,8 +5,8 @@
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -340,12 +340,12 @@ def main():
     contadj_oneram6.tol       = 0.00001
     test_list.append(contadj_oneram6)
 
-    # Inviscid WEDGE: tests generalized adjoint
+    # Inviscid WEDGE: tests averaged outflow total pressure adjoint
     contadj_wedge             = TestCase('contadj_wedge')
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [2.780403, -3.223266, -1448300.000000, -0.000000] #last 4 columns
+    contadj_wedge.test_vals = [2.856008, -2.767216, 1.0029e+06, 1.3024e-13] #last 4 columns
     contadj_wedge.su2_exec  = "SU2_CFD"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
@@ -628,23 +628,23 @@ def main():
     ######################################
 
     # Uniform flow
-#    uniform_flow         = TestCase('uniform_flow')
-#    uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
-#    uniform_flow.cfg_file  = "uniform_NN.cfg"
-#    uniform_flow.test_iter = 50
-#    uniform_flow.test_vals = [-0.368836, 5.156090, 0.000000, 0.000000] #last 4 columns
-#    uniform_flow.su2_exec  = "SU2_CFD"
-#    uniform_flow.timeout   = 1600
-#    uniform_flow.tol       = 0.000001
-#    uniform_flow.unsteady  = True
-#    test_list.append(uniform_flow) 
+    uniform_flow         = TestCase('uniform_flow')
+    uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
+    uniform_flow.cfg_file  = "uniform_NN.cfg"
+    uniform_flow.test_iter = 50
+    uniform_flow.test_vals = [-0.368836, 5.156090, 0.000000, 0.000000] #last 4 columns
+    uniform_flow.su2_exec  = "SU2_CFD"
+    uniform_flow.timeout   = 1600
+    uniform_flow.tol       = 0.000001
+    uniform_flow.unsteady  = True
+    test_list.append(uniform_flow) 
 
     # Channel_2D
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
-    channel_2D.cfg_file  = "channel_2D_NN.cfg"
+    channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 4
-    channel_2D.test_vals = [-1.498300, 4.541411, 0.000000, 0.000000] #last 4 columns
+    channel_2D.test_vals = [-1.656896, 4.263158, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -654,9 +654,9 @@ def main():
     # Channel_3D
     channel_3D           = TestCase('channel_3D')
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
-    channel_3D.cfg_file  = "channel_3D_NN.cfg"
+    channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 1
-    channel_3D.test_vals = [-1.899948, 4.032874, 0.000000, 0.000000] #last 4 columns
+    channel_3D.test_vals = [-1.899946, 4.032882, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "SU2_CFD"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -664,16 +664,40 @@ def main():
     test_list.append(channel_3D)
 
     # Pipe
-#    pipe           = TestCase('pipe')
-#    pipe.cfg_dir   = "sliding_interface/pipe"
-#    pipe.cfg_file  = "pipe_NN.cfg"
-#    pipe.test_iter = 2
-#    pipe.test_vals = [-3.503708, 3.194241, 0.000000, 0.000000] #last 4 columns
-#    pipe.su2_exec  = "SU2_CFD"
-#    pipe.timeout   = 1600
-#    pipe.tol       = 0.00001
-#    pipe.unsteady  = True
-#    test_list.append(pipe)
+    pipe           = TestCase('pipe')
+    pipe.cfg_dir   = "sliding_interface/pipe"
+    pipe.cfg_file  = "pipe_NN.cfg"
+    pipe.test_iter = 2
+    pipe.test_vals = [-3.503708, 3.194241, 0.000000, 0.000000] #last 4 columns
+    pipe.su2_exec  = "SU2_CFD"
+    pipe.timeout   = 1600
+    pipe.tol       = 0.00001
+    pipe.unsteady  = True
+    test_list.append(pipe)
+
+    # Rotating cylinders
+    rotating_cylinders           = TestCase('rotating_cylinders')
+    rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
+    rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
+    rotating_cylinders.test_iter = 3
+    rotating_cylinders.test_vals = [-1.253451, 4.531335, 0.000000, 0.000000] #last 4 columns
+    rotating_cylinders.su2_exec  = "SU2_CFD"
+    rotating_cylinders.timeout   = 1600
+    rotating_cylinders.tol       = 0.00001
+    rotating_cylinders.unsteady  = True
+    test_list.append(rotating_cylinders)
+
+    # Supersonic vortex shedding
+    supersonic_vortex_shedding           = TestCase('supersonic_vortex_shedding')
+    supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
+    supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
+    supersonic_vortex_shedding.test_iter = 5
+    supersonic_vortex_shedding.test_vals = [-1.122916, 4.606248, 0.000000, 0.000000] #last 4 columns
+    supersonic_vortex_shedding.su2_exec  = "SU2_CFD"
+    supersonic_vortex_shedding.timeout   = 1600
+    supersonic_vortex_shedding.tol       = 0.00001
+    supersonic_vortex_shedding.unsteady  = True
+    test_list.append(supersonic_vortex_shedding)
 
     # Bars_SST_2D
     bars_SST_2D           = TestCase('bars_SST_2D')
@@ -922,17 +946,17 @@ def main():
     pass_list.append(contadj_euler_py.run_filediff())
     test_list.append(contadj_euler_py)
 
-    # test finite_difference.py
-    findiff_euler_py = TestCase('findiff_euler_py')
-    findiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
-    findiff_euler_py.cfg_file  = "inv_NACA0012_FD.cfg"
-    findiff_euler_py.test_iter = 10
-    findiff_euler_py.su2_exec  = "finite_differences.py"
-    findiff_euler_py.timeout   = 1600
-    findiff_euler_py.reference_file = "of_grad_findiff.dat.ref"
-    findiff_euler_py.test_file = "FINDIFF/of_grad_findiff.dat"
-    pass_list.append(findiff_euler_py.run_filediff())
-    test_list.append(findiff_euler_py)
+#    # test finite_difference.py
+#    findiff_euler_py = TestCase('findiff_euler_py')
+#    findiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
+#    findiff_euler_py.cfg_file  = "inv_NACA0012_FD.cfg"
+#    findiff_euler_py.test_iter = 10
+#    findiff_euler_py.su2_exec  = "finite_differences.py"
+#    findiff_euler_py.timeout   = 1600
+#    findiff_euler_py.reference_file = "of_grad_findiff.dat.ref"
+#    findiff_euler_py.test_file = "FINDIFF/of_grad_findiff.dat"
+#    pass_list.append(findiff_euler_py.run_filediff())
+#    test_list.append(findiff_euler_py)
     
     # test shape_optimization.py
     shape_opt_euler_py           = TestCase('shape_opt_euler_py')
@@ -947,16 +971,16 @@ def main():
     test_list.append(shape_opt_euler_py)
 
     # test continuous_adjoint.py, with multiple objectives
-    #contadj_multi_py            = TestCase('contadj_multi_py')
-    #contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
-    #contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
-    #contadj_multi_py.test_iter  = 10
-    #contadj_multi_py.su2_exec   = "continuous_adjoint.py"
-    #contadj_multi_py.timeout    = 1600
-    #contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
-    #contadj_multi_py.test_file  = "of_grad_combo.dat"
-    #pass_list.append(contadj_multi_py.run_filediff())
-    #test_list.append(contadj_multi_py)
+    contadj_multi_py            = TestCase('contadj_multi_py')
+    contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
+    contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+    contadj_multi_py.test_iter  = 10
+    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    contadj_multi_py.timeout    = 1600
+    contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
+    contadj_multi_py.test_file  = "of_grad_combo.dat"
+    pass_list.append(contadj_multi_py.run_filediff())
+    test_list.append(contadj_multi_py)
 
 
     ##########################

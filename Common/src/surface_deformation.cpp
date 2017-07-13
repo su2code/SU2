@@ -522,8 +522,6 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         cout << "No surface deformation (scaling, rotation, or translation)." << endl;
     }
   }
-  else if (config->GetDesign_Variable(0) == CUSTOM && rank == MASTER_NODE)
-    cout <<"Custom design variable will be used in external script" << endl;
 
   /*--- Design variable not implement ---*/
 

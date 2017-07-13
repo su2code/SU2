@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon, S. Padron
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -1819,7 +1819,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   /*--- Move the FSI interfaces ---*/
 
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_FSIinterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+		if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -2726,4 +2726,3 @@ void CVolumetricMovement::SetVolume_Rotation(CGeometry *geometry, CConfig *confi
   if (UpdateGeo) UpdateDualGrid(geometry, config);
   
 }
-

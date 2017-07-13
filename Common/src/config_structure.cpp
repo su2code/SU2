@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -32,7 +32,6 @@
  */
 
 #include "../include/config_structure.hpp"
-
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
   
@@ -293,7 +292,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_DV           = NULL;   Marker_All_DV            = NULL;
   Marker_CfgFile_Moving       = NULL;   Marker_All_Moving        = NULL;
   Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
-  Marker_CfgFile_FSIinterface = NULL;
+  Marker_CfgFile_ZoneInterface = NULL;
   
   Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
   Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
@@ -314,11 +313,11 @@ void CConfig::SetPointersNull(void) {
   Marker_FlowLoad             = NULL;    Marker_Neumann          = NULL;    Marker_Internal       = NULL;
   Marker_All_TagBound         = NULL;    Marker_CfgFile_TagBound = NULL;    Marker_All_KindBC     = NULL;
   Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv     = NULL;    Marker_All_PerBound   = NULL;
-  Marker_FSIinterface         = NULL;    Marker_All_FSIinterface = NULL;    Marker_Riemann        = NULL;
+  Marker_ZoneInterface        = NULL;    Marker_All_ZoneInterface= NULL;    Marker_Riemann        = NULL;
   Marker_Fluid_InterfaceBound = NULL;
 
   
-  /*--- Boundary Condition settings ---*/
+    /*--- Boundary Condition settings ---*/
 
   Dirichlet_Value = NULL;    Isothermal_Temperature = NULL;
   Heat_Flux       = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
@@ -351,8 +350,8 @@ void CConfig::SetPointersNull(void) {
   Periodic_Translate   = NULL;   Periodic_Rotation  = NULL;   Periodic_Center    = NULL;
   Periodic_Translation = NULL;   Periodic_RotAngles = NULL;   Periodic_RotCenter = NULL;
 
-  Dirichlet_Value           = NULL;     Exhaust_Temperature_Target	= NULL;	    Exhaust_Temperature   = NULL;
-  Exhaust_Pressure_Target   = NULL;		Inlet_Ttotal                = NULL;	    Inlet_Ptotal          = NULL;
+  Dirichlet_Value           = NULL;     Exhaust_Temperature_Target  = NULL;     Exhaust_Temperature   = NULL;
+  Exhaust_Pressure_Target   = NULL;     Inlet_Ttotal                = NULL;     Inlet_Ptotal          = NULL;
   Inlet_FlowDir             = NULL;     Inlet_Temperature           = NULL;     Inlet_Pressure        = NULL;
   Inlet_Velocity            = NULL;     Inflow_Mach                 = NULL;     Inflow_Pressure       = NULL;
   Exhaust_Pressure          = NULL;     Outlet_Pressure             = NULL;     Isothermal_Temperature= NULL;
@@ -395,7 +394,7 @@ void CConfig::SetPointersNull(void) {
   CFL                 = NULL;
   HTP_Axis = NULL;
   PlaneTag            = NULL;
-  Kappa_Flow	      = NULL;    
+  Kappa_Flow          = NULL;    
   Kappa_AdjFlow       = NULL;
   Section_WingBounds    = NULL;
   ParamDV             = NULL;     
@@ -417,8 +416,8 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Moving mesh pointers ---*/
 
-  Kind_GridMovement	  = NULL;    LocationStations	  = NULL;
-  Motion_Origin_X     = NULL;    Motion_Origin_Y     = NULL;    Motion_Origin_Z	    = NULL;
+  Kind_GridMovement   = NULL;    LocationStations   = NULL;
+  Motion_Origin_X     = NULL;    Motion_Origin_Y     = NULL;    Motion_Origin_Z     = NULL;
   Translation_Rate_X  = NULL;    Translation_Rate_Y  = NULL;    Translation_Rate_Z  = NULL;
   Rotation_Rate_X     = NULL;    Rotation_Rate_Y     = NULL;    Rotation_Rate_Z     = NULL;
   Pitching_Omega_X    = NULL;    Pitching_Omega_Y    = NULL;    Pitching_Omega_Z    = NULL;
@@ -428,8 +427,8 @@ void CConfig::SetPointersNull(void) {
   Plunging_Ampl_X     = NULL;    Plunging_Ampl_Y     = NULL;    Plunging_Ampl_Z     = NULL;
   RefOriginMoment_X   = NULL;    RefOriginMoment_Y   = NULL;    RefOriginMoment_Z   = NULL;
   MoveMotion_Origin   = NULL;
-  Periodic_Translate  = NULL;    Periodic_Rotation 	 = NULL;    Periodic_Center	    = NULL;
-  Periodic_Translation= NULL;    Periodic_RotAngles	 = NULL;    Periodic_RotCenter  = NULL;
+  Periodic_Translate  = NULL;    Periodic_Rotation   = NULL;    Periodic_Center     = NULL;
+  Periodic_Translation= NULL;    Periodic_RotAngles  = NULL;    Periodic_RotCenter  = NULL;
 
 
   /* Harmonic Balance Frequency pointer */
@@ -757,8 +756,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_FLUID_INTERFACE", nMarker_Fluid_InterfaceBound, Marker_Fluid_InterfaceBound);
   /*!\brief MARKER_INTERFACE\n DESCRIPTION: Zone interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
-  /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: FSI interface boundary marker(s) \ingroup Config*/
-  addStringListOption("MARKER_FSI_INTERFACE", nMarker_FSIinterface, Marker_FSIinterface);
+  /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: ZONE interface boundary marker(s) \ingroup Config*/
+  addStringListOption("MARKER_ZONE_INTERFACE", nMarker_ZoneInterface, Marker_ZoneInterface);
   /*!\brief MARKER_DIRICHLET  \n DESCRIPTION: Dirichlet boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
@@ -1158,8 +1157,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
   /* DESCRIPTION: Sensitivity smoothing  */
   addEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, NO_SMOOTH);
-  /* DESCRIPTION: Adjoint frozen viscosity */
-  addBoolOption("FROZEN_VISC", Frozen_Visc, true);
+  /* DESCRIPTION: Continuous Adjoint frozen viscosity */
+  addBoolOption("FROZEN_VISC_CONT", Frozen_Visc_Cont, true);
+  /* DESCRIPTION: Discrete Adjoint frozen viscosity */
+  addBoolOption("FROZEN_VISC_DISC", Frozen_Visc_Disc, false);
+  /* DESCRIPTION: Discrete Adjoint frozen limiter */
+  addBoolOption("FROZEN_LIMITER_DISC", Frozen_Limiter_Disc, false);
    /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /*!\brief SENS_REMOVE_SHARP
@@ -1281,9 +1284,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
   /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
   addBoolOption("WRT_HALO", Wrt_Halo, false);
-  /*!\brief ONE_D_OUTPUT
-   *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker. \n Use with MARKER_OUT_1D. \ingroup Config*/
-  addBoolOption("ONE_D_OUTPUT", Wrt_1D_Output, false);
+  /*!\brief KIND_ONE_DIMENSIONALIZATION
+   *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker.
+   *  Options: AREA, MASSFLUX, NONE
+   *  \n Use with MARKER_OUT_1D. \ingroup Config*/
+  addEnumOption("KIND_ONE_DIMENSIONALIZATION", Kind_OneD, OneD_Map, ONED_NONE);
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
@@ -1773,6 +1778,30 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
   
+  /* DESCRIPTION: Multipoint design Mach number*/
+  addPythonOption("MULTIPOINT_MACH_NUMBER");
+  
+  /* DESCRIPTION: Multipoint design Weight */
+  addPythonOption("MULTIPOINT_WEIGHT");
+  
+  /* DESCRIPTION: Multipoint design Angle of Attack */
+  addPythonOption("MULTIPOINT_AOA");
+  
+  /* DESCRIPTION: Multipoint design Sideslip angle */
+  addPythonOption("MULTIPOINT_SIDESLIP_ANGLE");
+  
+  /* DESCRIPTION: Multipoint design target CL*/
+  addPythonOption("MULTIPOINT_TARGET_CL");
+  
+  /* DESCRIPTION: Multipoint design Reynolds number */
+  addPythonOption("MULTIPOINT_REYNOLDS_NUMBER");
+  
+  /* DESCRIPTION: Multipoint design freestream temperature */
+  addPythonOption("MULTIPOINT_FREESTREAM_TEMPERATURE");
+  
+  /* DESCRIPTION: Multipoint design freestream pressure */
+  addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
+  
   /* END_CONFIG_OPTIONS */
 
 }
@@ -1972,9 +2001,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
   bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
   
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   int size = SINGLE_NODE;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
 #ifndef HAVE_TECIO
@@ -2078,8 +2109,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   else { FSI_Problem = false; }
 
-  if ((rank==MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
+  if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
+  }
+  if ((rank == MASTER_NODE) && ContinuousAdjoint && (Kind_OneD == ONED_MFLUX) && (Kind_SU2 == SU2_CFD)) {
+    cout << "WARNING: The continuous adjoint solver assumes area-averaging." << endl;
   }
   
   /*--- Initialize non-physical points/reconstructions to zero ---*/
@@ -2263,15 +2297,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     exit(EXIT_FAILURE);
   }
   
-  /*--- Make sure that there aren't more than one rigid motion or
-   rotating frame specified in GRID_MOVEMENT_KIND. ---*/
- /* 
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
-      (nGridMovement > 2)) {
-    cout << "Can not support more than 2 type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
-    exit(EXIT_FAILURE);
-  }
- */ 
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each option, a value has been declared for each moving marker. ---*/
@@ -3060,16 +3085,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   AD_Mode = YES;
 #else
   if (AD_Mode == YES) {
-    cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
-    cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
+    if (rank == MASTER_NODE){
+      cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
+      cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
+    }
   }
 #endif
 
   if (DiscreteAdjoint) {
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD) {
-      cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
-      cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
+      if (rank == MASTER_NODE){
+        cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
+        cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
+      }
       exit(EXIT_FAILURE);
     }
 #endif
@@ -3086,6 +3115,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         exit(EXIT_FAILURE);
       }
 
+      if (Unst_AdjointIter- long(nExtIter) < 0){
+        if (rank == MASTER_NODE){
+          cout << "Invalid iteration number requested for unsteady adjoint. " << endl;
+          cout << "Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER." << endl;
+        }
+        exit(EXIT_FAILURE);
+      }
+
       /*--- If the averaging interval is not set, we average over all time-steps ---*/
 
       if (Iter_Avg_Objective == 0.0) {
@@ -3099,7 +3136,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
       case RANS:
         Kind_Solver = DISC_ADJ_RANS;
-        Frozen_Visc = false;
         break;
       case NAVIER_STOKES:
         Kind_Solver = DISC_ADJ_NAVIER_STOKES;
@@ -3131,7 +3167,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
-  iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
+  iMarker_Clamped, iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Load_Sine,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D;
 
   int size = SINGLE_NODE;
@@ -3170,12 +3206,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_Designing      = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
   Marker_All_Plotting       = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
   Marker_All_Analyze  = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_FSIinterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
+  Marker_All_ZoneInterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
   Marker_All_GeoEval        = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
   Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
   Marker_All_PerBound       = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Out_1D         = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
+
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All]      = "SEND_RECEIVE";
@@ -3185,8 +3222,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_GeoEval[iMarker_All]       = 0;
     Marker_All_Designing[iMarker_All]     = 0;
     Marker_All_Plotting[iMarker_All]      = 0;
-    Marker_All_Analyze[iMarker_All] = 0;
-    Marker_All_FSIinterface[iMarker_All]  = 0;
+    Marker_All_Analyze[iMarker_All]       = 0;
+    Marker_All_ZoneInterface[iMarker_All] = 0;
     Marker_All_DV[iMarker_All]            = 0;
     Marker_All_Moving[iMarker_All]        = 0;
     Marker_All_PerBound[iMarker_All]      = 0;
@@ -3202,7 +3239,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Plotting      = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Analyze       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_GeoEval       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_FSIinterface	 = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_ZoneInterface = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_DV            = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Moving        = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound      = new unsigned short[nMarker_CfgFile];
@@ -3215,8 +3252,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_GeoEval[iMarker_CfgFile]       = 0;
     Marker_CfgFile_Designing[iMarker_CfgFile]     = 0;
     Marker_CfgFile_Plotting[iMarker_CfgFile]      = 0;
-    Marker_CfgFile_Analyze[iMarker_CfgFile] = 0;
-    Marker_CfgFile_FSIinterface[iMarker_CfgFile]  = 0;
+    Marker_CfgFile_Analyze[iMarker_CfgFile]       = 0;
+    Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = 0;
     Marker_CfgFile_DV[iMarker_CfgFile]            = 0;
     Marker_CfgFile_Moving[iMarker_CfgFile]        = 0;
     Marker_CfgFile_PerBound[iMarker_CfgFile]      = 0;
@@ -3232,7 +3269,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Surface_IDR = new su2double[nMarker_Analyze];
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
      Surface_MassFlow[iMarker_Analyze] = 0.0;
-   	 Surface_DC60[iMarker_Analyze] = 0.0;
+     Surface_DC60[iMarker_Analyze] = 0.0;
      Surface_IDC[iMarker_Analyze] = 0.0;
      Surface_IDC_Mach[iMarker_Analyze] = 0.0;
      Surface_IDR[iMarker_Analyze] = 0.0;
@@ -3586,12 +3623,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Identification of Fluid-Structure interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-	unsigned short indexMarker = 0;
-    Marker_CfgFile_FSIinterface[iMarker_CfgFile] = NO;
-    for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++)
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_FSIinterface[iMarker_FSIinterface])
-			indexMarker = (int)(iMarker_FSIinterface/2+1);
-	  Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
+    unsigned short indexMarker = 0;
+    Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = NO;
+    for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_ZoneInterface[iMarker_ZoneInterface])
+            indexMarker = (int)(iMarker_ZoneInterface/2+1);
+      Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
   }
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -3626,7 +3663,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
-  iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
+  iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_ActDiskOutlet;
   
@@ -3652,8 +3689,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "|                                                                       |" << endl;
   //cout << "|   Local date and time: " << dt << "                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|" << endl;
-  cout << "|                Dr. Thomas D. Economon, economon@stanford.edu          |" << endl;
+  cout << "| SU2 Original Developers: Dr. Francisco D. Palacios.                   |" << endl;
+  cout << "|                          Dr. Thomas D. Economon.                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2 Developers:                                                       |" << endl;
   cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
@@ -3723,13 +3760,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     	  break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
       case ADJ_NAVIER_STOKES:
-        if (Frozen_Visc)
+        if (Frozen_Visc_Cont)
           cout << "Continuous Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
         else
           cout << "Continuous Navier-Stokes adjoint equations." << endl;
         break;
       case ADJ_RANS:
-        if (Frozen_Visc)
+        if (Frozen_Visc_Cont)
           cout << "Continuous RANS adjoint equations with frozen (laminar and eddy) viscosity." << endl;
         else
           cout << "Continuous RANS adjoint equations." << endl;
@@ -3816,6 +3853,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
         else cout <<"."<< endl;
       }
+      cout<< endl;
     }
     
     if (nMarker_Designing != 0) {
@@ -3848,11 +3886,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout<< endl;
     }
     
-    if (nMarker_FSIinterface != 0) {
-      cout << "Surface(s) belonging to the Fluid-Structure Interaction problem: ";
-      for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++) {
-        cout << Marker_FSIinterface[iMarker_FSIinterface];
-        if (iMarker_FSIinterface < nMarker_FSIinterface-1) cout << ", ";
+    if (nMarker_ZoneInterface != 0) {
+      cout << "Surface(s) acting as an interface among zones: ";
+      for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++) {
+        cout << Marker_ZoneInterface[iMarker_ZoneInterface];
+        if (iMarker_ZoneInterface < nMarker_ZoneInterface-1) cout << ", ";
         else cout <<".";
       }
       cout<<endl;
@@ -3964,11 +4002,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
           case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
-          case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
+          case FFD_THICKNESS:         cout << "FFD (thickness) -> "; break;
           case FFD_ANGLE_OF_ATTACK:   cout << "FFD (angle of attack) <-> "; break;
+<<<<<<< HEAD
           case FFD_DIRECT_MANIPULATION:    cout << "FFD (direct) <-> "; break;
           case FFD_DIRECT_MANIPULATION_2D: cout << "FFD (direct) <-> "; break;
           case CUSTOM:                cout << "Custom DV <-> "; break;
+||||||| merged common ancestors
+          case CUSTOM:                cout << "Custom DV <-> "; break;
+=======
+>>>>>>> github/develop
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -4008,7 +4051,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
-        if (Design_Variable[iDV] ==  CUSTOM) nParamDV = 1;
         if (Design_Variable[iDV] == FFD_TWIST) nParamDV = 8;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
@@ -4107,11 +4149,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
         case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
         case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
-        case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
         case AERO_DRAG_COEFFICIENT:   cout << "Aero CD objective function." << endl; break;
         case RADIAL_DISTORTION:       cout << "Radial distortion objective function." << endl; break;
         case CIRCUMFERENTIAL_DISTORTION:   cout << "Circumferential distortion objective function." << endl; break;
-
+        case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
       }
 		}
 		else {
@@ -4246,7 +4287,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
+    if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc_Cont)) {
       if (Kind_ConvNumScheme_AdjTurb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver (first order) for the adjoint turbulence model."<< endl;
         switch (SpatialOrder_AdjTurb) {
@@ -4294,7 +4335,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
     }
 
-    if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
+    if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc_Cont)) {
       cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
     }
@@ -5143,11 +5184,11 @@ unsigned short CConfig::GetMarker_CfgFile_Analyze(string val_marker) {
 }
 
 
-unsigned short CConfig::GetMarker_CfgFile_FSIinterface(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_ZoneInterface(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
-  return Marker_CfgFile_FSIinterface[iMarker_CfgFile];
+  return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_Out_1D(string val_marker) {
@@ -5178,12 +5219,12 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   return Marker_CfgFile_PerBound[iMarker_CfgFile];
 }
 
-int CConfig::GetMarker_FSIinterface(string val_marker) {	
+int CConfig::GetMarker_ZoneInterface(string val_marker) {	
 	  unsigned short iMarker_CfgFile;
 	  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     
 		  if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
-				return  Marker_CfgFile_FSIinterface[iMarker_CfgFile];
+				return  Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
     return 0;
 }
 
@@ -5303,8 +5344,8 @@ CConfig::~CConfig(void) {
   if (Marker_CfgFile_Analyze != NULL) delete[] Marker_CfgFile_Analyze;
   if (Marker_All_Analyze  != NULL) delete[] Marker_All_Analyze;
 
-  if (Marker_CfgFile_FSIinterface != NULL) delete[] Marker_CfgFile_FSIinterface;
-  if (Marker_All_FSIinterface     != NULL) delete[] Marker_All_FSIinterface;
+  if (Marker_CfgFile_ZoneInterface != NULL) delete[] Marker_CfgFile_ZoneInterface;
+  if (Marker_All_ZoneInterface     != NULL) delete[] Marker_All_ZoneInterface;
   
   if (Marker_CfgFile_DV != NULL) delete[] Marker_CfgFile_DV;
   if (Marker_All_DV     != NULL) delete[] Marker_All_DV;
@@ -5322,7 +5363,7 @@ CConfig::~CConfig(void) {
   if (Marker_GeoEval != NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
   if (Marker_Analyze != NULL)        delete[] Marker_Analyze;
-  if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
+  if (Marker_ZoneInterface != NULL)        delete[] Marker_ZoneInterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
 
   if (Kind_ObjFunc != NULL)      delete[] Kind_ObjFunc;
@@ -5642,10 +5683,10 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";      break;
-      case OUTFLOW_GENERALIZED:     AdjExt = "_chn";      break;
       case AERO_DRAG_COEFFICIENT:   AdjExt = "_acd";       break;
       case RADIAL_DISTORTION:           AdjExt = "_rdis";      break;
       case CIRCUMFERENTIAL_DISTORTION:  AdjExt = "_cdis";      break;
+      case CUSTOM_OBJFUNC:        		AdjExt = "_custom";   break;
       }
     }
     else{
