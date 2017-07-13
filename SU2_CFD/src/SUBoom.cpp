@@ -105,12 +105,9 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   /*---Walk through neighbors to determine all points containing line---*/
   if(rank == MASTER_NODE)
     cout << "Extract line." << endl;
-  cout << "Rank " << rank << " before extract line." << endl;
   for(int i = 0; i < ray_N_phi; i++){
     if(startline[i]){
-      cout << "Rank " << rank << " contains line." << endl;
       ExtractLine(geometry, ray_r0, ray_phi, ray_N_phi);
-      cout << "nPanel[" << rank << "] = " << nPanel << endl;
     }
     else{
       nPanel = 0;
@@ -120,22 +117,15 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   /*---Interpolate pressures along line---*/
   if(rank == MASTER_NODE)
     cout << "Extract pressure signature." << endl;
-  cout << "Rank " << rank << " before extract pressure" << endl;
   for(int i = 0; i < ray_N_phi; i++){
-    if(startline[i]){
-      cout << "Rank " << rank << " beginning pressure extraction." << endl;
-      ExtractPressure(solver, config, geometry);
+    if(startline[i]){      ExtractPressure(solver, config, geometry);
     }
   }
-
-  cout << "Rank " << rank << " after pressure extraction." << endl;
 
   unsigned long iPanel;
   for(iPanel = 0; iPanel < nPanel; iPanel++){
     signal.original_p[iPanel] = signal.original_p[iPanel]*Pressure_Ref - Pressure_FreeStream;
   }
-
-  cout << "Rank " << rank << " after modifying signal.original_p with reference pressure." << endl;
 
   unsigned long totSig = 0;
   unsigned long maxSig = 0;
@@ -504,25 +494,6 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
               if(nDim == 2){
                 yy = abs(y);
                 r2 = (yy-y0[0])*(yy-y0[0]);
-                //if(r2 < r2min[1]){
-                //  iPointmin[1] = iPoint;
-                //  r2min[1] = r2;
-                //  xmin[1] = x;
-                //  startline[0] = true;
-                //  /*--- Now sort min values based on r2 ---*/
-                //  if(r2min[1] < r2min[0]){
-                //    itmp = iPointmin[1];
-                //    iPointmin[1] = iPointmin[0];
-                //    iPointmin[0] = itmp;
-                //
-                //    mintmp = r2min[1];
-                //    r2min[1] = r2min[0];
-                //    r2min[0] = mintmp;
-                //
-                //    mintmp = xmin[1];
-                //    xmin[1] = xmin[0];
-                //    xmin[0] = mintmp;
-                //  }
                 if(r2 < r2min[iPointmax[0]]){
                   iPointmin[iPointmax[0]] = iPoint;
                   r2min[iPointmax[0]] = r2;
@@ -617,9 +588,9 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 }
 
 void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, const su2double *phi, unsigned short nPhi){
-  bool inside, end = false;
+  bool inside, boundary, end = false;
   unsigned short iElem, nElem;
-  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem();
+  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem(), nPoint_tot = geometry->GetnPointDomain();
   su2double x_i, x_m1;
 
   unsigned long *pointID_tmp;
@@ -636,55 +607,70 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, const su2doubl
 
       for(iElem = 0; iElem < nElem; iElem++){
         jElem = geometry->elem[jElem_m1]->GetNeighbor_Elements(iElem);
-        if(jElem < nElem_tot){
-          x_i = geometry->elem[jElem]->GetCG(0);
+        /*--- Don't extract boundary elements ---*/
+        boundary = false;
+        /*for(unsigned short iPoint = 0; iPoint < geometry->elem[jElem]->GetnNodes(); iPoint++){
+          unsigned long jPoint = geometry->elem[jElem]->GetNode(iPoint);
+          //cout << "jPoint = " << jPoint << endl;//", nPoint_tot = " << nPoint_tot << endl;
+          //if(jPoint < nPoint_tot) boundary = true;
+          if(!geometry->node[jPoint]->GetDomain()){
+            boundary = true;
+            cout << "jPoint = " << jPoint << ", jElem = " << jElem << endl;
+          }
+        }*/
+        //if(!boundary){
+          if(jElem < nElem_tot){
+            x_i = geometry->elem[jElem]->GetCG(0);
 
-          if(x_i > x_m1){
-            inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
-            if(inside){
-              nPanel++;
+            if(x_i > x_m1){
+              inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
+              if(inside){
+                nPanel++;
 
-              pointID_tmp = new unsigned long[nPanel-1];
-              Coord_tmp = new su2double*[nPanel-1];
-              for(unsigned long i = 0; i < nPanel-1; i++){
-                Coord_tmp[i] = new su2double[nDim];
-                pointID_tmp[i] = pointID_original[i];
-                Coord_tmp[i][0] = Coord_original[i][0];
-                Coord_tmp[i][1] = Coord_original[i][1];
+                pointID_tmp = new unsigned long[nPanel-1];
+                Coord_tmp = new su2double*[nPanel-1];
+                for(unsigned long i = 0; i < nPanel-1; i++){
+                  Coord_tmp[i] = new su2double[nDim];
+                  pointID_tmp[i] = pointID_original[i];
+                  Coord_tmp[i][0] = Coord_original[i][0];
+                  Coord_tmp[i][1] = Coord_original[i][1];
 
-                delete [] Coord_original[i];
+                  delete [] Coord_original[i];
+                }
+                delete [] pointID_original;
+                delete [] Coord_original;
+
+                pointID_original = new unsigned long[nPanel];
+                Coord_original = new su2double*[nPanel];
+                for(unsigned long i = 0; i < nPanel-1; i++){
+                  Coord_original[i] = new su2double[nDim];
+                  pointID_original[i] = pointID_tmp[i];
+                  Coord_original[i][0] = Coord_tmp[i][0];
+                  Coord_original[i][1] = Coord_tmp[i][1];
+
+                  delete [] Coord_tmp[i];
+                }
+                delete [] pointID_tmp;
+                delete [] Coord_tmp;
+
+                Coord_original[nPanel-1] = new su2double[nDim];
+                pointID_original[nPanel-1] = jElem;
+                Coord_original[nPanel-1][0] = (p0[0] + p1[0])/2.0;
+                Coord_original[nPanel-1][1] = -r0;
+
+                break;
               }
-              delete [] pointID_original;
-              delete [] Coord_original;
-
-              pointID_original = new unsigned long[nPanel];
-              Coord_original = new su2double*[nPanel];
-              for(unsigned long i = 0; i < nPanel-1; i++){
-                Coord_original[i] = new su2double[nDim];
-                pointID_original[i] = pointID_tmp[i];
-                Coord_original[i][0] = Coord_tmp[i][0];
-                Coord_original[i][1] = Coord_tmp[i][1];
-
-                delete [] Coord_tmp[i];
-              }
-              delete [] pointID_tmp;
-              delete [] Coord_tmp;
-
-              Coord_original[nPanel-1] = new su2double[nDim];
-              pointID_original[nPanel-1] = jElem;
-              Coord_original[nPanel-1][0] = (p0[0] + p1[0])/2.0;
-              Coord_original[nPanel-1][1] = -r0;
-
-              break;
             }
           }
-        }
+        //}
       }
       if(!inside){
         end = true;
       }
     }
   }
+
+  cout << "nPanel extracted = " << nPanel << endl;
 
 }
 
@@ -696,7 +682,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
   su2double rho_i, rho_ux_i, rho_uy_i, rho_uz_i, rho_E_i, TKE_i;
   su2double ux, uy, uz, StaticEnergy, p;
 
-  su2double isoparams[10];
+  su2double *isoparams;
   su2double *X_donor;
   su2double *Coord = new su2double[nDim];
 
@@ -726,6 +712,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     }
 
     /*--- Compute isoparameters ---*/
+    isoparams = new su2double[nNode];
     Isoparameters(nDim, nNode, X_donor, Coord, isoparams);
 
     /*--- Now interpolate pressure ---*/
@@ -734,45 +721,47 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     rho_ux_i = 0.0; rho_uy_i = 0.0; rho_uz_i = 0.0;
     rho_E_i = 0.0; TKE_i = 0.0;
     for(iNode = 0; iNode < nNode; iNode++){
-      jNode = geometry->elem[jElem]->GetNode(iNode);
+      if(isoparams[iNode]*isoparams[iNode] > 0.0){
+        jNode = geometry->elem[jElem]->GetNode(iNode);
 
-      /*---Extract conservative flow data---*/
-      rho = solver->node[jNode]->GetSolution(nDim);
-      rho_ux = solver->node[jNode]->GetSolution(nDim+1);
-      rho_uy = solver->node[jNode]->GetSolution(nDim+2);
-      if(nDim == 3) rho_uz = solver->node[jNode]->GetSolution(nDim+3);
-      rho_E = solver->node[jNode]->GetSolution(2*nDim+1);
-      TKE = 0.0;
+        /*---Extract conservative flow data---*/
+        rho = solver->node[jNode]->GetSolution(nDim);
+        rho_ux = solver->node[jNode]->GetSolution(nDim+1);
+        rho_uy = solver->node[jNode]->GetSolution(nDim+2);
+        if(nDim == 3) rho_uz = solver->node[jNode]->GetSolution(nDim+3);
+        rho_E = solver->node[jNode]->GetSolution(2*nDim+1);
+        TKE = 0.0;
 
-      //Register conservative variables as input for adjoint computation
-      if (config->GetAD_Mode()){
-        AD::RegisterInput(rho );
-        AD::RegisterInput(rho_ux );
-        AD::RegisterInput(rho_uy );
-        if (nDim==3) AD::RegisterInput(rho_uz );
-        AD::RegisterInput(rho_E );
-        AD::RegisterInput(TKE );
+        //Register conservative variables as input for adjoint computation
+        if (config->GetAD_Mode()){
+          AD::RegisterInput(rho );
+          AD::RegisterInput(rho_ux );
+          AD::RegisterInput(rho_uy );
+          if (nDim==3) AD::RegisterInput(rho_uz );
+          AD::RegisterInput(rho_E );
+          AD::RegisterInput(TKE );
+        }
+
+        /*---Compute pressure---*/
+        rho_i += rho*isoparams[iNode];
+        rho_ux_i += rho_ux*isoparams[iNode];
+        rho_uy_i += rho_uy*isoparams[iNode];
+        if(nDim == 3) rho_uz_i += rho_uz*isoparams[iNode];
+        rho_E_i += rho_E*isoparams[iNode];
+        TKE_i += TKE*isoparams[iNode];
+
+        /*ux = rho_ux/rho;
+        uy = rho_uy/rho;
+        uz = 0.0;
+        if(nDim == 3) uz= rho_uz/rho;
+        StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
+        p += (config->GetGamma()-1)*rho*StaticEnergy*isoparams[iNode];*/
+
+        PointID[pointCount] = geometry->node[jNode]->GetGlobalIndex();
+        pointCount++;
       }
-
-      /*---Compute pressure---*/
-      rho_i += rho*isoparams[iNode];
-      rho_ux_i += rho_ux*isoparams[iNode];
-      rho_uy_i += rho_uy*isoparams[iNode];
-      if(nDim == 3) rho_uz_i += rho_uz*isoparams[iNode];
-      rho_E_i += rho_E*isoparams[iNode];
-      TKE_i += TKE*isoparams[iNode];
-
-      /*ux = rho_ux/rho;
-      uy = rho_uy/rho;
-      uz = 0.0;
-      if(nDim == 3) uz= rho_uz/rho;
-      StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
-      p += (config->GetGamma()-1)*rho*StaticEnergy*isoparams[iNode];*/
-
-      PointID[pointCount] = geometry->node[jNode]->GetGlobalIndex();
-      pointCount++;
     }
-
+    
     ux = rho_ux_i/rho_i;
     uy = rho_uy_i/rho_i;
     uz = 0.0;
@@ -908,7 +897,7 @@ int SUBoom::Intersect3D(){
 void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj, su2double *isoparams) {
   short iDonor,iDim,k; // indices
   su2double tmp, tmp2;
-  
+
   su2double x[nDim+1];
   su2double x_tmp[nDim+1];
   su2double Q[nDonor*nDonor];
@@ -942,7 +931,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
      * for example, if z constant including the z values will make the system degenerate
      * TODO: improve efficiency of this loop---*/
     test[0]=true; // always keep the 1st row
-    for (iDim=1; iDim<nDim+1; iDim++) {
+    for (iDim=1; iDim<n; iDim++) {
       // Test this row against all previous
       test[iDim]=true; // Assume that it is not degenerate
       for (k=0; k<iDim; k++) {
@@ -956,7 +945,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
         testi[k]=false;
         for (iDonor=0; iDonor<nDonor; iDonor++) {
           // If at least one ratio is non-matching row iDim is not degenerate w/ row k
-          if (A[iDim*nDonor+iDonor]/tmp != A[k*nDonor+iDonor]/tmp2)
+          if (abs(A[iDim*nDonor+iDonor]/tmp-A[k*nDonor+iDonor]/tmp2) > eps)
             testi[k]=true;
         }
         // If any of testi (k<iDim) are false, row iDim is degenerate
@@ -969,7 +958,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     A2 = new su2double[n*nDonor];
     iDim=0;
     /*--- Copy only the rows that are non-degenerate ---*/
-    for (k=0; k<nDim+1; k++) {
+    for (k=0; k<n; k++) {
       if (test[k]) {
         for (iDonor=0;iDonor<nDonor;iDonor++ ) {
           A2[nDonor*iDim+iDonor]=A[nDonor*k+iDonor];
@@ -978,6 +967,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
         iDim++;
       }
     }
+
     /*--- Initialize Q,R to 0 --*/
     for (k=0; k<nDonor*nDonor; k++) {
       Q[k]=0;
@@ -1048,7 +1038,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
   /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
   if (nDonor==4) {
     //-- Bilinear coordinates, bounded by [-1,1] ---
-    su2double xi, eta;
+    /*su2double xi, eta;
     xi = (1.0-isoparams[0]/isoparams[1])/(1.0+isoparams[0]/isoparams[1]);
     eta = 1- isoparams[2]*4/(1+xi);
     if (xi>1.0) xi=1.0;
@@ -1058,10 +1048,28 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     isoparams[0]=0.25*(1-xi)*(1-eta);
     isoparams[1]=0.25*(1+xi)*(1-eta);
     isoparams[2]=0.25*(1+xi)*(1+eta);
-    isoparams[3]=0.25*(1-xi)*(1+eta);
+    isoparams[3]=0.25*(1-xi)*(1+eta);*/
+    tmp = 0.0;
+    tmp2 = 0.0;
+    k = 0;
+    for(iDonor = 0; iDonor < nDonor; iDonor++){
+      if(isoparams[iDonor] > tmp2){
+        k = iDonor;
+        tmp2 = isoparams[iDonor];
+      }
+      if(isoparams[iDonor] < 0) isoparams[iDonor] = 0;
+      if(isoparams[iDonor] > 1) isoparams[iDonor] = 1;
+      tmp += isoparams[iDonor];
+    }
+    if(tmp > 0){
+      for(iDonor = 0; iDonor < nDonor; iDonor++){
+        isoparams[iDonor] /= tmp;
+      }
+    }
+    else isoparams[k] = 1.0;
 
   }
-  if (nDonor<4) {
+/*  if (nDonor<4) {
     tmp = 0.0; // value for normalization
     tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
     k=0; // index for maximum value
@@ -1081,7 +1089,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     else {
       isoparams[k] = 1.0;
     }
-  }
+  }*/
   
   if (A2 != NULL) delete [] A2;
 

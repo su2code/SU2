@@ -191,8 +191,8 @@ geometry_container[ZONE_0]->SetElement_Connectivity();
 ////////geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
 /*--- Create the edge structure ---*/
 
-////////if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-////////geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
+if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
+geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
 
 /*--- Compute center of gravity ---*/
 
@@ -561,7 +561,7 @@ geometry_container[ZONE_0]->SetCoord_CG();
              }
              su2double boom_obj[1];
              if (rank == MASTER_NODE){
-               boom_obj[0] = boom.p_int2;
+//               boom_obj[0] = boom.p_int2;
                Objective_Function = boom.p_int2;
 //               AD::RegisterOutput(boom.p_int2);
              }
