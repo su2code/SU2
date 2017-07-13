@@ -2345,7 +2345,9 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
         if (geometry->node[iPoint]->GetDomain()) {
           
@@ -2359,8 +2361,6 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
           /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
           for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
-
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
             for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
@@ -2398,6 +2398,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
             
             for (iVar = 0; iVar < nVar; iVar++)
               Residual[iVar] += weight*tmp_residual[iVar];
+            
           }
 
           /*--- Add Residuals and Jacobians ---*/
@@ -3351,7 +3352,9 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
         if (geometry->node[iPoint]->GetDomain()) {
 
@@ -3366,8 +3369,6 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
           
           for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
             
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
             for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
