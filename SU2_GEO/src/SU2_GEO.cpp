@@ -39,39 +39,44 @@ int main(int argc, char *argv[]) {
   unsigned short iZone, nZone = SINGLE_ZONE;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
-  su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinXCoord, MaxXCoord,
+  su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps,
   **Plane_P0, **Plane_Normal,
   
-  Wing_Volume = 0.0, Wing_MinMaxThickness = 0.0, Wing_MaxChord = 0.0, Wing_MinToC = 0.0, Wing_MaxTwist = 0.0, Wing_MaxCurvature = 0.0, Wing_MaxDihedral = 0.0,
-  Wing_Volume_New = 0.0,Wing_MinMaxThickness_New = 0.0, Wing_MaxChord_New = 0.0, Wing_MinToC_New = 0.0, Wing_MaxTwist_New = 0.0, Wing_MaxCurvature_New = 0.0, Wing_MaxDihedral_New = 0.0,
-  Wing_Volume_Grad = 0.0, Wing_MinMaxThickness_Grad = 0.0, Wing_MaxChord_Grad = 0.0, Wing_MinToC_Grad = 0.0, Wing_MaxTwist_Grad = 0.0, Wing_MaxCurvature_Grad = 0.0, Wing_MaxDihedral_Grad = 0.0;
+  Fuselage_Volume = 0.0, Fuselage_WettedArea = 0.0, Fuselage_MinWidth = 0.0, Fuselage_MaxWidth = 0.0, Fuselage_MinWaterLineWidth = 0.0, Fuselage_MaxWaterLineWidth = 0.0, Fuselage_MinHeight = 0.0, Fuselage_MaxHeight = 0.0, Fuselage_MaxCurvature = 0.0,
+  Fuselage_Volume_New = 0.0, Fuselage_WettedArea_New = 0.0, Fuselage_MinWidth_New = 0.0, Fuselage_MaxWidth_New = 0.0, Fuselage_MinWaterLineWidth_New = 0.0, Fuselage_MaxWaterLineWidth_New = 0.0, Fuselage_MinHeight_New = 0.0, Fuselage_MaxHeight_New = 0.0, Fuselage_MaxCurvature_New = 0.0,
+  Fuselage_Volume_Grad = 0.0, Fuselage_WettedArea_Grad = 0.0, Fuselage_MinWidth_Grad = 0.0, Fuselage_MaxWidth_Grad = 0.0, Fuselage_MinWaterLineWidth_Grad = 0.0, Fuselage_MaxWaterLineWidth_Grad = 0.0, Fuselage_MinHeight_Grad = 0.0, Fuselage_MaxHeight_Grad = 0.0, Fuselage_MaxCurvature_Grad = 0.0,
   
+  Wing_Volume = 0.0, Wing_MinThickness = 0.0, Wing_MaxThickness = 0.0, Wing_MinChord = 0.0, Wing_MaxChord = 0.0, Wing_MinLERadius = 0.0, Wing_MaxLERadius = 0.0, Wing_MinToC = 0.0, Wing_MaxToC = 0.0, Wing_ObjFun_MinToC = 0.0, Wing_MaxTwist = 0.0, Wing_MaxCurvature = 0.0, Wing_MaxDihedral = 0.0,
+  Wing_Volume_New = 0.0, Wing_MinThickness_New = 0.0, Wing_MaxThickness_New = 0.0, Wing_MinChord_New = 0.0, Wing_MaxChord_New = 0.0, Wing_MinLERadius_New = 0.0, Wing_MaxLERadius_New = 0.0, Wing_MinToC_New = 0.0, Wing_MaxToC_New = 0.0, Wing_ObjFun_MinToC_New = 0.0, Wing_MaxTwist_New = 0.0, Wing_MaxCurvature_New = 0.0, Wing_MaxDihedral_New = 0.0,
+  Wing_Volume_Grad = 0.0, Wing_MinThickness_Grad = 0.0, Wing_MaxThickness_Grad = 0.0, Wing_MinChord_Grad = 0.0, Wing_MaxChord_Grad = 0.0, Wing_MinLERadius_Grad = 0.0, Wing_MaxLERadius_Grad = 0.0, Wing_MinToC_Grad = 0.0, Wing_MaxToC_Grad = 0.0, Wing_ObjFun_MinToC_Grad = 0.0, Wing_MaxTwist_Grad = 0.0, Wing_MaxCurvature_Grad = 0.0, Wing_MaxDihedral_Grad = 0.0;
+  
+  su2double Thickness_ZLoc;
   
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   vector<su2double> Xcoord_Fan, Ycoord_Fan, Zcoord_Fan;
   char config_file_name[MAX_STRING_SIZE];
  	char *cstr;
   bool Local_MoveSurface, MoveSurface = false;
-	ofstream Gradient_file, ObjFunc_file;
-	int rank = MASTER_NODE;
+  ofstream Gradient_file, ObjFunc_file;
+  int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
   /*--- MPI initialization ---*/
-
+  
 #ifdef HAVE_MPI
-	SU2_MPI::Init(&argc,&argv);
+  SU2_MPI::Init(&argc,&argv);
   SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-	MPI_Comm_rank(MPICommunicator,&rank);
+  MPI_Comm_rank(MPICommunicator,&rank);
   MPI_Comm_size(MPICommunicator,&size);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
-	
-	/*--- Pointer to different structures that will be used throughout the entire code ---*/
   
-	CConfig **config_container          = NULL;
-	CGeometry **geometry_container      = NULL;
-	CSurfaceMovement *surface_movement  = NULL;
+  /*--- Pointer to different structures that will be used throughout the entire code ---*/
+  
+  CConfig **config_container          = NULL;
+  CGeometry **geometry_container      = NULL;
+  CSurfaceMovement *surface_movement  = NULL;
   CFreeFormDefBox** FFDBox            = NULL;
   
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
@@ -79,7 +84,7 @@ int main(int argc, char *argv[]) {
   
   if (argc == 2) { strcpy(config_file_name,argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
-    
+  
   /*--- Definition of the containers per zones ---*/
   
   config_container = new CConfig*[nZone];
@@ -102,7 +107,7 @@ int main(int argc, char *argv[]) {
     
     config_container[iZone] = new CConfig(config_file_name, SU2_GEO, iZone, nZone, 0, VERB_HIGH);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
-        
+    
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
     CGeometry *geometry_aux = NULL;
@@ -123,7 +128,7 @@ int main(int argc, char *argv[]) {
     /*--- Deallocate the memory of geometry_aux ---*/
     
     delete geometry_aux;
-
+    
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone]->SetSendReceive(config_container[iZone]);
@@ -145,18 +150,18 @@ int main(int argc, char *argv[]) {
   /*--- Evaluation of the objective function ---*/
   
   if (rank == MASTER_NODE)
-		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-
+    cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
+  
   /*--- Set the number of sections, and allocate the memory ---*/
   
   if (geometry_container[ZONE_0]->GetnDim() == 2) nPlane = 1;
   else nPlane = config_container[ZONE_0]->GetnLocationStations();
-
+  
   Xcoord_Airfoil = new vector<su2double>[nPlane];
   Ycoord_Airfoil = new vector<su2double>[nPlane];
   Zcoord_Airfoil = new vector<su2double>[nPlane];
   Variable_Airfoil = new vector<su2double>[nPlane];
-
+  
   Plane_P0 = new su2double*[nPlane];
   Plane_Normal = new su2double*[nPlane];
   for(iPlane = 0; iPlane < nPlane; iPlane++ ) {
@@ -167,7 +172,7 @@ int main(int argc, char *argv[]) {
   ObjectiveFunc = new su2double[nPlane*20];
   ObjectiveFunc_New = new su2double[nPlane*20];
   Gradient = new su2double[nPlane*20];
-
+  
   for (iVar = 0; iVar < nPlane*20; iVar++) {
     ObjectiveFunc[iVar] = 0.0;
     ObjectiveFunc_New[iVar] = 0.0;
@@ -208,102 +213,170 @@ int main(int argc, char *argv[]) {
   /*--- Create plane structure ---*/
   
   if (rank == MASTER_NODE) cout << "Set plane structure." << endl;
+  
   if (geometry_container[ZONE_0]->GetnDim() == 2) {
-    MinXCoord = -1E6; MaxXCoord = 1E6;
     Plane_Normal[0][0] = 0.0;   Plane_P0[0][0] = 0.0;
     Plane_Normal[0][1] = 1.0;   Plane_P0[0][1] = 0.0;
     Plane_Normal[0][2] = 0.0;   Plane_P0[0][2] = 0.0;
   }
   else if (geometry_container[ZONE_0]->GetnDim() == 3) {
-    
-    MinXCoord = -1E6; MaxXCoord = 1E6;
-        
-      for (iPlane = 0; iPlane < nPlane; iPlane++) {
-        Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
-        Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
-        Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
-        Plane_Normal[iPlane][config_container[ZONE_0]->GetAxis_Stations()] = 1.0;
-        Plane_P0[iPlane][config_container[ZONE_0]->GetAxis_Stations()] = config_container[ZONE_0]->GetLocationStations(iPlane);
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
+      Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
+      Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
+      if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+        Plane_Normal[iPlane][0] = 1.0;
+        Plane_P0[iPlane][0] = config_container[ZONE_0]->GetLocationStations(iPlane);
       }
+      if (config_container[ZONE_0]->GetGeo_Description() == WING) {
+        Plane_Normal[iPlane][1] = 1.0;
+        Plane_P0[iPlane][1] = config_container[ZONE_0]->GetLocationStations(iPlane);
+      }
+    }
   }
   
   /*--- Compute the wing and fan description (only 3D). ---*/
   
   if (geometry_container[ZONE_0]->GetnDim() == 3) {
     
-    if (rank == MASTER_NODE)  cout << "Computing the wing continuous description." << endl << endl;
+    if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+      
+      if (rank == MASTER_NODE) {
+        cout << "Computing the fuselage continuous description." << endl << endl;
+      }
+      
+      geometry_container[ZONE_0]->Compute_Fuselage(config_container[ZONE_0], true,
+                                                   Fuselage_Volume, Fuselage_WettedArea, Fuselage_MinWidth, Fuselage_MaxWidth,
+                                                   Fuselage_MinWaterLineWidth, Fuselage_MaxWaterLineWidth,
+                                                   Fuselage_MinHeight, Fuselage_MaxHeight,
+                                                   Fuselage_MaxCurvature);
+      
+      /*--- Screen output for the wing definition ---*/
+      
+      if (rank == MASTER_NODE) {
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Fuselage volume: "    << Fuselage_Volume << " in^3. ";
+        else cout << "Fuselage volume: "    << Fuselage_Volume << " m^3. ";
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Fuselage wetted area: "    << Fuselage_WettedArea << " in^2. " << endl;
+        else cout << "Fuselage wetted area: "    << Fuselage_WettedArea << " m^2. " << endl;
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Fuselage min. width: "  << Fuselage_MinWidth << " in. ";
+        else cout << "Fuselage min. width: "  << Fuselage_MinWidth << " m. ";
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Fuselage max. width: "  << Fuselage_MaxWidth << " in. " << endl;
+        else cout << "Fuselage max. width: "  << Fuselage_MaxWidth << " m. " << endl;
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Fuselage min. waterline width: "  << Fuselage_MinWaterLineWidth << " in. ";
+        else cout << "Fuselage min. waterline width: "  << Fuselage_MinWaterLineWidth << " m. ";
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Fuselage max. waterline width: "  << Fuselage_MaxWaterLineWidth << " in. " << endl;
+        else cout << "Fuselage max. waterline width: "  << Fuselage_MaxWaterLineWidth << " m. " << endl;
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Fuselage min. height: "  << Fuselage_MinHeight << " in. ";
+        else cout << "Fuselage min. height: "  << Fuselage_MinHeight << " m. ";
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Fuselage max. height: "  << Fuselage_MaxHeight << " in. " << endl;
+        else cout << "Fuselage max. height: "  << Fuselage_MaxHeight << " m. " << endl;
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Fuselage max. curvature: "  << Fuselage_MaxCurvature << " 1/in. " << endl;
+        else cout << "Fuselage max. curvature: "  << Fuselage_MaxCurvature << " 1/m. " << endl;
+      }
+      
+    }
     
-    geometry_container[ZONE_0]->Compute_Wing(config_container[ZONE_0], true,
-                                             Wing_Volume, Wing_MinMaxThickness, Wing_MaxChord, Wing_MinToC,
-                                             Wing_MaxTwist, Wing_MaxCurvature, Wing_MaxDihedral);
-    
-    /*--- Screen output for the wing definition ---*/
-    
-    if (rank == MASTER_NODE) {
-      if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing volume: "    << Wing_Volume << " in^3. ";
-      else cout << "Wing volume: "    << Wing_Volume << " m^3. ";
-      if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing min. max. thickness: "  << Wing_MinMaxThickness << " in. ";
-      else cout << "Wing min. max. thickness: "  << Wing_MinMaxThickness << " m. ";
-      if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing max. chord: "  << Wing_MaxChord << " in." << endl;
-      else cout << "Wing max. chord: "  << Wing_MaxChord << " m." << endl;
-      cout << "Wing min. ToC: "  << Wing_MinToC*100 << "%. ";
-      cout << "Wing max. twist: "  << Wing_MaxTwist << " deg. ";
-      if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing max. curvature: "  << Wing_MaxCurvature << " 1/in. " << endl;
-      else cout << "Wing max. curvature: "  << Wing_MaxCurvature << " 1/m. " << endl;
-      cout << "Wing max. dihedral: "  << Wing_MaxDihedral << " deg." << endl;
+    else {
+      
+      if (rank == MASTER_NODE) {
+        cout << "Computing the wing continuous description." << endl << endl;
+      }
+      
+      geometry_container[ZONE_0]->Compute_Wing(config_container[ZONE_0], true,
+                                               Wing_Volume, Wing_MinThickness, Wing_MaxThickness, Wing_MinChord, Wing_MaxChord,
+                                               Wing_MinLERadius, Wing_MaxLERadius, Wing_MinToC, Wing_MaxToC, Wing_ObjFun_MinToC,
+                                               Wing_MaxTwist, Wing_MaxCurvature, Wing_MaxDihedral);
+      
+      /*--- Screen output for the wing definition ---*/
+      
+      if (rank == MASTER_NODE) {
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing volume: "    << Wing_Volume << " in^3. ";
+        else cout << "Wing volume: "    << Wing_Volume << " m^3. ";
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing min. thickness: "  << Wing_MinThickness << " in. ";
+        else cout << "Wing min. thickness: "  << Wing_MinThickness << " m. ";
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing max. thickness: "  << Wing_MaxThickness << " in. " << endl;
+        else cout << "Wing max. thickness: "  << Wing_MaxThickness << " m. " << endl;
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing min. chord: "  << Wing_MinChord << " in. ";
+        else cout << "Wing min. chord: "  << Wing_MinChord << " m. ";
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing max. chord: "  << Wing_MaxChord << " in. ";
+        else cout << "Wing max. chord: "  << Wing_MaxChord << " m. ";
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing min. LE radius: "  << Wing_MinLERadius << " 1/in. ";
+        else cout << "Wing min. LE radius: "  << Wing_MinLERadius << " 1/m. ";
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing max. LE radius: "  << Wing_MaxLERadius << " 1/in. " << endl;
+        else cout << "Wing max. LE radius: "  << Wing_MaxLERadius << " 1/m. " << endl;
+        cout << "Wing min. ToC: "  << Wing_MinToC << ". ";
+        cout << "Wing max. ToC: "  << Wing_MaxToC << ". ";
+        cout << "Wing delta ToC: "  << Wing_ObjFun_MinToC << ". ";
+        cout << "Wing max. twist: "  << Wing_MaxTwist << " deg. "<< endl;
+        if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << "Wing max. curvature: "  << Wing_MaxCurvature << " 1/in. ";
+        else cout << "Wing max. curvature: "  << Wing_MaxCurvature << " 1/m. ";
+        cout << "Wing max. dihedral: "  << Wing_MaxDihedral << " deg." << endl;
+      }
+      
     }
     
   }
-
-  /*--- Create airfoil section structure ---*/
-  
-  if (rank == MASTER_NODE) cout << "Set airfoil section structure." << endl;
   
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
-                                     Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], true, config_container[ZONE_0]);
+    
+    geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, NULL,
+                                                       Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], true, config_container[ZONE_0]);
   }
   
   if (rank == MASTER_NODE)
     cout << endl <<"-------------------- Objective function evaluation ----------------------" << endl;
-
+  
   if (rank == MASTER_NODE) {
     
     /*--- Evaluate objective function ---*/
+    
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-
-      if (Xcoord_Airfoil[iPlane].size() != 0) {
+      
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
         
-        cout << "\nStation " << (iPlane+1) << ". Plane (yCoord): " << Plane_P0[iPlane][1] << "." << endl;
+        cout << "\nStation " << (iPlane+1);
+        if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) cout << ". XCoord: " << Plane_P0[iPlane][0] << ", ";
+        if (config_container[ZONE_0]->GetGeo_Description() == WING) cout << ". YCoord: " << Plane_P0[iPlane][1] << ", ";
+        if (config_container[ZONE_0]->GetGeo_Description() == TWOD_AIRFOIL) cout << ". ZCoord: " << Plane_P0[iPlane][2] << ", ";
         
-        ObjectiveFunc[iPlane]           = geometry_container[ZONE_0]->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                           config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-        ObjectiveFunc[1*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                        0.250000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-        ObjectiveFunc[2*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                        0.333333, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-        ObjectiveFunc[3*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                        0.500000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-        ObjectiveFunc[4*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                        0.666666, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-        ObjectiveFunc[5*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                        0.750000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-        ObjectiveFunc[6*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                   config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-        ObjectiveFunc[7*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane],
-                                                                                    iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-        ObjectiveFunc[8*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane],
-                                                                                    iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-        
-        cout << "Max. thickness: "   << ObjectiveFunc[iPlane] << ", ";
-        cout << "1/3C thickness: " << ObjectiveFunc[2*nPlane+iPlane] << ", ";
-        cout << "2/3C thickness: " << ObjectiveFunc[4*nPlane+iPlane] << endl;
-        cout << "1/4C thickness: " << ObjectiveFunc[1*nPlane+iPlane] << ", ";
-        cout << "1/2C thickness: " << ObjectiveFunc[3*nPlane+iPlane] << ", ";
-        cout << "3/4C thickness: " << ObjectiveFunc[5*nPlane+iPlane] << endl;
-        cout << "Area: "                << ObjectiveFunc[6*nPlane+iPlane] << ", ";
-        cout << "Twist angle: "     << ObjectiveFunc[7*nPlane+iPlane] << ", ";
-        cout << "Chord: "               << ObjectiveFunc[8*nPlane+iPlane] << endl;
+        if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+          ObjectiveFunc[0*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+          ObjectiveFunc[1*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Length(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+          ObjectiveFunc[2*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Width(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+          ObjectiveFunc[3*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_WaterLineWidth(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+          ObjectiveFunc[4*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Height(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+          
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Area: "             << ObjectiveFunc[0*nPlane+iPlane] << " in^2, ";
+          else  cout << "Area: "             << ObjectiveFunc[0*nPlane+iPlane] << " m^2, ";
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Length: "           << ObjectiveFunc[1*nPlane+iPlane] << " in, ";
+          else  cout << "Length: "           << ObjectiveFunc[1*nPlane+iPlane] << " m, ";
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Width: "            << ObjectiveFunc[2*nPlane+iPlane] << " in, ";
+          else cout << "Width: "             << ObjectiveFunc[2*nPlane+iPlane] << " m, ";
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Waterline width: "  << ObjectiveFunc[3*nPlane+iPlane] << " in, ";
+          else cout << "Waterline width: "   << ObjectiveFunc[3*nPlane+iPlane] << " m, ";
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Height: "           << ObjectiveFunc[4*nPlane+iPlane] << " in.";
+          else cout << "Height: "            << ObjectiveFunc[4*nPlane+iPlane] << " m.";
+        }
+        else {
+          ObjectiveFunc[0*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+          ObjectiveFunc[1*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+          ObjectiveFunc[2*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+          ObjectiveFunc[3*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_LERadius(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+          ObjectiveFunc[4*nPlane+iPlane]  = ObjectiveFunc[1*nPlane+iPlane]/ObjectiveFunc[2*nPlane+iPlane];
+          ObjectiveFunc[5*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+          
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Area: "             << ObjectiveFunc[0*nPlane+iPlane] << " in^2, ";
+          else  cout << "Area: "                 << ObjectiveFunc[0*nPlane+iPlane] << " m^2, ";
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Thickness: "   << ObjectiveFunc[1*nPlane+iPlane] << " in, " << endl;
+          else cout << "Thickness: "             << ObjectiveFunc[1*nPlane+iPlane] << " m, " << endl;
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Chord: "            << ObjectiveFunc[2*nPlane+iPlane] << " in, " << endl;
+          else cout << "Chord: "                 << ObjectiveFunc[2*nPlane+iPlane] << " m, " << endl;
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "LE radius: "            << ObjectiveFunc[3*nPlane+iPlane] << " 1/in, ";
+          else cout << "LE radius: "             << ObjectiveFunc[3*nPlane+iPlane] << " 1/m, ";
+          cout << "ToC: "                        << ObjectiveFunc[4*nPlane+iPlane] << ", ";
+          if (geometry_container[ZONE_0]->GetnDim() == 2) cout << "Alpha: "      << ObjectiveFunc[5*nPlane+iPlane] <<" deg.";
+          else if (geometry_container[ZONE_0]->GetnDim() == 3) cout << "Twist angle: "      << ObjectiveFunc[5*nPlane+iPlane] <<" deg.";
+        }
         
       }
       
@@ -317,65 +390,85 @@ int main(int argc, char *argv[]) {
     ObjFunc_file << "TITLE = \"SU2_GEO Evaluation\"" << endl;
     
     if (geometry_container[ZONE_0]->GetnDim() == 2) {
-      ObjFunc_file << "VARIABLES = \"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/3_THICKNESS\",\"1/2_THICKNESS\",\"2/3_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"";
+      ObjFunc_file << "VARIABLES = \"AIRFOIL_AREA\",\"AIRFOIL_THICKNESS\",\"AIRFOIL_CHORD\",\"AIRFOIL_LE_RADIUS\",\"AIRFOIL_TOC\",\"AIRFOIL_ALPHA\"";
     }
     else if (geometry_container[ZONE_0]->GetnDim() == 3) {
-      ObjFunc_file << "VARIABLES = ";
-      ObjFunc_file << "\"WING_VOLUME\",\"WING_MIN_MAXTHICKNESS\",\"WING_MAX_CHORD\",\"WING_MIN_TOC\",\"WING_MAX_TWIST\",\"WING_MAX_CURVATURE\",\"WING_MAX_DIHEDRAL\",";
       
-      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"MAX_THICKNESS_SEC"<< (iPlane+1) << "\",";
-      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"1/4_THICKNESS_SEC"<< (iPlane+1) << "\",";
-      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"1/3_THICKNESS_SEC"<< (iPlane+1) << "\",";
-      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"1/2_THICKNESS_SEC"<< (iPlane+1) << "\",";
-      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"2/3_THICKNESS_SEC"<< (iPlane+1) << "\",";
-      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\",";
-      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AREA_SEC"<< (iPlane+1) << "\",";
-      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AOA_SEC"<< (iPlane+1) << "\",";
-      for (iPlane = 0; iPlane < nPlane; iPlane++) {
-        ObjFunc_file << "\"CHORD_SEC"<< (iPlane+1) << "\"";
-        if (iPlane != nPlane-1) ObjFunc_file << ",";
+      ObjFunc_file << "VARIABLES = ";
+      
+      if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+       	ObjFunc_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_LENGTH\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_WIDTH\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_WATERLINE_WIDTH\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) {
+          ObjFunc_file << "\"STATION" << (iPlane+1) << "_HEIGHT\"";
+          if (iPlane != nPlane-1) ObjFunc_file << ",";
+        }
+      }
+      else {
+        ObjFunc_file << "\"WING_VOLUME\",\"WING_MIN_THICKNESS\",\"WING_MAX_THICKNESS\",\"WING_MIN_CHORD\",\"WING_MAX_CHORD\",\"WING_MIN_LE_RADIUS\",\"WING_MAX_LE_RADIUS\",\"WING_MIN_TOC\",\"WING_MAX_TOC\",\"WING_OBJFUN_MIN_TOC\",\"WING_MAX_TWIST\",\"WING_MAX_CURVATURE\",\"WING_MAX_DIHEDRAL\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_CHORD\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_LE_RADIUS\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_TOC\",";
+        for (iPlane = 0; iPlane < nPlane; iPlane++) {
+          ObjFunc_file << "\"STATION" << (iPlane+1) << "_TWIST\"";
+          if (iPlane != nPlane-1) ObjFunc_file << ",";
+        }
       }
       
     }
     
     ObjFunc_file << "\nZONE T= \"Geometrical variables (value)\"" << endl;
     
-    if (geometry_container[ZONE_0]->GetnDim() == 3) {
-      ObjFunc_file << Wing_Volume <<", "<< Wing_MinMaxThickness <<", "<< Wing_MaxChord
-      <<", "<< Wing_MinToC <<", "<< Wing_MaxTwist <<", "<< Wing_MaxCurvature
-      <<", "<< Wing_MaxDihedral <<", ";
+    if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+      if (geometry_container[ZONE_0]->GetnDim() == 3) {
+        ObjFunc_file << Fuselage_Volume <<", "<< Fuselage_WettedArea <<", "<< Fuselage_MinWidth <<", "<< Fuselage_MaxWidth <<", "<< Fuselage_MinWaterLineWidth <<", "<< Fuselage_MaxWaterLineWidth<<", "<< Fuselage_MinHeight <<", "<< Fuselage_MaxHeight <<", "<< Fuselage_MaxCurvature <<", ";
+      }
+      for (iPlane = 0; iPlane < nPlane*5; iPlane++) {
+        ObjFunc_file << ObjectiveFunc[iPlane];
+        if (iPlane != (nPlane*5)-1) ObjFunc_file <<", ";
+      }
     }
-    for (iPlane = 0; iPlane < nPlane*9; iPlane++) {
-      ObjFunc_file << ObjectiveFunc[iPlane];
-      if (iPlane != (nPlane*9)-1) ObjFunc_file <<", ";
+    else {
+      if (geometry_container[ZONE_0]->GetnDim() == 3) {
+        ObjFunc_file << Wing_Volume <<", "<< Wing_MinThickness <<", "<< Wing_MaxThickness <<", "<< Wing_MinChord <<", "<< Wing_MaxChord <<", "<< Wing_MinLERadius <<", "<< Wing_MaxLERadius<<", "<< Wing_MinToC <<", "<< Wing_MaxToC <<", "<< Wing_ObjFun_MinToC <<", "<< Wing_MaxTwist <<", "<< Wing_MaxCurvature <<", "<< Wing_MaxDihedral <<", ";
+      }
+      for (iPlane = 0; iPlane < nPlane*6; iPlane++) {
+        ObjFunc_file << ObjectiveFunc[iPlane];
+        if (iPlane != (nPlane*6)-1) ObjFunc_file <<", ";
+      }
     }
     
     ObjFunc_file.close();
     
-	}
-	
-	if (config_container[ZONE_0]->GetGeometryMode() == GRADIENT) {
-		
-		/*--- Definition of the Class for surface deformation ---*/
-		surface_movement = new CSurfaceMovement();
+  }
+  
+  if (config_container[ZONE_0]->GetGeometryMode() == GRADIENT) {
+    
+    /*--- Definition of the Class for surface deformation ---*/
+    surface_movement = new CSurfaceMovement();
     
     /*--- Copy coordinates to the surface structure ---*/
     surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
-		
-		/*--- Definition of the FFD deformation class ---*/
-		FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
-		
-		if (rank == MASTER_NODE)
-			cout << endl <<"------------- Gradient evaluation using finite differences --------------" << endl;
-
-		/*--- Write the gradient in a external file ---*/
-		if (rank == MASTER_NODE) {
-			cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
-			strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
-			Gradient_file.open(cstr, ios::out);
-		}
-		
-		for (iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
+    
+    /*--- Definition of the FFD deformation class ---*/
+    FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    
+    if (rank == MASTER_NODE)
+      cout << endl << endl << "------------- Gradient evaluation using finite differences --------------" << endl;
+    
+    /*--- Write the gradient in a external file ---*/
+    if (rank == MASTER_NODE) {
+      cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
+      strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
+      Gradient_file.open(cstr, ios::out);
+    }
+    
+    for (iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
 			   
       /*--- Free Form deformation based ---*/
       
@@ -413,7 +506,12 @@ int main(int argc, char *argv[]) {
               FFDBox[iFFDBox]->SetCart2Sphe_ControlPoints(config_container[ZONE_0]);
             }
           }
-
+          else if (config_container[ZONE_0]->GetFFD_CoordSystem() == POLAR) {
+            for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetCart2Sphe_ControlPoints(config_container[ZONE_0]);
+            }
+          }
+          
           /*--- If the FFDBox was not defined in the input file ---*/
           
           if (!surface_movement->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
@@ -426,7 +524,7 @@ int main(int argc, char *argv[]) {
             
             if (rank == MASTER_NODE) cout << "Checking FFD box dimension." << endl;
             surface_movement->CheckFFDDimension(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iFFDBox);
-
+            
             
             if (rank == MASTER_NODE) cout << "Check the FFD box intersections with the solid surfaces." << endl;
             surface_movement->CheckFFDIntersections(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iFFDBox);
@@ -446,7 +544,7 @@ int main(int argc, char *argv[]) {
         /*--- Apply the control point change ---*/
         
         MoveSurface = false;
-
+        
         for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
           
           switch ( config_container[ZONE_0]->GetDesign_Variable(iDV) ) {
@@ -455,8 +553,8 @@ int main(int argc, char *argv[]) {
             case FFD_THICKNESS_2D :     Local_MoveSurface = surface_movement->SetFFDThickness_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
             case FFD_TWIST_2D :         Local_MoveSurface = surface_movement->SetFFDTwist_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
             case FFD_CONTROL_POINT :    Local_MoveSurface = surface_movement->SetFFDCPChange(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
-            case FFD_NACELLE :    Local_MoveSurface = surface_movement->SetFFDNacelle(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
-            case FFD_GULL :    Local_MoveSurface = surface_movement->SetFFDGull(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_NACELLE :          Local_MoveSurface = surface_movement->SetFFDNacelle(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_GULL :             Local_MoveSurface = surface_movement->SetFFDGull(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
             case FFD_TWIST :            Local_MoveSurface = surface_movement->SetFFDTwist(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
             case FFD_ROTATION :         Local_MoveSurface = surface_movement->SetFFDRotation(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
             case FFD_CAMBER :           Local_MoveSurface = surface_movement->SetFFDCamber(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
@@ -485,9 +583,9 @@ int main(int argc, char *argv[]) {
         MoveSurface = true;
         surface_movement->SetHicksHenne(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
       }
-
+      
       /*--- Surface bump design variable ---*/
-
+      
       else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == SURFACE_BUMP) {
         if (rank == MASTER_NODE) {
           cout << endl << "Design variable number "<< iDV <<"." << endl;
@@ -496,7 +594,7 @@ int main(int argc, char *argv[]) {
         MoveSurface = true;
         surface_movement->SetSurface_Bump(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
       }
-
+      
       /*--- CST design variable ---*/
       
       else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CST) {
@@ -562,11 +660,11 @@ int main(int argc, char *argv[]) {
         MoveSurface = true;
         surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
-
+      
       /*--- Design variable not implement ---*/
       
       else {
-        if (rank==MASTER_NODE)
+        if (rank == MASTER_NODE)
           cout << "Design Variable not implemented yet" << endl;
       }
       
@@ -577,16 +675,26 @@ int main(int argc, char *argv[]) {
         
         if (geometry_container[ZONE_0]->GetnDim() == 3) {
           
-          geometry_container[ZONE_0]->Compute_Wing(config_container[ZONE_0], false,
-                                                   Wing_Volume_New, Wing_MinMaxThickness_New, Wing_MaxChord_New, Wing_MinToC_New,
-                                                   Wing_MaxTwist_New, Wing_MaxCurvature_New, Wing_MaxDihedral_New);
+          if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+            geometry_container[ZONE_0]->Compute_Fuselage(config_container[ZONE_0], false,
+                                                         Fuselage_Volume_New, Fuselage_WettedArea_New, Fuselage_MinWidth_New, Fuselage_MaxWidth_New,
+                                                         Fuselage_MinWaterLineWidth_New, Fuselage_MaxWaterLineWidth_New,
+                                                         Fuselage_MinHeight_New, Fuselage_MaxHeight_New,
+                                                         Fuselage_MaxCurvature_New);
+          }
+          else {
+            geometry_container[ZONE_0]->Compute_Wing(config_container[ZONE_0], false,
+                                                     Wing_Volume_New, Wing_MinThickness_New, Wing_MaxThickness_New, Wing_MinChord_New,
+                                                     Wing_MaxChord_New, Wing_MinLERadius_New, Wing_MaxLERadius_New, Wing_MinToC_New, Wing_MaxToC_New,
+                                                     Wing_ObjFun_MinToC_New, Wing_MaxTwist_New, Wing_MaxCurvature_New, Wing_MaxDihedral_New);
+          }
           
         }
         
         /*--- Create airfoil structure ---*/
         
         for (iPlane = 0; iPlane < nPlane; iPlane++) {
-          geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
+          geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, NULL,
                                                              Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], false, config_container[ZONE_0]);
         }
         
@@ -610,46 +718,81 @@ int main(int argc, char *argv[]) {
           exit(EXIT_FAILURE);
 #endif
         }
-
+        
         if (MoveSurface) {
           
-          Wing_Volume_Grad = (Wing_Volume_New - Wing_Volume) / delta_eps;
-          Wing_MinMaxThickness_Grad = (Wing_MinMaxThickness_New - Wing_MinMaxThickness) / delta_eps;
-          Wing_MaxChord_Grad = (Wing_MaxChord_New - Wing_MaxChord) / delta_eps;
-          Wing_MinToC_Grad = (Wing_MinToC_New - Wing_MinToC) / delta_eps;
-          Wing_MaxTwist_Grad = (Wing_MaxTwist_New - Wing_MaxTwist) / delta_eps;
-          Wing_MaxCurvature_Grad = (Wing_MaxCurvature_New - Wing_MaxCurvature) / delta_eps;
-          Wing_MaxDihedral_Grad = (Wing_MaxDihedral_New - Wing_MaxDihedral) / delta_eps;
+          if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+            Fuselage_Volume_Grad = (Fuselage_Volume_New - Fuselage_Volume) / delta_eps;
+            Fuselage_WettedArea_Grad = (Fuselage_WettedArea_New - Fuselage_WettedArea) / delta_eps;
+            Fuselage_MinWidth_Grad = (Fuselage_MinWidth_New - Fuselage_MinWidth) / delta_eps;
+            Fuselage_MaxWidth_Grad = (Fuselage_MaxWidth_New - Fuselage_MaxWidth) / delta_eps;
+            Fuselage_MinWaterLineWidth_Grad = (Fuselage_MinWaterLineWidth_New - Fuselage_MinWaterLineWidth) / delta_eps;
+            Fuselage_MaxWaterLineWidth_Grad = (Fuselage_MaxWaterLineWidth_New - Fuselage_MaxWaterLineWidth) / delta_eps;
+            Fuselage_MinHeight_Grad = (Fuselage_MinHeight_New - Fuselage_MinHeight) / delta_eps;
+            Fuselage_MaxHeight_Grad = (Fuselage_MaxHeight_New - Fuselage_MaxHeight) / delta_eps;
+            Fuselage_MaxCurvature_Grad = (Fuselage_MaxCurvature_New - Fuselage_MaxCurvature) / delta_eps;
+            
+          }
+          else {
+            Wing_Volume_Grad = (Wing_Volume_New - Wing_Volume) / delta_eps;
+            Wing_MinThickness_Grad = (Wing_MinThickness_New - Wing_MinThickness) / delta_eps;
+            Wing_MaxThickness_Grad = (Wing_MaxThickness_New - Wing_MaxThickness) / delta_eps;
+            Wing_MinChord_Grad = (Wing_MinChord_New - Wing_MinChord) / delta_eps;
+            Wing_MaxChord_Grad = (Wing_MaxChord_New - Wing_MaxChord) / delta_eps;
+            Wing_MinLERadius_Grad = (Wing_MinLERadius_New - Wing_MinLERadius) / delta_eps;
+            Wing_MaxLERadius_Grad = (Wing_MaxLERadius_New - Wing_MaxLERadius) / delta_eps;
+            Wing_MinToC_Grad = (Wing_MinToC_New - Wing_MinToC) / delta_eps;
+            Wing_MaxToC_Grad = (Wing_MaxToC_New - Wing_MaxToC) / delta_eps;
+            Wing_ObjFun_MinToC_Grad = (Wing_ObjFun_MinToC_New - Wing_ObjFun_MinToC) / delta_eps;
+            Wing_MaxTwist_Grad = (Wing_MaxTwist_New - Wing_MaxTwist) / delta_eps;
+            Wing_MaxCurvature_Grad = (Wing_MaxCurvature_New - Wing_MaxCurvature) / delta_eps;
+            Wing_MaxDihedral_Grad = (Wing_MaxDihedral_New - Wing_MaxDihedral) / delta_eps;
+          }
           
           for (iPlane = 0; iPlane < nPlane; iPlane++) {
-            if (Xcoord_Airfoil[iPlane].size() != 0) {
-              ObjectiveFunc_New[iPlane] = geometry_container[ZONE_0]->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                           config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-              Gradient[iPlane] = (ObjectiveFunc_New[iPlane] - ObjectiveFunc[iPlane]) / delta_eps;
-              ObjectiveFunc_New[1*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                                   0.250000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-              Gradient[1*nPlane + iPlane] = (ObjectiveFunc_New[1*nPlane + iPlane] - ObjectiveFunc[1*nPlane + iPlane]) / delta_eps;
-              ObjectiveFunc_New[2*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                                   0.333333, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-              Gradient[2*nPlane + iPlane] = (ObjectiveFunc_New[2*nPlane + iPlane] - ObjectiveFunc[2*nPlane + iPlane]) / delta_eps;
-              ObjectiveFunc_New[3*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                                   0.500000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-              Gradient[3*nPlane + iPlane] = (ObjectiveFunc_New[3*nPlane + iPlane] - ObjectiveFunc[3*nPlane + iPlane]) / delta_eps;
-              ObjectiveFunc_New[4*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                                   0.666666, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-              Gradient[4*nPlane + iPlane] = (ObjectiveFunc_New[4*nPlane + iPlane] - ObjectiveFunc[4*nPlane + iPlane]) / delta_eps;
-              ObjectiveFunc_New[5*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                                   0.750000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-              Gradient[5*nPlane + iPlane] = (ObjectiveFunc_New[5*nPlane + iPlane] - ObjectiveFunc[5*nPlane + iPlane]) / delta_eps;
-              ObjectiveFunc_New[6*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                              config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-              Gradient[6*nPlane + iPlane] = (ObjectiveFunc_New[6*nPlane + iPlane] - ObjectiveFunc[6*nPlane + iPlane]) / delta_eps;
-              ObjectiveFunc_New[7*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                               Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-              Gradient[7*nPlane + iPlane] = (ObjectiveFunc_New[7*nPlane + iPlane] - ObjectiveFunc[7*nPlane + iPlane]) / delta_eps;
-              ObjectiveFunc_New[8*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane,
-                                                                                               Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-              Gradient[8*nPlane + iPlane] = (ObjectiveFunc_New[8*nPlane + iPlane] - ObjectiveFunc[8*nPlane + iPlane]) / delta_eps;
+            if (Xcoord_Airfoil[iPlane].size() > 1) {
+              
+              if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+                
+                ObjectiveFunc_New[0*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[0*nPlane + iPlane] = (ObjectiveFunc_New[0*nPlane + iPlane] - ObjectiveFunc[0*nPlane + iPlane]) / delta_eps;
+                
+                ObjectiveFunc_New[1*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Length(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[1*nPlane + iPlane] = (ObjectiveFunc_New[1*nPlane + iPlane] - ObjectiveFunc[1*nPlane + iPlane]) / delta_eps;
+                
+                ObjectiveFunc_New[2*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Width(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[2*nPlane + iPlane] = (ObjectiveFunc_New[2*nPlane + iPlane] - ObjectiveFunc[2*nPlane + iPlane]) / delta_eps;
+                
+                ObjectiveFunc_New[3*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_WaterLineWidth(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[3*nPlane + iPlane] = (ObjectiveFunc_New[3*nPlane + iPlane] - ObjectiveFunc[3*nPlane + iPlane]) / delta_eps;
+                
+                ObjectiveFunc_New[4*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Height(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[4*nPlane + iPlane] = (ObjectiveFunc_New[4*nPlane + iPlane] - ObjectiveFunc[4*nPlane + iPlane]) / delta_eps;
+                
+              }
+              
+              else {
+                
+                ObjectiveFunc_New[0*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[0*nPlane + iPlane] = (ObjectiveFunc_New[0*nPlane + iPlane] - ObjectiveFunc[0*nPlane + iPlane]) / delta_eps;
+                
+                ObjectiveFunc_New[1*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[1*nPlane + iPlane] = (ObjectiveFunc_New[1*nPlane + iPlane] - ObjectiveFunc[1*nPlane + iPlane]) / delta_eps;
+                
+                ObjectiveFunc_New[2*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[2*nPlane + iPlane] = (ObjectiveFunc_New[2*nPlane + iPlane] - ObjectiveFunc[2*nPlane + iPlane]) / delta_eps;
+                
+                ObjectiveFunc_New[3*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_LERadius(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[3*nPlane + iPlane] = (ObjectiveFunc_New[3*nPlane + iPlane] - ObjectiveFunc[3*nPlane + iPlane]) / delta_eps;
+                
+                ObjectiveFunc_New[4*nPlane + iPlane] = ObjectiveFunc_New[1*nPlane + iPlane] / ObjectiveFunc_New[2*nPlane + iPlane];
+                Gradient[4*nPlane + iPlane] = (ObjectiveFunc_New[4*nPlane + iPlane] - ObjectiveFunc[4*nPlane + iPlane]) / delta_eps;
+                
+                ObjectiveFunc_New[5*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[5*nPlane + iPlane] = (ObjectiveFunc_New[5*nPlane + iPlane] - ObjectiveFunc[5*nPlane + iPlane]) / delta_eps;
+                
+              }
+              
             }
           }
           
@@ -657,54 +800,109 @@ int main(int argc, char *argv[]) {
         
         else {
           
-          Wing_Volume_Grad = 0.0;
-          Wing_MinMaxThickness_Grad = 0.0;
-          Wing_MaxChord_Grad = 0.0;
-          Wing_MinToC_Grad = 0.0;
-          Wing_MaxTwist_Grad = 0.0;
-          Wing_MaxCurvature_Grad = 0.0;
-          Wing_MaxDihedral_Grad = 0.0;
-
-          for (iPlane = 0; iPlane < nPlane; iPlane++) {
-            Gradient[iPlane] = 0.0;
-            Gradient[1*nPlane + iPlane] = 0.0;
-            Gradient[2*nPlane + iPlane] = 0.0;
-            Gradient[3*nPlane + iPlane] = 0.0;
-            Gradient[4*nPlane + iPlane] = 0.0;
-            Gradient[5*nPlane + iPlane] = 0.0;
-            Gradient[6*nPlane + iPlane] = 0.0;
-            Gradient[7*nPlane + iPlane] = 0.0;
-            Gradient[8*nPlane + iPlane] = 0.0;
+          if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+            Fuselage_Volume_Grad            = 0.0;
+            Fuselage_WettedArea_Grad        = 0.0;
+            Fuselage_MinWidth_Grad          = 0.0;
+            Fuselage_MaxWidth_Grad          = 0.0;
+            Fuselage_MinWaterLineWidth_Grad = 0.0;
+            Fuselage_MaxWaterLineWidth_Grad = 0.0;
+            Fuselage_MinHeight_Grad         = 0.0;
+            Fuselage_MaxHeight_Grad         = 0.0;
+            Fuselage_MaxCurvature_Grad      = 0.0;
+            
+            for (iPlane = 0; iPlane < nPlane; iPlane++) {
+              Gradient[0*nPlane + iPlane] = 0.0;
+              Gradient[1*nPlane + iPlane] = 0.0;
+              Gradient[2*nPlane + iPlane] = 0.0;
+              Gradient[3*nPlane + iPlane] = 0.0;
+              Gradient[4*nPlane + iPlane] = 0.0;
+            }
+            
+          }
+          else  {
+            Wing_Volume_Grad          = 0.0;
+            Wing_MinThickness_Grad    = 0.0;
+            Wing_MaxThickness_Grad    = 0.0;
+            Wing_MinChord_Grad        = 0.0;
+            Wing_MaxChord_Grad        = 0.0;
+            Wing_MinLERadius_Grad     = 0.0;
+            Wing_MaxLERadius_Grad     = 0.0;
+            Wing_MinToC_Grad          = 0.0;
+            Wing_MaxToC_Grad          = 0.0;
+            Wing_ObjFun_MinToC_Grad   = 0.0;
+            Wing_MaxTwist_Grad        = 0.0;
+            Wing_MaxCurvature_Grad    = 0.0;
+            Wing_MaxDihedral_Grad     = 0.0;
+            
+            for (iPlane = 0; iPlane < nPlane; iPlane++) {
+              Gradient[0*nPlane + iPlane] = 0.0;
+              Gradient[1*nPlane + iPlane] = 0.0;
+              Gradient[2*nPlane + iPlane] = 0.0;
+              Gradient[3*nPlane + iPlane] = 0.0;
+              Gradient[4*nPlane + iPlane] = 0.0;
+              Gradient[5*nPlane + iPlane] = 0.0;
+            }
           }
           
         }
         
         /*--- Screen output ---*/
         
-        if (geometry_container[ZONE_0]->GetnDim() == 3) {
-          cout << "\nWing volume grad.: "    << Wing_Volume_Grad << ". ";
-          cout << "Wing min. max. thickness grad.: "  << Wing_MinMaxThickness_Grad << ". ";
-          cout << "Wing max. chord grad.: "  << Wing_MaxChord_Grad << "." << endl;
-          cout << "Wing min. ToC grad.: "  << Wing_MinToC_Grad << ". ";
-          cout << "Wing max. twist grad.: "  << Wing_MaxTwist_Grad << ". ";
-          cout << "Wing max. curvature grad.: "  << Wing_MaxCurvature_Grad << "." << endl;
-          cout << "Wing max. dihedral grad.: "  << Wing_MaxDihedral_Grad << "." << endl;
-        }
-        
-        for (iPlane = 0; iPlane < nPlane; iPlane++) {
-          if (Xcoord_Airfoil[iPlane].size() != 0) {
-            cout << "\nStation " << (iPlane+1) << ". Plane (yCoord): " << Plane_P0[iPlane][1] << "." << endl;
-            cout << "Max. thick. grad.: "    << Gradient[iPlane] << ". ";
-            cout << "1/3c thick. grad.: "  << Gradient[2*nPlane + iPlane] << ". ";
-            cout << "2/3c thick. grad.: "  << Gradient[4*nPlane + iPlane] << "." << endl;
-            cout << "1/4c thick. grad.: "  << Gradient[1*nPlane + iPlane] << ". ";
-            cout << "1/2c thick. grad.: "  << Gradient[3*nPlane + iPlane] << ". ";
-            cout << "3/4c thick. grad.: "  << Gradient[5*nPlane + iPlane] << "." << endl;
-            cout << "Area grad.: "                 << Gradient[6*nPlane + iPlane] << ". ";
-            cout << "Twist angle grad.: "      << Gradient[7*nPlane + iPlane] << ". ";
-            cout << "Chord grad.: "                << Gradient[8*nPlane + iPlane] << "." << endl;
+        if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+          if (geometry_container[ZONE_0]->GetnDim() == 3) {
+            cout << "\nFuselage volume grad.: "    << Fuselage_Volume_Grad << ". ";
+            cout << "Fuselage wetted area grad.: "    << Fuselage_WettedArea_Grad << ". ";
+            cout << "Fuselage min. width grad.: "  << Fuselage_MinWidth_Grad << ". ";
+            cout << "Fuselage max. width grad.: "  << Fuselage_MaxWidth_Grad << "."  << endl;
+            cout << "Fuselage min. waterline width grad.: "  << Fuselage_MinWaterLineWidth_Grad << ". ";
+            cout << "Fuselage max. waterline width grad.: "  << Fuselage_MaxWaterLineWidth_Grad << "."  << endl;
+            cout << "Fuselage min. height grad.: " << Fuselage_MinHeight_Grad << ". ";
+            cout << "Fuselage max. height grad.: " << Fuselage_MaxHeight_Grad << ". ";
+            cout << "Fuselage max. curv. grad.: "  << Fuselage_MaxCurvature_Grad << ".";
+          }
+          
+          for (iPlane = 0; iPlane < nPlane; iPlane++) {
+            if (Xcoord_Airfoil[iPlane].size() > 1) {
+              cout << "\nStation " << (iPlane+1) << ". XCoord: " << Plane_P0[iPlane][0] << ". ";
+              cout << "Area grad.: "                 << Gradient[0*nPlane + iPlane] << ". ";
+              cout << "Length grad.: "               << Gradient[1*nPlane + iPlane] << ". ";
+              cout << "Width grad.: "                << Gradient[2*nPlane + iPlane] << ". ";
+              cout << "Waterline width grad.: "      << Gradient[3*nPlane + iPlane] << ". ";
+              cout << "Height grad.: "               << Gradient[4*nPlane + iPlane] << ". ";
+            }
           }
         }
+        else {
+          if (geometry_container[ZONE_0]->GetnDim() == 3) {
+            cout << "\nWing volume grad.: "             << Wing_Volume_Grad << ". ";
+            cout << "Wing min. thickness grad.: "  << Wing_MinThickness_Grad << ". ";
+            cout << "Wing max. thickness grad.: "  << Wing_MaxThickness_Grad << ". ";
+            cout << "Wing min. chord grad.: "           << Wing_MinChord_Grad << ". ";
+            cout << "Wing max. chord grad.: "           << Wing_MaxChord_Grad << "." << endl;
+            cout << "Wing min. LE radius grad.: "       << Wing_MinChord_Grad << ". ";
+            cout << "Wing max. LE radius grad.: "       << Wing_MaxChord_Grad << ". ";
+            cout << "Wing min. ToC grad.: "             << Wing_MinToC_Grad << ". ";
+            cout << "Wing max. ToC grad.: "             << Wing_MaxToC_Grad << ". ";
+            cout << "Wing delta ToC grad.: "            << Wing_ObjFun_MinToC_Grad << "." << endl;
+            cout << "Wing max. twist grad.: "           << Wing_MaxTwist_Grad << ". ";
+            cout << "Wing max. curv. grad.: "           << Wing_MaxCurvature_Grad << ". ";
+            cout << "Wing max. dihedral grad.: "        << Wing_MaxDihedral_Grad << "." << endl;
+          }
+          
+          for (iPlane = 0; iPlane < nPlane; iPlane++) {
+            if (Xcoord_Airfoil[iPlane].size() > 1) {
+              cout << "\nStation " << (iPlane+1) << ". YCoord: " << Plane_P0[iPlane][1] << ". ";
+              cout << "Area grad.: "                 << Gradient[0*nPlane + iPlane] << ". ";
+              cout << "Thickness grad.: "            << Gradient[1*nPlane + iPlane] << ". ";
+              cout << "Chord grad.: "                << Gradient[2*nPlane + iPlane] << ". ";
+              cout << "LE radius grad.: "            << Gradient[3*nPlane + iPlane] << ". ";
+              cout << "ToC grad.: "                  << Gradient[4*nPlane + iPlane] << ". ";
+              cout << "Twist angle grad.: "          << Gradient[5*nPlane + iPlane] << ". ";
+            }
+          }
+        }
+        
         cout << endl;
         
         
@@ -712,23 +910,36 @@ int main(int argc, char *argv[]) {
           Gradient_file << "TITLE = \"SU2_GEO Gradient\"" << endl;
           
           if (geometry_container[ZONE_0]->GetnDim() == 2) {
-            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/3_THICKNESS\",\"1/2_THICKNESS\",\"2/3_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"";
+            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"AIRFOIL_AREA\",\"AIRFOIL_THICKNESS\",\"AIRFOIL_CHORD\",\"AIRFOIL_LE_RADIUS\",\"AIRFOIL_TOC\",\"AIRFOIL_ALPHA\"";
           }
           else if (geometry_container[ZONE_0]->GetnDim() == 3) {
-            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
-            Gradient_file << "\"WING_VOLUME\",\"WING_MIN_MAXTHICKNESS\",\"WING_MAX_CHORD\",\"WING_MIN_TOC\",\"WING_MAX_TWIST\",\"WING_MAX_CURVATURE\",\"WING_MAX_DIHEDRAL\",";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"MAX_THICKNESS_SEC"<< (iPlane+1) << "\",";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"1/4_THICKNESS_SEC"<< (iPlane+1) << "\",";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"1/3_THICKNESS_SEC"<< (iPlane+1) << "\",";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"1/2_THICKNESS_SEC"<< (iPlane+1) << "\",";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"2/3_THICKNESS_SEC"<< (iPlane+1) << "\",";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\",";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AREA_SEC"<< (iPlane+1) << "\",";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AOA_SEC"<< (iPlane+1) << "\",";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) {
-              Gradient_file << "\"CHORD_SEC"<< (iPlane+1) << "\"";
-              if (iPlane != nPlane-1) Gradient_file << ",";
+            
+            if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+              Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
+              Gradient_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_LENGTH\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_WIDTH\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_WATERLINE_WIDTH\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) {
+                Gradient_file << "\"STATION"<< (iPlane+1) << "_HEIGHT\"";
+                if (iPlane != nPlane-1) Gradient_file << ",";
+              }
             }
+            else {
+              Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
+              Gradient_file << "\"WING_VOLUME\",\"WING_MIN_THICKNESS\",\"WING_MAX_THICKNESS\",\"WING_MIN_CHORD\",\"WING_MAX_CHORD\",\"WING_MIN_LE_RADIUS\",\"WING_MAX_LE_RADIUS\",\"WING_MIN_TOC\",\"WING_MAX_TOC\",\"WING_OBJFUN_MIN_TOC\",\"WING_MAX_TWIST\",\"WING_MAX_CURVATURE\",\"WING_MAX_DIHEDRAL\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_CHORD\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_LE_RADIUS\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_TOC\",";
+              for (iPlane = 0; iPlane < nPlane; iPlane++) {
+                Gradient_file << "\"STATION"<< (iPlane+1) << "_TWIST\"";
+                if (iPlane != nPlane-1) Gradient_file << ",";
+              }
+            }
+            
           }
           
           Gradient_file << "\nZONE T= \"Geometrical variables (gradient)\"" << endl;
@@ -737,14 +948,23 @@ int main(int argc, char *argv[]) {
         
         Gradient_file << (iDV) <<",";
         
-        if (geometry_container[ZONE_0]->GetnDim() == 3) {
-          Gradient_file << Wing_Volume_Grad <<","<< Wing_MinMaxThickness_Grad <<","<< Wing_MaxChord_Grad <<","<< Wing_MinToC_Grad
-          <<","<< Wing_MaxTwist_Grad <<","<< Wing_MaxCurvature_Grad <<","<< Wing_MaxDihedral_Grad <<",";
+        if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+          if (geometry_container[ZONE_0]->GetnDim() == 3) {
+            Gradient_file << Fuselage_Volume_Grad <<","<< Fuselage_WettedArea_Grad <<","<< Fuselage_MinWidth_Grad <<","<< Fuselage_MaxWidth_Grad <<","<< Fuselage_MinWaterLineWidth_Grad <<","<< Fuselage_MaxWaterLineWidth_Grad <<","<< Fuselage_MinHeight_Grad <<","<< Fuselage_MaxHeight_Grad <<","<< Fuselage_MaxCurvature_Grad <<",";
+          }
+          for (iPlane = 0; iPlane < nPlane*5; iPlane++) {
+            Gradient_file << Gradient[iPlane];
+            if (iPlane != (nPlane*5)-1) Gradient_file <<",";
+          }
         }
-        
-        for (iPlane = 0; iPlane < nPlane*9; iPlane++) {
-          Gradient_file << Gradient[iPlane];
-          if (iPlane != (nPlane*9)-1) Gradient_file <<",";
+        else {
+          if (geometry_container[ZONE_0]->GetnDim() == 3) {
+            Gradient_file << Wing_Volume_Grad <<","<< Wing_MinThickness_Grad <<","<< Wing_MaxThickness_Grad <<","<< Wing_MinChord_Grad <<","<< Wing_MaxChord_Grad <<","<< Wing_MinLERadius_Grad <<","<< Wing_MaxLERadius_Grad<<","<< Wing_MinToC_Grad <<","<< Wing_MaxToC_Grad <<","<< Wing_ObjFun_MinToC_Grad <<","<< Wing_MaxTwist_Grad <<","<< Wing_MaxCurvature_Grad <<","<< Wing_MaxDihedral_Grad <<",";
+          }
+          for (iPlane = 0; iPlane < nPlane*6; iPlane++) {
+            Gradient_file << Gradient[iPlane];
+            if (iPlane != (nPlane*6)-1) Gradient_file <<",";
+          }
         }
         
         Gradient_file << endl;
@@ -790,15 +1010,15 @@ int main(int argc, char *argv[]) {
   
   UsedTime = StopTime-StartTime;
   if (rank == MASTER_NODE) {
-    cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
+    cout << "\n\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
     if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
   }
   
   /*--- Exit the solver cleanly ---*/
   
-	if (rank == MASTER_NODE)
-		cout << endl <<"------------------------- Exit Success (SU2_GEO) ------------------------" << endl << endl;
-
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Exit Success (SU2_GEO) ------------------------" << endl << endl;
+  
   
   /*--- Finalize MPI parallelization ---*/
   
@@ -806,6 +1026,6 @@ int main(int argc, char *argv[]) {
   MPI_Finalize();
 #endif
   
-	return EXIT_SUCCESS;
-	
+  return EXIT_SUCCESS;
+  
 }
