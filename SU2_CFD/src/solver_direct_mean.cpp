@@ -9175,10 +9175,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             else if (config->GetSystemMeasurements() == US) cout << "Solid surfaces Drag (lbf): ";
             cout << setprecision(1) << SolidSurf_Drag * Ref << ". Solid surfaces CD: " << setprecision(5) << SolidSurf_CD << "." << endl;
 
-            if (config->GetSystemMeasurements() == SI) cout << "Aero Drag (N): ";
-            else if (config->GetSystemMeasurements() == US) cout << "Aero Drag (lbf): ";
-            cout << setprecision(1) << Aero_Drag * Ref << ". Aero CD: " << setprecision(5) << Aero_CD << "." << endl;
-
             if (config->GetSystemMeasurements() == SI) cout << setprecision(1) <<"Net Thrust (N): ";
             else if (config->GetSystemMeasurements() == US) cout << setprecision(1) << "Net Thrust (lbf): ";
             cout << setprecision(5) << -NetThrust * Ref  << ". Net CT: " << CT;
@@ -10050,18 +10046,6 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
         
     case EQUIVALENT_AREA:
       Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
-      break;
-    case AERO_DRAG_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*Total_AeroCD;
-      break;
-    case SOLID_DRAG_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*Total_SolidCD;
-      break;
-    case RADIAL_DISTORTION:
-      Total_ComboObj+=Weight_ObjFunc*Total_IDR;
-      break;
-    case CIRCUMFERENTIAL_DISTORTION:
-      Total_ComboObj+=Weight_ObjFunc*Total_IDC;
       break;
     case NEARFIELD_PRESSURE:
       Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
@@ -13132,7 +13116,9 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
         if (geometry->node[iPoint]->GetDomain()) {
 
@@ -13146,8 +13132,6 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
           for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
-
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             for (iVar = 0; iVar < nPrimVar; iVar++) {
               PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);

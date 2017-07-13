@@ -176,52 +176,48 @@ def read_history( History_filename ):
 #  Define Dictionary Map for Header Names
 # -------------------------------------------------------------------
 history_header_map = { "Iteration"       : "ITERATION"               ,
-                 "CLift"           : "LIFT"                    ,
-                 "CDrag"           : "DRAG"                    ,
-                 "CSideForce"      : "SIDEFORCE"               ,
-                 "Cp_Diff"         : "INVERSE_DESIGN_PRESSURE" ,
-                 "HeatFlux_Diff"   : "INVERSE_DESIGN_HEATFLUX" ,
-                 "HeatFlux_Total"  : "TOTAL_HEATFLUX"          ,
-                 "HeatFlux_Maximum": "MAXIMUM_HEATFLUX"        ,
-                 "CMx"             : "MOMENT_X"                ,
-                 "CMy"             : "MOMENT_Y"                ,
-                 "CMz"             : "MOMENT_Z"                ,
-                 "CFx"             : "FORCE_X"                 ,
-                 "CFy"             : "FORCE_Y"                 ,
-                 "CFz"             : "FORCE_Z"                 ,
-                 "CL/CD"           : "EFFICIENCY"              ,
-                 "AoA"             : "AOA"                     ,
-                 "CMerit"          : "FIGURE_OF_MERIT"         ,
-                 "CQ"              : "TORQUE"                  ,
-                 "CT"              : "THRUST"                  ,
-                 "CEquivArea"      : "EQUIVALENT_AREA"         ,
-                 "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
-                 "AreaAvg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
-                 "Avg_Pressure"    : "AVG_OUTLET_PRESSURE"     ,
-                 "Avg_Density"     : "AVG_OUTLET_DENSITY"      ,
-                 "Avg_Velocity"    : "AVG_OUTLET_VELOCITY"     ,
-                 "AreaAvg_Mach"        : "AVG_OUTLET_MACH"         ,
-                 "AreaAvg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
-                 "MassFlowRate"        : "MASS_FLOW_RATE"          ,
-                 "AeroCDrag"           : "AERO_DRAG"               ,
-                 "SolidCDrag"          : "SOLID_DRAG"               ,
-                 "Radial_Distortion"           : "RADIAL_DISTORTION"              ,
-                 "Circumferential_Distortion"  : "CIRCUMFERENTIAL_DISTORTION"     ,
-                 "Linear_Solver_Iterations"    : "LINEAR_ITERATION"               ,
-                 "CFL_Number"      : "CFL_NUMBER"              ,
-                 "Time(min)"       : "TIME"                    ,
-                 "D(CLift)"        : "D_LIFT"                  ,
-                 "D(CDrag)"        : "D_DRAG"                  ,
-                 "D(CSideForce)"   : "D_SIDEFORCE"             ,
-                 "D(CMx)"          : "D_MOMENT_X"              ,
-                 "D(CMy)"          : "D_MOMENT_Y"              ,
-                 "D(CMz)"          : "D_MOMENT_Z"              ,
-                 "D(CFx)"          : "D_FORCE_X"               ,
-                 "D(CFy)"          : "D_FORCE_Y"               ,
-                 "D(CFz)"          : "D_FORCE_Z"               ,
-                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
-                 "ComboObj"        : "COMBO"}
-     
+                       "CL"              : "LIFT"                    ,
+                       "CD"              : "DRAG"                    ,
+                       "CSF"             : "SIDEFORCE"               ,
+                       "Cp_Diff"         : "INVERSE_DESIGN_PRESSURE" ,
+                       "HeatFlux_Diff"   : "INVERSE_DESIGN_HEATFLUX" ,
+                       "HeatFlux_Total"  : "TOTAL_HEATFLUX"          ,
+                       "HeatFlux_Maximum": "MAXIMUM_HEATFLUX"        ,
+                       "CMx"             : "MOMENT_X"                ,
+                       "CMy"             : "MOMENT_Y"                ,
+                       "CMz"             : "MOMENT_Z"                ,
+                       "CFx"             : "FORCE_X"                 ,
+                       "CFy"             : "FORCE_Y"                 ,
+                       "CFz"             : "FORCE_Z"                 ,
+                       "CL/CD"           : "EFFICIENCY"              ,
+                       "AoA"             : "AOA"                     ,
+                       "Custom_ObjFunc"  : "CUSTOM_OBJFUNC"          ,
+                       "CMerit"          : "FIGURE_OF_MERIT"         ,
+                       "CQ"              : "TORQUE"                  ,
+                       "CT"              : "THRUST"                  ,
+                       "CEquivArea"      : "EQUIVALENT_AREA"         ,
+                       "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
+                       "AreaAvg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
+                       "Avg_Pressure"        : "AVG_OUTLET_PRESSURE"     ,
+                       "Avg_Density"         : "AVG_OUTLET_DENSITY"      ,
+                       "Avg_Velocity"        : "AVG_OUTLET_VELOCITY"     ,
+                       "AreaAvg_Mach"        : "AVG_OUTLET_MACH"         ,
+                       "AreaAvg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
+                       "MassFlowRate"        : "MASS_FLOW_RATE"          ,
+                       "ComboObj"          : "COMBO"                   ,
+                       "Time(min)"         : "TIME"                    ,
+                       "D(CL)"             : "D_LIFT"                  ,
+                       "D(CD)"             : "D_DRAG"                  ,
+                       "D(CSF)"            : "D_SIDEFORCE"             ,
+                       "D(CMx)"            : "D_MOMENT_X"              ,
+                       "D(CMy)"            : "D_MOMENT_Y"              ,
+                       "D(CMz)"            : "D_MOMENT_Z"              ,
+                       "D(CFx)"            : "D_FORCE_X"               ,
+                       "D(CFy)"            : "D_FORCE_Y"               ,
+                       "D(CFz)"            : "D_FORCE_Z"               ,
+                       "D(CL/CD)"          : "D_EFFICIENCY"            ,
+                       "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC" }
+
 
 def get_headerMap():
     """ returns a dictionary that maps history file header names
@@ -239,6 +235,7 @@ def get_headerMap():
 # -------------------------------------------------------------------
 
 # Aerodynamic Optimizer Function Names
+
 optnames_aero = [ "LIFT"                    ,
                   "DRAG"                    ,
                   "SIDEFORCE"               ,
@@ -263,12 +260,10 @@ optnames_aero = [ "LIFT"                    ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ,
-                  "AERO_DRAG"               ,
-                  "SOLID_DRAG"               ,
-                  "RADIAL_DISTORTION"            ,
-                  "CIRCUMFERENTIAL_DISTORTION"   ,
+                  "CUSTOM_OBJFUNC"             ,
                   "COMBO"]
-#: optnames_aero
+
+#: Stability Optimizer Function Names
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
                   "D_DRAG_D_ALPHA"               ,
@@ -277,6 +272,18 @@ optnames_stab = [ "D_LIFT_D_ALPHA"               ,
                   "D_MOMENT_Y_D_ALPHA"           ,
                   "D_MOMENT_Z_D_ALPHA"           ,
                 ]
+
+#: Multipoint Optimizer Function Names
+
+# optnames_multi = ['{}_{}'.format('MULTIPOINT', a) for a in optnames_aero]
+
+optnames_multi = [ "MULTIPOINT_LIFT"               ,
+                   "MULTIPOINT_DRAG"               ,
+                   "MULTIPOINT_SIDEFORCE"          ,
+                   "MULTIPOINT_MOMENT_X"           ,
+                   "MULTIPOINT_MOMENT_Y"           ,
+                   "MULTIPOINT_MOMENT_Z"           ,
+                   "MULTIPOINT_CUSTOM_OBJFUNC"]
 
 # Geometric Optimizer Function Names
 optnames_geo = [ "AIRFOIL_AREA"                   ,
@@ -348,9 +355,9 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "EFFICIENCY" : "D_EFFICIENCY"}
 
 # per-surface functions
-per_surface_map = {"LIFT"       :   "CLift" ,
-                  "DRAG"        :   "CDrag" ,
-                  "SIDEFORCE"   :   "CSideForce"  ,
+per_surface_map = {"LIFT"       :   "CL" ,
+                  "DRAG"        :   "CD" ,
+                  "SIDEFORCE"   :   "CSF"  ,
                   "MOMENT_X"    :   "CMx"   ,
                   "MOMENT_Y"    :   "CMy"   ,
                   "MOMENT_Z"    :   "CMz"   ,
@@ -505,10 +512,7 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
-                 "AERO_DRAG"               : "acd"       ,
-                 "SOLID_DRAG"              : "scd"       ,
-                 "RADIAL_DISTORTION"              : "rdis"       ,
-                 "CIRCUMFERENTIAL_DISTORTION"     : "cdis"       ,
+                 "CUSTOM_OBJFUNC"          : "custom"    ,
                  "COMBO"                   : "combo"}
     
     # if none or false, return map
@@ -638,9 +642,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         
     # Case: finite difference  
     elif grad_type == 'FINITE_DIFFERENCE':
-        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
-        write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
-        
+        header.append(r'"iVar","Grad_CL","Grad_CD","Grad_CSF","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_CL/CD","Grad_Custom_ObjFunc","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
+        write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
+
         for key in special_cases: 
             if key == "ROTATING_FRAME" : 
                 header.append(r',"Grad_CMerit","Grad_CT","Grad_CQ"')
@@ -758,8 +762,8 @@ def get_optFileFormat(plot_format,special_cases=None):
     else: raise Exception('output plot format not recognized')
 
     # start header
-    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CEff","HeatFlux_Total","HeatFlux_Maximum"])
-    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
+    header_list.extend(["Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","HeatFlux_Total","HeatFlux_Maximum"])
+    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
     # special cases
     for key in special_cases: 

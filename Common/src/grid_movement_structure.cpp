@@ -2882,7 +2882,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
   unsigned short Degree_Unitary [] = {1,1,1}, BSpline_Unitary [] = {2,2,2};
-  su2double MaxDiff, Current_Scale, Ratio, New_Scale;
+  su2double MaxDiff;
 	int rank = MASTER_NODE;
 	string FFDBoxTag;
 	bool allmoving;

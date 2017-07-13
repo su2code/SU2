@@ -297,18 +297,6 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CL();
       break;
-    case AERO_DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_AeroCD();
-      break;
-    case SOLID_DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_SolidCD();
-      break;
-    case RADIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_IDR();
-      break;
-    case CIRCUMFERENTIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_IDC();
-      break;
     case SIDEFORCE_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CSF();
       break;
@@ -338,6 +326,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       break;
     case MASS_FLOW_RATE:
       ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
+      break;
+    case CUSTOM_OBJFUNC:
+      ObjFunc_Value = direct_solver->GetTotal_Custom_ObjFunc();
       break;
     }
 
