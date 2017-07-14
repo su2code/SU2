@@ -369,8 +369,8 @@ int main(int argc, char *argv[]) {
           else  cout << "Area: "                 << ObjectiveFunc[0*nPlane+iPlane] << " m^2, ";
           if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Thickness: "   << ObjectiveFunc[1*nPlane+iPlane] << " in, " << endl;
           else cout << "Thickness: "             << ObjectiveFunc[1*nPlane+iPlane] << " m, " << endl;
-          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Chord: "            << ObjectiveFunc[2*nPlane+iPlane] << " in, " << endl;
-          else cout << "Chord: "                 << ObjectiveFunc[2*nPlane+iPlane] << " m, " << endl;
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Chord: "            << ObjectiveFunc[2*nPlane+iPlane] << " in, ";
+          else cout << "Chord: "                 << ObjectiveFunc[2*nPlane+iPlane] << " m, ";
           if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "LE radius: "            << ObjectiveFunc[3*nPlane+iPlane] << " 1/in, ";
           else cout << "LE radius: "             << ObjectiveFunc[3*nPlane+iPlane] << " 1/m, ";
           cout << "ToC: "                        << ObjectiveFunc[4*nPlane+iPlane] << ", ";
