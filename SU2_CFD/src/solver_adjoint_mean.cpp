@@ -2652,11 +2652,11 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
-  bool eval_dcd_dcx   = config->GetEval_dOF_dCX();
+  bool eval_dof_dcx   = config->GetEval_dOF_dCX();
 
   /*--- Update the objective function coefficient to guarantee zero gradient. ---*/
   
-  if (fixed_cl && eval_dcd_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if (fixed_cl && eval_dof_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Residual initialization ---*/
   
@@ -6267,11 +6267,11 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
-  bool eval_dcd_dcx   = config->GetEval_dOF_dCX();
+  bool eval_dof_dcx   = config->GetEval_dOF_dCX();
 
   /*--- Update the objective function coefficient to guarantee zero gradient. ---*/
   
-  if (fixed_cl && eval_dcd_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if (fixed_cl && eval_dof_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Residual initialization ---*/
   
