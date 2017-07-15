@@ -98,6 +98,7 @@ lib_sources = \
   ../include/element_structure.inl \
   ../include/adt_structure.hpp \
   ../include/adt_structure.inl \
+  ../src/cgns_elements.cpp \
   ../src/config_structure.cpp \
   ../src/dense_matrix_product.cpp \
   ../src/dual_grid_structure.cpp \
