@@ -37,12 +37,12 @@ inline CSGSModel::CSGSModel(void){}
 inline CSGSModel::~CSGSModel(void){}
 
 inline su2double CSGSModel::ComputeEddyViscosity_2D(const su2double rho,
-                                                   const su2double dudx,
-                                                   const su2double dudy,
-                                                   const su2double dvdx,
-                                                   const su2double dvdy,
-                                                   const su2double lenScale,
-                                                   const su2double distToWall) {
+                                                    const su2double dudx,
+                                                    const su2double dudy,
+                                                    const su2double dvdx,
+                                                    const su2double dvdy,
+                                                    const su2double lenScale,
+                                                    const su2double distToWall) {
   return 0.0;
 }
 
@@ -146,7 +146,7 @@ inline su2double CSmagorinskyModel::ComputeEddyViscosity_2D(const su2double rho,
   const su2double strain_rate2 = 2.0*(dudx*dudx + dvdy*dvdy + 2.0*S12*S12);
 
   /* Return the SGS dynamic viscosity. */
-  return C_s_filter_width*C_s_filter_width*sqrt(rho*strain_rate2);
+  return rho*C_s_filter_width*C_s_filter_width*sqrt(strain_rate2);
 }
 
 inline su2double CSmagorinskyModel::ComputeEddyViscosity_3D(const su2double rho,
@@ -177,7 +177,7 @@ inline su2double CSmagorinskyModel::ComputeEddyViscosity_3D(const su2double rho,
                                +      2.0*(S12*S12 + S13*S13 + S23*S23));
 
   /* Return the SGS dynamic viscosity. */
-  return C_s_filter_width*C_s_filter_width*sqrt(rho*strain_rate2);
+  return rho*C_s_filter_width*C_s_filter_width*sqrt(strain_rate2);
 }
 
 inline void CSmagorinskyModel::ComputeGradEddyViscosity_2D(const su2double rho,
