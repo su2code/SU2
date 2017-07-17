@@ -334,7 +334,7 @@
 		E9F5F1CE1CFF9CA200522F68 /* def_NACA4412.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_NACA4412.cfg; sourceTree = "<group>"; };
 		E9F5F1D11CFF9CA200522F68 /* def_RAE2822.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_RAE2822.cfg; sourceTree = "<group>"; };
 		E9FDF6E91D2DD0560066E49C /* adt_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = adt_structure.cpp; path = ../../Common/src/adt_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		E9FDF6EB1D2DD0710066E49C /* adt_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = adt_structure.inl; path = ../../Common/include/adt_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		E9FDF6EB1D2DD0710066E49C /* adt_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = adt_structure.inl; path = ../../Common/include/adt_structure.inl; sourceTree = "<group>"; };
 		E9FDF6EC1D2DD0860066E49C /* adt_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = adt_structure.hpp; path = ../../Common/include/adt_structure.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
