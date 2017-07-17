@@ -9116,9 +9116,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   TotalWettedArea    = WettedArea;
 #endif
     
-  if (config->GetRefAreaCoeff() == 0.0) {
-  	if (nDim == 3) config->SetRefAreaCoeff(TotalPositiveZArea);
-  	else config->SetRefAreaCoeff(TotalPositiveYArea);
+  if (config->GetRefArea() == 0.0) {
+  	if (nDim == 3) config->SetRefArea(TotalPositiveZArea);
+  	else config->SetRefArea(TotalPositiveYArea);
   }
   
   if (rank == MASTER_NODE) {
