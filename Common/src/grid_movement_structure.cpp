@@ -1627,8 +1627,8 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
     
     switch (config->GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
-      case DEF_WALL_DISTANCE: E = 1.0 / (ElemDistance*ElemDistance); break;
-      case SOLID_WALL_DISTANCE: E = 1.0 / (ElemDistance*ElemDistance); break;
+      case DEF_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
+      case SOLID_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
       case CONSTANT_STIFFNESS: E = 1.0 / EPS; break;
     }
     
