@@ -109,6 +109,8 @@ inline bool CPrimalGrid::GetJacobianConsideredConstant(void) { return false; }
 
 inline void CPrimalGrid::SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {}
 
+inline void CPrimalGrid::AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {}
+
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 
 inline unsigned long CVertexMPI::GetNode(unsigned short val_node) { return Nodes[val_node]; }
@@ -341,6 +343,8 @@ inline void CPrimalGridFEM::SetColor(unsigned long val_color) { color = val_colo
 inline unsigned long CPrimalGridFEM::GetColor(void) { return color; }
 
 inline void CPrimalGridFEM::SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) { JacobianConsideredConstant = val_JacobianConsideredConstant; }
+
+inline void CPrimalGridFEM::AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {offsetDOFsSolGlobal += val_offsetRank;}
 
 inline CPrimalGridBoundFEM::~CPrimalGridBoundFEM(){}
 

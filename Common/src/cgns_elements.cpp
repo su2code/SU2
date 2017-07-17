@@ -64,6 +64,92 @@ void CGNSElementTypeClass::DetermineMetaData(const unsigned short nDim,
   surfaceConn = (nDimElem == nDim-1);
 }
 
+void CGNSElementTypeClass::ReadConnectivityRange(const int           fn,
+                                                 const int           iBase,
+                                                 const int           iZone,
+                                                 const unsigned long offsetRank,
+                                                 const unsigned long nElemRank,
+                                                 const unsigned long startingElemIDRank,
+                                                 CPrimalGrid         **&elem,
+                                                 unsigned long       &locElemCount,
+                                                 unsigned long       &nDOFsLoc) {
+
+  /* Determine the index range to be read for this rank. */
+  const cgsize_t iBeg = indBeg + offsetRank;
+  const cgsize_t iEnd = iBeg + nElemRank -1;
+
+  /* Determine the size of the vector needed to read the connectivity
+     data from the CGNS file. */
+  cgsize_t sizeNeeded;
+  if(cg_ElementPartialSize(fn, iBase, iZone, connID, iBeg, iEnd,
+                           &sizeNeeded) != CG_OK) cg_error_exit();
+
+  /* Allocate the memory for the connectivity and read the data. */
+  vector<cgsize_t> connCGNSVec(sizeNeeded);
+  if(cg_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd,
+                              connCGNSVec.data(), NULL) != CG_OK) cg_error_exit();
+
+  /* Define the variables needed to convert the connectivities from CGNS to
+     SU2 format. Note that the vectors are needed to support a connectivity
+     section with mixed element types. */
+  vector<ElementType_t>  CGNS_Type;
+  vector<unsigned short> VTK_Type;
+  vector<unsigned short> nPoly;
+  vector<unsigned short> nDOFs;
+
+  vector<vector<unsigned short> > SU2ToCGNS;
+
+  /* Definition of variables used in the loop below. */
+  cgsize_t *connCGNS = connCGNSVec.data();
+  ElementType_t typeElem = elemType;
+  vector<unsigned long> connSU2;
+
+  /* Loop over the elements just read. */
+  for(unsigned long i=0; i<nElemRank; ++i, ++locElemCount) {
+
+    /* Determine the element type for this element if this is a mixed
+       connectivity and set the pointer to the actual connectivity data. */
+    if(elemType == MIXED) {
+      typeElem = (ElementType_t) connCGNS[0];
+      ++connCGNS;
+    }
+
+    /* Determine the index in the stored vectors (CGNS_Type, VTK_Type, etc),
+       which corresponds to this element. If the type is not stored yet,
+       a new entry in these vectors will be created. */
+    const unsigned short ind = IndexInStoredTypes(typeElem, CGNS_Type, VTK_Type,
+                                                  nPoly, nDOFs, SU2ToCGNS);
+
+    /* Resize the connSU2 vector to the appropriate size. */
+    connSU2.resize(nDOFs[ind]);
+
+    /* Create the connectivity used in SU2 by carrying out the renumbering.
+       Note that in CGNS the numbering starts at 1, while in SU2 it starts
+       at 0. This explains the addition of -1. */
+    for(unsigned short j=0; j<nDOFs[ind]; ++j)
+      connSU2[j] = connCGNS[SU2ToCGNS[ind][j]] - 1;
+
+    /* Set the pointer for connCGNS for the data of the next element. */
+    connCGNS += nDOFs[ind];
+
+    /* Determine the global element ID of this element. */
+    const unsigned long globElemID = startingElemIDRank + locElemCount;
+
+    /* Create a new FEM primal grid element, which stores the required
+       information. Note that the second to last argument contains the local
+       offset of the DOFs. This will be corrected to the global offset
+       afterwards in CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM.
+       Also note that in CGNS it is not possible (at least at the moment)
+       to specify a different polynomial degree for the grid and solution. */
+    elem[locElemCount] = new CPrimalGridFEM(globElemID, VTK_Type[ind], nPoly[ind],
+                                            nPoly[ind], nDOFs[ind], nDOFs[ind],
+                                            nDOFsLoc, connSU2.data());
+
+    /* Update the counter nDOFsLoc. */
+    nDOFsLoc += nDOFs[ind];
+  }
+}
+
 unsigned short CGNSElementTypeClass::DetermineElementDimension(const int fn,
                                                                const int iBase,
                                                                const int iZone) {
@@ -118,16 +204,25 @@ unsigned short CGNSElementTypeClass::DetermineElementDimension(const int fn,
     MPI_Finalize();
 #endif
   }
+
+  /* Just return a value to avoid a compiler warning. The program should
+     never reach this position. */
+  return 0;
 }
 
 unsigned short CGNSElementTypeClass::DetermineElementDimensionMixed(const int fn,
                                                                     const int iBase,
                                                                     const int iZone) {
-  /* Read the data of the first element in this section.
-     Reserve enough memory for the worst case scenario. */
-  cgsize_t buf[200];
+  /* Determine the required size of the vector to read the
+     data of the first element of this connectivity. */
+  cgsize_t sizeNeeded;
+  if(cg_ElementPartialSize(fn, iBase, iZone, connID, indBeg, indBeg,
+                           &sizeNeeded) != CG_OK) cg_error_exit();
+
+  /* Read the data of the first element in this section. */
+  vector<cgsize_t> buf(sizeNeeded);
   if(cg_elements_partial_read(fn, iBase, iZone, connID, indBeg, indBeg,
-                              buf, NULL) != CG_OK) cg_error_exit();
+                              buf.data(), NULL) != CG_OK) cg_error_exit();
 
   /* The first entry of buf contains the element type. Copy this value
      temporarily into the member variable elemType and determine the
@@ -139,6 +234,39 @@ unsigned short CGNSElementTypeClass::DetermineElementDimensionMixed(const int fn
   /* Reset the element type to MIXED and return the element dimension. */
   elemType = MIXED;
   return nDimElem;
+}
+
+unsigned short CGNSElementTypeClass::IndexInStoredTypes(
+                                  const ElementType_t             typeElem,
+                                  vector<ElementType_t>           &CGNS_Type,
+                                  vector<unsigned short>          &VTK_Type,
+                                  vector<unsigned short>          &nPoly,
+                                  vector<unsigned short>          &nDOFs,
+                                  vector<vector<unsigned short> > &SU2ToCGNS) {
+
+  /* Loop over the available types and check if the current type is present.
+     If so, break the loop, such that the correct index is stored. */
+  unsigned short ind;
+  for(ind=0; ind<CGNS_Type.size(); ++ind)
+    if(typeElem == CGNS_Type[ind]) break;
+
+  /* If the current element type is not present yet, the data for this
+     type must be created. */
+  if(ind == CGNS_Type.size()) {
+
+    unsigned short VTKElem, nPolyElem, nDOFsElem;
+    vector<unsigned short> SU2ToCGNSElem;
+    CreateDataElement(typeElem, VTKElem, nPolyElem, nDOFsElem, SU2ToCGNSElem);
+
+    CGNS_Type.push_back(typeElem);
+    VTK_Type.push_back(VTKElem);
+    nPoly.push_back(nPolyElem);
+    nDOFs.push_back(nDOFsElem);
+    SU2ToCGNS.push_back(SU2ToCGNSElem);
+  }
+
+  /* Return the index. */
+  return ind;
 }
 
 #endif
