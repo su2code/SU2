@@ -45,7 +45,7 @@ extern "C" {
 }
 #endif
 #ifdef HAVE_CGNS
-  #include "cgnslib.h"
+  #include "cgns_elements.hpp"
 #endif
 #include <string>
 #include <fstream>
@@ -216,78 +216,6 @@ private:
   /*--- Copy function, which copies the data of the given object into the current object. ---*/
   void Copy(const MatchingFaceClass &other);
 };
-
-
-#ifdef HAVE_CGNS
-#if CGNS_VERSION >= 3300
-class CGNSElementTypeClass {
-public:
-  int           connID;      /*!< \brief CGNS connectivity ID of this connectivity. */
-  ElementType_t elemType;    /*!< \brief Element type according to the CGNS convention,
-                                         possibly MIXED. */
-  cgsize_t      indBeg;      /*!< \brief Index of the first element in the CGNS connectivity. */
-  cgsize_t      indEnd;      /*!< \brief Index of the last element in the CGNS connectivity. */
-  cgsize_t      nElem;       /*!< \brief Number of elements present for this element type. */
-
-  bool volumeConn;           /*!< \brief Whether or not this is a volume connectivity. */
-  bool surfaceConn;          /*!< \brief Whether or not this is a surface connectivity. */
-
-  /* Standard constructor, nothing to be done. */
-  CGNSElementTypeClass(){}
-
-  /* Destructor, nothing to be done. */
-  ~CGNSElementTypeClass(){}
-
-  /*--- Member function, which determines the meta data for this element type. ---*/
-  void DetermineMetaData(const unsigned short nDim,
-                         const int            fn,
-                         const int            iBase,
-                         const int            iZone,
-                         const int            iConn);
-
-  /* Member function, which reads the required connectivity range. */
-  void ReadConnectivityRange(const int           fn,
-                             const int           iBase,
-                             const int           iZone,
-                             const unsigned long offsetRank,
-                             const unsigned long nElemRank,
-                             const unsigned long startingElemIDRank,
-                             CPrimalGrid         **&elem,
-                             unsigned long       &locElemCount,
-                             unsigned long       &nDOFsLoc);
-private:
-  /*--- Member function, which creates the required data for the given
-        element type. ---*/
-  void CreateDataElement(const ElementType_t    typeElem,
-                         unsigned short         &VTK_Type,
-                         unsigned short         &nPoly,
-                         unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
-
-  /*--- Member function, which determines the element dimension, i.e. the
-        number of parametric coordinates. ---*/
-  unsigned short DetermineElementDimension(const int fn,
-                                           const int iBase,
-                                           const int iZone);
-
-  /*--- Member function, which determines the element dimension when the
-        connectivity is mixed. ---*/
-  unsigned short DetermineElementDimensionMixed(const int fn,
-                                                const int iBase,
-                                                const int iZone);
-
-  /*--- Member function, which determines the corresponding index of the
-        given element in the stored types. If not present, a new index
-        is created. ---*/
-  unsigned short IndexInStoredTypes(const ElementType_t             typeElem,
-                                    vector<ElementType_t>           &CGNS_Type,
-                                    vector<unsigned short>          &VTK_Type,
-                                    vector<unsigned short>          &nPoly,
-                                    vector<unsigned short>          &nDOFs,
-                                    vector<vector<unsigned short> > &SU2ToCGNS);
-};
-#endif
-#endif
 
 /*!
  * \class CGeometry

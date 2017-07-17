@@ -118,7 +118,7 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/datatypes/complex_structure.hpp \
 	../include/datatypes/complex_structure.inl \
 	../include/ad_structure.hpp ../include/ad_structure.inl \
-	../include/config_structure.hpp \
+	../include/cgns_elements.hpp ../include/config_structure.hpp \
 	../include/config_structure.inl \
 	../include/dense_matrix_product.hpp \
 	../include/dual_grid_structure.hpp \
@@ -207,7 +207,7 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../include/datatypes/complex_structure.hpp \
 	../include/datatypes/complex_structure.inl \
 	../include/ad_structure.hpp ../include/ad_structure.inl \
-	../include/config_structure.hpp \
+	../include/cgns_elements.hpp ../include/config_structure.hpp \
 	../include/config_structure.inl \
 	../include/dense_matrix_product.hpp \
 	../include/dual_grid_structure.hpp \
@@ -296,7 +296,7 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/datatypes/complex_structure.hpp \
 	../include/datatypes/complex_structure.inl \
 	../include/ad_structure.hpp ../include/ad_structure.inl \
-	../include/config_structure.hpp \
+	../include/cgns_elements.hpp ../include/config_structure.hpp \
 	../include/config_structure.inl \
 	../include/dense_matrix_product.hpp \
 	../include/dual_grid_structure.hpp \
@@ -584,6 +584,7 @@ lib_sources = \
   ../include/datatypes/complex_structure.inl \
   ../include/ad_structure.hpp \
   ../include/ad_structure.inl \
+  ../include/cgns_elements.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.inl \
