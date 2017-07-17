@@ -424,6 +424,12 @@ public:
   * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
   */
  virtual void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant);
+
+ /*!
+  * \brief Virtual function to correct the offset of the global DOFs.
+  * \param[in] val_offsetRank - The offset that must be added for this rank.
+  */
+ virtual void AddOffsetGlobalDOFs(const unsigned long val_offsetRank);
 };
 
 /*!
@@ -1443,6 +1449,22 @@ public:
                 unsigned long  val_offDOfsSol,   istringstream  &elem_line);
 
  /*!
+  * \brief Constructor using data to initialize the element.
+  * \param[in] val_elemGlobalID - Global element ID of this element.
+  * \param[in] val_VTK_Type     - VTK type to indicate the element type
+  * \param[in] val_nPolyGrid    - Polynomial degree to describe the geometry of the element.
+  * \param[in] val_nPolySol     - Polynomial degree to describe the solution of the element.
+  * \param[in] val_nDOFsGrid    - Number of DOFs used to describe the geometry of the element.
+  * \param[in] val_nDOFsSol     - Number of DOFs used to describe the solution of the element.
+  * \param[in] val_offDOfsSol   - Global offset of the solution DOFs of the element.
+  * \param[in] connGrid         - Array, which contains the grid node numbers of the element.
+  */
+ CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
+                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
+                unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
+                unsigned long  val_offDOfsSol,   const unsigned long *connGrid);
+
+ /*!
   * \brief Destructor of the class.
   */
  ~CPrimalGridFEM(void);
@@ -1607,6 +1629,12 @@ public:
   * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
   */
  void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant);
+
+ /*!
+  * \brief Function to correct the offset of the global DOFs.
+  * \param[in] val_offsetRank - The offset that must be added for this rank.
+  */
+ void AddOffsetGlobalDOFs(const unsigned long val_offsetRank);
 };
 
 /*!

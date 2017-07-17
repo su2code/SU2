@@ -8996,7 +8996,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
       /*--- Compute the number of elements that will be on each processor.
             This is a linear partitioning with the addition of a simple load
             balancing for any remainder elements. ---*/
-
       unsigned long total_elem_accounted = 0;
       for(unsigned long i = 0; i < (unsigned long)size; i++) {
         npoint_procs[i] = Global_nElem/size;
@@ -9019,7 +9018,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
       }
 
       /*--- Allocate space for elements ---*/
-
       elem = new CPrimalGrid*[nElem];
       for (unsigned long i = 0; i < nElem; i++) elem[i] = NULL;
 
@@ -9027,7 +9025,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
             this rank. Furthermore, determine the total amount of DOFs for
             the solution (which may differ from the number of DOFS for the
             grid).                                                          ---*/
-
       unsigned long nDOFs_tot = 0;
       for (unsigned long i = 0; i < Global_nElem; i++) {
 
@@ -9037,7 +9034,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
         /*--- Read the value that defines the element type, the polynomial
               degree of the geometry and the polynomial degree of the
               solution. Extract this info as well.                     ---*/
-
         unsigned long typeRead; elem_line >> typeRead;
         unsigned long typeReadErrorMessage = typeRead;
         unsigned short nPolySol, nPolyGrid;
@@ -9060,7 +9056,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
         /*--- Allocate the memory for a new primary grid FEM element if
               this element must be stored on this rank.                 ---*/
-
         if ((i >= starting_node[rank]) && (i < ending_node[rank])) {
 
           elem[loc_element_count] = new CPrimalGridFEM(i, VTK_Type, nPolyGrid, nPolySol,
@@ -9071,21 +9066,17 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
         }
 
         /*--- Update the total value of the number of DOFs. ---*/
-
         nDOFs_tot += nDOFsSol;
       }
 
       /*--- Break from the loop to find the element information. ---*/
-
       break;
     }
-
   }
 
   mesh_file.close();
 
   /*--- Create a vector, which contains the global node IDs of the local elements. ---*/
-
   vector<unsigned long> nodeIDsElemLoc;
   nodeIDsElemLoc.reserve(nDOFsGrid_Local);
   for(unsigned long i=0; i<loc_element_count; i++)
@@ -9101,14 +9092,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   nodeIDsElemLoc.erase(lastNode, nodeIDsElemLoc.end());
 
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
-
   nPoint     = nodeIDsElemLoc.size();
   nPointNode = nPoint;
   node = new CPoint*[nPoint];
 
   /*--- Open the grid file again and go to the position where
         the correct zone is stored.                           ---*/
-
   mesh_file.open(val_mesh_filename.c_str(), ios::in);
 
   if (val_nZone > 1 && !time_spectral) {
@@ -9123,7 +9112,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   }
 
   /*--- While loop to read the point information. ---*/
-
   while (getline (mesh_file, text_line)) {
 
     position = text_line.find ("NPOIN=",0);
@@ -9134,7 +9122,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
       /*--- Loop over the global number of points and store the
             ones that are needed on this processor.             ---*/
-
       unsigned long ii = 0;
       for(unsigned long i=0; i<Global_nPoint; ++i) {
         getline(mesh_file, text_line);
@@ -9169,12 +9156,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   mesh_file.close();
 
   /*--- Determine the faces of the local elements. --- */
-
   vector<FaceOfElementClass> localFaces;
   for(unsigned long k=0; k<loc_element_count; k++) {
 
     /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
-
     unsigned short nFaces;
     unsigned short nPointsPerFace[6];
     unsigned long  faceConn[6][4];
@@ -9182,7 +9167,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
     elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
     /*--- Loop over the faces and add them to localFaces. ---*/
-
     for(unsigned short i=0; i<nFaces; ++i) {
       FaceOfElementClass thisFace;
       thisFace.nCornerPoints = nPointsPerFace[i];
@@ -9197,7 +9181,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Sort localFaces in increasing order and remove the double entities,
         such that the binary search later on is a bit more efficient.       ---*/
-
   sort(localFaces.begin(), localFaces.end());
   vector<FaceOfElementClass>::iterator lastFace;
   lastFace = unique(localFaces.begin(), localFaces.end());
@@ -9594,9 +9577,53 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   for(unsigned long i=0; i<nElem; ++i) elem[i] = NULL;
 
   /*--- Loop over over the connectivities and read the elements to be stored on
-        this rank. Furthermore, determine the total amount of DOFs for the
+        this rank. Furthermore, determine the local amount of DOFs for the
         solution (which may differ from the number of DOFS for the grid). ---*/
-  unsigned long nDOFs_tot = 0;
+  unsigned long nDOFsLoc = 0, elemCount = 0, locElemCount = 0;
+
+  for(int iConn=0; iConn<nsections; ++iConn) {
+    if( CGNSElemTypes[iConn].volumeConn ) {
+
+      /* Determine the global volume element range for this connectivity. */
+      const unsigned long elemCountOld = elemCount;
+      elemCount += CGNSElemTypes[iConn].nElem;
+
+      /* Check for overlap with the element range this rank is responsible for. */
+      const unsigned long indBegOverlap = max(elemCountOld, starting_node[rank]);
+      const unsigned long indEndOverlap = min(elemCount, ending_node[rank]);
+
+      if(indEndOverlap > indBegOverlap) {
+
+        /* This rank must read element data from this connectivity section.
+           Determine the offset relative to the start of this section and the
+           number of elements to be read by this rank. */
+        const unsigned long offsetRank = indBegOverlap - elemCountOld;
+        const unsigned long nElemRank  = indEndOverlap - indBegOverlap;
+
+        /* Read the connectivity range determined above. */
+        CGNSElemTypes[iConn].ReadConnectivityRange(fn, iBase, iZone, offsetRank,
+                                                   nElemRank, starting_node[rank],
+                                                   elem, locElemCount, nDOFsLoc);
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+  /* The global offset of the elements must be corrected when running in
+     Therefore gather the number of DOFs of all the ranks. */
+  vector<unsigned long> nDOFsPerRank(size);
+  SU2_MPI::Allgather(&nDOFsLoc, 1, MPI_UNSIGNED_LONG, nDOFsPerRank.data(), 1,
+                     MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+  /* Determine the offset for the DOFs on this rank. */
+  unsigned long offsetRank = 0;
+  for(int i=0; i<rank; ++i)
+    offsetRank += nDOFsPerRank[i];
+
+  /* Loop over the local elements to correct the global offset of the DOFs. */
+  for(unsigned long i=0; i<nElem; ++i)
+    elem[i]->AddOffsetGlobalDOFs(offsetRank);
+#endif
 
 
 

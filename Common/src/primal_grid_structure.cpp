@@ -649,7 +649,6 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
                                unsigned long  val_offDOfsSol,   istringstream  &elem_line)
 {
   /*--- Store the integer data in the member variables of this object. ---*/
-
   VTK_Type = val_VTK_Type;
   nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
 
@@ -663,7 +662,6 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
 
   /*--- Allocate the memory for the global nodes of the element to define
         the geometry and read them from elem_line.                        ---*/
-
   Nodes = new unsigned long[nDOFsGrid];
   for(unsigned short i=0; i<nDOFsGrid; i++)
     elem_line >> Nodes[i];
@@ -672,7 +670,6 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
         must be adapted. The reason is that compatability with the original
         SU2 format is maintained for linear elements, but for the FEM solver
         the nodes of the elements are stored row-wise.                       ---*/
-
   if(nPolyGrid == 1){
     switch( VTK_Type ) {
 
@@ -690,6 +687,30 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
         break;
     }
   }
+}
+
+CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
+                               unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
+                               unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
+                               unsigned long  val_offDOfsSol,   const unsigned long *connGrid)
+{
+  /*--- Store the integer data in the member variables of this object. ---*/
+  VTK_Type = val_VTK_Type;
+  nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
+
+  nPolyGrid = val_nPolyGrid;
+  nPolySol  = val_nPolySol;
+  nDOFsGrid = val_nDOFsGrid;
+  nDOFsSol  = val_nDOFsSol;
+
+  elemIDGlobal        = val_elemGlobalID;
+  offsetDOFsSolGlobal = val_offDOfsSol;
+
+  /*--- Allocate the memory for the global nodes of the element to define
+        the geometry and copy the data from connGrid. ---*/
+  Nodes = new unsigned long[nDOFsGrid];
+  for(unsigned short i=0; i<nDOFsGrid; i++)
+    Nodes[i] = connGrid[i];
 }
 
 CPrimalGridFEM::~CPrimalGridFEM(){}
