@@ -289,7 +289,7 @@ inline su2double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
 inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
-inline su2double CConfig::GetRefAreaCoeff(void) { return RefAreaCoeff; }
+inline su2double CConfig::GetRefArea(void) { return RefArea; }
 
 inline su2double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
 
@@ -315,7 +315,7 @@ inline bool CConfig::GetPrestretch(void) { return Prestretch; }
 
 inline string CConfig::GetPrestretch_FEMFileName(void) { return Prestretch_FEMFileName; }
 
-inline su2double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
+inline su2double CConfig::GetRefLength(void) { return RefLength; }
 
 inline su2double CConfig::GetRefElemLength(void) { return RefElemLength; }
 
@@ -323,7 +323,7 @@ inline su2double CConfig::GetRefSharpEdges(void) { return RefSharpEdges; }
 
 inline su2double CConfig::GetDomainVolume(void) { return DomainVolume; }
 
-inline void CConfig::SetRefAreaCoeff(su2double val_area) { RefAreaCoeff = val_area; }
+inline void CConfig::SetRefArea(su2double val_area) { RefArea = val_area; }
 
 inline void CConfig::SetDomainVolume(su2double val_volume) { DomainVolume = val_volume; }
 
@@ -1274,7 +1274,11 @@ inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Mod
 
 inline unsigned short CConfig::GetKind_SGS_Model(void) { return Kind_SGS_Model; }
 
-inline bool CConfig::GetFrozen_Visc(void) { return Frozen_Visc; }
+inline bool CConfig::GetFrozen_Visc_Cont(void) { return Frozen_Visc_Cont; }
+
+inline bool CConfig::GetFrozen_Visc_Disc(void) { return Frozen_Visc_Disc; }
+
+inline bool CConfig::GetFrozen_Limiter_Disc(void){ return Frozen_Limiter_Disc; }
 
 inline bool CConfig::GetSens_Remove_Sharp(void) { return Sens_Remove_Sharp; }
 

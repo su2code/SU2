@@ -123,7 +123,9 @@ private:
   SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
   AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
   SubsonicEngine,			/*!< \brief Engine intake subsonic region. */
-  Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
+  Frozen_Visc_Cont,			/*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
+  Frozen_Visc_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
+  Frozen_Limiter_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen limiter. */
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric; /*!< \brief Flag for axisymmetric calculations */
@@ -601,10 +603,10 @@ private:
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
-  su2double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
+  su2double RefArea,		/*!< \brief Reference area for coefficient computation. */
   RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
-  RefLengthMoment,			/*!< \brief Reference length for moment computation. */
+  RefLength,			/*!< \brief Reference length for moment computation. */
   *RefOriginMoment,           /*!< \brief Origin for moment computation. */
   *RefOriginMoment_X,      /*!< \brief X Origin for moment computation. */
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
@@ -1709,8 +1711,8 @@ public:
    *        the z plane (3D) or the x plane (2D).
    * \return Value of the reference area for coefficient computation.
    */
-  su2double GetRefAreaCoeff(void);
-
+  su2double GetRefArea(void);
+  
   /*!
    * \brief Get the wave speed.
    * \return Value of the wave speed.
@@ -1788,8 +1790,8 @@ public:
    * \brief Get the reference length for computing moment (the default value is 1).
    * \return Reference length for moment computation.
    */
-  su2double GetRefLengthMoment(void);
-
+  su2double GetRefLength(void);
+  
   /*!
    * \brief Get the reference element length for computing the slope limiting epsilon.
    * \return Reference element length for slope limiting epsilon.
@@ -1810,12 +1812,12 @@ public:
   su2double GetDomainVolume(void);
 
   /*!
-   * \brief In case the <i>RefAreaCoeff</i> is equal to 0 then, it is necessary to compute a reference area,
+   * \brief In case the <i>RefArea</i> is equal to 0 then, it is necessary to compute a reference area,
    *        with this function we set the value of the reference area.
    * \param[in] val_area - Value of the reference area for non dimensional coefficient computation.
    */
-  void SetRefAreaCoeff(su2double val_area);
-
+  void SetRefArea(su2double val_area);
+  
   /*!
    * \brief Set the value of the domain volume computed on the finest grid.
    * \note This volume do not include the volume of the body that is being simulated.
@@ -3773,10 +3775,24 @@ public:
 
   /*!
    * \brief Provides information about the way in which the turbulence will be treated by the
-   *        adjoint method.
+   *        cont. adjoint method.
    * \return <code>FALSE</code> means that the adjoint turbulence equations will be used.
    */
-  bool GetFrozen_Visc(void);
+  bool GetFrozen_Visc_Cont(void);
+  
+  /*!
+   * \brief Provides information about the way in which the turbulence will be treated by the
+   *        disc. adjoint method.
+   * \return <code>FALSE</code> means that the adjoint turbulence equations will be used.
+   */
+  bool GetFrozen_Visc_Disc(void);
+
+  /*!
+   * \brief Provides information about the way in which the limiter will be treated by the
+   *        disc. adjoint method.
+   * \return <code>FALSE</code> means that the limiter computation is included.
+   */
+  bool GetFrozen_Limiter_Disc(void);
 
   /*!
    * \brief Viscous limiter mean flow.

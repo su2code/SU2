@@ -4956,7 +4956,7 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
       /*--- The angle of rotation is computed based on a characteristic length of the wing,
        otherwise it is difficult to compare with other length based design variables. ---*/
       
-      su2double RefLength = config->GetRefLengthMoment();
+      su2double RefLength = config->GetRefLength();
       su2double theta = atan(config->GetDV_Value(iDV)/RefLength);
       
       /*--- An intermediate value used in computations. ---*/
