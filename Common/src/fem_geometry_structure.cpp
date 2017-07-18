@@ -2301,8 +2301,8 @@ void CMeshFEM::SetPositive_ZArea(CConfig *config) {
   /*---         a message about the projected area if I am the master.      ---*/
   /*---------------------------------------------------------------------------*/
 
-  if (config->GetRefAreaCoeff() == 0.0)
-    config->SetRefAreaCoeff(PositiveZArea);
+  if (config->GetRefArea() == 0.0)
+    config->SetRefArea(PositiveZArea);
 
   if (rank == MASTER_NODE) {
     if (nDim == 2) cout << "Area projection in the y-plane = "<< PositiveZArea << "." << endl;
