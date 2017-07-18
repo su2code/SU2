@@ -66,7 +66,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   bool axisymmetric = config->GetAxisymmetric();
   
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Mach_Motion     = config->GetMach_Motion();
@@ -362,7 +362,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
 
-        factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+        factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
 
         ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
         if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
@@ -2050,7 +2050,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   
   su2double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
-  su2double RefLengthMoment  = config->GetRefLengthMoment();
+  su2double RefLength  = config->GetRefLength();
   su2double *RefOriginMoment = config->GetRefOriginMoment(0);
   su2double dCD_dCL          = config->GetdCD_dCL();
   su2double dCD_dCM          = config->GetdCD_dCM();
@@ -2066,7 +2066,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   CT = solver_container[FLOW_SOL]->GetTotal_CT();
   CQ = solver_container[FLOW_SOL]->GetTotal_CQ();
   invCD  = 1.0/CD; CLCD2  = CL/(CD*CD);
-  invCQ  = 1.0/CQ; CTRCQ2 = CT/(RefLengthMoment*CQ*CQ);
+  invCQ  = 1.0/CQ; CTRCQ2 = CT/(RefLength*CQ*CQ);
   
   x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
@@ -2121,7 +2121,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               /*--- Modification to run at a fixed CL and CM value ---*/
               
               if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
-              if (Fixed_CM) { ForceProj_Vector[0] -= dCD_dCM*Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += dCD_dCM*Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
+              if (Fixed_CM) { ForceProj_Vector[0] -= dCD_dCM*Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += dCD_dCM*Weight_ObjFunc*(x - x_origin)/RefLength; }
 
             }
             if (nDim == 3) {
@@ -2133,7 +2133,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               /*--- Modification to run at a fixed CL value ---*/
               
               if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
-              if (Fixed_CM) { ForceProj_Vector[0] += dCD_dCM*Weight_ObjFunc*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] -= dCD_dCM*Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
+              if (Fixed_CM) { ForceProj_Vector[0] += dCD_dCM*Weight_ObjFunc*(z - z_origin)/RefLength; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] -= dCD_dCM*Weight_ObjFunc*(x - x_origin)/RefLength; }
               
             }
             break;
@@ -2157,15 +2157,15 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) {  ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += -Weight_ObjFunc*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] += Weight_ObjFunc*(y - y_origin)/RefLengthMoment; }
+            if (nDim == 3) {  ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += -Weight_ObjFunc*(z - z_origin)/RefLength; ForceProj_Vector[2] += Weight_ObjFunc*(y - y_origin)/RefLength; }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += -Weight_ObjFunc*(x - x_origin)/RefLengthMoment;}
+            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(z - z_origin)/RefLength; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += -Weight_ObjFunc*(x - x_origin)/RefLength;}
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
+            if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLength; }
+            if (nDim == 3) { ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLength; ForceProj_Vector[2] += 0; }
             break;
           case EFFICIENCY :
             if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] += Weight_ObjFunc*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
@@ -2202,8 +2202,8 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += Weight_ObjFunc*1.0; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) {  ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
+            if (nDim == 2) {  ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLength; }
+            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLength; ForceProj_Vector[2] += 0; }
             break;
           case FIGURE_OF_MERIT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
@@ -3327,7 +3327,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 
   su2double Gas_Constant    = config->GetGas_ConstantND();
   bool grid_movement     = config->GetGrid_Movement();
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double Mach_Motion     = config->GetMach_Motion();
   unsigned short ObjFunc = config->GetKind_ObjFunc();
 
@@ -3355,7 +3355,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   factor = 1.0;
   /*-- For multi-objective problems these scaling factors are applied before solution ---*/
   if (config->GetnObj()==1) {
-    factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+    factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX)  ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
   (ObjFunc == MASS_FLOW_RATE) )
@@ -5905,7 +5905,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ifstream restart_file;
   string filename, AdjExt;
 
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Mach_Motion     = config->GetMach_Motion();
@@ -6164,7 +6164,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
      for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
          Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
 
-         factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+         factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
 
          ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
          if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
@@ -6259,7 +6259,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Compute gradients adj for viscous term coupling ---*/
 
-  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[ADJTURB_SOL]->SetSolution_Gradient_GG(geometry, config);
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[ADJTURB_SOL]->SetSolution_Gradient_LS(geometry, config);
   }
@@ -6364,7 +6364,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     
     /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
     
-    if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+    if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
       
       /*--- Turbulent variables w/o reconstruction and its gradient ---*/
       
@@ -6396,7 +6396,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
   /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
   
-  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
 
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -6504,7 +6504,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   
   bool rotating_frame    = config->GetRotating_Frame();
   bool grid_movement     = config->GetGrid_Movement();
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double Mach_Motion     = config->GetMach_Motion();
   unsigned short ObjFunc = config->GetKind_ObjFunc();
   su2double Gas_Constant    = config->GetGas_ConstantND();
@@ -6535,7 +6535,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   factor = 1.0;
   /*-- For multi-objective problems these scaling factors are applied before solution ---*/
   if (config->GetnObj()==1) {
-    factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+    factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
 
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
