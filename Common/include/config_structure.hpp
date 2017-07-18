@@ -5,8 +5,8 @@
  * \author F. Palacios, T. Economon, B. Tracey
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -123,7 +123,9 @@ private:
   SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
   AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
   SubsonicEngine,			/*!< \brief Engine intake subsonic region. */
-  Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
+  Frozen_Visc_Cont,			/*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
+  Frozen_Visc_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
+  Frozen_Limiter_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen limiter. */
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric; /*!< \brief Flag for axisymmetric calculations */
@@ -546,9 +548,9 @@ private:
   unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
   nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
+  nMarker_ZoneInterface, /*!< \brief Number of markers in the zone interface. */
   nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
-  nMarker_FSIinterface,					/*!< \brief Number of markers in the FSI interface. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   nMarker_CHT,               /*!< \brief Number of markers used for heat transfer. */
   nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
@@ -557,7 +559,7 @@ private:
   *Marker_GeoEval,         /*!< \brief Markers to plot. */
   *Marker_Plotting,          /*!< \brief Markers to plot. */
   *Marker_Analyze,          /*!< \brief Markers to plot. */
-  *Marker_FSIinterface,          /*!< \brief Markers in the FSI interface. */
+  *Marker_ZoneInterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   *Marker_CHT,            /*!< \brief Markers used for heat transfer. */
   *Marker_DV;            /*!< \brief Markers affected by the design variables. */
@@ -565,7 +567,7 @@ private:
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
   *Marker_All_Analyze,        /*!< \brief Global index for plotting using the grid information. */
-  *Marker_All_FSIinterface,        /*!< \brief Global index for FSI interface markers using the grid information. */
+  *Marker_All_ZoneInterface,        /*!< \brief Global index for FSI interface markers using the grid information. */
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_BCCustom,
@@ -577,7 +579,7 @@ private:
   *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Plotting,     /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Analyze,     /*!< \brief Global index for plotting using the config information. */
-  *Marker_CfgFile_FSIinterface,     /*!< \brief Global index for FSI interface using the config information. */
+  *Marker_CfgFile_ZoneInterface,     /*!< \brief Global index for FSI interface using the config information. */
   *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_CHT,        /*!< \brief Global index for heat transfer surfaces using the config information. */
@@ -591,10 +593,10 @@ private:
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
-  su2double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
+  su2double RefArea,		/*!< \brief Reference area for coefficient computation. */
   RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
-  RefLengthMoment,			/*!< \brief Reference length for moment computation. */
+  RefLength,			/*!< \brief Reference length for moment computation. */
   *RefOriginMoment,           /*!< \brief Origin for moment computation. */
   *RefOriginMoment_X,      /*!< \brief X Origin for moment computation. */
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
@@ -645,9 +647,9 @@ private:
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
-  Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
-  Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
-  unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
+  Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
+  unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
+  Kind_OneD;        /*!< \brief Write one-dimensionalized output on specified markers. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
   ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
@@ -1683,7 +1685,7 @@ public:
    *        the z plane (3D) or the x plane (2D).
    * \return Value of the reference area for coefficient computation.
    */
-  su2double GetRefAreaCoeff(void);
+  su2double GetRefArea(void);
   
   /*!
    * \brief Get the wave speed.
@@ -1762,7 +1764,7 @@ public:
    * \brief Get the reference length for computing moment (the default value is 1).
    * \return Reference length for moment computation.
    */
-  su2double GetRefLengthMoment(void);
+  su2double GetRefLength(void);
   
   /*!
    * \brief Get the reference element length for computing the slope limiting epsilon.
@@ -1784,11 +1786,11 @@ public:
   su2double GetDomainVolume(void);
   
   /*!
-   * \brief In case the <i>RefAreaCoeff</i> is equal to 0 then, it is necessary to compute a reference area,
+   * \brief In case the <i>RefArea</i> is equal to 0 then, it is necessary to compute a reference area,
    *        with this function we set the value of the reference area.
    * \param[in] val_area - Value of the reference area for non dimensional coefficient computation.
    */
-  void SetRefAreaCoeff(su2double val_area);
+  void SetRefArea(su2double val_area);
   
   /*!
    * \brief Set the value of the domain volume computed on the finest grid.
@@ -2735,7 +2737,7 @@ public:
    * \param[in] val_marker - Index of the marker in which we are interested.
    * \param[in] val_plotting - 0 or 1 depending if the the marker is part of the FSI interface.
    */
-  void SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface);
+  void SetMarker_All_ZoneInterface(unsigned short val_marker, unsigned short val_fsiinterface);
   
   /*!
    * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
@@ -2834,14 +2836,14 @@ public:
    * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
    * \return 0 or 1 depending if the marker is part of the FSI interface.
    */
-  unsigned short GetMarker_All_FSIinterface(unsigned short val_marker);
+  unsigned short GetMarker_All_ZoneInterface(unsigned short val_marker);
   
   /*!
    * \brief Get the number of FSI interface markers <i>val_marker</i>.
    * \param[in] void.
    * \return Number of markers belonging to the FSI interface.
    */
-  unsigned short GetMarker_n_FSIinterface(void);
+  unsigned short GetMarker_n_ZoneInterface(void);
   
   /*!
    * \brief Get the DV information for a marker <i>val_marker</i>.
@@ -3676,17 +3678,31 @@ public:
   
   /*!
    * \brief Provides information about the way in which the turbulence will be treated by the
-   *        adjoint method.
+   *        cont. adjoint method.
    * \return <code>FALSE</code> means that the adjoint turbulence equations will be used.
    */
-  bool GetFrozen_Visc(void);
+  bool GetFrozen_Visc_Cont(void);
   
+  /*!
+   * \brief Provides information about the way in which the turbulence will be treated by the
+   *        disc. adjoint method.
+   * \return <code>FALSE</code> means that the adjoint turbulence equations will be used.
+   */
+  bool GetFrozen_Visc_Disc(void);
+
+  /*!
+   * \brief Provides information about the way in which the limiter will be treated by the
+   *        disc. adjoint method.
+   * \return <code>FALSE</code> means that the limiter computation is included.
+   */
+  bool GetFrozen_Limiter_Disc(void);
+
   /*!
    * \brief Viscous limiter mean flow.
    * \return <code>FALSE</code> means no viscous limiter turb equations.
    */
   bool GetViscous_Limiter_Flow(void);
-  
+
   /*!
    * \brief Viscous limiter turb equations.
    * \return <code>FALSE</code> means no viscous limiter turb equations.
@@ -4803,7 +4819,7 @@ public:
    * \brief Get the FSI interface information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_FSIinterface(string val_marker);
+  unsigned short GetMarker_CfgFile_ZoneInterface(string val_marker);
   
   /*!
    * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
@@ -4839,7 +4855,7 @@ public:
    * \brief  Get the name of the marker <i>val_marker</i>.
    * \return The interface which owns that marker <i>val_marker</i>.
    */
-  int GetMarker_FSIinterface(string val_marker);
+  int GetMarker_ZoneInterface(string val_marker);
   
   /*!
    * \brief Determines if problem is adjoint
@@ -6646,6 +6662,13 @@ public:
    */
   unsigned short GetConsole_Output_Verb(void);
   
+  /*!
+   * \brief Get the kind of one-dimensionalization
+   * (area-averaged, mass flux averaged,etc).
+   * \return Kind of one-dimensionalization.
+   */
+  unsigned short GetKind_OneD(void);
+
   /*!
    *
    * \brief Get the direct differentation method.

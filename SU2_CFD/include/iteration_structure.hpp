@@ -5,8 +5,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -159,6 +159,30 @@ public:
    * \param[in] ??? - Description here.
    */
   virtual void Postprocess();
+
+  virtual void InitializeAdjoint(CSolver ****solver_container,
+                                 CGeometry ***geometry_container,
+                                 CConfig **config_container,
+                                 unsigned short iZone){}
+
+  virtual void RegisterInput(CSolver ****solver_container,
+                             CGeometry*** geometry_container,
+                             CConfig** config_container,
+                             unsigned short iZone,
+                             unsigned short kind_recording){}
+
+  virtual void SetDependencies(CSolver ****solver_container,
+                               CGeometry ***geometry_container,
+                               CConfig **config_container,
+                               unsigned short iZone,
+                               unsigned short kind_recording){}
+
+  virtual void RegisterOutput(CSolver ****solver_container,
+                              CGeometry*** geometry_container,
+                              CConfig** config_container,
+                              COutput* output,
+                              unsigned short iZone){}
+
 
 };
 
@@ -782,18 +806,6 @@ private:
   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
   bool turbulent;       /*!< \brief Stores the turbulent flag. */
 
-  enum RECORDING{
-    NONE = 0,      /*!< \brief Indicates that nothing is recorded. */
-    FLOW_VARIABLES = 1, /*!< \brief Indicates that the current recording
-                                    can be used to compute the gradients with respect
-                                    to the conservative flow variables. */
-    GEOMETRY_VARIABLES = 2, /*!< \brief Indicates that the current recording
-                                       can be used to compute the gradients with respect
-                                       to the geometry variables. */
-    ALL_VARIABLES = 3,
-  };
-
-
 public:
   
   /*!
@@ -873,8 +885,10 @@ public:
   void Output();
   
   /*!
-   * \brief Postprocesses the discrete adjoint fluid system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
+   * \brief Postprocess ???.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
   void Postprocess(); 
 
@@ -884,9 +898,11 @@ public:
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
-   * \param[in] kind_recording - Kind of recording, either FLOW_VARIABLES or GEOMETRY_VARIABLES
    */
-  void RegisterInput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone, unsigned short kind_recording);
+  void InitializeAdjoint(CSolver ****solver_container,
+                         CGeometry*** geometry_container,
+                         CConfig** config_container,
+                         unsigned short iZone);
 
   /*!
    * \brief Registers all output variables of the fluid iteration.
@@ -894,8 +910,13 @@ public:
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
+   * \param[in] kind_recording - Kind of recording, either FLOW_VARIABLES or GEOMETRY_VARIABLES
    */
-  void RegisterOutput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
+  void RegisterInput(CSolver ****solver_container,
+                     CGeometry*** geometry_container,
+                     CConfig** config_container,
+                     unsigned short iZone,
+                     unsigned short kind_recording);
 
   /*!
    * \brief Initializes the adjoints of the output variables of the fluid iteration.
@@ -904,35 +925,11 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void InitializeAdjoint(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
-
-
-  /*!
-   * \brief Record a single iteration of the direct fluid system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] kind_recording - The kind of recording (geometry or flow).
-   */
-  void SetRecording(COutput *output,
-                      CIntegration ***integration_container,
-                      CGeometry ***geometry_container,
-                      CSolver ****solver_container,
-                      CNumerics *****numerics_container,
-                      CConfig **config_container,
-                      CSurfaceMovement **surface_movement,
-                      CVolumetricMovement **grid_movement,
-                      CFreeFormDefBox*** FFDBox,
-                      unsigned short val_iZone,
-                      unsigned short kind_recording);
-
+  void RegisterOutput(CSolver ****solver_container,
+                      CGeometry*** geometry_container,
+                      CConfig** config_container,
+											                      COutput* output,
+                      unsigned short iZone);
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
    * (e.g. turbulent variables, normals, volumes).
