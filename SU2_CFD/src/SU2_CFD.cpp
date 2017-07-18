@@ -125,8 +125,17 @@ int main(int argc, char *argv[]) {
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-    driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+  	if (config->GetDiscrete_Adjoint()){
 
+
+          driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+  	
+
+  	} else {
+
+          driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+
+  	}
   }
   
   delete config;

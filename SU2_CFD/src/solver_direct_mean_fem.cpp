@@ -5784,13 +5784,13 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
   const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
-  const su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
-  const su2double Beta            = config->GetAoS()*PI_NUMBER/180.0;
-  const su2double RefAreaCoeff    = config->GetRefAreaCoeff();
-  const su2double RefLengthMoment = config->GetRefLengthMoment();
-  const su2double Gas_Constant    = config->GetGas_ConstantND();
-  const su2double *Origin         = config->GetRefOriginMoment(0);
-  const bool grid_movement        = config->GetGrid_Movement();
+  const su2double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
+  const su2double Beta         = config->GetAoS()*PI_NUMBER/180.0;
+  const su2double RefArea      = config->GetRefArea();
+  const su2double RefLength    = config->GetRefLength();
+  const su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double *Origin      = config->GetRefOriginMoment(0);
+  const bool grid_movement     = config->GetGrid_Movement();
 
   /*--- Evaluate reference values for non-dimensionalization.
         For dynamic meshes, use the motion Mach number as a reference value
@@ -5811,7 +5811,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
       RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
 
-  const su2double factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  const su2double factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
 
   /*-- Variables initialization ---*/
   Total_CD = 0.0; Total_CL = 0.0; Total_CSF = 0.0; Total_CEff = 0.0;
@@ -5938,10 +5938,10 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
 
             /*--- Update the inviscid moment. ---*/
             if (nDim == 3) {
-              MomentInviscid[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLengthMoment;
-              MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLengthMoment;
+              MomentInviscid[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLength;
+              MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLength;
             }
-            MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLengthMoment;
+            MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLength;
           }
         }
 
@@ -7662,11 +7662,11 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
-  const su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
-  const su2double Beta            = config->GetAoS()*PI_NUMBER/180.0;
-  const su2double RefAreaCoeff    = config->GetRefAreaCoeff();
-  const su2double RefLengthMoment = config->GetRefLengthMoment();
-  const su2double Gas_Constant    = config->GetGas_ConstantND();
+  const su2double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
+  const su2double Beta         = config->GetAoS()*PI_NUMBER/180.0;
+  const su2double RefArea      = config->GetRefArea();
+  const su2double RefLength    = config->GetRefLength();
+  const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double *Origin         = config->GetRefOriginMoment(0);
   const bool grid_movement        = config->GetGrid_Movement();
 
@@ -7689,7 +7689,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
       RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
 
-  const su2double factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  const su2double factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
 
   /*--- Variables initialization ---*/
   AllBound_CD_Visc = 0.0;  AllBound_CL_Visc  = 0.0; AllBound_CSF_Visc = 0.0;
@@ -7877,10 +7877,10 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
             /*--- Update the viscous moment. ---*/
             if (nDim == 3) {
-              MomentViscous[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLengthMoment;
-              MomentViscous[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLengthMoment;
+              MomentViscous[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLength;
+              MomentViscous[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLength;
             }
-            MomentViscous[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLengthMoment;
+            MomentViscous[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLength;
 
             /* Update the heat flux and maximum heat flux for this marker. */
             Heat_Visc[iMarker] += qHeatNorm*weights[i]*normals[nDim];
