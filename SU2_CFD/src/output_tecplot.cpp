@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon, M. Colonno
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -1029,7 +1029,14 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
     /*--- Write the header ---*/
     
     Tecplot_File << "ZONE ";
-    
+    if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
+    } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+      /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
+      su2double period = config->GetHarmonicBalance_Period();
+      su2double deltaT = period/(su2double)(config->GetnTimeInstances());
+      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(val_iZone+1)<<", SOLUTIONTIME="<<deltaT*val_iZone<<", ";
+    }
     if (nDim == 2) {
       if (surf_sol) Tecplot_File << "NODES= "<< nGlobal_Surf_Poin <<", ELEMENTS= "<< nSurf_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
       else Tecplot_File << "NODES= "<< nGlobal_Poin_Par <<", ELEMENTS= "<< nGlobal_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;

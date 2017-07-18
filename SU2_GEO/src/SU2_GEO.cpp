@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -561,10 +561,6 @@ int main(int argc, char *argv[]) {
         }
         MoveSurface = true;
         surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
-      }
-      
-      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM && rank == MASTER_NODE) {
-        cout <<"Custom design variable will be used in external script" << endl;
       }
 
       /*--- Design variable not implement ---*/

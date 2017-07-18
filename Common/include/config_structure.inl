@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -289,7 +289,7 @@ inline su2double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
 inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
-inline su2double CConfig::GetRefAreaCoeff(void) { return RefAreaCoeff; }
+inline su2double CConfig::GetRefArea(void) { return RefArea; }
 
 inline su2double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
 
@@ -315,7 +315,7 @@ inline bool CConfig::GetPrestretch(void) { return Prestretch; }
 
 inline string CConfig::GetPrestretch_FEMFileName(void) { return Prestretch_FEMFileName; }
 
-inline su2double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
+inline su2double CConfig::GetRefLength(void) { return RefLength; }
 
 inline su2double CConfig::GetRefElemLength(void) { return RefElemLength; }
 
@@ -323,7 +323,7 @@ inline su2double CConfig::GetRefSharpEdges(void) { return RefSharpEdges; }
 
 inline su2double CConfig::GetDomainVolume(void) { return DomainVolume; }
 
-inline void CConfig::SetRefAreaCoeff(su2double val_area) { RefAreaCoeff = val_area; }
+inline void CConfig::SetRefArea(su2double val_area) { RefArea = val_area; }
 
 inline void CConfig::SetDomainVolume(su2double val_volume) { DomainVolume = val_volume; }
 
@@ -1024,7 +1024,7 @@ inline void CConfig::SetMarker_All_Plotting(unsigned short val_marker, unsigned 
 
 inline void CConfig::SetMarker_All_Analyze(unsigned short val_marker, unsigned short val_analyze) { Marker_All_Analyze[val_marker] = val_analyze; }
 
-inline void CConfig::SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_FSIinterface[val_marker] = val_fsiinterface; }
+inline void CConfig::SetMarker_All_ZoneInterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_ZoneInterface[val_marker] = val_fsiinterface; }
 
 inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short val_DV) { Marker_All_DV[val_marker] = val_DV; }
 
@@ -1056,9 +1056,9 @@ inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker)
 
 inline unsigned short CConfig::GetMarker_All_Analyze(unsigned short val_marker) { return Marker_All_Analyze[val_marker]; }
 
-inline unsigned short CConfig::GetMarker_All_FSIinterface(unsigned short val_marker) { return Marker_All_FSIinterface[val_marker]; }
+inline unsigned short CConfig::GetMarker_All_ZoneInterface(unsigned short val_marker) { return Marker_All_ZoneInterface[val_marker]; }
 
-inline unsigned short CConfig::GetMarker_n_FSIinterface(void) { return nMarker_FSIinterface; }
+inline unsigned short CConfig::GetMarker_n_ZoneInterface(void) { return nMarker_ZoneInterface; }
 
 inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { return Marker_All_DV[val_marker]; }
 
@@ -1260,7 +1260,11 @@ inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model
 
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
 
-inline bool CConfig::GetFrozen_Visc(void) { return Frozen_Visc; }
+inline bool CConfig::GetFrozen_Visc_Cont(void) { return Frozen_Visc_Cont; }
+
+inline bool CConfig::GetFrozen_Visc_Disc(void) { return Frozen_Visc_Disc; }
+
+inline bool CConfig::GetFrozen_Limiter_Disc(void){ return Frozen_Limiter_Disc; }
 
 inline bool CConfig::GetSens_Remove_Sharp(void) { return Sens_Remove_Sharp; }
 
@@ -1316,7 +1320,7 @@ inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 
-inline bool CConfig::GetWrt_1D_Output(void) { return Wrt_1D_Output; }
+inline bool CConfig::GetWrt_1D_Output(void) { return (Kind_OneD != ONED_NONE); }
 
 inline vector<vector<su2double> > CConfig::GetAeroelastic_np1(unsigned short iMarker) { return Aeroelastic_np1[iMarker]; }
 
@@ -1423,6 +1427,8 @@ inline void CConfig::SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr)
 inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }
 
 inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Output_Verb; }
+
+inline unsigned short CConfig::GetKind_OneD(void) { return Kind_OneD; }
 
 inline unsigned short CConfig::GetnIterFSI(void) { return nIterFSI; }
 
