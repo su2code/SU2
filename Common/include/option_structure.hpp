@@ -626,7 +626,7 @@ enum ENUM_LIMITER {
   BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
   SHARP_EDGES = 2,       /*!< \brief Slope limiter using sharp edges. */
   SOLID_WALL_DISTANCE = 3,       /*!< \brief Slope limiter using wall distance. */
-	VAN_ALBADA = 4         /*!< \brief Slope limiter using wall distance. */
+  VAN_ALBADA = 4         /*!< \brief Slope limiter using Van Albada Method. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
