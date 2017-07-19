@@ -876,10 +876,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0 .
    * \n Format: (shroud1, shroud2, ...)*/
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);
-  /*!\brief SPANWISE_BCINLET_FILENAME \n DESCRIPTION: File containing the inlet spanwise condtions \n DEFAULT: spanwise_BCInlet.dat \ingroup Config */
-  addStringOption("SPANWISE_BCINLET_FILENAME", SpanWise_BCInlet_FileName, string("spanwise_BCInlet.dat"));
-  /*!\brief SPANWISE_BCOUTLET_FILENAME \n DESCRIPTION: File containing the outlet spanwise condtions \n DEFAULT: spanwise_BCOutlet.dat \ingroup Config */
-  addStringOption("SPANWISE_BCOUTLET_FILENAME", SpanWise_BCOutlet_FileName, string("spanwise_BCOutlet.dat"));
+  /*!\brief SPANWISE_BC_INLET_FILENAME \n DESCRIPTION: File containing the inlet spanwise condtions \n DEFAULT: spanwise_BCInlet.dat \ingroup Config */
+  addStringOption("SPANWISE_BC_INLET_FILENAME", SpanWise_BCInlet_FileName, string("spanwise_BCInlet.dat"));
+  /*!\brief SPANWISE_BC_OUTLET_FILENAME \n DESCRIPTION: File containing the outlet spanwise condtions \n DEFAULT: spanwise_BCOutlet.dat \ingroup Config */
+  addStringOption("SPANWISE_BC_OUTLET_FILENAME", SpanWise_BCOutlet_FileName, string("spanwise_BCOutlet.dat"));
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s)
    * \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet, Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
