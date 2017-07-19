@@ -3382,7 +3382,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-   virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
+  virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief A virtual member.
@@ -3988,7 +4002,11 @@ protected:
              **AverageOmega,
              **ExtAverageNu,
              **ExtAverageKine,
-             **ExtAverageOmega;
+             **ExtAverageOmega,
+             **TotalPressure_BC,
+             **TotalTemperature_BC,
+             **FlowAngle_BC,
+             **Pressure_BC;
 
   su2double  **DensityIn,
              **PressureIn,
@@ -5941,6 +5959,20 @@ public:
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
   void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+
+  /*!
+   * \brief It reads the spanwise inlet conditions from the input file and, if necessary, it interpolates these values on the Inlet spanwsie grid division.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief It reads the spanwise outlet conditions from the input file and, if necessary, it interpolates these values on the outlet spanwsie grid division.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Provide the average density at the boundary of interest.

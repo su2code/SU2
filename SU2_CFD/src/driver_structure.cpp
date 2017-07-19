@@ -2786,7 +2786,11 @@ void CDriver::TurbomachineryPreprocessing(){
 
     }
   }
+  if (config_container[ZONE_0]->GetBoolSpanwiseBC_Inlet())
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->PreprocessSpanWiceBC_Inlet(config_container[ZONE_0],geometry_container[ZONE_0][MESH_0]);
 
+  if (config_container[ZONE_0]->GetBoolSpanwiseBC_Outlet())
+    solver_container[nZone -1][MESH_0][FLOW_SOL]->PreprocessSpanWiceBC_Inlet(config_container[nZone -1],geometry_container[nZone -1][MESH_0]);
 }
 
 void CDriver::StartSolver() {
