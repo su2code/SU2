@@ -365,6 +365,7 @@ private:
   unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
   su2double
   CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
+  CFLRedCoeff_Heat,		/*!< \brief CFL reduction coefficient for heat equation. */
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
@@ -424,7 +425,8 @@ private:
   Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
   Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
-  Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
+  Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the heat equations. */
+  Kind_TimeStep_Heat, /*!< \brief Time stepping method for the heat equation. */
   Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -3462,13 +3464,22 @@ public:
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
-   *        for the flow equations.
+   *        for the heat equation.
    * \note This value is obtained from the config file, and it is constant
    *       during the computation.
-   * \return Kind of integration scheme for the plasma equations.
+   * \return Kind of integration scheme for the heat equation.
    */
   unsigned short GetKind_TimeIntScheme_Heat(void);
-  
+    
+  /*!
+   * \brief Get the kind of time stepping
+   *        for the heat equation.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of time stepping for the heat equation.
+   */
+  unsigned short GetKind_TimeStep_Heat(void);
+
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.
@@ -5291,6 +5302,12 @@ public:
    * \return Value of the CFL reduction in LevelSet problems.
    */
   su2double GetCFLRedCoeff_Turb(void);
+
+  /*!
+   * \brief Value of the CFL reduction for heat equation.
+   * \return Value of the CFL reduction for heat equation.
+   */
+  su2double GetCFLRedCoeff_Heat(void);
   
   /*!
    * \brief Get the flow direction unit vector at an inlet boundary.

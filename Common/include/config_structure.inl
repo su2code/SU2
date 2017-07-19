@@ -877,6 +877,8 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_Wave(void) { return Kind_Ti
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Heat(void) { return Kind_TimeIntScheme_Heat; }
 
+inline unsigned short CConfig::GetKind_TimeStep_Heat(void) { return Kind_TimeStep_Heat; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_Poisson(void) { return Kind_TimeIntScheme_Poisson; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_FEA(void) { return Kind_TimeIntScheme_FEA; }
@@ -1237,6 +1239,8 @@ inline su2double CConfig::GetCM_Target(void) { return CM_Target; }
 inline su2double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 
 inline su2double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
+
+inline su2double CConfig::GetCFLRedCoeff_Heat(void) { return CFLRedCoeff_Heat; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 

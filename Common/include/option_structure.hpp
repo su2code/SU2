@@ -706,6 +706,21 @@ static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_T
 ("CLASSICAL_RK4_EXPLICIT", CLASSICAL_RK4_EXPLICIT);
 
 /*!
+ * \brief type of heat timestep calculation
+ */
+enum ENUM_HEAT_TIMESTEP {
+  MINIMUM = 1, /*!< \brief Local time stepping based on minimum lambda.*/
+  CONVECTIVE = 2, /*!< \brief Local time stepping based on convective spectral radius.*/
+  VISCOUS = 3, /*!< \brief Local time stepping based on viscous spectral radius.*/
+  BYFLOW = 4, /*!< \brief Unsing the mean solvers time step. */
+};
+static const map<string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = CCreateMap<string, ENUM_HEAT_TIMESTEP>
+("LOCAL", MINIMUM)
+("CONVECTIVE", CONVECTIVE)
+("VISCOUS", VISCOUS)
+("BYFLOW", BYFLOW);
+
+/*!
  * \brief type of time integration schemes
  */
 enum ENUM_TIME_INT_FEA {

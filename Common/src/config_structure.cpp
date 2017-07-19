@@ -916,6 +916,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
+  /* DESCRIPTION: Reduction factor of the CFL coefficient in the heat equation */
+  addDoubleOption("CFL_REDUCTION_HEAT", CFLRedCoeff_Heat, 1.0);
   /* DESCRIPTION: Number of total iterations */
   addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
   /* DESCRIPTION: External iteration offset due to restart */
@@ -959,6 +961,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, NEWMARK_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
+  /* DESCRIPTION: Time discretization */
+  addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
 

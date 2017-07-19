@@ -1402,7 +1402,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double *Normal, Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb,
       thermal_conductivity, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
-  su2double Global_Delta_Time, Local_Delta_Time, Local_Delta_Time_Visc, K_v = 0.25;
+  su2double Global_Delta_Time, Local_Delta_Time, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
 
   laminar_viscosity = config->GetViscosity_FreeStreamND();
@@ -1414,6 +1414,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   /*--- Compute spectral radius based on thermal conductivity ---*/
 
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  CFL_Reduction = config->GetCFLRedCoeff_Heat();
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     node[iPoint]->SetMax_Lambda_Inv(0.0);
@@ -1500,18 +1501,31 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
     if (Vol != 0.0) {
 
       if(flow)
-        Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
+        Local_Delta_Time_Inv = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
       else
-        Local_Delta_Time = config->GetCFL(iMesh)*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+        Local_Delta_Time_Inv = Min_Delta_Time;
 
-      //Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
-      //Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
+      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+
+      /*--- Time step setting method ---*/
+
+      if (config->GetKind_TimeStep_Heat() == MINIMUM)
+        Local_Delta_Time = min(Local_Delta_Time_Inv, Local_Delta_Time_Visc);
+      else if (config->GetKind_TimeStep_Heat() == CONVECTIVE)
+        Local_Delta_Time = Local_Delta_Time_Inv;
+      else if (config->GetKind_TimeStep_Heat() == VISCOUS)
+        Local_Delta_Time = Local_Delta_Time_Visc;
+      else if (config->GetKind_TimeStep_Heat() == BYFLOW)
+        Local_Delta_Time = solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
+
+      /*--- Min-Max-Logic ---*/
+
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
       Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
-      node[iPoint]->SetDelta_Time(Local_Delta_Time);
+      node[iPoint]->SetDelta_Time(CFL_Reduction*Local_Delta_Time);
     }
     else {
       node[iPoint]->SetDelta_Time(0.0);
