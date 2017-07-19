@@ -639,11 +639,11 @@ void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_containe
 }
 
 
-void CTurbSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
-  switch(config->GetKind_Data_NRBC(Marker_Tag))
+  switch(config->GetKind_Data_Giles(Marker_Tag))
   {
   case TOTAL_CONDITIONS_PT:case TOTAL_CONDITIONS_PT_1D: case DENSITY_VELOCITY:
     BC_Inlet_Turbo(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);

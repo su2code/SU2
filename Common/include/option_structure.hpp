@@ -780,7 +780,7 @@ enum BC_TYPE {
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
-  NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
+  GILES_BOUNDARY= 37,   /*!< \brief Giles Boundary definition. */
   INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
   FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
@@ -851,7 +851,7 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D);
 
 
-static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
+static const map<string, RIEMANN_TYPE> Giles_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
 ("DENSITY_VELOCITY", DENSITY_VELOCITY)
 ("STATIC_PRESSURE", STATIC_PRESSURE)
@@ -2863,7 +2863,7 @@ public:
 };
 
 template <class Tenum>
-class COptionNRBC : public COptionBase{
+class COptionGiles : public COptionBase{
 
   map<string, Tenum> m;
   unsigned short & size;
@@ -2877,12 +2877,12 @@ class COptionNRBC : public COptionBase{
   su2double * & relfac2;
 
 public:
-  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relfac1, su2double* & relfac2) : size(nMarker_NRBC),
-  	  	  	  	  marker(Marker_NRBC), field(option_field), var1(var1), var2(var2), flowdir(FlowDir), relfac1(relfac1), relfac2(relfac2) {
+  COptionGiles(string option_field_name, unsigned short & nMarker_Giles, string* & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relfac1, su2double* & relfac2) : size(nMarker_Giles),
+  	  	  	  	  marker(Marker_Giles), field(option_field), var1(var1), var2(var2), flowdir(FlowDir), relfac1(relfac1), relfac2(relfac2) {
     this->name = option_field_name;
     this->m = m;
   }
-  ~COptionNRBC() {};
+  ~COptionGiles() {};
 
   string SetValue(vector<string> option_value) {
 
@@ -2944,32 +2944,32 @@ public:
 
       istringstream ss_1st(option_value[9*i + 2]);
       if (!(ss_1st >> this->var1[i])) {
-        return badValue(option_value, "NRBC", this->name);
+        return badValue(option_value, "Giles BC", this->name);
       }
       istringstream ss_2nd(option_value[9*i + 3]);
       if (!(ss_2nd >> this->var2[i])) {
-        return badValue(option_value, "NRBC", this->name);
+        return badValue(option_value, "Giles BC", this->name);
       }
       istringstream ss_3rd(option_value[9*i + 4]);
       if (!(ss_3rd >> this->flowdir[i][0])) {
-        return badValue(option_value, "NRBC", this->name);
+        return badValue(option_value, "Giles BC", this->name);
       }
       istringstream ss_4th(option_value[9*i + 5]);
       if (!(ss_4th >> this->flowdir[i][1])) {
-        return badValue(option_value, "NRBC", this->name);
+        return badValue(option_value, "Giles BC", this->name);
       }
       istringstream ss_5th(option_value[9*i + 6]);
       if (!(ss_5th >> this->flowdir[i][2])) {
-        return badValue(option_value, "NRBC", this->name);
+        return badValue(option_value, "Giles BC", this->name);
       }
       istringstream ss_6th(option_value[9*i + 7]);
-			if (!(ss_6th >> this->relfac1[i])) {
-				return badValue(option_value, "NRBC", this->name);
-			}
-			istringstream ss_7th(option_value[9*i + 8]);
-			if (!(ss_7th >> this->relfac2[i])) {
-				return badValue(option_value, "NRBC", this->name);
-			}
+      if (!(ss_6th >> this->relfac1[i])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
+      istringstream ss_7th(option_value[9*i + 8]);
+      if (!(ss_7th >> this->relfac2[i])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
     }
 
     return "";
