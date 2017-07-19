@@ -614,7 +614,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   unsigned long iPoint, total_index;
   su2double Delta, Vol, density_old = 0.0, density = 0.0;
   
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
@@ -1352,7 +1352,8 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   
   unsigned long iPoint;
   unsigned long ExtIter      = config->GetExtIter();
-  bool limiter_flow          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool disc_adjoint         = config->GetDiscrete_Adjoint();
+  bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -2344,7 +2345,9 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
         if (geometry->node[iPoint]->GetDomain()) {
           
@@ -2358,8 +2361,6 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
           /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
           for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
-
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
             for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
@@ -2397,6 +2398,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
             
             for (iVar = 0; iVar < nVar; iVar++)
               Residual[iVar] += weight*tmp_residual[iVar];
+            
           }
 
           /*--- Add Residuals and Jacobians ---*/
@@ -2835,7 +2837,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   unsigned long iPoint;
 
   unsigned long ExtIter      = config->GetExtIter();
-  bool limiter_flow          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool disc_adjoint         = config->GetDiscrete_Adjoint();
+  bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -3349,7 +3352,9 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
         if (geometry->node[iPoint]->GetDomain()) {
 
@@ -3364,8 +3369,6 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
           
           for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
             
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
             for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
