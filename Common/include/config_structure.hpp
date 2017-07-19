@@ -192,8 +192,8 @@ private:
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
   nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
   nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
-  nMarker_NRBC,					/*!< \brief Number of NRBC flow markers. */
-  nRelaxFactor_NRBC,    /*!< \brief Number of relaxation factors for NRBC markers. */
+  nMarker_Giles,					/*!< \brief Number of Giles flow markers. */
+  nRelaxFactor_Giles,                                   /*!< \brief Number of relaxation factors for Giles markers. */
   nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
   nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
   nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
@@ -233,8 +233,8 @@ private:
   *Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
   *Marker_Inlet,					/*!< \brief Inlet flow markers. */
   *Marker_Riemann,					/*!< \brief Riemann markers. */
-  *Marker_NRBC,					/*!< \brief NRBC markers. */
-  *Marker_Shroud,/*!< \brief Shroud markers. */
+  *Marker_Giles,					/*!< \brief Giles markers. */
+  *Marker_Shroud,                                       /*!< \brief Shroud markers. */
   *Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
   *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
   *Marker_Outlet,					/*!< \brief Outlet flow markers. */
@@ -258,8 +258,8 @@ private:
   su2double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
   su2double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
   su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
-  su2double *NRBC_Var1, *NRBC_Var2, *RelaxFactorAverage, *RelaxFactorFourier;    /*!< \brief Specified values for NRBC boundary. */
-  su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
+  su2double *Giles_Var1, *Giles_Var2, *RelaxFactorAverage, *RelaxFactorFourier;    /*!< \brief Specified values for Giles BC. */
+  su2double **Giles_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Giles BC. */
   su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
   su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
   su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
@@ -468,7 +468,7 @@ private:
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
-  Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
+  Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_Giles;           /*!< \brief Kind of inlet boundary treatment. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
@@ -612,7 +612,7 @@ private:
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
   *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
   *CFL_AdaptParam,      /*!< \brief Information about the CFL ramp. */
-  *RelaxFactor_NRBC,      /*!< \brief Information about the under relaxation factor for NRBC. */
+  *RelaxFactor_Giles,      /*!< \brief Information about the under relaxation factor for Giles BC. */
   *CFL,
   *HTP_Axis,      /*!< \brief Location of the HTP axis. */
   DomainVolume;		/*!< \brief Volume of the computational grid. */
@@ -849,7 +849,7 @@ private:
   *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit,          /*!< \brief Default incremental criteria array for the COption class. */
-  *default_extrarelfac;       /*!< \brief Default extra relaxation factor for NRBC in the COption class. */
+  *default_extrarelfac;       /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
@@ -865,7 +865,7 @@ private:
   su2double FinalOutletPressure; /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
   su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
-  su2double *ExtraRelFacNRBC; /*!< \brief coefficient for extra relaxation factor for NRBC */
+  su2double *ExtraRelFacGiles; /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
@@ -1093,11 +1093,11 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   template <class Tenum>
-  void addNRBCOption(const string name, unsigned short & nMarker_NRBC, string * & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> & enum_map,
+  void addGilesOption(const string name, unsigned short & nMarker_Giles, string * & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                      su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionNRBC<Tenum>(name, nMarker_NRBC, Marker_NRBC, option_field, enum_map, var1, var2, FlowDir, relaxfactor1, relaxfactor2);
+    COptionBase* val = new COptionGiles<Tenum>(name, nMarker_Giles, Marker_Giles, option_field, enum_map, var1, var2, FlowDir, relaxfactor1, relaxfactor2);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -3842,10 +3842,10 @@ public:
   su2double GetMixedout_Coeff(unsigned short iCoeff);
 
   /*!
-   * \brief Get extra relaxation factor coefficients.
+   * \brief Get extra relaxation factor coefficients for the Giels BC.
    * \return mixedout coefficient.
    */
-  su2double GetExtraRelFacNRBC(unsigned short iCoeff);
+  su2double GetExtraRelFacGiles(unsigned short iCoeff);
 
   /*!
    * \brief Get mach limit for average massflow-based procedure .
@@ -3926,10 +3926,10 @@ public:
   void SetnBlades(unsigned short val_iZone, su2double nblades);
 
   /*!
-   * \brief Verify if there is any Non Reflecting Boundary Condition option specified from config file.
+   * \brief Verify if there is any Giles Boundary Condition option specified from config file.
    * \return boolean.
    */
-  bool GetBoolNRBC(void);
+  bool GetBoolGiles(void);
   
   /*!
    * \brief Verify if there is any Riemann Boundary Condition option specified from config file.
@@ -5562,7 +5562,6 @@ public:
    * \param[in] val_marker - Index corresponding to the Riemann boundary.
    * \return The var2
    */
-  
   su2double GetRiemann_Var2(string val_marker);
   
   /*!
@@ -5580,53 +5579,52 @@ public:
   unsigned short GetKind_Data_Riemann(string val_marker);
   
   /*!
-   * \brief Get the var 1 at NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
+   * \brief Get the var 1 for the Giels BC.
+   * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The var1
    */
-  su2double GetNRBC_Var1(string val_marker);
+  su2double GetGiles_Var1(string val_marker);
   
   /*!
-   * \brief Get the var 2 at NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
+   * \brief Get the var 2 for the Giles boundary.
+   * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The var2
    */
-  
-  su2double GetNRBC_Var2(string val_marker);
+  su2double GetGiles_Var2(string val_marker);
   
   /*!
-   * \brief Get the Flowdir at NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
+   * \brief Get the Flowdir for the Giles BC.
+   * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The Flowdir
    */
-  su2double* GetNRBC_FlowDir(string val_marker);
+  su2double* GetGiles_FlowDir(string val_marker);
   
   /*!
-   * \brief Get Kind Data of NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
+   * \brief Get Kind Data for the Giles BC.
+   * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return Kind data
    */
-  unsigned short GetKind_Data_NRBC(string val_marker);
+  unsigned short GetKind_Data_Giles(string val_marker);
   
   /*!
-   * \brief Set the var 1 at NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
+   * \brief Set the var 1 for Giles BC.
+   * \param[in] val_marker - Index corresponding to the Giles BC.
    */
-  void SetNRBC_Var1(su2double newVar1, string val_marker);
+  void SetGiles_Var1(su2double newVar1, string val_marker);
 
   /*!
-   * \brief Get the relax factor for the average component at NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
+   * \brief Get the relax factor for the average component for the Giles BC.
+   * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The relax factor for the average component
    */
-  su2double GetNRBC_RelaxFactorAverage(string val_marker);
+  su2double GetGiles_RelaxFactorAverage(string val_marker);
 
   /*!
-   * \brief Get the relax factor for the fourier component at NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
+   * \brief Get the relax factor for the fourier component for the Giles BC.
+   * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The relax factor for the fourier component
    */
-  su2double GetNRBC_RelaxFactorFourier(string val_marker);
+  su2double GetGiles_RelaxFactorFourier(string val_marker);
 
   /*!
    * \brief Get the outlet pressure imposed as BC for internal flow.

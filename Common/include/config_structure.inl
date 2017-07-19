@@ -957,7 +957,7 @@ inline bool CConfig::GetRampOutletPressure(void) { return RampOutletPressure;}
 
 inline su2double CConfig::GetMixedout_Coeff(unsigned short iCoeff) { return Mixedout_Coeff[iCoeff];}
 
-inline su2double CConfig::GetExtraRelFacNRBC(unsigned short iCoeff) { return ExtraRelFacNRBC[iCoeff];}
+inline su2double CConfig::GetExtraRelFacGiles(unsigned short iCoeff) { return ExtraRelFacGiles[iCoeff];}
 
 inline su2double CConfig::GetAverageMachLimit(void) { return AverageMachLimit;}
 
@@ -983,7 +983,7 @@ inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[
 
 inline void CConfig::SetnBlades(unsigned short val_iZone, su2double nblades) { nBlades[val_iZone] = nblades;}
 
-inline bool CConfig::GetBoolNRBC(void) { return (nMarker_NRBC!=0);}
+inline bool CConfig::GetBoolGiles(void) { return (nMarker_Giles!=0);}
 
 inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0);}
 

@@ -4099,11 +4099,11 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
               exit(EXIT_FAILURE);
             }
             break;
-          case NRBC_BOUNDARY:
+          case GILES_BOUNDARY:
             Marker_Tag         = config_container[iZone]->GetMarker_All_TagBound(iMarker);
-            KindBCOption       = config_container[iZone]->GetKind_Data_NRBC(Marker_Tag);
+            KindBCOption       = config_container[iZone]->GetKind_Data_Giles(Marker_Tag);
             if(KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D || KindBCOption == RADIAL_EQUILIBRIUM ){
-              config_container[iZone]->SetNRBC_Var1(outPres, Marker_Tag);
+              config_container[iZone]->SetGiles_Var1(outPres, Marker_Tag);
             }
             break;
           }

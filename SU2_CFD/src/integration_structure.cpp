@@ -94,10 +94,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/
 
-  if (config->GetBoolNRBC() && config->GetSpatialFourier()){
-    solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], INFLOW);
+  if (config->GetBoolGiles() && config->GetSpatialFourier()){
+    solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], INFLOW);
 
-    solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
+    solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
   }
 
 
@@ -133,8 +133,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case SUPERSONIC_OUTLET:
         solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
-      case NRBC_BOUNDARY:
-      	solver_container[MainSolver]->BC_NonReflecting(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      case GILES_BOUNDARY:
+        solver_container[MainSolver]->BC_Giles(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	break;
       case RIEMANN_BOUNDARY:
       	if (config->GetBoolTurbomachinery()){

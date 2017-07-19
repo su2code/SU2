@@ -150,7 +150,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   NuOut                         = NULL;
 
 
-  /*--- Initialize quantities for NRBC ---*/
+  /*--- Initialize quantities for Giles BC---*/
 
   CkInflow                      = NULL;
   CkOutflow1                    = NULL;
@@ -326,7 +326,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   NuOut                         = NULL;
 
 
-  /*--- Initialize quantities for NRBC ---*/
+  /*--- Initialize quantities for Giles BC---*/
 
   CkInflow                      = NULL;
   CkOutflow1                    = NULL;
@@ -1402,7 +1402,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
 
   /*--- Initialize quantities for NR BC ---*/
 
-  if(config->GetBoolNRBC()){
+  if(config->GetBoolGiles()){
 
     CkInflow= new complex<su2double>** [nMarker];
     CkOutflow1= new complex<su2double>** [nMarker];
@@ -11513,7 +11513,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag) {
+void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag) {
   /* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
   su2double cj_inf,cj_out1, cj_out2, Density_i, Pressure_i, *turboNormal, *turboVelocity, *Velocity_i, AverageSoundSpeed;
   su2double *deltaprim, *cj, TwoPiThetaFreq_Pitch, pitch, theta, deltaTheta;
@@ -11671,7 +11671,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 
 }
 
-void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
+void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, iVar, jVar, iSpan;
   unsigned long  iPoint, Point_Normal, oldVertex, k, kend, kend_max;
@@ -11688,8 +11688,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
-  su2double relfacAvgCfg       = config->GetNRBC_RelaxFactorAverage(Marker_Tag);
-  su2double relfacFouCfg       = config->GetNRBC_RelaxFactorFourier(Marker_Tag);
+  su2double relfacAvgCfg       = config->GetGiles_RelaxFactorAverage(Marker_Tag);
+  su2double relfacFouCfg       = config->GetGiles_RelaxFactorFourier(Marker_Tag);
   su2double *Normal;
   su2double TwoPiThetaFreq_Pitch, pitch,theta;
   su2double *SpanWiseValues = NULL;
@@ -11741,8 +11741,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Compute coeff for under relaxation of Avg and Fourier Coefficient for hub and shroud---*/
   if (nDim == 3){
-    extrarelfacAvg  = config->GetExtraRelFacNRBC(0);
-    spanPercent     = config->GetExtraRelFacNRBC(1);
+    extrarelfacAvg  = config->GetExtraRelFacGiles(0);
+    spanPercent     = config->GetExtraRelFacGiles(1);
     Turbo_Flag      = config->GetMarker_All_TurbomachineryFlag(val_marker);
     SpanWiseValues  = geometry->GetSpanWiseValue(Turbo_Flag);
     deltaSpan       = SpanWiseValues[nSpanWiseSections-1]*spanPercent;
@@ -11787,14 +11787,14 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
     kend_max = geometry->GetnFreqSpanMax(config->GetMarker_All_TurbomachineryFlag(val_marker));
     conv_numerics->GetRMatrix(AverageSoundSpeed, AverageDensity[val_marker][iSpan], R_Matrix);
 
-    switch(config->GetKind_Data_NRBC(Marker_Tag)){
+    switch(config->GetKind_Data_Giles(Marker_Tag)){
 
     case TOTAL_CONDITIONS_PT:
 
       /*--- Retrieve the specified total conditions for this inlet. ---*/
-      P_Total  = config->GetNRBC_Var1(Marker_Tag);
-      T_Total  = config->GetNRBC_Var2(Marker_Tag);
-      FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
+      P_Total  = config->GetGiles_Var1(Marker_Tag);
+      T_Total  = config->GetGiles_Var2(Marker_Tag);
+      FlowDir = config->GetGiles_FlowDir(Marker_Tag);
       alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
 
       gammaIn_BC = 0;
@@ -11813,7 +11813,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 
       /* --- Computes the inverse matrix R_c --- */
-      conv_numerics->ComputeResJacobianNRBC(FluidModel, AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageTurboVelocity[val_marker][iSpan], alphaIn_BC, gammaIn_BC, R_c, R_c_inv);
+      conv_numerics->ComputeResJacobianGiles(FluidModel, AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageTurboVelocity[val_marker][iSpan], alphaIn_BC, gammaIn_BC, R_c, R_c_inv);
 
       FluidModel->SetTDState_Prho(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan]);
       AverageEnthalpy = FluidModel->GetStaticEnergy() + AveragePressure[val_marker][iSpan]/AverageDensity[val_marker][iSpan];
@@ -11846,9 +11846,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
     case TOTAL_CONDITIONS_PT_1D:
 
       /*--- Retrieve the specified total conditions for this inlet. ---*/
-      P_Total  = config->GetNRBC_Var1(Marker_Tag);
-      T_Total  = config->GetNRBC_Var2(Marker_Tag);
-      FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
+      P_Total  = config->GetGiles_Var1(Marker_Tag);
+      T_Total  = config->GetGiles_Var2(Marker_Tag);
+      FlowDir = config->GetGiles_FlowDir(Marker_Tag);
       alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
 
       gammaIn_BC = 0;
@@ -11868,7 +11868,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 
       /* --- Computes the inverse matrix R_c --- */
-      conv_numerics->ComputeResJacobianNRBC(FluidModel, AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageTurboVelocity[val_marker][iSpan], alphaIn_BC, gammaIn_BC, R_c, R_c_inv);
+      conv_numerics->ComputeResJacobianGiles(FluidModel, AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageTurboVelocity[val_marker][iSpan], alphaIn_BC, gammaIn_BC, R_c, R_c_inv);
 
       FluidModel->SetTDState_Prho(AveragePressure[val_marker][nSpanWiseSections], AverageDensity[val_marker][nSpanWiseSections]);
       AverageEnthalpy = FluidModel->GetStaticEnergy() + AveragePressure[val_marker][nSpanWiseSections]/AverageDensity[val_marker][nSpanWiseSections];
@@ -11990,7 +11990,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 
     case STATIC_PRESSURE:
-      Pressure_e = config->GetNRBC_Var1(Marker_Tag);
+      Pressure_e = config->GetGiles_Var1(Marker_Tag);
       Pressure_e /= config->GetPressure_Ref();
 
       /* --- Compute avg characteristic jump  --- */
@@ -12004,7 +12004,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       break;
 
     case STATIC_PRESSURE_1D:
-      Pressure_e = config->GetNRBC_Var1(Marker_Tag);
+      Pressure_e = config->GetGiles_Var1(Marker_Tag);
       Pressure_e /= config->GetPressure_Ref();
 
       /* --- Compute avg characteristic jump  --- */
@@ -12112,7 +12112,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       pitch      = geometry->GetMaxAngularCoord(val_marker, iSpan) - geometry->GetMinAngularCoord(val_marker,iSpan);
       theta      = geometry->turbovertex[val_marker][iSpan][iVertex]->GetRelAngularCoord();
 
-      switch(config->GetKind_Data_NRBC(Marker_Tag))
+      switch(config->GetKind_Data_Giles(Marker_Tag))
       {
 
       //Done, generilize for 3D case
@@ -12210,10 +12210,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
       case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case SPANWISE_STATIC_PRESSURE:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D:
 
-        /* --- implementation of NRBC ---*/
+        /* --- implementation of Giles BC---*/
         if(config->GetSpatialFourier()){
           if (AvgMach > 1.0){
-            /* --- supersonic NRBC implementation ---*/
+            /* --- supersonic Giles implementation ---*/
             if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
               GilesBeta= -sqrt(AvgMach - 1.0);
 
@@ -12234,7 +12234,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
             }
           }else{
 
-            /* --- subsonic NRBC implementation ---*/
+            /* --- subsonic Giles implementation ---*/
             Beta_inf= I*complex<su2double>(sqrt(1.0  - AvgMach));
             cOutjs 	= complex<su2double>(0.0,0.0);
             for(k=0; k < 2*kend_max+1; k++){
@@ -12293,7 +12293,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         break;
 
       default:
-        cout << "Warning! Invalid NRBC input!" << endl;
+        cout << "Warning! Invalid Giles input!" << endl;
         exit(EXIT_FAILURE);
         break;
 
@@ -16067,7 +16067,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
           Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
-          if(config->GetBoolNRBC() || config->GetBoolRiemann()){
+          if(config->GetBoolGiles() || config->GetBoolRiemann()){
             if(config->GetBoolRiemann()){
               if(config->GetKind_Data_Riemann(Marker_Tag) == RADIAL_EQUILIBRIUM){
                 RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetRiemann_Var1(Marker_Tag)/config->GetPressure_Ref();
@@ -16086,8 +16086,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               }
             }
             else{
-              if(config->GetKind_Data_NRBC(Marker_Tag) == RADIAL_EQUILIBRIUM){
-                RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetNRBC_Var1(Marker_Tag)/config->GetPressure_Ref();
+              if(config->GetKind_Data_Giles(Marker_Tag) == RADIAL_EQUILIBRIUM){
+                RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetGiles_Var1(Marker_Tag)/config->GetPressure_Ref();
                 for (iSpan= nSpanWiseSections/2; iSpan < nSpanWiseSections-1; iSpan++){
                   Radius2    = geometry->GetTurboRadius(iMarker,iSpan+1);
                   Radius1    = geometry->GetTurboRadius(iMarker,iSpan);
@@ -16716,9 +16716,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   TurboVelocityOut              = NULL;
 
 
-  /*--- Initialize quantities for NRBC ---*/
+  /*--- Initialize quantities for Giles BC ---*/
 
-  CkInflow				= NULL;
+  CkInflow                      = NULL;
   CkOutflow1			= NULL;
   CkOutflow2			= NULL;
 
