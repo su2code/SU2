@@ -9558,7 +9558,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   }
 
   /*--- Get the number of remainder elements after the even division ---*/
-  unsigned long rem_elem = Global_nElem - total_elem_accounted;
+  const unsigned long rem_elem = Global_nElem - total_elem_accounted;
   for (unsigned long i = 0; i<rem_elem; i++) {
     ++npoint_procs[i];
   }
@@ -9625,15 +9625,310 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     elem[i]->AddOffsetGlobalDOFs(offsetRank);
 #endif
 
-
-
-
-
-  /* Determine the number of vertices in the requested zone. The other
-     size information is not used. */
+  /* Determine the global number of vertices in the requested zone.
+     The other size information is not used. */
   cgsize_t sizes[3];
   if(cg_zone_read(fn, iBase, iZone, cgnsname, sizes) != CG_OK) cg_error_exit();
   Global_nPoint = sizes[0];
+
+  /*--- Determine the number of points per rank in cumulative storage format.
+        This is done to avoid that every rank reads all the coordinates.
+        The required coordinates for each rank are later obtained via
+        communication.  ---*/
+  unsigned long totalPointsAccounted = 0;
+  vector<cgsize_t> nPointsPerRank(size+1);
+  for(int i=1; i<=size; ++i) {
+    nPointsPerRank[i]    = Global_nPoint/size;
+    totalPointsAccounted += nPointsPerRank[i];
+  }
+
+  const unsigned long nPointsRem = Global_nPoint - totalPointsAccounted;
+  for(unsigned long i=1; i<=nPointsRem; ++i) ++nPointsPerRank[i];
+
+  nPointsPerRank[0] = 0;
+  for(int i=0; i<size; ++i)
+    nPointsPerRank[i+1] += nPointsPerRank[i];
+
+  /* Determine the number of points that must be read by this rank and
+     allocate the memory for the coordinate buffers. */
+  const cgsize_t nPointsRead = nPointsPerRank[rank+1] - nPointsPerRank[rank];
+  vector<vector<su2double> > coorBuf(nDim, vector<su2double>(nPointsRead));
+
+  /* Loop over the number of dimensions to read the coordinates. Note that
+     the loop starts at 1 and ends at nDim because CGNS requires this. */
+  for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+
+    /* Determine the data type and name of the coordinate. Copy the name
+       of the coordinate in a string for easier comparison. */
+    DataType_t datatype;
+    if(cg_coord_info(fn, iBase, iZone, iDim, &datatype, cgnsname) != CG_OK)
+      cg_error_exit();
+    string coorname = cgnsname;
+
+    /* Check the name of the coordinate and determine the index in coorBuf
+       where to store this coordinate. Normally this should be iDim-1. */
+    unsigned short indC;
+    if(     coorname == "CoordinateX") indC = 0;
+    else if(coorname == "CoordinateY") indC = 1;
+    else if(coorname == "CoordinateZ") indC = 2;
+    else {
+      if(rank == MASTER_NODE) {
+        cout << endl << endl << "   !!! Error !!!" << endl;
+        cout << "Unknown coordinate name, " << coorname
+             << ", encountered in the CGNS file." << endl;
+        cout << " Now exiting..." << endl << endl;
+      }
+
+  #ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+  #else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+  #endif
+    }
+
+    /* Easier storage of the range in the CGNS file. */
+    cgsize_t range_min = nPointsPerRank[rank] + 1;
+    cgsize_t range_max = nPointsPerRank[rank+1];
+
+    /*--- Read the coordinate with the required precision and copy
+          this data to the correct index in coorBuf. ---*/
+    switch( datatype ) {
+      case RealSingle: {
+        /* Single precision used. */
+        vector<float> buf(nPointsRead);
+        if(cg_coord_read(fn, iBase, iZone, cgnsname, datatype, &range_min,
+                         &range_max, buf.data()) != CG_OK) cg_error_exit();
+
+        for(cgsize_t i=0; i<nPointsRead; ++i)
+          coorBuf[indC][i] = buf[i];
+        break;
+      }
+
+      case RealDouble: {
+        /* Double precision used. */
+        vector<double> buf(nPointsRead);
+        if(cg_coord_read(fn, iBase, iZone, cgnsname, datatype, &range_min,
+                         &range_max, buf.data()) != CG_OK) cg_error_exit();
+
+        for(cgsize_t i=0; i<nPointsRead; ++i)
+          coorBuf[indC][i] = buf[i];
+        break;
+      }
+
+      default: {
+        if(rank == MASTER_NODE) {
+          cout << endl << endl << "   !!! Error !!!" << endl;
+          cout << "Datatype for coordinates must be RealSingle or RealDouble, "
+               << "not " << datatype << endl;
+          cout << " Now exiting..." << endl << endl;
+        }
+
+    #ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+    #else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+    #endif
+      }
+    }
+  }
+
+  /* Make a distinction between sequential and parallel mode. */
+#ifdef HAVE_MPI
+  /*--- Parallel mode. Create a vector, which contains the global
+        node IDs of the local elements. ---*/
+  vector<unsigned long> nodeIDsElemLoc;
+  nodeIDsElemLoc.reserve(nDOFsLoc);
+  for(unsigned long i=0; i<locElemCount; ++i) {
+    unsigned short nDOFsElem = elem[i]->GetnNodes();
+    for(unsigned short j=0; j<nDOFsElem; ++j)
+      nodeIDsElemLoc.push_back(elem[i]->GetNode(j));
+  }
+
+  sort(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
+  vector<unsigned long>::iterator lastNode;
+  lastNode = unique(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
+  nodeIDsElemLoc.erase(lastNode, nodeIDsElemLoc.end());
+
+  /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
+  nPoint     = nodeIDsElemLoc.size();
+  nPointNode = nPoint;
+  node = new CPoint*[nPoint];
+
+  /*--- Store the global ID's of the nodes in such a way that they can
+        be sent to the rank that actually stores the coordinates.. ---*/
+  vector<vector<unsigned long> > nodeBuf(size, vector<unsigned long>(0));
+  for(unsigned long i=0; i<nodeIDsElemLoc.size(); ++i) {
+    const cgsize_t nodeID = nodeIDsElemLoc[i];
+    vector<cgsize_t>::iterator low;
+    low = lower_bound(nPointsPerRank.begin(), nPointsPerRank.end(), nodeID);
+    cgsize_t rankNode = low - nPointsPerRank.begin();
+    if(*low > nodeID) --rankNode;
+
+    nodeBuf[rankNode].push_back(nodeIDsElemLoc[i]);
+  }
+
+  /*--- Determine the total number of ranks to which this rank will send
+        a message and also determine the number of ranks from which this
+        rank will receive a message. Furthermore, determine the starting
+        indices where data from the different ranks should be stored in
+        node. ---*/
+  int nRankSend = 0;
+  vector<int> sendToRank(size, 0);
+  vector<unsigned long> startingIndRanksInNode(size+1);
+  startingIndRanksInNode[0] = 0;
+
+  for(int i=0; i<size; ++i) {
+    startingIndRanksInNode[i+1] = startingIndRanksInNode[i] + nodeBuf[i].size();
+
+    if( nodeBuf[i].size() ) {
+      ++nRankSend;
+      sendToRank[i] = 1;
+    }
+  }
+
+  int nRankRecv;
+  vector<int> sizeRecv(size, 1);
+  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  /*--- Send out the messages with the global node numbers. Use nonblocking
+        sends to avoid deadlock. ---*/
+  vector<MPI_Request> sendReqs(nRankSend);
+  nRankSend = 0;
+  for(int i=0; i<size; ++i) {
+    if( nodeBuf[i].size() ) {
+      SU2_MPI::Isend(nodeBuf[i].data(), nodeBuf[i].size(), MPI_UNSIGNED_LONG,
+                     i, i, MPI_COMM_WORLD, &sendReqs[nRankSend]);
+      ++nRankSend;
+    }
+  }
+
+  /* Define the communication buffer for the coordinates and the vector
+     for the return communication requests. */
+  vector<MPI_Request> returnReqs(nRankRecv);
+  vector<vector<su2double> > coorReturnBuf(nRankRecv, vector<su2double>(0));
+
+  /*--- Loop over the number of ranks from which this rank receives global
+        point numbers that should be stored on this rank. ---*/
+  for(int i=0; i<nRankRecv; ++i) {
+
+    /* Block until a message arrives. Determine the source and size
+       of the message. */
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    /* Allocate the memory for a buffer to receive this message and also
+       for the buffer to return to coordinates. */
+    vector<unsigned long> nodeRecvBuf(sizeMess);
+    coorReturnBuf[i].resize(nDim*sizeMess);
+
+    /* Receive the message using a blocking receive. */
+    SU2_MPI::Recv(nodeRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                  source, rank, MPI_COMM_WORLD, &status);
+
+    /*--- Loop over the nodes just received and fill the return communication
+          buffer with the coordinates of the requested nodes. ---*/
+    for(int j=0; j<sizeMess; ++j) {
+      const int jj = nDim*j;
+      const long kk = nodeRecvBuf[j] - nPointsPerRank[rank];
+      if(kk < 0 || kk >= nPointsRead) {
+        cout << "Invalid point requested. This should not happen." << endl;
+        exit(EXIT_FAILURE);
+      }
+
+      for(unsigned short k=0; k<nDim; ++k)
+        coorReturnBuf[i][jj+k] = coorBuf[k][kk];
+    }
+
+    /* Send the buffer just filled back to the requesting rank.
+       Use a non-blocking send to avoid deadlock. */
+    SU2_MPI::Isend(coorReturnBuf[i].data(), coorReturnBuf[i].size(), MPI_DOUBLE,
+                   source, source+1, MPI_COMM_WORLD, &returnReqs[i]);
+  }
+
+  /* Loop over the ranks from which this rank has requested coordinates. */
+  for(int i=0; i<nRankSend; ++i) {
+
+    /* Block until a message arrives. Determine the source of the message. */
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    int source = status.MPI_SOURCE;
+
+    /* Allocate the memory for the coordinate receive buffer. */
+    vector<su2double> coorRecvBuf(nDim*nodeBuf[source].size());
+
+    /* Receive the message using a blocking receive. */
+    SU2_MPI::Recv(coorRecvBuf.data(), coorRecvBuf.size(), MPI_DOUBLE,
+                  source, rank+1, MPI_COMM_WORLD, &status);
+
+    /*--- Make a distinction between 2D and 3D to store the data of the nodes.
+          This data is created by taking the offset of the source rank into
+          account. In this way the nodes are numbered with increading
+          global node ID. ---*/
+    switch ( nDim ) {
+      case 2: {
+        for(unsigned long j=0; j<nodeBuf[source].size(); ++j) {
+          const unsigned long jj = nDim*j;
+          const unsigned long kk = startingIndRanksInNode[source] + j;
+
+          node[kk] = new CPoint(coorRecvBuf[jj], coorRecvBuf[jj+1],
+                                nodeBuf[source][j], config);
+        }
+        break;
+      }
+
+      case 3: {
+        for(unsigned long j=0; j<nodeBuf[source].size(); ++j) {
+          const unsigned long jj = nDim*j;
+          const unsigned long kk = startingIndRanksInNode[source] + j;
+
+          node[kk] = new CPoint(coorRecvBuf[jj], coorRecvBuf[jj+1],
+                                coorRecvBuf[jj+1], nodeBuf[source][j], config);
+        }
+        break;
+      }
+    }
+  }
+
+  /* Complete the non-blocking sends of both rounds. */
+  SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Waitall(returnReqs.size(), returnReqs.data(), MPI_STATUSES_IGNORE);
+
+  /* Wild cards have been used in the communication,
+     so synchronize the ranks to avoid problems.    */
+  MPI_Barrier(MPI_COMM_WORLD);
+
+#else
+  /*--- Sequential mode. Create the data for the points. The global
+        number of points equals the local number of points. ---*/
+  nPoint     = Global_nPoint;
+  nPointNode = nPoint;
+  node = new CPoint*[nPoint];
+
+  switch(nDim) {
+    case 2: {
+      for(unsigned long i=0; i<nPoint; ++i)
+        node[i] = new CPoint(coorBuf[0][i], coorBuf[1][i], i, config);
+      break;
+    }
+
+    case 3: {
+      for(unsigned long i=0; i<nPoint; ++i)
+        node[i] = new CPoint(coorBuf[0][i], coorBuf[1][i], coorBuf[2][i],
+                             i, config);
+      break;
+    }
+  }
+
+#endif
 
 
   /* Close the CGNS file again. */
@@ -10256,7 +10551,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   TotalPositiveZArea = PositiveZArea;
   TotalWettedArea    = WettedArea;
 #endif
-    
+
   if (config->GetRefArea() == 0.0) {
   	if (nDim == 3) config->SetRefArea(TotalPositiveZArea);
   	else config->SetRefArea(TotalPositiveYArea);
