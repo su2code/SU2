@@ -1169,8 +1169,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
   /* DESCRIPTION: Sensitivity smoothing  */
   addEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, NO_SMOOTH);
-  /* DESCRIPTION: Adjoint frozen viscosity */
-  addBoolOption("FROZEN_VISC", Frozen_Visc, true);
+  /* DESCRIPTION: Continuous Adjoint frozen viscosity */
+  addBoolOption("FROZEN_VISC_CONT", Frozen_Visc_Cont, true);
+  /* DESCRIPTION: Discrete Adjoint frozen viscosity */
+  addBoolOption("FROZEN_VISC_DISC", Frozen_Visc_Disc, false);
+  /* DESCRIPTION: Discrete Adjoint frozen limiter */
+  addBoolOption("FROZEN_LIMITER_DISC", Frozen_Limiter_Disc, false);
    /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /*!\brief SENS_REMOVE_SHARP
@@ -3088,16 +3092,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   AD_Mode = YES;
 #else
   if (AD_Mode == YES) {
-    cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
-    cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
+    if (rank == MASTER_NODE){
+      cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
+      cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
+    }
   }
 #endif
 
   if (DiscreteAdjoint) {
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD) {
-      cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
-      cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
+      if (rank == MASTER_NODE){
+        cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
+        cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
+      }
       exit(EXIT_FAILURE);
     }
 #endif
@@ -3111,6 +3119,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       if (Grid_Movement) {
         cout << "Dynamic mesh movement currently not supported for the discrete adjoint solver." << endl;
+        exit(EXIT_FAILURE);
+      }
+
+      if (Unst_AdjointIter- long(nExtIter) < 0){
+        if (rank == MASTER_NODE){
+          cout << "Invalid iteration number requested for unsteady adjoint. " << endl;
+          cout << "Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER." << endl;
+        }
         exit(EXIT_FAILURE);
       }
 
@@ -3128,7 +3144,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
       case RANS:
         Kind_Solver = DISC_ADJ_RANS;
-        Frozen_Visc = false;
         break;
       case NAVIER_STOKES:
         Kind_Solver = DISC_ADJ_NAVIER_STOKES;
@@ -3773,13 +3788,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     	  break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
       case ADJ_NAVIER_STOKES:
-        if (Frozen_Visc)
+        if (Frozen_Visc_Cont)
           cout << "Continuous Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
         else
           cout << "Continuous Navier-Stokes adjoint equations." << endl;
         break;
       case ADJ_RANS:
-        if (Frozen_Visc)
+        if (Frozen_Visc_Cont)
           cout << "Continuous RANS adjoint equations with frozen (laminar and eddy) viscosity." << endl;
         else
           cout << "Continuous RANS adjoint equations." << endl;
@@ -3847,7 +3862,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
     
     if (RefArea == 0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
-    else { cout << "The reference area (force coefficient) is " << RefArea;
+    else { cout << "The reference area is " << RefArea;
     	if (SystemMeasurements == US) cout << " in^2." << endl;
     	else cout << " m^2." << endl;
     }
@@ -3869,7 +3884,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
     else {
-      cout << "Reference origin (moment computation) is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
+      cout << "Reference origin for moment evaluation is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
       cout << "Surface(s) where the force coefficients are evaluated: ";
       for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
         cout << Marker_Monitoring[iMarker_Monitoring];
@@ -4306,7 +4321,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
+    if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc_Cont)) {
       if (Kind_ConvNumScheme_AdjTurb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver (first order) for the adjoint turbulence model."<< endl;
         switch (SpatialOrder_AdjTurb) {
@@ -4354,7 +4369,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
     }
 
-    if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
+    if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc_Cont)) {
       cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
     }
