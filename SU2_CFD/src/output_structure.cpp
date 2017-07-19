@@ -11149,7 +11149,16 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   int *Local_Halo = NULL;
   
   stringstream varname;
+  su2double Pressure,Density, TotalEnthalpy, Entropy, TotalPressure, Enthalpy, Velocity2, SoundSpeed, MachIs, TotalEnthalpyBC;
   
+  CFluidModel* FluidModel = solver[FLOW_SOL]->GetFluidModel();
+
+  /*--- retrieve Total Inlet Enthalpy at the inlet BC ---*/
+  if (turbo) {
+    FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());
+    TotalEnthalpyBC = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+  }
+
   /*--- Set the non-dimensionalization for coefficients. ---*/
   
   if (grid_movement) {
@@ -11317,6 +11326,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
 		}
     Variable_Names.push_back("Mach");
     
+    /*--- Add Entropy, Total Pressure and Isentropic Mach Number---*/
+    if(turbo){
+      nVar_Par += 3;
+      Variable_Names.push_back("Entropy");
+      Variable_Names.push_back("Total_Pressure");
+      Variable_Names.push_back("MachIs");
+    }
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
@@ -11549,6 +11565,35 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity()*config->GetDensity_Ref())); iVar++;
         }
         
+        if(turbo){
+
+          Pressure       = solver[FLOW_SOL]->node[iPoint]->GetPressure();
+          Density        = solver[FLOW_SOL]->node[iPoint]->GetDensity();
+          TotalEnthalpy  = solver[FLOW_SOL]->node[iPoint]->GetEnthalpy();
+
+          FluidModel->SetTDState_Prho(Pressure, Density);
+          Entropy       = FluidModel->GetEntropy();
+          FluidModel->SetTDState_hs(TotalEnthalpy, Entropy);
+          TotalPressure = FluidModel->GetPressure();
+          Velocity2     = solver[FLOW_SOL]->node[iPoint]->GetVelocity2();
+          SoundSpeed    = solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
+          Enthalpy      = TotalEnthalpy - 0.5*Velocity2;
+
+//          if((TotalEnthalpyBC - Enthalpy) >= 0.0)
+//            MachIs        = sqrt(2.0*(TotalEnthalpyBC - Enthalpy))/SoundSpeed;
+//          else
+//            MachIs        = sqrt(2.0*(-TotalEnthalpyBC + Enthalpy))/SoundSpeed;
+
+          if (config->GetTotalPressureIn_BC()/Pressure >= 1.0)
+           MachIs        = sqrt(2.0/(Gamma -1)*(pow((config->GetTotalPressureIn_BC()/Pressure),(Gamma-1)/Gamma)-1.0));
+          else
+            MachIs        = sqrt(2.0/(Gamma -1)*(pow((Pressure/config->GetTotalPressureIn_BC()),(Gamma-1)/Gamma))-1);
+
+          Local_Data[jPoint][iVar] = Entropy; iVar++;
+          Local_Data[jPoint][iVar] = TotalPressure; iVar++;
+          Local_Data[jPoint][iVar] = MachIs; iVar++;
+        }
+
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           
           /*--- Load data for the laminar viscosity. ---*/
