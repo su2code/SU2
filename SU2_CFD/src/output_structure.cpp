@@ -11149,15 +11149,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   int *Local_Halo = NULL;
   
   stringstream varname;
-  su2double Pressure,Density, TotalEnthalpy, Entropy, TotalPressure, Enthalpy, Velocity2, SoundSpeed, MachIs, TotalEnthalpyBC;
+  su2double Pressure,Density, TotalEnthalpy, Entropy, EntropyBC, TotalPressure, Enthalpy, SoundSpeed, MachIs, TotalEnthalpyBC;
   
   CFluidModel* FluidModel = solver[FLOW_SOL]->GetFluidModel();
-
-  /*--- retrieve Total Inlet Enthalpy at the inlet BC ---*/
-  if (turbo) {
-    FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());
-    TotalEnthalpyBC = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-  }
 
   /*--- Set the non-dimensionalization for coefficients. ---*/
   
@@ -11176,6 +11170,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
   factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
   
+  /*--- Retrieve the total inlet enthalpy value and inlet entropy value from the inlet BC data to compute the isentropic Mach number ---*/
+  if (turbo) {
+    FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());
+    TotalEnthalpyBC = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+    EntropyBC       = FluidModel->GetEntropy();
+  }
+
   /*--- Use a switch statement to decide how many solver containers we have
    in this zone for output. ---*/
   
@@ -11565,30 +11566,29 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity()*config->GetDensity_Ref())); iVar++;
         }
         
+        /*--- Compute and store the derived quantities of entropy, total-pressure and isentropic Mach.---*/
         if(turbo){
-
           Pressure       = solver[FLOW_SOL]->node[iPoint]->GetPressure();
           Density        = solver[FLOW_SOL]->node[iPoint]->GetDensity();
           TotalEnthalpy  = solver[FLOW_SOL]->node[iPoint]->GetEnthalpy();
-
+          /*--- compute the entropy values ---*/
           FluidModel->SetTDState_Prho(Pressure, Density);
           Entropy       = FluidModel->GetEntropy();
+
+          /*--- compute the total pressure values ---*/
           FluidModel->SetTDState_hs(TotalEnthalpy, Entropy);
           TotalPressure = FluidModel->GetPressure();
-          Velocity2     = solver[FLOW_SOL]->node[iPoint]->GetVelocity2();
-          SoundSpeed    = solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
-          Enthalpy      = TotalEnthalpy - 0.5*Velocity2;
 
-//          if((TotalEnthalpyBC - Enthalpy) >= 0.0)
-//            MachIs        = sqrt(2.0*(TotalEnthalpyBC - Enthalpy))/SoundSpeed;
-//          else
-//            MachIs        = sqrt(2.0*(-TotalEnthalpyBC + Enthalpy))/SoundSpeed;
-
-          if (config->GetTotalPressureIn_BC()/Pressure >= 1.0)
-           MachIs        = sqrt(2.0/(Gamma -1)*(pow((config->GetTotalPressureIn_BC()/Pressure),(Gamma-1)/Gamma)-1.0));
+          /*--- compute the isentropic Mach values ---*/
+          FluidModel->SetTDState_Ps(Pressure, EntropyBC);
+          SoundSpeed    = FluidModel->GetSoundSpeed();
+          Enthalpy      = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+          if((TotalEnthalpyBC - Enthalpy) >= 0.0)
+            MachIs        = sqrt(2.0*(TotalEnthalpyBC - Enthalpy))/SoundSpeed;
           else
-            MachIs        = sqrt(2.0/(Gamma -1)*(pow((Pressure/config->GetTotalPressureIn_BC()),(Gamma-1)/Gamma))-1);
+            MachIs        = sqrt(2.0*(-TotalEnthalpyBC + Enthalpy))/SoundSpeed;
 
+          /*--- Store the values on the Data container for the solution ---*/
           Local_Data[jPoint][iVar] = Entropy; iVar++;
           Local_Data[jPoint][iVar] = TotalPressure; iVar++;
           Local_Data[jPoint][iVar] = MachIs; iVar++;
