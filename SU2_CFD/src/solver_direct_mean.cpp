@@ -16403,6 +16403,9 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
   int countLine = 0, i;
   unsigned short iMarker, iMarkerTP, iSpan;
 
+  ofstream myfile;
+  string spanwise_performance_filename;
+
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -16410,11 +16413,12 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
   bc_file.open(filename.data(), ios::in);
   if (bc_file.fail()) {
     if (rank == MASTER_NODE)
-      cout << "There is not BC Spanwise intlet file!! "  << filename.data() << "."<< endl;
+      cout << "There isn't any BC Spanwise inflow file!! "  << filename.data() << "."<< endl;
     exit(EXIT_FAILURE);
   }
 
-  /*--- The first line is the header ---*/
+  /*--- Count the number of spanwise values specified from the user to initialize the containers.
+   * Skipping the first line because is the header---*/
   getline(bc_file, text_line);
 
   while (getline (bc_file, text_line)) {
@@ -16434,7 +16438,7 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
 
   bc_file.open(filename.data(), ios::in);
 
-  /*--- The first line is the header ---*/
+  /*--- Retrieve the quantities to imposed from the file---*/
   getline(bc_file, text_line);
   countLine = 0;
   while (getline (bc_file, text_line)) {
@@ -16447,7 +16451,7 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
 
   SpanWiseValues  = geometry->GetSpanWiseValue(INFLOW);
 
-
+  /*--- Compute the values to impose at each spanwise boundary section interpolating from file values---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
     iSpanPercent = (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);
     for(i=0; i<countLine-1; i++){
@@ -16467,20 +16471,35 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
       FlowAngleImposed[iSpan]  = PI_NUMBER/180.0*(FlowAngle[countLine-1]);
     }
   }
-
+  /*--- print a file to check the imposed values ---*/
   if(rank == MASTER_NODE){
-    cout << "Computing SpanWise Values for Inlet BC" << endl;
-    cout << "Span-wise section (%)-" <<"Total Inlet Pressure (Pa)-"<<"Total Inlet Temperature (K)-"<<" Inlet Flow Angle (°)"<<endl;
+    spanwise_performance_filename = "TURBOMACHINERY/imposed_bc_inlet.dat";
+    myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+    myfile.setf(ios::scientific);
+    myfile.precision(12);
 
+    myfile << "TITLE = \"Spanwise Imposed Inflow Values." << endl;
+    myfile << "VARIABLES =" << endl;
+    myfile.width(30); myfile << "\"Spanwise Value[m]\"";
+    myfile.width(21); myfile << "\"iSpan [-]\"";
+    myfile.width(28); myfile << "\"Spanwise extension[%]\"";
+    myfile.width(26); myfile << "\"TotalPressure[Pa]\"";
+    myfile.width(32); myfile << "\"TotalTemperature[K]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle\"";
+    myfile << endl;
     for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
-      cout.width(17); cout << (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);;
-      cout.width(20); cout << PTotalImposed[iSpan]*config->GetPressure_Ref();
-      cout.width(26); cout << TTotalImposed[iSpan]*config->GetTemperature_Ref();
-      cout.width(28); cout << FlowAngleImposed[iSpan]*180/PI_NUMBER;
-      cout << endl;
+      myfile.width(30); myfile << SpanWiseValues[iSpan];
+      myfile.width(15); myfile << iSpan;
+      myfile.width(30); myfile << (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);
+      myfile.width(30); myfile << PTotalImposed[iSpan]*config->GetPressure_Ref();
+      myfile.width(30); myfile << TTotalImposed[iSpan]*config->GetTemperature_Ref();
+      myfile.width(30); myfile << FlowAngleImposed[iSpan]*180/PI_NUMBER;
+      myfile << endl;
     }
+    myfile.close();
   }
 
+  /*--- Store the quantities to impose in the correct boundary containers---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
     for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
@@ -16513,6 +16532,8 @@ void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geome
   int rank = MASTER_NODE;
   int countLine = 0, i;
   unsigned short iMarker, iMarkerTP, iSpan;
+  ofstream myfile;
+  string spanwise_performance_filename;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -16521,11 +16542,12 @@ void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geome
   bc_file.open(filename.data(), ios::in);
   if (bc_file.fail()) {
     if (rank == MASTER_NODE)
-      cout << "There is not BC Spanwise outlet file!! " << filename.data() << "."<< endl;
+      cout << "There isn't any BC Spanwise outflow file!! !! " << filename.data() << "."<< endl;
     exit(EXIT_FAILURE);
   }
 
-  /*--- The first line is the header ---*/
+  /*--- Count the number of spanwise values specified from the user to initialize the containers.
+   * Skipping the first line because is the header---*/
   getline(bc_file, text_line);
 
   while (getline (bc_file, text_line)) {
@@ -16541,7 +16563,7 @@ void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geome
 
   bc_file.open(filename.data(), ios::in);
 
-  /*--- The first line is the header ---*/
+  /*--- Retrieve the quantities to imposed from the file---*/
   getline(bc_file, text_line);
   countLine = 0;
   while (getline (bc_file, text_line)) {
@@ -16554,6 +16576,7 @@ void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geome
 
   SpanWiseValues  = geometry->GetSpanWiseValue(OUTFLOW);
 
+  /*--- Compute the values to impose at each spanwise boundary section interpolating from file values---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
     iSpanPercent = (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);
     for(i=0; i<countLine-1; i++){
@@ -16568,18 +16591,32 @@ void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geome
     }
   }
 
+  /*--- print a file to check the imposed values ---*/
   if(rank == MASTER_NODE){
-    cout << "Computing SpanWise Values for Outlet BC" << endl;
-    cout << "Span-wise section (%)     " <<" Outlet Pressure (Pa)   "<<endl;
+    spanwise_performance_filename = "TURBOMACHINERY/imposed_bc_outlet.dat";
+    myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+    myfile.setf(ios::scientific);
+    myfile.precision(12);
+
+    myfile << "TITLE = \"Spanwise Imposed Outflow Values." << endl;
+    myfile << "VARIABLES =" << endl;
+    myfile.width(30); myfile << "\"Spanwise Value[m]\"";
+    myfile.width(21); myfile << "\"iSpan [-]\"";
+    myfile.width(28); myfile << "\"Spanwise extension[%]\"";
+    myfile.width(21); myfile << "\"Pressure[Pa]\"";
+    myfile << endl;
 
     for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
-      cout.width(17); cout << (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);;
-      cout.width(25); cout << PStaticImposed[iSpan]*config->GetPressure_Ref();
-      cout << endl;
+      myfile.width(30); myfile << SpanWiseValues[iSpan];
+      myfile.width(15); myfile << iSpan;
+      myfile.width(30); myfile << (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);
+      myfile.width(30); myfile << PStaticImposed[iSpan]*config->GetPressure_Ref();
+      myfile << endl;
     }
+    myfile.close();
   }
 
-
+  /*--- Store the quantities to impose in the correct boundary containers---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
     for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
