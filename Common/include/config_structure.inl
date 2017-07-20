@@ -289,7 +289,7 @@ inline su2double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
 inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
-inline su2double CConfig::GetRefAreaCoeff(void) { return RefAreaCoeff; }
+inline su2double CConfig::GetRefArea(void) { return RefArea; }
 
 inline su2double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
 
@@ -315,7 +315,7 @@ inline bool CConfig::GetPrestretch(void) { return Prestretch; }
 
 inline string CConfig::GetPrestretch_FEMFileName(void) { return Prestretch_FEMFileName; }
 
-inline su2double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
+inline su2double CConfig::GetRefLength(void) { return RefLength; }
 
 inline su2double CConfig::GetRefElemLength(void) { return RefElemLength; }
 
@@ -323,7 +323,7 @@ inline su2double CConfig::GetRefSharpEdges(void) { return RefSharpEdges; }
 
 inline su2double CConfig::GetDomainVolume(void) { return DomainVolume; }
 
-inline void CConfig::SetRefAreaCoeff(su2double val_area) { RefAreaCoeff = val_area; }
+inline void CConfig::SetRefArea(su2double val_area) { RefArea = val_area; }
 
 inline void CConfig::SetDomainVolume(su2double val_volume) { DomainVolume = val_volume; }
 
@@ -985,7 +985,7 @@ inline bool CConfig::GetRampOutletPressure(void) { return RampOutletPressure;}
 
 inline su2double CConfig::GetMixedout_Coeff(unsigned short iCoeff) { return Mixedout_Coeff[iCoeff];}
 
-inline su2double CConfig::GetExtraRelFacNRBC(unsigned short iCoeff) { return ExtraRelFacNRBC[iCoeff];}
+inline su2double CConfig::GetExtraRelFacGiles(unsigned short iCoeff) { return ExtraRelFacGiles[iCoeff];}
 
 inline su2double CConfig::GetAverageMachLimit(void) { return AverageMachLimit;}
 
@@ -1007,7 +1007,7 @@ inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[
 
 inline void CConfig::SetnBlades(unsigned short val_iZone, su2double nblades) { nBlades[val_iZone] = nblades;}
 
-inline bool CConfig::GetBoolNRBC(void) { return (nMarker_NRBC!=0);}
+inline bool CConfig::GetBoolGiles(void) { return (nMarker_Giles!=0);}
 
 inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0);}
 

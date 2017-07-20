@@ -619,7 +619,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_ComboObj(CConfig *config);
+  virtual void Evaluate_ObjFunc(CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -887,7 +887,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] marker_flag - Surface marker flag where the function is applied.
    */
-  virtual void PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag);
+  virtual void PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag);
 
   /*!
    * \brief A virtual member.
@@ -898,7 +898,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
+  virtual void BC_Giles(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 	
   /*!
@@ -1338,7 +1338,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
@@ -1431,15 +1431,17 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  virtual void SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
+  virtual void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
   
   /*!
    * \brief A virtual member.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  virtual void AddTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
+  virtual void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
   
   /*!
    * \brief A virtual member.
@@ -2192,9 +2194,9 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   * \return Value of the custom objective function.
    */
-  virtual su2double GetTotal_Custom(void);
+  virtual su2double GetTotal_Custom_ObjFunc(void);
 
   /*!
    * \brief A virtual member.
@@ -3924,7 +3926,7 @@ protected:
   Total_Poly_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_NetCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_BCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
-  Total_Custom,        /*!< \brief Total IDC coefficient for all the boundaries. */
+  Total_Custom_ObjFunc,        /*!< \brief Total custom objective function for all the boundaries. */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
   Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
@@ -4398,7 +4400,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_ComboObj(CConfig *config);
+  void Evaluate_ObjFunc(CConfig *config);
   
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -4526,26 +4528,26 @@ public:
                   CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
 
-	/*!
-	 * \brief Impose the boundary condition using characteristic recostruction.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
+  /*!
+   * \brief Impose the boundary condition using characteristic recostruction.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
    * \param[in] visc_numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container,
-                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container,
+      CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
-	/*!
-	 * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] marker_flag - Surface marker flag where the function is applied.
-	 */
-	void PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics,  unsigned short marker_flag);
+  /*!
+   * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] marker_flag - Surface marker flag where the function is applied.
+   */
+  void PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics,  unsigned short marker_flag);
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -4558,7 +4560,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
+  void BC_Giles(CGeometry *geometry, CSolver **solver_container,
                         CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
   
@@ -5251,10 +5253,10 @@ public:
   su2double GetTotal_DC60(void);
   
   /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
-   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   * \brief Provide the total custom objective function.
+   * \return Value of the custom objective function.
    */
-  su2double GetTotal_Custom(void);
+  su2double GetTotal_Custom_ObjFunc(void);
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.
@@ -5437,16 +5439,18 @@ public:
   void SetTotal_DC60(su2double val_Total_DC60);
   
   /*!
-   * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \brief Set the value of the custom objective function.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  void SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
+  void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
   
   /*!
-   * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \brief Add the value of the custom objective function.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  void AddTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
+  void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
 
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
@@ -8519,7 +8523,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+  void BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
 
   
@@ -12222,7 +12226,7 @@ private:
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
-  su2double Mach, Alpha, Beta, Pressure, Temperature;
+  su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure;
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   
 public:

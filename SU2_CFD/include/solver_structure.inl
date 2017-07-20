@@ -326,7 +326,7 @@ inline su2double CSolver::GetTotal_IDR() { return 0; }
 
 inline su2double CSolver::GetTotal_DC60() { return 0; }
 
-inline su2double CSolver::GetTotal_Custom() { return 0; }
+inline su2double CSolver::GetTotal_Custom_ObjFunc() { return 0; }
 
 inline su2double CSolver::GetTotal_CMx() { return 0; }
 
@@ -444,9 +444,9 @@ inline void CSolver::SetTotal_IDR(su2double val_Total_IDR) { }
 
 inline void CSolver::SetTotal_DC60(su2double val_Total_DC60) { }
 
-inline void CSolver::SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff) { }
+inline void CSolver::SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { }
 
-inline void CSolver::AddTotal_Custom(su2double val_Total_Custom, su2double val_coeff) { }
+inline void CSolver::AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { }
 
 inline su2double CSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
@@ -598,7 +598,7 @@ inline void CSolver::SetTotal_ComboObj(su2double ComboObj) {}
 
 inline su2double CSolver::GetTotal_ComboObj(void) { return 0;}
 
-inline void CSolver::Compute_ComboObj(CConfig *config) {};
+inline void CSolver::Evaluate_ObjFunc(CConfig *config) {};
 
 inline void CSolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
@@ -666,10 +666,10 @@ inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 inline void CSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
 										 CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config,
+inline void CSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config,
 																								CNumerics *conv_numerics,unsigned short marker_flag){}
 
-inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
+inline void CSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
@@ -1173,7 +1173,7 @@ inline su2double CEulerSolver::GetTotal_IDR() { return Total_IDR; }
 
 inline su2double CEulerSolver::GetTotal_DC60() { return Total_DC60; }
 
-inline su2double CEulerSolver::GetTotal_Custom() { return Total_Custom; }
+inline su2double CEulerSolver::GetTotal_Custom_ObjFunc() { return Total_Custom_ObjFunc; }
 
 inline su2double CEulerSolver::GetTotal_CMx() { return Total_CMx; }
 
@@ -1269,9 +1269,9 @@ inline void CEulerSolver::SetTotal_IDR(su2double val_Total_IDR) { Total_IDR = va
 
 inline void CEulerSolver::SetTotal_DC60(su2double val_Total_DC60) { Total_DC60 = val_Total_DC60; }
 
-inline void CEulerSolver::SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff) { Total_Custom = val_Total_Custom*val_coeff; }
+inline void CEulerSolver::SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { Total_Custom_ObjFunc = val_total_custom_objfunc*val_weight; }
 
-inline void CEulerSolver::AddTotal_Custom(su2double val_Total_Custom, su2double val_coeff) { Total_Custom += val_Total_Custom*val_coeff; }
+inline void CEulerSolver::AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { Total_Custom_ObjFunc += val_total_custom_objfunc*val_weight; }
 
 inline su2double CEulerSolver::GetAllBound_CL_Inv() { return AllBound_CL_Inv; }
 

@@ -436,29 +436,29 @@ void CConfig::SetPointersNull(void) {
     
   /*--- Initialize some default arrays to NULL. ---*/
   
-  default_vel_inf       = NULL;
-  default_ffd_axis      = NULL;
-  default_eng_cyl       = NULL;
-  default_eng_val       = NULL;
-  default_heat_capacity = NULL;
-  default_cfl_adapt     = NULL;
-  default_ad_coeff_flow = NULL;
-  default_mixedout_coeff = NULL;
-  default_extrarelfac   = NULL;
+  default_vel_inf            = NULL;
+  default_ffd_axis           = NULL;
+  default_eng_cyl            = NULL;
+  default_eng_val            = NULL;
+  default_cfl_adapt          = NULL;
+  default_ad_coeff_flow      = NULL;
+  default_mixedout_coeff     = NULL;
+  default_extrarelfac        = NULL;
   default_rampRotFrame_coeff = NULL;
-  default_rampOutPres_coeff = NULL;
-  default_ad_coeff_adj  = NULL;
-  default_obj_coeff     = NULL;
-  default_geo_loc       = NULL;
-  default_distortion    = NULL;
-  default_ea_lim        = NULL;
-  default_grid_fix      = NULL;
-  default_inc_crit      = NULL;
-  default_htp_axis      = NULL;
-  default_body_force    = NULL;
+  default_rampOutPres_coeff  = NULL;
+  default_ad_coeff_adj       = NULL;
+  default_obj_coeff          = NULL;
+  default_geo_loc            = NULL;
+  default_distortion         = NULL;
+  default_ea_lim             = NULL;
+  default_grid_fix           = NULL;
+  default_inc_crit           = NULL;
+  default_htp_axis           = NULL;
+  default_body_force         = NULL;
+  default_heat_capacity      = NULL;
 
   Riemann_FlowDir       = NULL;
-  NRBC_FlowDir          = NULL;
+  Giles_FlowDir         = NULL;
   CoordFFDBox           = NULL;
   DegreeFFDBox          = NULL;
   FFDTag                = NULL;
@@ -468,13 +468,13 @@ void CConfig::SetPointersNull(void) {
   Kind_Data_Riemann        = NULL;
   Riemann_Var1             = NULL;
   Riemann_Var2             = NULL;
-  Kind_Data_NRBC           = NULL;
-  NRBC_Var1                = NULL;
-  NRBC_Var2                = NULL;
+  Kind_Data_Giles          = NULL;
+  Giles_Var1               = NULL;
+  Giles_Var2               = NULL;
   RelaxFactorAverage       = NULL;
   RelaxFactorFourier       = NULL;
   nSpan_iZones             = NULL;
-  ExtraRelFacNRBC          = NULL;
+  ExtraRelFacGiles         = NULL;
   Mixedout_Coeff           = NULL;
   RampRotatingFrame_Coeff  = NULL;
   RampOutletPressure_Coeff = NULL;
@@ -483,7 +483,7 @@ void CConfig::SetPointersNull(void) {
   Marker_MixingPlaneInterface  = NULL;
   Marker_TurboBoundIn          = NULL;
   Marker_TurboBoundOut         = NULL;
-  Marker_NRBC                  = NULL;
+  Marker_Giles                 = NULL;
   Marker_Shroud                = NULL;
 
   nBlades                      = NULL;
@@ -743,11 +743,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief REF_ORIGIN_MOMENT_Z\n DESCRIPTION: Z Reference origin for moment computation \ingroup Config*/
   addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
   /*!\brief REF_AREA\n DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) \ingroup Config*/
-  addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
+  addDoubleOption("REF_AREA", RefArea, 1.0);
   /*!\brief SEMI_SPAN\n DESCRIPTION: Wing semi-span (1 by deafult) \ingroup Config*/
   addDoubleOption("SEMI_SPAN", SemiSpan, 1.0);
-  /*!\brief REF_LENGTH_MOMENT\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
-  addDoubleOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
+  /*!\brief REF_LENGTH\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
+  addDoubleOption("REF_LENGTH", RefLength, 1.0);
   /*!\brief REF_ELEM_LENGTH\n DESCRIPTION: Reference element length for computing the slope limiter epsilon \ingroup Config*/
   addDoubleOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
   /*!\brief REF_SHARP_EDGES\n DESCRIPTION: Reference coefficient for detecting sharp edges \ingroup Config*/
@@ -835,14 +835,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
-  /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
-  addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
-  /*!\brief SPATIAL_FOURIER \n DESCRIPTION: Option to compute the spatial fourier trasformation for the NRBC. */
+  /*!\brief MARKER_GILES \n DESCRIPTION: Giles boundary marker(s) with the following formats, a unit vector. */
+  /* \n OPTIONS: See \link Giles_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
+  addGilesOption("MARKER_GILES", nMarker_Giles, Marker_Giles, Kind_Data_Giles, Giles_Map, Giles_Var1, Giles_Var2, Giles_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
+  /*!\brief SPATIAL_FOURIER \n DESCRIPTION: Option to compute the spatial fourier trasformation for the Giles BC. */
   addBoolOption("SPATIAL_FOURIER", SpatialFourier, false);
-  /*!\brief NRBC_EXTRA_RELAXFACTOR \n DESCRIPTION: the 1st coeff the value of the under relaxation factor to apply to the shroud and hub,
+  /*!\brief GILES_EXTRA_RELAXFACTOR \n DESCRIPTION: the 1st coeff the value of the under relaxation factor to apply to the shroud and hub,
    * the 2nd coefficient is the the percentage of span-wise height influenced by this extra under relaxation factor.*/
   default_extrarelfac[0] = 0.1; default_extrarelfac[1] = 0.1;
-  addDoubleArrayOption("NRBC_EXTRA_RELAXFACTOR", 2, ExtraRelFacNRBC, default_extrarelfac);
+  addDoubleArrayOption("GILES_EXTRA_RELAXFACTOR", 2, ExtraRelFacGiles, default_extrarelfac);
   /*!\brief AVERAGE_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
     \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("MIXINGPLANE_INTERFACE_KIND", Kind_MixingPlaneInterface, MixingPlaneInterface_Map, NEAREST_SPAN);
@@ -873,15 +874,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("RAMP_OUTLET_PRESSURE_COEFF", 3, RampOutletPressure_Coeff, default_rampOutPres_coeff);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
-  /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
+  /*!\brief TURBULENT_MIXINGPLANE \n DESCRIPTION: Activate mixing plane also for turbulent quantities \ingroup Config*/
   addBoolOption("TURBULENT_MIXINGPLANE", turbMixingPlane, false);
-  /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
+  /*!\brief MARKER_TURBOMACHINERY \n DESCRIPTION: Identify the inflow and outflow boundaries in which the turbomachinery settings are  applied. \ingroup Config*/
   addTurboPerfOption("MARKER_TURBOMACHINERY", nMarker_Turbomachinery, Marker_TurboBoundIn, Marker_TurboBoundOut);
-  /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
+  /*!\brief NUM_SPANWISE_SECTIONS \n DESCRIPTION: Integer number of spanwise sections to compute 3D turbo BC and Performance for turbomachinery */
   addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections_User, 1);
-  /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
+  /*!\brief SPANWISE_KIND \n DESCRIPTION: type of algorithm to identify the span-wise sections at the turbo boundaries.
+   \n OPTIONS: see \link SpanWise_Map \endlink \n Default: AUTOMATIC */
   addEnumOption("SPANWISE_KIND", Kind_SpanWise, SpanWise_Map, AUTOMATIC);
-  /*!\brief TURBOMACHINERY_TYPE \n DESCRIPTION: types of turbomachynery architecture.
+  /*!\brief TURBOMACHINERY_KIND \n DESCRIPTION: types of turbomachynery architecture.
       \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
   addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
   /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0 .
@@ -1884,6 +1886,30 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
   
+  /* DESCRIPTION: Multipoint design Mach number*/
+  addPythonOption("MULTIPOINT_MACH_NUMBER");
+  
+  /* DESCRIPTION: Multipoint design Weight */
+  addPythonOption("MULTIPOINT_WEIGHT");
+  
+  /* DESCRIPTION: Multipoint design Angle of Attack */
+  addPythonOption("MULTIPOINT_AOA");
+  
+  /* DESCRIPTION: Multipoint design Sideslip angle */
+  addPythonOption("MULTIPOINT_SIDESLIP_ANGLE");
+  
+  /* DESCRIPTION: Multipoint design target CL*/
+  addPythonOption("MULTIPOINT_TARGET_CL");
+  
+  /* DESCRIPTION: Multipoint design Reynolds number */
+  addPythonOption("MULTIPOINT_REYNOLDS_NUMBER");
+  
+  /* DESCRIPTION: Multipoint design freestream temperature */
+  addPythonOption("MULTIPOINT_FREESTREAM_TEMPERATURE");
+  
+  /* DESCRIPTION: Multipoint design freestream pressure */
+  addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
+  
   /* END_CONFIG_OPTIONS */
 
 }
@@ -2284,10 +2310,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     FreeStreamTurboNormal= new su2double[3];
   }
 
-  /*--- Check if NRBC are used with turbo markers ---*/
+  /*--- Check if Giles are used with turbo markers ---*/
 
-  if (nMarker_NRBC > 0 && !GetBoolTurbomachinery()){
-    cout << "NRBC Boundary conditions can only be used with turbomachinery markers" << endl;
+  if (nMarker_Giles > 0 && !GetBoolTurbomachinery()){
+    cout << "Giles Boundary conditions can only be used with turbomachinery markers" << endl;
     exit(EXIT_FAILURE);
   }
 
@@ -2295,16 +2321,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (!ideal_gas) {
     if (nMarker_Inlet != 0) {
-      cout << "Riemann Boundary conditions or NRBC must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
+      cout << "Riemann Boundary conditions or Giles must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
       exit(EXIT_FAILURE);
     }
     if (nMarker_Outlet != 0) {
-      cout << "Riemann Boundary conditions or NRBC must be used outlet with Not Ideal Compressible Fluids " << endl;
+      cout << "Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids " << endl;
       exit(EXIT_FAILURE);
     }
     
     if (nMarker_FarField != 0) {
-      cout << "Riemann Boundary conditions or NRBC must be used outlet with Not Ideal Compressible Fluids " << endl;
+      cout << "Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids " << endl;
       exit(EXIT_FAILURE);
     }
     
@@ -2361,10 +2387,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if(RampOutletPressure && !DiscreteAdjoint){
-    for (iMarker = 0; iMarker < nMarker_NRBC; iMarker++){
-      if (Kind_Data_NRBC[iMarker] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker] == STATIC_PRESSURE_1D || Kind_Data_NRBC[iMarker] == RADIAL_EQUILIBRIUM ){
-        FinalOutletPressure   = NRBC_Var1[iMarker];
-        NRBC_Var1[iMarker] = RampOutletPressure_Coeff[0];
+    for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
+      if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ){
+        FinalOutletPressure   = Giles_Var1[iMarker];
+        Giles_Var1[iMarker] = RampOutletPressure_Coeff[0];
       }
     }
     for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
@@ -2375,9 +2401,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Check on extra Relaxation factor for NRBC---*/
-  if(ExtraRelFacNRBC[1] > 0.5){
-    ExtraRelFacNRBC[1] = 0.5;
+  /*--- Check on extra Relaxation factor for Giles---*/
+  if(ExtraRelFacGiles[1] > 0.5){
+    ExtraRelFacGiles[1] = 0.5;
   }
 
 
@@ -3165,9 +3191,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
     }
     
-    RefLengthMoment = RefLengthMoment/12.0;
-    if ((val_nDim == 2) && (!Axisymmetric)) RefAreaCoeff = RefAreaCoeff/12.0;
-    else RefAreaCoeff = RefAreaCoeff/144.0;
+    RefLength = RefLength/12.0;
+    if ((val_nDim == 2) && (!Axisymmetric)) RefArea = RefArea/12.0;
+    else RefArea = RefArea/144.0;
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
     Highlite_Area = Highlite_Area/144.0;
@@ -3316,7 +3342,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
-  iMarker_Inlet, iMarker_Riemann, iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal,
+  iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
@@ -3337,7 +3363,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
-  nMarker_NRBC + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
+  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
@@ -3595,9 +3621,9 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NRBC[iMarker_NRBC];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = NRBC_BOUNDARY;
+  for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Giles[iMarker_Giles];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = GILES_BOUNDARY;
     iMarker_CfgFile++;
   }
 
@@ -3857,7 +3883,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
   iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
-  iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
+  iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
@@ -4041,9 +4067,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
     
-    if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." << endl;
-    else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." << endl;
-    cout << "The reference length (moment computation) is " << RefLengthMoment << "." << endl;
+    if (RefArea == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." << endl;
+    else cout << "The reference length/area is " << RefArea << "." << endl;
+    cout << "The reference length is " << RefLength << "." << endl;
 
     if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
       cout << "Surface(s) where the force coefficients are evaluated and \n";
@@ -4056,7 +4082,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
     else {
-      cout << "Reference origin (moment computation) is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
+      cout << "Reference origin for moment evaluation is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
       cout << "Surface(s) where the force coefficients are evaluated: ";
       for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
         cout << Marker_Monitoring[iMarker_Monitoring];
@@ -4350,7 +4376,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AERO_DRAG_COEFFICIENT:   cout << "Aero CD objective function." << endl; break;
         case RADIAL_DISTORTION:       cout << "Radial distortion objective function." << endl; break;
         case CIRCUMFERENTIAL_DISTORTION:   cout << "Circumferential distortion objective function." << endl; break;
-
+        case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
       }
 		}
 		else {
@@ -5031,11 +5057,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
   
-  if (nMarker_NRBC != 0) {
-      cout << "NRBC boundary marker(s): ";
-      for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++) {
-        cout << Marker_NRBC[iMarker_NRBC];
-        if (iMarker_NRBC < nMarker_NRBC-1) cout << ", ";
+  if (nMarker_Giles != 0) {
+      cout << "Giles boundary marker(s): ";
+      for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++) {
+        cout << Marker_Giles[iMarker_Giles];
+        if (iMarker_Giles < nMarker_Giles-1) cout << ", ";
         else cout <<"."<< endl;
     }
   }
@@ -5728,10 +5754,10 @@ CConfig::~CConfig(void) {
     delete [] Riemann_FlowDir;
   }
   
-  if (NRBC_FlowDir != NULL) {
-    for (iMarker = 0; iMarker < nMarker_NRBC; iMarker++)
-      delete [] NRBC_FlowDir[iMarker];
-    delete [] NRBC_FlowDir;
+  if (Giles_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Giles; iMarker++)
+      delete [] Giles_FlowDir[iMarker];
+    delete [] Giles_FlowDir;
   }
   
   if (Load_Sine_Dir != NULL) {
@@ -5845,9 +5871,9 @@ CConfig::~CConfig(void) {
   if (Kind_Data_Riemann != NULL) delete [] Kind_Data_Riemann;
   if (Riemann_Var1 != NULL) delete [] Riemann_Var1;
   if (Riemann_Var2 != NULL) delete [] Riemann_Var2;
-  if (Kind_Data_NRBC != NULL) delete [] Kind_Data_NRBC;
-  if (NRBC_Var1 != NULL) delete [] NRBC_Var1;
-  if (NRBC_Var2 != NULL) delete [] NRBC_Var2;
+  if (Kind_Data_Giles != NULL) delete [] Kind_Data_Giles;
+  if (Giles_Var1 != NULL) delete [] Giles_Var1;
+  if (Giles_Var2 != NULL) delete [] Giles_Var2;
   if (RelaxFactorAverage != NULL) delete [] RelaxFactorAverage;
   if (RelaxFactorFourier != NULL) delete [] RelaxFactorFourier;
   if (nSpan_iZones != NULL) delete [] nSpan_iZones;
@@ -5857,7 +5883,7 @@ CConfig::~CConfig(void) {
   if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
   if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
   if (Marker_Riemann != NULL) delete [] Marker_Riemann;
-  if (Marker_NRBC != NULL) delete [] Marker_NRBC;
+  if (Marker_Giles != NULL) delete [] Marker_Giles;
   if (Marker_Shroud != NULL) delete [] Marker_Shroud;
 
   if (nBlades != NULL) delete [] nBlades;
@@ -5959,6 +5985,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AERO_DRAG_COEFFICIENT:   AdjExt = "_acd";       break;
       case RADIAL_DISTORTION:           AdjExt = "_rdis";      break;
       case CIRCUMFERENTIAL_DISTORTION:  AdjExt = "_cdis";      break;
+      case CUSTOM_OBJFUNC:        		AdjExt = "_custom";   break;
       case KINETIC_ENERGY_LOSS:     AdjExt = "_ke";        break;
       case TOTAL_PRESSURE_LOSS:     AdjExt = "_pl";        break;
       case FLOW_ANGLE_OUT:          AdjExt = "_fao";       break;
@@ -5968,7 +5995,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case EULERIAN_WORK:           AdjExt = "_ew";        break;
       case MASS_FLOW_IN:            AdjExt = "_mfi";       break;
       case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
-      case ENTROPY_GENERATION:      AdjExt = "_entg";       break;
+      case ENTROPY_GENERATION:      AdjExt = "_entg";      break;
       }
     }
     else{
@@ -6514,62 +6541,62 @@ unsigned short CConfig::GetKind_Data_Riemann(string val_marker) {
 }
 
 
-su2double CConfig::GetNRBC_Var1(string val_marker) {
-  unsigned short iMarker_NRBC;
-  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
-    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
-  return NRBC_Var1[iMarker_NRBC];
+su2double CConfig::GetGiles_Var1(string val_marker) {
+  unsigned short iMarker_Giles;
+  for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
+    if (Marker_Giles[iMarker_Giles] == val_marker) break;
+  return Giles_Var1[iMarker_Giles];
 }
 
-void CConfig::SetNRBC_Var1(su2double newVar1, string val_marker) {
-  unsigned short iMarker_NRBC;
-  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
-    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
-  NRBC_Var1[iMarker_NRBC] = newVar1;
+void CConfig::SetGiles_Var1(su2double newVar1, string val_marker) {
+  unsigned short iMarker_Giles;
+  for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
+    if (Marker_Giles[iMarker_Giles] == val_marker) break;
+  Giles_Var1[iMarker_Giles] = newVar1;
 }
 
-su2double CConfig::GetNRBC_Var2(string val_marker) {
-  unsigned short iMarker_NRBC;
-  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
-    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
-  return NRBC_Var2[iMarker_NRBC];
+su2double CConfig::GetGiles_Var2(string val_marker) {
+  unsigned short iMarker_Giles;
+  for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
+    if (Marker_Giles[iMarker_Giles] == val_marker) break;
+  return Giles_Var2[iMarker_Giles];
 }
 
-su2double CConfig::GetNRBC_RelaxFactorAverage(string val_marker) {
-  unsigned short iMarker_NRBC;
-  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
-    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
-  return RelaxFactorAverage[iMarker_NRBC];
+su2double CConfig::GetGiles_RelaxFactorAverage(string val_marker) {
+  unsigned short iMarker_Giles;
+  for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
+    if (Marker_Giles[iMarker_Giles] == val_marker) break;
+  return RelaxFactorAverage[iMarker_Giles];
 }
 
-su2double CConfig::GetNRBC_RelaxFactorFourier(string val_marker) {
-  unsigned short iMarker_NRBC;
-  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
-    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
-  return RelaxFactorFourier[iMarker_NRBC];
+su2double CConfig::GetGiles_RelaxFactorFourier(string val_marker) {
+  unsigned short iMarker_Giles;
+  for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
+    if (Marker_Giles[iMarker_Giles] == val_marker) break;
+  return RelaxFactorFourier[iMarker_Giles];
 }
 
-su2double* CConfig::GetNRBC_FlowDir(string val_marker) {
-  unsigned short iMarker_NRBC;
-  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
-    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
-  return NRBC_FlowDir[iMarker_NRBC];
+su2double* CConfig::GetGiles_FlowDir(string val_marker) {
+  unsigned short iMarker_Giles;
+  for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
+    if (Marker_Giles[iMarker_Giles] == val_marker) break;
+  return Giles_FlowDir[iMarker_Giles];
 }
 
-unsigned short CConfig::GetKind_Data_NRBC(string val_marker) {
-  unsigned short iMarker_NRBC;
-  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
-    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
-  return Kind_Data_NRBC[iMarker_NRBC];
+unsigned short CConfig::GetKind_Data_Giles(string val_marker) {
+  unsigned short iMarker_Giles;
+  for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
+    if (Marker_Giles[iMarker_Giles] == val_marker) break;
+  return Kind_Data_Giles[iMarker_Giles];
 }
 
 
 su2double CConfig::GetPressureOut_BC() {
   unsigned short iMarker_BC;
   su2double pres_out = 0.0;
-  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
-    if (Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_NRBC[iMarker_BC] == RADIAL_EQUILIBRIUM ){
-      pres_out = NRBC_Var1[iMarker_BC];
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
+    if (Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker_BC] == RADIAL_EQUILIBRIUM ){
+      pres_out = Giles_Var1[iMarker_BC];
     }
   }
   for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
@@ -6580,12 +6607,27 @@ su2double CConfig::GetPressureOut_BC() {
   return pres_out/Pressure_Ref;
 }
 
+
+void CConfig::SetPressureOut_BC(su2double val_press) {
+  unsigned short iMarker_BC;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
+    if (Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker_BC] == RADIAL_EQUILIBRIUM ){
+      Giles_Var1[iMarker_BC] = val_press*Pressure_Ref;
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+    if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker_BC] == RADIAL_EQUILIBRIUM){
+      Riemann_Var1[iMarker_BC] = val_press*Pressure_Ref;
+    }
+  }
+}
+
 su2double CConfig::GetTotalPressureIn_BC() {
   unsigned short iMarker_BC;
   su2double tot_pres_in = 0.0;
-  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
-    if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
-      tot_pres_in = NRBC_Var1[iMarker_BC];
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+      tot_pres_in = Giles_Var1[iMarker_BC];
     }
   }
   for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
@@ -6602,9 +6644,9 @@ su2double CConfig::GetTotalPressureIn_BC() {
 su2double CConfig::GetTotalTemperatureIn_BC() {
   unsigned short iMarker_BC;
   su2double tot_temp_in = 0.0;
-  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
-    if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
-      tot_temp_in = NRBC_Var2[iMarker_BC];
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+      tot_temp_in = Giles_Var2[iMarker_BC];
     }
   }
   for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
@@ -6619,12 +6661,30 @@ su2double CConfig::GetTotalTemperatureIn_BC() {
   return tot_temp_in/Temperature_Ref;
 }
 
+void CConfig::SetTotalTemperatureIn_BC(su2double val_temp) {
+  unsigned short iMarker_BC;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+      Giles_Var2[iMarker_BC] = val_temp*Temperature_Ref;
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+      Riemann_Var2[iMarker_BC] = val_temp*Temperature_Ref;
+    }
+  }
+
+  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+    Inlet_Ttotal[0] = val_temp*Temperature_Ref;
+  }
+}
+
 su2double CConfig::GetFlowAngleIn_BC() {
   unsigned short iMarker_BC;
   su2double alpha_in = 0.0;
-  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
-    if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
-    	alpha_in = atan(NRBC_FlowDir[iMarker_BC][1]/NRBC_FlowDir[iMarker_BC][0]);
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+      alpha_in = atan(Giles_FlowDir[iMarker_BC][1]/Giles_FlowDir[iMarker_BC][0]);
     }
   }
   for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){

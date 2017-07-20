@@ -1046,28 +1046,28 @@ public:
 	 */
 	void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix);
 
-	/*!
-   * \brief Computation of the flow Residual Jacoboan Matrix for Non Reflecting BC.
-   * \param[in] val_soundspeed - value of the sound speed.
-   * \param[in] val_density - value of the density.
-   * \param[out] R_c - Residual Jacoboan Matrix
-   * \param[out] R_c_inv- inverse of the Residual Jacoboan Matrix .
-   */
-	void ComputeResJacobianNRBC(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv);
+        /*!
+         * \brief Computation of the flow Residual Jacoboan Matrix for Non Reflecting BC.
+         * \param[in] val_soundspeed - value of the sound speed.
+         * \param[in] val_density - value of the density.
+         * \param[out] R_c - Residual Jacoboan Matrix
+         * \param[out] R_c_inv- inverse of the Residual Jacoboan Matrix .
+         */
+        void ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv);
 
-	/*!
-   * \brief Computate the inverse of a 3x3 matrix
-   * \param[in]  matrix     - the matrix to invert
-   * \param[out] invMatrix  - inverse matrix.
-   */
-	void InvMatrix3D(su2double **matrix, su2double **invMatrix);
+        /*!
+         * \brief Computate the inverse of a 3x3 matrix
+         * \param[in]  matrix     - the matrix to invert
+         * \param[out] invMatrix  - inverse matrix.
+         */
+        void InvMatrix3D(su2double **matrix, su2double **invMatrix);
 
-  /*!
-   * \brief Computate the inverse of a 4x4 matrix
-   * \param[in]  matrix    - the matrix to invert
-   * \param[out] invMatrix - inverse matrix.
-   */
-	void InvMatrix4D(su2double **matrix, su2double **invMatrix);
+        /*!
+         * \brief Computate the inverse of a 4x4 matrix
+         * \param[in]  matrix    - the matrix to invert
+         * \param[out] invMatrix - inverse matrix.
+         */
+        void InvMatrix4D(su2double **matrix, su2double **invMatrix);
 
 	/*!
 	 * \brief Computation of the matrix R.

@@ -645,7 +645,7 @@ enum ENUM_LIMITER {
   BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
   SHARP_EDGES = 2,       /*!< \brief Slope limiter using sharp edges. */
   SOLID_WALL_DISTANCE = 3,       /*!< \brief Slope limiter using wall distance. */
-  VAN_ALBADA = 4,         /*!< \brief Slope limiter using wall distance. */
+  VAN_ALBADA = 4,         /*!< \brief Slope limiter using Van Albada Method. */
   MINMOD = 5,       /*!< \brief Slope limiter using mimmod. */
   SUPERBEE = 6,       /*!< \brief Slope limiter using van_leer. */
   PUT = 7       /*!< \brief Slope limiter using van_leer. */
@@ -839,7 +839,7 @@ enum BC_TYPE {
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
-  NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
+  GILES_BOUNDARY= 37,   /*!< \brief Giles Boundary definition. */
   INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
   FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
@@ -910,7 +910,7 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D);
 
 
-static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
+static const map<string, RIEMANN_TYPE> Giles_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
 ("DENSITY_VELOCITY", DENSITY_VELOCITY)
 ("STATIC_PRESSURE", STATIC_PRESSURE)
@@ -1104,18 +1104,19 @@ enum ENUM_OBJECTIVE {
   AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
   RADIAL_DISTORTION = 36, 	      /*!< \brief Radial Distortion objective function definition. */
   CIRCUMFERENTIAL_DISTORTION = 37,  /*!< \brief Circumferential Distortion objective function definition. */
-  TOTAL_PRESSURE_LOSS=38,
-  KINETIC_ENERGY_LOSS=39,
-  TOTAL_EFFICIENCY=40,
-  TOTAL_STATIC_EFFICIENCY=41,
-  EULERIAN_WORK=42,
-  TOTAL_ENTHALPY_IN=43,
-  FLOW_ANGLE_IN=44,
-  FLOW_ANGLE_OUT=45,
-  MASS_FLOW_IN=46,
-  MASS_FLOW_OUT=47,
-  PRESSURE_RATIO=48,
-  ENTROPY_GENERATION=49
+  CUSTOM_OBJFUNC = 38, 	           /*!< \brief Custom objective function definition. */
+  TOTAL_PRESSURE_LOSS=39,
+  KINETIC_ENERGY_LOSS=40,
+  TOTAL_EFFICIENCY=41,
+  TOTAL_STATIC_EFFICIENCY=42,
+  EULERIAN_WORK=43,
+  TOTAL_ENTHALPY_IN=44,
+  FLOW_ANGLE_IN=45,
+  FLOW_ANGLE_OUT=46,
+  MASS_FLOW_IN=47,
+  MASS_FLOW_OUT=48,
+  PRESSURE_RATIO=49,
+  ENTROPY_GENERATION=50
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1151,6 +1152,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("AERO_DRAG", AERO_DRAG_COEFFICIENT)
 ("RADIAL_DISTORTION", RADIAL_DISTORTION)
 ("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION)
+("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
 ("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
 ("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
 ("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
@@ -2920,7 +2922,7 @@ public:
 };
 
 template <class Tenum>
-class COptionNRBC : public COptionBase{
+class COptionGiles : public COptionBase{
 
   map<string, Tenum> m;
   unsigned short & size;
@@ -2934,12 +2936,12 @@ class COptionNRBC : public COptionBase{
   su2double * & relfac2;
 
 public:
-  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relfac1, su2double* & relfac2) : size(nMarker_NRBC),
-  	  	  	  	  marker(Marker_NRBC), field(option_field), var1(var1), var2(var2), flowdir(FlowDir), relfac1(relfac1), relfac2(relfac2) {
+  COptionGiles(string option_field_name, unsigned short & nMarker_Giles, string* & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relfac1, su2double* & relfac2) : size(nMarker_Giles),
+  	  	  	  	  marker(Marker_Giles), field(option_field), var1(var1), var2(var2), flowdir(FlowDir), relfac1(relfac1), relfac2(relfac2) {
     this->name = option_field_name;
     this->m = m;
   }
-  ~COptionNRBC() {};
+  ~COptionGiles() {};
 
   string SetValue(vector<string> option_value) {
 
@@ -3001,32 +3003,32 @@ public:
 
       istringstream ss_1st(option_value[9*i + 2]);
       if (!(ss_1st >> this->var1[i])) {
-        return badValue(option_value, "NRBC", this->name);
+        return badValue(option_value, "Giles BC", this->name);
       }
       istringstream ss_2nd(option_value[9*i + 3]);
       if (!(ss_2nd >> this->var2[i])) {
-        return badValue(option_value, "NRBC", this->name);
+        return badValue(option_value, "Giles BC", this->name);
       }
       istringstream ss_3rd(option_value[9*i + 4]);
       if (!(ss_3rd >> this->flowdir[i][0])) {
-        return badValue(option_value, "NRBC", this->name);
+        return badValue(option_value, "Giles BC", this->name);
       }
       istringstream ss_4th(option_value[9*i + 5]);
       if (!(ss_4th >> this->flowdir[i][1])) {
-        return badValue(option_value, "NRBC", this->name);
+        return badValue(option_value, "Giles BC", this->name);
       }
       istringstream ss_5th(option_value[9*i + 6]);
       if (!(ss_5th >> this->flowdir[i][2])) {
-        return badValue(option_value, "NRBC", this->name);
+        return badValue(option_value, "Giles BC", this->name);
       }
       istringstream ss_6th(option_value[9*i + 7]);
-			if (!(ss_6th >> this->relfac1[i])) {
-				return badValue(option_value, "NRBC", this->name);
-			}
-			istringstream ss_7th(option_value[9*i + 8]);
-			if (!(ss_7th >> this->relfac2[i])) {
-				return badValue(option_value, "NRBC", this->name);
-			}
+      if (!(ss_6th >> this->relfac1[i])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
+      istringstream ss_7th(option_value[9*i + 8]);
+      if (!(ss_7th >> this->relfac2[i])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
     }
 
     return "";

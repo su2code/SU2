@@ -471,7 +471,7 @@ void CDriver::Postprocessing() {
   if (interpolator_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
     if (interpolator_container[iZone] != NULL){
-            delete interpolator_container[iZone];
+            delete [] interpolator_container[iZone];
       }
     }
     delete [] interpolator_container;
@@ -481,7 +481,7 @@ void CDriver::Postprocessing() {
   if (transfer_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
         if (transfer_container[iZone] != NULL)
-          delete transfer_container[iZone];
+          delete [] transfer_container[iZone];
     }
     delete [] transfer_container;
     if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
@@ -500,7 +500,7 @@ void CDriver::Postprocessing() {
 
   /*--- Free-form deformation class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    delete FFDBox[iZone];
+    delete [] FFDBox[iZone];
   }
   delete [] FFDBox;
   if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
@@ -2854,7 +2854,7 @@ void CDriver::TurbomachineryPreprocessing(){
 #endif
 
   /*--- Create turbovertex structure ---*/
-  if (rank == MASTER_NODE) cout<<endl<<"Initiliaze Turbo Vertex Structure." << endl;
+  if (rank == MASTER_NODE) cout<<endl<<"Initialize Turbo Vertex Structure." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config_container[iZone]->GetBoolTurbomachinery()){
       geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
@@ -3246,11 +3246,11 @@ su2double CDriver::Get_Drag() {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CDrag, RefDensity, RefAreaCoeff, RefVel2, factor;
+  su2double CDrag, RefDensity, RefArea, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
+  RefArea = config_container[val_iZone]->GetRefArea();
 
   /*--- Calculate free-stream velocity (squared) ---*/
   RefVel2 = 0.0;
@@ -3258,7 +3258,7 @@ su2double CDriver::Get_Drag() {
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
   /*--- Calculate drag force based on drag coefficient ---*/
-  factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
+  factor = 0.5*RefDensity*RefArea*RefVel2;
   CDrag = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
 
   return CDrag*factor;
@@ -3268,11 +3268,11 @@ su2double CDriver::Get_Lift() {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CLift, RefDensity, RefAreaCoeff, RefVel2, factor;
+  su2double CLift, RefDensity, RefArea, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
+  RefArea = config_container[val_iZone]->GetRefArea();
 
   /*--- Calculate free-stream velocity (squared) ---*/
   RefVel2 = 0.0;
@@ -3280,7 +3280,7 @@ su2double CDriver::Get_Lift() {
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
   /*--- Calculate drag force based on drag coefficient ---*/
-  factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
+  factor = 0.5*RefDensity*RefArea*RefVel2;
   CLift = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
 
   return CLift*factor;
@@ -3290,12 +3290,12 @@ su2double CDriver::Get_Mx(){
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMx, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2, factor;
+  su2double CMx, RefDensity, RefArea, RefLengthCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
-  RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
+  RefArea = config_container[val_iZone]->GetRefArea();
+  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
 
   /*--- Calculate free-stream velocity (squared) ---*/
   RefVel2 = 0.0;
@@ -3303,7 +3303,7 @@ su2double CDriver::Get_Mx(){
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
   /*--- Calculate moment around x-axis based on coefficients ---*/
-  factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
+  factor = 0.5*RefDensity*RefArea*RefVel2;
   CMx = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
 
   return CMx*factor*RefLengthCoeff;
@@ -3314,12 +3314,12 @@ su2double CDriver::Get_My(){
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMy, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2, factor;
+  su2double CMy, RefDensity, RefArea, RefLengthCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
-  RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
+  RefArea = config_container[val_iZone]->GetRefArea();
+  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
 
   /*--- Calculate free-stream velocity (squared) ---*/
   RefVel2 = 0.0;
@@ -3327,7 +3327,7 @@ su2double CDriver::Get_My(){
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
   /*--- Calculate moment around x-axis based on coefficients ---*/
-  factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
+  factor = 0.5*RefDensity*RefArea*RefVel2;
   CMy = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
 
   return CMy*factor*RefLengthCoeff;
@@ -3338,12 +3338,12 @@ su2double CDriver::Get_Mz() {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMz, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2, factor;
+  su2double CMz, RefDensity, RefArea, RefLengthCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
-  RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
+  RefArea = config_container[val_iZone]->GetRefArea();
+  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
 
   /*--- Calculate free-stream velocity (squared) ---*/
   RefVel2 = 0.0;
@@ -3351,7 +3351,7 @@ su2double CDriver::Get_Mz() {
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
   /*--- Calculate moment around z-axis based on coefficients ---*/
-  factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
+  factor = 0.5*RefDensity*RefArea*RefVel2;
   CMz = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
 
   return CMz*factor*RefLengthCoeff;
@@ -4295,11 +4295,11 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
               exit(EXIT_FAILURE);
             }
             break;
-          case NRBC_BOUNDARY:
+          case GILES_BOUNDARY:
             Marker_Tag         = config_container[iZone]->GetMarker_All_TagBound(iMarker);
-            KindBCOption       = config_container[iZone]->GetKind_Data_NRBC(Marker_Tag);
+            KindBCOption       = config_container[iZone]->GetKind_Data_Giles(Marker_Tag);
             if(KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D || KindBCOption == RADIAL_EQUILIBRIUM ){
-              config_container[iZone]->SetNRBC_Var1(outPres, Marker_Tag);
+              config_container[iZone]->SetGiles_Var1(outPres, Marker_Tag);
             }
             break;
           }
@@ -4642,7 +4642,7 @@ void CDiscAdjFluidDriver::SetObjFunction(){
   /*--- Surface based obj. function ---*/
 
   for (iZone = 0; iZone < nZone; iZone++){
-    solver_container[iZone][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[iZone]);
+    solver_container[iZone][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(config_container[iZone]);
     ObjFunc += solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
   }
 
@@ -4760,24 +4760,6 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
   if (rank == MASTER_NODE){
     SetTurboPerformance(ZONE_0);
   }
-  /*--- Print residuals in the first iteration ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    if ((rank == MASTER_NODE) && ((config_container[iZone]->GetExtIter() == 0) || (unsteady))){
-      cout << "Convergence of direct solver for Zone " << iZone << ": " << endl;
-
-      cout << "  log10[RMS Density]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-           <<", Entropy Generation: " << output->GetEntropyGen(config_container[iZone]->GetnMarker_Turbomachinery() -1, config_container[ZONE_0]->GetnSpan_iZones(config_container[iZone]->GetnMarker_Turbomachinery() -1)) << endl;
-
-      if (config_container[iZone]->GetKind_Turb_Model() != NONE){
-        cout << "  log10[RMS k]:       " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
-        if (config_container[iZone]->GetKind_Turb_Model() == SST){
-          cout << "  log10[RMS omega]:   " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(1)) << endl;
-        }
-      }
-    }
-  }
 
 }
 
@@ -4790,8 +4772,6 @@ void CDiscAdjTurbomachineryDriver::SetObjFunction(){
 #endif
 
   solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
-
-  solver_container[ZONE_0][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[ZONE_0]);
 
   switch (config_container[ZONE_0]->GetKind_ObjFunc()){
   case ENTROPY_GENERATION:

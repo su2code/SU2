@@ -9267,9 +9267,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   TotalWettedArea    = WettedArea;
 #endif
     
-  if (config->GetRefAreaCoeff() == 0.0) {
-  	if (nDim == 3) config->SetRefAreaCoeff(TotalPositiveZArea);
-  	else config->SetRefAreaCoeff(TotalPositiveYArea);
+  if (config->GetRefArea() == 0.0) {
+  	if (nDim == 3) config->SetRefArea(TotalPositiveZArea);
+  	else config->SetRefArea(TotalPositiveYArea);
   }
   
   if (rank == MASTER_NODE) {
@@ -11205,7 +11205,9 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
           /*--- retrieve outlet information ---*/
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
-            pitchIn         = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
+            if (iSpan < nSpanWiseSections){
+              pitchIn       = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
+            }
             areaOut         = SpanArea[iMarker][iSpan];
             tangGridVelOut  = AverageTangGridVel[iMarker][iSpan];
             radiusOut       = TurboRadius[iMarker][iSpan];
