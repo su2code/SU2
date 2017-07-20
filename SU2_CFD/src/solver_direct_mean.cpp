@@ -16478,7 +16478,7 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
     myfile.setf(ios::scientific);
     myfile.precision(12);
 
-    myfile << "TITLE = \"Spanwise Imposed Inflow Values." << endl;
+    myfile << "TITLE = \"Spanwise Imposed Inflow Values. \"" << endl;
     myfile << "VARIABLES =" << endl;
     myfile.width(30); myfile << "\"Spanwise Value[m]\"";
     myfile.width(21); myfile << "\"iSpan [-]\"";
@@ -16598,7 +16598,7 @@ void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geome
     myfile.setf(ios::scientific);
     myfile.precision(12);
 
-    myfile << "TITLE = \"Spanwise Imposed Outflow Values." << endl;
+    myfile << "TITLE = \"Spanwise Imposed Outflow Values.\"" << endl;
     myfile << "VARIABLES =" << endl;
     myfile.width(30); myfile << "\"Spanwise Value[m]\"";
     myfile.width(21); myfile << "\"iSpan [-]\"";
