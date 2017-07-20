@@ -2941,7 +2941,6 @@ CSlidingAdaptive::CSlidingAdaptive(CGeometry ***geometry_container, CConfig **co
           dist = PointsDistance(Coord_i, Coord_j);
 
           if (dist == 0.0){
-            donor_iPoint;
             break;
           }    
         }
@@ -2955,7 +2954,18 @@ CSlidingAdaptive::CSlidingAdaptive(CGeometry ***geometry_container, CConfig **co
         target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(0, Donor_Proc[        donor_iPoint ]);
           
       }
-    }    
+    }
+    
+    // This must be distributed in parallel
+    
+    map = new unsigned long[ nVertexTarget ];
+    
+    for (iVertex = 0; iVertex < nVertexTarget; iVertex++){
+      map[iVertex] = target_geometry->vertex[markTarget][iVertex]->GetNode();
+      //cout << map[iVertex] << endl;
+    }
+//getchar();
+
       
     delete [] TargetPoint_Coord;
     delete [] Target_GlobalPoint;
@@ -2980,7 +2990,10 @@ CSlidingAdaptive::CSlidingAdaptive(CGeometry ***geometry_container, CConfig **co
  // InitializeData(Zones,nDim);
 }
 
-CSlidingAdaptive::~CSlidingAdaptive(){}
+CSlidingAdaptive::~CSlidingAdaptive(){
+if( map != NULL )
+  delete [] map;
+}
 
 void CSlidingAdaptive::Set_TransferCoeff(CConfig **config){
 
@@ -3011,7 +3024,7 @@ void CSlidingAdaptive::Set_TransferCoeff(CConfig **config){
 
   /* --- Geometrical variables --- */
 
-  su2double *Coord_i, *Coord_j, dist, mindist, *Normal;
+  su2double *Coord_i, *Coord_j, *Coord_k, dist, mindist, *Normal;
   su2double Area, Area_old, tmp_Area;
   su2double LineIntersectionLength, *Direction, length;
 
@@ -3144,9 +3157,7 @@ unsigned long GlobalDonorPoint;
 
         target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
         
-//cout << target_geometry->GetnPointBaseline() << endl; getchar();
-
-        if (target_geometry->node[target_iPoint]->GetDomain() && target_iPoint >= target_geometry->GetnPointBaseline()){
+        if (target_geometry->node[target_iPoint]->GetDomain() && target_geometry->node[target_iPoint]->GetGlobalIndex() >= target_geometry->GetnPointBaseline()){
           
           Coord_i = target_geometry->node[target_iPoint]->GetCoord();
 
@@ -3158,13 +3169,352 @@ unsigned long GlobalDonorPoint;
               
           Coord_j = &DonorPoint_Coord[ donor_iPoint * nDim ];
 
-          for(iDim = 0; iDim < nDim; iDim++)
+          for(iDim = 0; iDim < nDim; iDim++){
             Coord_i[iDim] = Coord_j[iDim];
+            TargetPoint_Coord[ 2*iVertex +iDim ] = Coord_j[iDim];
+          }
+
+        }
+        
+        //cout << iVertex << "  " << nVertexTarget << "  " << Target_LinkedNodes[iVertex*2    ] << "  " << Target_LinkedNodes[iVertex*2 + 1 ] << endl;
+      }//getchar();
+      
+      
+      unsigned long link1, link2, link3, link1_Global, link2_Global, link3_Global, StartNode, Edge1, Edge2, Edge3, iPoint, iNode, iTmp;
+      su2double m, *dptr1, *dptr2, dtmp[3];
+      CPoint *dummyPoint;
+      
+      for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
+
+        target_iPoint = map[ iVertex ];
+        
+        if (target_geometry->node[target_iPoint]->GetDomain() && target_geometry->node[target_iPoint]->GetGlobalIndex() >= target_geometry->GetnPointBaseline()){
+
+          // To fix for parallel since we'll have to change the edge structure on other ranks
+          
+          link1 = Target_LinkedNodes[iVertex*2    ];
+          link2 = Target_LinkedNodes[iVertex*2 + 1];
+          
+          Coord_i = &TargetPoint_Coord[ 2*iVertex ];
+          Coord_j = &TargetPoint_Coord[ 2*link1   ];
+          Coord_k = &TargetPoint_Coord[ 2*link2   ];
+          
+          m = 0.0;
+          for(iDim = 0; iDim < nDim; iDim++)
+            m += (Coord_j[iDim]-Coord_i[iDim])*(Coord_k[iDim]-Coord_i[iDim]);
             
-          //cout << "ECCO" << endl;
+            //////////////////////////////////////////////////////////////
+          if(m < 0.0) // Fix for value = 0
+            continue;  
+//cout << iVertex << endl;
+          StartNode = target_iPoint;
+
+          
+          // Move in one direction
+
+          if ( Target_LinkedNodes[ link1*2 ] != iVertex )          
+            link3 = Target_LinkedNodes[ link1*2 ];
+          else
+            link3 = Target_LinkedNodes[ link1*2 + 1 ];
+          
+          Coord_k = &TargetPoint_Coord[ 2*link3 ];
+
+          m = 0.0;
+          for(iDim = 0; iDim < nDim; iDim++)
+            m += (Coord_j[iDim]-Coord_i[iDim])*(Coord_k[iDim]-Coord_i[iDim]);
+
+            
+          if(m > 0){ // Fix for value = 0 & for parallel
+            // Swap edges
+/*           
+            for(iDim = 0; iDim < nDim; iDim++){
+              dtmp[iDim] = target_geometry->node[ StartNode ]->GetCoord(iDim);
+              target_geometry->node[ StartNode ]->SetCoord(iDim, target_geometry->node[ map[ link1 ]  ]->GetCoord(iDim));
+              target_geometry->node[ map[ link1 ]  ]->SetCoord(iDim, dtmp[iDim]);
+            }
+*/     
+
+cout << iVertex << "  " << nVertexTarget << "  " << link1 << "  " << link3 << "  " << map[ link3 ] << endl; getchar();
+            Edge1 = target_geometry->FindEdge(map[ link1 ], map[ link3 ]);
+            Edge2 = target_geometry->FindEdge(StartNode,    map[ link2 ]);
+            
+            delete target_geometry->edge[Edge1];
+            delete target_geometry->edge[Edge2];
+                              
+            target_geometry->edge[Edge1] = new CEdge(StartNode,    map[ link3 ], 2);
+            target_geometry->edge[Edge2] = new CEdge(map[ link1 ], map[ link2 ], 2);
+            
+            
+            // Update connectivity in the reconstructed boundary
+            
+            if( Target_LinkedNodes[ link3*2 ] == link1 )
+              Target_LinkedNodes[ link3*2 ] = iVertex;
+            else
+              Target_LinkedNodes[ link3*2 + 1 ] = iVertex;
+              
+            if( Target_LinkedNodes[ link2*2 ] == iVertex )
+              Target_LinkedNodes[ link2*2 ] = link1;
+            else
+              Target_LinkedNodes[ link2*2 + 1 ] = link1;
+
+            Target_LinkedNodes[ iVertex*2     ] = link1;
+            Target_LinkedNodes[ iVertex*2 + 1 ] = link3;
+            
+            
+            // Re-define points connectivity in the target_geometry container
+            
+            // Start Node
+            
+            dummyPoint = target_geometry->node[StartNode];
+
+            target_geometry->node[StartNode] = new CPoint(dummyPoint->GetCoord(0), dummyPoint->GetCoord(1), StartNode, config[targetZone]);
+
+            target_geometry->node[StartNode]->SetBoundary(target_geometry->GetnMarker());
+            
+            for (iNode = 0; iNode < dummyPoint->GetnPoint(); iNode++){
+              
+              if(dummyPoint->GetPoint(iNode) != map[ link2 ] )
+                target_geometry->node[StartNode]->SetPoint( dummyPoint->GetPoint(iNode) );
+              else
+                target_geometry->node[StartNode]->SetPoint( map[ link3 ] );
+              
+                
+              if( dummyPoint->GetEdge(iNode) != Edge2 )
+                target_geometry->node[StartNode]->SetEdge(dummyPoint->GetEdge(iNode), iNode);
+              else
+                target_geometry->node[StartNode]->SetEdge(Edge1, iNode);
+            }
+            
+            delete dummyPoint;
+            
+            // link1
+            
+            iTmp = map[ link1 ];
+            
+            dummyPoint = target_geometry->node[iTmp];
+            
+            target_geometry->node[iTmp] = new CPoint(dummyPoint->GetCoord(0), dummyPoint->GetCoord(1), iTmp, config[targetZone]);
+            
+            target_geometry->node[iTmp]->SetBoundary(target_geometry->GetnMarker());
+
+            for (iNode = 0; iNode < dummyPoint->GetnPoint(); iNode++){
+              
+              if(dummyPoint->GetPoint(iNode) != map[ link3 ] )
+                target_geometry->node[iTmp]->SetPoint( dummyPoint->GetPoint(iNode) );
+              else
+                target_geometry->node[iTmp]->SetPoint( map[ link2 ] );
+              
+                
+              if( dummyPoint->GetEdge(iNode) != Edge1 )
+                target_geometry->node[iTmp]->SetEdge(dummyPoint->GetEdge(iNode), iNode);
+              else
+                target_geometry->node[iTmp]->SetEdge(Edge2, iNode);
+            }
+            
+            delete dummyPoint;
+            
+            // link2
+            
+            iTmp = map[ link2 ];
+            
+            dummyPoint = target_geometry->node[iTmp];
+            
+            target_geometry->node[iTmp] = new CPoint(dummyPoint->GetCoord(0), dummyPoint->GetCoord(1), iTmp, config[targetZone]);
+
+            target_geometry->node[iTmp]->SetBoundary(target_geometry->GetnMarker());
+            
+            for (iNode = 0; iNode < dummyPoint->GetnPoint(); iNode++){
+              
+              if(dummyPoint->GetPoint(iNode) != StartNode )
+                target_geometry->node[iTmp]->SetPoint( dummyPoint->GetPoint(iNode) );
+              else
+                target_geometry->node[iTmp]->SetPoint( map[ link1 ] );
+
+
+              target_geometry->node[iTmp]->SetEdge(dummyPoint->GetEdge(iNode), iNode);
+            }
+            
+            delete dummyPoint;
+            
+            // link3
+            
+            iTmp = map[ link3 ];
+            
+            dummyPoint = target_geometry->node[iTmp];
+            
+            target_geometry->node[iTmp] = new CPoint(dummyPoint->GetCoord(0), dummyPoint->GetCoord(1), iTmp, config[targetZone]);
+            
+            target_geometry->node[iTmp]->SetBoundary(target_geometry->GetnMarker());
+
+            for (iNode = 0; iNode < dummyPoint->GetnPoint(); iNode++){
+              
+              if(dummyPoint->GetPoint(iNode) != map[ link1 ] )
+                target_geometry->node[iTmp]->SetPoint( dummyPoint->GetPoint(iNode) );
+              else
+                target_geometry->node[iTmp]->SetPoint( StartNode );
+              
+              target_geometry->node[iTmp]->SetEdge(dummyPoint->GetEdge(iNode), iNode);
+            }
+            
+            delete dummyPoint;                                    
+            
+            continue;
+          }
+          
+          
+          
+          // Move in the other direction
+          
+          if ( Target_LinkedNodes[ link2*2 ] != iVertex )          
+            link3 = Target_LinkedNodes[ link2*2 ];
+          else
+            link3 = Target_LinkedNodes[ link2*2 + 1 ];
+
+          Coord_j = &TargetPoint_Coord[ 2*link2 ];          
+          Coord_k = &TargetPoint_Coord[ 2*link3 ];
+
+          m = 0;
+          for(iDim = 0; iDim < nDim; iDim++)
+            m += (Coord_j[iDim]-Coord_i[iDim])*(Coord_k[iDim]-Coord_i[iDim]);
+            
+          if(m > 1e10){ // Fix for value = 0 & for parallel
+            // Swap edges
+/*
+            for(iDim = 0; iDim < nDim; iDim++){
+              dtmp[iDim] = target_geometry->node[ StartNode ]->GetCoord(iDim);
+              target_geometry->node[ StartNode ]->SetCoord(iDim, target_geometry->node[ map[ link2 ]  ]->GetCoord(iDim) );
+              target_geometry->node[ map[ link2 ]  ]->SetCoord(iDim, dtmp[iDim]);
+            }
+*/                        
+          
+            Edge1 = target_geometry->FindEdge(map[ link2 ], map[ link3 ]);
+            Edge2 = target_geometry->FindEdge(StartNode,    map[ link1 ]);
+
+            delete target_geometry->edge[Edge1];
+            delete target_geometry->edge[Edge2];
+                  
+            target_geometry->edge[Edge1] = new CEdge(StartNode,    map[ link3 ], 2);
+            target_geometry->edge[Edge2] = new CEdge(map[ link2 ], map[ link1 ], 2);
+            
+            
+            // Update connectivity in the reconstructed boundary
+
+            if( Target_LinkedNodes[ link3*2 ] == link2 )
+              Target_LinkedNodes[ link3*2 ] = StartNode;
+            else
+              Target_LinkedNodes[ link3*2 + 1 ] = StartNode;
+              
+            if( Target_LinkedNodes[ link1*2 ] == StartNode )
+              Target_LinkedNodes[ link1*2 ] = link2;
+            else
+              Target_LinkedNodes[ link1*2 + 1 ] = link2;
+
+            Target_LinkedNodes[ StartNode*2     ] = link2;
+            Target_LinkedNodes[ StartNode*2 + 1 ] = link3;
+
+
+            // Re-define points connectivity in the target_geometry container
+            
+            // Start Node
+            
+            dummyPoint = target_geometry->node[StartNode];
+
+            target_geometry->node[StartNode] = new CPoint(dummyPoint->GetCoord(0), dummyPoint->GetCoord(1), StartNode, config[targetZone]);
+
+
+            for (iNode = 0; iNode < dummyPoint->GetnPoint(); iNode++){
+              
+              if(dummyPoint->GetPoint(iNode) != map[ link1 ] )
+                target_geometry->node[StartNode]->SetPoint( dummyPoint->GetPoint(iNode) );
+              else
+                target_geometry->node[StartNode]->SetPoint( map[ link3 ] );
+              
+                
+              if( dummyPoint->GetEdge(iNode) != Edge2 )
+                target_geometry->node[StartNode]->SetEdge(dummyPoint->GetEdge(iNode), iNode);
+              else
+                target_geometry->node[StartNode]->SetEdge(Edge1, iNode);
+            }
+            
+            delete dummyPoint;
+            
+            // link1
+            
+            iTmp = map[ link1 ];
+            
+            dummyPoint = target_geometry->node[iTmp];
+            
+            target_geometry->node[iTmp] = new CPoint(dummyPoint->GetCoord(0), dummyPoint->GetCoord(1), iTmp, config[targetZone]);
+            
+            target_geometry->node[iTmp]->SetBoundary(target_geometry->GetnMarker());
+
+            for (iNode = 0; iNode < dummyPoint->GetnPoint(); iNode++){
+              
+              if(dummyPoint->GetPoint(iNode) != map[ StartNode ] )
+                target_geometry->node[iTmp]->SetPoint( dummyPoint->GetPoint(iNode) );
+              else
+                target_geometry->node[iTmp]->SetPoint( map[ link2 ] );
+              
+              
+              target_geometry->node[iTmp]->SetEdge(dummyPoint->GetEdge(iNode), iNode);
+            }
+            
+            delete dummyPoint;
+            
+            // link2
+            
+            iTmp = map[ link2 ];
+            
+            dummyPoint = target_geometry->node[iTmp];
+            
+            target_geometry->node[iTmp] = new CPoint(dummyPoint->GetCoord(0), dummyPoint->GetCoord(1), iTmp, config[targetZone]);
+            
+            target_geometry->node[iTmp]->SetBoundary(target_geometry->GetnMarker());
+
+            for (iNode = 0; iNode < dummyPoint->GetnPoint(); iNode++){
+              
+              if(dummyPoint->GetPoint(iNode) != map[ link3 ] )
+                target_geometry->node[iTmp]->SetPoint( dummyPoint->GetPoint(iNode) );
+              else
+                target_geometry->node[iTmp]->SetPoint( map[ link1 ] );
+
+
+              if( dummyPoint->GetEdge(iNode) != Edge1 )
+                target_geometry->node[iTmp]->SetEdge(dummyPoint->GetEdge(iNode), iNode);
+              else
+                target_geometry->node[iTmp]->SetEdge(Edge2, iNode);
+            }
+            
+            delete dummyPoint;
+            
+            // link3
+            
+            iTmp = map[ link3 ];
+            
+            dummyPoint = target_geometry->node[iTmp];
+            
+            target_geometry->node[iTmp] = new CPoint(dummyPoint->GetCoord(0), dummyPoint->GetCoord(1), iTmp, config[targetZone]);
+            
+            target_geometry->node[iTmp]->SetBoundary(target_geometry->GetnMarker());
+
+            for (iNode = 0; iNode < dummyPoint->GetnPoint(); iNode++){
+              
+              if(dummyPoint->GetPoint(iNode) != map[ link2 ] )
+                target_geometry->node[iTmp]->SetPoint( dummyPoint->GetPoint(iNode) );
+              else
+                target_geometry->node[iTmp]->SetPoint( StartNode );
+              
+              target_geometry->node[iTmp]->SetEdge(dummyPoint->GetEdge(iNode), iNode);
+            }
+            
+            delete dummyPoint;                                               
+          
+            continue;
+          }                
+                                  
         }
       }
-      
+      //getchar();
     }
     else{
       cout << "3D not working yet!!!" << endl;
