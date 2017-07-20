@@ -1911,7 +1911,9 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver ****solver_container, CGe
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
-
+  bool two_phase = ((config_container[iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
+                     (config_container[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+                     (config_container[iZone]->GetKind_Solver() == TWO_PHASE_RANS));
   /*--- Initialize the adjoints the conservative variables ---*/
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
@@ -1923,6 +1925,10 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver ****solver_container, CGe
   if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
     solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
         config_container[iZone]);
+  }
+
+  if (two_phase){
+    solver_container[iZone][MESH_0][ADJTWO_PHASE_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0], config_container[iZone]);
   }
 }
 
@@ -2004,6 +2010,9 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver ****solver_container, CGeome
   
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
+  bool two_phase = ((config_container[iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
+                   (config_container[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+                   (config_container[iZone]->GetKind_Solver() == TWO_PHASE_RANS));
   
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
   
@@ -2015,6 +2024,10 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver ****solver_container, CGeome
   if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
     solver_container[iZone][MESH_0][TURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
                                                                  config_container[iZone]);
+  }
+
+  if(two_phase){
+    solver_container[iZone][MESH_0][TWO_PHASE_SOL]->RegisterOutput(geometry_container[iZone][MESH_0], config_container[iZone]);
   }
 }
 

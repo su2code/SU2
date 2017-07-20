@@ -721,7 +721,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
-  adj_euler, adj_ns, adj_turb,
+  adj_euler, adj_ns, adj_turb, adj_two_phase,
   two_phase,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition, hill_rus, hill_ausm,
@@ -739,8 +739,8 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
   spalart_allmaras = false;  menter_sst      = false;  two_phase = false;
   poisson          = false;  neg_spalart_allmaras = false;
-  wave             = false;   disc_adj        = false;
-  fem = false;
+  wave             = false;  disc_adj        = false;
+  fem = false;               adj_two_phase   = false;
   heat             = false;
   transition       = false;
   template_solver  = false;
@@ -803,6 +803,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; disc_adj= true;  break;
+    case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; disc_adj = true;break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -955,6 +958,8 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
       if (adj_turb)
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
+      if (adj_two_phase)
+        solver_container[iMGlevel][ADJTWO_PHASE_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_2PHASE_SYS, iMGlevel);
     }
   }
 
