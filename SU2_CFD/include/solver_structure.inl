@@ -666,10 +666,10 @@ inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 inline void CSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
 										 CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config,
+inline void CSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config,
 																								CNumerics *conv_numerics,unsigned short marker_flag){}
 
-inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
+inline void CSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
