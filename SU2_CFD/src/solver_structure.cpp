@@ -2407,6 +2407,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
     Solution[iVar] = 0.0;
   }
 
+  this->nVar = nVar;
   /*--- Define geometry constants in the solver structure ---*/
 
   nDim = geometry->GetnDim();

@@ -3452,9 +3452,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   
   nVar_Total = config->fields.size() - 1;
     
-    // ****** Hardocidng for now
-    //nVar_Total = 10;
-    cout << "nVar_Total in MergeBaselineSolution ********** = " << nVar_Total << endl;
+  cout << "nVar_Total in MergeBaselineSolution ********** = " << nVar_Total << endl;
   /*--- Merge the solution either in serial or parallel. ---*/
   
 #ifndef HAVE_MPI
@@ -3910,6 +3908,9 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
     bool grid_movement  = (config->GetGrid_Movement());
     bool transition     = (config->GetKind_Trans_Model() == LM);
     bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+    bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
+    bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
     
     /*--- Prepare send buffers for the conservative variables. Need to
      find the total number of conservative variables and also the
@@ -3959,6 +3960,255 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
         filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
     }
     
+    cout << "About to start writing bimary restart " << endl;
+    
+    
+    nVar_Par  = 1; Variable_Names.push_back("x");
+    nVar_Par += 1; Variable_Names.push_back("y");
+    if (geometry->GetnDim() == 3) {
+        nVar_Par += 1; Variable_Names.push_back("z");
+    }
+    
+    /*--- At a mininum, the restarts and visualization files need the
+     conservative variables, so these follow next. ---*/
+    
+    //nVar_Par += nVar_Consv_Par;
+    
+    /*--- For now, leave the names as "Conservative_", etc., in order
+     to avoid confusion with the serial version, which still prints these
+     names. Names can be set alternatively by using the commented code
+     below. ---*/
+    
+    if (incompressible) {
+        Variable_Names.push_back("Pressure");
+        Variable_Names.push_back("X-Momentum");
+        Variable_Names.push_back("Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+    } else {
+        Variable_Names.push_back("Density");
+        Variable_Names.push_back("X-Momentum");
+        Variable_Names.push_back("Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+        Variable_Names.push_back("Energy");
+    }
+    if (SecondIndex != NONE) {
+        if (config->GetKind_Turb_Model() == SST) {
+            Variable_Names.push_back("TKE");
+            Variable_Names.push_back("Omega");
+        } else {
+            /*--- S-A variants ---*/
+            Variable_Names.push_back("Nu_Tilde");
+        }
+    }
+    
+    /*--- If requested, register the limiter and residuals for all of the
+     equations in the current flow problem. ---*/
+    
+    if (!config->GetLow_MemoryOutput()) {
+        
+        /*--- Add the limiters ---*/
+        
+        if (config->GetWrt_Limiters()) {
+            //nVar_Par += nVar_Consv_Par;
+            if (incompressible) {
+                Variable_Names.push_back("Limiter_Pressure");
+                Variable_Names.push_back("Limiter_X-Momentum");
+                Variable_Names.push_back("Limiter_Y-Momentum");
+                if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+            } else {
+                Variable_Names.push_back("Limiter_Density");
+                Variable_Names.push_back("Limiter_X-Momentum");
+                Variable_Names.push_back("Limiter_Y-Momentum");
+                if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+                Variable_Names.push_back("Limiter_Energy");
+            }
+            if (SecondIndex != NONE) {
+                if (config->GetKind_Turb_Model() == SST) {
+                    Variable_Names.push_back("Limiter_TKE");
+                    Variable_Names.push_back("Limiter_Omega");
+                } else {
+                    /*--- S-A variants ---*/
+                    Variable_Names.push_back("Limiter_Nu_Tilde");
+                }
+            }
+        }
+        
+        /*--- Add the residuals ---*/
+        
+        if (config->GetWrt_Residuals()) {
+            //nVar_Par += nVar_Consv_Par;
+            if (incompressible) {
+                Variable_Names.push_back("Residual_Pressure");
+                Variable_Names.push_back("Residual_X-Momentum");
+                Variable_Names.push_back("Residual_Y-Momentum");
+                if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+            } else {
+                Variable_Names.push_back("Residual_Density");
+                Variable_Names.push_back("Residual_X-Momentum");
+                Variable_Names.push_back("Residual_Y-Momentum");
+                if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+                Variable_Names.push_back("Residual_Energy");
+            }
+            if (SecondIndex != NONE) {
+                if (config->GetKind_Turb_Model() == SST) {
+                    Variable_Names.push_back("Residual_TKE");
+                    Variable_Names.push_back("Residual_Omega");
+                } else {
+                    /*--- S-A variants ---*/
+                    Variable_Names.push_back("Residual_Nu_Tilde");
+                }
+            }
+        }
+        
+        /*--- Add the grid velocity. ---*/
+        
+        if (grid_movement) {
+            if (geometry->GetnDim() == 2) nVar_Par += 2;
+            else if (geometry->GetnDim() == 3) nVar_Par += 3;
+            
+            Variable_Names.push_back("Grid_Velx");
+            Variable_Names.push_back("Grid_Vely");
+            if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velz");
+        }
+        
+        
+        /*--- Add Pressure, Temperature, Cp, Mach. ---*/
+        
+        if (!incompressible) {
+            nVar_Par += 1; Variable_Names.push_back("Pressure");
+        }
+        
+        nVar_Par += 3; Variable_Names.push_back("Temperature");
+        if (config->GetOutput_FileFormat() == PARAVIEW){
+            Variable_Names.push_back("Pressure_Coefficient");
+        } else {
+            Variable_Names.push_back("C<sub>p</sub>");
+        }
+        Variable_Names.push_back("Mach");
+        
+        /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
+        
+        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+            if (config->GetOutput_FileFormat() == PARAVIEW){
+                nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
+                nVar_Par += 2; Variable_Names.push_back("Skin_Friction_Coefficient_X");
+                Variable_Names.push_back("Skin_Friction_Coefficient_Y");
+                if (geometry->GetnDim() == 3) {
+                    nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
+                }
+                nVar_Par += 2; Variable_Names.push_back("Heat_Flux");
+                Variable_Names.push_back("Y_Plus");
+            } else {
+                nVar_Par += 1; Variable_Names.push_back("<greek>m</greek>");
+                nVar_Par += 2; Variable_Names.push_back("C<sub>f</sub>_x");
+                Variable_Names.push_back("C<sub>f</sub>_y");
+                if (geometry->GetnDim() == 3) {
+                    nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
+                }
+                nVar_Par += 2;
+                Variable_Names.push_back("h");
+                Variable_Names.push_back("y<sup>+</sup>");
+            }
+        }
+        
+        /*--- Add Eddy Viscosity. ---*/
+        
+        if (Kind_Solver == RANS) {
+            nVar_Par += 1;
+            if (config->GetOutput_FileFormat() == PARAVIEW){
+                Variable_Names.push_back("Eddy_Viscosity");
+            } else {
+                Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
+            }
+        }
+        
+        /*--- Add the distance to the nearest sharp edge if requested. ---*/
+        
+        if (config->GetWrt_SharpEdges()) {
+            nVar_Par += 1; Variable_Names.push_back("Sharp_Edge_Dist");
+        }
+        
+        /*--- New variables get registered here before the end of the loop. ---*/
+        
+    }
+    
+    if (config->GetWrt_Binary_Restart()) {
+        /*--- Prepare the first four ints containing the counts. The last two values
+         are for metadata: one int for ExtIter and 5 su2doubles. ---*/
+        unsigned long nPoint = geometry->GetGlobal_nPointDomain();
+        
+        int var_buf_size = 4;
+        int var_buf[4] = {nVar_Total, (int)nPoint, 1, 5};
+        
+        /*--- Prepare the 1D data buffer on this rank. ---*/
+        
+        passivedouble *buf = new passivedouble[nPoint*nVar_Total];
+        
+        /*--- For now, create a temp 1D buffer to load up the data for writing.
+         This will be replaced with a derived data type most likely. ---*/
+        
+        for (iPoint = 0; iPoint < nPoint; iPoint++)
+            for (iVar = 0; iVar < nVar_Total; iVar++)
+                buf[iPoint*nVar_Total+iVar] = SU2_TYPE::GetValue(Data[iVar][iPoint]);
+        
+        /*--- Prepare metadata. ---*/
+        int Restart_ExtIter;
+        if (dual_time)
+            Restart_ExtIter= (int)config->GetExtIter() + 1;
+        else
+            Restart_ExtIter = (int)config->GetExtIter() + (int)config->GetExtIter_OffSet() + 1;
+
+        passivedouble Restart_Metadata[5] = {
+            SU2_TYPE::GetValue(config->GetAoA() - config->GetAoA_Offset()),
+            SU2_TYPE::GetValue(config->GetAoS() - config->GetAoS_Offset()),
+            SU2_TYPE::GetValue(config->GetInitial_BCThrust()),
+            SU2_TYPE::GetValue(config->GetdCD_dCL()),
+            0.0
+        };
+        if (adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+
+        char str_buf[CGNS_STRING_SIZE], fname[100];
+        strcpy(fname, filename.c_str());
+
+        FILE* fhw;
+        fhw = fopen(fname, "wb");
+
+        /*--- Error check for opening the file. ---*/
+        
+        if (!fhw) {
+            cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+            exit(EXIT_FAILURE);
+        }
+
+        
+        /*--- First, write the number of variables and points. ---*/
+        
+        fwrite(var_buf, var_buf_size, sizeof(int), fhw);
+        cout << " Check 1" << endl;
+        /*--- Write the variable names to the file. Note that we are adopting a
+         fixed length of 33 for the string length to match with CGNS. This is
+         needed for when we read the strings later. ---*/
+        
+        for (iVar = 0; iVar < nVar_Total; iVar++) {
+            strcpy(str_buf, Variable_Names[iVar].c_str());
+            fwrite(str_buf, CGNS_STRING_SIZE, sizeof(char), fhw);
+        }
+        cout << " Check 2" << endl;
+        /*--- Call to write the entire restart file data in binary in one shot. ---*/
+        
+        fwrite(buf, nVar_Total*nPoint, sizeof(passivedouble), fhw);
+        cout << " Check 3" << endl;
+        /*--- Write the external iteration. ---*/
+        
+        fwrite(&Restart_ExtIter, 1, sizeof(int), fhw);
+        cout << " Check 4" << endl;
+        /*--- Write the metadata. ---*/
+        
+        fwrite(Restart_Metadata, 5, sizeof(passivedouble), fhw);
+        cout << " Check 5" << endl;
+        return;
+    }
+    cout << " Done with restart for binary " << endl;
     /*--- Open the restart file and write the solution. ---*/
     
     restart_file.open(filename.c_str(), ios::out);
@@ -7596,8 +7846,9 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           
         /* For interpolation of solution from one mesh to another */
         cout << "Writing SU2 native restart file." << endl;
-        SetBaselineRestart(config[iZone], geometry[iZone], solver, iZone);
-          
+          if(geometry[ZONE_0]->GetnPoint() < 10000)
+              SetBaselineRestart(config[iZone], geometry[iZone], solver, iZone);
+  //      SetBaselineRestart(config[iZone], geometry[iZone], solver, iZone);
         if (Wrt_Vol) {
           
           switch (FileFormat) {
@@ -15863,7 +16114,6 @@ unsigned long COutput::FindProbeLocElement_fromNearestNode(CGeometry *geometry,
     unsigned long jElem, probe_elem;
     /* Total number of points in given processor */
     unsigned long nPoint_proc = geometry->GetnPoint();
-    //cout << "nPoint = " << nPoint_proc << endl;
     bool Inside=false;
     unsigned short nElem_node = geometry->node[pointID]->GetnElem();
     //cout << "Number of elements containing Node " <<  geometry->node[pointID]->GetGlobalIndex()  << " are " << nElem_node << endl;
@@ -15963,7 +16213,7 @@ bool COutput::IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,uns
 
 void COutput::Isoparameters(unsigned short nDim, unsigned short nDonor,
                                    su2double *X, su2double *xj, su2double *isoparams) {
-    //cout << "Inside isoparameters method in the inteprolator class " << endl;
+
     short iDonor,iDim,k; // indices
     su2double tmp, tmp2;
     su2double x[nDim+1];
