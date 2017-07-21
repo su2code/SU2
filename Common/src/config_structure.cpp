@@ -2948,7 +2948,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Setting relaxation factor and CFL for the adjoint runs ---*/
 
   if (ContinuousAdjoint) {
-//  if (ContinuousAdjoint || DiscreteAdjoint) {
     Relaxation_Factor_Flow = Relaxation_Factor_AdjFlow;
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[2] *= CFLRedCoeff_AdjFlow;
@@ -2957,15 +2956,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Iter_Fixed_CM = SU2_TYPE::Int(su2double (Iter_Fixed_CM) / CFLRedCoeff_AdjFlow);
     Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
-  
-//  if (DiscreteAdjoint) {
-//	  Kind_ConvNumScheme_Flow = Kind_ConvNumScheme_AdjFlow;
-//	  Kind_Centered_Flow = Kind_Centered_AdjFlow;
-//	  Kind_Upwind_Flow = Kind_Upwind_AdjFlow;
-//	  Kappa_Flow[0] = Kappa_AdjFlow[0];
-//	  Kappa_Flow[1] = Kappa_AdjFlow[1];
-//	  Kappa_Flow[2] = Kappa_AdjFlow[2];
-//  }
 
   if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nExtIter+1; Update_Alpha = 0; }
   if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nExtIter+1; Update_iH = 0; }
