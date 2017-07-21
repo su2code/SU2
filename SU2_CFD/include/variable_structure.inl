@@ -303,6 +303,8 @@ inline void CVariable::SetObjFuncSource(su2double *val_ObjFuncSource) { }
 
 inline void CVariable::SetIntBoundary_Jump(su2double *val_IntBoundary_Jump) { }
 
+inline su2double CVariable::GetGammaBC(void) { return 0; }
+
 inline void CVariable::SetEnthalpy(void) { }
 
 inline bool CVariable::SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config) { return true; }
