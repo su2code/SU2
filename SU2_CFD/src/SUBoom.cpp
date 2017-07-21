@@ -1038,9 +1038,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
   /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
   if (nDonor==4) {
     //-- Bilinear coordinates, bounded by [-1,1] ---
-    /*su2double xi, eta;
-    xi = (1.0-isoparams[0]/isoparams[1])/(1.0+isoparams[0]/isoparams[1]);
-    eta = 1- isoparams[2]*4/(1+xi);
+    su2double xi, eta;
     if (xi>1.0) xi=1.0;
     if (xi<-1.0) xi=-1.0;
     if (eta>1.0) eta=1.0;
@@ -1048,26 +1046,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     isoparams[0]=0.25*(1-xi)*(1-eta);
     isoparams[1]=0.25*(1+xi)*(1-eta);
     isoparams[2]=0.25*(1+xi)*(1+eta);
-    isoparams[3]=0.25*(1-xi)*(1+eta);*/
-    tmp = 0.0;
-    tmp2 = 0.0;
-    k = 0;
-    for(iDonor = 0; iDonor < nDonor; iDonor++){
-      if(isoparams[iDonor] > tmp2){
-        k = iDonor;
-        tmp2 = isoparams[iDonor];
-      }
-      if(isoparams[iDonor] < 0) isoparams[iDonor] = 0;
-      if(isoparams[iDonor] > 1) isoparams[iDonor] = 1;
-      tmp += isoparams[iDonor];
-    }
-    if(tmp > 0){
-      for(iDonor = 0; iDonor < nDonor; iDonor++){
-        isoparams[iDonor] /= tmp;
-      }
-    }
-    else isoparams[k] = 1.0;
-
+    isoparams[3]=0.25*(1-xi)*(1+eta);
   }
 /*  if (nDonor<4) {
     tmp = 0.0; // value for normalization
