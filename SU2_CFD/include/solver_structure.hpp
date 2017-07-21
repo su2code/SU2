@@ -7,8 +7,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -111,9 +111,12 @@ protected:
   
   su2double **Smatrix,  /*!< \brief Auxiliary structure for computing gradients by least-squares */
   **Cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  
+
+  int *Restart_Vars;       /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
+  int Restart_ExtIter;     /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
+  passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
-  
+
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -454,7 +457,13 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void Set_OldSolution(CGeometry *geometry);
-  
+
+  /*!
+   * \brief Set the new solution variables to the current solution value for classical RK.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void Set_NewSolution(CGeometry *geometry);
+
   /*!
    * \brief Load the geometries at the previous time states n and nM1.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -609,7 +618,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_ComboObj(CConfig *config);
+  virtual void Evaluate_ObjFunc(CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -732,10 +741,11 @@ public:
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] numerics - Description of the numerical method.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -1255,24 +1265,45 @@ public:
    */
   virtual su2double GetAveragedTangVelocity(unsigned short valMarker);
   
-   /*!
-  * \brief Get the outer state for fluid interface nodes.
-  * \param[in] val_marker - marker index
-  * \param[in] val_vertex - vertex index
-  * \param[in] val_state  - requested state component
-  */
-  virtual su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
-  
- /*!
-  * \brief Set the outer state for fluid interface nodes.
-  * \param[in] val_marker - marker index
-  * \param[in] val_vertex - vertex index
-  * \param[in] val_state  - requested state component
-  * \param[in] component  - set value
-  */
-  virtual void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+  /*!
+   * \brief Get the outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] val_state  - requested state component
+   */
+  virtual su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
 
-  
+  /*!
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   */
+  virtual void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] val_state  - requested state component
+   * \param[in] component  - set value
+   */
+  virtual void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+
+  /*!
+   * \brief Get the number of outer states for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  virtual int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set the number of outer states for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] value      - number of outer states
+   */
+  virtual void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
+    
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1282,7 +1313,17 @@ public:
    */
   virtual void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iRKStep);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  virtual void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                      unsigned short iRKStep);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1314,8 +1355,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1552,7 +1592,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
@@ -1645,15 +1685,17 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  virtual void SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
+  virtual void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
   
   /*!
    * \brief A virtual member.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  virtual void AddTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
+  virtual void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
   
   /*!
    * \brief A virtual member.
@@ -2406,9 +2448,9 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   * \return Value of the custom objective function.
    */
-  virtual su2double GetTotal_Custom(void);
+  virtual su2double GetTotal_Custom_ObjFunc(void);
 
   /*!
    * \brief A virtual member.
@@ -3092,49 +3134,49 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged pressure at a marker.(same as area averaged pressure)
+   * \ Get the one-dimensionalized pressure at a marker.(same as area averaged pressure)
    */
-  virtual su2double GetOneD_FluxAvgPress(void);
+  virtual su2double GetOneD_AvgPress(void);
   
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged pressure at a marker. (same as area averaged pressure)
+   * \ Set the one-dimensionalized pressure at a marker. (same as area averaged pressure)
    */
-  virtual void SetOneD_FluxAvgPress(su2double PressureRef);
+  virtual void SetOneD_AvgPress(su2double Pressure1D);
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged density at a marker. (\f$ = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
+   * \ Get the one-dimensionalized density at a marker. (\f$ = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
    */
-  virtual su2double GetOneD_FluxAvgDensity(void);
+  virtual su2double GetOneD_AvgDensity(void);
   
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged density at a marker.( \f$= (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
+   * \ Set the one-dimensionalized density at a marker.( \f$= (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
    */
-  virtual void SetOneD_FluxAvgDensity(su2double DensityRef);
+  virtual void SetOneD_AvgDensity(su2double Density1D);
   
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged velocity at a marker. = \f$ \sqrt ( \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
+   * \ Get the one-dimensionalized velocity at a marker. = \f$ \sqrt ( \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
    */
-  virtual su2double GetOneD_FluxAvgVelocity(void);
+  virtual su2double GetOneD_AvgVelocity(void);
   
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged velocity at a marker. = \f$ \sqrt (  \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
+   * \ Set the one-dimensionalized velocity at a marker. = \f$ \sqrt (  \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
    */
-  virtual void SetOneD_FluxAvgVelocity(su2double VelocityRef);
+  virtual void SetOneD_AvgVelocity(su2double Velocity1D);
   
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA )} \f$
+   * \ Get the one-dimensionalized enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA )} \f$
    */
-  virtual su2double GetOneD_FluxAvgEntalpy(void);
+  virtual su2double GetOneD_AvgEnthalpy(void);
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA ) }\f$
+   * \ Set the one-dimensionalized enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA ) }\f$
    */
-  virtual void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
+  virtual void SetOneD_AvgEnthalpy(su2double Enthalpy1D);
 
   /*!
    * \brief A virtual member.
@@ -3268,10 +3310,35 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   virtual void LoadRestart(CGeometry **geometry, CSolver ***solver,
-                           CConfig *config, int val_iter);
-  
+                           CConfig *config, int val_iter, bool val_update_geo);
+
+  /*!
+   * \brief Read a native SU2 restart file in ASCII format.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, string val_filename);
+
+  /*!
+   * \brief Read a native SU2 restart file in binary format.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, string val_filename);
+
+  /*!
+   * \brief Read the metadata from a native SU2 restart file (ASCII or binary).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, string val_filename);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3525,7 +3592,7 @@ public:
    * \brief A virtual member.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  virtual void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
+  virtual void SetRecording(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -3561,7 +3628,14 @@ public:
    * \brief Constructor of the class.
    */
   CBaselineSolver(void);
-  
+
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBaselineSolver(CGeometry *geometry, CConfig *config);
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3570,14 +3644,12 @@ public:
    * \param[in] field_names - Vector of variable names.
    */
   CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names);
-  
+
   /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Destructor of the class.
    */
-  CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+  virtual ~CBaselineSolver(void);
+
   /*!
    * \brief Impose the send-receive boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3591,8 +3663,9 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
   /*!
    * \brief Load a FSI solution from a restart file.
@@ -3602,11 +3675,12 @@ public:
    * \param[in] val_iter - Current external iteration number.
    */
   void LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter);
-  
+
   /*!
-   * \brief Destructor of the class.
+   * \brief Set the number of variables and string names from the restart file.
+   * \param[in] config - Definition of the particular problem.
    */
-  virtual ~CBaselineSolver(void);
+  void SetOutputVariables(CGeometry *geometry, CConfig *config);
   
 };
 
@@ -3745,11 +3819,11 @@ protected:
   OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
   OneD_Mach, /*!< \brief area average Mach evaluated at an exit */
   OneD_Temp, /*!< \brief area average Temperature evaluated at an exit */
-  OneD_PressureRef, /*!< \brief area average Pressure evaluated at an exit */
+  OneD_Pressure1D, /*!< \brief area average Pressure evaluated at an exit */
   OneD_MassFlowRate, /*!< \brief Mass flow rate at an exit */
-  OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
-  OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
-  OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
+  OneD_Density1D, /*!< \brief one-dimensionalized density evaluated at an exit */
+  OneD_Enthalpy1D, /*!< \brief one-dimensionalized enthalpy evaluated at an exit */
+  OneD_Velocity1D, /*!< \brief one-dimensionalized velocity evaluated at an exit */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   AoA_Prev, /*!< \brief Old value of the AoA for fixed lift mode. */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
@@ -3771,7 +3845,7 @@ protected:
   Total_Poly_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_NetCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_BCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
-  Total_Custom,        /*!< \brief Total IDC coefficient for all the boundaries. */
+  Total_Custom_ObjFunc,        /*!< \brief Total custom objective function for all the boundaries. */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
   Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
@@ -3805,6 +3879,7 @@ protected:
   *Surface_CMz,            /*!< \brief z Moment coefficient for each monitoring surface. */
   *Surface_HF_Visc,            /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;         /*!< \brief Maximum heat flux for each monitored surface. */
+  
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -3889,7 +3964,8 @@ protected:
 
   /* Sliding meshes variables */
 
-  su2double ***SlidingState;
+  su2double ****SlidingState;
+  int **SlidingStateNodes;
 
 public:
   
@@ -3965,8 +4041,7 @@ public:
    * \return Value of the pressure at the infinity.
    */
   CFluidModel* GetFluidModel(void);
-  
-  
+
   /*!
    * \brief Compute the density at the infinity.
    * \return Value of the density at the infinity.
@@ -4051,6 +4126,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeConsExtrapolation(CConfig *config);
+
   /*!
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4242,7 +4318,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_ComboObj(CConfig *config);
+  void Evaluate_ObjFunc(CConfig *config);
   
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -4284,10 +4360,11 @@ public:
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] numerics - Description of the numerical method.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
     
   /*!
    * \brief Impose the engine inflow boundary condition.
@@ -4756,7 +4833,13 @@ public:
    * \param[in] b - value 2.
    */
   static bool Compareval(std::vector<su2double> a,std::vector<su2double> b);
-  
+
+  /*!
+   * \brief Set the new solution variables to the current solution value for classical RK.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void Set_NewSolution(CGeometry *geometry);
+
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4766,7 +4849,17 @@ public:
    */
   void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep);
-  
+
+  /*!
+   * \brief Update the solution using the classical fourth-order Runge-Kutta scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                              unsigned short iRKStep);
+
   /*!
    * \brief Compute the Fan face Mach number.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4864,7 +4957,7 @@ public:
   * \param[in] val_vertex - vertex index
   * \param[in] val_state  - requested state component
   */
-  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
 
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
@@ -5347,10 +5440,10 @@ public:
   su2double GetTotal_DC60(void);
   
   /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
-   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   * \brief Provide the total custom objective function.
+   * \return Value of the custom objective function.
    */
-  su2double GetTotal_Custom(void);
+  su2double GetTotal_Custom_ObjFunc(void);
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.
@@ -5533,16 +5626,18 @@ public:
   void SetTotal_DC60(su2double val_Total_DC60);
   
   /*!
-   * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \brief Set the value of the custom objective function.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  void SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
+  void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
   
   /*!
-   * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \brief Add the value of the custom objective function.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  void AddTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
+  void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
 
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
@@ -5866,44 +5961,44 @@ public:
   void SetOneD_MassFlowRate(su2double MassFlowRate);
   
   /*!
-   * \brief Get the flux averaged pressure at a marker.(same as area averaged pressure)
+   * \brief Get the one-dimensionalized pressure at a marker.(same as area averaged pressure)
    */
-  su2double GetOneD_FluxAvgPress(void);
+  su2double GetOneD_AvgPress(void);
   
   /*!
-   * \brief Set the flux averaged pressure at a marker. (same as area averaged pressure)
+   * \brief Set the one-dimensionalized pressure at a marker. (same as area averaged pressure)
    */
-  void SetOneD_FluxAvgPress(su2double PressureRef);
+  void SetOneD_AvgPress(su2double Pressure1D);
   
   /*!
-   * \brief Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+   * \brief Get the one-dimensionalized density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
    */
-  su2double GetOneD_FluxAvgDensity(void);
+  su2double GetOneD_AvgDensity(void);
   
   /*!
-   * \brief Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+   * \brief Set the one-dimensionalized density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
    */
-  void SetOneD_FluxAvgDensity(su2double DensityRef);
+  void SetOneD_AvgDensity(su2double Density1D);
   
   /*!
-   * \brief Get the flux averaged velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
+   * \brief Get the one-dimensionalized velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
    */
-  su2double GetOneD_FluxAvgVelocity(void);
+  su2double GetOneD_AvgVelocity(void);
   
   /*!
-   * \brief Set the flux averaged velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
+   * \brief Set the one-dimensionalized velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
    */
-  void SetOneD_FluxAvgVelocity(su2double VelocityRef);
+  void SetOneD_AvgVelocity(su2double Velocity1D);
   
   /*!
-   * \brief Get the flux averaged enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
+   * \brief Get the one-dimensionalized enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
    */
-  su2double GetOneD_FluxAvgEntalpy(void);
+  su2double GetOneD_AvgEnthalpy(void);
   
   /*!
-   * \brief Set the flux averaged enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
+   * \brief Set the one-dimensionalized enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
    */
-  void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
+  void SetOneD_AvgEnthalpy(su2double Enthalpy1D);
   
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -5943,17 +6038,41 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
-  
- /*!
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
+  /*!
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   */
+  void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
+      
+  /*!
    * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] donor_index  - index of the donor node to set
+   * \param[in] component    - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+
+  /*!
+   * \brief Set the number of outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
-   * \param[in] val_state  - requested state component
-   * \param[in] component  - set value
+   * \param[in] value - number of outer states
    */
-  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+  void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
+
+  /*!
+   * \brief Get the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
     
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -7274,8 +7393,9 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -8094,7 +8214,14 @@ protected:
   *upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
+  unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
+  *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
   
+  /* Sliding meshes variables */
+
+  su2double ****SlidingState;
+  int **SlidingStateNodes;
+
 public:
   
   /*!
@@ -8109,6 +8236,7 @@ public:
   
   /*!
    * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
    */
   CTurbSolver(CConfig *config);
   
@@ -8212,9 +8340,49 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
+ /*!
+  * \brief Get the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  */
+  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
+
+  /*!
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   */
+  void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
+      
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] donor_index  - index of the donor node to set
+   * \param[in] component    - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+
+  /*!
+   * \brief Set the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] value - number of outer states
+   */
+  void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
+
+  /*!
+   * \brief Get the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
 };
 
 /*!
@@ -8388,7 +8556,17 @@ public:
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
-  
+
+  /*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+
   /*!
    * \brief Impose the near-field boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8582,6 +8760,16 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
   
+ /*!
+  * \brief Impose the interface state across sliding meshes.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+
   /*!
    * \brief Get the constants for the SST model.
    * \return A pointer to an array containing a set of constants
@@ -9356,8 +9544,17 @@ public:
    * \param[in] ExtIter - External iteration.
    */
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-  
-  
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
 };
 
 /*!
@@ -9394,7 +9591,9 @@ protected:
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
   su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
   *FlowPrimVar_j;        /*!< \brief Store the flow solution at point j. */
-  
+
+  unsigned long **DonorGlobalIndex;     /*!< \brief Value of the donor global index. */
+
   su2double pnorm,
   Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
   
@@ -9787,8 +9986,17 @@ public:
    * \param[in] ExtIter - External iteration.
    */
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-  
-  
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
 };
 
 /*!
@@ -10415,15 +10623,6 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-  
-  /*!
-   * \brief Load a solution from a restart file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iter - Current external iteration number.
-   */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
   
   /*!
    * \brief Compute the total wave strength coefficient.
@@ -11081,6 +11280,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_Prestretch(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 };
 
 /*!
@@ -11381,12 +11590,6 @@ public:
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Register the objective function as output.
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  void RegisterObj_Func(CConfig *config);
-  
-  /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -11399,14 +11602,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Set the objective function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
-  
   
   /*!
    * \brief Provide the total shape sensitivity coefficient.
@@ -11463,7 +11658,7 @@ public:
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
+  void SetRecording(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -11490,5 +11685,16 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
 };
 #include "solver_structure.inl"

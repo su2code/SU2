@@ -5,8 +5,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -160,28 +160,52 @@ public:
    */
   virtual void Postprocess();
 
+  virtual void InitializeAdjoint(CSolver ****solver_container,
+                                 CGeometry ***geometry_container,
+                                 CConfig **config_container,
+                                 unsigned short iZone){}
+
+  virtual void RegisterInput(CSolver ****solver_container,
+                             CGeometry*** geometry_container,
+                             CConfig** config_container,
+                             unsigned short iZone,
+                             unsigned short kind_recording){}
+
+  virtual void SetDependencies(CSolver ****solver_container,
+                               CGeometry ***geometry_container,
+                               CConfig **config_container,
+                               unsigned short iZone,
+                               unsigned short kind_recording){}
+
+  virtual void RegisterOutput(CSolver ****solver_container,
+                              CGeometry*** geometry_container,
+                              CConfig** config_container,
+                              COutput* output,
+                              unsigned short iZone){}
+
+
 };
 
 
 /*!
- * \class CMeanFlowIteration
- * \brief Class for driving an iteration of the mean flow system.
+ * \class CFluidIteration
+ * \brief Class for driving an iteration of the fluid system.
  * \author T. Economon
  * \version 5.0.0 "Raven"
  */
-class CMeanFlowIteration : public CIteration {
+class CFluidIteration : public CIteration {
 public:
   
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CMeanFlowIteration(CConfig *config);
+  CFluidIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CMeanFlowIteration(void);
+  ~CFluidIteration(void);
   
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -199,7 +223,7 @@ public:
                   unsigned short val_iZone);
   
   /*!
-   * \brief Perform a single iteration of the mean flow system.
+   * \brief Perform a single iteration of the fluid system.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration_container - Container vector with all the integration methods.
    * \param[in] geometry_container - Geometrical definition of the problem.
@@ -222,7 +246,7 @@ public:
                unsigned short val_iZone);
   
   /*!
-   * \brief Updates the containers for the mean flow system.
+   * \brief Updates the containers for the fluid system.
    * \param[in] ??? - Description here.
    */
   void Update(COutput *output,
@@ -237,20 +261,18 @@ public:
               unsigned short val_iZone);
   
   /*!
-   * \brief Monitors the convergence and other metrics for the mean flow system.
+   * \brief Monitors the convergence and other metrics for the fluid system.
    * \param[in] ??? - Description here.
    */
   void Monitor();
   
   /*!
-   * \brief Outputs desired files and quantities for the mean flow system.
-   * \param[in] ??? - Description here.
+   * \brief Outputs desired files and quantities for the fluid system.
    */
   void Output();
   
   /*!
-   * \brief Postprocesses the mean flow system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
+   * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.
    */
   void Postprocess();
   
@@ -681,24 +703,24 @@ public:
 };
 
 /*!
- * \class CAdjMeanFlowIteration
- * \brief Class for driving an iteration of the adjoint mean flow system.
+ * \class CAdjFluidIteration
+ * \brief Class for driving an iteration of the adjoint fluid system.
  * \author T. Economon
  * \version 5.0.0 "Raven"
  */
-class CAdjMeanFlowIteration : public CIteration {
+class CAdjFluidIteration : public CIteration {
 public:
   
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjMeanFlowIteration(CConfig *config);
+  CAdjFluidIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CAdjMeanFlowIteration(void);
+  ~CAdjFluidIteration(void);
   
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -716,7 +738,7 @@ public:
                   unsigned short val_iZone);
   
   /*!
-   * \brief Perform a single iteration of the adjoint mean flow system.
+   * \brief Perform a single iteration of the adjoint fluid system.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration_container - Container vector with all the integration methods.
    * \param[in] geometry_container - Geometrical definition of the problem.
@@ -739,7 +761,7 @@ public:
                unsigned short val_iZone);
   
   /*!
-   * \brief Updates the containers for the adjoint mean flow system.
+   * \brief Updates the containers for the adjoint fluid system.
    * \param[in] ??? - Description here.
    */
   void Update(COutput *output,
@@ -754,50 +776,35 @@ public:
               unsigned short val_iZone);
   
   /*!
-   * \brief Monitors the convergence and other metrics for the adjoint mean flow system.
-   * \param[in] ??? - Description here.
+   * \brief Monitors the convergence and other metrics for the adjoint fluid system.
    */
   void Monitor();
   
   /*!
-   * \brief Outputs desired files and quantities for the adjoint mean flow system.
-   * \param[in] ??? - Description here.
+   * \brief Outputs desired files and quantities for the adjoint fluid system.
    */
   void Output();
   
   /*!
-   * \brief Postprocesses the adjoint mean flow system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
+   * \brief Postprocesses the adjoint fluid system before heading to another physics system or the next iteration.
    */
   void Postprocess();
   
 };
 
 /*!
- * \class CDiscAdjMeanFlowIteration
- * \brief Class for driving an iteration of the discrete adjoint mean flow system.
+ * \class CDiscAdjFluidIteration
+ * \brief Class for driving an iteration of the discrete adjoint fluid system.
  * \author T. Economon
  * \version 5.0.0 "Raven"
  */
-class CDiscAdjMeanFlowIteration : public CIteration {
+class CDiscAdjFluidIteration : public CIteration {
 
 private:
 
-  CMeanFlowIteration* meanflow_iteration; /*!< \brief Pointer to the mean flow iteration class. */
+  CFluidIteration* fluid_iteration; /*!< \brief Pointer to the fluid iteration class. */
   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
   bool turbulent;       /*!< \brief Stores the turbulent flag. */
-
-  enum RECORDING{
-    NONE = 0,      /*!< \brief Indicates that nothing is recorded. */
-    FLOW_VARIABLES = 1, /*!< \brief Indicates that the current recording
-                                    can be used to compute the gradients with respect
-                                    to the conservative flow variables. */
-    GEOMETRY_VARIABLES = 2, /*!< \brief Indicates that the current recording
-                                       can be used to compute the gradients with respect
-                                       to the geometry variables. */
-    ALL_VARIABLES = 3,
-  };
-
 
 public:
   
@@ -805,12 +812,12 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjMeanFlowIteration(CConfig *config);
+  CDiscAdjFluidIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMeanFlowIteration(void);
+  ~CDiscAdjFluidIteration(void);
   
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -828,7 +835,7 @@ public:
                   unsigned short val_iZone);
   
   /*!
-   * \brief Perform a single iteration of the adjoint mean flow system.
+   * \brief Perform a single iteration of the adjoint fluid system.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration_container - Container vector with all the integration methods.
    * \param[in] geometry_container - Geometrical definition of the problem.
@@ -851,7 +858,7 @@ public:
                unsigned short val_iZone);
   
   /*!
-   * \brief Updates the containers for the discrete adjoint mean flow system.
+   * \brief Updates the containers for the discrete adjoint fluid system.
    * \param[in] ??? - Description here.
    */
   void Update(COutput *output,
@@ -866,78 +873,63 @@ public:
               unsigned short val_iZone);
   
   /*!
-   * \brief Monitors the convergence and other metrics for the discrete adjoint mean flow system.
+   * \brief Monitors the convergence and other metrics for the discrete adjoint fluid system.
    * \param[in] ??? - Description here.
    */
   void Monitor();
   
   /*!
-   * \brief Outputs desired files and quantities for the discrete adjoint mean flow system.
+   * \brief Outputs desired files and quantities for the discrete adjoint fluid system.
    * \param[in] ??? - Description here.
    */
   void Output();
   
   /*!
-   * \brief Postprocesses the discrete adjoint mean flow system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
+   * \brief Postprocess ???.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
   void Postprocess(); 
 
   /*!
-   * \brief Registers all input variables of the mean flow iteration.
+   * \brief Registers all input variables of the fluid iteration.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void InitializeAdjoint(CSolver ****solver_container,
+                         CGeometry*** geometry_container,
+                         CConfig** config_container,
+                         unsigned short iZone);
+
+  /*!
+   * \brief Registers all output variables of the fluid iteration.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    * \param[in] kind_recording - Kind of recording, either FLOW_VARIABLES or GEOMETRY_VARIABLES
    */
-  void RegisterInput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone, unsigned short kind_recording);
+  void RegisterInput(CSolver ****solver_container,
+                     CGeometry*** geometry_container,
+                     CConfig** config_container,
+                     unsigned short iZone,
+                     unsigned short kind_recording);
 
   /*!
-   * \brief Registers all output variables of the mean flow iteration.
+   * \brief Initializes the adjoints of the output variables of the fluid iteration.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void RegisterOutput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
-
-  /*!
-   * \brief Initializes the adjoints of the output variables of the meanflow iteration.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
-   */
-  void InitializeAdjoint(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
-
-
-  /*!
-   * \brief Record a single iteration of the direct mean flow system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] kind_recording - The kind of recording (geometry or flow).
-   */
-  void SetRecording(COutput *output,
-                      CIntegration ***integration_container,
-                      CGeometry ***geometry_container,
-                      CSolver ****solver_container,
-                      CNumerics *****numerics_container,
-                      CConfig **config_container,
-                      CSurfaceMovement **surface_movement,
-                      CVolumetricMovement **grid_movement,
-                      CFreeFormDefBox*** FFDBox,
-                      unsigned short val_iZone,
-                      unsigned short kind_recording);
-
+  void RegisterOutput(CSolver ****solver_container,
+                      CGeometry*** geometry_container,
+                      CConfig** config_container,
+											                      COutput* output,
+                      unsigned short iZone);
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
    * (e.g. turbulent variables, normals, volumes).

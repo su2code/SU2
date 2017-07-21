@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -53,13 +53,12 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(void) : CSolver() {
 }
 
 CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-  unsigned long iPoint, index, iVertex;
+  unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val, myArea_Monitored, Area, *Normal;
-  bool restart = config->GetRestart();
+  su2double myArea_Monitored, Area, *Normal;
   bool axisymmetric = config->GetAxisymmetric();
   
   int rank = MASTER_NODE;
@@ -249,72 +248,10 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
 
   }
 
-  if (!restart || (iMesh != MESH_0)) {
-    /*--- Restart the solution from infinity ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CAdjIncEulerVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
-  }
-  else {
-    
-    /*--- Restart the solution from file information ---*/
-    mesh_filename = config->GetSolution_AdjFileName();
-    filename = config->GetObjFunc_Extension(mesh_filename);
-    
-    restart_file.open(filename.data(), ios::in);
-    
-    /*--- In case there is no file ---*/
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    }
-    
-    /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;
-    
-    /*--- The first line is the header ---*/
-    getline (restart_file, text_line);
-    
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        node[iPoint_Local] = new CAdjIncEulerVariable(Solution, nDim, nVar, config);
-      }
-      iPoint_Global++;
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CAdjIncEulerVariable(Solution, nDim, nVar, config);
-    }
-    
-    /*--- Close the restart file ---*/
-    restart_file.close();
-    
-  }
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CAdjIncEulerVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
   
   /*--- Define solver parameters needed for execution of destructor ---*/
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) space_centered = true;
@@ -322,8 +259,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==OUTFLOW_GENERALIZED || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-    config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE || config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1061,7 +997,7 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
   
   su2double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
-  su2double RefLengthMoment  = config->GetRefLengthMoment();
+  su2double RefLength  = config->GetRefLength();
   su2double *RefOriginMoment = config->GetRefOriginMoment(0);
 
   ForceProj_Vector = new su2double[nDim];
@@ -1073,7 +1009,7 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
   CT = solver_container[FLOW_SOL]->GetTotal_CT();
   CQ = solver_container[FLOW_SOL]->GetTotal_CQ();
   invCD  = 1.0/CD; CLCD2  = CL/(CD*CD);
-  invCQ  = 1.0/CQ; CTRCQ2 = CT/(RefLengthMoment*CQ*CQ);
+  invCQ  = 1.0/CQ; CTRCQ2 = CT/(RefLength*CQ*CQ);
   
   x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
@@ -1118,15 +1054,15 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = (y - y_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -(z - z_origin)/RefLength; ForceProj_Vector[2] = (y - y_origin)/RefLength; }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = (z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = (z - z_origin)/RefLength; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -(x - x_origin)/RefLength; }
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] = -(y - y_origin)/RefLength; ForceProj_Vector[1] = (x - x_origin)/RefLength; }
+            if (nDim == 3) { ForceProj_Vector[0] = -(y - y_origin)/RefLength; ForceProj_Vector[1] = (x - x_origin)/RefLength; ForceProj_Vector[2] = 0; }
             break;
           case EFFICIENCY :
             if (nDim == 2) { ForceProj_Vector[0] = -(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = (invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
@@ -1163,8 +1099,8 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] = (y - y_origin)/RefLength; ForceProj_Vector[1] = -(x - x_origin)/RefLength; }
+            if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLength; ForceProj_Vector[1] = -(x - x_origin)/RefLength; ForceProj_Vector[2] = 0; }
             break;
           case FIGURE_OF_MERIT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
@@ -2257,7 +2193,7 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
 
   su2double Gas_Constant    = config->GetGas_ConstantND();
   bool grid_movement     = config->GetGrid_Movement();
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double Mach_Motion     = config->GetMach_Motion();
   unsigned short ObjFunc = config->GetKind_ObjFunc();
 
@@ -2282,14 +2218,14 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
   
   RefDensity  = config->GetDensity_FreeStreamND();
 
-  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
       (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-     (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+ if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+   factor = 1.0/Area_Monitored;
   
   /*--- Initialize sensitivities to zero ---*/
   
@@ -3475,12 +3411,7 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Pressure=0.0, Velocity2 = 0.0, Area=0.0, Density=0.0, Vn_Exit=0.0;
-  su2double Velocity[3], UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
-  su2double a2=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
-  /*Gradient terms for the generalized boundary */
-  su2double density_gradient, velocity_gradient;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
@@ -3502,14 +3433,6 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Set the normal point ---*/
 
@@ -3544,83 +3467,6 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       su2double coeff = (2.0*V_domain[1])/ solver_container[FLOW_SOL]->node[Point_Normal]->GetBetaInc2();
       Psi_outlet[1] = node[Point_Normal]->GetSolution(1);
       Psi_outlet[0] = -coeff*Psi_outlet[1];
-
-
-
-      /*--- Add terms for objective functions where additions are needed outside the energy term
-       *     Terms which are added to the energy term are taken care of in the supersonic section above ---*/
-      switch (config->GetKind_ObjFunc()){
-      case MASS_FLOW_RATE:
-        Psi_outlet[0]+=1;
-        break;
-      case OUTFLOW_GENERALIZED:
-        density_gradient = config->GetCoeff_ObjChainRule(0);
-        velocity_gradient = 0.0;    /*Inside the option, this term is $\vec{v} \cdot \frac{dg}{d\vec{v}}$ */
-        for (iDim=0; iDim<nDim; iDim++)
-          velocity_gradient += Velocity[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
-        /* repeated term */
-        /* Characteristic-based version (for possible future use.)
-        a1 = 1.0/(SoundSpeed+Vn_Exit); // Repeated term
-        normgrad = 0.0;   // n dot dgdv
-        velgradcross=0.0; // (v x n ) dot (dgdv x n)
-        for (iDim=0; iDim<nDim; iDim++){
-          normgrad += UnitNormal[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
-        }
-        velgradcross = (config->GetCoeff_ObjChainRule(1)*UnitNormal[1]-config->GetCoeff_ObjChainRule(2)*UnitNormal[0])*(Velocity[0]*UnitNormal[1]-Velocity[1]*UnitNormal[0]);
-        if (nDim==3){
-          velgradcross += (config->GetCoeff_ObjChainRule(2)*UnitNormal[2]-config->GetCoeff_ObjChainRule(3)*UnitNormal[1])*(Velocity[1]*UnitNormal[2]-Velocity[2]*UnitNormal[1]);
-          velgradcross +=(config->GetCoeff_ObjChainRule(3)*UnitNormal[0]-config->GetCoeff_ObjChainRule(1)*UnitNormal[2])*(Velocity[2]*UnitNormal[0]-Velocity[0]*UnitNormal[2]);
-        }
-        Psi_outlet[0]+= ((SoundSpeed+Vn_Exit+Vn)*density_gradient/Vn_Exit -SoundSpeed*Vn_Exit*pressure_gradient - velocity_gradient/Density )*a1;
-        Psi_outlet[0]-= velgradcross/Density/Vn_Exit*SoundSpeed*a1;
-        for (iDim=0; iDim<nDim; iDim++){
-          Psi_outlet[iDim+1]+=a1*UnitNormal[iDim]*(-density_gradient/Vn_Exit+ SoundSpeed*pressure_gradient - normgrad*SoundSpeed/Density/Vn_Exit);
-          Psi_outlet[iDim+1]+=(config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit);
-        }
-         */
-        /*Pressure-fixed version*/
-        if (Vn_Exit != 0.0){
-          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit;
-          for (iDim=0; iDim<nDim; iDim++){
-            Psi_outlet[iDim+1]+=config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit;
-          }
-        }
-        break;
-      case AVG_TOTAL_PRESSURE:
-        /*--- For total pressure objective function. NOTE: this is AREA averaged term---*/
-        Velocity2  = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-        /* Characteristic-based version
-        a1 = 1.0/(SoundSpeed+Vn_Exit);
-        Psi_outlet[0]-=a1*SoundSpeed*Velocity2/Vn_rel;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi_outlet[iDim+1] +=a1*UnitNormal[iDim]*(-Velocity2)/(2.0*Vn_Exit)+Velocity[iDim]/Vn_Exit;
-         */
-        /*Pressure-fixed version*/
-        if (Vn_Exit !=0.0){
-          a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/(Gamma_Minus_One));
-          density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
-          velocity_gradient=a2*Gamma_Minus_One*Density/(Gamma*Pressure); // re-using variable as the constant multiplying V[i] for dj/dvi
-          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit;
-          for (iDim=0; iDim<nDim; iDim++){
-            Psi_outlet[0]-=velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit);
-            Psi_outlet[iDim+1] += velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Vn_Exit*Vn_Exit);
-          }
-        }
-        break;
-      case AVG_OUTLET_PRESSURE:
-        /* Characteristic-based version
-        a1 = 1.0/(SoundSpeed+Vn_Exit);
-        Psi_outlet[0]+=-SoundSpeed*Vn_Exit*a1;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi_outlet[iDim+1]+=UnitNormal[iDim]*SoundSpeed*a1;
-         */
-        /*Pressure-fixed version: all 0s*/
-        break;
-      default:
-        break;
-      }
 
       /*--- Set the flow and adjoint states in the solver ---*/
 
@@ -3759,16 +3605,158 @@ void CAdjIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **sol
   
 }
 
+void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  /*--- Restart the solution from file information ---*/
+  unsigned short iDim, iVar, iMesh;
+  unsigned long iPoint, index, iChildren, Point_Fine;
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  string UnstExt, text_line, filename, restart_filename;
+  ifstream restart_file;
+
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry[iZone]->GetnZone();
+
+  /*--- Restart the solution from file information ---*/
+
+  filename         = config->GetSolution_AdjFileName();
+  restart_filename = config->GetObjFunc_Extension(filename);
+
+  Coord = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Coord[iDim] = 0.0;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+
+  /*--- Modify file name for an unsteady restart ---*/
+
+  if (dual_time || time_stepping)
+    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
+
+  /*--- Read all lines in the restart file ---*/
+
+  int counter = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+      node[iPoint_Local]->SetSolution(Solution);
+      iPoint_Global_Local++;
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+    }
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We also call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated. ---*/
+
+  solver[MESH_0][ADJFLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][ADJFLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+    solver[iMesh][ADJFLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][ADJFLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  }
+
+  delete [] Coord;
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+
+}
+
 CAdjIncNSSolver::CAdjIncNSSolver(void) : CAdjIncEulerSolver() { }
 
 CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CAdjIncEulerSolver() {
-  unsigned long iPoint, index, iVertex;
+  unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val, Area=0.0, *Normal = NULL, myArea_Monitored;
-  bool restart = config->GetRestart();
+  su2double Area=0.0, *Normal = NULL, myArea_Monitored;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -3925,78 +3913,15 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   Phi_Inf = new su2double [nDim];
   Phi_Inf[0] = 0.0; Phi_Inf[1] = 0.0;
   if (nDim == 3) Phi_Inf[2] = 0.0;
-  
-  if (!restart || (iMesh != MESH_0)) {
-    /*--- Restart the solution from infinity ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CAdjIncNSVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
-  }
-  else {
-    
-    /*--- Restart the solution from file information ---*/
-    mesh_filename = config->GetSolution_AdjFileName();
-    filename = config->GetObjFunc_Extension(mesh_filename);
-    
-    restart_file.open(filename.data(), ios::in);
-    
-    /*--- In case there is no file ---*/
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    }
-    
-    /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;
-    
-    /*--- The first line is the header ---*/
-    getline (restart_file, text_line);
-    
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        node[iPoint_Local] = new CAdjIncNSVariable(Solution, nDim, nVar, config);
-      }
-      iPoint_Global++;
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CAdjIncNSVariable(Solution, nDim, nVar, config);
-    }
-    
-    /*--- Close the restart file ---*/
-    restart_file.close();
 
-  }
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CAdjIncNSVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==OUTFLOW_GENERALIZED || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-    config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -4091,7 +4016,7 @@ void CAdjIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Compute gradients adj for viscous term coupling ---*/
 
-  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[ADJTURB_SOL]->SetSolution_Gradient_GG(geometry, config);
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[ADJTURB_SOL]->SetSolution_Gradient_LS(geometry, config);
   }
@@ -4196,7 +4121,7 @@ void CAdjIncNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     
     /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
     
-    if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+    if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
       
       /*--- Turbulent variables w/o reconstruction and its gradient ---*/
       
@@ -4228,7 +4153,7 @@ void CAdjIncNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   
   /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
   
-  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
 
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -4341,7 +4266,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   
   bool rotating_frame    = config->GetRotating_Frame();
   bool grid_movement     = config->GetGrid_Movement();
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double Mach_Motion     = config->GetMach_Motion();
   unsigned short ObjFunc = config->GetKind_ObjFunc();
   su2double Gas_Constant    = config->GetGas_ConstantND();
@@ -4367,14 +4292,13 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   
   RefDensity  = config->GetDensity_FreeStreamND();
   
-  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
       (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-     (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+ if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)) factor = 1.0/Area_Monitored;
 
 
   /*--- Compute gradient of the grid velocity, if applicable ---*/

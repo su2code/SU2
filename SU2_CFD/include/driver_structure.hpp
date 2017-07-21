@@ -5,8 +5,8 @@
  * \author T. Economon, H. Kline, R. Sanchez
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -589,6 +589,66 @@ public:
   void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 };
 
+
+/*!
+ * \class CDiscAdjMultiZoneDriver
+ * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
+ * \author T. Albring
+ * \version 4.3.0 "Cardinal"
+ */
+class CDiscAdjFluidDriver : public CFluidDriver {
+
+protected:
+  unsigned short RecordingState; /*!< \brief The kind of recording the tape currently holds.*/
+  su2double ObjFunc;             /*!< \brief The value of the objective function.*/
+  CIteration** direct_iteration; /*!< \brief A pointer to the direct iteration.*/
+
+public:
+
+  /*!
+    * \brief Constructor of the class.
+    * \param[in] confFile - Configuration file name.
+    * \param[in] val_nZone - Total number of zones.
+    * \param[in] val_nDim - Number of dimensions.
+    */
+  CDiscAdjFluidDriver(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim,
+                   SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjFluidDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the discrete adjoint solver within multiple zones.
+   */
+
+  void Run();
+
+  /*!
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (either CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   */
+
+  void SetRecording(unsigned short kind_recording);
+
+  /*!
+   * \brief Run one iteration of the solver. It is virtual because it depends on the kind of physics.
+   */
+  virtual void DirectRun();
+
+  /*!
+   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
+   */
+  virtual void SetObjFunction();
+
+  /*!
+   * \brief Initialize the adjoint value of the objective function.
+   */
+  void SetAdj_ObjFunction();
+};
 
 /*!
  * \class CHBDriver

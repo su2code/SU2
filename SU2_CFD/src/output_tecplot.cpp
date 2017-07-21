@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon, M. Colonno
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -929,7 +929,7 @@ void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool su
   
 }
 
-void COutput::SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
   unsigned short iVar, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
@@ -1029,7 +1029,14 @@ void COutput::SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSo
     /*--- Write the header ---*/
     
     Tecplot_File << "ZONE ";
-    
+    if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
+    } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+      /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
+      su2double period = config->GetHarmonicBalance_Period();
+      su2double deltaT = period/(su2double)(config->GetnTimeInstances());
+      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(val_iZone+1)<<", SOLUTIONTIME="<<deltaT*val_iZone<<", ";
+    }
     if (nDim == 2) {
       if (surf_sol) Tecplot_File << "NODES= "<< nGlobal_Surf_Poin <<", ELEMENTS= "<< nSurf_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
       else Tecplot_File << "NODES= "<< nGlobal_Poin_Par <<", ELEMENTS= "<< nGlobal_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
@@ -1738,6 +1745,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
     }
     
     delete [] ShareFromZone;
+
     wrote_base_file = true;
     
     err = TECEND112();
@@ -1766,6 +1774,9 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint(); 
+  unsigned short Kind_Solver = config->GetKind_Solver();
+  
   /*--- Consistent data for Tecplot zones ---*/
   Debug            = 0;
   IsDouble          = 1;
@@ -1783,11 +1794,32 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   ShareConnectivityFromZone  = 0;
   
   file.str(string());
-  buffer = config->GetFlow_FileName();
+
+  /*--- Write file name with extension ---*/
+  
+  if (adjoint)
+    buffer = config->GetAdj_FileName();
+  else buffer = config->GetFlow_FileName();
+  
+  if (Kind_Solver == FEM_ELASTICITY) {
+    buffer = config->GetStructure_FileName().c_str();
+  }
+  
+  if (Kind_Solver == WAVE_EQUATION) {
+    buffer = config->GetWave_FileName().c_str();
+  }
+  
+  if (Kind_Solver == HEAT_EQUATION) {
+    buffer = config->GetHeat_FileName().c_str();
+  }
+  
+  if (Kind_Solver == POISSON_EQUATION) {
+    buffer = config->GetStructure_FileName().c_str();
+  }
+  
   if (config->GetKind_SU2() == SU2_DOT) {
     buffer = config->GetVolSens_FileName();
   }
-
   file << buffer;
   
   if (unsteady) {
@@ -2656,6 +2688,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     delete [] ShareFromZone;
     delete [] LocalIndex;
     delete [] SurfacePoint;
+    
     wrote_surf_file = true;
     
     err = TECEND112();
@@ -2684,9 +2717,32 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  unsigned short Kind_Solver = config->GetKind_Solver();
   
   file.str(string());
-  buffer = config->GetSurfFlowCoeff_FileName();
+  
+  /*--- Write file name with extension ---*/
+  
+  if (adjoint) buffer = config->GetSurfAdjCoeff_FileName();
+  else buffer = config->GetSurfFlowCoeff_FileName();
+  
+  if (Kind_Solver == FEM_ELASTICITY) {
+    buffer = config->GetSurfStructure_FileName().c_str();
+  }
+  
+  if (Kind_Solver == WAVE_EQUATION) {
+    buffer = config->GetSurfWave_FileName().c_str();
+  }
+  
+  if (Kind_Solver == HEAT_EQUATION) {
+    buffer = config->GetSurfHeat_FileName().c_str();
+  }
+  
+  if (Kind_Solver == POISSON_EQUATION) {
+    buffer = config->GetSurfStructure_FileName().c_str();
+  }
+  
   if (config->GetKind_SU2() == SU2_DOT) {
     buffer = config->GetSurfSens_FileName();
   }

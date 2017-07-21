@@ -6,8 +6,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -160,13 +160,13 @@ public:
    * \return Pointer to the old solution vector.
    */
   su2double GetSolution_Old(unsigned short val_var);
-  
+
   /*!
    * \brief Set the value of the old solution.
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
   void SetSolution_Old(su2double *val_solution_old);
-  
+
   /*!
    * \overload
    * \param[in] val_var - Index of the variable.
@@ -178,12 +178,12 @@ public:
    * \brief Set old variables to the value of the current variables.
    */
   void Set_OldSolution(void);
-  
+
   /*!
    * \brief Set variables to the value of the old variables.
    */
   void Set_Solution(void);
-  
+
   /*!
    * \brief Set the variable solution at time n.
    */
@@ -242,7 +242,26 @@ public:
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   void AddSolution(unsigned short val_var, su2double val_solution);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  virtual su2double GetSolution_New(unsigned short val_var);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetSolution_New(void);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  virtual void AddSolution_New(unsigned short val_var, su2double val_solution);
+
   /*!
    * \brief Add a value to the solution, clipping the values.
    * \param[in] val_var - Index of the variable.
@@ -2656,6 +2675,10 @@ protected:
   su2double *Secondary;            /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   su2double **Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Secondary;   /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+
+  /*--- New solution container for Classical RK4 ---*/
+
+  su2double *Solution_New;
   
 public:
   
@@ -2689,7 +2712,26 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CEulerVariable(void);
-  
+
+  /*!
+   * \brief Get the new solution of the problem (Classical RK4).
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  su2double GetSolution_New(unsigned short val_var);
+
+  /*!
+   * \brief Set the new solution container for Classical RK4.
+   */
+  void SetSolution_New(void);
+
+  /*!
+   * \brief Add a value to the new solution container for Classical RK4.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  void AddSolution_New(unsigned short val_var, su2double val_solution);
+
   /*!
    * \brief Set to zero the gradient of the primitive variables.
    */

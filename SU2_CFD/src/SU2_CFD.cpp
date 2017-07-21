@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -78,11 +78,14 @@ int main(int argc, char *argv[]) {
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
-  if ( (config->GetKind_Solver() == FEM_ELASTICITY || config->GetKind_Solver() == POISSON_EQUATION || config->GetKind_Solver() == WAVE_EQUATION || config->GetKind_Solver() == HEAT_EQUATION) ) {
+  if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
+        config->GetKind_Solver() == POISSON_EQUATION ||
+        config->GetKind_Solver() == WAVE_EQUATION ||
+        config->GetKind_Solver() == HEAT_EQUATION) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     
-    if(nZone > 1 ) {
+    if (nZone > 1 ) {
       cout << "The required solver doesn't support multizone simulations" << endl; 
       exit(EXIT_FAILURE);
     }
@@ -106,8 +109,17 @@ int main(int argc, char *argv[]) {
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-    driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+  	if (config->GetDiscrete_Adjoint()){
 
+
+          driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+  	
+
+  	} else {
+
+          driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+
+  	}
   }
 
   delete config;
