@@ -94,7 +94,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-5.930145,-0.546310,0.300089,0.019393] #last 4 columns
+    fixedCL_naca0012.test_vals = [-5.767126,-0.377182,0.299930,0.019384] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -355,7 +355,7 @@ def main():
     contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixed_CL_naca0012.test_iter = 500
-    contadj_fixed_CL_naca0012.test_vals = [-5.767126, -0.377182, 0.299930, 0.019384] #last 4 columns
+    contadj_fixed_CL_naca0012.test_vals = [-2.093175,-6.967350,2.4987e-01,-1.9392e-05] #last 4 columns
     contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_fixed_CL_naca0012.timeout   = 1600
     contadj_fixed_CL_naca0012.tol       = 0.00001
