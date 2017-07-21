@@ -7,8 +7,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -4361,6 +4361,40 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, CConfig *config);
+};
+
+/*!
+ * \class CSourceBodyForce
+ * \brief Class for the source term integration of a body force.
+ * \ingroup SourceDiscr
+ * \author T. Economon
+ * \version 5.0.0 "Raven"
+ */
+class CSourceBodyForce : public CNumerics {
+  su2double *Body_Force_Vector;
+  bool compressible;
+
+public:
+
+  /*!
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceBodyForce(void);
+
+  /*!
+   * \brief Source term integration for a body force.
+   * \param[out] val_residual - Pointer to the residual vector.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, CConfig *config);
+
 };
 
 /*!
