@@ -3618,7 +3618,7 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
   ifstream restart_file;
 
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry[iZone]->GetnZone();
+  unsigned short nZone = config->GetnZone();
 
   /*--- Restart the solution from file information ---*/
 
