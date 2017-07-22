@@ -448,7 +448,7 @@ class TestCase:
 
                     if line.find('Chord') > -1:
                         raw_data = line.replace(",","").split()
-                        data.append(raw_data[2])
+                        data.append(raw_data[1])
                         found_chord = True
                         data.append(raw_data[5])
                         found_radius = True
