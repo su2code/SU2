@@ -1122,6 +1122,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief LIMIT_ADJFLOW \n DESCRIPTION: Limit value for the adjoint variable.\n DEFAULT: 1E6. \ingroup Config*/
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
+  /*!\brief MG_ADJFLOW\n DESCRIPTION: Multigrid with the adjoint problem. \n Defualt: YES \ingroup Config*/
+  addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
 
   /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
   addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
@@ -2096,6 +2098,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
   
+  /*--- Deactivate the multigrid in the adjoint problem ---*/
+  
+  if ((ContinuousAdjoint && !MG_AdjointFlow) ||
+      (Unsteady_Simulation == TIME_STEPPING)) { nMGLevels = 0; }
+
   /*--- If Fluid Structure Interaction, set the solver for each zone.
    *--- ZONE_0 is the zone of the fluid.
    *--- All the other zones are structure.
