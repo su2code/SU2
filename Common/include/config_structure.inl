@@ -803,6 +803,8 @@ inline su2double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation
 
 inline su2double CConfig::GetRelaxation_Factor_Turb(void) { return Relaxation_Factor_Turb; }
 
+inline su2double CConfig::GetRelaxation_Factor_Heat(void) { return Relaxation_Factor_Heat; }
+
 inline su2double CConfig::GetRelaxation_Factor_CHT(void) { return Relaxation_Factor_CHT; }
 
 inline su2double CConfig::GetRoe_Kappa(void) { return Roe_Kappa; }
