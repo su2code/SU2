@@ -397,7 +397,8 @@ void CConfig::SetPointersNull(void) {
   PlaneTag            = NULL;
   Kappa_Flow          = NULL;    
   Kappa_AdjFlow       = NULL;
-  Section_WingBounds    = NULL;
+  Kappa_Heat          = NULL;
+  Section_WingBounds  = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
   Design_Variable     = NULL;
@@ -444,6 +445,7 @@ void CConfig::SetPointersNull(void) {
   default_cfl_adapt     = NULL;
   default_ad_coeff_flow = NULL;
   default_ad_coeff_adj  = NULL;
+  default_ad_coeff_heat = NULL;
   default_obj_coeff     = NULL;
   default_geo_loc       = NULL;
   default_distortion    = NULL;
@@ -513,6 +515,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_cfl_adapt     = new su2double[4];
   default_ad_coeff_flow = new su2double[3];
   default_ad_coeff_adj  = new su2double[3];
+  default_ad_coeff_heat = new su2double[3];
   default_obj_coeff     = new su2double[5];
   default_geo_loc       = new su2double[2];
   default_distortion    = new su2double[2];
@@ -1098,6 +1101,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_ad_coeff_flow[0] = 0.15; default_ad_coeff_flow[1] = 0.5; default_ad_coeff_flow[2] = 0.02;
   /*!\brief AD_COEFF_FLOW \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
   addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_ad_coeff_flow);
+  default_ad_coeff_heat[0] = 0.15; default_ad_coeff_heat[1] = 0.5; default_ad_coeff_heat[2] = 0.02;
+  /*!\brief AD_COEFF_FLOW \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
+  addDoubleArrayOption("AD_COEFF_HEAT", 3, Kappa_Heat, default_ad_coeff_heat);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -1134,6 +1140,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONV_NUM_METHOD_ADJTURB\n DESCRIPTION: Convective numerical method for the adjoint/turbulent problem \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
 
+  /*!\brief CONV_NUM_METHOD_HEAT
+   *  \n DESCRIPTION: Convective numerical method \n DEFAULT: UPWIND */
+  addEnumOption("CONV_NUM_METHOD_HEAT", Kind_ConvNumScheme_Heat, Space_Map, SPACE_UPWIND);
   /*!\brief SPATIAL_ORDER_HEAT
    *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_HEAT", SpatialOrder_Heat, SpatialOrder_Map, FIRST_ORDER);
@@ -2839,6 +2848,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kappa_1st_AdjFlow = Kappa_AdjFlow[0];
   Kappa_2nd_AdjFlow = Kappa_AdjFlow[1];
   Kappa_4th_AdjFlow = Kappa_AdjFlow[2];
+  Kappa_1st_Heat = Kappa_Heat[0];
+  Kappa_2nd_Heat = Kappa_Heat[1];
+  Kappa_4th_Heat = Kappa_Heat[2];
   
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
@@ -3170,7 +3182,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kind_Upwind_Heat = SCALAR_UPWIND;
   if (Kind_Solver == HEAT_EQUATION)
     Kind_Upwind_Heat = NONE;
-  Kind_ConvNumScheme_Heat = SPACE_UPWIND;
   
   delete [] tmp_smooth;
   

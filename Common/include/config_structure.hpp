@@ -491,14 +491,18 @@ private:
   unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
-  *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
+  *Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
+  *Kappa_Heat;                    /*!< \brief Numerical dissipation coefficients for the heat equation. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
   Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
   Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
-  Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  Kappa_1st_Heat,     /*!< \brief 1st order dissipation coefficient for heat equation. */
+  Kappa_2nd_Heat,     /*!< \brief 2nd order dissipation coefficient for heat equation. */
+  Kappa_4th_Heat;     /*!< \brief 4th order dissipation coefficient for heat equation. */
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -838,6 +842,7 @@ private:
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  *default_ad_coeff_heat,     /*!< \brief Default artificial dissipation (heat) array for the COption class. */
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */
@@ -3621,6 +3626,26 @@ public:
    * \return Calibrated constant for the JST method for the flow equations.
    */
   su2double GetKappa_4th_Flow(void);
+
+
+  /*!
+   * \brief Value of the calibrated constant for the Lax method (center scheme).
+   * \note This constant is used in coarse levels and with first order methods.
+   * \return Calibrated constant for the Lax method.
+   */
+  su2double GetKappa_1st_Heat(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the JST method (center scheme).
+   * \return Calibrated constant for the JST-like method for the heat equations.
+   */
+  su2double GetKappa_2nd_Heat(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the JST-like method (center scheme).
+   * \return Calibrated constant for the JST-like method for the heat equation.
+   */
+  su2double GetKappa_4th_Heat(void);
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -3726,6 +3751,14 @@ public:
    */
   unsigned short GetKind_ConvNumScheme_AdjTurb(void);
   
+  /*!
+   * \brief Get the kind of convective numerical scheme for the heat equation.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of convective numerical scheme for the heat equation.
+   */
+  unsigned short GetKind_ConvNumScheme_Heat(void);
+
   /*!
    * \brief Get the kind of center convective numerical scheme for the adjoint turbulence equations.
    * \note This value is obtained from the config file, and it is constant

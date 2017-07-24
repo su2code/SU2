@@ -1607,8 +1607,19 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       numerics_container[iMGlevel][HEAT_SOL][VISC_TERM] = new CAvgGradCorrected_Heat(nDim, nVar_Heat, config);
       numerics_container[iMGlevel][HEAT_SOL][VISC_BOUND_TERM] = new CAvgGrad_Heat(nDim, nVar_Heat, config);
 
-      numerics_container[iMGlevel][HEAT_SOL][CONV_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
-      numerics_container[iMGlevel][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+      switch (config->GetKind_ConvNumScheme_Heat()) {
+        case SPACE_UPWIND :
+          numerics_container[iMGlevel][HEAT_SOL][CONV_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+          numerics_container[iMGlevel][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+          break;
+        case SPACE_CENTERED :
+          numerics_container[iMGlevel][HEAT_SOL][CONV_TERM] = new CCentSca_Heat(nDim, nVar_Heat, config);
+          numerics_container[iMGlevel][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+        break;
+        default :
+        cout << "Convective scheme not implemented (heat)." << endl; exit(EXIT_FAILURE);
+        break;
+      }
 
       /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
       numerics_container[iMGlevel][HEAT_SOL][SOURCE_FIRST_TERM] = new CSourceHeating(nDim, nVar_Heat, config);

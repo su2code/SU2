@@ -224,6 +224,10 @@ CHeatSolver::~CHeatSolver(void) {
 void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint;
+  bool center = (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED);
+
+  if (center)
+    SetUndivided_Laplacian(geometry, config);
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -402,6 +406,223 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 }
 
 
+void CHeatSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
+
+  unsigned long iPoint, jPoint, iEdge;
+  su2double *Diff;
+  unsigned short iVar;
+  bool boundary_i, boundary_j;
+
+  Diff = new su2double[nVar];
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    node[iPoint]->SetUnd_LaplZero();
+
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+
+    /*--- Solution differences ---*/
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      Diff[iVar] = node[iPoint]->GetSolution(iVar) - node[jPoint]->GetSolution(iVar);
+
+    boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+
+    /*--- Both points inside the domain, or both in the boundary ---*/
+
+    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
+      if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SubtractUnd_Lapl(Diff);
+      if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddUnd_Lapl(Diff);
+    }
+
+    /*--- iPoint inside the domain, jPoint on the boundary ---*/
+
+    if (!boundary_i && boundary_j)
+      if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SubtractUnd_Lapl(Diff);
+
+    /*--- jPoint inside the domain, iPoint on the boundary ---*/
+
+    if (boundary_i && !boundary_j)
+      if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddUnd_Lapl(Diff);
+
+  }
+
+  /*--- MPI parallelization ---*/
+
+  Set_MPI_Undivided_Laplacian(geometry, config);
+
+  delete [] Diff;
+
+}
+
+void CHeatSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
+  *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Send_Undivided_Laplacian = NULL;
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_Undivided_Laplacian = new su2double [nBufferR_Vector];
+      Buffer_Send_Undivided_Laplacian = new su2double[nBufferS_Vector];
+
+      /*--- Copy the solution old that should be sended ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send_Undivided_Laplacian[iVar*nVertexS+iVertex] = node[iPoint]->GetUndivided_Laplacian(iVar);
+      }
+
+#ifdef HAVE_MPI
+
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex] = Buffer_Send_Undivided_Laplacian[iVar*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_Undivided_Laplacian;
+
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
+
+        /*--- Retrieve the supplied periodic information. ---*/
+        angles = config->GetPeriodicRotation(iPeriodic_Index);
+
+        /*--- Store angles separately for clarity. ---*/
+        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
+        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
+        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
+
+        /*--- Compute the rotation matrix. Note that the implicit
+         ordering is rotation about the x-axis, y-axis,
+         then z-axis. Note that this is the transpose of the matrix
+         used during the preprocessing stage. ---*/
+        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+
+        /*--- Copy conserved variables before performing transformation. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          Solution[iVar] = Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex];
+
+        /*--- Rotate the momentum components. ---*/
+        if (nDim == 2) {
+          Solution[1] = rotMatrix[0][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
+          rotMatrix[0][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex];
+          Solution[2] = rotMatrix[1][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
+          rotMatrix[1][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex];
+        }
+        else {
+          Solution[1] = rotMatrix[0][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
+          rotMatrix[0][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
+          rotMatrix[0][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
+          Solution[2] = rotMatrix[1][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
+          rotMatrix[1][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
+          rotMatrix[1][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
+          Solution[3] = rotMatrix[2][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
+          rotMatrix[2][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
+          rotMatrix[2][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
+        }
+
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetUndivided_Laplacian(iVar, Solution[iVar]);
+
+      }
+
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_Undivided_Laplacian;
+
+    }
+
+  }
+
+}
+
+void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
+          **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad, Non_Physical = 1.0;
+  unsigned short iDim, iVar;
+  unsigned long iEdge, iPoint, jPoint;
+  bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
+
+  if(flow) {
+
+    nVarFlow = solver_container[FLOW_SOL]->GetnVar();
+
+      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+        /*--- Points in edge ---*/
+        iPoint = geometry->edge[iEdge]->GetNode(0);
+        jPoint = geometry->edge[iEdge]->GetNode(1);
+        numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+
+        /*--- Primitive variables w/o reconstruction ---*/
+        V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+        V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+
+        Temp_i = node[iPoint]->GetSolution(0);
+        Temp_j = node[jPoint]->GetSolution(0);
+
+        numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
+        numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+
+        numerics->SetPrimitive(V_i, V_j);
+        numerics->SetTemperature(Temp_i, Temp_j);
+
+        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+        LinSysRes.AddBlock(iPoint, Residual);
+        LinSysRes.SubtractBlock(jPoint, Residual);
+
+        /*--- Implicit part ---*/
+
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+        Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+      }
+  }
+}
+
 void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
   su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
@@ -430,7 +651,7 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         Temp_j = node[jPoint]->GetSolution(0); 
 
         /* Second order reconstruction */
-        if(second_order) {
+        if (second_order) {
 
             for (iDim = 0; iDim < nDim; iDim++) {
               Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -477,10 +698,11 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
             numerics->SetTemperature(Temp_i_Corrected, Temp_j_Corrected);
 
         }
+
         else {
 
-            numerics->SetPrimitive(V_i, V_j);
-            numerics->SetTemperature(Temp_i, Temp_j);
+          numerics->SetPrimitive(V_i, V_j);
+          numerics->SetTemperature(Temp_i, Temp_j);
         }
 
 

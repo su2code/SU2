@@ -37,6 +37,8 @@ CHeatVariable::CHeatVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
+
+  Undivided_Laplacian = NULL;
   
 }
 
@@ -47,6 +49,8 @@ CHeatVariable::CHeatVariable(su2double val_Heat, unsigned short val_nDim, unsign
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+  Undivided_Laplacian = NULL;
 
   /*--- Initialization of heat variable ---*/
   Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
@@ -73,6 +77,10 @@ CHeatVariable::CHeatVariable(su2double val_Heat, unsigned short val_nDim, unsign
   if (dual_time) {
     Solution_time_n[0]  = val_Heat;
     Solution_time_n1[0] = val_Heat;
+  }
+
+  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
+    Undivided_Laplacian = new su2double [nVar];
   }
 }
 

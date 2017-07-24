@@ -913,6 +913,12 @@ inline su2double CConfig::GetKappa_2nd_Flow(void) { return Kappa_2nd_Flow; }
 
 inline su2double CConfig::GetKappa_4th_Flow(void) { return Kappa_4th_Flow; }
 
+inline su2double CConfig::GetKappa_1st_Heat(void) { return Kappa_1st_Heat; }
+
+inline su2double CConfig::GetKappa_2nd_Heat(void) { return Kappa_2nd_Heat; }
+
+inline su2double CConfig::GetKappa_4th_Heat(void) { return Kappa_4th_Heat; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_AdjFlow(void) { return Kind_TimeIntScheme_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_AdjFlow(void) { return Kind_ConvNumScheme_AdjFlow; }
@@ -942,6 +948,8 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_AdjTurb(void) { return Kind
 inline unsigned short CConfig::GetKind_Centered_AdjTurb(void) { return Kind_Centered_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_Upwind_AdjTurb(void) { return Kind_Upwind_AdjTurb; }
+
+inline unsigned short CConfig::GetKind_ConvNumScheme_Heat(void) {	return Kind_ConvNumScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
