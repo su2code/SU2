@@ -611,6 +611,24 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
     }
   }
 
+  /*--- Skip flow adjoint variables ---*/
+  if (KindDirect_Solver== RUNTIME_2PHASE_SYS) {
+    if (compressible) {
+      if (nDim == 2) skipVars += 6;
+      if (nDim == 3) skipVars += 8;
+    }
+    if (incompressible) {
+      if (nDim == 2) skipVars += 5;
+      if (nDim == 3) skipVars += 7;
+    }
+
+    if (config->GetKind_Turb_Model() != NONE) {
+      if (config->GetKind_Turb_Model() == SST)
+        skipVars += 2;
+      else
+        skipVars += 1;
+    }
+  }
   /*--- Load data from the restart into correct containers. ---*/
 
   counter = 0;

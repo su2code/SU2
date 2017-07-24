@@ -3316,6 +3316,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case NAVIER_STOKES:
         Kind_Solver = DISC_ADJ_NAVIER_STOKES;
         break;
+      case TWO_PHASE_EULER:
+        Kind_Solver = DISC_ADJ_TWO_PHASE_EULER;
+        break;
+      case TWO_PHASE_NAVIER_STOKES:
+        Kind_Solver = DISC_ADJ_TWO_PHASE_NAVIER_STOKES;
+        break;
+      case TWO_PHASE_RANS:
+        Kind_Solver = DISC_ADJ_TWO_PHASE_RANS;
+        break;
       default:
         break;
     }

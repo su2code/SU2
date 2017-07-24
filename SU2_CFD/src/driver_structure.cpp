@@ -803,9 +803,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
-    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; disc_adj= true;  break;
-    case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; disc_adj = true;break;
-    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; disc_adj= true; adj_two_phase = true;  break;
+    case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; disc_adj = true; adj_two_phase=true; break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; adj_two_phase = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -1005,6 +1005,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
       if (adj_turb)
         solver_container[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+      if(adj_two_phase){
+        solver_container[MESH_0][ADJTWO_PHASE_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+      }
     }
   }
 
@@ -1179,7 +1182,9 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
-
+    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; disc_adj= true; break;
+    case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; disc_adj = true;  break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; break;
   }
 
   /*--- Allocate solution for a template problem ---*/
@@ -2445,7 +2450,7 @@ void CDriver::Iteration_Preprocessing() {
   switch (config_container[iZone]->GetKind_Solver()) {
 
     case EULER: case NAVIER_STOKES: case RANS:
-
+    case TWO_PHASE_EULER: case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
     if(config_container[iZone]->GetBoolTurbomachinery()){
       if (rank == MASTER_NODE)
         cout << ": Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
@@ -2489,19 +2494,8 @@ void CDriver::Iteration_Preprocessing() {
       iteration_container[iZone] = new CAdjFluidIteration(config_container[iZone]);
     break;
 
-  case TWO_PHASE_EULER: case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
-    if(config_container[iZone]->GetBoolTurbomachinery()){
-      if (rank == MASTER_NODE)
-        cout << ": Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
-      iteration_container[iZone] = new CTurboIteration(config_container[iZone]);
-    }else{
-      if (rank == MASTER_NODE)
-        cout << ": 2phase Euler/Navier-Stokes/RANS fluid iteration." << endl;
-        iteration_container[iZone] = new CFluidIteration(config_container[iZone]);
-    }
-    break;
-
    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+   case DISC_ADJ_TWO_PHASE_EULER: case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: case DISC_ADJ_TWO_PHASE_RANS:
     if (rank == MASTER_NODE)
         cout << ": discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration_container[iZone] = new CDiscAdjFluidIteration(config_container[iZone]);

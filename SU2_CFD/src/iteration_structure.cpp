@@ -1642,6 +1642,8 @@ void CAdjFluidIteration::Postprocess(CConfig **config_container,
 CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(config) {
   
   turbulent = ( config->GetKind_Solver() == DISC_ADJ_RANS);
+  two_phase = ((config->GetKind_Solver() == TWO_PHASE_EULER) || (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+               (config->GetKind_Solver() == TWO_PHASE_RANS));
   
 }
 
@@ -1665,8 +1667,6 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   bool dual_time = (dual_time_1st || dual_time_2nd);
   unsigned short iMesh;
   int Direct_Iter;
-  bool two_phase = ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) || (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-                   (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS));
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -1886,7 +1886,8 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
-  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
+  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)
+      || two_phase) {
 
     solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
 
@@ -1904,19 +1905,24 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
                                                                               config_container[val_iZone]);
   }
 
+  if(two_phase){
+    solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][MESH_0],
+                                                                                  config_container[val_iZone]);
   }
+
+
+
+}
   
     
 void CDiscAdjFluidIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
-  bool two_phase = ((config_container[iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
-                     (config_container[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-                     (config_container[iZone]->GetKind_Solver() == TWO_PHASE_RANS));
+
   /*--- Initialize the adjoints the conservative variables ---*/
 
-  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
+  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || two_phase) {
 
     solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
                                                                   config_container[iZone]);
@@ -1937,15 +1943,13 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
-  bool two_phase = ((config_container[iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
-                   (config_container[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-                   (config_container[iZone]->GetKind_Solver() == TWO_PHASE_RANS));
+
 
   if (kind_recording == CONS_VARS || kind_recording == COMBINED){
     
     /*--- Register flow and turbulent variables as input ---*/
     
-    if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
+    if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || two_phase) {
 
       solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
 
@@ -1975,9 +1979,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeom
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
-  bool two_phase = ((config_container[iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
-             (config_container[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
- (config_container[iZone]->GetKind_Solver() == TWO_PHASE_RANS));
+
   if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
@@ -2001,7 +2003,6 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeom
     solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_2PHASE_SYS, true);
     solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
     solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
-
   }
 
 }
@@ -2010,11 +2011,8 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver ****solver_container, CGeome
   
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
-  bool two_phase = ((config_container[iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
-                   (config_container[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-                   (config_container[iZone]->GetKind_Solver() == TWO_PHASE_RANS));
   
-  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
+  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || two_phase) {
   
   /*--- Register conservative variables as output of the iteration ---*/
   
