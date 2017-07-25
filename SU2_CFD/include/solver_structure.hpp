@@ -4005,7 +4005,8 @@ protected:
              **ExtAverageOmega,
              **TotalPressure_BC,
              **TotalTemperature_BC,
-             **FlowAngle_BC,
+             **FlowAngle1_BC,
+             **FlowAngle2_BC,
              **Pressure_BC;
 
   su2double  **DensityIn,

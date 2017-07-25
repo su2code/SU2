@@ -130,7 +130,8 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   ExtAverageOmega            = NULL;
   TotalPressure_BC           = NULL;
   TotalTemperature_BC        = NULL;
-  FlowAngle_BC               = NULL;
+  FlowAngle1_BC              = NULL;
+  FlowAngle2_BC              = NULL;
   Pressure_BC                = NULL;
 
 
@@ -306,7 +307,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ExtAverageOmega                   = NULL;
   TotalPressure_BC                  = NULL;
   TotalTemperature_BC               = NULL;
-  FlowAngle_BC                      = NULL;
+  FlowAngle1_BC                     = NULL;
+  FlowAngle2_BC                     = NULL;
   Pressure_BC                       = NULL;
 
 
@@ -1126,10 +1128,16 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] TotalTemperature_BC;
   }
 
-  if(FlowAngle_BC !=NULL){
+  if(FlowAngle1_BC !=NULL){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] FlowAngle_BC[iMarker];
-    delete [] FlowAngle_BC;
+      delete [] FlowAngle1_BC[iMarker];
+    delete [] FlowAngle1_BC;
+  }
+
+  if(FlowAngle2_BC !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] FlowAngle2_BC[iMarker];
+    delete [] FlowAngle2_BC;
   }
 
   if(Pressure_BC !=NULL){
@@ -1277,7 +1285,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   ExtAverageOmega                       = new su2double* [nMarker];
   TotalPressure_BC                      = new su2double* [nMarker];
   TotalTemperature_BC                   = new su2double* [nMarker];
-  FlowAngle_BC                          = new su2double* [nMarker];
+  FlowAngle1_BC                         = new su2double* [nMarker];
+  FlowAngle2_BC                         = new su2double* [nMarker];
   Pressure_BC                           = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1302,7 +1311,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     ExtAverageOmega[iMarker]                = new su2double [nSpanWiseSections + 1];
     TotalPressure_BC[iMarker]               = new su2double [nSpanWiseSections + 1];
     TotalTemperature_BC[iMarker]            = new su2double [nSpanWiseSections + 1];
-    FlowAngle_BC[iMarker]                   = new su2double [nSpanWiseSections + 1];
+    FlowAngle1_BC[iMarker]                  = new su2double [nSpanWiseSections + 1];
+    FlowAngle2_BC[iMarker]                  = new su2double [nSpanWiseSections + 1];
     Pressure_BC[iMarker]                    = new su2double [nSpanWiseSections + 1];
 
     for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
@@ -1327,7 +1337,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       ExtAverageOmega[iMarker][iSpan]           = 0.0;
       TotalPressure_BC[iMarker][iSpan]          = 0.0;
       TotalTemperature_BC[iMarker][iSpan]       = 0.0;
-      FlowAngle_BC[iMarker][iSpan]              = 0.0;
+      FlowAngle1_BC[iMarker][iSpan]             = 0.0;
+      FlowAngle2_BC[iMarker][iSpan]             = 0.0;
       Pressure_BC[iMarker][iSpan]               = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -11904,9 +11915,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
       /*--- Retrieve the specified total conditions for this inlet. ---*/
       P_Total    = TotalPressure_BC[val_marker][iSpan];
       T_Total    = TotalTemperature_BC[val_marker][iSpan];
-      alphaIn_BC = FlowAngle_BC[val_marker][iSpan];
-
-      gammaIn_BC = 0;
+      alphaIn_BC = FlowAngle1_BC[val_marker][iSpan];
+      gammaIn_BC = FlowAngle2_BC[val_marker][iSpan];
 
       /* --- Computes the total state --- */
       FluidModel->SetTDState_PT(P_Total, T_Total);
@@ -16395,7 +16405,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
 }
 
 void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geometry){
-  su2double *PTotal, *TTotal, *FlowAngle, *PTotalImposed, *TTotalImposed, *FlowAngleImposed, *SpanPercent, *SpanWiseValues, iSpanPercent;
+  su2double *PTotal, *TTotal, *FlowAngle1, *FlowAngle2, *PTotalImposed, *TTotalImposed, *FlowAngle1Imposed,
+            *FlowAngle2Imposed, *SpanPercent, *SpanWiseValues, iSpanPercent;
   string filename = config->GetSpanWise_BCInlet_FileName();
   ifstream bc_file;
   string text_line;
@@ -16430,11 +16441,13 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
 
   PTotal             = new su2double[countLine];
   TTotal             = new su2double[countLine];
-  FlowAngle          = new su2double[countLine];
+  FlowAngle1         = new su2double[countLine];
+  FlowAngle2         = new su2double[countLine];
   SpanPercent        = new su2double[countLine];
   PTotalImposed      = new su2double[nSpanWiseSections];
   TTotalImposed      = new su2double[nSpanWiseSections];
-  FlowAngleImposed   = new su2double[nSpanWiseSections];
+  FlowAngle1Imposed  = new su2double[nSpanWiseSections];
+  FlowAngle2Imposed  = new su2double[nSpanWiseSections];
 
   bc_file.open(filename.data(), ios::in);
 
@@ -16443,7 +16456,7 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
   countLine = 0;
   while (getline (bc_file, text_line)) {
     istringstream point_line(text_line);
-    point_line >> SpanPercent[countLine] >> PTotal[countLine] >> TTotal[countLine] >> FlowAngle[countLine];
+    point_line >> SpanPercent[countLine] >> PTotal[countLine] >> TTotal[countLine] >> FlowAngle1[countLine]>> FlowAngle2[countLine];
     countLine++;
   }
 
@@ -16460,7 +16473,8 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
         PTotalImposed[iSpan]    /= config->GetPressure_Ref();
         TTotalImposed[iSpan]     = TTotal[i] + (TTotal[i+1] - TTotal[i])/(SpanPercent[i+1] - SpanPercent[i])*(iSpanPercent - SpanPercent[i]);
         TTotalImposed[iSpan]    /= config->GetTemperature_Ref();
-        FlowAngleImposed[iSpan]  = PI_NUMBER/180.0*(FlowAngle[i] + (FlowAngle[i+1] - FlowAngle[i])/(SpanPercent[i+1] - SpanPercent[i])*(iSpanPercent - SpanPercent[i]));
+        FlowAngle1Imposed[iSpan] = PI_NUMBER/180.0*(FlowAngle1[i] + (FlowAngle1[i+1] - FlowAngle1[i])/(SpanPercent[i+1] - SpanPercent[i])*(iSpanPercent - SpanPercent[i]));
+        FlowAngle2Imposed[iSpan] = PI_NUMBER/180.0*(FlowAngle2[i] + (FlowAngle2[i+1] - FlowAngle2[i])/(SpanPercent[i+1] - SpanPercent[i])*(iSpanPercent - SpanPercent[i]));
       }
     }
     if(iSpan == nSpanWiseSections -1){
@@ -16468,7 +16482,8 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
       PTotalImposed[iSpan]    /= config->GetPressure_Ref();
       TTotalImposed[iSpan]     = TTotal[countLine-1];
       TTotalImposed[iSpan]    /= config->GetTemperature_Ref();
-      FlowAngleImposed[iSpan]  = PI_NUMBER/180.0*(FlowAngle[countLine-1]);
+      FlowAngle1Imposed[iSpan] = PI_NUMBER/180.0*(FlowAngle1[countLine-1]);
+      FlowAngle2Imposed[iSpan] = PI_NUMBER/180.0*(FlowAngle2[countLine-1]);
     }
   }
   /*--- print a file to check the imposed values ---*/
@@ -16485,7 +16500,8 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
     myfile.width(28); myfile << "\"Spanwise extension[%]\"";
     myfile.width(26); myfile << "\"TotalPressure[Pa]\"";
     myfile.width(32); myfile << "\"TotalTemperature[K]\"";
-    myfile.width(30); myfile << "\"Absolute Flow Angle\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle1[°]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle2[°]\"";
     myfile << endl;
     for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
       myfile.width(30); myfile << SpanWiseValues[iSpan];
@@ -16493,7 +16509,8 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
       myfile.width(30); myfile << (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);
       myfile.width(30); myfile << PTotalImposed[iSpan]*config->GetPressure_Ref();
       myfile.width(30); myfile << TTotalImposed[iSpan]*config->GetTemperature_Ref();
-      myfile.width(30); myfile << FlowAngleImposed[iSpan]*180/PI_NUMBER;
+      myfile.width(30); myfile << FlowAngle1Imposed[iSpan]*180/PI_NUMBER;
+      myfile.width(30); myfile << FlowAngle2Imposed[iSpan]*180/PI_NUMBER;
       myfile << endl;
     }
     myfile.close();
@@ -16507,7 +16524,8 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
           for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
             TotalPressure_BC[iMarker][iSpan]    = PTotalImposed[iSpan];
             TotalTemperature_BC[iMarker][iSpan] = TTotalImposed[iSpan];
-            FlowAngle_BC[iMarker][iSpan]        = FlowAngleImposed[iSpan];
+            FlowAngle1_BC[iMarker][iSpan]       = FlowAngle1Imposed[iSpan];
+            FlowAngle2_BC[iMarker][iSpan]       = FlowAngle2Imposed[iSpan];
           }
         }
       }
@@ -16516,11 +16534,13 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
 
   delete [] PTotal;
   delete [] TTotal;
-  delete [] FlowAngle;
+  delete [] FlowAngle1;
+  delete [] FlowAngle2;
   delete [] SpanPercent;
   delete [] PTotalImposed;
   delete [] TTotalImposed;
-  delete [] FlowAngleImposed;
+  delete [] FlowAngle1Imposed;
+  delete [] FlowAngle2Imposed;
 
 }
 
