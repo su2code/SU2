@@ -55,13 +55,17 @@ def main():
                       help="OPTIMIZATION techique (SLSQP, CG, BFGS, POWELL)", metavar="OPTIMIZATION")
     parser.add_option("-q", "--quiet", dest="quiet", default="True",
                       help="True/False Quiet all SU2 output (optimizer output only)", metavar="QUIET")
-    
+    parser.add_option("-z", "--zones", dest="nzones", default="1",
+                      help="Number of Zones", metavar="ZONES")
+
+
     (options, args)=parser.parse_args()
     
     # process inputs
     options.partitions  = int( options.partitions )
     options.quiet       = options.quiet.upper() == 'TRUE'
     options.gradient    = options.gradient.upper()
+    options.nzones      = int( options.nzones )
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
@@ -98,12 +102,13 @@ def main():
     sys.stdout.write('| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
 
-    shape_optimization( options.filename     ,
-                        options.projectname  ,
-                        options.partitions   ,
-                        options.gradient     ,
+    shape_optimization( options.filename    ,
+                        options.projectname ,
+                        options.partitions  ,
+                        options.gradient    ,
                         options.optimization ,
-                        options.quiet         )
+                        options.quiet       ,
+                        options.nzones      )
     
 #: main()
 
@@ -112,11 +117,13 @@ def shape_optimization( filename                           ,
                         partitions  = 0                    ,
                         gradient    = 'CONTINUOUS_ADJOINT' ,
                         optimization = 'SLSQP'             ,
-                        quiet       = False                 ):
+                        quiet       = False                ,
+                        nzones      = 1                    ):
   
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
+    config.NZONES      = int( nzones )
     if quiet: config.CONSOLE = 'CONCISE'
     config.GRADIENT_METHOD = gradient
     

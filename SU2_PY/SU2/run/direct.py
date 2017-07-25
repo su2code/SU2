@@ -101,8 +101,8 @@ def direct ( config ):
     final_avg = config.get('ITER_AVERAGE_OBJ',0)
 
     # get history and objectives
-    history      = su2io.read_history( history_filename )
-    aerodynamics = su2io.read_aerodynamics( history_filename , special_cases, final_avg )
+    history      = su2io.read_history( history_filename , config.NZONES)
+    aerodynamics = su2io.read_aerodynamics( history_filename , config.NZONES, special_cases, final_avg )
     
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
