@@ -147,7 +147,7 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
 
 }
 
-void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording) {
+void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -218,7 +218,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register farfield values as input ---*/
 
-  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS)) {
+  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
 
     su2double Velocity_Ref = config->GetVelocity_Ref();
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
@@ -258,6 +258,20 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+
+    BPressure = config->GetPressureOut_BC();
+    Temperature = config->GetTotalTemperatureIn_BC();
+
+    if (!reset){
+      AD::RegisterInput(BPressure);
+      AD::RegisterInput(Temperature);
+    }
+
+    config->SetPressureOut_BC(BPressure);
+    config->SetTotalTemperatureIn_BC(Temperature);
+  }
+
 
     /*--- Here it is possible to register other variables as input that influence the flow solution
      * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
@@ -279,113 +293,8 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   }
 }
 
-void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  /*--- Here we can add new (scalar) objective functions ---*/
-  if (config->GetnObj()==1) {
-    switch (config->GetKind_ObjFunc()) {
-    case DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CD();
-      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
-      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
-      break;
-    case LIFT_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CL();
-      break;
-    case AERO_DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_AeroCD();
-      break;
-    case RADIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_RadialDistortion();
-      break;
-    case CIRCUMFERENTIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_CircumferentialDistortion();
-      break;
-    case SIDEFORCE_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CSF();
-      break;
-    case EFFICIENCY:
-      ObjFunc_Value = direct_solver->GetTotal_CEff();
-      break;
-    case MOMENT_X_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMx();
-      break;
-    case MOMENT_Y_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMy();
-      break;
-    case MOMENT_Z_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMz();
-      break;
-    case EQUIVALENT_AREA:
-      ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
-      break;
-    case AVG_TOTAL_PRESSURE:
-      ObjFunc_Value = direct_solver->GetOneD_TotalPress();
-      break;
-    case AVG_OUTLET_PRESSURE:
-      ObjFunc_Value = direct_solver->GetOneD_AvgPress();
-      break;
-    case MASS_FLOW_RATE:
-      ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
-      break;
-    case CUSTOM_OBJFUNC:
-      ObjFunc_Value = direct_solver->GetTotal_Custom_ObjFunc();
-      break;
-    }
-
-    /*--- Template for new objective functions where TemplateObjFunction()
-     *  is the routine that returns the obj. function value. The computation
-     * must be done while the tape is active, i.e. between AD::StartRecording() and
-     * AD::StopRecording() in DiscAdjFluidIteration::Iterate(). The best place is somewhere
-     * inside FluidIteration::Iterate().
-     *
-     * case TEMPLATE_OBJECTIVE:
-     *    ObjFunc_Value = TemplateObjFunction();
-     *    break;
-     * ---*/
-  }
-  else{
-    ObjFunc_Value = direct_solver->GetTotal_ComboObj();
-  }
-  if (rank == MASTER_NODE) {
-    AD::RegisterOutput(ObjFunc_Value);
-  }
-}
-
-void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
-  int rank = MASTER_NODE;
-
-  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
-  unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
-  unsigned long ExtIter = config->GetExtIter();
-  su2double seeding = 1.0;
-
-  if (time_stepping) {
-    if (ExtIter < IterAvg_Obj) {
-      seeding = 1.0/((su2double)IterAvg_Obj);
-    }
-    else {
-      seeding = 0.0;
-    }
-  }
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  if (rank == MASTER_NODE) {
-    SU2_TYPE::SetDerivative(ObjFunc_Value, SU2_TYPE::GetValue(seeding));
-  } else {
-    SU2_TYPE::SetDerivative(ObjFunc_Value, 0.0);
-  }
-}
-
-void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) {
+void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -458,11 +367,12 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-  su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
 
   /*--- Extract the adjoint values of the farfield values ---*/
 
-  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS)) {
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
+    su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
+
     Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
     Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
     Local_Sens_Temp  = SU2_TYPE::GetDerivative(Temperature);
@@ -479,6 +389,23 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     Total_Sens_Temp  = Local_Sens_Temp;
     Total_Sens_Press = Local_Sens_Press;
 #endif
+  }
+
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+    su2double Local_Sens_BPress, Local_Sens_Temperature;
+
+    Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
+    Local_Sens_Temperature = SU2_TYPE::GetDerivative(Temperature);
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&Local_Sens_BPress,   &Total_Sens_BPress,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Temperature,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+#else
+    Total_Sens_BPress = Local_Sens_BPress;
+    Total_Sens_Temp = Local_Sens_Temperature;
+#endif
+
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
@@ -543,11 +470,12 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 }
 
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
-  unsigned short iMarker,iDim;
+  unsigned short iMarker, iDim, iMarker_Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
-  su2double Total_Sens_Geo_local = 0.0;
+  su2double *Normal, Prod, Sens = 0.0, SensDim, Area, Sens_Vertex;
   Total_Sens_Geo = 0.0;
+  su2double *MySens_Geo;
+  string Monitoring_Tag, Marker_Tag;
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Sens_Geo[iMarker] = 0.0;
@@ -557,7 +485,10 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
        || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
        || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
 
+      Sens = 0.0;
+
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Prod = 0.0;
@@ -574,26 +505,44 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
         Area = sqrt(Area);
 
-        /*--- projection of the gradient
-         *     calculated with AD onto the normal
-         *     vector of the surface ---*/
-        Sens = Prod/Area;
+        /*--- Projection of the gradient calculated with AD onto the normal vector of the surface ---*/
+
+        Sens_Vertex = Prod/Area;
+        CSensitivity[iMarker][iVertex] = -Sens_Vertex;
+        Sens += Sens_Vertex*Sens_Vertex;
+      }
+
+      if (config->GetMarker_All_Monitoring(iMarker) == YES){
 
         /*--- Compute sensitivity for each surface point ---*/
-        CSensitivity[iMarker][iVertex] = -Sens;
-        if (geometry->node[iPoint]->GetDomain()) {
-          Sens_Geo[iMarker] += Sens*Sens;
+
+        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+          Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if (Marker_Tag == Monitoring_Tag) {
+            Sens_Geo[iMarker_Monitoring] = Sens;
+          }
         }
       }
-      Total_Sens_Geo_local += sqrt(Sens_Geo[iMarker]);
     }
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&Total_Sens_Geo_local,&Total_Sens_Geo,1,MPI_DOUBLE,MPI_SUM, MPI_COMM_WORLD);
-#else
-  Total_Sens_Geo = Total_Sens_Geo_local;
+  MySens_Geo = new su2double[config->GetnMarker_Monitoring()];
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    MySens_Geo[iMarker_Monitoring] = Sens_Geo[iMarker_Monitoring];
+    Sens_Geo[iMarker_Monitoring]   = 0.0;
+  }
+
+  SU2_MPI::Allreduce(MySens_Geo, Sens_Geo, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  delete [] MySens_Geo;
 #endif
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    Sens_Geo[iMarker_Monitoring] = sqrt(Sens_Geo[iMarker_Monitoring]);
+    Total_Sens_Geo   += Sens_Geo[iMarker_Monitoring];
+  }
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -607,15 +556,11 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
           solution_n = node[iPoint]->GetSolution_time_n();
           solution_n1 = node[iPoint]->GetSolution_time_n1();
-
           for (iVar=0; iVar < nVar; iVar++) {
               node[iPoint]->SetDual_Time_Derivative(iVar, solution_n[iVar]+node[iPoint]->GetDual_Time_Derivative_n(iVar));
               node[iPoint]->SetDual_Time_Derivative_n(iVar, solution_n1[iVar]);
-
             }
-
         }
-
     }
 }
 
