@@ -1221,7 +1221,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
   
 //  /*--- Coupling terms coming from the continuous adjoint turbulent equations ---*/
 //  
-//  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+//  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
 //    
 //    /*--- Closure constants ---*/
 //    
