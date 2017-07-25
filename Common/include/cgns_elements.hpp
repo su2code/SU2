@@ -43,6 +43,9 @@
 
 #include "primal_grid_structure.hpp"
 
+/* Forward declaration of BoundaryFaceClass to avoid problems. */
+class BoundaryFaceClass;
+
 #ifdef HAVE_CGNS
 #if CGNS_VERSION >= 3300
 class CGNSElementTypeClass {
@@ -53,6 +56,8 @@ public:
   cgsize_t      indBeg;      /*!< \brief Index of the first element in the CGNS connectivity. */
   cgsize_t      indEnd;      /*!< \brief Index of the last element in the CGNS connectivity. */
   cgsize_t      nElem;       /*!< \brief Number of elements present for this element type. */
+
+  string connName;           /*!< \brief Name of this connectivity. */
 
   bool volumeConn;           /*!< \brief Whether or not this is a volume connectivity. */
   bool surfaceConn;          /*!< \brief Whether or not this is a surface connectivity. */
@@ -70,7 +75,17 @@ public:
                          const int            iZone,
                          const int            iConn);
 
-  /* Member function, which reads the required connectivity range. */
+  /*--- Member function, which reads the required boundary connectivity range. ---*/
+  void ReadBoundaryConnectivityRange(const int           fn,
+                                     const int           iBase,
+                                     const int           iZone,
+                                     const unsigned long offsetRank,
+                                     const unsigned long nBoundElemRank,
+                                     const unsigned long startingBoundElemIDRank,
+                                     unsigned long       &locBoundElemCount,
+                                     vector<BoundaryFaceClass> &boundElems);
+
+  /*--- Member function, which reads the required connectivity range. ---*/
   void ReadConnectivityRange(const int           fn,
                              const int           iBase,
                              const int           iZone,

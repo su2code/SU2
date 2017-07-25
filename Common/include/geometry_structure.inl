@@ -53,6 +53,8 @@ inline  BoundaryFaceClass::BoundaryFaceClass(const BoundaryFaceClass &other){Cop
 
 inline BoundaryFaceClass& BoundaryFaceClass::operator=(const BoundaryFaceClass &other){Copy(other); return (*this);}
 
+inline bool BoundaryFaceClass::operator<(const BoundaryFaceClass &other) const {return (globalBoundElemID < other.globalBoundElemID);}
+
 inline MatchingFaceClass::MatchingFaceClass(const MatchingFaceClass &other){Copy(other);}
 
 inline MatchingFaceClass& MatchingFaceClass::operator=(const MatchingFaceClass &other){Copy(other); return (*this);}
