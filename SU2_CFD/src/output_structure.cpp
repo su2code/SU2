@@ -11363,9 +11363,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par += 1;
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
-    
-    /*--- New variables get registered here before the end of the loop. ---*/
-    
+
+    /*--- Add the intermittency for the BC trans. model. ---*/
+        
     if (transition) {
         nVar_Par += 1;
 			if (config->GetOutput_FileFormat() == PARAVIEW){
@@ -11374,6 +11374,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
 				Variable_Names.push_back("<greek>g</greek><sub>BC</sub>");
 			}
     }
+
+    /*--- New variables get registered here before the end of the loop. ---*/
 
   }
   
@@ -11590,12 +11592,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
         }
         
-        /*--- New variables can be loaded to the Local_Data structure here,
-         assuming they were registered above correctly. ---*/
+        /*--- Load data for the intermittency of the BC trans. model. ---*/
 
         if (transition) {
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetGammaBC(); iVar++;
+          Local_Data[jPoint][iVar] = solver[TURB_SOL]->node[iPoint]->GetGammaBC(); iVar++;
         }
+
+        /*--- New variables can be loaded to the Local_Data structure here,
+         assuming they were registered above correctly. ---*/
         
       }
 
