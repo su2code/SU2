@@ -2538,30 +2538,23 @@ void CNumerics::GetViscousArtCompProjJacs(su2double val_laminar_viscosity,
   su2double factor = total_viscosity/(val_dist_ij)*val_dS;
 
   if (nDim == 3) {
-    su2double thetax = theta + val_normal[0]*val_normal[0]/3.0;
-    su2double thetay = theta + val_normal[1]*val_normal[1]/3.0;
-    su2double thetaz = theta + val_normal[2]*val_normal[2]/3.0;
-
-    su2double etax = val_normal[1]*val_normal[2]/3.0;
-    su2double etay = val_normal[0]*val_normal[2]/3.0;
-    su2double etaz = val_normal[0]*val_normal[1]/3.0;
 
     val_Proj_Jac_Tensor_i[0][0] = 0.0;
     val_Proj_Jac_Tensor_i[0][1] = 0.0;
     val_Proj_Jac_Tensor_i[0][2] = 0.0;
     val_Proj_Jac_Tensor_i[0][3] = 0.0;
     val_Proj_Jac_Tensor_i[1][0] = 0.0;
-    val_Proj_Jac_Tensor_i[1][1] = -factor*thetax;
-    val_Proj_Jac_Tensor_i[1][2] = -factor*etaz;
-    val_Proj_Jac_Tensor_i[1][3] = -factor*etay;
+    val_Proj_Jac_Tensor_i[1][1] = -factor*theta;
+    val_Proj_Jac_Tensor_i[1][2] = 0.0;
+    val_Proj_Jac_Tensor_i[1][3] = 0.0;
     val_Proj_Jac_Tensor_i[2][0] = 0.0;
-    val_Proj_Jac_Tensor_i[2][1] = -factor*etaz;
-    val_Proj_Jac_Tensor_i[2][2] = -factor*thetay;
-    val_Proj_Jac_Tensor_i[2][3] = -factor*etax;
+    val_Proj_Jac_Tensor_i[2][1] = 0.0;
+    val_Proj_Jac_Tensor_i[2][2] = -factor*theta;
+    val_Proj_Jac_Tensor_i[2][3] = 0.0;
     val_Proj_Jac_Tensor_i[3][0] = 0.0;
-    val_Proj_Jac_Tensor_i[3][1] = -factor*etay;
-    val_Proj_Jac_Tensor_i[3][2] = -factor*etax;
-    val_Proj_Jac_Tensor_i[3][3] = -factor*thetaz;
+    val_Proj_Jac_Tensor_i[3][1] = 0.0;
+    val_Proj_Jac_Tensor_i[3][2] = 0.0;
+    val_Proj_Jac_Tensor_i[3][3] = -factor*theta;
 
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
@@ -2570,19 +2563,16 @@ void CNumerics::GetViscousArtCompProjJacs(su2double val_laminar_viscosity,
   }
 
   if (nDim == 2) {
-    su2double thetax = theta + val_normal[0]*val_normal[0]/3.0;
-    su2double thetay = theta + val_normal[1]*val_normal[1]/3.0;
-    su2double etaz = val_normal[0]*val_normal[1]/3.0;
 
     val_Proj_Jac_Tensor_i[0][0] = 0.0;
     val_Proj_Jac_Tensor_i[0][1] = 0.0;
     val_Proj_Jac_Tensor_i[0][2] = 0.0;
     val_Proj_Jac_Tensor_i[1][0] = 0.0;
-    val_Proj_Jac_Tensor_i[1][1] = -factor*thetax;
-    val_Proj_Jac_Tensor_i[1][2] = -factor*etaz;
+    val_Proj_Jac_Tensor_i[1][1] = -factor*theta;
+    val_Proj_Jac_Tensor_i[1][2] = 0.0;
     val_Proj_Jac_Tensor_i[2][0] = 0.0;
-    val_Proj_Jac_Tensor_i[2][1] = -factor*etaz;
-    val_Proj_Jac_Tensor_i[2][2] = -factor*thetay;
+    val_Proj_Jac_Tensor_i[2][1] = 0.0;
+    val_Proj_Jac_Tensor_i[2][2] = -factor*theta;
 
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
