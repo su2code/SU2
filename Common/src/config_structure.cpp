@@ -4189,6 +4189,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (Kind_Upwind_Flow == L2ROE) cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
       if (Kind_Upwind_Flow == LMROE) cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
       if (Kind_Upwind_Flow == SLAU) cout << "Simple Low-Dissipation AUSM solver for the flow inviscid terms."<< endl;
+      if (Kind_Upwind_Flow == SLAU2) cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
         switch (SpatialOrder_Flow) {
           case FIRST_ORDER: cout << "First order integration." << endl; break;
           case SECOND_ORDER: cout << "Second order integration." << endl; break;
@@ -4202,7 +4203,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
               case VENKATAKRISHNAN_MOD:
-                cout << "Venkatakrishnan slope-limiting method, with constant:. "<< endl;
+                cout << "Modified Venkatakrishnan slope-limiting method, with constant:. "<< endl;
                 break;
                     
             }
