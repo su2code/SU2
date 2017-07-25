@@ -1347,6 +1347,11 @@ public:
    * \param[in] val_crossproduction - Value of the CrossProduction.
    */
   virtual su2double GetCrossProduction(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetGammaBC(void);
   
   /*!
    * \overload
@@ -4115,7 +4120,8 @@ public:
   su2double GetProduction(void);
 
   /*!
-   * \brief  ______________.
+   * \brief  Get the intermittency for the BC trans. model.
+   * \return Value of the intermittency.
    */
   su2double GetGammaBC(void);
   

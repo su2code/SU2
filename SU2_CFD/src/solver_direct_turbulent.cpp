@@ -1528,8 +1528,10 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
 
+    /*--- Store the intermittency ---*/
+
     if (transition_BC) {
-        node[iPoint]->GetGammaBC();
+      node[iPoint]->SetGammaBC(numerics->GetGammaBC());
     }
     
     /*--- Subtract residual and the Jacobian ---*/
