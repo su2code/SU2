@@ -6356,7 +6356,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
 void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
   
   su2double Mean_BetaInc2, *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Mean_DensityInc,
-  Global_Delta_Time = 1E6, Mean_LaminarVisc = 0.0, Mean_EddyVisc = 0.0, Mean_Density = 0.0, Lambda_1, Lambda_2, K_v = 0.25, Global_Delta_UnstTimeND;
+  Global_Delta_Time = 1E6, Mean_LaminarVisc = 0.0, Mean_EddyVisc = 0.0, Mean_Density = 0.0, K_v = 0.25, Global_Delta_UnstTimeND;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   unsigned short iDim, iMarker;
   su2double ProjVel, ProjVel_i, ProjVel_j;
@@ -6419,9 +6419,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosity() + node[jPoint]->GetEddyViscosity());
     Mean_Density     = 0.5*(node[iPoint]->GetDensity() + node[jPoint]->GetDensity());
 
-    Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
-    Lambda_2 = (1.0 + (Prandtl_Lam/Prandtl_Turb)*(Mean_EddyVisc/Mean_LaminarVisc))*(Gamma*Mean_LaminarVisc/Prandtl_Lam);
-    Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+    Lambda = (Mean_LaminarVisc + Mean_EddyVisc)*Area*Area/Mean_Density;
     
     if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
     if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
@@ -6469,9 +6467,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosity() + node[jPoint]->GetEddyViscosity());
       Mean_Density     = 0.5*(node[iPoint]->GetDensity() + node[jPoint]->GetDensity());
       
-      Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
-      Lambda_2 = (1.0 + (Prandtl_Lam/Prandtl_Turb)*(Mean_EddyVisc/Mean_LaminarVisc))*(Gamma*Mean_LaminarVisc/Prandtl_Lam);
-      Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+      Lambda = (Mean_LaminarVisc + Mean_EddyVisc)*Area*Area/Mean_Density;
       
       if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
       
