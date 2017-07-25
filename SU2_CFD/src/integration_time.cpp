@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -44,7 +44,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                                                 unsigned short RunTime_EqSystem,
                                                 unsigned long Iteration,
                                                 unsigned short iZone) {
-  unsigned short FinestMesh, iMGLevel;
+  unsigned short FinestMesh, iMGLevel = 0;
   su2double monitor = 1.0;
   bool FullMG = false;
   
@@ -924,6 +924,7 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver
 
   solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
       config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
+
 
   /*--- Space integration ---*/
 
