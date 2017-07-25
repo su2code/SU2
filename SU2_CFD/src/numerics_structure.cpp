@@ -870,36 +870,12 @@ void CNumerics::GetRMatrix(su2double val_pressure, su2double val_soundspeed, su2
 
 
 
-void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2double* val_normal, su2double **R_Matrix) {
+void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix) {
 
+  su2double cc, rhoc;
+  cc = val_soundspeed*val_soundspeed;
+  rhoc = val_density*val_soundspeed;
   if (nDim == 2) {
-
-
-
-//    R_Matrix[0][0] = 1.0;
-//    R_Matrix[0][1] = 0.0;
-//    R_Matrix[0][2] = 0.5*val_density/val_soundspeed;
-//    R_Matrix[0][3] = 0.5*val_density/val_soundspeed;
-//
-//    R_Matrix[1][0] = 0.0;
-//    R_Matrix[1][1] = val_normal[1];
-//    R_Matrix[1][2] = 0.5*val_normal[0];
-//    R_Matrix[1][3] = -0.5*val_normal[0];
-//
-//    R_Matrix[2][0] = 0.0;
-//    R_Matrix[2][1] = -val_normal[0];
-//    R_Matrix[2][2] = 0.5*val_normal[1];
-//    R_Matrix[2][3] = -0.5*val_normal[1];
-//
-//    R_Matrix[3][0] = 0.0;
-//    R_Matrix[3][1] = 0.0;
-//    R_Matrix[3][2] = 0.5*val_density*val_soundspeed;
-//    R_Matrix[3][3] = 0.5*val_density*val_soundspeed;
-
-    su2double cc, rhoc;
-    cc = val_soundspeed*val_soundspeed;
-    rhoc = val_density/val_soundspeed;
-
     R_Matrix[0][0] = -1.0/cc;
     R_Matrix[0][1] = 0.0;
     R_Matrix[0][2] = 0.5/cc;
@@ -923,104 +899,233 @@ void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2d
   }
   else {
 
-//    sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1]+val_velocity[2]*val_velocity[2];
-//
-//    R_Matrix[0][0] =  0.5*gm1*sqvel;
-//    R_Matrix[0][1] = -val_velocity[0]*gm1;
-//    R_Matrix[0][2] = -val_velocity[1]*gm1;
-//    R_Matrix[0][3] = -val_velocity[2]*gm1;
-//    R_Matrix[0][4] = gm1;
-//
-//    R_Matrix[1][0] = -val_velocity[0]/val_density;
-//    R_Matrix[1][1] = 1.0/val_density;
-//    R_Matrix[1][2] = 0.0;
-//    R_Matrix[1][3] = 0.0;
-//    R_Matrix[1][4] = 0.0;
-//
-//    R_Matrix[2][0] = -val_velocity[1]/val_density;
-//    R_Matrix[2][1] = 0.0;
-//    R_Matrix[2][2] = 1.0/val_density;
-//    R_Matrix[2][3] = 0.0;
-//    R_Matrix[2][4] = 0.0;
-//
-//    R_Matrix[3][0] = -val_velocity[2]/val_density;
-//    R_Matrix[3][1] = 0.0;
-//    R_Matrix[3][2] = 0.0;
-//    R_Matrix[3][3] = 1.0/val_density;
-//    R_Matrix[3][4] = 0.0;
-//
-//    R_Matrix[4][0] = 0.5*gm1*sqvel/val_pressure - Gamma/val_density;
-//    R_Matrix[4][1] = -gm1*val_velocity[0]/val_pressure;
-//    R_Matrix[4][2] = -gm1*val_velocity[1]/val_pressure;
-//    R_Matrix[4][3] = -gm1*val_velocity[2]/val_pressure;
-//    R_Matrix[4][4] = gm1/val_pressure;
+    R_Matrix[0][0] = -1.0/cc;
+    R_Matrix[0][1] = 0.0;
+    R_Matrix[0][2] = 0.0;
+    R_Matrix[0][3] = 0.5/cc;
+    R_Matrix[0][4] = 0.5/cc;
+
+    R_Matrix[1][0] = 0.0;
+    R_Matrix[1][1] = 0.0;
+    R_Matrix[1][2] = 0.0;
+    R_Matrix[1][3] = 0.5/rhoc;
+    R_Matrix[1][4] = -0.5/rhoc;
+
+    R_Matrix[2][0] = 0.0;
+    R_Matrix[2][1] = 1.0/rhoc;
+    R_Matrix[2][2] = 0.0;
+    R_Matrix[2][3] = 0.0;
+    R_Matrix[2][4] = 0.0;
+
+    R_Matrix[3][0] = 0.0;
+    R_Matrix[3][1] = 0.0;
+    R_Matrix[3][2] = 1.0/rhoc;
+    R_Matrix[3][3] = 0.0;
+    R_Matrix[3][4] = 0.0;
+
+    R_Matrix[4][0] = 0.0;
+    R_Matrix[4][1] = 0.0;
+    R_Matrix[4][2] = 0.0;
+    R_Matrix[4][3] = 0.5;
+    R_Matrix[4][4] = 0.5;
+
+}
+
+}
+
+void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix) {
+
+  su2double cc, rhoc;
+  cc = val_soundspeed*val_soundspeed;
+  rhoc = val_density*val_soundspeed;
+  if (nDim == 2) {
+
+    L_Matrix[0][0] = -cc;
+    L_Matrix[0][1] = 0.0;
+    L_Matrix[0][2] = 0.0;
+    L_Matrix[0][3] = 1.0;
+
+    L_Matrix[1][0] = 0.0;
+    L_Matrix[1][1] = 0.0;
+    L_Matrix[1][2] = rhoc;
+    L_Matrix[1][3] = 0.0;
+
+    L_Matrix[2][0] = 0.0;
+    L_Matrix[2][1] = rhoc;
+    L_Matrix[2][2] = 0.0;
+    L_Matrix[2][3] = 1.0;
+
+    L_Matrix[3][0] = 0.0;
+    L_Matrix[3][1] = -rhoc;
+    L_Matrix[3][2] = 0.0;
+    L_Matrix[3][3] = 1.0;
+  }
+  else {
+
+    L_Matrix[0][0] = -cc;
+    L_Matrix[0][1] = 0.0;
+    L_Matrix[0][2] = 0.0;
+    L_Matrix[0][3] = 0.0;
+    L_Matrix[0][4] = 1.0;
+
+    L_Matrix[1][0] = 0.0;
+    L_Matrix[1][1] = 0.0;
+    L_Matrix[1][2] = rhoc;
+    L_Matrix[1][3] = 0.0;
+    L_Matrix[1][4] = 0.0;
+
+    L_Matrix[2][0] = 0.0;
+    L_Matrix[2][1] = 0.0;
+    L_Matrix[2][2] = 0.0;
+    L_Matrix[2][3] = rhoc;
+    L_Matrix[2][4] = 0.0;
+
+    L_Matrix[3][0] = 0.0;
+    L_Matrix[3][1] = rhoc;
+    L_Matrix[3][2] = 0.0;
+    L_Matrix[3][3] = 0.0;
+    L_Matrix[3][4] = 1.0;
+
+    L_Matrix[4][0] = 0.0;
+    L_Matrix[4][1] = -rhoc;
+    L_Matrix[4][2] = 0.0;
+    L_Matrix[4][3] = 0.0;
+    L_Matrix[4][4] = 1.0;
 
   }
 
 }
 
-void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2double* val_normal, su2double **L_Matrix) {
+void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv){
+  su2double rhoc, cc;
+  su2double dhdrho_P, dhdP_rho, dsdrho_P,dsdP_rho;
 
+  FluidModel->ComputeDerivativeNRBC_Prho(pressure, density);
+  cc   = FluidModel->GetSoundSpeed2();
+  rhoc = density*sqrt(cc);
+
+
+  dhdrho_P  = FluidModel->Getdhdrho_P();
+  dhdP_rho  = FluidModel->GetdhdP_rho();
+  dsdrho_P  = FluidModel->Getdsdrho_P();
+  dsdP_rho  = FluidModel->GetdsdP_rho();
+
+  if (nDim == 2){
+
+    R_c[0][0] = -1/cc*dsdrho_P;                   //a11
+    R_c[0][1] = 0.0;                                //a12
+    R_c[0][2] = 0.5/cc*dsdrho_P + 0.5*dsdP_rho;    //a13
+
+    R_c[1][0] = 0.0;                                //a21
+    R_c[1][1] = 1/rhoc;                           //a22
+    R_c[1][2] = -0.5/rhoc*tan(alphaInBC);          //a23
+
+    R_c[2][0] = -1/cc*dhdrho_P;                                //a31
+    R_c[2][1] = turboVel[1]/rhoc;                                       //a32
+    R_c[2][2] = 0.5/cc*dhdrho_P + 0.5*turboVel[0]/rhoc + 0.5*dhdP_rho;  //a33
+
+    InvMatrix3D(R_c, R_c_inv);
+  }
+  else{
+    R_c[0][0] = -1/cc*dsdrho_P;                     //a11
+    R_c[0][1] = 0.0;                                //a12
+    R_c[0][2] = 0.0;                                //a13
+    R_c[0][3] = 0.5/cc*dsdrho_P + 0.5*dsdP_rho;     //a14
+
+    R_c[1][0] = 0.0;                                //a21
+    R_c[1][1] = 1/rhoc;                             //a22
+    R_c[1][2] = 0.0;                                //a23
+    R_c[1][3] = -0.5/rhoc*tan(alphaInBC);           //a24
+
+    R_c[2][0] = 0.0;                                //a31
+    R_c[2][1] = 0.0;                                //a32
+    R_c[2][2] = 1/rhoc;                             //a33
+    R_c[2][3] = -0.5/rhoc*tan(gammaInBC);           //a34
+
+    R_c[3][0] = -1/cc*dhdrho_P;                                          //a41
+    R_c[3][1] = turboVel[1]/rhoc;                                        //a42
+    R_c[3][2] = turboVel[2]/rhoc;                                        //a43
+    R_c[3][3] = 0.5/cc*dhdrho_P + 0.5*turboVel[0]/rhoc + 0.5*dhdP_rho;   //a44
+
+    InvMatrix4D(R_c, R_c_inv);
+  }
+}
+
+void CNumerics::InvMatrix3D(su2double **matrix, su2double **invMatrix){
+
+  su2double invDet;
+
+  invDet = 1 /
+      (- matrix[0][2]*matrix[1][1]*matrix[2][0] + matrix[0][1]*matrix[1][2]*matrix[2][0] + matrix[0][2]*matrix[1][0]*matrix[2][1] -
+         matrix[0][0]*matrix[1][2]*matrix[2][1] - matrix[0][1]*matrix[1][0]*matrix[2][2] + matrix[0][0]*matrix[1][1]*matrix[2][2]);
+
+  invMatrix[0][0] = invDet*( - matrix[1][2]*matrix[2][1] + matrix[1][1]*matrix[2][2] );
+  invMatrix[0][1] = invDet*( + matrix[0][2]*matrix[2][1] - matrix[0][1]*matrix[2][2] );
+  invMatrix[0][2] = invDet*( - matrix[0][2]*matrix[1][1] + matrix[0][1]*matrix[1][2] );
+
+  invMatrix[1][0] = invDet*( + matrix[1][2]*matrix[2][0] - matrix[1][0]*matrix[2][2] );
+  invMatrix[1][1] = invDet*( - matrix[0][2]*matrix[2][0] + matrix[0][0]*matrix[2][2] );
+  invMatrix[1][2] = invDet*( + matrix[0][2]*matrix[1][0] - matrix[0][0]*matrix[1][2] );
+
+  invMatrix[2][0] = invDet*( - matrix[1][1]*matrix[2][0] + matrix[1][0]*matrix[2][1] );
+  invMatrix[2][1] = invDet*( + matrix[0][1]*matrix[2][0] - matrix[0][0]*matrix[2][1] );
+  invMatrix[2][2] = invDet*( - matrix[0][1]*matrix[1][0] + matrix[0][0]*matrix[1][1] );
+
+}
+
+void CNumerics::InvMatrix4D(su2double **matrix, su2double **invMatrix){
+  su2double invDet;
+
+  invDet = 1 /
+      (matrix[0][3]*matrix[1][2]*matrix[2][1]*matrix[3][0] - matrix[0][2]*matrix[1][3]*matrix[2][1]*matrix[3][0] - matrix[0][3]*matrix[1][1]*matrix[2][2]*matrix[3][0] +
+          matrix[0][1]*matrix[1][3]*matrix[2][2]*matrix[3][0] + matrix[0][2]*matrix[1][1]*matrix[2][3]*matrix[3][0] - matrix[0][1]*matrix[1][2]*matrix[2][3]*matrix[3][0] -
+          matrix[0][3]*matrix[1][2]*matrix[2][0]*matrix[3][1] + matrix[0][2]*matrix[1][3]*matrix[2][0]*matrix[3][1] + matrix[0][3]*matrix[1][0]*matrix[2][2]*matrix[3][1] -
+          matrix[0][0]*matrix[1][3]*matrix[2][2]*matrix[3][1] - matrix[0][2]*matrix[1][0]*matrix[2][3]*matrix[3][1] + matrix[0][0]*matrix[1][2]*matrix[2][3]*matrix[3][1] +
+          matrix[0][3]*matrix[1][1]*matrix[2][0]*matrix[3][2] - matrix[0][1]*matrix[1][3]*matrix[2][0]*matrix[3][2] - matrix[0][3]*matrix[1][0]*matrix[2][1]*matrix[3][2] +
+          matrix[0][0]*matrix[1][3]*matrix[2][1]*matrix[3][2] + matrix[0][1]*matrix[1][0]*matrix[2][3]*matrix[3][2] - matrix[0][0]*matrix[1][1]*matrix[2][3]*matrix[3][2] -
+          matrix[0][2]*matrix[1][1]*matrix[2][0]*matrix[3][3] + matrix[0][1]*matrix[1][2]*matrix[2][0]*matrix[3][3] + matrix[0][2]*matrix[1][0]*matrix[2][1]*matrix[3][3] -
+          matrix[0][0]*matrix[1][2]*matrix[2][1]*matrix[3][3] - matrix[0][1]*matrix[1][0]*matrix[2][2]*matrix[3][3] + matrix[0][0]*matrix[1][1]*matrix[2][2]*matrix[3][3]);
+
+  invMatrix[0][0] = invDet*(- matrix[1][3]*matrix[2][2]*matrix[3][1] + matrix[1][2]*matrix[2][3]*matrix[3][1] + matrix[1][3]*matrix[2][1]*matrix[3][2] - matrix[1][1]*matrix[2][3]*matrix[3][2] - matrix[1][2]*matrix[2][1]*matrix[3][3] + matrix[1][1]*matrix[2][2]*matrix[3][3]) ;
+  invMatrix[0][1] = invDet*(  matrix[0][3]*matrix[2][2]*matrix[3][1] - matrix[0][2]*matrix[2][3]*matrix[3][1] - matrix[0][3]*matrix[2][1]*matrix[3][2] + matrix[0][1]*matrix[2][3]*matrix[3][2] + matrix[0][2]*matrix[2][1]*matrix[3][3] - matrix[0][1]*matrix[2][2]*matrix[3][3]) ;
+  invMatrix[0][2] = invDet*(- matrix[0][3]*matrix[1][2]*matrix[3][1] + matrix[0][2]*matrix[1][3]*matrix[3][1] + matrix[0][3]*matrix[1][1]*matrix[3][2] - matrix[0][1]*matrix[1][3]*matrix[3][2] - matrix[0][2]*matrix[1][1]*matrix[3][3] + matrix[0][1]*matrix[1][2]*matrix[3][3]) ;
+  invMatrix[0][3] = invDet*(  matrix[0][3]*matrix[1][2]*matrix[2][1] - matrix[0][2]*matrix[1][3]*matrix[2][1] - matrix[0][3]*matrix[1][1]*matrix[2][2] + matrix[0][1]*matrix[1][3]*matrix[2][2] + matrix[0][2]*matrix[1][1]*matrix[2][3] - matrix[0][1]*matrix[1][2]*matrix[2][3]) ;
+
+  invMatrix[1][0] = invDet*(  matrix[1][3]*matrix[2][2]*matrix[3][0] - matrix[1][2]*matrix[2][3]*matrix[3][0] - matrix[1][3]*matrix[2][0]*matrix[3][2] + matrix[1][0]*matrix[2][3]*matrix[3][2] + matrix[1][2]*matrix[2][0]*matrix[3][3] - matrix[1][0]*matrix[2][2]*matrix[3][3]) ;
+  invMatrix[1][1] = invDet*(- matrix[0][3]*matrix[2][2]*matrix[3][0] + matrix[0][2]*matrix[2][3]*matrix[3][0] + matrix[0][3]*matrix[2][0]*matrix[3][2] - matrix[0][0]*matrix[2][3]*matrix[3][2] - matrix[0][2]*matrix[2][0]*matrix[3][3] + matrix[0][0]*matrix[2][2]*matrix[3][3]) ;
+  invMatrix[1][2] = invDet*(  matrix[0][3]*matrix[1][2]*matrix[3][0] - matrix[0][2]*matrix[1][3]*matrix[3][0] - matrix[0][3]*matrix[1][0]*matrix[3][2] + matrix[0][0]*matrix[1][3]*matrix[3][2] + matrix[0][2]*matrix[1][0]*matrix[3][3] - matrix[0][0]*matrix[1][2]*matrix[3][3]) ;
+  invMatrix[1][3] = invDet*(- matrix[0][3]*matrix[1][2]*matrix[2][0] + matrix[0][2]*matrix[1][3]*matrix[2][0] + matrix[0][3]*matrix[1][0]*matrix[2][2] - matrix[0][0]*matrix[1][3]*matrix[2][2] - matrix[0][2]*matrix[1][0]*matrix[2][3] + matrix[0][0]*matrix[1][2]*matrix[2][3]) ;
+
+  invMatrix[2][0] = invDet*(- matrix[1][3]*matrix[2][1]*matrix[3][0] + matrix[1][1]*matrix[2][3]*matrix[3][0] + matrix[1][3]*matrix[2][0]*matrix[3][1] - matrix[1][0]*matrix[2][3]*matrix[3][1] - matrix[1][1]*matrix[2][0]*matrix[3][3] + matrix[1][0]*matrix[2][1]*matrix[3][3]) ;
+  invMatrix[2][1] = invDet*(  matrix[0][3]*matrix[2][1]*matrix[3][0] - matrix[0][1]*matrix[2][3]*matrix[3][0] - matrix[0][3]*matrix[2][0]*matrix[3][1] + matrix[0][0]*matrix[2][3]*matrix[3][1] + matrix[0][1]*matrix[2][0]*matrix[3][3] - matrix[0][0]*matrix[2][1]*matrix[3][3]) ;
+  invMatrix[2][2] = invDet*(- matrix[0][3]*matrix[1][1]*matrix[3][0] + matrix[0][1]*matrix[1][3]*matrix[3][0] + matrix[0][3]*matrix[1][0]*matrix[3][1] - matrix[0][0]*matrix[1][3]*matrix[3][1] - matrix[0][1]*matrix[1][0]*matrix[3][3] + matrix[0][0]*matrix[1][1]*matrix[3][3]) ;
+  invMatrix[2][3] = invDet*(  matrix[0][3]*matrix[1][1]*matrix[2][0] - matrix[0][1]*matrix[1][3]*matrix[2][0] - matrix[0][3]*matrix[1][0]*matrix[2][1] + matrix[0][0]*matrix[1][3]*matrix[2][1] + matrix[0][1]*matrix[1][0]*matrix[2][3] - matrix[0][0]*matrix[1][1]*matrix[2][3]) ;
+
+  invMatrix[3][0] = invDet*(  matrix[1][2]*matrix[2][1]*matrix[3][0] - matrix[1][1]*matrix[2][2]*matrix[3][0] - matrix[1][2]*matrix[2][0]*matrix[3][1] + matrix[1][0]*matrix[2][2]*matrix[3][1] + matrix[1][1]*matrix[2][0]*matrix[3][2] - matrix[1][0]*matrix[2][1]*matrix[3][2]) ;
+  invMatrix[3][1] = invDet*(- matrix[0][2]*matrix[2][1]*matrix[3][0] + matrix[0][1]*matrix[2][2]*matrix[3][0] + matrix[0][2]*matrix[2][0]*matrix[3][1] - matrix[0][0]*matrix[2][2]*matrix[3][1] - matrix[0][1]*matrix[2][0]*matrix[3][2] + matrix[0][0]*matrix[2][1]*matrix[3][2]) ;
+  invMatrix[3][2] = invDet*(  matrix[0][2]*matrix[1][1]*matrix[3][0] - matrix[0][1]*matrix[1][2]*matrix[3][0] - matrix[0][2]*matrix[1][0]*matrix[3][1] + matrix[0][0]*matrix[1][2]*matrix[3][1] + matrix[0][1]*matrix[1][0]*matrix[3][2] - matrix[0][0]*matrix[1][1]*matrix[3][2]) ;
+  invMatrix[3][3] = invDet*(- matrix[0][2]*matrix[1][1]*matrix[2][0] + matrix[0][1]*matrix[1][2]*matrix[2][0] + matrix[0][2]*matrix[1][0]*matrix[2][1] - matrix[0][0]*matrix[1][2]*matrix[2][1] - matrix[0][1]*matrix[1][0]*matrix[2][2] + matrix[0][0]*matrix[1][1]*matrix[2][2]) ;
+
+
+}
+
+void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2double *delta_prim, su2double *delta_char){
+
+  su2double cc, rhoc;
+  cc = val_soundspeed*val_soundspeed;
+  rhoc = val_density*val_soundspeed;
   if (nDim == 2) {
-
-
-
-    L_Matrix[0][0] = 1.0;
-    L_Matrix[0][1] = 0.0;
-    L_Matrix[0][2] = 0.0;
-    L_Matrix[0][3] = -0.5/val_soundspeed/val_soundspeed;
-
-    L_Matrix[1][0] = 0.0;
-    L_Matrix[1][1] = val_normal[1];
-    L_Matrix[1][2] = -val_normal[0];
-    L_Matrix[1][3] = 0.0;
-
-    L_Matrix[2][0] = 0.0;
-    L_Matrix[2][1] = val_normal[0];
-    L_Matrix[2][2] = val_normal[1];
-    L_Matrix[2][3] = 1.0/val_density/val_soundspeed;
-
-    L_Matrix[3][0] = 0.0;
-    L_Matrix[3][1] = -val_normal[0];
-    L_Matrix[3][2] = -val_normal[1];
-    L_Matrix[3][3] = 1.0/val_density/val_soundspeed;
+    delta_char[0] = -cc*delta_prim[0] + delta_prim[3];
+    delta_char[1] = rhoc*delta_prim[2];
+    delta_char[2] = rhoc*delta_prim[1] + delta_prim[3];																	;
+    delta_char[3] = -rhoc*delta_prim[1] + delta_prim[3];
+  }else {
+    delta_char[0] = -cc*delta_prim[0] + delta_prim[4];
+    delta_char[1] = rhoc*delta_prim[2];
+    delta_char[2] = rhoc*delta_prim[3];
+    delta_char[3] = rhoc*delta_prim[1] + delta_prim[4];
+    delta_char[4] = -rhoc*delta_prim[1] + delta_prim[4];
   }
-  else {
-
-//    sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1]+val_velocity[2]*val_velocity[2];
-//
-//    R_Matrix[0][0] =  0.5*gm1*sqvel;
-//    R_Matrix[0][1] = -val_velocity[0]*gm1;
-//    R_Matrix[0][2] = -val_velocity[1]*gm1;
-//    R_Matrix[0][3] = -val_velocity[2]*gm1;
-//    R_Matrix[0][4] = gm1;
-//
-//    R_Matrix[1][0] = -val_velocity[0]/val_density;
-//    R_Matrix[1][1] = 1.0/val_density;
-//    R_Matrix[1][2] = 0.0;
-//    R_Matrix[1][3] = 0.0;
-//    R_Matrix[1][4] = 0.0;
-//
-//    R_Matrix[2][0] = -val_velocity[1]/val_density;
-//    R_Matrix[2][1] = 0.0;
-//    R_Matrix[2][2] = 1.0/val_density;
-//    R_Matrix[2][3] = 0.0;
-//    R_Matrix[2][4] = 0.0;
-//
-//    R_Matrix[3][0] = -val_velocity[2]/val_density;
-//    R_Matrix[3][1] = 0.0;
-//    R_Matrix[3][2] = 0.0;
-//    R_Matrix[3][3] = 1.0/val_density;
-//    R_Matrix[3][4] = 0.0;
-//
-//    R_Matrix[4][0] = 0.5*gm1*sqvel/val_pressure - Gamma/val_density;
-//    R_Matrix[4][1] = -gm1*val_velocity[0]/val_pressure;
-//    R_Matrix[4][2] = -gm1*val_velocity[1]/val_pressure;
-//    R_Matrix[4][3] = -gm1*val_velocity[2]/val_pressure;
-//    R_Matrix[4][4] = gm1/val_pressure;
-
-  }
-
 }
 
 void CNumerics::GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* Lambda, su2double *val_normal,

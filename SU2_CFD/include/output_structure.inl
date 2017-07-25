@@ -1,7 +1,7 @@
 /*!
- * \file transfer_structure.inl
- * \brief In-Line subroutines of the <i>transfer_structure.hpp</i> file.
- * \author R. Sanchez
+ * \file output_structure.inl
+ * \brief In-Line subroutines of the <i>output_structure.hpp</i> file.
+ * \author J. Smith
  * \version 5.0.0 "Raven"
  *
  * SU2 Original Developers: Dr. Francisco D. Palacios.
@@ -33,20 +33,8 @@
 
 #pragma once
 
-inline void CTransfer::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-                                                    CGeometry *donor_geometry, CGeometry *target_geometry,
-                       CConfig *donor_config, CConfig *target_config) { }
+inline su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
 
-inline void CTransfer::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, 
-                          CConfig *donor_config, unsigned long Marker_Donor, 
-                     unsigned long Vertex_Donor, unsigned long Point_Donor) { }
+inline su2double COutput::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan) { return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER; }
 
-inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-										  CConfig *target_config, unsigned long Marker_Target,
-										  unsigned long Vertex_Target, unsigned long Point_Target) { }
-
-inline void CTransfer::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone) { }
-
-inline void CTransfer::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone) { }
-
-inline void CTransfer::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config) { }
+inline su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan) { return MassFlowIn[iMarkerTP][iSpan]; }
