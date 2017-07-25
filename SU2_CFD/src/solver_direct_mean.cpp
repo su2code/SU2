@@ -16497,7 +16497,7 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
     myfile << "VARIABLES =" << endl;
     myfile.width(30); myfile << "\"Spanwise Value[m]\"";
     myfile.width(21); myfile << "\"iSpan [-]\"";
-    myfile.width(28); myfile << "\"Spanwise extension[%]\"";
+    myfile.width(28); myfile << "\"Spanwise extension[-]\"";
     myfile.width(26); myfile << "\"TotalPressure[Pa]\"";
     myfile.width(32); myfile << "\"TotalTemperature[K]\"";
     myfile.width(30); myfile << "\"Absolute Flow Angle1[°]\"";
@@ -16622,7 +16622,7 @@ void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geome
     myfile << "VARIABLES =" << endl;
     myfile.width(30); myfile << "\"Spanwise Value[m]\"";
     myfile.width(21); myfile << "\"iSpan [-]\"";
-    myfile.width(28); myfile << "\"Spanwise extension[%]\"";
+    myfile.width(28); myfile << "\"Spanwise extension[-]\"";
     myfile.width(21); myfile << "\"Pressure[Pa]\"";
     myfile << endl;
 
