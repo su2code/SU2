@@ -31,7 +31,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/cgns_elements.hpp"
+#include "../include/geometry_structure.hpp"
 
 #ifdef HAVE_CGNS
 #if CGNS_VERSION >= 3300
@@ -51,6 +51,9 @@ void CGNSElementTypeClass::DetermineMetaData(const unsigned short nDim,
   if(cg_section_read(fn, iBase, iZone, iConn, cgnsname, &elemType,
                      &indBeg, &indEnd, &nBndry, &parentFlag) != CG_OK) cg_error_exit();
 
+  /* Store the name of this connectivity. */
+  connName = cgnsname;
+
   /* Determine the number of elements present in this connectivity section. */
   nElem = indEnd - indBeg + 1;
 
@@ -62,6 +65,93 @@ void CGNSElementTypeClass::DetermineMetaData(const unsigned short nDim,
   const unsigned short nDimElem = DetermineElementDimension(fn, iBase, iZone);
   volumeConn  = (nDimElem == nDim);
   surfaceConn = (nDimElem == nDim-1);
+}
+
+void CGNSElementTypeClass::ReadBoundaryConnectivityRange(
+                                     const int           fn,
+                                     const int           iBase,
+                                     const int           iZone,
+                                     const unsigned long offsetRank,
+                                     const unsigned long nBoundElemRank,
+                                     const unsigned long startingBoundElemIDRank,
+                                     unsigned long       &locBoundElemCount,
+                                     vector<BoundaryFaceClass> &boundElems) {
+
+  /* Determine the index range to be read for this rank. */
+  const cgsize_t iBeg = indBeg + offsetRank;
+  const cgsize_t iEnd = iBeg + nBoundElemRank -1;
+
+  /* Determine the size of the vector needed to read the connectivity
+     data from the CGNS file. */
+  cgsize_t sizeNeeded;
+  if(cg_ElementPartialSize(fn, iBase, iZone, connID, iBeg, iEnd,
+                           &sizeNeeded) != CG_OK) cg_error_exit();
+
+  /* Allocate the memory for the connectivity and read the data. */
+  vector<cgsize_t> connCGNSVec(sizeNeeded);
+  if(cg_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd,
+                              connCGNSVec.data(), NULL) != CG_OK) cg_error_exit();
+
+  /* Define the variables needed to convert the connectivities from CGNS to
+     SU2 format. Note that the vectors are needed to support a connectivity
+     section with mixed element types. */
+  vector<ElementType_t>  CGNS_Type;
+  vector<unsigned short> VTK_Type;
+  vector<unsigned short> nPoly;
+  vector<unsigned short> nDOFs;
+
+  vector<vector<unsigned short> > SU2ToCGNS;
+
+  /* Definition of variables used in the loop below. */
+  cgsize_t *connCGNS = connCGNSVec.data();
+  ElementType_t typeElem = elemType;
+  vector<unsigned long> connSU2;
+
+  /* Loop over the elements just read. */
+  for(unsigned long i=0; i<nBoundElemRank; ++i, ++locBoundElemCount) {
+
+    /* Determine the element type for this element if this is a mixed
+       connectivity and set the pointer to the actual connectivity data. */
+    if(elemType == MIXED) {
+      typeElem = (ElementType_t) connCGNS[0];
+      ++connCGNS;
+    }
+
+    /* Determine the index in the stored vectors (CGNS_Type, VTK_Type, etc),
+       which corresponds to this element. If the type is not stored yet,
+       a new entry in these vectors will be created. */
+    const unsigned short ind = IndexInStoredTypes(typeElem, CGNS_Type, VTK_Type,
+                                                  nPoly, nDOFs, SU2ToCGNS);
+
+    /* Resize the connSU2 vector to the appropriate size. */
+    connSU2.resize(nDOFs[ind]);
+
+    /* Create the connectivity used in SU2 by carrying out the renumbering.
+       Note that in CGNS the numbering starts at 1, while in SU2 it starts
+       at 0. This explains the addition of -1. */
+    for(unsigned short j=0; j<nDOFs[ind]; ++j)
+      connSU2[j] = connCGNS[SU2ToCGNS[ind][j]] - 1;
+
+    /* Set the pointer for connCGNS for the data of the next element. */
+    connCGNS += nDOFs[ind];
+
+    /* Determine the global boundary element ID of this element. */
+    const unsigned long globBoundElemID = startingBoundElemIDRank
+                                        + locBoundElemCount;
+
+    /* Create an object of BoundaryFaceClass and store it in boundElems.
+       Note that the corresponding domain element is not known yet and
+       is therefore set to ULONG_MAX. */
+    BoundaryFaceClass thisBoundFace;
+    thisBoundFace.VTK_Type          = VTK_Type[ind];
+    thisBoundFace.nPolyGrid         = nPoly[ind];
+    thisBoundFace.nDOFsGrid         = nDOFs[ind];
+    thisBoundFace.globalBoundElemID = globBoundElemID;
+    thisBoundFace.domainElementID   = ULONG_MAX;
+    thisBoundFace.Nodes             = connSU2;
+
+    boundElems.push_back(thisBoundFace);
+  }
 }
 
 void CGNSElementTypeClass::ReadConnectivityRange(const int           fn,

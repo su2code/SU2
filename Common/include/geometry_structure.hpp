@@ -129,6 +129,11 @@ public:
   FaceOfElementClass();
   ~FaceOfElementClass(){}
 
+  /* Alternative constructor to set the corner points. */
+  FaceOfElementClass(const unsigned short VTK_Type,
+                     const unsigned short nPoly,
+                     const unsigned long  *Nodes);
+
   /* Copy constructor and assignment operator. */
   FaceOfElementClass(const FaceOfElementClass &other);
 
@@ -173,6 +178,9 @@ class BoundaryFaceClass {
   BoundaryFaceClass(const BoundaryFaceClass &other);
 
   BoundaryFaceClass& operator=(const BoundaryFaceClass &other);
+
+  /* Less than operator. Needed for the sorting. */
+  bool operator<(const BoundaryFaceClass &other) const;
 
 private:
   /*--- Copy function, which copies the data of the given object into the current object. ---*/

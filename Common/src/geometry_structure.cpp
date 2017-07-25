@@ -91,6 +91,67 @@ FaceOfElementClass::FaceOfElementClass(){
   elem0IsOwner                = false;
 }
 
+FaceOfElementClass::FaceOfElementClass(const unsigned short VTK_Type,
+                                       const unsigned short nPoly,
+                                       const unsigned long  *Nodes) {
+
+  /* Set the default values of the member variables. */
+  nCornerPoints   = 0;
+  cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = ULONG_MAX;
+  elemID0         = elemID1 = ULONG_MAX;
+  nPolyGrid0      = nPolyGrid1 = 0;
+  nPolySol0       = nPolySol1  = 0;
+  nDOFsElem0      = nDOFsElem1 = 0;
+  elemType0       = elemType1  = 0;
+  faceID0         = faceID1    = 0;
+  periodicIndex   = 0;
+  faceIndicator   = 0;
+
+  JacFaceIsConsideredConstant = false;
+  elem0IsOwner                = false;
+
+  /* Determine the face element type and set the corner points accordingly. */
+  switch( VTK_Type ) {
+    case LINE: {
+      nCornerPoints   = 2;
+      cornerPoints[0] = Nodes[0];
+      cornerPoints[1] = Nodes[nPoly];
+      break;
+    }
+
+    case TRIANGLE: {
+      const unsigned short ind2 = (nPoly+1)*(nPoly+2)/2 -1;
+      nCornerPoints   = 3;
+      cornerPoints[0] = Nodes[0];
+      cornerPoints[1] = Nodes[nPoly];
+      cornerPoints[2] = Nodes[ind2];
+      break;
+    }
+
+    case QUADRILATERAL: {
+      const unsigned short ind2 = nPoly*(nPoly+1);
+      const unsigned short ind3 = (nPoly+1)*(nPoly+1) -1;
+      nCornerPoints   = 4;
+      cornerPoints[0] = Nodes[0];
+      cornerPoints[1] = Nodes[nPoly];
+      cornerPoints[2] = Nodes[ind2];
+      cornerPoints[3] = Nodes[ind3];
+      break;
+    }
+
+    default: {
+      cout << "Unknown VTK surface element type, " << VTK_Type
+           << ", in FaceOfElementClass::FaceOfElementClass." << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+  }
+}
+
 bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
   if(nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
 
@@ -9189,7 +9250,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Open the grid file again and go to the position where
         the correct zone is stored.                           ---*/
-
   mesh_file.open(val_mesh_filename.c_str(), ios::in);
 
   if (val_nZone > 1 && !time_spectral) {
@@ -9204,7 +9264,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   }
 
   /*--- While loop to read the boundary information. ---*/
-
   while (getline (mesh_file, text_line)) {
     /*--- Read number of markers ---*/
     position = text_line.find ("NMARK=",0);
@@ -9327,7 +9386,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
                                                       boundElems[i].Nodes);
 
         /*--- Update config information storing the boundary information in the right place ---*/
-
         Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
         config->SetMarker_All_TagBound(iMarker, Marker_Tag);
         config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
@@ -9401,6 +9459,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   nelem_hexa     = 0; Global_nelem_hexa     = 0;
   nelem_prism    = 0; Global_nelem_prism    = 0;
   nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
+
+  /*--------------------------------------------------------------------------*/
+  /*---       Checking of the file, determine the dimensions, etc.         ---*/
+  /*--------------------------------------------------------------------------*/
 
   /*--- Allocate memory for the linear partition of the elements of the mesh.
         These arrays are the size of the number of ranks. ---*/
@@ -9510,6 +9572,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   int nsections;
   if(cg_nsections(fn, iBase, iZone, &nsections) != CG_OK) cg_error_exit();
 
+  /*--------------------------------------------------------------------------*/
+  /*---            Reading and distributing the volume elements.           ---*/
+  /*--------------------------------------------------------------------------*/
+
   /* Loop over the sections to store the meta data in CGNSElemTypes
      and to determine the number of volume elements.
      Note that the indices start at 1 in CGNS. */
@@ -9548,7 +9614,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 #endif
   }
 
-  /*--- Compute the number of elements that will be on each processor.
+  /*--- Compute the number of elements that will be stored on each rank.
         This is a linear partitioning with the addition of a simple load
         balancing for any remainder elements. ---*/
   unsigned long total_elem_accounted = 0;
@@ -9609,8 +9675,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   }
 
 #ifdef HAVE_MPI
-  /* The global offset of the elements must be corrected when running in
-     Therefore gather the number of DOFs of all the ranks. */
+  /* The global offset of the DOFs must be corrected when running in
+     parallel. Therefore gather the number of DOFs of all the ranks. */
   vector<unsigned long> nDOFsPerRank(size);
   SU2_MPI::Allgather(&nDOFsLoc, 1, MPI_UNSIGNED_LONG, nDOFsPerRank.data(), 1,
                      MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
@@ -9624,6 +9690,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   for(unsigned long i=0; i<nElem; ++i)
     elem[i]->AddOffsetGlobalDOFs(offsetRank);
 #endif
+
+  /*--------------------------------------------------------------------------*/
+  /*---            Reading and distributing the coordinates.               ---*/
+  /*--------------------------------------------------------------------------*/
 
   /* Determine the global number of vertices in the requested zone.
      The other size information is not used. */
@@ -9891,7 +9961,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
           const unsigned long kk = startingIndRanksInNode[source] + j;
 
           node[kk] = new CPoint(coorRecvBuf[jj], coorRecvBuf[jj+1],
-                                coorRecvBuf[jj+1], nodeBuf[source][j], config);
+                                coorRecvBuf[jj+2], nodeBuf[source][j], config);
         }
         break;
       }
@@ -9930,16 +10000,627 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
 #endif
 
+  /*--------------------------------------------------------------------------*/
+  /*--- Determine and distribute the single faces of the elements. These   ---*/
+  /*--- faces are distributed over the ranks such that later the boundary  ---*/
+  /*--- can retrieve the info on which rank they must be stored without    ---*/
+  /*--- each rank having to read the entire connectivity data.             ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Determine the faces of the local elements. --- */
+  vector<FaceOfElementClass> localFaces;
+  for(unsigned long k=0; k<nElem; ++k) {
+
+    /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long  faceConn[6][4];
+
+    elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+    /*--- Loop over the faces and add them to localFaces. For consistency
+          between sequential and parallel mode the rank is stored at the
+          position for the second element ID. ---*/
+    for(unsigned short i=0; i<nFaces; ++i) {
+      FaceOfElementClass thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[i];
+      for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
+        thisFace.cornerPoints[j] = faceConn[i][j];
+      thisFace.elemID0 = k + starting_node[rank];
+      thisFace.elemID1 = rank;
+
+      thisFace.CreateUniqueNumbering();
+      localFaces.push_back(thisFace);
+    }
+  }
+
+  /*--- Sort localFaces in increasing order and remove the double entities,
+        such that unnecessary data is not communicated later on. ---*/
+  sort(localFaces.begin(), localFaces.end());
+  vector<FaceOfElementClass>::iterator lastFace;
+  lastFace = unique(localFaces.begin(), localFaces.end());
+  localFaces.erase(lastFace, localFaces.end());
+
+#ifdef HAVE_MPI
+
+  /*--- In parallel mode these faces must be distributed over the ranks.
+        A face is stored on the rank where its first node ID is located
+        based on nPointsPerRank. Define the communication buffers and
+        determine their contents. ---*/
+  vector<vector<unsigned long> > faceBuf(size, vector<unsigned long>(0));
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    const cgsize_t nodeID = localFaces[i].cornerPoints[0];
+    vector<cgsize_t>::iterator low;
+    low = lower_bound(nPointsPerRank.begin(), nPointsPerRank.end(), nodeID);
+    cgsize_t rankNode = low - nPointsPerRank.begin();
+    if(*low > nodeID) --rankNode;
+
+    faceBuf[rankNode].push_back(localFaces[i].nCornerPoints);
+    for(unsigned short j=0; j<localFaces[i].nCornerPoints; ++j)
+      faceBuf[rankNode].push_back(localFaces[i].cornerPoints[j]);
+    faceBuf[rankNode].push_back(localFaces[i].elemID0);
+  }
+
+  /* Delete the memory of localFaces again, because its contents will be
+     build from the messages that this rank will receive. */
+  localFaces.clear();
+
+  /*--- Determine the number of messages this rank will send and receive. ---*/
+  nRankSend = 0;
+  for(int i=0; i<size; ++i) {
+    if( faceBuf[i].size() ) {
+      ++nRankSend;
+      sendToRank[i] = 1;
+    }
+    else {
+      sendToRank[i] = 0;
+    }
+  }
+
+  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
+  sendReqs.resize(nRankSend);
+  nRankSend = 0;
+  for(int i=0; i<size; ++i) {
+    if( faceBuf[i].size() ) {
+      SU2_MPI::Isend(faceBuf[i].data(), faceBuf[i].size(), MPI_UNSIGNED_LONG,
+                     i, i+4, MPI_COMM_WORLD, &sendReqs[nRankSend]);
+      ++nRankSend;
+    }
+  }
+
+  /* Loop over the number of ranks from which this rank will receive data. */
+  for(int i=0; i<nRankRecv; ++i) {
+
+    /* Block until a message arrives and determine the source and size
+       of the message. */
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, rank+4, MPI_COMM_WORLD, &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    /* Allocate the memory for the receive buffer and receive the
+       message using a non-blocking receive. */
+    vector<unsigned long> faceRecvBuf(sizeMess);
+    SU2_MPI::Recv(faceRecvBuf.data(), faceRecvBuf.size(), MPI_UNSIGNED_LONG,
+                  source, rank+4, MPI_COMM_WORLD, &status);
+
+    /* Loop to extract the data from the receive buffer. */
+    int ii = 0;
+    while(ii < sizeMess) {
+
+      /* Store the data for this face in localFaces. The rank where the
+         corresponding element is physically present is stored in the
+         second element ID. Note that it is not necessary to create a unique
+         numbering anymore, because this has already been done before the
+         communication buffer was created. */
+      FaceOfElementClass thisFace;
+      thisFace.nCornerPoints = (unsigned short) faceRecvBuf[ii++];
+      for(unsigned short j=0; j<thisFace.nCornerPoints; ++j, ++ii)
+        thisFace.cornerPoints[j] = faceRecvBuf[ii];
+      thisFace.elemID0 = faceRecvBuf[ii++];
+
+      thisFace.elemID1 = source;
+      localFaces.push_back(thisFace);
+    }
+  }
+
+  /*--- Sort localFaces in increasing order and remove the double entities,
+       such that searching is a bit more efficient later on. ---*/
+  sort(localFaces.begin(), localFaces.end());
+  lastFace = unique(localFaces.begin(), localFaces.end());
+  localFaces.erase(lastFace, localFaces.end());
+
+  /* Complete the non-blocking sends. Afterwards, synchronize the ranks,
+     because wild cards have been used. */
+  SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+#endif
+
+  /*--------------------------------------------------------------------------*/
+  /*---           Reading and distributing the surface elements.           ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Determine the number of families in this base and read their names.
+     Not that when multiple zones are present, this step is repeated for
+     every zone. */
+  int nFamilies;
+  if(cg_nfamilies(fn, iBase, &nFamilies) != CG_OK) cg_error_exit();
+
+  vector<string> familyNames(nFamilies);
+  for(int i=1; i<=nFamilies; ++i) {
+    int nFamBC, nGeo;
+    if(cg_family_read(fn, iBase, i, cgnsname, &nFamBC, &nGeo) != CG_OK) cg_error_exit();
+    familyNames[i-1] = cgnsname;
+  }
+
+  /* Determine the number of boundary condtions for this zone. */
+  int nBCs;
+  if(cg_nbocos(fn, iBase, iZone, &nBCs) != CG_OK) cg_error_exit();
+
+  /* Read the names of the boundary conditions and determine their family names.
+     If not family name is specified for a boundary condition, the family name
+     is set to the name of the boundary condition. */
+  vector<string> BCNames(nBCs), BCFamilyNames(nBCs);
+  for(int i=1; i<=nBCs; ++i) {
+
+    /* Read the info for this boundary condition. */
+    BCType_t BCType;
+    PointSetType_t ptsetType;
+    cgsize_t npnts, NormalListSize;
+    int NormalIndex, nDataSet;
+    DataType_t NormalDataType;
+    if(cg_boco_info(fn, iBase, iZone, i, cgnsname, &BCType, &ptsetType,
+                    &npnts, &NormalIndex, &NormalListSize, &NormalDataType,
+                    &nDataSet) != CG_OK) cg_error_exit();
+    BCNames[i-1] = cgnsname;
+
+    /* Read the possibly family name and set it. If not present, it is
+       equal to BCName. */
+    if(cg_goto(fn, iBase, "Zone_t", iZone, "ZoneBC_t", 1,
+               "BC_t", i, "end") != CG_OK) cg_error_exit();
+
+    int ierr = cg_famname_read(cgnsname);
+    if(ierr ==  CG_ERROR)  cg_error_exit();
+    else if(ierr == CG_OK) BCFamilyNames[i-1] = cgnsname;
+    else                   BCFamilyNames[i-1] = BCNames[i-1];
+  }
+
+  /*--- Determine the number of different surface connectivities. It is
+        possible to specify a family name for a surface connectivity. If that
+        family name is the same for multiple surface connectivities, these
+        connectivities are merged together for the boundary condition
+        treatment in the DG-FEM solver. ---*/
+  vector<string> surfaceNames;
+  vector<vector<int> > surfaceConnIDs;
+
+  for(int i=0; i<nsections; ++i) {
+    if( CGNSElemTypes[i].surfaceConn ) {
+
+      /*--- Determine the surface name to use for this connectivity.
+            This name is determined as follows (in terms of importance).
+            1) Family name specified for this connectivity.
+            2) Family name of the corresponding boundary condition,
+               if present.
+            3) Name of the connectivity. ---*/
+      string thisSurfaceName;
+      const int connID = CGNSElemTypes[i].connID;
+
+      /* First try to read the family name for the connectivity. */
+      if(cg_goto(fn, iBase, "Zone_t", iZone,
+                 "Elements_t", connID, "end") != CG_OK) cg_error_exit();
+      int ierr = cg_famname_read(cgnsname);
+      if(ierr ==  CG_ERROR)  cg_error_exit();
+      else if(ierr == CG_OK) thisSurfaceName = cgnsname;
+      else {
+        /* No family name. Check the boundary conditions. It is assumed that
+           the boundary conditions have the same name as the connectivities. */
+        int j;
+        for(j=0; j<nBCs; ++j) {
+          if(BCNames[j] == CGNSElemTypes[i].connName) {
+            thisSurfaceName = BCFamilyNames[j];
+            break;
+          }
+        }
+
+        /* If the name is not found in the boundary conditions, set the name
+           of this surface connectivity to the name of this connectivity. */
+        if(j == nBCs) thisSurfaceName = CGNSElemTypes[i].connName;
+      }
+
+      /* Loop over the previously stored surface names and check if this
+         surface name is already present. */
+      unsigned long j;
+      for(j=0; j<surfaceNames.size(); ++j) {
+        if(thisSurfaceName == surfaceNames[j]) {
+          surfaceConnIDs[j].push_back(i);
+        }
+      }
+
+      /* If the surface name is not stored yet, create new entries in
+          surfaceNames and surfaceConnIDs. */
+      if(j == surfaceNames.size()) {
+        surfaceNames.push_back(thisSurfaceName);
+        vector<int> thisSurfaceConn(1, i);
+        surfaceConnIDs.push_back(thisSurfaceConn);
+      }
+    }
+  }
+
+  /* Write a message about the number of surface markers and allocate the
+     memory for the data structures to store the required information. */
+  nMarker = surfaceNames.size();
+  if(rank == MASTER_NODE) cout << nMarker << " surface markers." << endl;
+  config->SetnMarker_All(nMarker);
+
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+
+  bound = new CPrimalGrid**[nMarker];
+  nElem_Bound = new unsigned long[nMarker];
+  Tag_to_Marker = new string[nMarker_Max];
+
+  /* Loop over the number of markers to read and distribute the connectivities. */
+  for(unsigned short iMarker = 0 ; iMarker < nMarker; ++iMarker) {
+
+    /* Easier storage of the entries in CGNSElemTypes that contribute
+       to this boundary marker. */
+    const int nEntries = surfaceConnIDs[iMarker].size();
+    const int *entries = surfaceConnIDs[iMarker].data();
+
+    /* Determine the global number of elements for this boundary marker. */
+    cgsize_t nElem_Bound_Global = 0;
+    for(int iConn=0; iConn<nEntries; ++iConn)
+      nElem_Bound_Global += CGNSElemTypes[entries[iConn]].nElem;
+
+    /* Write a message about the global number of surface elements
+       present in this marker. */
+    string Marker_Tag = surfaceNames[iMarker];
+    if(rank == MASTER_NODE)
+      cout << nElem_Bound_Global  << " boundary elements in index "<< iMarker
+           <<" (Marker = " << Marker_Tag << ")." << endl;
+
+    /* Determine the number of surface elements per rank in cumulative storage
+       format. This is done to avoid that every rank reads all the elements.
+       This is to avoid that every rank reads all the elements. The correct
+       rank for storage is determined later via communication. */
+    unsigned long totalBoundElemAccounted = 0;
+    vector<unsigned long> nBoundElemPerRank(size+1);
+    for(int i=1; i<=size; ++i) {
+      nBoundElemPerRank[i]     = nElem_Bound_Global/size;
+      totalBoundElemAccounted += nBoundElemPerRank[i];
+    }
+
+    const unsigned long nBoundElemRem = nElem_Bound_Global - totalBoundElemAccounted;
+    for(unsigned long i=1; i<=nBoundElemRem; ++i) ++nBoundElemPerRank[i];
+
+    nBoundElemPerRank[0] = 0;
+    for(int i=0; i<size; ++i)
+      nBoundElemPerRank[i+1] += nBoundElemPerRank[i];
+
+    /* Define a vector of FEM boundary elements to store the local
+       boundary faces to be read. */
+    vector<BoundaryFaceClass> boundElems;
+
+    /* Loop over the connectivity sections that contribute. */
+    elemCount = locElemCount = 0;
+    for(int iConn=0; iConn<nEntries; ++iConn) {
+
+      /* Determine the global range for this connectivity. */
+      const unsigned long elemCountOld = elemCount;
+      elemCount += CGNSElemTypes[entries[iConn]].nElem;
+
+      /* Check for overlap with the element range this rank is responsible for. */
+      const unsigned long indBegOverlap = max(elemCountOld, nBoundElemPerRank[rank]);
+      const unsigned long indEndOverlap = min(elemCount, nBoundElemPerRank[rank+1]);
+
+      if(indEndOverlap > indBegOverlap) {
+
+        /* This rank must read boundary element data from this connectivity
+           section. Determine the offset relative to the start of this section
+           and the number of elements to be read by this rank. */
+        const unsigned long offsetRank = indBegOverlap - elemCountOld;
+        const unsigned long nElemRank  = indEndOverlap - indBegOverlap;
+
+        /* Read the connectivity range determined above. */
+        CGNSElemTypes[entries[iConn]].ReadBoundaryConnectivityRange(fn, iBase, iZone, offsetRank,
+                                                                    nElemRank, nBoundElemPerRank[rank],
+                                                                    locElemCount, boundElems);
+      }
+    }
+
+    /* Make a distinction between sequential and parallel mode. */
+#ifdef HAVE_MPI
+    /*--- Parallel mode. The information stored in boundElems must be
+          communicated to find out where it must be stored. First clear the
+          contents of the faceBuf, such that it can be used again to send
+          data to the appropiate rank. ---*/
+    for(int i=0; i<size; ++i) faceBuf[i].clear();
+
+    /*-- Loop over the locally read boundary elements and store its contents
+         in the appropiate location in faceBuf. ---*/
+    for(unsigned long i=0; i<boundElems.size(); ++i) {
+
+      /* Create an object of the class FaceOfElementClass to determine the
+         node number that determines on which rank the corresponding face
+         in localFaces is stored. */
+      FaceOfElementClass thisFace(boundElems[i].VTK_Type,
+                                  boundElems[i].nPolyGrid,
+                                  boundElems[i].Nodes.data());
+      thisFace.CreateUniqueNumbering();
+
+      /* Determine the rank to which this face must be sent to. */
+      const cgsize_t nodeID = thisFace.cornerPoints[0];
+      vector<cgsize_t>::iterator low;
+      low = lower_bound(nPointsPerRank.begin(), nPointsPerRank.end(), nodeID);
+      cgsize_t rankNode = low - nPointsPerRank.begin();
+      if(*low > nodeID) --rankNode;
+
+      /*--- Copy the relevant data of this boundary element into faceBuf. ---*/
+      faceBuf[rankNode].push_back(boundElems[i].VTK_Type);
+      faceBuf[rankNode].push_back(boundElems[i].nPolyGrid);
+      faceBuf[rankNode].push_back(boundElems[i].nDOFsGrid);
+      faceBuf[rankNode].push_back(boundElems[i].globalBoundElemID);
+      faceBuf[rankNode].insert(faceBuf[rankNode].end(),
+                               boundElems[i].Nodes.begin(),
+                               boundElems[i].Nodes.end());
+    }
+
+    /* The contents of boundElems is copied into faceBuf, so it can
+       be released. */
+    boundElems.clear();
+
+    /*--- Determine the number of messages this rank will send and receive. ---*/
+    nRankSend = 0;
+    for(int i=0; i<size; ++i) {
+      if( faceBuf[i].size() ) {
+        ++nRankSend;
+        sendToRank[i] = 1;
+      }
+      else {
+        sendToRank[i] = 0;
+      }
+    }
+
+    MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                       MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
+    sendReqs.resize(nRankSend);
+    nRankSend = 0;
+    for(int i=0; i<size; ++i) {
+      if( faceBuf[i].size() ) {
+        SU2_MPI::Isend(faceBuf[i].data(), faceBuf[i].size(), MPI_UNSIGNED_LONG,
+                       i, i+5, MPI_COMM_WORLD, &sendReqs[nRankSend]);
+        ++nRankSend;
+      }
+    }
+
+    /* Use nodeBuf as storage for the sending of the surface element data
+       to the correct rank. First clear its contents. */
+    for(int i=0; i<size; ++i) nodeBuf[i].clear();
+
+    /*--- Loop over the number of ranks from which this rank receives
+          surface elements to be processed. ---*/
+    for(int i=0; i<nRankRecv; ++i) {
+
+      /* Block until a message arrives. Determine the source and size
+         of the message. */
+      MPI_Status status;
+      MPI_Probe(MPI_ANY_SOURCE, rank+5, MPI_COMM_WORLD, &status);
+      int source = status.MPI_SOURCE;
+
+      int sizeMess;
+      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+      /* Allocate the memory for the receive buffer and receive the message
+         using a blocking send. */
+      vector<unsigned long> boundElemRecvBuf(sizeMess);
+      SU2_MPI::Recv(boundElemRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                    source, rank+5, MPI_COMM_WORLD, &status);
+
+      /* Loop to extract the data from the receive buffer. */
+      int ii = 0;
+      while(ii < sizeMess) {
+
+        /* Store the data for this boundary element. */
+        const unsigned short VTK_Type  = (unsigned short) boundElemRecvBuf[ii++];
+        const unsigned short nPolyGrid = (unsigned short) boundElemRecvBuf[ii++];
+        const unsigned short nDOFsGrid = (unsigned short) boundElemRecvBuf[ii++];
+
+        const unsigned long globalBoundElemID = boundElemRecvBuf[ii++];
+        const unsigned long *Nodes            = boundElemRecvBuf.data() + ii;
+        ii += nDOFsGrid;
+
+        /* Determine the corner nodes and store them in an object of
+           the class FaceOfElementClass to carry out the search in localFaces. */
+        FaceOfElementClass thisFace(VTK_Type, nPolyGrid, Nodes);
+
+        /* Check if the face is actually present. If not, print an error message
+           and exit. */
+        thisFace.CreateUniqueNumbering();
+        if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
+          cout << "Boundary element not found in list of faces. This is a bug." << endl;
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
+        }
+
+        /* Carry out the search again, but now with lower_bound to find the
+           actual entry to determine the domain element and the rank where
+           this boundary element should be sent to.. */
+        vector<FaceOfElementClass>::iterator low;
+        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+        const unsigned long domainElementID = low->elemID0;
+        const int rankBoundElem = (int) low->elemID1;
+
+        /*--- Store the data for this element in the communication buffer
+              for rankBoundElem. ---*/
+        nodeBuf[rankBoundElem].push_back(VTK_Type);
+        nodeBuf[rankBoundElem].push_back(nPolyGrid);
+        nodeBuf[rankBoundElem].push_back(nDOFsGrid);
+        nodeBuf[rankBoundElem].push_back(globalBoundElemID);
+        nodeBuf[rankBoundElem].push_back(domainElementID);
+
+        for(unsigned short j=0; j<nDOFsGrid; ++j)
+          nodeBuf[rankBoundElem].push_back(Nodes[j]);
+      }
+    }
+
+    /* Complete the non-blocking sends. */
+    SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
+
+    /*--- Determine the number of messages this rank will send and receive. ---*/
+    nRankSend = 0;
+    for(int i=0; i<size; ++i) {
+      if( nodeBuf[i].size() ) {
+        ++nRankSend;
+        sendToRank[i] = 1;
+      }
+      else {
+        sendToRank[i] = 0;
+      }
+    }
+
+    MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                       MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
+    sendReqs.resize(nRankSend);
+    nRankSend = 0;
+    for(int i=0; i<size; ++i) {
+      if( nodeBuf[i].size() ) {
+        SU2_MPI::Isend(nodeBuf[i].data(), nodeBuf[i].size(), MPI_UNSIGNED_LONG,
+                       i, i+6, MPI_COMM_WORLD, &sendReqs[nRankSend]);
+        ++nRankSend;
+      }
+    }
+
+    /*--- Loop over the number of ranks from which this rank receives
+          surface elements to be stored on this rank. ---*/
+    for(int i=0; i<nRankRecv; ++i) {
+
+      /* Block until a message arrives. Determine the source and size
+         of the message. */
+      MPI_Status status;
+      MPI_Probe(MPI_ANY_SOURCE, rank+6, MPI_COMM_WORLD, &status);
+      int source = status.MPI_SOURCE;
+
+      int sizeMess;
+      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+      /* Allocate the memory for the receive buffer and receive the message
+         using a blocking send. */
+      vector<unsigned long> boundElemRecvBuf(sizeMess);
+      SU2_MPI::Recv(boundElemRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                    source, rank+6, MPI_COMM_WORLD, &status);
+
+      /* Loop to extract the data from the receive buffer. */
+      int ii = 0;
+      while(ii < sizeMess) {
+
+        /* Store the data for this boundary element. */
+        const unsigned short VTK_Type  = (unsigned short) boundElemRecvBuf[ii++];
+        const unsigned short nPolyGrid = (unsigned short) boundElemRecvBuf[ii++];
+        const unsigned short nDOFsGrid = (unsigned short) boundElemRecvBuf[ii++];
+
+        const unsigned long globalBoundElemID = boundElemRecvBuf[ii++];
+        const unsigned long domainElementID   = boundElemRecvBuf[ii++];
+        const unsigned long *Nodes            = boundElemRecvBuf.data() + ii;
+        ii += nDOFsGrid;
+
+        /* Create an object of BoundaryFaceClass and store it in boundElems. */
+        BoundaryFaceClass thisBoundFace;
+        thisBoundFace.VTK_Type          = VTK_Type;
+        thisBoundFace.nPolyGrid         = nPolyGrid;
+        thisBoundFace.nDOFsGrid         = nDOFsGrid;
+        thisBoundFace.globalBoundElemID = globalBoundElemID;
+        thisBoundFace.domainElementID   = domainElementID;
+
+        thisBoundFace.Nodes.resize(nDOFsGrid);
+        for(unsigned short j=0; j<nDOFsGrid; ++j)
+          thisBoundFace.Nodes[j] = Nodes[j];
+
+        boundElems.push_back(thisBoundFace);
+      }
+    }
+
+    /* Sort boundElems in increasing order, where the less than operator
+       is a comparison between the globalBoundElemID's. */
+    sort(boundElems.begin(), boundElems.end());
+
+    /* Complete the non-blocking sends and synchronize the processors,
+       because wild cards have been used. */
+    SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+#else
+    /*--- Sequential mode. All boundary elements read must be stored on this
+          rank. The only information missing is the global ID of the domain
+          element of the boundary elements. This is created below. ---*/
+    for(unsigned long i=0; i<boundElems.size(); ++i) {
+
+      /* Determine the corner nodes and store them in an object of
+         the class FaceOfElementClass to carry out the search in localFaces. */
+      FaceOfElementClass thisFace(boundElems[i].VTK_Type,
+                                  boundElems[i].nPolyGrid,
+                                  boundElems[i].Nodes.data());
+
+      /* Check if the face is actually present. If not, print an error message
+         and exit. */
+      thisFace.CreateUniqueNumbering();
+      if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
+        cout << "Boundary element not found in list of faces. This is a bug." << endl;
+        exit(EXIT_FAILURE);
+      }
+
+      /* Carry out the search again, but now with lower_bound to find the
+         actual entry to set the domain element. */
+      vector<FaceOfElementClass>::iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      boundElems[i].domainElementID = low->elemID0;
+    }
+#endif
+
+    /*--- Allocate space for the local boundary elements and copy the data
+          from boundElems into bound. ---*/
+    nElem_Bound[iMarker] = boundElems.size();
+    bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
+
+    for(unsigned long i=0; i<nElem_Bound[iMarker]; ++i)
+      bound[iMarker][i] = new CPrimalGridBoundFEM(boundElems[i].globalBoundElemID,
+                                                  boundElems[i].domainElementID,
+                                                  boundElems[i].VTK_Type,
+                                                  boundElems[i].nPolyGrid,
+                                                  boundElems[i].nDOFsGrid,
+                                                  boundElems[i].Nodes);
+
+    /*--- Update config information storing the boundary information in the right place ---*/
+    Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
+    config->SetMarker_All_TagBound(iMarker, Marker_Tag);
+    config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
+    config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
+    config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
+    config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
+    config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+    config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
+    config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
+    config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
+    config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+    config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
+    config->SetMarker_All_SendRecv(iMarker, NONE);
+    config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+  }
 
   /* Close the CGNS file again. */
   if(cg_close(fn) != CG_OK) cg_error_exit();
   if(rank == MASTER_NODE)
     cout << "Successfully closed the CGNS file." << endl;
-
-
-  cout << "CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM: "
-       << "Not implemented yet" << endl;
-  exit(0);
 
 #else  /* CGNS_VERSION >= 3300 */
 
