@@ -561,21 +561,7 @@ CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
 
 }
 
-CNSVariable::~CNSVariable(void) {
-
-	unsigned short iVar, iDim;
-
-	  if (Gradient_Primitive != NULL) {
-	    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-	      if (Gradient_Primitive[iVar] != NULL) delete [] Gradient_Primitive[iVar];
-	    delete [] Gradient_Primitive;
-	  }
-	  if (Gradient_Secondary != NULL) {
-	    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-	      if (Gradient_Secondary[iVar] != NULL) delete [] Gradient_Secondary[iVar];
-	    delete [] Gradient_Secondary;
-	  }
-}
+CNSVariable::~CNSVariable(void) { }
 
 bool CNSVariable::SetVorticity(bool val_limiter) {
   

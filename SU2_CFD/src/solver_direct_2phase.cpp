@@ -2144,8 +2144,8 @@ void C2phase_QMOMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
 void C2phase_QMOMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-	 unsigned long iPoint, iNode, rho_m;
-	  su2double R, S, y, *Liquid_vec, rho_v, rhoN, rhoNR, rhoNR3;
+	 unsigned long iPoint, iNode;
+	  su2double R, S, y, *Liquid_vec, rho_v, rhoN, rhoNR, rhoNR3, rho_m;
 
 	  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
