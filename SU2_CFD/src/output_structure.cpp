@@ -11993,7 +11993,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   /*--- At a mininum, the restarts and visualization files need the
    conservative variables, so these follow next. ---*/
 
-  nVar_Par += nVar_Consv_Par+2;
+  nVar_Par += nVar_Consv_Par+3;
 
   /*--- For now, leave the names as "Conservative_", etc., in order
    to avoid confusion with the serial version, which still prints these
