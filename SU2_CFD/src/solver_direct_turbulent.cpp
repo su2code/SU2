@@ -4034,7 +4034,7 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry,
        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, jPoint, iVertex, total_index;
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, jVar;
   su2double distance, wall_k, wall_zeta;
   su2double density = 0.0, laminar_viscosity = 0.0;
 
@@ -4069,17 +4069,50 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry,
       }
 
 
-      wall_k = max(node[jPoint]->GetSolution(0),1e-8);
+      // FIXME:
+      /*--- The conditions below are a mess.  Here is why...
+
+        Epsilon at the wall depends on k at the first node off the
+        wall.  It is observed that, if this is enforced following the
+        'standard' SU2 procedure (see e.g., the wall conditions for SA
+        or SST), it is difficult to converge epsilon and that the
+        large residuals tend to appear very close to the wall.
+
+        Thus, it is preferred to enforce the BC by including the
+        equation in the system being solved directly.  This is easy
+        enough to do in the residual by setting
+
+        Res[iPoint*nVal+1] = (epsilon - desired epsilon based on k).
+
+        It is also simple to set the appropriate Jacobian.  However,
+        Vol/dt is added to the diagonal of the Jacobian in
+        CTurbSolver::ImplicitEuler_Iteration.  So, to ensure we get
+        the right Jacobian, we subtract Vol/dt here.  But, obviously
+        this is very brittle b/c it assumes we're using backward
+        Euler. ---*/
+
+
+      //wall_k = max(node[jPoint]->GetSolution(0),1e-8);
+      //wall_k = node[jPoint]->GetSolution(0);
+      const su2double wall_k_old = node[jPoint]->GetSolution_Old(0);
+      wall_k = node[jPoint]->GetSolution(0);
       wall_zeta = node[jPoint]->GetSolution(2);
+
+      const su2double delta_rEps =
+          2.0*laminar_viscosity*(wall_k - wall_k_old)/distance/distance;
+
+      const su2double Vol = geometry->node[iPoint]->GetVolume();
+      const su2double dt = solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
 
       // jPoint correct
       su2double fwall = node[iPoint]->GetSolution(3);
 
       // // swh: needs a modification here...
       Solution[0] = 0.0;
-      Solution[1] = 2.0*laminar_viscosity*wall_k/(density*distance*distance);
+      Solution[1] = node[iPoint]->GetSolution(1); //2.0*laminar_viscosity*wall_k/(density*distance*distance);
+      //Solution[1] = 2.0*laminar_viscosity*wall_k/(density*distance*distance);
       Solution[2] = 0.0;
-      Solution[3] = 0.0;
+      Solution[3] = fwall; //0.0;
 
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);
@@ -4092,6 +4125,12 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry,
 
       // FIXME: Go back to method below for f-eqn!
 
+      for (iVar=0; iVar<nVar; iVar++) {
+        for (jVar=0; jVar<nVar; jVar++) {
+          Jacobian_j[iVar][jVar] = 0.0;
+        }
+      }
+
       // // Don't set solution directly... put in constraint as part of linear system
       // LinSysRes.SetBlock(iPoint, 0, node[iPoint]->GetSolution(0) - 0.0);
       // Jacobian.DeleteValsRowi(iPoint*nVar+0); // zeros this row and puts 1 on diagonal
@@ -4101,12 +4140,22 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry,
       // Jacobian_j[0][3] = 0.0;
 
 
-      // LinSysRes.SetBlock(iPoint, 1, node[iPoint]->GetSolution(1) - 2.0*laminar_viscosity*wall_k/(density*distance*distance));
-      // Jacobian.DeleteValsRowi(iPoint*nVar+1); // zeros this row and puts 1 on diagonal
-      // Jacobian_j[1][0] = 0.0; //-2.0*laminar_viscosity/(density*distance*distance);
-      // Jacobian_j[1][1] = 0.0;
-      // Jacobian_j[1][2] = 0.0;
-      // Jacobian_j[1][3] = 0.0;
+      LinSysRes.SetBlock(iPoint, 1, node[iPoint]->GetSolution(1) - 2.0*laminar_viscosity*wall_k/(density*distance*distance));
+      Jacobian.DeleteValsRowi(iPoint*nVar+1); // zeros this row and puts 1 on diagonal
+
+      // WARNING: Begin hackery...
+      // ... subtract Vol/dt from jacobian to offset addition of this later on
+      Jacobian_j[1][1] = Vol/dt;
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_j);
+
+
+      Jacobian_j[1][0] = -2.0*laminar_viscosity/(density*distance*distance);
+      Jacobian_j[1][1] = 0.0;
+      Jacobian_j[1][2] = 0.0;
+      Jacobian_j[1][3] = 0.0;
+
+      //LinSysRes.SetBlock(iPoint, 1, Vol*delta_rEps/dt);
+      //Jacobian.SetBlock(iPoint, iPoint, Jacobian_j);
 
 
       // LinSysRes.SetBlock(iPoint, 2, node[iPoint]->GetSolution(2) - 0.0);
@@ -4116,15 +4165,15 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry,
       // Jacobian_j[2][2] = 0.0;
       // Jacobian_j[2][3] = 0.0;
 
-      // LinSysRes.SetBlock(iPoint, 3, node[iPoint]->GetSolution(3) - 0.0);
-      // Jacobian.DeleteValsRowi(iPoint*nVar+3); // zeros this row and puts 1 on diagonal
+      LinSysRes.SetBlock(iPoint, 3, node[iPoint]->GetSolution(3) - 0.0);
+      Jacobian.DeleteValsRowi(iPoint*nVar+3); // zeros this row and puts 1 on diagonal
       // Jacobian_j[3][0] = 0.0;
       // Jacobian_j[3][1] = 0.0;
       // Jacobian_j[3][2] = 0.0;
       // Jacobian_j[3][3] = 0.0;
 
 
-      //Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+      Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
 
     }
   }
