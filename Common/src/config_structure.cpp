@@ -589,6 +589,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
+  /*!\brief OLD_SOLUTION_1PHASE \n DESCRIPTION: Restart solution from single phase simulation \n Options: NO, YES \ingroup Config */
+  addBoolOption("OLD_SOLUTION_1PH", Old_Solution_1Ph, false);
+  /*!\brief OLD_SOLUTION_TURB \n DESCRIPTION: Restart solution from turbulent solution \n Options: NO, YES \ingroup Config */
+  addBoolOption("OLD_SOLUTION_TURB", Old_Solution_Turb, false);
   /*!\brief UPDATE_RESTART_PARAMS \n DESCRIPTION: Update some parameters from a metadata file when restarting \n Options: NO, YES \ingroup Config */
   addBoolOption("UPDATE_RESTART_PARAMS", Update_Restart_Params, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */

@@ -5165,7 +5165,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool body_force       = config->GetBody_Force();
   unsigned short two_phase        = (config->GetKind_Solver()== TWO_PHASE_EULER ||
 		                             config->GetKind_Solver()== TWO_PHASE_NAVIER_STOKES ||
-									 config->GetKind_Solver()== TWO_PHASE_RANS);
+									  config->GetKind_Solver()== TWO_PHASE_RANS);
 
   su2double S, h, R, Y;
 
@@ -5332,7 +5332,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-      
+
       S = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetMassSource();
 
       h = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidEnthalpy();
@@ -15114,11 +15114,17 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
+  su2double S, H;
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool Old_Solution_1Ph = config->GetOld_Solution_1Ph();
+  bool Old_Solution_Turb = config->GetOld_Solution_Turb();
+  bool two_phase = (config->GetKind_Solver() == TWO_PHASE_EULER) ||
+       (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+       (config->GetKind_Solver() == TWO_PHASE_RANS);
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -15145,6 +15151,14 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   /*--- Skip coordinates ---*/
   
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
+  unsigned short skipVarsTurb;
+
+  if (config->GetKind_Turb_Model() != NONE) {
+    if (config->GetKind_Turb_Model() == SST)
+      skipVarsTurb = 2;
+    else
+      skipVarsTurb = 1;
+  }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -15180,8 +15194,28 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
        offset in the buffer of data from the restart file and load it. ---*/
 
       index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Solution[iVar] = Restart_Data[index+iVar];
+      }
       node[iPoint_Local]->SetSolution(Solution);
+
+      /*--- load source data for two-phase simulation ---*/
+      if (two_phase) {
+        if (Old_Solution_1Ph) {
+          S = 0.0;
+          H = 0.0;
+        }
+        else {
+          if (Old_Solution_Turb) {
+            index += skipVarsTurb;
+          }
+          S = Restart_Data[index+nVar];
+          H = Restart_Data[index+nVar+1];
+        }
+        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetSource(S);
+        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetLiqEnthalpy(H);
+      }
+
       iPoint_Global_Local++;
 
       /*--- For dynamic meshes, read in and store the

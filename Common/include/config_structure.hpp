@@ -564,6 +564,8 @@ private:
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Old_Solution_1Ph,/*!< \brief Restart solution from single phase computation*/
+  Old_Solution_Turb,/*!< \brief Restart solution from turbulent computation*/
   Update_Restart_Params,
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,	/*!< \brief Read binary SU2 native restart files.*/
@@ -4396,6 +4398,18 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void);
+
+  /*!
+   * \brief Provides the restart information for single phase computation.
+   * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
+   */
+  bool GetOld_Solution_1Ph(void);
+
+  /*!
+   * \brief Provides the restart information for turbulent computation.
+   * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
+   */
+  bool GetOld_Solution_Turb(void);
 
   /*!
    * \brief Flag for whether binary SU2 native restart files are written.

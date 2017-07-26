@@ -57,39 +57,39 @@ CLiquidModel::~CLiquidModel(void) { }
 
 void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double Rcritical, su2double Rdroplet, su2double mom3) {
 
-	// guess for R critical, a loop is required to evaluate the right properties
-	//Rc = 1e-12;
+  // guess for R critical, a loop is required to evaluate the right properties
+  //Rc = 1e-12;
 
-	//SetRadius(Two_Phase_Var);
+  //SetRadius(Two_Phase_Var);
 
-	SetTsat(P);
-	SetPsat(T);
+  SetTsat(P);
+  SetPsat(T);
 
-	if (Tsat > T) {
+  if (Tsat > T) {
 
-		SetSurfaceTension(T, Rdroplet);
+    SetSurfaceTension(T, Rdroplet);
 
-		SetTLiquid(T, Rcritical, Rdroplet);
-		SetLiquidDensity();
+    SetTLiquid(T, Rcritical, Rdroplet);
+    SetLiquidDensity();
 
-		SetLiquidEnthalpy(h_v);
+    SetLiquidEnthalpy(h_v);
 
-		SetRCritical(P, T);
+    SetRCritical(P, T);
 
-		//Rc = min(Rc, Rdroplet);
+    //Rc = min(Rc, Rdroplet);
 
-		SetDensity_Mixture(rho, mom3);
-	} else {
+    SetDensity_Mixture(rho, mom3);
+  } else {
 
-		sigma = 0;
-		T_l = T;
-		rho_l = rho;
-		Rc = 0;
-		h_l = h_v;
-		rho_m = rho;
-		Rdroplet = 0;
+    sigma = 0;
+    T_l = T;
+    rho_l = rho;
+    Rc = 0;
+    h_l = h_v;
+    rho_m = rho;
+    Rdroplet = 0;
 
-	}
+  }
 
 }
 

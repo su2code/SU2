@@ -2056,6 +2056,8 @@ public:
 
   virtual void      SetRadius(su2double R);
 
+  virtual void      SetCriticalRadius(su2double Rc);
+
   virtual void      SetLiquidFrac(su2double Y);
 
   virtual void      SetMixtureDensity(su2double rhom);
@@ -3735,6 +3737,8 @@ public:
   void      SetLiqEnthalpy(su2double h);
 
   void      SetRadius(su2double R);
+
+  void      SetCriticalRadius(su2double Rc);
 
   void      SetLiquidFrac(su2double Y);
 

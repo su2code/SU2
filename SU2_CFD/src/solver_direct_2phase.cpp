@@ -916,20 +916,22 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 
 	  unsigned short iVar, iMesh;
 	  unsigned long iPoint, index, iChildren, Point_Fine;
-	  su2double Area_Children, Area_Parent, *Solution_Fine, *Sol;
+	  su2double Area_Children, Area_Parent, Rc, *Solution_Fine, *Sol;
 	  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
 	  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 	                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
-	  unsigned short iZone = config->GetiZone();
+  bool Old_Solution_1Ph = config->GetOld_Solution_1Ph();
+  bool Old_Solution_Turb = config->GetOld_Solution_Turb();
+  unsigned short iZone = config->GetiZone();
 	  unsigned short nZone = config->GetnZone();
 
 	  string UnstExt, text_line;
 	  ifstream restart_file;
 	  string restart_filename = config->GetSolution_FlowFileName();
 
-	  int rank = MASTER_NODE;
+  int rank = MASTER_NODE;
 	#ifdef HAVE_MPI
 	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	#endif
@@ -969,12 +971,18 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 	    if (nDim == 3) skipVars += 7;
 	  }
 
-	  if (config->GetKind_Turb_Model() != NONE) {
-		  if (config->GetKind_Turb_Model() == SST)
-			  skipVars += 2;
-		  else
-			  skipVars += 1;
+	  if (Old_Solution_Turb) {
+	    if (config->GetKind_Turb_Model() != NONE) {
+	      if (config->GetKind_Turb_Model() == SST)
+	        skipVars += 2;
+	      else
+	        skipVars += 1;
+	    }
 	  }
+
+  /*--- Skip source terms (S,h) ---*/
+
+  skipVars += 2;
 
 	  /*--- Load data from the restart into correct containers. ---*/
 
@@ -992,8 +1000,20 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 	      /*--- We need to store this point's data, so jump to the correct
 	       offset in the buffer of data from the restart file and load it. ---*/
 
-	      index = counter*Restart_Vars[0] + skipVars;
-	      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+	      if (!Old_Solution_1Ph) {
+	        index = counter*Restart_Vars[1] + skipVars;
+	        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetCriticalRadius(Restart_Data[index]);
+	        for (iVar = 0; iVar < nVar; iVar++) {
+	          Solution[iVar] = Restart_Data[index+iVar+1];
+	        }
+	      }
+	      else {
+	        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetCriticalRadius(0);
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] = 0.0;
+        }
+	      }
+
 	      node[iPoint_Local]->SetSolution(Solution);
 	      iPoint_Global_Local++;
 
@@ -1029,7 +1049,14 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 
 	  solver[MESH_0][TWO_PHASE_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
 	  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-	  solver[MESH_0][TWO_PHASE_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+//	  solver[MESH_0][TWO_PHASE_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+
+  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+    Rc = solver[MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6);
+    Sol = node[iPoint]->SetLiquidPrim(solver[MESH_0][FLOW_SOL]->node[iPoint]->GetPrimitive(),
+             node[iPoint]->GetSolution(), Rc,
+             solver[MESH_0][FLOW_SOL]->GetFluidModel(), config);
+  }
 
 	  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -1049,11 +1076,12 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 	    }
 	    solver[iMesh][TWO_PHASE_SOL]->Set_MPI_Solution(geometry[iMesh], config);
 	    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-	    solver[iMesh][TWO_PHASE_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+//	    solver[iMesh][TWO_PHASE_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
 
 	    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-	    	Sol = node[iPoint]->SetLiquidPrim(solver[iMesh][FLOW_SOL]->node[iPoint]->GetPrimitive(),
-	    			           node[iPoint]->GetSolution(), 1e-10,
+	      Rc = solver[iMesh][TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6);
+	      Sol = node[iPoint]->SetLiquidPrim(solver[iMesh][FLOW_SOL]->node[iPoint]->GetPrimitive(),
+	    			           node[iPoint]->GetSolution(), Rc,
 	    			           solver[iMesh][FLOW_SOL]->GetFluidModel(), config);
 	    }
 	  }
@@ -1065,9 +1093,7 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 	  if (Restart_Data != NULL) delete [] Restart_Data;
 	  Restart_Vars = NULL; Restart_Data = NULL;
 
-
-
-	}
+}
 
 
 C2phase_HillSolver::C2phase_HillSolver(void) : C2phaseSolver() {
@@ -1474,25 +1500,25 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
      Liquid_vec = node[iPoint]->GetLiquidPrim();
 
      if (mom0 != 0.0 && mom1!=0.0 && Liquid_vec[1]!=0) {
-    	 r = mom1 / mom0;
+       r = mom1 / mom0;
 
-    	 y = mom3*(Liquid_vec[1] - rho_v);
-     	 y = y + 0.75 * rho_v / 3.1415;
-     	 y = mom3*Liquid_vec[1] / y;
+       y = mom3*(Liquid_vec[1] - rho_v);
+       y = y + 0.75 * rho_v / 3.1415;
+       y = mom3*Liquid_vec[1] / y;
 
-     	 rho_m = y/ Liquid_vec[1] + (1.0 - y)/ rho_v;
-     	 rho_m = 1.0/ rho_m;
+       rho_m = y/ Liquid_vec[1] + (1.0 - y)/ rho_v;
+       rho_m = 1.0/ rho_m;
 
-     	 s = 3.0 * rho_m * y * Liquid_vec[9];
-     	 s = s/r;
+       s = 3.0 * rho_m * y * Liquid_vec[9];
+       s = s/r;
 
      } else {
-    	 r = 0; y = 0; rho_m = rho_v; s = 0;
+       r = 0; y = 0; rho_m = rho_v; s = 0;
      }
 
-	 node[iPoint]->SetSource(s);
-	 node[iPoint]->SetLiqEnthalpy(Liquid_vec[2]);
-	 node[iPoint]->SetRadius(r);
+	     node[iPoint]->SetSource(s);
+	     node[iPoint]->SetLiqEnthalpy(Liquid_vec[2]);
+	     node[iPoint]->SetRadius(r);
      node[iPoint]->SetLiquidFrac(y);
      node[iPoint]->SetMixtureDensity(rho_m);
     

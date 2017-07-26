@@ -11993,7 +11993,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   /*--- At a mininum, the restarts and visualization files need the
    conservative variables, so these follow next. ---*/
 
-  nVar_Par += nVar_Consv_Par;
+  nVar_Par += nVar_Consv_Par+2;
 
   /*--- For now, leave the names as "Conservative_", etc., in order
    to avoid confusion with the serial version, which still prints these
@@ -12013,6 +12013,9 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
     Variable_Names.push_back("Energy");
   }
   if (SecondIndex == TWO_PHASE_SOL) {
+      Variable_Names.push_back("S");
+      Variable_Names.push_back("h");
+      Variable_Names.push_back("Rc");
       Variable_Names.push_back("mom0");
       Variable_Names.push_back("mom1");
       Variable_Names.push_back("mom2");
@@ -12028,6 +12031,9 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
     }
   }
   if (ThirdIndex == TWO_PHASE_SOL) {
+      Variable_Names.push_back("S");
+      Variable_Names.push_back("h");
+      Variable_Names.push_back("Rc");
       Variable_Names.push_back("mom0");
       Variable_Names.push_back("mom1");
       Variable_Names.push_back("mom2");
@@ -12268,9 +12274,6 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   	}
   }
 
-
-
-
   /*--- Allocate the local data structure now that we know how many
    variables are in the output. ---*/
 
@@ -12344,12 +12347,28 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
       }
 
       if (SecondIndex != NONE) {
+        if (SecondIndex == TWO_PHASE_SOL) {
+            Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetMassSource();
+            iVar++;
+            Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLiquidEnthalpy();
+            iVar++;
+            Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLiquidPrim(6);
+            iVar++;
+          }
         for (jVar = 0; jVar < nVar_Second; jVar++) {
           Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
           iVar++;
         }
       }
       if (ThirdIndex != NONE) {
+        if (ThirdIndex == TWO_PHASE_SOL) {
+            Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetMassSource();
+            iVar++;
+            Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetLiquidEnthalpy();
+            iVar++;
+            Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetLiquidPrim(6);
+            iVar++;
+          }
         for (jVar = 0; jVar < nVar_Third; jVar++) {
           Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetSolution(jVar);
           iVar++;

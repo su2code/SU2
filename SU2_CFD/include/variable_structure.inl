@@ -1125,6 +1125,8 @@ inline  su2double C2phaseVariable::GetAverageRadius()      {return Radius;}
 
 inline  void      C2phaseVariable::SetRadius(su2double R)   {Radius = R;}  
 
+inline  void      C2phaseVariable::SetCriticalRadius(su2double Rc)   {Primitive_Liquid[6] = Rc;}   
+
 inline  su2double C2phaseVariable::GetLiquidFraction()    {return Liquid_Fraction;}       
 
 inline  su2double C2phaseVariable::GetMixtureDensity()    {return Mixture_Density;}       
@@ -1174,6 +1176,8 @@ inline  void      CVariable::SetSource(su2double S)  {}
 inline  void      CVariable::SetLiqEnthalpy(su2double h) {}       
 
 inline  void      CVariable::SetRadius(su2double R)   {}   
+
+inline  void      CVariable::SetCriticalRadius(su2double Rc)   {}   
 
 inline  void      CVariable::SetLiquidFrac(su2double Y) {}
 
