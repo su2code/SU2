@@ -214,7 +214,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
       /*--- Output original FFD FFDBox ---*/
 
-      if (rank == MASTER_NODE) {
+       if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
         if (config->GetOutput_FileFormat() == PARAVIEW) {
           cout << "Writing a Paraview file of the FFD boxes." << endl;
           for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
@@ -351,7 +351,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
         /*--- Output the deformed FFD Boxes ---*/
 
-        if (rank == MASTER_NODE) {
+        if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
           if (config->GetOutput_FileFormat() == PARAVIEW) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
@@ -2359,7 +2359,7 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
       /*--- The angle of rotation is computed based on a characteristic length of the wing,
        otherwise it is difficult to compare with other length based design variables. ---*/
 
-      su2double RefLength = config->GetRefLengthMoment();
+      su2double RefLength = config->GetRefLength();
       su2double theta = atan(config->GetDV_Value(iDV)/RefLength);
 
       /*--- An intermediate value used in computations. ---*/
@@ -5248,10 +5248,10 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
+void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeometry **geometry, CConfig **config) {
 
 
-  unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox;
+  unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox, iZone;
   unsigned long iSurfacePoints;
   char cstr[MAX_STRING_SIZE], mesh_file[MAX_STRING_SIZE];
   string str;
@@ -5265,19 +5265,49 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  unsigned short nDim = geometry->GetnDim();
+  unsigned short nDim = geometry[ZONE_0]->GetnDim();
 
-  /*--- Merge the FFD info ---*/
+  for (iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone++){
 
-  MergeFFDInfo(geometry, config);
+    /*--- Merge the parallel FFD info ---*/
 
-  /*--- Attach to the mesh file the FFD information ---*/
+    surface_movement[iZone]->MergeFFDInfo(geometry[iZone], config[iZone]);
+
+    if (iZone > 0){
+
+      /* --- Merge the per-zone FFD info from the other zones into ZONE_0 ---*/
+
+      for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++){
+
+        surface_movement[ZONE_0]->GlobalCoordX[iFFDBox].insert(surface_movement[ZONE_0]->GlobalCoordX[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalCoordX[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalCoordX[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalCoordY[iFFDBox].insert(surface_movement[ZONE_0]->GlobalCoordY[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalCoordY[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalCoordY[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalCoordZ[iFFDBox].insert(surface_movement[ZONE_0]->GlobalCoordZ[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalCoordZ[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalCoordZ[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalTag[iFFDBox].insert(surface_movement[ZONE_0]->GlobalTag[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalTag[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalTag[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalPoint[iFFDBox].insert(surface_movement[ZONE_0]->GlobalPoint[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalPoint[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalPoint[iFFDBox].end());
+      }
+    }
+  }
+
+
+
+  
+  /*--- Attach to the mesh file the FFD information (all information is in ZONE_0) ---*/
 
   if (rank == MASTER_NODE) {
 
     /*--- Read the name of the output file ---*/
 
-    str = config->GetMesh_Out_FileName();
+    str = config[ZONE_0]->GetMesh_Out_FileName();
     strcpy (mesh_file, str.c_str());
     strcpy (cstr, mesh_file);
 
@@ -5297,13 +5327,13 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
       output_file << "FFD_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
       output_file << "FFD_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
       if (nDim == 3) output_file << "FFD_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
-      if (FFDBox[iFFDBox]->BlendingFunction[0]->GetOrder() != FFDBox[iFFDBox]->BlendingFunction[0]->GetnControl()) {
+      if (config[ZONE_0]->GetFFD_Blending() == BSPLINE_UNIFORM) {
         output_file << "FFD_BLENDING= BSPLINE_UNIFORM" << endl;
         output_file << "BSPLINE_ORDER_I= " << FFDBox[iFFDBox]->BlendingFunction[0]->GetOrder() << endl;
         output_file << "BSPLINE_ORDER_J= " << FFDBox[iFFDBox]->BlendingFunction[1]->GetOrder() << endl;
         if (nDim == 3) output_file << "BSPLINE_ORDER_K= " << FFDBox[iFFDBox]->BlendingFunction[2]->GetOrder() << endl;
       }
-      else {
+      if (config[ZONE_0]->GetFFD_Blending() == BEZIER) {
         output_file << "FFD_BLENDING= BEZIER" << endl;
       }
 
@@ -5386,7 +5416,7 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
     Pilot_file.open(Pilot_filename, ios::out);
 
     Pilot_file << "TITLE= \"Pilot point positions.\"" << endl;
-    if (geometry->GetnDim() == 2) Pilot_file << "VARIABLES = \"x\", \"y\"" << endl;
+    if (geometry[iZone]->GetnDim() == 2) Pilot_file << "VARIABLES = \"x\", \"y\"" << endl;
     else Pilot_file << "VARIABLES = \"x\", \"y\", \"z\"" << endl;
 
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++){
@@ -5398,7 +5428,7 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
           Coord[2] = FFDBox[iFFDBox]->CSPPilotPointsZ[iGroup][iPilotPoints];
           CartCoord = FFDBox[iFFDBox]->EvalCartesianCoord(Coord);
           Pilot_file << scientific << CartCoord[0] << "\t" << CartCoord[1];
-          if (geometry->GetnDim() ==3) Pilot_file << scientific << "\t" << CartCoord[2];
+          if (geometry[iZone]->GetnDim() ==3) Pilot_file << scientific << "\t" << CartCoord[2];
           Pilot_file << "\n";
         }
       }

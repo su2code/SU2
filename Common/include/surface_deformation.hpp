@@ -1434,7 +1434,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_mesh_filename - Name of the grid output file.
    */
-  void WriteFFDInfo(CGeometry *geometry, CConfig *config);
+  void WriteFFDInfo(CSurfaceMovement** surface_movement, CGeometry **geometry, CConfig **config);
 
   /*!
    * \brief Get information about if there is a complete FFDBox definition, or it is necessary to
