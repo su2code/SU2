@@ -3887,7 +3887,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
 }
 
 void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
-    
+    cout << "*************++++++++++++ In SetBaselineRestart" << endl;
     /*--- Local variables ---*/
     
     unsigned short nZone = geometry->GetnZone();
@@ -3935,6 +3935,7 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
     if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
     nVar_Consv = nVar_First + nVar_Second + nVar_Third;
     //nVar_Total = nVar_Consv;
+    nVar_Consv = 4;
     cout << "%%%%%%%%%%%%% nVar_Consv in SetBaselineRestart = " << nVar_Consv << endl;
     /*--- Retrieve filename from config ---*/
     
@@ -3960,7 +3961,7 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
         filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
     }
     
-    cout << "About to start writing bimary restart " << endl;
+    cout << "About to start writing binary restart " << endl;
     
     
     nVar_Par  = 1; Variable_Names.push_back("x");
@@ -7846,7 +7847,8 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           
         /* For interpolation of solution from one mesh to another */
         cout << "Writing SU2 native restart file." << endl;
-          if(geometry[ZONE_0]->GetnPoint() < 10000)
+          cout << "nPoint to check calling SetBaselineRestart = " << geometry[ZONE_0]->GetnPoint() << endl;
+          if(geometry[ZONE_0]->GetnPoint() < 20000)
               SetBaselineRestart(config[iZone], geometry[iZone], solver, iZone);
   //      SetBaselineRestart(config[iZone], geometry[iZone], solver, iZone);
         if (Wrt_Vol) {
@@ -16024,7 +16026,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             delete [] Buffer_send_InterpSolution[iProc];
         }
     }
-    delete Buffer_send_InterpSolution;
+    delete[] Buffer_send_InterpSolution;
     if (Buffer_recv_InterpSolution != NULL) {
         for (int iProc=0; iProc < nProcs_send; iProc++) {
             cout << "iProc = " << iProc << endl;
@@ -16032,7 +16034,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             delete [] Buffer_recv_InterpSolution[iProc];
         }
     }
-    delete Buffer_recv_InterpSolution;
+    delete[] Buffer_recv_InterpSolution;
 #else
 
     /* Serial code */
@@ -16113,7 +16115,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNode(CGeometry *geometry,
     /*--- Compute the total number of nodes on no-slip boundaries ---*/
     unsigned long jElem, probe_elem;
     /* Total number of points in given processor */
-    unsigned long nPoint_proc = geometry->GetnPoint();
+    //unsigned long nPoint_proc = geometry->GetnPoint();
     bool Inside=false;
     unsigned short nElem_node = geometry->node[pointID]->GetnElem();
     //cout << "Number of elements containing Node " <<  geometry->node[pointID]->GetGlobalIndex()  << " are " << nElem_node << endl;
@@ -16204,9 +16206,9 @@ bool COutput::IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,uns
     }
     
     for (iNode = 0; iNode < nNodes_elem; iNode++) {
-        delete Coord_elem[iNode];
+        delete [] Coord_elem[iNode];
     }
-    
+    delete [] Coord_elem;
     return Inside;
     
 }
@@ -16220,7 +16222,7 @@ void COutput::Isoparameters(unsigned short nDim, unsigned short nDonor,
     su2double x_tmp[nDim+1];
     su2double Q[nDonor*nDonor];
     su2double R[nDonor*nDonor];
-    su2double A[nDim+1*nDonor];
+    su2double A[(nDim+1)*nDonor];
     su2double *A2    = NULL;
     su2double x2[nDim+1];
     
@@ -16237,7 +16239,7 @@ void COutput::Isoparameters(unsigned short nDim, unsigned short nDonor,
         for (iDonor=0; iDonor<nDonor; iDonor++) {
             isoparams[iDonor]=0;
             A[iDonor] = 1.0;
-            for (iDim=0; iDim<n; iDim++)
+            for (iDim=0; iDim<nDim; iDim++)
                 A[(iDim+1)*nDonor+iDonor]=X[iDim*nDonor+iDonor];
         }
         
