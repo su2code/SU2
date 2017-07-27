@@ -97,7 +97,22 @@ def main():
     discadj_cylinder.tol       = 0.00001
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
-
+    
+    #######################################################
+    ### Disc. adj. turbomachinery                       ###
+    #######################################################
+    
+    # Transonic Stator 2D
+    discadj_trans_stator           = TestCase('transonic_stator')
+    discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
+    discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
+    discadj_trans_stator.test_iter = 79
+    discadj_trans_stator.test_vals = [-1.989643, -2.114104, -0.434878, -15.772327] #last 4 columns
+    discadj_trans_stator.su2_exec  = "parallel_computation.py -f"
+    discadj_trans_stator.timeout   = 1600
+    discadj_trans_stator.tol       = 0.00001
+    test_list.append(discadj_trans_stator)
+    
     ######################################
     ### RUN TESTS                      ###
     ######################################

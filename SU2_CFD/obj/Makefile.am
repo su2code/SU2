@@ -107,6 +107,7 @@ libSU2Core_sources = \
   ../src/numerics_template.cpp \
   ../src/output_cgns.cpp \
   ../src/output_structure.cpp \
+  ../src/output_physics.cpp \
   ../src/output_tecplot.cpp \
   ../src/output_fieldview.cpp \
   ../src/output_su2.cpp \
