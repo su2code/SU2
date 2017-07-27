@@ -16153,6 +16153,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNode(CGeometry *geometry,
     }
     if (!Inside) {
         cout << " ######### Could not locate the point wit XCoord = " << probe_loc[0] << ", Ycoord= " << probe_loc[1] << " in the mesh ####### " << endl;
+        cout << "Nearest node found Xcoord = " << geometry->node[pointID]->GetCoord(0) << endl;
     }
     return probe_elem;
 }
