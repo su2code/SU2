@@ -110,6 +110,7 @@ lib_sources = \
   ../src/fem_work_estimate_metis.cpp \
   ../src/gelite.cpp \
   ../src/geometry_structure.cpp \
+  ../src/geometry_structure_fem_part.cpp \
   ../src/graph_vertex_coloring.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
