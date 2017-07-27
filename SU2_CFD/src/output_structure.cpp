@@ -11365,14 +11365,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     }
 
     /*--- Add the intermittency for the BC trans. model. ---*/
-        
+
     if (transition) {
-        nVar_Par += 1;
-			if (config->GetOutput_FileFormat() == PARAVIEW){
-				Variable_Names.push_back("gamma_BC");
-			} else {
-				Variable_Names.push_back("<greek>g</greek><sub>BC</sub>");
-			}
+      nVar_Par += 1;
+      if (config->GetOutput_FileFormat() == PARAVIEW){
+        Variable_Names.push_back("gamma_BC");
+      } else {
+        Variable_Names.push_back("<greek>g</greek><sub>BC</sub>");
+      }
     }
 
     /*--- New variables get registered here before the end of the loop. ---*/
