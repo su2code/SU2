@@ -36,7 +36,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy, time
-from ..io   import expand_part, expand_time, get_adjointSuffix, add_suffix, \
+from ..io   import expand_part, expand_zones, expand_time, get_adjointSuffix, add_suffix, \
                    get_specialCases, Config
 from ..util import bunch
 from ..util import ordered_bunch
@@ -183,10 +183,12 @@ class State(ordered_bunch):
                 link.extend(value)
             elif key == 'DIRECT':
                 # direct solution
+                value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
             elif 'ADJOINT_' in key:
                 # adjoint solution
+                value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
             #elif key == 'STABILITY':
@@ -230,17 +232,36 @@ class State(ordered_bunch):
         targetheatflux_name = 'TargetHeatFlux.dat'
 
         adj_map = get_adjointSuffix()
-        
         restart = config.RESTART_SOL == 'YES'
         special_cases = get_specialCases(config)
         
         def register_file(label,filename):
             if not files.has_key(label):
-                if os.path.exists(filename):
+                if label.split('_')[0] in ['DIRECT', 'ADJOINT']:
+                  names = expand_zones(filename, config)
+                  found = False
+                  for name in names:
+                    if os.path.exists(name):
+                      found = True
+                    else:
+                      found = False
+                      break
+
+                  if found:
                     files[label] = filename
                     print 'Found: %s' % filename
+                  
+
+                else:
+                  if os.path.exists(filename):
+                      files[label] = filename
+                      print 'Found: %s' % filename
             else:
-                assert os.path.exists(files[label]) , 'state expected file: %s' % filename
+                if label.split("_")[0] in ['DIRECT', 'ADJOINT']:
+                    for name in expand_zones(files[label], config):
+                        assert os.path.exists(name), 'state expected file: %s' % filename
+                else:
+                    assert os.path.exists(files[label]) , 'state expected file: %s' % filename
         #: register_file()                
 
         # mesh

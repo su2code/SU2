@@ -33,25 +33,20 @@
 
 #include "../include/output_structure.hpp"
 
-void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
+void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, ofstream& output_file) {
   
-  char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, nElem;
   unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
+  short SendTo;
   su2double *center, *angles, *transl;
-  ofstream output_file;
   ifstream input_file;
   string Grid_Marker, text_line, Marker_Tag, str;
   string::size_type position;
 
-  /*--- Read the name of the output and input file ---*/
-  
-  str = config->GetMesh_Out_FileName();
-  strcpy (out_file, str.c_str());
-  strcpy (cstr, out_file);
-  output_file.precision(15);
-  output_file.open(cstr, ios::out);
-  
+  if (config->GetnZone() > 1){
+    output_file << "IZONE= " << val_iZone+1 << endl;
+  }
+
   /*--- Write dimensions data. ---*/
 
   output_file << "NDIME= " << nDim << endl;
@@ -138,8 +133,12 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   }
   
   /*--- Read the boundary information ---*/
-  
-  input_file.open("boundary.su2", ios::out);
+
+  str = "boundary.dat";
+
+  str = config->GetMultizone_FileName(str, val_iZone);
+
+  input_file.open(str.c_str(), ios::out);
   
   /*--- Read grid file with format SU2 ---*/
   
@@ -175,10 +174,12 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
           text_line.erase (0,13); nElem_Bound_ = atoi(text_line.c_str());
           output_file << "MARKER_TAG= " << Marker_Tag << endl;
           output_file << "MARKER_ELEMS= " << nElem_Bound_<< endl;
-          
-          if (Marker_Tag == "SEND_RECEIVE") {
-            if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
-            if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
+          getline (input_file, text_line);
+
+          text_line.erase (0,8); SendTo = atoi(text_line.c_str());
+
+          if (Marker_Tag == "SEND_RECEIVE"){
+            output_file << "SEND_TO= " << SendTo << endl;
           }
           for (iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
             
@@ -214,7 +215,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   
   input_file.close();
 
-  remove("boundary.su2");
+  remove(str.c_str());
 
   /*--- Get the total number of periodic transformations ---*/
   
@@ -239,7 +240,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   }
   
   output_file.close();
-  
+
 }
 
 void COutput::SetSU2_MeshBinary(CConfig *config, CGeometry *geometry) { }
