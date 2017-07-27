@@ -7041,106 +7041,39 @@ void CFreeFormDefBox::GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *con
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
   const unsigned short nControl = BlendingFunction[2]->GetnControl();
+
   const unsigned long TotalControl = lControl*mControl*nControl;
 
-  unsigned short iControl, jControl, kControl;
+  unsigned short iControl, jControl, kControl, iDim;
 
-  unsigned long iVertex, iPoint, iSurfacePoints;
-  unsigned short iMarker, iDim;
-  unsigned short lmn_min[3], lmn_max[3];
+  su2double ParamCoord[3], d_0 = 1.0;
+  su2double E = config->GetCSP_ElasticModulus();
 
-  su2double *ParamCoord, Area = 0, *Normal, *Coord, ParamCoord_Guess[] = {0.5, 0.5, 0.5}, factor, E;
-
-  E = config->GetCSP_ElasticModulus();
-
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  EigenMatrix LocalStiffness(6, TotalControl*nDim);
-  EigenMatrix MyEnergy(TotalControl*nDim, TotalControl*nDim);
-  Matrix.resize(TotalControl*nDim, TotalControl*nDim);
   Derivative.resize(TotalControl, nDim);
-
   LocalMatrix.resize(nDim, nDim);
   R.resize(TotalControl, nDim);
 
-  R = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
-  MyEnergy = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
+  Matrix.resize(TotalControl*nDim, TotalControl*nDim);
   Matrix = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
-  LocalStiffness = EigenMatrix::Zero(6, TotalControl*nDim);
 
-  /*--- Compute the elastic energy as an integral over the surface points ---*/
+  for (iControl = 0; iControl < lControl; iControl++){
+    for (jControl = 0; jControl < mControl; jControl++){
+      for (kControl = 0; kControl < nControl; kControl++){
 
-//    for (iSurfacePoints = 0; iSurfacePoints < GetnSurfacePoint(); iSurfacePoints++){
-//  
-//      iMarker = Get_MarkerIndex(iSurfacePoints);
-//  
-//      if (config->GetMarker_All_DV(iMarker) == YES) {
-//  
-//        iVertex = Get_VertexIndex(iSurfacePoints);
-//        iPoint  = Get_PointIndex(iSurfacePoints);
-//  
-//        if (geometry->node[iPoint]->GetDomain()){
-//  
-//          ParamCoord = Get_ParametricCoord(iSurfacePoints);
-//  
-//          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-//  
-//          Area = 0.0;
-//          for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-//            Area += Normal[iDim]*Normal[iDim];
-//          }
-//          Area = sqrt(Area);
-//  
-//          factor = 0.5*Area;
-//  
-//          /*--- Get the local stiffness matrix at the parametric coordinates of the surface point  ---*/
-//  
-//          AddLocalStiffnessContribution(MyEnergy, ParamCoord, factor, E);
-//  
-//        }
-//      }
-//    }
-//  
-//   /*--- At the moment the receive buffer will be always registered on the tape,
-//    * even if the send buffer was not active. This will lead to an extremely high memory consumption
-//    * in the subsequent computation when AD is enabled. Since we know that the energy value does not depend on the design
-//    * variable values (it only depends on the initial control point positions), we can set the tape to passive here ... ---*/
-//  
-//  AD_BEGIN_PASSIVE
-//    SU2_MPI::Allreduce(MyEnergy.data(), Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-//  AD_END_PASSIVE
-  
+        ParamCoord[0] = su2double(iControl)/su2double(lControl-1);
+        ParamCoord[1] = su2double(jControl)/su2double(mControl-1);
+        ParamCoord[2] = su2double(kControl)/su2double(nControl-1);
 
-  //if (rank == MASTER_NODE){
-    for (iControl = 0; iControl < lControl; iControl++){
-      for (jControl = 0; jControl < mControl; jControl++){
-        for (kControl = 0; kControl < nControl; kControl++){
-
-          Coord = GetCoordControlPoints(iControl, jControl, kControl);
-
-          ParamCoord = GetParametricCoord_Iterative(0, Coord, ParamCoord_Guess, config);
-
-//          ParamCoord = GetParCoordControlPoints(iControl, jControl, kControl);
-  
-          cout << ParamCoord[0] << " " << ParamCoord[1] << " " << ParamCoord[2] << endl;
-          for (iDim = 0; iDim < nDim; iDim++){
-            
-            ParamCoord[iDim] = ParamCoord[iDim] + EPS;
-            if (ParamCoord[iDim] <= 0.0) ParamCoord[iDim] = EPS;
-            if (ParamCoord[iDim] >= 1.0) ParamCoord[iDim] = 1.0 - EPS;
-          }
-          AddLocalStiffnessContribution(Matrix, ParamCoord, 0.0025, E);
-
+        for (iDim = 0; iDim < nDim; iDim++){
+          if (ParamCoord[iDim] >= 1.0) ParamCoord[iDim] -= 1e-06;
+          if (ParamCoord[iDim] <= 0.0) ParamCoord[iDim] += 1e-06;
         }
+
+        AddLocalStiffnessContribution(Matrix, ParamCoord, d_0 , E);
+
       }
     }
-  //}
-
-  //SU2_MPI::Bcast(Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE,MASTER_NODE, MPI_COMM_WORLD);
-
+  }
 }
 
 
