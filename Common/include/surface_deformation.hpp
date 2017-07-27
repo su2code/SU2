@@ -946,6 +946,9 @@ public:
   su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11,
                          su2double A12, su2double A20, su2double A21, su2double A22);
 
+
+  su2double EvalParam_ObjFunc(su2double* param_coord, su2double* xyz);
+
   void GetRelativeGroupBlock(EigenMatrix &SystemMatrix, unsigned short iGroup);
 
   void GetAbsoluteGroupBlock(EigenMatrix &SystemMatrix, unsigned short iGroup);

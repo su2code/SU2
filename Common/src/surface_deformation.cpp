@@ -6377,10 +6377,25 @@ void CFreeFormDefBox::GetFFDHessian(su2double *uvw, su2double *xyz, su2double **
 
 }
 
+su2double CFreeFormDefBox::EvalParam_ObjFunc(su2double *param_coord, su2double *xyz){
+
+  su2double *Coord, val = 0;
+  unsigned short iDim;
+
+  Coord = EvalCartesianCoord(param_coord);
+
+  for (iDim = 0; iDim < nDim; iDim++){
+    val += (Coord[iDim] - xyz[iDim])*(Coord[iDim] - xyz[iDim]);
+  }
+
+  return val;
+}
+
 su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, su2double *ParamCoordGuess, CConfig *config) {
 
-  su2double *IndepTerm, SOR_Factor = 1.0, MinNormError, NormError, Determinant, AdjHessian[3][3], Temp[3] = {0.0,0.0,0.0};
-  unsigned short iDim, jDim, RandonCounter;
+  su2double *IndepTerm, MinNormError, NormError, Determinant, AdjHessian[3][3], Temp[3] = {0.0,0.0,0.0}, alpha, ObjFunc_new,
+      *Coord, ParamCoord_New[3], c_1, c_2, m;
+  unsigned short iDim, jDim, RandomCounter;
   unsigned long iter;
 
   su2double tol = config->GetFFD_Tol();
@@ -6396,8 +6411,9 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
     ParamCoord[iDim] = ParamCoordGuess[iDim];
     IndepTerm [iDim] = 0.0;
   }
+  RandomCounter = 0; MinNormError = 1E6;
 
-  RandonCounter = 0; MinNormError = 1E6;
+  c_1 = 1e-04; c_2 = 0.5;
 
   /*--- External iteration ---*/
 
@@ -6443,55 +6459,86 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
       }
     }
 
-    /*--- Update with Successive over-relaxation ---*/
+    /*--- Line search procedure ---*/
+
+    alpha = 1.0;
+
+    ObjFunc = EvalParam_ObjFunc(ParamCoord, xyz);
+
+    /*--- Update opt. variables---*/
+
+    for (iDim = 0; iDim < nDim; iDim ++){
+      ParamCoord_New[iDim] = ParamCoord[iDim] + alpha*IndepTerm[iDim];
+    }
+
+    /*--- Project opt. variables onto feasible set ---*/
 
     for (iDim = 0; iDim < nDim; iDim++) {
-      ParamCoord[iDim] = (1.0-SOR_Factor)*ParamCoord[iDim] + SOR_Factor*(ParamCoord[iDim] + IndepTerm[iDim]);
+      if (ParamCoord_New[iDim] < 0.0 ) ParamCoord_New[iDim] = 0;
+      if (ParamCoord_New[iDim] > 1.0 ) ParamCoord_New[iDim] = 1.0;
     }
 
-    /*--- If the gradient is small, we have converged ---*/
+    ObjFunc_new = EvalParam_ObjFunc(ParamCoord_New, xyz);
 
-    if ((fabs(IndepTerm[0]) < tol) && (fabs(IndepTerm[1]) < tol) && (fabs(IndepTerm[2]) < tol))	break;
+    /*--- Compute slope along search direction ---*/
 
-    /*--- Compute the norm of the error ---*/
+    m = 0;
+    for (iDim = 0; iDim < nDim; iDim ++ ){
+      m -= Gradient[iDim]*IndepTerm[iDim];
+    }
+
+    /*--- Loop until Armijo condition is satisfied --- */
+
+    while (ObjFunc - ObjFunc_new < alpha*c_1*m){
+
+      alpha = c_2*alpha;
+
+      /*--- Update opt. variables---*/
+
+      for (iDim = 0; iDim < nDim; iDim ++){
+        ParamCoord_New[iDim] = ParamCoord[iDim] +alpha*IndepTerm[iDim];
+      }
+
+      /*--- Project opt. variables onto feasible set ---*/
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        if (ParamCoord_New[iDim] < 0.0 ) ParamCoord_New[iDim] = 0;
+        if (ParamCoord_New[iDim] > 1.0 ) ParamCoord_New[iDim] = 1.0;
+      }
+
+      ObjFunc_new = EvalParam_ObjFunc(ParamCoord_New, xyz);
+
+    }
+
+    /*--- Evaluate norm of projected gradient and update opt. variables ---*/
 
     NormError = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      NormError += IndepTerm[iDim]*IndepTerm[iDim];
-    NormError = sqrt(NormError);
-
+    for (iDim = 0; iDim < nDim; iDim ++){
+      NormError += (ParamCoord_New[iDim] - ParamCoord[iDim])*(ParamCoord_New[iDim] - ParamCoord[iDim])/alpha*alpha;
+      ParamCoord[iDim] = ParamCoord_New[iDim];
+    }
+    NormError =sqrt(NormError);
     MinNormError = min(NormError, MinNormError);
 
-    /*--- If we have no convergence with Random_Trials iterations probably we are in a local minima. ---*/
+    /*--- If norm of proj. gradient and obj. function value is below tolerance we have reached our solution ---*/
 
-    if (((iter % it_max) == 0) && (iter != 0)) {
+    if (NormError < tol && ObjFunc_new < tol) break;
 
-      RandonCounter++;
-      if (RandonCounter == Random_Trials) {
+    /*--- If norm of proj. gradient is below tolerance but obj. function value is not, we are in a local minimum,
+     * so we try again with a random initial solution ---*/
+
+    if (NormError < tol && ObjFunc_new > tol){
+
+      RandomCounter++;
+
+      if (RandomCounter == Random_Trials) {
         cout << endl << "Unknown point: "<< iPoint <<" (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Min Error: "<< MinNormError <<". Iter: "<< iter <<"."<< endl;
-      }
-      else {
-        SOR_Factor = 0.1;
-        for (iDim = 0; iDim < nDim; iDim++)
+      } else {
+        for (iDim = 0; iDim < nDim; iDim++){
           ParamCoord[iDim] = su2double(rand())/su2double(RAND_MAX);
+        }
       }
-
     }
-
-    /* --- Splines are not defined outside of [0,1]. So if the parametric coords are outside of
-     *  [0,1] the step was too big and we have to use a smaller relaxation factor. ---*/
-
-    if ((config->GetFFD_Blending() == BSPLINE_UNIFORM)     &&
-        (((ParamCoord[0] < 0.0) || (ParamCoord[0] > 1.0))  ||
-         ((ParamCoord[1] < 0.0) || (ParamCoord[1] > 1.0))  ||
-         ((ParamCoord[2] < 0.0) || (ParamCoord[2] > 1.0)))) {
-
-      for (iDim = 0; iDim < nDim; iDim++){
-        ParamCoord[iDim] = su2double(rand())/su2double(RAND_MAX);
-      }
-      SOR_Factor = 0.5*SOR_Factor;
-    }
-
   }
 
   for (iDim = 0; iDim < nDim; iDim++)
@@ -7024,106 +7071,39 @@ void CFreeFormDefBox::GetGlobalStiffnessMatrix(EigenMatrix &Matrix, CConfig *con
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
   const unsigned short nControl = BlendingFunction[2]->GetnControl();
+
   const unsigned long TotalControl = lControl*mControl*nControl;
 
-  unsigned short iControl, jControl, kControl;
+  unsigned short iControl, jControl, kControl, iDim;
 
-  unsigned long iVertex, iPoint, iSurfacePoints;
-  unsigned short iMarker, iDim;
-  unsigned short lmn_min[3], lmn_max[3];
+  su2double ParamCoord[3], d_0 = 1.0;
+  su2double E = config->GetCSP_ElasticModulus();
 
-  su2double *ParamCoord, Area = 0, *Normal, *Coord, ParamCoord_Guess[] = {0.5, 0.5, 0.5}, factor, E;
-
-  E = config->GetCSP_ElasticModulus();
-
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  EigenMatrix LocalStiffness(6, TotalControl*nDim);
-  EigenMatrix MyEnergy(TotalControl*nDim, TotalControl*nDim);
-  Matrix.resize(TotalControl*nDim, TotalControl*nDim);
   Derivative.resize(TotalControl, nDim);
-
   LocalMatrix.resize(nDim, nDim);
   R.resize(TotalControl, nDim);
 
-  R = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
-  MyEnergy = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
+  Matrix.resize(TotalControl*nDim, TotalControl*nDim);
   Matrix = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
-  LocalStiffness = EigenMatrix::Zero(6, TotalControl*nDim);
 
-  /*--- Compute the elastic energy as an integral over the surface points ---*/
+  for (iControl = 0; iControl < lControl; iControl++){
+    for (jControl = 0; jControl < mControl; jControl++){
+      for (kControl = 0; kControl < nControl; kControl++){
 
-//    for (iSurfacePoints = 0; iSurfacePoints < GetnSurfacePoint(); iSurfacePoints++){
-//  
-//      iMarker = Get_MarkerIndex(iSurfacePoints);
-//  
-//      if (config->GetMarker_All_DV(iMarker) == YES) {
-//  
-//        iVertex = Get_VertexIndex(iSurfacePoints);
-//        iPoint  = Get_PointIndex(iSurfacePoints);
-//  
-//        if (geometry->node[iPoint]->GetDomain()){
-//  
-//          ParamCoord = Get_ParametricCoord(iSurfacePoints);
-//  
-//          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-//  
-//          Area = 0.0;
-//          for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-//            Area += Normal[iDim]*Normal[iDim];
-//          }
-//          Area = sqrt(Area);
-//  
-//          factor = 0.5*Area;
-//  
-//          /*--- Get the local stiffness matrix at the parametric coordinates of the surface point  ---*/
-//  
-//          AddLocalStiffnessContribution(MyEnergy, ParamCoord, factor, E);
-//  
-//        }
-//      }
-//    }
-//  
-//   /*--- At the moment the receive buffer will be always registered on the tape,
-//    * even if the send buffer was not active. This will lead to an extremely high memory consumption
-//    * in the subsequent computation when AD is enabled. Since we know that the energy value does not depend on the design
-//    * variable values (it only depends on the initial control point positions), we can set the tape to passive here ... ---*/
-//  
-//  AD_BEGIN_PASSIVE
-//    SU2_MPI::Allreduce(MyEnergy.data(), Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-//  AD_END_PASSIVE
-  
+        ParamCoord[0] = su2double(iControl)/su2double(lControl-1);
+        ParamCoord[1] = su2double(jControl)/su2double(mControl-1);
+        ParamCoord[2] = su2double(kControl)/su2double(nControl-1);
 
-  //if (rank == MASTER_NODE){
-    for (iControl = 0; iControl < lControl; iControl++){
-      for (jControl = 0; jControl < mControl; jControl++){
-        for (kControl = 0; kControl < nControl; kControl++){
-
-          Coord = GetCoordControlPoints(iControl, jControl, kControl);
-
-          ParamCoord = GetParametricCoord_Iterative(0, Coord, ParamCoord_Guess, config);
-
-//          ParamCoord = GetParCoordControlPoints(iControl, jControl, kControl);
-  
-          cout << ParamCoord[0] << " " << ParamCoord[1] << " " << ParamCoord[2] << endl;
-          for (iDim = 0; iDim < nDim; iDim++){
-            
-            ParamCoord[iDim] = ParamCoord[iDim] + EPS;
-            if (ParamCoord[iDim] <= 0.0) ParamCoord[iDim] = EPS;
-            if (ParamCoord[iDim] >= 1.0) ParamCoord[iDim] = 1.0 - EPS;
-          }
-          AddLocalStiffnessContribution(Matrix, ParamCoord, 0.0025, E);
-
+        for (iDim = 0; iDim < nDim; iDim++){
+          if (ParamCoord[iDim] >= 1.0) ParamCoord[iDim] -= 1e-06;
+          if (ParamCoord[iDim] <= 0.0) ParamCoord[iDim] += 1e-06;
         }
+
+        AddLocalStiffnessContribution(Matrix, ParamCoord, d_0 , E);
+
       }
     }
-  //}
-
-  //SU2_MPI::Bcast(Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE,MASTER_NODE, MPI_COMM_WORLD);
-
+  }
 }
 
 
