@@ -159,7 +159,9 @@ am__libSU2_a_SOURCES_DIST =  \
 	../src/fem_integration_rules.cpp \
 	../src/fem_standard_element.cpp ../src/fem_wall_distance.cpp \
 	../src/fem_work_estimate_metis.cpp ../src/gelite.cpp \
-	../src/geometry_structure.cpp ../src/graph_vertex_coloring.cpp \
+	../src/geometry_structure.cpp \
+	../src/geometry_structure_fem_part.cpp \
+	../src/graph_vertex_coloring.cpp \
 	../src/grid_adaptation_structure.cpp \
 	../src/grid_movement_structure.cpp \
 	../src/linear_solvers_structure.cpp \
@@ -181,6 +183,7 @@ am__objects_1 = ../src/libSU2_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_a-fem_work_estimate_metis.$(OBJEXT) \
 	../src/libSU2_a-gelite.$(OBJEXT) \
 	../src/libSU2_a-geometry_structure.$(OBJEXT) \
+	../src/libSU2_a-geometry_structure_fem_part.$(OBJEXT) \
 	../src/libSU2_a-graph_vertex_coloring.$(OBJEXT) \
 	../src/libSU2_a-grid_adaptation_structure.$(OBJEXT) \
 	../src/libSU2_a-grid_movement_structure.$(OBJEXT) \
@@ -248,7 +251,9 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../src/fem_integration_rules.cpp \
 	../src/fem_standard_element.cpp ../src/fem_wall_distance.cpp \
 	../src/fem_work_estimate_metis.cpp ../src/gelite.cpp \
-	../src/geometry_structure.cpp ../src/graph_vertex_coloring.cpp \
+	../src/geometry_structure.cpp \
+	../src/geometry_structure_fem_part.cpp \
+	../src/graph_vertex_coloring.cpp \
 	../src/grid_adaptation_structure.cpp \
 	../src/grid_movement_structure.cpp \
 	../src/linear_solvers_structure.cpp \
@@ -269,6 +274,7 @@ am__objects_2 = ../src/libSU2_AD_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_AD_a-fem_work_estimate_metis.$(OBJEXT) \
 	../src/libSU2_AD_a-gelite.$(OBJEXT) \
 	../src/libSU2_AD_a-geometry_structure.$(OBJEXT) \
+	../src/libSU2_AD_a-geometry_structure_fem_part.$(OBJEXT) \
 	../src/libSU2_AD_a-graph_vertex_coloring.$(OBJEXT) \
 	../src/libSU2_AD_a-grid_adaptation_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-grid_movement_structure.$(OBJEXT) \
@@ -337,7 +343,9 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/fem_integration_rules.cpp \
 	../src/fem_standard_element.cpp ../src/fem_wall_distance.cpp \
 	../src/fem_work_estimate_metis.cpp ../src/gelite.cpp \
-	../src/geometry_structure.cpp ../src/graph_vertex_coloring.cpp \
+	../src/geometry_structure.cpp \
+	../src/geometry_structure_fem_part.cpp \
+	../src/graph_vertex_coloring.cpp \
 	../src/grid_adaptation_structure.cpp \
 	../src/grid_movement_structure.cpp \
 	../src/linear_solvers_structure.cpp \
@@ -358,6 +366,7 @@ am__objects_3 = ../src/libSU2_DIRECTDIFF_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-fem_work_estimate_metis.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-gelite.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-geometry_structure.$(OBJEXT) \
+	../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-graph_vertex_coloring.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-grid_adaptation_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-grid_movement_structure.$(OBJEXT) \
@@ -637,6 +646,7 @@ lib_sources = \
   ../src/fem_work_estimate_metis.cpp \
   ../src/gelite.cpp \
   ../src/geometry_structure.cpp \
+  ../src/geometry_structure_fem_part.cpp \
   ../src/graph_vertex_coloring.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
@@ -753,6 +763,8 @@ clean-noinstLIBRARIES:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-geometry_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_a-geometry_structure_fem_part.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-graph_vertex_coloring.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-grid_adaptation_structure.$(OBJEXT):  \
@@ -811,6 +823,8 @@ libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDEN
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-geometry_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_AD_a-geometry_structure_fem_part.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-graph_vertex_coloring.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-grid_adaptation_structure.$(OBJEXT):  \
@@ -868,6 +882,8 @@ libSU2_AD.a: $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_DEPENDENCIES) $(EXTRA_libSU2_A
 ../src/libSU2_DIRECTDIFF_a-gelite.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-geometry_structure.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-graph_vertex_coloring.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -930,6 +946,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-gelite.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-geometry_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-geometry_structure_fem_part.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-graph_vertex_coloring.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-grid_adaptation_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-grid_movement_structure.Po@am__quote@
@@ -957,6 +974,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gelite.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-graph_vertex_coloring.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-grid_movement_structure.Po@am__quote@
@@ -984,6 +1002,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-gelite.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-geometry_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-geometry_structure_fem_part.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-graph_vertex_coloring.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-grid_adaptation_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-grid_movement_structure.Po@am__quote@
@@ -1164,6 +1183,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure.cpp' object='../src/libSU2_a-geometry_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
+
+../src/libSU2_a-geometry_structure_fem_part.o: ../src/geometry_structure_fem_part.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-geometry_structure_fem_part.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-geometry_structure_fem_part.Tpo -c -o ../src/libSU2_a-geometry_structure_fem_part.o `test -f '../src/geometry_structure_fem_part.cpp' || echo '$(srcdir)/'`../src/geometry_structure_fem_part.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-geometry_structure_fem_part.Tpo ../src/$(DEPDIR)/libSU2_a-geometry_structure_fem_part.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure_fem_part.cpp' object='../src/libSU2_a-geometry_structure_fem_part.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-geometry_structure_fem_part.o `test -f '../src/geometry_structure_fem_part.cpp' || echo '$(srcdir)/'`../src/geometry_structure_fem_part.cpp
+
+../src/libSU2_a-geometry_structure_fem_part.obj: ../src/geometry_structure_fem_part.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-geometry_structure_fem_part.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-geometry_structure_fem_part.Tpo -c -o ../src/libSU2_a-geometry_structure_fem_part.obj `if test -f '../src/geometry_structure_fem_part.cpp'; then $(CYGPATH_W) '../src/geometry_structure_fem_part.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure_fem_part.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-geometry_structure_fem_part.Tpo ../src/$(DEPDIR)/libSU2_a-geometry_structure_fem_part.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure_fem_part.cpp' object='../src/libSU2_a-geometry_structure_fem_part.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-geometry_structure_fem_part.obj `if test -f '../src/geometry_structure_fem_part.cpp'; then $(CYGPATH_W) '../src/geometry_structure_fem_part.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure_fem_part.cpp'; fi`
 
 ../src/libSU2_a-graph_vertex_coloring.o: ../src/graph_vertex_coloring.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-graph_vertex_coloring.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-graph_vertex_coloring.Tpo -c -o ../src/libSU2_a-graph_vertex_coloring.o `test -f '../src/graph_vertex_coloring.cpp' || echo '$(srcdir)/'`../src/graph_vertex_coloring.cpp
@@ -1543,6 +1576,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
 
+../src/libSU2_AD_a-geometry_structure_fem_part.o: ../src/geometry_structure_fem_part.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-geometry_structure_fem_part.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-geometry_structure_fem_part.Tpo -c -o ../src/libSU2_AD_a-geometry_structure_fem_part.o `test -f '../src/geometry_structure_fem_part.cpp' || echo '$(srcdir)/'`../src/geometry_structure_fem_part.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-geometry_structure_fem_part.Tpo ../src/$(DEPDIR)/libSU2_AD_a-geometry_structure_fem_part.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure_fem_part.cpp' object='../src/libSU2_AD_a-geometry_structure_fem_part.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-geometry_structure_fem_part.o `test -f '../src/geometry_structure_fem_part.cpp' || echo '$(srcdir)/'`../src/geometry_structure_fem_part.cpp
+
+../src/libSU2_AD_a-geometry_structure_fem_part.obj: ../src/geometry_structure_fem_part.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-geometry_structure_fem_part.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-geometry_structure_fem_part.Tpo -c -o ../src/libSU2_AD_a-geometry_structure_fem_part.obj `if test -f '../src/geometry_structure_fem_part.cpp'; then $(CYGPATH_W) '../src/geometry_structure_fem_part.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure_fem_part.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-geometry_structure_fem_part.Tpo ../src/$(DEPDIR)/libSU2_AD_a-geometry_structure_fem_part.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure_fem_part.cpp' object='../src/libSU2_AD_a-geometry_structure_fem_part.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-geometry_structure_fem_part.obj `if test -f '../src/geometry_structure_fem_part.cpp'; then $(CYGPATH_W) '../src/geometry_structure_fem_part.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure_fem_part.cpp'; fi`
+
 ../src/libSU2_AD_a-graph_vertex_coloring.o: ../src/graph_vertex_coloring.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-graph_vertex_coloring.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-graph_vertex_coloring.Tpo -c -o ../src/libSU2_AD_a-graph_vertex_coloring.o `test -f '../src/graph_vertex_coloring.cpp' || echo '$(srcdir)/'`../src/graph_vertex_coloring.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-graph_vertex_coloring.Tpo ../src/$(DEPDIR)/libSU2_AD_a-graph_vertex_coloring.Po
@@ -1920,6 +1967,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure.cpp' object='../src/libSU2_DIRECTDIFF_a-geometry_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
+
+../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.o: ../src/geometry_structure_fem_part.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.o `test -f '../src/geometry_structure_fem_part.cpp' || echo '$(srcdir)/'`../src/geometry_structure_fem_part.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure_fem_part.cpp' object='../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.o `test -f '../src/geometry_structure_fem_part.cpp' || echo '$(srcdir)/'`../src/geometry_structure_fem_part.cpp
+
+../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.obj: ../src/geometry_structure_fem_part.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.obj `if test -f '../src/geometry_structure_fem_part.cpp'; then $(CYGPATH_W) '../src/geometry_structure_fem_part.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure_fem_part.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure_fem_part.cpp' object='../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.obj `if test -f '../src/geometry_structure_fem_part.cpp'; then $(CYGPATH_W) '../src/geometry_structure_fem_part.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure_fem_part.cpp'; fi`
 
 ../src/libSU2_DIRECTDIFF_a-graph_vertex_coloring.o: ../src/graph_vertex_coloring.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-graph_vertex_coloring.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-graph_vertex_coloring.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-graph_vertex_coloring.o `test -f '../src/graph_vertex_coloring.cpp' || echo '$(srcdir)/'`../src/graph_vertex_coloring.cpp
