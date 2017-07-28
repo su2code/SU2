@@ -1281,7 +1281,7 @@ CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config,
           point_line >> Solution[0];
 
           /*--- Instantiate the solution at this node  ---*/
-          node[iPoint_Local] = new CHybridConvVariable(alpha_Inf, nDim, nVar, config);
+          node[iPoint_Local] = new CHybridConvVariable(Solution[0], nDim, nVar, config);
           iPoint_Global_Local++;
         }
 
@@ -1347,12 +1347,6 @@ void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
   }
 
-  /*--- Use the hybrid mediator to set up the solver ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-    HybridMediator->SetupHybridParamSolver(geometry, solver_container, iPoint);
-  }
-
   /*--- Initialize the Jacobian matrices ---*/
 
   Jacobian.SetValZero();
@@ -1363,6 +1357,12 @@ void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
   /*--- Upwind second order reconstruction ---*/
 
   //if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
+
+  /*--- Use the hybrid mediator to set up the solver ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+    HybridMediator->SetupHybridParamSolver(geometry, solver_container, iPoint);
+  }
 
 }
 
@@ -1496,76 +1496,29 @@ void CHybridConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CHybridConvSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
-  unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
-  su2double *V_inlet, *V_domain, *Normal;
-
-  Normal = new su2double[nDim];
-
-  bool grid_movement  = config->GetGrid_Movement();
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  unsigned long iPoint, iVertex;
+  unsigned short iVar;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
     if (geometry->node[iPoint]->GetDomain()) {
 
-      /*--- Index of the closest interior node ---*/
+      /*--- Get the velocity vector ---*/
 
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution[iVar] = alpha_Inf; // alpha_Inf = 1.0
 
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      node[iPoint]->SetSolution_Old(Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
 
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      /*--- includes 1 in the diagonal ---*/
 
-      /*--- Allocate the value at the inlet ---*/
-
-      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-
-      /*--- Set various quantities in the solver class ---*/
-
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
-
-      /*--- Set the hybrid parameter states (prescribed for an inflow) ---*/
-
-      Solution_i[0] = node[iPoint]->GetSolution(0);
-      Solution_j[0] = alpha_Inf;
-
-      conv_numerics->SetHybridParameter(Solution_i, Solution_j);
-
-      /*--- Set various other quantities in the conv_numerics class ---*/
-
-      conv_numerics->SetNormal(Normal);
-
-      if (grid_movement)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
-
-      /*--- Compute the residual using an upwind scheme ---*/
-
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
+      Jacobian.DeleteValsRowi(iPoint);
     }
   }
-
-  /*--- Free locally allocated memory ---*/
-  delete[] Normal;
 
 }
 

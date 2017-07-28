@@ -1245,8 +1245,22 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     
     /*--- Implicit part ---*/
     
-    val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;    val_Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
-    val_Jacobian_i[1][0] = 0.0;                               val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
+    su2double d_pk_d_k = pk/TurbVar_i[0]; /*--- pk is linear in k ---*/
+    su2double d_mu_d_omega = 0;
+    if (zeta == TurbVar_i[1])
+      d_mu_d_omega = -Density_i*TurbVar_i[0]/(zeta*zeta);
+    su2double d_pk_d_omega = d_mu_d_omega*StrainMag_i*StrainMag_i;
+    su2double d_pw_d_omega = 0;
+    if (zeta == TurbVar_i[1])
+      d_pw_d_omega = -2.0/3.0*diverg;
+
+    val_Jacobian_i[0][0] = d_pk_d_k*Volume/Density_i -
+                           beta_star*TurbVar_i[1]*Volume;
+    val_Jacobian_i[0][1] = d_pk_d_omega*Volume/Density_i -
+                           beta_star*TurbVar_i[0]*Volume;
+    val_Jacobian_i[1][0] = 0.0;
+    val_Jacobian_i[1][1] = d_pw_d_omega*Volume/Density_i -
+                           2.0*beta_blended*TurbVar_i[1]*Volume;
   }
   
   AD::SetPreaccOut(val_residual, nVar);

@@ -58,9 +58,9 @@ CHybridVariable::CHybridVariable(unsigned short val_nDim,
       Solution_Min[iVar] = 0.0;
     }
 
-    /*--- Initialize resolution adequacy in RANS mode ---*/
+    /*--- Initialize resolution adequacy in balanced LES mode ---*/
 
-    resolution_adequacy = 1.0;
+    resolution_adequacy = 1;
 
 }
 
@@ -82,9 +82,9 @@ CHybridConvVariable::CHybridConvVariable(su2double val_hybrid_param,
       Solution_time_n1[0] = val_hybrid_param;
     }
 
-    /*--- Initialize resolution adequacy in RANS mode ---*/
+    /*--- Initialize resolution adequacy in balanced LES mode ---*/
 
-    resolution_adequacy = 1.0;
+    resolution_adequacy = 1;
 
 }
 

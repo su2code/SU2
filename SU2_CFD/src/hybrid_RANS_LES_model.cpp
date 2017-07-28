@@ -123,6 +123,11 @@ inline void CHybrid_Aniso_Q::SetScalar(su2double val_r_k) {
 CHybrid_Mediator::CHybrid_Mediator(int nDim, CConfig* config, string filename)
  : nDim(nDim), C_sf(config->Get_Hybrid_Model_Const()) {
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /*--- Allocate the approximate structure function (used in calcs) ---*/
 
   Q = new su2double*[nDim];
@@ -135,8 +140,10 @@ CHybrid_Mediator::CHybrid_Mediator(int nDim, CConfig* config, string filename)
   /*--- Load the constants for mapping M to M-tilde ---*/
 
   if (filename == "") {
-    cout << "WARNING: No file given for hybrid RANS/LES constants." << endl;
-    cout << "         Default (hardcoded) values used." << endl;
+    if (rank == MASTER_NODE) {
+      cout << "WARNING: No file given for hybrid RANS/LES constants." << endl;
+      cout << "         Default (hardcoded) values used." << endl;
+    }
     constants.resize(3, vector<su2double>(15));
     constants[0][0]  = -1.3441989500430;
     constants[0][1]  = -1.2997962353961;

@@ -112,7 +112,7 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
 
 #ifndef NDEBUG
   if (Resolution_Adequacy < 0) {
-    cout << "ERROR: Resolution adequacy was less than zero!" << endl;
+    cout << "ERROR: Resolution adequacy < 0!" << endl;
     cout << "       Resolution adequacy: " << Resolution_Adequacy << endl;
     exit(EXIT_FAILURE);
   }
@@ -147,6 +147,7 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
     // No grid gradients are aligned with nonzero velocities; ignore S_c/Tc
     val_residual[0] = S_r/TurbT * Volume;
   }
+  val_residual[0] = S_r/TurbT * Volume;
 
   // Jacobian of \alpha with respect to \alpha
   val_Jacobian_i[0][0] = 0.0;
