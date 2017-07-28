@@ -92,10 +92,7 @@ void CUpwSca_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Ja
   AD::EndPreacc();
 }
 
-CAvgGrad_Template::CAvgGrad_Template(unsigned short val_nDim,
-                                     unsigned short val_nVar,
-                                     CConfig *config)
-    : CNumerics(val_nDim, val_nVar, config) {
+CAvgGrad_Template::CAvgGrad_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -106,6 +103,7 @@ CAvgGrad_Template::CAvgGrad_Template(unsigned short val_nDim,
   Mean_GradTurbVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Mean_GradTurbVar[iVar] = new su2double [nDim];
+
 }
 
 CAvgGrad_Template::~CAvgGrad_Template(void) {
@@ -166,14 +164,14 @@ void CAvgGrad_Template::ComputeResidual(su2double *val_residual,
     }
   }
 
-  TemplatedComputeResidual(val_residual, Jacobian_i, Jacobian_j);
+  TemplatedComputeResidual(val_residual, Jacobian_i, Jacobian_j, config);
 
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
 
 }
 
-CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CAvgGrad_Template(val_nDim, val_nVar, config), sigma(2.0/3) {
+CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CAvgGrad_Template(val_nDim, val_nVar, config) {
 }
 
 CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
@@ -201,8 +199,8 @@ void CAvgGrad_TurbSA::TemplatedComputeResidual(su2double *val_residual, su2doubl
 
 }
 
-CAvgGrad_TurbSA_Neg::CAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, CConfig *config)
- : CAvgGrad_Template(val_nDim, val_nVar, config), sigma(2./3.), cn1(16.0), fn(0.0) {
+CAvgGrad_TurbSA_Neg::CAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CAvgGrad_Template(val_nDim, val_nVar, config) {
+  fn = 0.0;
 }
 
 CAvgGrad_TurbSA_Neg::~CAvgGrad_TurbSA_Neg(void) {

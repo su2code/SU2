@@ -2833,6 +2833,10 @@ public:
 
 class CAvgGrad_Template : public CNumerics {
  private:
+  virtual void ADPreacc() = 0;
+  virtual void TemplatedComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) = 0;
+
+ protected:
   bool implicit, incompressible;
   unsigned short iVar, iDim;
   su2double **Mean_GradTurbVar;               /*!< \brief Average of gradients at cell face */
@@ -2841,9 +2845,6 @@ class CAvgGrad_Template : public CNumerics {
             *Proj_Mean_GradTurbVar_Edge;      /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
   su2double  dist_ij_2,                    /*!< \brief |Edge_Vector|^2 */
              proj_vector_ij;               /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-
-  virtual void ADPreacc() = 0;
-  virtual void TemplatedComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) = 0;
 
  public:
   /*!
@@ -2879,7 +2880,7 @@ class CAvgGrad_Template : public CNumerics {
 class CAvgGrad_TurbSA : public CAvgGrad_Template {
 private:
 
-  static const su2double sigma;
+  static const su2double sigma = 2.0/3;
   su2double nu_i, nu_j, nu_e;
   
   void ADPreacc(void);
@@ -2911,9 +2912,9 @@ public:
 class CAvgGrad_TurbSA_Neg : public CAvgGrad_Template {
 private:
 
-  static const su2double sigma;
-  static const su2double cn1, fn
-  su2double Xi;
+  static const su2double sigma = 2.0/3;
+  static const su2double cn1 = 16.0;
+  su2double fn, Xi;
   su2double nu_i, nu_j, nu_ij, nu_tilde_ij, nu_e;
   
   void ADPreacc(void);
