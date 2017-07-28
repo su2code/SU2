@@ -2038,19 +2038,91 @@ public:
 };
 
 /*!
+ * \class CUpwSca_Template
+ * \brief Template class for scalar upwind fluxes between nodes i and j.
+ * \ingroup ConvDiscr
+ * \author C. Pederson, A. Bueno., and A. Campos.
+ * \version 5.0.0 "Raven"
+ */
+class CUpwSca_Template : public CNumerics {
+private:
+
+  /*!
+   * \brief A pure virtual function; Adds any extra variables to AD
+   */
+  virtual void ADPreacc() = 0;
+
+  /*!
+   * \brief Model-specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void TemplatedComputeResidual(su2double *val_residual,
+                                        su2double **Jacobian_i,
+                                        su2double **Jacobian_j,
+                                        CConfig *config) = 0;
+
+protected:
+  su2double *Velocity_i, *Velocity_j;
+  su2double Density_i, Density_j;
+  bool implicit, grid_movement, incompressible;
+  su2double q_ij, /*!< \brief Projected velocity at the face. */
+            a0,   /*!< \brief The maximum of the face-normal velocity and 0 */
+            a1;   /*!< \brief The minimum of the face-normal velocity and 0 */
+  unsigned short iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSca_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwSca_Template(void);
+
+  /*!
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
  * \class CUpwSca_TurbSA
- * \brief Class for doing a scalar upwind solver for the Spalar-Allmaral turbulence model equations.
+ * \brief Class for doing a scalar upwind solver for the Spalar-Allmaras turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
  * \version 5.0.0 "Raven"
  */
-class CUpwSca_TurbSA : public CNumerics {
+class CUpwSca_TurbSA : public CUpwSca_Template {
 private:
-  su2double *Velocity_i, *Velocity_j;
-  bool implicit, grid_movement, incompressible;
-  su2double q_ij, a0, a1;
-  unsigned short iDim;
-  
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ADPreacc();
+
+  /*!
+   * \brief SA specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void TemplatedComputeResidual(su2double *val_residual, su2double **Jacobian_i,
+                                su2double **Jacobian_j, CConfig *config);
+
 public:
   
   /*!
@@ -2065,15 +2137,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwSca_TurbSA(void);
-  
-  /*!
-   * \brief Compute the scalar upwind flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -2083,12 +2146,23 @@ public:
  * \author A. Bueno.
  * \version 5.0.0 "Raven"
  */
-class CUpwSca_TurbML : public CNumerics {
+class CUpwSca_TurbML : public CUpwSca_Template {
 private:
-  su2double *Velocity_i, *Velocity_j;
-  bool implicit, grid_movement, incompressible;
-  su2double q_ij, a0, a1;
-  unsigned short iDim;
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ADPreacc();
+
+  /*!
+   * \brief SA specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void TemplatedComputeResidual(su2double *val_residual, su2double **Jacobian_i,
+                                su2double **Jacobian_j, CConfig *config);
   
 public:
   
@@ -2104,15 +2178,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwSca_TurbML(void);
-  
-  /*!
-   * \brief Compute the scalar upwind flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -2122,15 +2187,24 @@ public:
  * \author A. Campos.
  * \version 5.0.0 "Raven"
  */
-class CUpwSca_TurbSST : public CNumerics {
+class CUpwSca_TurbSST : public CUpwSca_Template {
 private:
-  su2double *Velocity_i, *Velocity_j;
-  bool implicit, grid_movement, incompressible;
-  su2double Density_i, Density_j,
-  q_ij,
-  a0, a1;
-  unsigned short iDim;
-  
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ADPreacc();
+
+  /*!
+   * \brief SST specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void TemplatedComputeResidual(su2double *val_residual, su2double **Jacobian_i,
+                                su2double **Jacobian_j, CConfig *config);
+
 public:
   
   /*!
@@ -2145,15 +2219,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwSca_TurbSST(void);
-  
-  /*!
-   * \brief Compute the scalar upwind flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -2993,18 +3058,26 @@ public:
  * \author A. Bueno.
  * \version 5.0.0 "Raven"
  */
-class CAvgGrad_TurbML : public CNumerics {
+class CAvgGrad_TurbML : public CAvgGrad_Template {
 private:
-  su2double **Mean_GradTurbVar;
-  su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge;
-  su2double *Edge_Vector;
-  bool implicit, incompressible;
   su2double sigma;
   su2double nu_i, nu_j, nu_e;
-  su2double dist_ij_2;
-  su2double proj_vector_ij;
-  unsigned short iVar, iDim;
   
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ADPreacc(void);
+
+  /*!
+   * \brief SA specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void TemplatedComputeResidual(su2double *val_residual, su2double **Jacobian_i,
+                                su2double **Jacobian_j, CConfig *config);
+
 public:
   
   /*!
@@ -3019,15 +3092,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CAvgGrad_TurbML(void);
-  
-  /*!
-   * \brief Compute the viscous turbulence terms residual using an average of gradients.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
 };
 
 /*!

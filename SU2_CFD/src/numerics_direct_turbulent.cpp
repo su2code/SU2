@@ -34,62 +34,88 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
-                               CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+CUpwSca_Template::CUpwSca_Template(unsigned short val_nDim,
+                                   unsigned short val_nVar,
+                                   CConfig *config)
+    : CNumerics(val_nDim, val_nVar, config) {
+
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
   grid_movement   = config->GetGrid_Movement();
-  
+
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
-  
+
 }
 
-CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
-  
+CUpwSca_Template::~CUpwSca_Template(void) {
+
   delete [] Velocity_i;
   delete [] Velocity_j;
-  
+
 }
 
-void CUpwSca_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
-  q_ij = 0.0;
-  
+void CUpwSca_Template::ComputeResidual(su2double *val_residual,
+                                       su2double **val_Jacobian_i,
+                                       su2double **val_Jacobian_j,
+                                       CConfig *config) {
+
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
-  AD::SetPreaccIn(TurbVar_i[0]); AD::SetPreaccIn(TurbVar_j[0]);
   AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
+  ADPreacc();
+
   if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
-  
+
+  q_ij = 0.0;
   if (grid_movement) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
       Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
-  } else {
+  }
+  else {
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1];
       Velocity_j[iDim] = V_j[iDim+1];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
   }
-  
+
+  TemplatedComputeResidual(val_residual, val_Jacobian_i, val_Jacobian_j, config);
+
   a0 = 0.5*(q_ij+fabs(q_ij));
   a1 = 0.5*(q_ij-fabs(q_ij));
+
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
+
+}
+
+CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
+                               unsigned short val_nVar,
+                               CConfig *config)
+    : CUpwSca_Template(val_nDim, val_nVar, config) {
+}
+
+CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
+}
+
+void CUpwSca_TurbSA::ADPreacc() {
+  AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
+}
+
+void CUpwSca_TurbSA::TemplatedComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+  
   val_residual[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
   
   if (implicit) {
     val_Jacobian_i[0][0] = a0;
     val_Jacobian_j[0][0] = a1;
   }
-  
-  AD::SetPreaccOut(val_residual[0]);
-  AD::EndPreacc();
 }
 
 CAvgGrad_Template::CAvgGrad_Template(unsigned short val_nDim,
@@ -809,67 +835,30 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
 //  AD::EndPreacc();
 }
 
-CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
-                                 CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
-  implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  grid_movement   = config->GetGrid_Movement();
-  
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-  
+CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
+                                 unsigned short val_nVar,
+                                 CConfig *config)
+    : CUpwSca_Template(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
-  
-  delete [] Velocity_i;
-  delete [] Velocity_j;
-  
 }
 
-void CUpwSca_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
-  AD::StartPreacc();
-  AD::SetPreaccIn(TurbVar_i,2);
-  AD::SetPreaccIn(TurbVar_j,2);
-  AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement) {
-    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
-  }
+void CUpwSca_TurbSST::ADPreacc() {
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+2);
     AD::SetPreaccIn(V_j, nDim+2);
-
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+3);
     AD::SetPreaccIn(V_j, nDim+3);
+  }
+}
 
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
-  }
-  
-  q_ij = 0.0;
-  if (grid_movement) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
-      Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
-      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-    }
-  }
-  else {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = V_i[iDim+1];
-      Velocity_j[iDim] = V_j[iDim+1];
-      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-    }
-  }
-  
-  a0 = 0.5*(q_ij+fabs(q_ij));
-  a1 = 0.5*(q_ij-fabs(q_ij));
+void CUpwSca_TurbSST::TemplatedComputeResidual(su2double *val_residual,
+                                               su2double **val_Jacobian_i,
+                                               su2double **val_Jacobian_j,
+                                               CConfig *config) {
   
   val_residual[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
   val_residual[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
@@ -881,10 +870,6 @@ void CUpwSca_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_J
     val_Jacobian_j[0][0] = a1;    val_Jacobian_j[0][1] = 0.0;
     val_Jacobian_j[1][0] = 0.0;    val_Jacobian_j[1][1] = a1;
   }
-
-  AD::SetPreaccOut(val_residual, nVar);
-  AD::EndPreacc();
-  
 }
 
 CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double *constants, CConfig *config) : CAvgGrad_Template(val_nDim, val_nVar, config) {
@@ -1152,132 +1137,56 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
 }
 
-CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar,
-                               CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
-  implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  grid_movement   = config->GetGrid_Movement();
-  
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-  
+CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim,
+                               unsigned short val_nVar,
+                               CConfig *config)
+  : CUpwSca_Template(val_nDim, val_nVar, config) {
+
 }
 
 CUpwSca_TurbML::~CUpwSca_TurbML(void) {
-  
-  delete [] Velocity_i;
-  delete [] Velocity_j;
-  
 }
 
-void CUpwSca_TurbML::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
-  
-  q_ij = 0.0;
-  
-  if (grid_movement) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
-      Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
-      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-    }
-  } else {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = V_i[iDim+1];
-      Velocity_j[iDim] = V_j[iDim+1];
-      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-    }
-  }
-  
-  a0 = 0.5*(q_ij+fabs(q_ij));
-  a1 = 0.5*(q_ij-fabs(q_ij));
+void CUpwSca_TurbML::ADPreacc() {
+}
+
+void CUpwSca_TurbML::TemplatedComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+
   val_residual[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
   
   if (implicit) {
     val_Jacobian_i[0][0] = a0;
     val_Jacobian_j[0][0] = a1;
   }
-  
-  
 }
 
-CAvgGrad_TurbML::CAvgGrad_TurbML(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  unsigned short iVar;
-  
-  implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
-  sigma = 2./3.;
-  
-  Edge_Vector = new su2double [nDim];
-  Proj_Mean_GradTurbVar_Kappa = new su2double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
-  Mean_GradTurbVar = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTurbVar[iVar] = new su2double [nDim];
-  
+CAvgGrad_TurbML::CAvgGrad_TurbML(unsigned short val_nDim,
+                                 unsigned short val_nVar,
+                                 CConfig *config)
+    : CAvgGrad_Template(val_nDim, val_nVar, config), sigma(2./3.) {
 }
 
 CAvgGrad_TurbML::~CAvgGrad_TurbML(void) {
-  unsigned short iVar;
-  
-  delete [] Edge_Vector;
-  delete [] Proj_Mean_GradTurbVar_Kappa;
-  delete [] Proj_Mean_GradTurbVar_Edge;
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] Mean_GradTurbVar[iVar];
-  delete [] Mean_GradTurbVar;
-  
 }
 
-void CAvgGrad_TurbML::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
-  
-  if (incompressible) {
-    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
-    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
-    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
-    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
-  }
-  
+void CAvgGrad_TurbML::ADPreacc() {
+}
+
+void CAvgGrad_TurbML::TemplatedComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
+
   /*--- Compute mean effective viscosity ---*/
   
   nu_i = Laminar_Viscosity_i/Density_i;
   nu_j = Laminar_Viscosity_j/Density_j;
   nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
   
-  /*--- Compute vector going from iPoint to jPoint ---*/
-  
-  dist_ij_2 = 0; proj_vector_ij = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-  }
-  proj_vector_ij = proj_vector_ij/dist_ij_2;
-  
-  /*--- Mean gradient approximation ---*/
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Proj_Mean_GradTurbVar_Kappa[iVar] = 0.0;
-    Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] + TurbVar_Grad_j[iVar][iDim]);
-      Proj_Mean_GradTurbVar_Kappa[iVar] += Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
-    }
-  }
-  
-  val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Kappa[0]/sigma;
+  val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Normal[0]/sigma;
   
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   
   if (implicit) {
-    Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]-nu_e*proj_vector_ij)/sigma;
-    Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]+nu_e*proj_vector_ij)/sigma;
+    Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Normal[0]-nu_e*proj_vector_ij)/sigma;
+    Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Normal[0]+nu_e*proj_vector_ij)/sigma;
   }
   
 }
