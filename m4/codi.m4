@@ -8,7 +8,7 @@ AC_DEFUN([CONFIGURE_CODI],
         [build_CODI_FORWARD="yes"], [build_CODI_FORWARD="no"])
 
         CODIheader=${srcdir}/externals/codi/include/codi.hpp
-        AMPIheader=${srcdir}/externals/medipack/include/medi/medi.hpp
+        AMPIheader=${srcdir}/externals/medi/include/medi/medi.hpp
 
         if test "$build_CODI_REVERSE" == "yes" || test "$build_CODI_FORWARD" == "yes"
         then
@@ -33,9 +33,9 @@ AC_DEFUN([CONFIGURE_CODI],
               AC_CHECK_FILE([$AMPIheader], [have_AMPIheader='yes'], [have_AMPIheader='no'])
               if test "$have_AMPIheader" == "no"
               then
-                AC_MSG_ERROR([AMPI header not found in externals/medipack/include.  Use 'preconfigure.py --autodiff --enable-mpi' to download it.])
+                AC_MSG_ERROR([MediPack header not found in externals/medi/include.  Use 'preconfigure.py --autodiff --enable-mpi' to download it.])
               fi
-              REVERSE_CXX=$REVERSE_CXX" -I\$(top_srcdir)/externals/medipack/include -I\$(top_srcdir)/externals/medipack/src"
+              REVERSE_CXX=$REVERSE_CXX" -I\$(top_srcdir)/externals/medi/include -I\$(top_srcdir)/externals/medi/src"
            fi
            build_REVERSE=yes
            build_DIRECTDIFF=no
