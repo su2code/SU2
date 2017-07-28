@@ -3181,8 +3181,9 @@ unsigned long GlobalDonorPoint;
       }//getchar();
       
 
-      unsigned long link1, link2, link3, link1_Global, link2_Global, link3_Global, StartNode, Edge1, Edge2, Edge3;
-      unsigned long jFace, jElem, jEdge, iPoint, iNode, iTmp, *dummyList, *dummyList1, *dummyList2, *dummyListEdge, modElem;
+      unsigned long link1, link2, link3, StartNode, Edge1, Edge2;
+      unsigned long jFace, jElem, iEdge, iPoint, iNode, iTmp, iTmp1, iTmp2, *dummyList1, *dummyList2, *dummyListEdge1, *dummyListEdge2, modElem;
+      unsigned long ***dummyFace1, ***dummyFace2;
       su2double m, m1, m2, *dptr1, *dptr2, dtmp[3];
       CPoint *dummyPoint;
 
@@ -3233,57 +3234,65 @@ unsigned long GlobalDonorPoint;
             // Swap edges  
 
             // Trovo l'elemento che contiene link1 e StartNode
-            dummyList1 = new unsigned long[ target_geometry->node[ StartNode ]->GetnElem() ];
+            dummyList1 = new unsigned long  [ target_geometry->node[ StartNode ]->GetnElem() ];
+//            dummyFace1 = new unsigned long**[ target_geometry->node[ StartNode ]->GetnElem() ];
             
             for ( jElem = 0; jElem < target_geometry->node[ StartNode ]->GetnElem(); jElem++){
               modElem = target_geometry->node[ StartNode ]->GetElem(jElem);
               dummyList1[ jElem ] = modElem;
-            
+
+//              dummyFace1[jElem] = new unsigned long*[ target_geometry->elem[modElem]->GetnNodes() ];
+              
               for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                if( target_geometry->elem[modElem]->GetNode(iNode) == map[ link1 ] ){ // this is the element not to modify
-                  break;
+                if( target_geometry->elem[modElem]->GetNode(iNode) == StartNode ){ 
+                  target_geometry->elem[modElem]->SetNode(iNode, map[ link1 ]);
+                  break;//////////
                 }
-              }
-              if( iNode == target_geometry->elem[modElem]->GetnNodes() ){
-                for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                  if( target_geometry->elem[modElem]->GetNode(iNode) == StartNode ){ // this is the element not to modify
-                    target_geometry->elem[modElem]->SetNode(iNode, map[ link1 ]);
-                    break;
-                  }
-                }                
-              }
+/*                
+                dummyFace1[jElem][iNode] = new unsigned long[ 2 ];
+                
+                dummyFace1[jElem][iNode][0] = target_geometry->elem[modElem]->GetNode( target_geometry->elem[modElem]->GetFaces(iNode,0));
+                dummyFace1[jElem][iNode][1] = target_geometry->elem[modElem]->GetNode( target_geometry->elem[modElem]->GetFaces(iNode,1));
+*/
+              }                
             }
             
-            dummyList2 = new unsigned long[ target_geometry->node[ map[ link1 ] ]->GetnElem() ];
+            dummyList2 = new unsigned long  [ target_geometry->node[ map[ link1 ] ]->GetnElem() ];
+//            dummyFace2 = new unsigned long**[ target_geometry->node[ map[ link1 ] ]->GetnElem() ];
             
             for ( jElem = 0; jElem < target_geometry->node[ map[ link1 ] ]->GetnElem(); jElem++){
               modElem = target_geometry->node[ map[ link1 ] ]->GetElem(jElem);
               dummyList2[ jElem ] = modElem;
               
+//              dummyFace2[jElem] = new unsigned long*[ target_geometry->elem[modElem]->GetnNodes() ];
+
               for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                if( target_geometry->elem[modElem]->GetNode(iNode) == StartNode ){ // this is the element not to modify
-                  break;
+                if( target_geometry->elem[modElem]->GetNode(iNode) == map[ link1 ] ){ 
+                  target_geometry->elem[modElem]->SetNode(iNode, StartNode);
+                  break;//////////
                 }
-              }
-              if( iNode == target_geometry->elem[modElem]->GetnNodes() ){
-                for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                  if( target_geometry->elem[modElem]->GetNode(iNode) == map[ link1 ] ){ // this is the element not to modify
-                    target_geometry->elem[modElem]->SetNode(iNode, StartNode);
-                    break;
-                  }
-                }                
-              }
+/*
+                dummyFace2[jElem][iNode] = new unsigned long[ 2 ];
+                
+                dummyFace2[jElem][iNode][0] = target_geometry->elem[modElem]->GetNode( target_geometry->elem[modElem]->GetFaces(iNode,0));
+                dummyFace2[jElem][iNode][1] = target_geometry->elem[modElem]->GetNode( target_geometry->elem[modElem]->GetFaces(iNode,1));            
+*/
+              }                
             }
             
-            iTmp = target_geometry->node[  map[ link1 ] ]->GetnElem();
+            iTmp1 = target_geometry->node[ StartNode ]->GetnElem();
+            iTmp2 = target_geometry->node[  map[ link1 ] ]->GetnElem();
+            
             target_geometry->node[ StartNode ]->ResetElem();
-            for ( jElem = 0; jElem < iTmp; jElem++)
+            for ( jElem = 0; jElem < iTmp2; jElem++)
               target_geometry->node[ StartNode ]->SetElem(dummyList2[jElem]);
             
-            iTmp = target_geometry->node[ StartNode ]->GetnElem();
             target_geometry->node[ map[ link1 ] ]->ResetElem();
-            for ( jElem = 0; jElem < iTmp; jElem++)
+            for ( jElem = 0; jElem < iTmp1; jElem++)
               target_geometry->node[ map[ link1 ] ]->SetElem(dummyList1[jElem]);            
+            
+            
+            
             
 
             delete [] dummyList1;
@@ -3302,46 +3311,19 @@ unsigned long GlobalDonorPoint;
               else if (target_geometry->bound[markTarget][iNode]->GetNode(1) == map[ link1 ])
                   target_geometry->bound[markTarget][iNode]->SetNode(1, StartNode);
             }
-            
-            
-            // Trovo l'elemento che contiene link1 e link 3
-            
-            for ( jElem = 0; jElem < target_geometry->node[ map[link3] ]->GetnElem(); jElem++){
-              modElem = target_geometry->node[ map[link3] ]->GetElem(jElem);
-              
-              for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                if( target_geometry->elem[modElem]->GetNode(iNode) == map[ link1 ] ){ // this is the element to modify
-                    target_geometry->elem[modElem]->SetNode(iNode, StartNode);
-                    jElem = target_geometry->node[ map[link3] ]->GetnElem();
                     
-                    break;
-                }
-                                    
-              }
-            }
-                   
-            // Trovo l'elemento che contiene link2 e StartNode
-            for ( jElem = 0; jElem < target_geometry->node[ map[link2] ]->GetnElem(); jElem++){
-              modElem = target_geometry->node[ map[link2] ]->GetElem(jElem);
-              
-              for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                if( target_geometry->elem[modElem]->GetNode(iNode) == StartNode ){ // this is the element to modify
-                    target_geometry->elem[modElem]->SetNode(iNode, map[ link1 ]);
-                    jElem = target_geometry->node[ map[link2] ]->GetnElem();
-                    
-                    break;
-                }
-                                    
-              }
-            }
-
-                      
-            Edge1 = target_geometry->FindEdge(map[ link1 ], map[ link3 ]);
-            Edge2 = target_geometry->FindEdge(StartNode,    map[ link2 ]);
-
-            target_geometry->edge[Edge1]->SetNodes( StartNode,    map[ link3 ] );
-            target_geometry->edge[Edge2]->SetNodes( map[ link1 ], map[ link2 ] );
-            
+            for(iEdge = 0; iEdge < target_geometry->GetnEdge(); iEdge++){
+              if(target_geometry->edge[iEdge]->GetNode(0) == StartNode)
+                target_geometry->edge[iEdge]->SetNodes( map[ link1 ], 0 );
+              else if(target_geometry->edge[iEdge]->GetNode(0) == map[ link1 ])
+                target_geometry->edge[iEdge]->SetNodes( StartNode, 0 );
+                
+              if(target_geometry->edge[iEdge]->GetNode(1) == StartNode)
+                target_geometry->edge[iEdge]->SetNodes( map[ link1 ], 1 );
+              else if(target_geometry->edge[iEdge]->GetNode(1) == map[ link1 ])
+                target_geometry->edge[iEdge]->SetNodes( StartNode, 1 );                
+            }            
+      
             
             // Update connectivity in the reconstructed boundary
             
@@ -3368,72 +3350,47 @@ unsigned long GlobalDonorPoint;
             
             // Start Node
 
-            dummyPoint = target_geometry->node[StartNode];
+            iTmp1 = target_geometry->node[ StartNode ]->GetnElem();
             
-            iTmp = dummyPoint->GetnPoint();
+            dummyList1     = new unsigned long[ iTmp1 ];
+            dummyListEdge1 = new unsigned long[ iTmp1 ];
             
-            dummyList     = new unsigned long[iTmp];
-            dummyListEdge = new unsigned long[iTmp];
-
-            for (iNode = 0; iNode < iTmp; iNode++){
-              dummyList[iNode]     = dummyPoint->GetPoint(iNode);
-              dummyListEdge[iNode] = dummyPoint->GetEdge(iNode);           
-            }
-
-            dummyPoint->ResetPoint();
-            
-            for (iNode = 0; iNode < iTmp; iNode++){
-              
-              if(dummyList[iNode] != map[ link2 ] )
-                dummyPoint->SetPoint( dummyList[iNode] );
-              else
-                dummyPoint->SetPoint( map[ link3 ] );
-              
-              if( dummyListEdge[iNode] == Edge2 )
-                dummyPoint->SetEdge(Edge1, iNode);
-              else
-                dummyPoint->SetEdge(dummyListEdge[iNode], iNode);
+            for (iNode = 0; iNode < iTmp1; iNode++){
+              dummyList1[iNode]     = target_geometry->node[ StartNode ]->GetPoint(iNode);
+              dummyListEdge1[iNode] = target_geometry->node[ StartNode ]->GetEdge(iNode);           
             }
             
-            delete dummyList;
-            delete dummyListEdge;
-
-
-            // link1
             
-
-            dummyPoint = target_geometry->node[ map[ link1 ] ];
+            iTmp2 = target_geometry->node[  map[ link1 ] ]->GetnElem();
             
-            iTmp = dummyPoint->GetnPoint();
+            dummyList2     = new unsigned long[ iTmp2 ];
+            dummyListEdge2 = new unsigned long[ iTmp2 ];
             
-            dummyList     = new unsigned long[iTmp];
-            dummyListEdge = new unsigned long[iTmp];
+            for (iNode = 0; iNode < iTmp2; iNode++){
+              dummyList2[iNode]     = target_geometry->node[ map[ link1 ] ]->GetPoint(iNode);
+              dummyListEdge2[iNode] = target_geometry->node[ map[ link1 ] ]->GetEdge(iNode);           
+            }            
             
-            for (iNode = 0; iNode < iTmp; iNode++){
-              dummyList[iNode]     = dummyPoint->GetPoint(iNode);
-              dummyListEdge[iNode] = dummyPoint->GetEdge(iNode);
+            target_geometry->node[ StartNode ]->ResetPoint();
+            target_geometry->node[ map[ link1 ] ]->ResetPoint();
+            
+            for (iNode = 0; iNode < iTmp2; iNode++){
+              target_geometry->node[ StartNode ]->SetPoint( dummyList2[iNode] );
+              target_geometry->node[ StartNode ]->SetEdge(dummyListEdge2[iNode], iNode);           
             }
-            
-            dummyPoint->ResetPoint();
-              
-            for (iNode = 0; iNode < iTmp; iNode++){
-              
-              if(dummyList[iNode] != map[ link3 ] )
-                dummyPoint->SetPoint( dummyList[iNode] );
-              else
-                dummyPoint->SetPoint( map[ link2 ] );
-              
-                
-              if( dummyListEdge[iNode] == Edge1 )
-                dummyPoint->SetEdge(Edge2, iNode);
-              else
-                dummyPoint->SetEdge(dummyListEdge[iNode], iNode);
-            }
-            
-            delete dummyList;
-            delete dummyListEdge;
-                        
-            
+
+            for (iNode = 0; iNode < iTmp1; iNode++){
+              target_geometry->node[ map[ link1 ] ]->SetPoint( dummyList1[iNode] );
+              target_geometry->node[ map[ link1 ] ]->SetEdge(dummyListEdge1[iNode], iNode);           
+            }            
+
+            delete [] dummyList1;
+            delete [] dummyList2;
+
+            delete [] dummyListEdge1;
+            delete [] dummyListEdge2;
+
+
             // link2
             
             
@@ -3441,28 +3398,28 @@ unsigned long GlobalDonorPoint;
             
             iTmp = dummyPoint->GetnPoint();
             
-            dummyList     = new unsigned long[iTmp];
-            dummyListEdge = new unsigned long[iTmp];
+            dummyList1     = new unsigned long[iTmp];
+            dummyListEdge1 = new unsigned long[iTmp];
             
             for (iNode = 0; iNode < iTmp; iNode++){
-              dummyList[iNode]     = dummyPoint->GetPoint(iNode);
-              dummyListEdge[iNode] = dummyPoint->GetEdge(iNode);
+              dummyList1[iNode]     = dummyPoint->GetPoint(iNode);
+              dummyListEdge1[iNode] = dummyPoint->GetEdge(iNode);
             }
 
             dummyPoint->ResetPoint();
               
             for (iNode = 0; iNode < iTmp; iNode++){
               
-              if(dummyList[iNode] != StartNode )
-                dummyPoint->SetPoint( dummyList[iNode] );
+              if(dummyList1[iNode] != StartNode )
+                dummyPoint->SetPoint( dummyList1[iNode] );
               else
                 dummyPoint->SetPoint( map[ link1 ] );
                 
-              dummyPoint->SetEdge(dummyListEdge[iNode], iNode);
+              dummyPoint->SetEdge(dummyListEdge1[iNode], iNode);
             }
             
-            delete dummyList;
-            delete dummyListEdge;
+            delete dummyList1;
+            delete dummyListEdge1;
             
             
             // link3
@@ -3472,28 +3429,28 @@ unsigned long GlobalDonorPoint;
             
             iTmp = dummyPoint->GetnPoint();
             
-            dummyList     = new unsigned long[iTmp];
-            dummyListEdge = new unsigned long[iTmp];
+            dummyList1     = new unsigned long[iTmp];
+            dummyListEdge1 = new unsigned long[iTmp];
             
             for (iNode = 0; iNode < iTmp; iNode++){
-              dummyList[iNode]     = dummyPoint->GetPoint(iNode);
-              dummyListEdge[iNode] = dummyPoint->GetEdge(iNode);
+              dummyList1[iNode]     = dummyPoint->GetPoint(iNode);
+              dummyListEdge1[iNode] = dummyPoint->GetEdge(iNode);
             }
 
             dummyPoint->ResetPoint();
                         
             for (iNode = 0; iNode < iTmp; iNode++){
               
-              if(dummyList[iNode] != map[ link1 ] )
-                dummyPoint->SetPoint( dummyList[iNode] );
+              if(dummyList1[iNode] != map[ link1 ] )
+                dummyPoint->SetPoint( dummyList1[iNode] );
               else
                 dummyPoint->SetPoint( StartNode );
                 
-              dummyPoint->SetEdge(dummyListEdge[iNode], iNode);
+              dummyPoint->SetEdge(dummyListEdge1[iNode], iNode);
             }
             
-            delete dummyList;
-            delete dummyListEdge;            
+            delete dummyList1;
+            delete dummyListEdge1;            
           }
           else{
           
@@ -3515,20 +3472,13 @@ unsigned long GlobalDonorPoint;
             for ( jElem = 0; jElem < target_geometry->node[ StartNode ]->GetnElem(); jElem++){
               modElem = target_geometry->node[ StartNode ]->GetElem(jElem);
               dummyList1[ jElem ] = modElem;
-              
+
               for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                if( target_geometry->elem[modElem]->GetNode(iNode) == map[ link2 ] ){ // this is the element not to modify
+                if( target_geometry->elem[modElem]->GetNode(iNode) == StartNode ){ 
+                  target_geometry->elem[modElem]->SetNode(iNode, map[ link2 ]);
                   break;
                 }
-              }
-              if( iNode == target_geometry->elem[modElem]->GetnNodes() ){
-                for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                  if( target_geometry->elem[modElem]->GetNode(iNode) == StartNode ){ // this is the element not to modify
-                    target_geometry->elem[modElem]->SetNode(iNode, map[ link2 ]);
-                    break;
-                  }
-                }                
-              }
+              }                
             }
             
             dummyList2 = new unsigned long[ target_geometry->node[ map[ link2 ] ]->GetnElem() ];
@@ -3536,30 +3486,25 @@ unsigned long GlobalDonorPoint;
             for ( jElem = 0; jElem < target_geometry->node[ map[ link2 ] ]->GetnElem(); jElem++){
               modElem = target_geometry->node[ map[ link2 ] ]->GetElem(jElem);
               dummyList2[ jElem ] = modElem;
-              
+
               for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                if( target_geometry->elem[modElem]->GetNode(iNode) == StartNode ){ // this is the element not to modify
+                if( target_geometry->elem[modElem]->GetNode(iNode) == map[ link2 ] ){ 
+                  target_geometry->elem[modElem]->SetNode(iNode, StartNode);
                   break;
                 }
-              }
-              if( iNode == target_geometry->elem[modElem]->GetnNodes() ){
-                for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                  if( target_geometry->elem[modElem]->GetNode(iNode) == map[ link2 ] ){ // this is the element not to modify
-                    target_geometry->elem[modElem]->SetNode(iNode, StartNode);
-                    break;
-                  }
-                }                
-              }
+              }                
             }
             
-            iTmp = target_geometry->node[  map[ link2 ] ]->GetnElem();
+            iTmp1 = target_geometry->node[ StartNode ]->GetnElem();
+            iTmp2 = target_geometry->node[  map[ link2 ] ]->GetnElem();
+            
             target_geometry->node[ StartNode ]->ResetElem();
-            for ( jElem = 0; jElem < iTmp; jElem++)
+            for ( jElem = 0; jElem < iTmp2; jElem++)
               target_geometry->node[ StartNode ]->SetElem(dummyList2[jElem]);
             
-            iTmp = target_geometry->node[ StartNode ]->GetnElem();
+            
             target_geometry->node[ map[ link2 ] ]->ResetElem();
-            for ( jElem = 0; jElem < iTmp; jElem++)
+            for ( jElem = 0; jElem < iTmp1; jElem++)
               target_geometry->node[ map[ link2 ] ]->SetElem(dummyList1[jElem]);            
             
 
@@ -3579,43 +3524,20 @@ unsigned long GlobalDonorPoint;
               else if (target_geometry->bound[markTarget][iNode]->GetNode(1) == map[ link2 ])
                   target_geometry->bound[markTarget][iNode]->SetNode(1, StartNode);
             }
-            
-            // Trovo l'elemento che contiene link2 e link 3
-            for ( jElem = 0; jElem < target_geometry->node[ map[link3] ]->GetnElem(); jElem++){
-              modElem = target_geometry->node[ map[link3] ]->GetElem(jElem);
-              
-              for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                if( target_geometry->elem[modElem]->GetNode(iNode) == map[ link2 ] ){ // this is the element to modify
-                    target_geometry->elem[modElem]->SetNode(iNode, StartNode);
-                    jElem = target_geometry->node[ map[link3] ]->GetnElem();
-                    
-                    break;
-                }
-                                    
-              }
-            }
                    
-            // Trovo l'elemento che contiene link1 e StartNode
-            for ( jElem = 0; jElem < target_geometry->node[ map[link1] ]->GetnElem(); jElem++){
-              modElem = target_geometry->node[ map[link1] ]->GetElem(jElem);
-              
-              for ( iNode = 0; iNode < target_geometry->elem[modElem]->GetnNodes(); iNode++) { 
-                if( target_geometry->elem[modElem]->GetNode(iNode) == map[ iVertex ] ){ // this is the element to modify
-                    target_geometry->elem[modElem]->SetNode(iNode, map[ link2 ]);
-                    jElem = target_geometry->node[ map[link1] ]->GetnElem();
-                    
-                    break;
-                }
-                                    
-              }
+            
+            for(iEdge = 0; iEdge < target_geometry->GetnEdge(); iEdge++){
+              if(target_geometry->edge[iEdge]->GetNode(0) == StartNode)
+                target_geometry->edge[iEdge]->SetNodes( map[ link2 ], 0 );
+              else if(target_geometry->edge[iEdge]->GetNode(0) == map[ link2 ])
+                target_geometry->edge[iEdge]->SetNodes( StartNode, 0 );
+                
+              if(target_geometry->edge[iEdge]->GetNode(1) == StartNode)
+                target_geometry->edge[iEdge]->SetNodes( map[ link2 ], 1 );
+              else if(target_geometry->edge[iEdge]->GetNode(1) == map[ link2 ])
+                target_geometry->edge[iEdge]->SetNodes( StartNode, 1 );                
             }
             
-            
-            Edge1 = target_geometry->FindEdge(map[ link2 ], map[ link3 ]);
-            Edge2 = target_geometry->FindEdge(StartNode,    map[ link1 ]);
-
-            target_geometry->edge[Edge1]->SetNodes( StartNode,    map[ link3 ] );
-            target_geometry->edge[Edge2]->SetNodes( map[ link2 ], map[ link1 ] );            
             
             // Update connectivity in the reconstructed boundary
 
@@ -3642,38 +3564,47 @@ unsigned long GlobalDonorPoint;
             
             // Start Node
             
+            iTmp1 = target_geometry->node[ StartNode ]->GetnElem();
             
-            dummyPoint = target_geometry->node[StartNode];
+            dummyList1     = new unsigned long[ iTmp1 ];
+            dummyListEdge1 = new unsigned long[ iTmp1 ];
             
-            iTmp = dummyPoint->GetnPoint();
+            for (iNode = 0; iNode < iTmp1; iNode++){
+              dummyList1[iNode]     = target_geometry->node[ StartNode ]->GetPoint(iNode);
+              dummyListEdge1[iNode] = target_geometry->node[ StartNode ]->GetEdge(iNode);           
+            }
             
-            dummyList     = new unsigned long[iTmp];
-            dummyListEdge = new unsigned long[iTmp];
             
-            for (iNode = 0; iNode < iTmp; iNode++){
-              dummyList[iNode]     = dummyPoint->GetPoint(iNode);
-              dummyListEdge[iNode] = dummyPoint->GetEdge(iNode);
+            iTmp2 = target_geometry->node[  map[ link2 ] ]->GetnElem();
+            
+            dummyList2     = new unsigned long[ iTmp2 ];
+            dummyListEdge2 = new unsigned long[ iTmp2 ];
+            
+            for (iNode = 0; iNode < iTmp2; iNode++){
+              dummyList2[iNode]     = target_geometry->node[ map[ link2 ] ]->GetPoint(iNode);
+              dummyListEdge2[iNode] = target_geometry->node[ map[ link2 ] ]->GetEdge(iNode);           
+            }            
+            
+            target_geometry->node[ StartNode ]->ResetPoint();
+            target_geometry->node[ map[ link2 ] ]->ResetPoint();
+            
+            for (iNode = 0; iNode < iTmp2; iNode++){
+              target_geometry->node[ StartNode ]->SetPoint( dummyList2[iNode] );
+              target_geometry->node[ StartNode ]->SetEdge(dummyListEdge2[iNode], iNode);           
             }
 
-            dummyPoint->ResetPoint();
-              
-            for (iNode = 0; iNode < iTmp; iNode++){
-              
-              if(dummyList[iNode] != map[ link1 ] )
-                dummyPoint->SetPoint( dummyList[iNode] );
-              else
-                dummyPoint->SetPoint( map[ link3 ] );
-              
-                
-              if( dummyListEdge[iNode] == Edge2 )
-                dummyPoint->SetEdge(Edge1, iNode);
-              else
-                dummyPoint->SetEdge(dummyListEdge[iNode], iNode);
-            }
+            for (iNode = 0; iNode < iTmp1; iNode++){
+              target_geometry->node[ map[ link2 ] ]->SetPoint( dummyList1[iNode] );
+              target_geometry->node[ map[ link2 ] ]->SetEdge(dummyListEdge1[iNode], iNode);           
+            }            
+
+            delete [] dummyList1;
+            delete [] dummyList2;
+
+            delete [] dummyListEdge1;
+            delete [] dummyListEdge2;
             
-            delete dummyList;
-            delete dummyListEdge;
-            
+                          
             
             // link1
             
@@ -3682,65 +3613,30 @@ unsigned long GlobalDonorPoint;
             
             iTmp = dummyPoint->GetnPoint();
             
-            dummyList     = new unsigned long[iTmp];
-            dummyListEdge = new unsigned long[iTmp];
+            dummyList1     = new unsigned long[iTmp];
+            dummyListEdge1 = new unsigned long[iTmp];
             
             for (iNode = 0; iNode < iTmp; iNode++){
-              dummyList[iNode]     = dummyPoint->GetPoint(iNode);
-              dummyListEdge[iNode] = dummyPoint->GetEdge(iNode);
+              dummyList1[iNode]     = dummyPoint->GetPoint(iNode);
+              dummyListEdge1[iNode] = dummyPoint->GetEdge(iNode);
             }
 
             dummyPoint->ResetPoint();
               
             for (iNode = 0; iNode < iTmp; iNode++){
               
-              if(dummyList[iNode] != StartNode )
-                dummyPoint->SetPoint( dummyList[iNode] );
+              if(dummyList1[iNode] != StartNode )
+                dummyPoint->SetPoint( dummyList1[iNode] );
               else
                 dummyPoint->SetPoint( map[ link2 ] );
                 
-              dummyPoint->SetEdge(dummyListEdge[iNode], iNode);
+              dummyPoint->SetEdge(dummyListEdge1[iNode], iNode);
             }
             
-            delete dummyList;
-            delete dummyListEdge;
+            delete dummyList1;
+            delete dummyListEdge1;
                         
-            
-            // link2
-            
-            
-            dummyPoint = target_geometry->node[ map[ link2 ] ];
-            
-            iTmp = dummyPoint->GetnPoint();
-                        
-            dummyList     = new unsigned long[iTmp];
-            dummyListEdge = new unsigned long[iTmp];
-            
-            for (iNode = 0; iNode < iTmp; iNode++){
-              dummyList[iNode]     = dummyPoint->GetPoint(iNode);
-              dummyListEdge[iNode] = dummyPoint->GetEdge(iNode);
-            }
-
-            dummyPoint->ResetPoint();
-              
-            for (iNode = 0; iNode < iTmp; iNode++){
-              
-              if(dummyList[iNode] != map[ link3 ] )
-                dummyPoint->SetPoint( dummyList[iNode] );
-              else
-                dummyPoint->SetPoint( map[ link1 ] );
-              
-                
-              if( dummyListEdge[iNode] == Edge1 )
-                dummyPoint->SetEdge(Edge2, iNode);
-              else
-                dummyPoint->SetEdge(dummyListEdge[iNode], iNode);
-            }
-            
-            delete dummyList;
-            delete dummyListEdge;
-
-            
+      
             // link3
             
 
@@ -3748,28 +3644,28 @@ unsigned long GlobalDonorPoint;
             
             iTmp = dummyPoint->GetnPoint();
             
-            dummyList     = new unsigned long[iTmp];
-            dummyListEdge = new unsigned long[iTmp];
+            dummyList1     = new unsigned long[iTmp];
+            dummyListEdge1 = new unsigned long[iTmp];
             
             for (iNode = 0; iNode < iTmp; iNode++){
-              dummyList[iNode]     = dummyPoint->GetPoint(iNode);
-              dummyListEdge[iNode] = dummyPoint->GetEdge(iNode);
+              dummyList1[iNode]     = dummyPoint->GetPoint(iNode);
+              dummyListEdge1[iNode] = dummyPoint->GetEdge(iNode);
             }
 
             dummyPoint->ResetPoint();
                          
             for (iNode = 0; iNode < iTmp; iNode++){
               
-              if(dummyList[iNode] != map[ link2 ] )
-                dummyPoint->SetPoint( dummyList[iNode] );
+              if(dummyList1[iNode] != map[ link2 ] )
+                dummyPoint->SetPoint( dummyList1[iNode] );
               else
                 dummyPoint->SetPoint( StartNode );
                 
-              dummyPoint->SetEdge(dummyListEdge[iNode], iNode);
+              dummyPoint->SetEdge(dummyListEdge1[iNode], iNode);
             }
             
-            delete dummyList;
-            delete dummyListEdge;
+            delete dummyList1;
+            delete dummyListEdge1;
                                                       
           }                
                                   
