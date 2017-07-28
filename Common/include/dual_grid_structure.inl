@@ -273,6 +273,8 @@ inline su2double *CEdge::GetCoord(void) { return NULL; }
 
 inline void CEdge::SetCoord(su2double *val_coord) { }
 
+inline void CEdge::SetNodes(unsigned long val_iPoint, unsigned long val_jPoint) { Nodes[0] = val_iPoint;   Nodes[1] = val_jPoint; }
+
 inline unsigned short CVertex::GetnNodes() { return 1; }
 
 inline unsigned long CVertex::GetNode() { return Nodes[0]; }

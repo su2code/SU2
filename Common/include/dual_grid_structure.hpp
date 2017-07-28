@@ -812,6 +812,14 @@ public:
 	su2double GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point);
 	
 	/*! 
+	 * \brief Set the the points that are linked by the edge.
+	 * \param[in] val_iPoint - Index of node 1.
+	 * \param[in] val_jPoint - Index of node 2.
+	 * \return Set the the points that are linked by the edge.
+	 */
+	void SetNodes(unsigned long val_iPoint, unsigned long val_jPoint);
+
+	/*! 
 	 * \brief Set the face that correspond to an edge.
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
 	 * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
