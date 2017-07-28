@@ -568,12 +568,15 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   unsigned short iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine, counter;
-  su2double Area_Children, Area_Parent, *Solution_Fine;
+  su2double Area_Children, Area_Parent, *Solution_Fine, S, H;
   ifstream restart_file;
   string restart_filename, filename, text_line;
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool two_phase = (config->GetKind_Solver() == TWO_PHASE_EULER) ||
+       (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+       (config->GetKind_Solver() == TWO_PHASE_RANS);
 
   /*--- Restart the solution from file information ---*/
 
@@ -600,6 +603,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   /*--- Skip coordinates ---*/
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
+  unsigned short skipVarsTurb = 0;
 
   /*--- Skip flow adjoint variables ---*/
   if (KindDirect_Solver== RUNTIME_TURB_SYS) {
@@ -615,44 +619,108 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   if (KindDirect_Solver== RUNTIME_2PHASE_SYS) {
     if (compressible) {
       if (nDim == 2) skipVars += 6;
-      if (nDim == 3) skipVars += 8;
+      if (nDim == 3) skipVars += 7;
     }
     if (incompressible) {
       if (nDim == 2) skipVars += 5;
-      if (nDim == 3) skipVars += 7;
+      if (nDim == 3) skipVars += 6;
     }
 
     if (config->GetKind_Turb_Model() != NONE) {
       if (config->GetKind_Turb_Model() == SST)
-        skipVars += 2;
+        skipVarsTurb = 2;
       else
-        skipVars += 1;
+        skipVarsTurb = 1;
     }
   }
   /*--- Load data from the restart into correct containers. ---*/
 
-  counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+  if (KindDirect_Solver== RUNTIME_TURB_SYS) {
+    counter = 0;
+    for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
-    /*--- Retrieve local index. If this node from the restart file lives
-     on the current processor, we will load and instantiate the vars. ---*/
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
 
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+      iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
-    if (iPoint_Local > -1) {
+      if (iPoint_Local > -1) {
 
-      /*--- We need to store this point's data, so jump to the correct
-       offset in the buffer of data from the restart file and load it. ---*/
+        /*--- We need to store this point's data, so jump to the correct
+         offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      node[iPoint_Local]->SetSolution(Solution);
-      iPoint_Global_Local++;
+        index = counter*Restart_Vars[1] + skipVars;
+        for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+        node[iPoint_Local]->SetSolution(Solution);
+        iPoint_Global_Local++;
 
-      /*--- Increment the overall counter for how many points have been loaded. ---*/
-      counter++;
+        /*--- Increment the overall counter for how many points have been loaded. ---*/
+        counter++;
+      }
     }
+  }
 
+  else if(KindDirect_Solver== RUNTIME_FLOW_SYS) {
+    counter = 0;
+    for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
+
+      iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+      if (iPoint_Local > -1) {
+
+        /*--- We need to store this point's data, so jump to the correct
+         offset in the buffer of data from the restart file and load it. ---*/
+
+        index = counter*Restart_Vars[1] + skipVars;
+        for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+        node[iPoint_Local]->SetSolution(Solution);
+
+        index += skipVarsTurb;
+
+        /*--- load source data for two-phase simulation ---*/
+        if (two_phase) {
+          S = Restart_Data[index+nVar];
+          H = Restart_Data[index+nVar+1];
+          solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetSource(S);
+          solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetLiqEnthalpy(H);
+        }
+
+        iPoint_Global_Local++;
+
+        /*--- Increment the overall counter for how many points have been loaded. ---*/
+        counter++;
+      }
+    }
+  }
+
+  else if(KindDirect_Solver== RUNTIME_2PHASE_SYS) {
+    counter = 0;
+    for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
+
+      iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+      if (iPoint_Local > -1) {
+
+        /*--- We need to store this point's data, so jump to the correct
+         offset in the buffer of data from the restart file and load it. ---*/
+
+        index = counter*Restart_Vars[1] + skipVars +skipVarsTurb;
+        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetCriticalRadius(Restart_Data[index]);
+        for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar+1];
+        node[iPoint_Local]->SetSolution(Solution);
+
+        iPoint_Global_Local++;
+
+        /*--- Increment the overall counter for how many points have been loaded. ---*/
+        counter++;
+      }
+    }
   }
 
   /*--- Detect a wrong solution file ---*/
