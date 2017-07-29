@@ -779,7 +779,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   /*--- Compute the distance to the nearest surface if needed
    as part of the stiffness calculation.. ---*/
 
-  if (config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE) {
+  if (config->GetDeform_Stiffness_Type() == BOUNDARY_DISTANCE) {
     ComputeSolid_Wall_Distance(geometry, config, MinDistance, MaxDistance);
     if (rank == MASTER_NODE) cout <<"Min. distance: "<< MinDistance <<", max. distance: "<< MaxDistance <<"." << endl;
   }
@@ -807,7 +807,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
     ElemVolume = geometry->elem[iElem]->GetVolume();
     
     if ((config->GetDeform_Stiffness_Type() == DEF_WALL_DISTANCE) ||
-    		(config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE)) {
+    		(config->GetDeform_Stiffness_Type() == BOUNDARY_DISTANCE)) {
       ElemDistance = 0.0;
       for (iNodes = 0; iNodes < nNodes; iNodes++)
         ElemDistance += geometry->node[PointCorners[iNodes]]->GetWall_Distance();
@@ -1630,7 +1630,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
     switch (config->GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
       case DEF_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
-      case SOLID_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
+      case BOUNDARY_DISTANCE: E = 1.0 / ElemDistance; break;
       case CONSTANT_STIFFNESS: E = 1.0 / EPS; break;
     }
     
@@ -1770,7 +1770,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     switch (config->GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
       case DEF_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
-      case SOLID_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
+      case BOUNDARY_DISTANCE: E = 1.0 / ElemDistance; break;
       case CONSTANT_STIFFNESS: E = 1.0 / EPS; break;
     }
     
