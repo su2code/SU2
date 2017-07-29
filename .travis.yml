@@ -12,7 +12,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - economon@stanford.edu
+            - Thomas.Economon@us.bosch.com
             - e.t.a.vanderweide@utwente.nl
             - jhchoi89@stanford.edu
             - gomer@stanford.edu
