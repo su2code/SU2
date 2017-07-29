@@ -2925,13 +2925,15 @@ class CAvgGrad_Template : public CNumerics {
 
  protected:
   bool implicit, incompressible;
+  bool correct_gradient;
   unsigned short iVar, iDim;
-  su2double **Mean_GradTurbVar;            /*!< \brief Average of gradients at cell face */
-  su2double *Edge_Vector,                  /*!< \brief Vector from node i to node j. */
-            *Proj_Mean_GradTurbVar_Normal, /*!< \brief Mean_gradTurbVar DOT normal */
-            *Proj_Mean_GradTurbVar_Edge;   /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
-  su2double  dist_ij_2,                    /*!< \brief |Edge_Vector|^2 */
-             proj_vector_ij;               /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  su2double **Mean_GradTurbVar;               /*!< \brief Average of gradients at cell face */
+  su2double *Edge_Vector,                     /*!< \brief Vector from node i to node j. */
+            *Proj_Mean_GradTurbVar_Normal,    /*!< \brief Mean_gradTurbVar DOT normal */
+            *Proj_Mean_GradTurbVar_Edge,      /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
+            *Proj_Mean_GradTurbVar;           /*!< \brief Mean_gradTurbVar DOT normal, corrected if required*/
+  su2double  dist_ij_2,                       /*!< \brief |Edge_Vector|^2 */
+             proj_vector_ij;                  /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
 
  public:
   /*!
@@ -2941,7 +2943,7 @@ class CAvgGrad_Template : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_Template(unsigned short val_nDim, unsigned short val_nVar,
-                    CConfig *config);
+                    bool correct_gradient, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -2996,7 +2998,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
-                  CConfig *config);
+                  bool correct_grad, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -3043,7 +3045,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
-                      CConfig *config);
+                      bool correct_grad, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -3086,7 +3088,8 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_TurbML(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CAvgGrad_TurbML(unsigned short val_nDim, unsigned short val_nVar,
+                  bool correct_grad, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -3357,133 +3360,6 @@ public:
 };
 
 /*!
- * \class CAvgGradCorrected_TurbSA
- * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
- * \ingroup ViscDiscr
- * \author A. Bueno.
- * \version 5.0.0 "Raven"
- */
-class CAvgGradCorrected_TurbSA : public CNumerics {
-private:
-  su2double **Mean_GradTurbVar;
-  su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
-  su2double *Edge_Vector;
-  bool implicit, incompressible;
-  su2double sigma, nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij;
-  unsigned short iVar, iDim;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradCorrected_TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradCorrected_TurbSA(void);
-  
-  /*!
-   * \brief Compute the viscous turbulent residual using an average of gradients with correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CAvgGradCorrected_TurbSA_Neg
- * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
- * \ingroup ViscDiscr
- * \author F. Palacios
- * \version 5.0.0 "Raven"
- */
-class CAvgGradCorrected_TurbSA_Neg : public CNumerics {
-private:
-  
-  su2double **Mean_GradTurbVar;
-  su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
-  su2double *Edge_Vector;
-  su2double sigma;
-  su2double cn1, fn, Xi;
-  su2double nu_ij, nu_tilde_ij;
-  bool implicit, incompressible;
-  su2double nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij;
-  unsigned short iVar, iDim;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradCorrected_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradCorrected_TurbSA_Neg(void);
-  
-  /*!
-   * \brief Compute the viscous turbulent residual using an average of gradients with correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CAvgGradCorrected_TurbML
- * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
- * \ingroup ViscDiscr
- * \author A. Bueno.
- * \version 5.0.0 "Raven"
- */
-class CAvgGradCorrected_TurbML : public CNumerics {
-private:
-  su2double **Mean_GradTurbVar;
-  su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
-  su2double *Edge_Vector;
-  bool implicit, incompressible;
-  su2double sigma, nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij;
-  unsigned short iVar, iDim;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradCorrected_TurbML(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradCorrected_TurbML(void);
-  
-  /*!
-   * \brief Compute the viscous turbulent residual using an average of gradients with correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
-};
-
-/*!
  * \class CAvgGradCorrected_TransLM
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
@@ -3566,7 +3442,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
-                   su2double* constants, CConfig *config);
+                   su2double* constants, bool correct_grad, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -3579,68 +3455,6 @@ public:
   void SetF1blending(su2double val_F1_i, su2double val_F1_j) {
     F1_i = val_F1_i; F1_j = val_F1_j;
   }
-  
-};
-
-/*!
- * \class CAvgGradCorrected_TurbSST
- * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
- * \ingroup ViscDiscr
- * \author A. Bueno.
- * \version 5.0.0 "Raven"
- */
-class CAvgGradCorrected_TurbSST : public CNumerics {
-private:
-  su2double sigma_k1,                     /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
-  sigma_k2,
-  sigma_om1,
-  sigma_om2;
-  
-  su2double diff_kine,                     /*!< \brief Diffusivity for viscous terms of tke eq */
-  diff_omega;                           /*!< \brief Diffusivity for viscous terms of omega eq */
-  
-  su2double *Edge_Vector,                  /*!< \brief Vector from node i to node j. */
-  dist_ij_2,                            /*!< \brief |Edge_Vector|^2 */
-  proj_vector_ij;                       /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-  
-  su2double **Mean_GradTurbVar,            /*!< \brief Average of gradients at cell face */
-  *Proj_Mean_GradTurbVar_Normal,        /*!< \brief Mean_gradTurbVar DOT normal */
-  *Proj_Mean_GradTurbVar_Edge,          /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
-  *Proj_Mean_GradTurbVar_Corrected;
-  
-  su2double F1_i, F1_j;                    /*!< \brief Menter's first blending function */
-  
-  bool implicit, incompressible;
-  unsigned short iVar, iDim;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradCorrected_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double* constants, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradCorrected_TurbSST(void);
-  
-  /*!
-   * \brief Sets value of first blending function.
-   */
-  void SetF1blending(su2double val_F1_i, su2double val_F1_j) { F1_i = val_F1_i; F1_j = val_F1_j;}
-  
-  /*!
-   * \brief Compute the viscous turbulent residual using an average of gradients wtih correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
   
 };
 
