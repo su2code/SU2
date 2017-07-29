@@ -2263,7 +2263,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
-		fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
+		fseek(fhw,-(sizeof(int) + 8*sizeof(passivedouble)), SEEK_END);
 
 		/*--- Read the external iteration. ---*/
 

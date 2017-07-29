@@ -941,15 +941,15 @@ void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, unsigne
 }
 
 void COutput::SetSTL_MeshASCII(CConfig *config, CGeometry *geometry) {
-
-	unsigned short iDim, nDim = geometry->GetnDim();
-	unsigned long iElem, iNode;
-	char cstr[200];
-	ofstream STL_File;
-	su2double p[3] = {0.0,0.0,0.0}, u[3] = {0.0,0.0,0.0}, v[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, a;
-	unsigned long Point_0, Point_1, Point_2;
-
-	/*---	STL format:
+  
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned long iElem, iNode;
+  char cstr[200];
+  ofstream STL_File;
+  su2double p[3] = {0.0,0.0,0.0}, u[3] = {0.0,0.0,0.0}, v[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, a;
+  unsigned long Point_0, Point_1, Point_2;
+  
+  /*---	STL format:
    solid NAME
    ...
    facet normal 0.00 0.00 1.00
@@ -962,85 +962,85 @@ void COutput::SetSTL_MeshASCII(CConfig *config, CGeometry *geometry) {
    ...
    end solid
    ---*/
-
-	if (nDim == 3) {
-
-		strcpy(cstr, "surface_grid.stl");
-
-		/*--- Open STL ASCII file and write the header. ---*/
-
-		STL_File.open(cstr, ios::out);
-		STL_File.precision(6);
-		STL_File << "solid surface_mesh" << endl;
-
-		for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
-
-			iNode = iElem*N_POINTS_TRIANGLE;
-
-			/*--- Compute Normal vectors ---*/
-
-			Point_0 = Conn_BoundTria[iNode+0]-1;
-			Point_1 = Conn_BoundTria[iNode+1]-1;
-			Point_2 = Conn_BoundTria[iNode+2]-1;
-
-			for (iDim = 0; iDim < nDim; iDim++) {
-				p[0] = Coords[iDim][Point_0];
-				p[1] = Coords[iDim][Point_1];
-				p[2] = Coords[iDim][Point_2];
-				u[iDim] = p[1]-p[0];
-				v[iDim] = p[2]-p[0];
-			}
-
-			n[0] = u[1]*v[2]-u[2]*v[1];
-			n[1] = u[2]*v[0]-u[0]*v[2];
-			n[2] = u[0]*v[1]-u[1]*v[0];
-			a = sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
-
-			/*--- Print normal vector ---*/
-
-			STL_File << "  facet normal ";
-			for (iDim = 0; iDim < nDim; iDim++) {
-				STL_File << n[iDim]/a << " ";
-			}
-			STL_File << endl;
-
-			/*--- Print nodes for facet ---*/
-			STL_File << "    outer loop" << endl;
-
-			STL_File << "      vertex ";
-			for (iDim = 0; iDim < nDim; iDim++) STL_File << Coords[iDim][Point_0] << " ";
-			STL_File <<  endl;
-
-			STL_File << "      vertex ";
-			for (iDim = 0; iDim < nDim; iDim++) STL_File << Coords[iDim][Point_1] << " ";
-			STL_File <<  endl;
-
-			STL_File << "      vertex ";
-			for (iDim = 0; iDim < nDim; iDim++) STL_File << Coords[iDim][Point_2] << " ";
-			STL_File <<  endl;
-
-			STL_File << "    endloop" << endl;
-			STL_File << "  endfacet" << endl;
-
-		}
-
-		//  for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
-		//      iNode = iElem*N_POINTS_QUADRILATERAL;
-		//      STL_File << LocalIndex[Conn_BoundQuad[iNode+0]] << "\t";
-		//      STL_File << LocalIndex[Conn_BoundQuad[iNode+1]] << "\t";
-		//      STL_File << LocalIndex[Conn_BoundQuad[iNode+2]] << "\t";
-		//      STL_File << LocalIndex[Conn_BoundQuad[iNode+3]] << "\n";
-		//    }
-
-		/*--- Done with Surface Mesh ---*/
-
-		STL_File << "endsolid" << endl;
-
-		STL_File.close();
-
-
-	}
-
+  
+  if (nDim == 3) {
+    
+    strcpy(cstr, "surface_grid.stl");
+    
+    /*--- Open STL ASCII file and write the header. ---*/
+    
+    STL_File.open(cstr, ios::out);
+    STL_File.precision(6);
+    STL_File << "solid surface_mesh" << endl;
+    
+    for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+      
+      iNode = iElem*N_POINTS_TRIANGLE;
+      
+      /*--- Compute Normal vectors ---*/
+      
+      Point_0 = Conn_BoundTria[iNode+0]-1;
+      Point_1 = Conn_BoundTria[iNode+1]-1;
+      Point_2 = Conn_BoundTria[iNode+2]-1;
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        p[0] = Coords[iDim][Point_0];
+        p[1] = Coords[iDim][Point_1];
+        p[2] = Coords[iDim][Point_2];
+        u[iDim] = p[1]-p[0];
+        v[iDim] = p[2]-p[0];
+      }
+      
+      n[0] = u[1]*v[2]-u[2]*v[1];
+      n[1] = u[2]*v[0]-u[0]*v[2];
+      n[2] = u[0]*v[1]-u[1]*v[0];
+      a = sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
+      
+      /*--- Print normal vector ---*/
+      
+      STL_File << "  facet normal ";
+      for (iDim = 0; iDim < nDim; iDim++) {
+        STL_File << n[iDim]/a << " ";
+      }
+      STL_File << endl;
+      
+      /*--- Print nodes for facet ---*/
+      STL_File << "    outer loop" << endl;
+      
+      STL_File << "      vertex ";
+      for (iDim = 0; iDim < nDim; iDim++) STL_File << Coords[iDim][Point_0] << " ";
+      STL_File <<  endl;
+      
+      STL_File << "      vertex ";
+      for (iDim = 0; iDim < nDim; iDim++) STL_File << Coords[iDim][Point_1] << " ";
+      STL_File <<  endl;
+      
+      STL_File << "      vertex ";
+      for (iDim = 0; iDim < nDim; iDim++) STL_File << Coords[iDim][Point_2] << " ";
+      STL_File <<  endl;
+      
+      STL_File << "    endloop" << endl;
+      STL_File << "  endfacet" << endl;
+      
+    }
+    
+    //  for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+    //      iNode = iElem*N_POINTS_QUADRILATERAL;
+    //      STL_File << LocalIndex[Conn_BoundQuad[iNode+0]] << "\t";
+    //      STL_File << LocalIndex[Conn_BoundQuad[iNode+1]] << "\t";
+    //      STL_File << LocalIndex[Conn_BoundQuad[iNode+2]] << "\t";
+    //      STL_File << LocalIndex[Conn_BoundQuad[iNode+3]] << "\n";
+    //    }
+    
+    /*--- Done with Surface Mesh ---*/
+    
+    STL_File << "endsolid" << endl;
+    
+    STL_File.close();
+    
+    
+  }
+  
 }
 
 void COutput::SetCSV_MeshASCII(CConfig *config, CGeometry *geometry) {

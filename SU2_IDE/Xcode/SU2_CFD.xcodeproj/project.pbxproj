@@ -116,6 +116,10 @@
 		05AF9F1D1BE1E1830062E1F1 /* element_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = element_linear.cpp; path = ../../Common/src/element_linear.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05AF9F1E1BE1E1830062E1F1 /* element_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = element_structure.cpp; path = ../../Common/src/element_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05AF9F1F1BE1E1830062E1F1 /* gauss_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = gauss_structure.cpp; path = ../../Common/src/gauss_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		05C9891F1F2D1D95006F0FBC /* inv_NACA0012_discadj.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; path = inv_NACA0012_discadj.cfg; sourceTree = "<group>"; };
+		05C989201F2D1D95006F0FBC /* inv_NACA0012_FD.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; path = inv_NACA0012_FD.cfg; sourceTree = "<group>"; };
+		05C989221F2D1DB3006F0FBC /* inv_wedge_ROE_multiobj.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = inv_wedge_ROE_multiobj.cfg; path = wedge/inv_wedge_ROE_multiobj.cfg; sourceTree = "<group>"; };
+		05C989231F2D1DB3006F0FBC /* inv_wedge_ROE.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = inv_wedge_ROE.cfg; path = wedge/inv_wedge_ROE.cfg; sourceTree = "<group>"; };
 		05E6DA9F17EB603F00FA1F7E /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = config_structure.inl; path = ../../Common/include/config_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DAA017EB603F00FA1F7E /* dual_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = dual_grid_structure.inl; path = ../../Common/include/dual_grid_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DAA117EB603F00FA1F7E /* geometry_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = geometry_structure.inl; path = ../../Common/include/geometry_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -518,6 +522,15 @@
 			name = FEA;
 			sourceTree = "<group>";
 		};
+		05C989211F2D1DA2006F0FBC /* wedge */ = {
+			isa = PBXGroup;
+			children = (
+				05C989221F2D1DB3006F0FBC /* inv_wedge_ROE_multiobj.cfg */,
+				05C989231F2D1DB3006F0FBC /* inv_wedge_ROE.cfg */,
+			);
+			name = wedge;
+			sourceTree = "<group>";
+		};
 		05D28619178BCA1200DD76AE /* Numerics */ = {
 			isa = PBXGroup;
 			children = (
@@ -667,6 +680,7 @@
 		E91CAC681B8C110E00EE3FCC /* cont_adj_euler */ = {
 			isa = PBXGroup;
 			children = (
+				05C989211F2D1DA2006F0FBC /* wedge */,
 				E91CAC691B8C110E00EE3FCC /* naca0012 */,
 				E91CAC6B1B8C110E00EE3FCC /* oneram6 */,
 			);
@@ -676,6 +690,8 @@
 		E91CAC691B8C110E00EE3FCC /* naca0012 */ = {
 			isa = PBXGroup;
 			children = (
+				05C9891F1F2D1D95006F0FBC /* inv_NACA0012_discadj.cfg */,
+				05C989201F2D1D95006F0FBC /* inv_NACA0012_FD.cfg */,
 				E91CAC6A1B8C110E00EE3FCC /* inv_NACA0012.cfg */,
 			);
 			path = naca0012;

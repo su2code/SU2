@@ -581,462 +581,462 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
 }
 
 void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
-		su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
-		vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
-		vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
-		bool original_surface, CConfig *config) {
-
-	unsigned short iMarker, iNode, jNode, iDim, Index = 0;
-	bool intersect;
-	long MinDist_Point;
-	unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, PointIndex, jVertex;
-	su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord,
-			*VarCoord = NULL, Variable_Interp;
-	passivedouble MinDist_Value, Dist_Value, Segment[3] = {0.0, 0.0, 0.0}, Tolerance = 1E-10;
-	vector<su2double> Xcoord_Index0, Ycoord_Index0, Zcoord_Index0, Variable_Index0, Xcoord_Index1, Ycoord_Index1, Zcoord_Index1, Variable_Index1;
-	vector<unsigned short> Conection_Index0, Conection_Index1;
-	vector<unsigned long> Duplicate;
-	vector<unsigned long>::iterator it;
-	int rank = MASTER_NODE;
-	su2double **Coord_Variation = NULL;
-
+                                       su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
+                                       vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
+                                       vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
+                                       bool original_surface, CConfig *config) {
+  
+  unsigned short iMarker, iNode, jNode, iDim, Index = 0;
+  bool intersect;
+  long MinDist_Point;
+  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, PointIndex, jVertex;
+  su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord,
+  *VarCoord = NULL, Variable_Interp;
+  passivedouble MinDist_Value, Dist_Value, Segment[3] = {0.0, 0.0, 0.0}, Tolerance = 1E-10;
+  vector<su2double> Xcoord_Index0, Ycoord_Index0, Zcoord_Index0, Variable_Index0, Xcoord_Index1, Ycoord_Index1, Zcoord_Index1, Variable_Index1;
+  vector<unsigned short> Conection_Index0, Conection_Index1;
+  vector<unsigned long> Duplicate;
+  vector<unsigned long>::iterator it;
+  int rank = MASTER_NODE;
+  su2double **Coord_Variation = NULL;
+  
 #ifdef HAVE_MPI
-	unsigned long nLocalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
-	int nProcessor, iProcessor;
-
-	su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  unsigned long nLocalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
+  int nProcessor, iProcessor;
+  
+  su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-	Xcoord_Airfoil.clear();
-	Ycoord_Airfoil.clear();
-	Zcoord_Airfoil.clear();
-	Variable_Airfoil.clear();
-
-	/*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
-
-	if (nDim == 2) {
-		Plane_P0[0] = 0.0;      Plane_P0[1] = 0.0;      Plane_P0[2] = 0.0;
-		Plane_Normal[0] = 0.0;  Plane_Normal[1] = 1.0;  Plane_Normal[2] = 0.0;
-	}
-
-	/*--- the grid variation is stored using a vertices information,
+  
+  Xcoord_Airfoil.clear();
+  Ycoord_Airfoil.clear();
+  Zcoord_Airfoil.clear();
+  Variable_Airfoil.clear();
+  
+  /*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
+  
+  if (nDim == 2) {
+    Plane_P0[0] = 0.0;      Plane_P0[1] = 0.0;      Plane_P0[2] = 0.0;
+    Plane_Normal[0] = 0.0;  Plane_Normal[1] = 1.0;  Plane_Normal[2] = 0.0;
+  }
+  
+  /*--- the grid variation is stored using a vertices information,
    we should go from vertex to points ---*/
-
-	if (original_surface == false) {
-
-		Coord_Variation = new su2double *[nPoint];
-		for (iPoint = 0; iPoint < nPoint; iPoint++)
-			Coord_Variation[iPoint] = new su2double [nDim];
-
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-			if (config->GetMarker_All_GeoEval(iMarker) == YES) {
-				for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-					VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
-					iPoint = vertex[iMarker][iVertex]->GetNode();
-					for (iDim = 0; iDim < nDim; iDim++)
-						Coord_Variation[iPoint][iDim] = VarCoord[iDim];
-				}
-			}
-		}
-
-	}
-
-	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-		if (config->GetMarker_All_GeoEval(iMarker) == YES) {
-
-			for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-				PointIndex=0;
-
-				for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-					iPoint = bound[iMarker][iElem]->GetNode(iNode);
-
-					for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
-						jPoint = bound[iMarker][iElem]->GetNode(jNode);
-
-						if ((jPoint > iPoint) && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))) {
-
-							Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
-							Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
-
-							for (iDim = 0; iDim < nDim; iDim++) {
-								if (original_surface == true) {
-									Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
-									Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
-								}
-								else {
-									Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
-									Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
-								}
-							}
-
-							if (FlowVariable != NULL) {
-								Variable_P0 = FlowVariable[iPoint];
-								Variable_P1 = FlowVariable[jPoint];
-							}
-
-							/*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
-
-									if (nDim == 2) {
-
-										Xcoord_Index0.push_back(Segment_P0[0]);    Xcoord_Index1.push_back(Segment_P1[0]);
-										Ycoord_Index0.push_back(Segment_P0[2]);    Ycoord_Index1.push_back(Segment_P1[2]);
-										Zcoord_Index0.push_back(Segment_P0[1]);    Zcoord_Index1.push_back(Segment_P1[1]);
-										Variable_Index0.push_back(Variable_P0);    Variable_Index1.push_back(Variable_P1);
-										PointIndex++;
-
-									}
-									/*--- In 3D compute the intersection ---*/
-
-									else if (nDim == 3) {
-
-										intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
-
-										if (intersect == true) {
-
-											if (PointIndex == 0) {
-												Xcoord_Index0.push_back(Intersection[0]);
-												Ycoord_Index0.push_back(Intersection[1]);
-												Zcoord_Index0.push_back(Intersection[2]);
-												Variable_Index0.push_back(Variable_Interp);
-											}
-											if (PointIndex == 1) {
-												Xcoord_Index1.push_back(Intersection[0]);
-												Ycoord_Index1.push_back(Intersection[1]);
-												Zcoord_Index1.push_back(Intersection[2]);
-												Variable_Index1.push_back(Variable_Interp);
-											}
-											PointIndex++;
-										}
-									}
-
-						}
-
-					}
-				}
-
-
-
-			}
-		}
-	}
-
-	if (original_surface == false) {
-
-		for (iPoint = 0; iPoint < nPoint; iPoint++)
-			delete [] Coord_Variation[iPoint];
-		delete [] Coord_Variation;
-
-	}
-
+  
+  if (original_surface == false) {
+    
+    Coord_Variation = new su2double *[nPoint];
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+    Coord_Variation[iPoint] = new su2double [nDim];
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_GeoEval(iMarker) == YES) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          for (iDim = 0; iDim < nDim; iDim++)
+          Coord_Variation[iPoint][iDim] = VarCoord[iDim];
+        }
+      }
+    }
+    
+  }
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_GeoEval(iMarker) == YES) {
+      
+      for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+        PointIndex=0;
+        
+        for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+          iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          
+          for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
+            jPoint = bound[iMarker][iElem]->GetNode(jNode);
+            
+            if ((jPoint > iPoint) && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))) {
+              
+              Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
+              Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
+              
+              for (iDim = 0; iDim < nDim; iDim++) {
+                if (original_surface == true) {
+                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
+                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
+                }
+                else {
+                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
+                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
+                }
+              }
+              
+              if (FlowVariable != NULL) {
+                Variable_P0 = FlowVariable[iPoint];
+                Variable_P1 = FlowVariable[jPoint];
+              }
+              
+              /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
+              
+              if (nDim == 2) {
+                
+                Xcoord_Index0.push_back(Segment_P0[0]);    Xcoord_Index1.push_back(Segment_P1[0]);
+                Ycoord_Index0.push_back(Segment_P0[2]);    Ycoord_Index1.push_back(Segment_P1[2]);
+                Zcoord_Index0.push_back(Segment_P0[1]);    Zcoord_Index1.push_back(Segment_P1[1]);
+                Variable_Index0.push_back(Variable_P0);    Variable_Index1.push_back(Variable_P1);
+                PointIndex++;
+                
+              }
+              /*--- In 3D compute the intersection ---*/
+              
+              else if (nDim == 3) {
+                
+                intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
+                
+                if (intersect == true) {
+                  
+                  if (PointIndex == 0) {
+                    Xcoord_Index0.push_back(Intersection[0]);
+                    Ycoord_Index0.push_back(Intersection[1]);
+                    Zcoord_Index0.push_back(Intersection[2]);
+                    Variable_Index0.push_back(Variable_Interp);
+                  }
+                  if (PointIndex == 1) {
+                    Xcoord_Index1.push_back(Intersection[0]);
+                    Ycoord_Index1.push_back(Intersection[1]);
+                    Zcoord_Index1.push_back(Intersection[2]);
+                    Variable_Index1.push_back(Variable_Interp);
+                  }
+                  PointIndex++;
+                }
+              }
+              
+            }
+            
+          }
+        }
+        
+        
+        
+      }
+    }
+  }
+  
+  if (original_surface == false) {
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+    delete [] Coord_Variation[iPoint];
+    delete [] Coord_Variation;
+    
+  }
+  
 #ifdef HAVE_MPI
-
-	/*--- Copy the coordinates of all the points in the plane to the master node ---*/
-
-	nLocalVertex = 0, MaxLocalVertex = 0;
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-
-	Buffer_Send_nVertex = new unsigned long [1];
-	Buffer_Receive_nVertex = new unsigned long [nProcessor];
-
-	nLocalVertex = Xcoord_Index0.size();
-
-	Buffer_Send_nVertex[0] = nLocalVertex;
-
-	SU2_MPI::Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-	SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-
-	Buffer_Send_Coord = new su2double [MaxLocalVertex*8];
-	Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex*8];
-	nBuffer = MaxLocalVertex*8;
-
-	for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-		Buffer_Send_Coord[iVertex*8 + 0] = Xcoord_Index0[iVertex];
-		Buffer_Send_Coord[iVertex*8 + 1] = Ycoord_Index0[iVertex];
-		Buffer_Send_Coord[iVertex*8 + 2] = Zcoord_Index0[iVertex];
-		Buffer_Send_Coord[iVertex*8 + 3] = Variable_Index0[iVertex];
-		Buffer_Send_Coord[iVertex*8 + 4] = Xcoord_Index1[iVertex];
-		Buffer_Send_Coord[iVertex*8 + 5] = Ycoord_Index1[iVertex];
-		Buffer_Send_Coord[iVertex*8 + 6] = Zcoord_Index1[iVertex];
-		Buffer_Send_Coord[iVertex*8 + 7] = Variable_Index1[iVertex];
-	}
-
-	SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-
-	/*--- Clean the vectors before adding the new vertices only to the master node ---*/
-
-	Xcoord_Index0.clear();     Xcoord_Index1.clear();
-	Ycoord_Index0.clear();     Ycoord_Index1.clear();
-	Zcoord_Index0.clear();     Zcoord_Index1.clear();
-	Variable_Index0.clear();   Variable_Index1.clear();
-
-	/*--- Copy the boundary to the master node vectors ---*/
-
-	if (rank == MASTER_NODE) {
-		for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-			for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-				Xcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 0] );
-				Ycoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 1] );
-				Zcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 2] );
-				Variable_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 3] );
-				Xcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 4] );
-				Ycoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 5] );
-				Zcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 6] );
-				Variable_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 7] );
-			}
-		}
-	}
-
-	delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
-	delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
-
+  
+  /*--- Copy the coordinates of all the points in the plane to the master node ---*/
+  
+  nLocalVertex = 0, MaxLocalVertex = 0;
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  
+  Buffer_Send_nVertex = new unsigned long [1];
+  Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  
+  nLocalVertex = Xcoord_Index0.size();
+  
+  Buffer_Send_nVertex[0] = nLocalVertex;
+  
+  SU2_MPI::Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  
+  Buffer_Send_Coord = new su2double [MaxLocalVertex*8];
+  Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex*8];
+  nBuffer = MaxLocalVertex*8;
+  
+  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
+    Buffer_Send_Coord[iVertex*8 + 0] = Xcoord_Index0[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 1] = Ycoord_Index0[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 2] = Zcoord_Index0[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 3] = Variable_Index0[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 4] = Xcoord_Index1[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 5] = Ycoord_Index1[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 6] = Zcoord_Index1[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 7] = Variable_Index1[iVertex];
+  }
+  
+  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
+  
+  /*--- Clean the vectors before adding the new vertices only to the master node ---*/
+  
+  Xcoord_Index0.clear();     Xcoord_Index1.clear();
+  Ycoord_Index0.clear();     Ycoord_Index1.clear();
+  Zcoord_Index0.clear();     Zcoord_Index1.clear();
+  Variable_Index0.clear();   Variable_Index1.clear();
+  
+  /*--- Copy the boundary to the master node vectors ---*/
+  
+  if (rank == MASTER_NODE) {
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+        Xcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 0] );
+        Ycoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 1] );
+        Zcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 2] );
+        Variable_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 3] );
+        Xcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 4] );
+        Ycoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 5] );
+        Zcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 6] );
+        Variable_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 7] );
+      }
+    }
+  }
+  
+  delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
+  delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
+  
 #endif
-
-
-
-	if ((rank == MASTER_NODE) && (Xcoord_Index0.size() != 0)) {
-
+  
+  
+  
+  if ((rank == MASTER_NODE) && (Xcoord_Index0.size() != 0)) {
+    
     /*--- Remove edges with zero length ---*/
-
+    
     bool Remove;
-
+    
     do {
-
+      
       Remove = false;
-
+      
       for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
-
+        
         Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[iVertex]);
         Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[iVertex]);
         Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[iVertex]);
-
+        
         Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-
+        
         if (Dist_Value <= Tolerance) {
-
+          
           /*--- Remove edge with repeated points ---*/
-
+          
           Xcoord_Index0.erase (Xcoord_Index0.begin() + iVertex);
           Ycoord_Index0.erase (Ycoord_Index0.begin() + iVertex);
           Zcoord_Index0.erase (Zcoord_Index0.begin() + iVertex);
           Variable_Index0.erase (Variable_Index0.begin() + iVertex);
-
+          
           Xcoord_Index1.erase (Xcoord_Index1.begin() + iVertex);
           Ycoord_Index1.erase (Ycoord_Index1.begin() + iVertex);
           Zcoord_Index1.erase (Zcoord_Index1.begin() + iVertex);
           Variable_Index1.erase (Variable_Index1.begin() + iVertex);
-
+          
           Remove = true; break;
-
+          
         }
-
+        
         if (Remove) break;
-
+        
       }
-
+      
     } while (Remove == true);
-
-
-		/*--- Remove repeated edges computing distance ---*/
-
-		do {
-
-			Remove = false;
-
-			for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
-				for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
-
-					/*--- First check ---*/
-
-					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
-
-					/*--- Compute the distance to each point ---*/
-
-					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-
-					/*--- Check the second point ---*/
-
-					if (Dist_Value <= Tolerance) {
-
-						Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-						Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-						Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-
-						/*--- Compute the distance to each point ---*/
-
-						Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-
-						if (Dist_Value <= Tolerance) {
-
-							/*--- Remove repeated point ---*/
-
-							Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
-							Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
-							Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
-							Variable_Index0.erase (Variable_Index0.begin() + jVertex);
-
-							Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
-							Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
-							Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
-							Variable_Index1.erase (Variable_Index1.begin() + jVertex);
-
-							Remove = true; break;
-
-						}
-
-					}
-
-					/*--- Second check ---*/
-
-					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-
-					/*--- Compute the distance to each point ---*/
-
-					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-
-					/*--- Check the second point ---*/
-
-					if (Dist_Value <= Tolerance) {
-
-						Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-						Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-						Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
-
-						/*--- Compute the distance to each point ---*/
-
-						Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-
-						if (Dist_Value <= Tolerance) {
-
-							/*--- Remove repeated point ---*/
-
-							Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
-							Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
-							Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
-							Variable_Index0.erase (Variable_Index0.begin() + jVertex);
-
-							Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
-							Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
-							Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
-							Variable_Index1.erase (Variable_Index1.begin() + jVertex);
-
-							Remove = true; break;
-						}
-					}
-					if (Remove) break;
-				}
-				if (Remove) break;
-			}
-
-		} while (Remove == true);
-
-		if (Xcoord_Index0.size() != 1) {
-
-			if (config->GetGeo_Description() == FUSELAGE) {
-
-				/*--- Rotate from the Y-Z plane to the X-Z plane to reuse the rest of subroutines  ---*/
-
-				su2double Angle = -0.5*PI_NUMBER;
-
-				for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
-
-					su2double XCoord = Xcoord_Index0[iVertex]*cos(Angle) - Ycoord_Index0[iVertex]*sin(Angle);
-					su2double YCoord = Ycoord_Index0[iVertex]*cos(Angle) + Xcoord_Index0[iVertex]*sin(Angle);
-					su2double ZCoord = Zcoord_Index0[iVertex];
-
-					Xcoord_Index0[iVertex] = XCoord;
-					Ycoord_Index0[iVertex] = YCoord;
-					Zcoord_Index0[iVertex] = ZCoord;
-
-					XCoord = Xcoord_Index1[iVertex]*cos(Angle) - Ycoord_Index1[iVertex]*sin(Angle);
-					YCoord = Ycoord_Index1[iVertex]*cos(Angle) + Xcoord_Index1[iVertex]*sin(Angle);
-					ZCoord = Zcoord_Index1[iVertex];
-					Xcoord_Index1[iVertex] = XCoord;
-					Ycoord_Index1[iVertex] = YCoord;
-					Zcoord_Index1[iVertex] = ZCoord;
-
-				}
-
-			}
-
-			/*--- Identify the extreme of the curve and close it ---*/
-
-			Conection_Index0.reserve(Xcoord_Index0.size()+1);
-			Conection_Index1.reserve(Xcoord_Index0.size()+1);
-
-			for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
-				Conection_Index0[iVertex] = 0;
-				Conection_Index1[iVertex] = 0;
-			}
-
-			for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
-				for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
-
-					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
-					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-					if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index0[jVertex]++; }
-
-					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-					if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index1[jVertex]++; }
-
-					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
-					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-					if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index0[jVertex]++; }
-
-					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-					if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index1[jVertex]++; }
-
-				}
-			}
-
-			/*--- Connect extremes of the curves ---*/
-
-			vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
-			vector<bool> AddExtra;
-			 unsigned long VertexDonor;
-			 bool FoundVertex;
-
-			for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
-				if (Conection_Index0[iVertex] == 0) {
-					XcoordExtra.push_back(Xcoord_Index0[iVertex]);
-					YcoordExtra.push_back(Ycoord_Index0[iVertex]);
-					ZcoordExtra.push_back(Zcoord_Index0[iVertex]);
-					VariableExtra.push_back(Variable_Index0[iVertex]);
-					AddExtra.push_back(true);
-				}
-				if (Conection_Index1[iVertex] == 0) {
-					XcoordExtra.push_back(Xcoord_Index1[iVertex]);
-					YcoordExtra.push_back(Ycoord_Index1[iVertex]);
-					ZcoordExtra.push_back(Zcoord_Index1[iVertex]);
-					VariableExtra.push_back(Variable_Index1[iVertex]);
-					AddExtra.push_back(true);
-				}
-			}
-
-			/*---Compute min distance from the points ---*/
-
-			if (XcoordExtra.size() > 1) {
-
-				for (iVertex = 0; iVertex < XcoordExtra.size()-1; iVertex++) {
-
+    
+    
+    /*--- Remove repeated edges computing distance ---*/
+    
+    do {
+      
+      Remove = false;
+      
+      for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
+        for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
+          
+          /*--- First check ---*/
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+          
+          /*--- Compute the distance to each point ---*/
+          
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          
+          /*--- Check the second point ---*/
+          
+          if (Dist_Value <= Tolerance) {
+            
+            Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+            Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+            Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+            
+            /*--- Compute the distance to each point ---*/
+            
+            Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+            
+            if (Dist_Value <= Tolerance) {
+              
+              /*--- Remove repeated point ---*/
+              
+              Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
+              Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
+              Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
+              Variable_Index0.erase (Variable_Index0.begin() + jVertex);
+              
+              Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
+              Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
+              Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
+              Variable_Index1.erase (Variable_Index1.begin() + jVertex);
+              
+              Remove = true; break;
+              
+            }
+            
+          }
+          
+          /*--- Second check ---*/
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+          
+          /*--- Compute the distance to each point ---*/
+          
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          
+          /*--- Check the second point ---*/
+          
+          if (Dist_Value <= Tolerance) {
+            
+            Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+            Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+            Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+            
+            /*--- Compute the distance to each point ---*/
+            
+            Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+            
+            if (Dist_Value <= Tolerance) {
+              
+              /*--- Remove repeated point ---*/
+              
+              Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
+              Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
+              Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
+              Variable_Index0.erase (Variable_Index0.begin() + jVertex);
+              
+              Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
+              Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
+              Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
+              Variable_Index1.erase (Variable_Index1.begin() + jVertex);
+              
+              Remove = true; break;
+            }
+          }
+          if (Remove) break;
+        }
+        if (Remove) break;
+      }
+      
+    } while (Remove == true);
+    
+    if (Xcoord_Index0.size() != 1) {
+      
+      if (config->GetGeo_Description() == FUSELAGE) {
+        
+        /*--- Rotate from the Y-Z plane to the X-Z plane to reuse the rest of subroutines  ---*/
+        
+        su2double Angle = -0.5*PI_NUMBER;
+        
+        for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+          
+          su2double XCoord = Xcoord_Index0[iVertex]*cos(Angle) - Ycoord_Index0[iVertex]*sin(Angle);
+          su2double YCoord = Ycoord_Index0[iVertex]*cos(Angle) + Xcoord_Index0[iVertex]*sin(Angle);
+          su2double ZCoord = Zcoord_Index0[iVertex];
+          
+          Xcoord_Index0[iVertex] = XCoord;
+          Ycoord_Index0[iVertex] = YCoord;
+          Zcoord_Index0[iVertex] = ZCoord;
+          
+          XCoord = Xcoord_Index1[iVertex]*cos(Angle) - Ycoord_Index1[iVertex]*sin(Angle);
+          YCoord = Ycoord_Index1[iVertex]*cos(Angle) + Xcoord_Index1[iVertex]*sin(Angle);
+          ZCoord = Zcoord_Index1[iVertex];
+          Xcoord_Index1[iVertex] = XCoord;
+          Ycoord_Index1[iVertex] = YCoord;
+          Zcoord_Index1[iVertex] = ZCoord;
+          
+        }
+        
+      }
+      
+      /*--- Identify the extreme of the curve and close it ---*/
+      
+      Conection_Index0.reserve(Xcoord_Index0.size()+1);
+      Conection_Index1.reserve(Xcoord_Index0.size()+1);
+      
+      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+        Conection_Index0[iVertex] = 0;
+        Conection_Index1[iVertex] = 0;
+      }
+      
+      for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
+        for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index0[jVertex]++; }
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index1[jVertex]++; }
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index0[jVertex]++; }
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index1[jVertex]++; }
+          
+        }
+      }
+      
+      /*--- Connect extremes of the curves ---*/
+      
+      vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
+      vector<bool> AddExtra;
+      unsigned long VertexDonor;
+      bool FoundVertex;
+      
+      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+        if (Conection_Index0[iVertex] == 0) {
+          XcoordExtra.push_back(Xcoord_Index0[iVertex]);
+          YcoordExtra.push_back(Ycoord_Index0[iVertex]);
+          ZcoordExtra.push_back(Zcoord_Index0[iVertex]);
+          VariableExtra.push_back(Variable_Index0[iVertex]);
+          AddExtra.push_back(true);
+        }
+        if (Conection_Index1[iVertex] == 0) {
+          XcoordExtra.push_back(Xcoord_Index1[iVertex]);
+          YcoordExtra.push_back(Ycoord_Index1[iVertex]);
+          ZcoordExtra.push_back(Zcoord_Index1[iVertex]);
+          VariableExtra.push_back(Variable_Index1[iVertex]);
+          AddExtra.push_back(true);
+        }
+      }
+      
+      /*---Compute min distance from the points ---*/
+      
+      if (XcoordExtra.size() > 1) {
+        
+        for (iVertex = 0; iVertex < XcoordExtra.size()-1; iVertex++) {
+          
           su2double MinDist = 1E6;
           FoundVertex = false;
           VertexDonor = 0;
-
+          
           for (jVertex = iVertex+1; jVertex <XcoordExtra.size(); jVertex++) {
             Dist_Value = sqrt(pow(SU2_TYPE::GetValue(XcoordExtra[iVertex])-SU2_TYPE::GetValue(XcoordExtra[jVertex]), 2.0));
             if ((Dist_Value < MinDist) && (AddExtra[iVertex]) && (AddExtra[jVertex])) {
@@ -1044,159 +1044,159 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
               FoundVertex = true;
             }
           }
-
-					if (FoundVertex) {
-
-						/*--- Add first point of the new edge ---*/
-
-						Xcoord_Index0.push_back (XcoordExtra[iVertex]);
-						Ycoord_Index0.push_back (YcoordExtra[iVertex]);
-						Zcoord_Index0.push_back (ZcoordExtra[iVertex]);
-						Variable_Index0.push_back (VariableExtra[iVertex]);
-						AddExtra[iVertex] = false;
-
-						/*--- Add second (closest)  point of the new edge ---*/
-
-						Xcoord_Index1.push_back (XcoordExtra[VertexDonor]);
-						Ycoord_Index1.push_back (YcoordExtra[VertexDonor]);
-						Zcoord_Index1.push_back (ZcoordExtra[VertexDonor]);
-						Variable_Index1.push_back (VariableExtra[VertexDonor]);
-						AddExtra[VertexDonor] = false;
-
-					}
-
-				}
-
-			}
-
-			else if (XcoordExtra.size() == 1) {
-				cout <<"There cutting system has failed, there is an incomplete curve (not used)." << endl;
-			}
-
-			Trailing_Point = 0; Trailing_Coord = Xcoord_Index0[0];
-			for (iVertex = 1; iVertex < Xcoord_Index0.size(); iVertex++) {
-				if (Xcoord_Index0[iVertex] > Trailing_Coord) {
-					Trailing_Point = iVertex; Trailing_Coord = Xcoord_Index0[iVertex];
-				}
-			}
-
-			/*--- Add the trailing edge to the list and the contect points to the trailing edge and remove from the original list ---*/
-
-			Xcoord_Airfoil.push_back(Xcoord_Index0[Trailing_Point]);
-			Ycoord_Airfoil.push_back(Ycoord_Index0[Trailing_Point]);
-			Zcoord_Airfoil.push_back(Zcoord_Index0[Trailing_Point]);
-			Variable_Airfoil.push_back(Variable_Index0[Trailing_Point]);
-
-			Xcoord_Airfoil.push_back(Xcoord_Index1[Trailing_Point]);
-			Ycoord_Airfoil.push_back(Ycoord_Index1[Trailing_Point]);
-			Zcoord_Airfoil.push_back(Zcoord_Index1[Trailing_Point]);
-			Variable_Airfoil.push_back(Variable_Index1[Trailing_Point]);
-
-			Xcoord_Index0.erase (Xcoord_Index0.begin() + Trailing_Point);
-			Ycoord_Index0.erase (Ycoord_Index0.begin() + Trailing_Point);
-			Zcoord_Index0.erase (Zcoord_Index0.begin() + Trailing_Point);
-			Variable_Index0.erase (Variable_Index0.begin() + Trailing_Point);
-
-			Xcoord_Index1.erase (Xcoord_Index1.begin() + Trailing_Point);
-			Ycoord_Index1.erase (Ycoord_Index1.begin() + Trailing_Point);
-			Zcoord_Index1.erase (Zcoord_Index1.begin() + Trailing_Point);
-			Variable_Index1.erase (Variable_Index1.begin() + Trailing_Point);
-
-			/*--- Algorithm for the rest of the points ---*/
-
-			do {
-
-				/*--- Last added point in the list ---*/
-
-				Airfoil_Point = Xcoord_Airfoil.size() - 1;
-
-				/*--- Find the closest point  ---*/
-
-				MinDist_Value = 1E6;
-				MinDist_Point = -1;
-
-				for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
-
-					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
-					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
-					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
-
-					/*--- Compute the distance to each point ---*/
-
-					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-					if (Dist_Value <= MinDist_Value) {
-						MinDist_Point = iVertex;
-						MinDist_Value = Dist_Value;
-						Index = 0;
-					}
-
-					/*--- Same with the second index  ---*/
-
-					Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
-					Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
-					Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
-
-					/*--- Compute the distance to each point ---*/
-
-					Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-					if (Dist_Value <= MinDist_Value) {
-						MinDist_Point = iVertex;
-						MinDist_Value = Dist_Value;
-						Index = 1;
-					}
-
-				}
-
-				/*--- Add and remove the min distance to the list and the next point in the edge ---*/
-
-				if (MinDist_Value < Tolerance) {
-
-					if (Index == 0) {
-
-						Xcoord_Airfoil.push_back(Xcoord_Index1[MinDist_Point]);
-						Ycoord_Airfoil.push_back(Ycoord_Index1[MinDist_Point]);
-						Zcoord_Airfoil.push_back(Zcoord_Index1[MinDist_Point]);
-						Variable_Airfoil.push_back(Variable_Index1[MinDist_Point]);
-					}
-
-					if (Index == 1) {
-
-						Xcoord_Airfoil.push_back(Xcoord_Index0[MinDist_Point]);
-						Ycoord_Airfoil.push_back(Ycoord_Index0[MinDist_Point]);
-						Zcoord_Airfoil.push_back(Zcoord_Index0[MinDist_Point]);
-						Variable_Airfoil.push_back(Variable_Index0[MinDist_Point]);
-					}
-
-					Xcoord_Index0.erase(Xcoord_Index0.begin() + MinDist_Point);
-					Ycoord_Index0.erase(Ycoord_Index0.begin() + MinDist_Point);
-					Zcoord_Index0.erase(Zcoord_Index0.begin() + MinDist_Point);
-					Variable_Index0.erase(Variable_Index0.begin() + MinDist_Point);
-
-					Xcoord_Index1.erase(Xcoord_Index1.begin() + MinDist_Point);
-					Ycoord_Index1.erase(Ycoord_Index1.begin() + MinDist_Point);
-					Zcoord_Index1.erase(Zcoord_Index1.begin() + MinDist_Point);
-					Variable_Index1.erase(Variable_Index1.begin() + MinDist_Point);
-
-				}
-				else { break; }
-
-			} while (Xcoord_Index0.size() != 0);
-
-			/*--- Clean the vector before using them again for storing the upper or the lower side ---*/
-
-			Xcoord_Index0.clear(); Ycoord_Index0.clear(); Zcoord_Index0.clear(); Variable_Index0.clear();
-			Xcoord_Index1.clear(); Ycoord_Index1.clear(); Zcoord_Index1.clear(); Variable_Index1.clear();
-
-		}
-
-	}
-
+          
+          if (FoundVertex) {
+            
+            /*--- Add first point of the new edge ---*/
+            
+            Xcoord_Index0.push_back (XcoordExtra[iVertex]);
+            Ycoord_Index0.push_back (YcoordExtra[iVertex]);
+            Zcoord_Index0.push_back (ZcoordExtra[iVertex]);
+            Variable_Index0.push_back (VariableExtra[iVertex]);
+            AddExtra[iVertex] = false;
+            
+            /*--- Add second (closest)  point of the new edge ---*/
+            
+            Xcoord_Index1.push_back (XcoordExtra[VertexDonor]);
+            Ycoord_Index1.push_back (YcoordExtra[VertexDonor]);
+            Zcoord_Index1.push_back (ZcoordExtra[VertexDonor]);
+            Variable_Index1.push_back (VariableExtra[VertexDonor]);
+            AddExtra[VertexDonor] = false;
+            
+          }
+          
+        }
+        
+      }
+      
+      else if (XcoordExtra.size() == 1) {
+        cout <<"There cutting system has failed, there is an incomplete curve (not used)." << endl;
+      }
+      
+      Trailing_Point = 0; Trailing_Coord = Xcoord_Index0[0];
+      for (iVertex = 1; iVertex < Xcoord_Index0.size(); iVertex++) {
+        if (Xcoord_Index0[iVertex] > Trailing_Coord) {
+          Trailing_Point = iVertex; Trailing_Coord = Xcoord_Index0[iVertex];
+        }
+      }
+      
+      /*--- Add the trailing edge to the list and the contect points to the trailing edge and remove from the original list ---*/
+      
+      Xcoord_Airfoil.push_back(Xcoord_Index0[Trailing_Point]);
+      Ycoord_Airfoil.push_back(Ycoord_Index0[Trailing_Point]);
+      Zcoord_Airfoil.push_back(Zcoord_Index0[Trailing_Point]);
+      Variable_Airfoil.push_back(Variable_Index0[Trailing_Point]);
+      
+      Xcoord_Airfoil.push_back(Xcoord_Index1[Trailing_Point]);
+      Ycoord_Airfoil.push_back(Ycoord_Index1[Trailing_Point]);
+      Zcoord_Airfoil.push_back(Zcoord_Index1[Trailing_Point]);
+      Variable_Airfoil.push_back(Variable_Index1[Trailing_Point]);
+      
+      Xcoord_Index0.erase (Xcoord_Index0.begin() + Trailing_Point);
+      Ycoord_Index0.erase (Ycoord_Index0.begin() + Trailing_Point);
+      Zcoord_Index0.erase (Zcoord_Index0.begin() + Trailing_Point);
+      Variable_Index0.erase (Variable_Index0.begin() + Trailing_Point);
+      
+      Xcoord_Index1.erase (Xcoord_Index1.begin() + Trailing_Point);
+      Ycoord_Index1.erase (Ycoord_Index1.begin() + Trailing_Point);
+      Zcoord_Index1.erase (Zcoord_Index1.begin() + Trailing_Point);
+      Variable_Index1.erase (Variable_Index1.begin() + Trailing_Point);
+      
+      /*--- Algorithm for the rest of the points ---*/
+      
+      do {
+        
+        /*--- Last added point in the list ---*/
+        
+        Airfoil_Point = Xcoord_Airfoil.size() - 1;
+        
+        /*--- Find the closest point  ---*/
+        
+        MinDist_Value = 1E6;
+        MinDist_Point = -1;
+        
+        for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
+          
+          /*--- Compute the distance to each point ---*/
+          
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= MinDist_Value) {
+            MinDist_Point = iVertex;
+            MinDist_Value = Dist_Value;
+            Index = 0;
+          }
+          
+          /*--- Same with the second index  ---*/
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
+          
+          /*--- Compute the distance to each point ---*/
+          
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= MinDist_Value) {
+            MinDist_Point = iVertex;
+            MinDist_Value = Dist_Value;
+            Index = 1;
+          }
+          
+        }
+        
+        /*--- Add and remove the min distance to the list and the next point in the edge ---*/
+        
+        if (MinDist_Value < Tolerance) {
+          
+          if (Index == 0) {
+            
+            Xcoord_Airfoil.push_back(Xcoord_Index1[MinDist_Point]);
+            Ycoord_Airfoil.push_back(Ycoord_Index1[MinDist_Point]);
+            Zcoord_Airfoil.push_back(Zcoord_Index1[MinDist_Point]);
+            Variable_Airfoil.push_back(Variable_Index1[MinDist_Point]);
+          }
+          
+          if (Index == 1) {
+            
+            Xcoord_Airfoil.push_back(Xcoord_Index0[MinDist_Point]);
+            Ycoord_Airfoil.push_back(Ycoord_Index0[MinDist_Point]);
+            Zcoord_Airfoil.push_back(Zcoord_Index0[MinDist_Point]);
+            Variable_Airfoil.push_back(Variable_Index0[MinDist_Point]);
+          }
+          
+          Xcoord_Index0.erase(Xcoord_Index0.begin() + MinDist_Point);
+          Ycoord_Index0.erase(Ycoord_Index0.begin() + MinDist_Point);
+          Zcoord_Index0.erase(Zcoord_Index0.begin() + MinDist_Point);
+          Variable_Index0.erase(Variable_Index0.begin() + MinDist_Point);
+          
+          Xcoord_Index1.erase(Xcoord_Index1.begin() + MinDist_Point);
+          Ycoord_Index1.erase(Ycoord_Index1.begin() + MinDist_Point);
+          Zcoord_Index1.erase(Zcoord_Index1.begin() + MinDist_Point);
+          Variable_Index1.erase(Variable_Index1.begin() + MinDist_Point);
+          
+        }
+        else { break; }
+        
+      } while (Xcoord_Index0.size() != 0);
+      
+      /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
+      
+      Xcoord_Index0.clear(); Ycoord_Index0.clear(); Zcoord_Index0.clear(); Variable_Index0.clear();
+      Xcoord_Index1.clear(); Ycoord_Index1.clear(); Zcoord_Index1.clear(); Variable_Index1.clear();
+      
+    }
+    
+  }
+  
 }
 
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
-
+  
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
@@ -1205,29 +1205,29 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
 }
 
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
-
-    unsigned short iMesh;
-    geometry_container[MESH_0]->Set_MPI_Coord(config);
-    if (config->GetGrid_Movement()){
-      geometry_container[MESH_0]->Set_MPI_GridVel(config);
-    }
-
-    geometry_container[MESH_0]->SetCoord_CG();
-    geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
-    geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
-
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-        /*--- Update the control volume structures ---*/
-
-        geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
-        geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
-        geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
-
-    }
-
-    if (config->GetKind_Solver() == DISC_ADJ_RANS)
-      geometry_container[MESH_0]->ComputeWall_Distance(config);
-
+  
+  unsigned short iMesh;
+  geometry_container[MESH_0]->Set_MPI_Coord(config);
+  if (config->GetGrid_Movement()){
+    geometry_container[MESH_0]->Set_MPI_GridVel(config);
+  }
+  
+  geometry_container[MESH_0]->SetCoord_CG();
+  geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
+  geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
+  
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    /*--- Update the control volume structures ---*/
+    
+    geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
+    geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
+    geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
+    
+  }
+  
+  if (config->GetKind_Solver() == DISC_ADJ_RANS)
+  geometry_container[MESH_0]->ComputeWall_Distance(config);
+  
 }
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
@@ -15122,7 +15122,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
-    fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
+    fseek(fhw,-(sizeof(int) + 8*sizeof(passivedouble)), SEEK_END);
 
     /*--- Read the external iteration. ---*/
 

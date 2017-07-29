@@ -8357,47 +8357,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
         }
         
         Cp_File.close();
-        
-        //				/*--- Write Cp at each section (n3d format) ---*/
-        //
-        //				ofstream n3d_File;
-        //
-        //				if (iSection == 0) n3d_File.open("cp_sections.n3d", ios::out);
-        //				else n3d_File.open("cp_sections.n3d", ios::app);
-        //
-        //				/*--- Coordinates and pressure value ---*/
-        //
-        //				if (config->GetSystemMeasurements() == SI) {
-        //					n3d_File << setprecision(4);
-        //					n3d_File << fixed;
-        //					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        //						n3d_File << setw(10) << Xcoord_Airfoil[iVertex] << setw(10) << Ycoord_Airfoil[iVertex]
-        //						<< setw(10) << Zcoord_Airfoil[iVertex];
-        //						if (iVertex==0) {
-        //							if (iSection == 0) n3d_File << "2 ";
-        //							else n3d_File << "1 ";
-        //						}
-        //						else n3d_File << "0 ";
-        //						n3d_File << setw(10) << CPressure_Airfoil[iVertex] << endl;
-        //					}
-        //				}
-        //				if (config->GetSystemMeasurements() == US) {
-        //					n3d_File << setprecision(4);
-        //					n3d_File << fixed;
-        //					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        //						n3d_File << setw(10) <<  Xcoord_Airfoil[iVertex] * 12.0 << setw(10) << Ycoord_Airfoil[iVertex] * 12.0
-        //								<< setw(10) << Zcoord_Airfoil[iVertex] * 12.0;
-        //						if (iVertex==0) {
-        //							if (iSection == 0) n3d_File << "2 ";
-        //							else n3d_File << "1 ";
-        //						}
-        //						else n3d_File << "0 ";
-        //						n3d_File << setw(10) << CPressure_Airfoil[iVertex] << endl;
-        //					}
-        //				}
-        //
-        //				n3d_File.close();
-        
+                
         /*--- Compute load distribution ---*/
         
         ForceInviscid[0] = 0.0; ForceInviscid[1] = 0.0; ForceInviscid[2] = 0.0; MomentInviscid[1] = 0.0;
