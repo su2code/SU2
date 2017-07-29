@@ -15008,10 +15008,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   Sensitivity = new su2double[nPoint*nDim];
 
-  if (config->GetUnsteady_Simulation()) { nExtIter = config->GetnExtIter(); }
-  else { nExtIter = 1; }
-
-  int rank = MASTER_NODE;
+  if (config->GetUnsteady_Simulation()) {
+    nExtIter = config->GetnExtIter();
+  }else {
+    nExtIter = 1;
+  }
+    int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -15021,17 +15023,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   unsigned short skipVar = nDim, skipMult = 1;
 
-  if (wrt_residuals)  { skipMult = 2; }
   if (incompressible)      { skipVar += skipMult*(nDim+1); }
   if (compressible)        { skipVar += skipMult*(nDim+2); }
   if (sst && !frozen_visc) { skipVar += skipMult*2;}
   if (sa && !frozen_visc)  { skipVar += skipMult*1;}
   if (grid_movement)       { skipVar += nDim;}
-  
-  /*--- Sensitivity in normal direction ---*/
-  
-  skipVar += 1;
-  
+
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
   
@@ -15331,7 +15328,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        index = counter*Restart_Vars[1] + skipVar;
+        index = counter*nFields + skipVar;
         for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
@@ -15387,10 +15384,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
-    MPI_Status status;
-    MPI_Datatype etype, filetype;
-    MPI_Offset disp;
-
     int ierr;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
