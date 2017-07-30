@@ -16071,10 +16071,10 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    magic number that we can use to check for binary files (it is the hex
    representation for "SU2"). The second two values are number of variables
    and number of points (DoFs). The last two values are for metadata: 
-   one int for ExtIter and 5 su2doubles. ---*/
+   one int for ExtIter and 8 su2doubles. ---*/
 
   int var_buf_size = 5;
-  int var_buf[5] = {535532, nVar_Par, (int)nTotalPoint, 1, 5};
+  int var_buf[5] = {535532, nVar_Par, (int)nTotalPoint, 1, 8};
 
   /*--- Prepare the 1D data buffer on this rank. ---*/
 
