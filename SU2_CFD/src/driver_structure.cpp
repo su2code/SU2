@@ -37,7 +37,7 @@
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
                  unsigned short val_nDim,
-                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false) {
+                 SU2_MPI::Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false) {
 
 
   unsigned short jZone, iSol;
@@ -3523,7 +3523,7 @@ su2double CDriver::SetVertexVarCoord(unsigned short iMarker, unsigned short iVer
 
 CGeneralDriver::CGeneralDriver(char* confFile, unsigned short val_nZone,
                                unsigned short val_nDim, 
-                               SU2_Comm MPICommunicator) : CDriver(confFile,
+                               SU2_MPI::Comm MPICommunicator) : CDriver(confFile,
                                                                    val_nZone,
                                                                    val_nDim,
                                                                    MPICommunicator) { }
@@ -3648,7 +3648,7 @@ void CGeneralDriver::SetInitialMesh() {
 
 }
 
-CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
+CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, SU2_MPI::Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
 
 CFluidDriver::~CFluidDriver(void) { }
 
@@ -3888,7 +3888,7 @@ void CFluidDriver::SetInitialMesh() {
 
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
     unsigned short val_nZone,
-    unsigned short val_nDim, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
+    unsigned short val_nDim, SU2_MPI::Comm MPICommunicator) : CFluidDriver(confFile,
         val_nZone,
         val_nDim,
         MPICommunicator) { }
@@ -4126,7 +4126,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
 CDiscAdjFluidDriver::CDiscAdjFluidDriver(char* confFile,
                                                  unsigned short val_nZone,
-                                                 unsigned short val_nDim, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
+                                                 unsigned short val_nDim, SU2_MPI::Comm MPICommunicator) : CFluidDriver(confFile,
 																										 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	val_nZone,
                                                                                     val_nDim, MPICommunicator) {
   RecordingState = NONE;
@@ -4507,7 +4507,7 @@ void CDiscAdjFluidDriver::DirectRun(){
 CDiscAdjTurbomachineryDriver::CDiscAdjTurbomachineryDriver(char* confFile,
                                                            unsigned short val_nZone,
                                                            unsigned short val_nDim,
-                                                           SU2_Comm MPICommunicator): CDiscAdjFluidDriver(confFile, val_nZone, val_nDim, MPICommunicator){ }
+                                                           SU2_MPI::Comm MPICommunicator): CDiscAdjFluidDriver(confFile, val_nZone, val_nDim, MPICommunicator){ }
 CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
 
 }
@@ -4624,7 +4624,7 @@ void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone
 CHBDriver::CHBDriver(char* confFile,
     unsigned short val_nZone,
     unsigned short val_nDim,
-    SU2_Comm MPICommunicator) : CDriver(confFile,
+    SU2_MPI::Comm MPICommunicator) : CDriver(confFile,
         val_nZone,
         val_nDim,
         MPICommunicator) {
@@ -5021,7 +5021,7 @@ void CHBDriver::ComputeHB_Operator() {
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
                        unsigned short val_nDim,
-                       SU2_Comm MPICommunicator) : CDriver(confFile,
+                       SU2_MPI::Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
                                                           val_nDim,
                                                           MPICommunicator) { }

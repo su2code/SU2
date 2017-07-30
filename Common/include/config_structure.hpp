@@ -67,7 +67,7 @@ using namespace std;
 
 class CConfig {
 private:
-  SU2_Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
+  SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank;
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
@@ -1172,13 +1172,13 @@ public:
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
    */
-  SU2_Comm GetMPICommunicator();
+  SU2_MPI::Comm GetMPICommunicator();
 
   /*!
    * \brief Set the MPI communicator for SU2.
    * \param[in] Communicator - MPI communicator for SU2.
    */
-  void SetMPICommunicator(SU2_Comm Communicator);
+  void SetMPICommunicator(SU2_MPI::Comm Communicator);
 
   /*!
    * \brief Gets the number of zones in the mesh file.
