@@ -63,10 +63,19 @@ void CUpwSca_Template::ComputeResidual(su2double *val_residual,
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
-  ADPreacc();
-
   if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+  }
+
+  ADPreacc();
+
+  if (incompressible) {
+    Density_i = V_i[nDim+1];
+    Density_j = V_j[nDim+1];
+  }
+  else {
+    Density_i = V_i[nDim+2];
+    Density_j = V_j[nDim+2];
   }
 
   q_ij = 0.0;
@@ -85,10 +94,11 @@ void CUpwSca_Template::ComputeResidual(su2double *val_residual,
     }
   }
 
-  TemplatedComputeResidual(val_residual, val_Jacobian_i, val_Jacobian_j, config);
-
   a0 = 0.5*(q_ij+fabs(q_ij));
   a1 = 0.5*(q_ij-fabs(q_ij));
+
+  TemplatedComputeResidual(val_residual, val_Jacobian_i, val_Jacobian_j, config);
+
 
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
