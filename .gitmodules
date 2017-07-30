@@ -9,3 +9,4 @@
 [submodule "externals/medi"]
 	path = externals/medi
 	url = https://github.com/SciCompKL/MeDiPack
+	ignore = dirty
