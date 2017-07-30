@@ -5159,7 +5159,6 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
         /* 3D simulation. Loop over the integration points to compute
            the fluxes. */
-//#pragma simd
         for(unsigned short i=0; i<nInt; ++i) {
 
           /* Easier storage of the metric terms in this integration point. */
@@ -10535,31 +10534,75 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
            coordinates of the element on side 0 of the face. */
         const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
 
-        /*--- Create the Cartesian derivatives of the basis functions
-              in the integration points. ---*/
-        unsigned int ii = 0;
-        for(unsigned short j=0; j<nDOFsElem0; ++j) {
-          for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+        /* Make a distinction between two and three space dimensions
+           in order to have the most efficient code. */
+        switch( nDim ) {
 
-            /* Easier storage of the derivatives of the basis function w.r.t. the
-               parametric coordinates, the location where to store the Cartesian
-               derivatives of the basis functions, and the metric terms in this
-               integration point. */
-            const su2double *derParam    = derBasisElemTrans + ii;
-            const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0.data()
-                                         + i*nDim*nDim;
-                  su2double *derCar      = gradSolInt + ii;
+          case 2: {
 
-            /*--- Loop over the dimensions to compute the Cartesian derivatives
-                  of the basis functions. ---*/
-#pragma simd
-            for(unsigned short k=0; k<nDim; ++k) {
-              derCar[k] = 0.0;
-              for(unsigned short l=0; l<nDim; ++l)
-                derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+            /*--- Two dimensional computation. Create the Cartesian derivatives
+                  of the basis functions of the DOFs of the element of side 0
+                  of the face in the integration points. ---*/
+            for(unsigned short j=0; j<nDOFsElem0; ++j) {
+              for(unsigned short i=0; i<nInt; ++i) {
+
+                /* Easier storage of the derivatives of the basis function w.r.t. the
+                   parametric coordinates, the location where to store the Cartesian
+                   derivatives of the basis functions, and the metric terms in this
+                   integration point. */
+                const unsigned int ii = 2*(j*nInt + i);   // The 2 is nDim.
+
+                const su2double *derParam    = derBasisElemTrans + ii;
+                const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0.data()
+                                             + 4*i;               // The 4 is nDim*nDim;
+                      su2double *derCar      = gradSolInt + ii;
+
+                /*--- Compute the Cartesian derivatives of this basis function
+                      in this integration point. ---*/
+                derCar[0] = derParam[0]*metricTerms[0] + derParam[1]*metricTerms[2];
+                derCar[1] = derParam[0]*metricTerms[1] + derParam[1]*metricTerms[3];
+              }
             }
+
+            break;
+          }
+
+          /*------------------------------------------------------------------*/
+
+          case 3: {
+
+            /*--- Three dimensional computation. Create the Cartesian derivatives
+                  of the basis functions of the DOFs of the element of side 0
+                  of the face in the integration points. ---*/
+            for(unsigned short j=0; j<nDOFsElem0; ++j) {
+              for(unsigned short i=0; i<nInt; ++i) {
+
+                /* Easier storage of the derivatives of the basis function w.r.t. the
+                   parametric coordinates, the location where to store the Cartesian
+                   derivatives of the basis functions, and the metric terms in this
+                   integration point. */
+                const unsigned int ii = 3*(j*nInt + i);   // The 3 is nDim.
+
+                const su2double *derParam    = derBasisElemTrans + ii;
+                const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0.data()
+                                             + 9*i;               // The 9 is nDim*nDim;
+                      su2double *derCar      = gradSolInt + ii;
+
+                /*--- Compute the Cartesian derivatives of this basis function
+                      in this integration point. ---*/
+                derCar[0] = derParam[0]*metricTerms[0] + derParam[1]*metricTerms[3]
+                          + derParam[2]*metricTerms[6];
+                derCar[1] = derParam[0]*metricTerms[1] + derParam[1]*metricTerms[4]
+                          + derParam[2]*metricTerms[7];
+                derCar[2] = derParam[0]*metricTerms[2] + derParam[1]*metricTerms[5]
+                          + derParam[2]*metricTerms[8];
+              }
+            }
+
+            break;
           }
         }
+
 
         /* Set the pointer of gradSolInt to cartGrad, such that the latter can
            be used in the call to the matrix multiplication. */
@@ -10587,29 +10630,72 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
            the parametric coordinates of the element on side 1 of the face. */
         const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
 
-        /*--- Create the Cartesian derivatives of the basis functions in the
-              integration points. Use gradSolInt for storage. ---*/
-        unsigned int ii = 0;
-        for(unsigned short j=0; j<nDOFsElem1; ++j) {
-          for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+        /* Make a distinction between two and three space dimensions
+           in order to have the most efficient code. */
+        switch( nDim ) {
 
-            /* Easier storage of the derivatives of the basis function w.r.t. the
-               parametric coordinates, the location where to store the Cartesian
-               derivatives of the basis functions, and the metric terms in this
-               integration point. */
-            const su2double *derParam    = derBasisElemTrans + ii;
-            const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
-                                         + i*nDim*nDim;
-                  su2double *derCar      = gradSolInt + ii;
+          case 2: {
 
-            /*--- Loop over the dimensions to compute the Cartesian derivatives
-                  of the basis functions. ---*/
-#pragma simd
-            for(unsigned short k=0; k<nDim; ++k) {
-              derCar[k] = 0.0;
-              for(unsigned short l=0; l<nDim; ++l)
-                derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+            /*--- Two dimensional computation. Create the Cartesian derivatives
+                  of the basis functions of the DOFs of the element of side 1
+                  of the face in the integration points. ---*/
+            for(unsigned short j=0; j<nDOFsElem1; ++j) {
+              for(unsigned short i=0; i<nInt; ++i) {
+
+                /* Easier storage of the derivatives of the basis function w.r.t. the
+                   parametric coordinates, the location where to store the Cartesian
+                   derivatives of the basis functions, and the metric terms in this
+                   integration point. */
+                const unsigned int ii = 2*(j*nInt + i);   // The 2 is nDim.
+
+                const su2double *derParam    = derBasisElemTrans + ii;
+                const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
+                                             + 4*i;               // The 4 is nDim*nDim;
+                      su2double *derCar      = gradSolInt + ii;
+
+                /*--- Compute the Cartesian derivatives of this basis function
+                      in this integration point. ---*/
+                derCar[0] = derParam[0]*metricTerms[0] + derParam[1]*metricTerms[2];
+                derCar[1] = derParam[0]*metricTerms[1] + derParam[1]*metricTerms[3];
+              }
             }
+
+            break;
+          }
+
+          /*------------------------------------------------------------------*/
+
+          case 3: {
+
+            /*--- Three dimensional computation. Create the Cartesian derivatives
+                  of the basis functions of the DOFs of the element of side 1
+                  of the face in the integration points. ---*/
+            for(unsigned short j=0; j<nDOFsElem1; ++j) {
+              for(unsigned short i=0; i<nInt; ++i) {
+
+                /* Easier storage of the derivatives of the basis function w.r.t. the
+                   parametric coordinates, the location where to store the Cartesian
+                   derivatives of the basis functions, and the metric terms in this
+                   integration point. */
+                const unsigned int ii = 3*(j*nInt + i);   // The 3 is nDim.
+
+                const su2double *derParam    = derBasisElemTrans + ii;
+                const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
+                                             + 9*i;               // The 9 is nDim*nDim;
+                      su2double *derCar      = gradSolInt + ii;
+
+                /*--- Compute the Cartesian derivatives of this basis function
+                      in this integration point. ---*/
+                derCar[0] = derParam[0]*metricTerms[0] + derParam[1]*metricTerms[3]
+                          + derParam[2]*metricTerms[6];
+                derCar[1] = derParam[0]*metricTerms[1] + derParam[1]*metricTerms[4]
+                          + derParam[2]*metricTerms[7];
+                derCar[2] = derParam[0]*metricTerms[2] + derParam[1]*metricTerms[5]
+                          + derParam[2]*metricTerms[8];
+              }
+            }
+
+            break;
           }
         }
 
