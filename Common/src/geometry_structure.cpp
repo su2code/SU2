@@ -1604,8 +1604,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   MPI_Status *send_stat = new MPI_Status[offset+size];
   MPI_Status *recv_stat = new MPI_Status[offset+size];
   
-  SU2_MPI_Request *send_req = new SU2_MPI_Request[offset+size];
-  SU2_MPI_Request *recv_req = new SU2_MPI_Request[offset+size];
+  SU2_MPI::Request *send_req = new SU2_MPI::Request[offset+size];
+  SU2_MPI::Request *recv_req = new SU2_MPI::Request[offset+size];
   
 #endif
   
@@ -7067,7 +7067,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   unsigned long Local_nElem;
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
   unsigned long Local_nElemHex, Local_nElemPrism, Local_nElemPyramid;
-  SU2_MPI_Request *send_req, *recv_req;
+  SU2_MPI::Request *send_req, *recv_req;
   MPI_Status  status;
   int ind;
 #endif
@@ -8001,8 +8001,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             connRecv[ii] = 0;
             
 #ifdef HAVE_MPI
-          send_req = new SU2_MPI_Request[nSends];
-          recv_req = new SU2_MPI_Request[nRecvs];
+          send_req = new SU2_MPI::Request[nSends];
+          recv_req = new SU2_MPI::Request[nRecvs];
           unsigned long iMessage = 0;
           for (int ii=0; ii<size; ii++) {
             if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {

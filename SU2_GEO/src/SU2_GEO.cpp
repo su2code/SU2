@@ -59,9 +59,9 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
-	SU2_MPI::Init(&argc,&argv);
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-	MPI_Comm_rank(MPICommunicator,&rank);
+  SU2_MPI::Init(&argc,&argv);
+  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
+  MPI_Comm_rank(MPICommunicator,&rank);
   MPI_Comm_size(MPICommunicator,&size);
 #else
   SU2_Comm MPICommunicator(0);

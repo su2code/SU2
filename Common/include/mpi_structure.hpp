@@ -43,40 +43,35 @@
 
 #ifdef HAVE_MPI
 
-typedef MPI_Comm SU2_Comm;
-
 /*--- Depending on the datatype used, the correct MPI wrapper class is defined.
  * For the default (double type) case this results in using the normal MPI routines. ---*/
-
-#if defined COMPLEX_TYPE  || \
-    defined ADOLC_FORWARD_TYPE || \
-    defined CODI_FORWARD_TYPE
-class CAuxMPIWrapper;
-typedef CAuxMPIWrapper SU2_MPI;
-typedef MPI_Request SU2_MPI_Request;
-#elif defined CODI_REVERSE_TYPE
+#if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
 #include <medi/medi.hpp>
-#include <medi/codiMediPackTypes.hpp>
-
 using namespace medi;
 
-class CAdjointMPIWrapper;
-typedef CAdjointMPIWrapper SU2_MPI;
-typedef AMPI_Request SU2_MPI_Request;
+class CMediMPIWrapper;
+typedef CMediMPIWrapper SU2_MPI;
 
+#if defined CODI_REVERSE_TYPE
+#include <medi/codiMediPackTypes.hpp>
 #if CODI_PRIMAL_INDEX_TAPE
 typedef CoDiPackToolPrimalRestore<su2double> MediTool;
 #else
 typedef CoDiPackTool<su2double> MediTool;
-#endif
+#endif // defined CODI_REVERSE_TYPE
+#elif defined CODI_FORWARD_TYPE
+#include <medi/codiForwardMediPackTypes.hpp>
+typedef CoDiPackForwardTool<su2double> MediTool;
+#endif // defined CODI_FORWARD_TYPE
+
 typedef medi::MpiTypeDefault<MediTool> AMPI_ADOUBLE_TYPE;
 extern AMPI_ADOUBLE_TYPE* AMPI_ADOUBLE;
+
 #else
 class CMPIWrapper;
 typedef CMPIWrapper SU2_MPI;
-typedef MPI_Request SU2_MPI_Request;
-#endif
+#endif // defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
 /*!
  * \class CMPIWrapper
@@ -87,88 +82,34 @@ typedef MPI_Request SU2_MPI_Request;
  */
 
 class CMPIWrapper {
+
 public:
+
+  typedef MPI_Comm Comm;
+
+#if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
+  typedef AMPI_Request Request;
+#else
+  typedef MPI_Request Request;
+#endif
+
   static void Init(int *argc, char***argv);
 
-  static inline MPI_Request* convertRequest(SU2_MPI_Request* request);
+  static inline MPI_Request* convertRequest(Request* request);
 
   static void Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count);
 
   static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
-                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
+                    int tag, MPI_Comm comm, Request* request);
 
   static void Irecv(void *buf, int count, MPI_Datatype datatype, int source,
-                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
+                    int tag, MPI_Comm comm, Request* request);
 
-  static void Wait(SU2_MPI_Request *request, MPI_Status *status);
+  static void Wait(Request *request, MPI_Status *status);
 
-  static void Waitall(int nrequests, SU2_MPI_Request *request, MPI_Status *status);
+  static void Waitall(int nrequests, Request *request, MPI_Status *status);
 
-  static void Waitany(int nrequests, SU2_MPI_Request *request,
-                      int *index, MPI_Status *status);
-  
-  static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
-                   int tag, MPI_Comm comm);
-
-  static void Recv(void *buf, int count, MPI_Datatype datatype, int dest,
-                   int tag, MPI_Comm comm, MPI_Status *status);
-
-  static void Bcast(void *buf, int count, MPI_Datatype datatype, int root,
-                    MPI_Comm comm);
-
-  static void Bsend(void *buf, int count, MPI_Datatype datatype, int dest,
-                    int tag, MPI_Comm comm);
-
-  static void Reduce(void *sendbuf, void *recvbuf, int count,
-                     MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm);
-
-  static void Allreduce(void *sendbuf, void *recvbuf, int count,
-                        MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
-
-  static void Gather(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
-                     void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
-
-  static void Scatter(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
-                      void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
-
-  static void Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
-                        void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm);
-
-  static void Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
-                       int dest, int sendtag, void *recvbuf, int recvcnt,
-                       MPI_Datatype recvtype,int source, int recvtag,
-                       MPI_Comm comm, MPI_Status *status);
-
-protected:
-  static char* buff;
-
-};
-
-#if defined COMPLEX_TYPE || \
-    defined ADOLC_FORWARD_TYPE || \
-    defined CODI_FORWARD_TYPE
-
-/*!
- * \class CAuxMPIWrapper
- * \brief Class for defining the MPI wrapper routines for the simplest non-primitive data where a
- * auxiliary variable is attached to each primary value.
- * \author T. Albring
- * \version 5.0.0 "Raven"
- */
-class CAuxMPIWrapper : public CMPIWrapper{
-public:
-
-  static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
-                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
-
-  static void Irecv(void *buf, int count, MPI_Datatype datatype, int source,
-                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
-
-  static void Wait(SU2_MPI_Request *request, MPI_Status *status);
-
-  static void Waitall(int nrequests, SU2_MPI_Request *request, MPI_Status *status);
-
-  static void Waitany(int nrequests, SU2_MPI_Request *request,
+  static void Waitany(int nrequests, Request *request,
                       int *index, MPI_Status *status);
 
   static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
@@ -202,46 +143,18 @@ public:
                        int dest, int sendtag, void *recvbuf, int recvcnt,
                        MPI_Datatype recvtype,int source, int recvtag,
                        MPI_Comm comm, MPI_Status *status);
-
-private:
-
-  enum CommType {
-    ISEND,
-    IRECV
-  };
-
-  struct CommInfo{
-    CommType Type;
-    SU2_MPI_Request* RequestAux;
-    double* ValueBuffer;
-    double* AuxBuffer;
-    su2double* su2doubleBuffer;
-    int     count;
-  };
-
-  struct ValRank{
-    double value;
-    int rank;
-  };
-
-  static std::map<SU2_MPI_Request*, CommInfo>::iterator CommInfoIterator;
-
-  static std::map<SU2_MPI_Request*, CommInfo> CommInfoMap;
-
-  static void FinalizeCommunication(std::map<SU2_MPI_Request*, CommInfo>::iterator &CommInfo);
-
 };
 
-#elif defined CODI_REVERSE_TYPE
+#if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
 /*!
- * \class CAdjointMPIWrapper
- * \brief Adjoint MPI wrapper functions.
+ * \class CMediMPIWrapper
+ * \brief MPI wrapper functions for MediPack tool.
  * \author T. Albring
  * \version 5.0.0 "Raven"
  */
 
-class CAdjointMPIWrapper: public CMPIWrapper {
+class CMediMPIWrapper: public CMPIWrapper {
 public:
   static void Init(int *argc, char***argv);
 
@@ -254,16 +167,16 @@ public:
   static void Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count);
 
   static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
-                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
+                    int tag, MPI_Comm comm, Request* request);
 
   static void Irecv(void *buf, int count, MPI_Datatype datatype, int source,
-                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
+                    int tag, MPI_Comm comm, Request* request);
 
-  static void Wait(SU2_MPI_Request *request, MPI_Status *status);
+  static void Wait(SU2_MPI::Request *request, MPI_Status *status);
 
-  static void Waitall(int nrequests, SU2_MPI_Request *request, MPI_Status *status);
+  static void Waitall(int nrequests, Request *request, MPI_Status *status);
 
-  static void Waitany(int nrequests, SU2_MPI_Request *request,
+  static void Waitany(int nrequests, SU2_MPI::Request *request,
                       int *index, MPI_Status *status);
 
   static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
@@ -297,9 +210,6 @@ public:
                        int dest, int sendtag, void *recvbuf, int recvcnt,
                        MPI_Datatype recvtype,int source, int recvtag,
                        MPI_Comm comm, MPI_Status *status);
-
-protected:
-  static char* buff;
 
 };
 #endif

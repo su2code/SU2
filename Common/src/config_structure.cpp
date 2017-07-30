@@ -115,13 +115,13 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
 }
 
-SU2_Comm CConfig::GetMPICommunicator() {
+SU2_MPI::Comm CConfig::GetMPICommunicator() {
 
   return SU2_Communicator;
 
 }
 
-void CConfig::SetMPICommunicator(SU2_Comm Communicator) {
+void CConfig::SetMPICommunicator(SU2_MPI::Comm Communicator) {
 
   SU2_Communicator = Communicator;
 
