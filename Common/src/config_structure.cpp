@@ -3178,6 +3178,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SubsonicEngine_Cyl[6] = SubsonicEngine_Cyl[6]/12.0;
     
   }
+
+  if ((Kind_Turb_Model != SA) && (Kind_Trans_Model == BC)){
+    if (rank == MASTER_NODE){
+      cout << "Config error: BC transition model currently only available in combination with SA turbulence model!" << endl;
+    }
+    exit(EXIT_FAILURE);
+  }
   
   /*--- Check for constant lift mode. Initialize the update flag for
    the AoA with each iteration to false  ---*/
