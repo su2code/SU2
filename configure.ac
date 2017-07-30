@@ -470,9 +470,6 @@ AC_SUBST([LAPACK_LD])
 
 build_PY=yes
 
-# Complex type
-COMPLEX_CXX="-std=gnu++11 -DCOMPLEX_TYPE"
-
 # direct differentation type
 build_DIRECTDIFF=no
 DIRECTDIFF_CXX=
@@ -481,16 +478,7 @@ DIRECTDIFF_LIBS=
 build_REVERSE=no
 REVERSE_CXX=
 FORWARD_CXX=
-#CONFIGURE_ADOLC
 CONFIGURE_CODI
-
-if test $build_COMPLEX != "no"
-then 
-   DIRECTDIFF_CXX=$COMPLEX_CXX
-   build_DIRECTDIFF=yes
-   build_REVERSE=no
-   build_NORMAL=no
-fi
 
 AC_SUBST([DIRECTDIFF_CXX])
 AC_SUBST([DIRECTDIFF_LIBS])
