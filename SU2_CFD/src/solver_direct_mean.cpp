@@ -3658,7 +3658,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
   unsigned short two_phase= ((config->GetKind_Solver() == TWO_PHASE_EULER) || (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES)
-		  || (config->GetKind_Solver() == TWO_PHASE_RANS));
+		  || (config->GetKind_Solver() == TWO_PHASE_RANS) || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER)
+		  || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
@@ -4006,9 +4007,9 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   }
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-  
-  if (viscous || two_phase != NONE) {
-    
+
+  if (viscous || two_phase) {
+
     /*--- Constant viscosity model ---*/
     config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
     
@@ -4302,7 +4303,10 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
                (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool two_phase = ((config->GetKind_Solver() == TWO_PHASE_EULER) ||
                  (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-                 (config->GetKind_Solver() == TWO_PHASE_RANS));
+                 (config->GetKind_Solver() == TWO_PHASE_RANS) ||
+                 (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) ||
+                 (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+                 (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
@@ -4450,9 +4454,9 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
         }
         if (two_phase) {
-		  solver_container[iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n();
-		  solver_container[iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n1();
-		}
+		          solver_container[iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n();
+		          solver_container[iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n1();
+	        	}
       }
     }
     

@@ -891,11 +891,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
     if (two_phase && !turbulent) {
     	  solver_container[iMGlevel][TWO_PHASE_SOL] = new C2phase_HillSolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
-      solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      solver_container[iMGlevel][TWO_PHASE_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
+    	  solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    	  solver_container[iMGlevel][TWO_PHASE_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
       solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
-
     if (two_phase && turbulent) {
     	solver_container[iMGlevel][TWO_PHASE_SOL] = new C2phase_HillSolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
 
@@ -953,13 +952,12 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (adj_turb) {
       solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
     }
-    
     if (disc_adj) {
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
       if (adj_turb)
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
       if (adj_two_phase)
-        solver_container[iMGlevel][ADJTWO_PHASE_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_2PHASE_SYS, iMGlevel);
+        solver_container[iMGlevel][ADJTWO_PHASE_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TWO_PHASE_SOL], RUNTIME_2PHASE_SYS, iMGlevel);
     }
   }
 
@@ -1037,7 +1035,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   unsigned short iMGlevel;
   bool euler, ns, turbulent, hill_rus, hill_ausm,
   adj_euler, adj_ns, adj_turb,
-  two_phase,
+  two_phase, adj_two_phase,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj;
@@ -1074,6 +1072,9 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
+    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; disc_adj= true; adj_two_phase = true;  break;
+    case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; disc_adj = true; adj_two_phase=true; break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; adj_two_phase = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -1212,7 +1213,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
 
 void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
-  bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
+  bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, adj_two_phase, poisson, wave, fem,
       heat, template_solver, transition, disc_adj, two_phase;
 
   /*--- Initialize some useful booleans ---*/
@@ -1220,8 +1221,8 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
   ns               = false; adj_ns           = false;
   turbulent        = false; adj_turb         = false;
   poisson          = false; disc_adj         = false;
-  wave             = false;two_phase         = false;
-  heat             = false;
+  wave             = false; two_phase        = false;
+  heat             = false; adj_two_phase    = false;
   fem = false;
   transition       = false;
   template_solver  = false;
@@ -1245,7 +1246,9 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
-
+    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; disc_adj= true; adj_two_phase = true;  break;
+    case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; disc_adj = true; adj_two_phase=true; break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; adj_two_phase = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
   }
 
   /*--- DeAllocate solution for a template problem ---*/
@@ -1331,6 +1334,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; break;
+    case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -2067,6 +2073,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; break;
+    case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
