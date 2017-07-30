@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
   geometry_container = new CGeometry*[nZone];
   surface_movement   = new CSurfaceMovement*[nZone];
   grid_movement      = new CVolumetricMovement*[nZone];
-  output   = new COutput(config_container[iZone]);
+  output             = new COutput(config_container[ZONE_0]);
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
     
     /*--- initialization of output structure  ---*/
     
-    output  = new COutput(config_container[iZone]);
+    output  = new COutput(config_container[ZONE_0]);
     
     /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
     
@@ -282,17 +282,17 @@ int main(int argc, char *argv[]) {
    requires to move all the data to the master node---*/
   
   bool NewFile = false;
-  if (config_container[iZone]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
+  if (config_container[ZONE_0]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
   
   output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, NewFile, true);
   
-  if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
+  if (config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
   
     /*--- Write the the free-form deformation boxes after deformation. ---*/
     
     if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
     
-    surface_movement[iZone]->WriteFFDInfo(surface_movement, geometry_container, config_container);
+    surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
     
   }
   
