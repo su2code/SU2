@@ -724,8 +724,8 @@ void CAvgGrad_TurbSST::TemplatedComputeResidual(su2double *val_residual, su2doub
   diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
   diff_omega = 0.5*(diff_i_omega + diff_j_omega);
   
-  val_residual[0] = diff_kine*Proj_Mean_GradTurbVar_Normal[0];
-  val_residual[1] = diff_omega*Proj_Mean_GradTurbVar_Normal[1];
+  val_residual[0] = diff_kine*Proj_Mean_GradTurbVar[0];
+  val_residual[1] = diff_omega*Proj_Mean_GradTurbVar[1];
   
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
