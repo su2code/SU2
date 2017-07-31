@@ -34,7 +34,7 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CUpwSca_Template::CUpwSca_Template(unsigned short val_nDim,
+CUpwSca_Abstract::CUpwSca_Abstract(unsigned short val_nDim,
                                    unsigned short val_nVar,
                                    CConfig *config)
     : CNumerics(val_nDim, val_nVar, config) {
@@ -48,14 +48,14 @@ CUpwSca_Template::CUpwSca_Template(unsigned short val_nDim,
 
 }
 
-CUpwSca_Template::~CUpwSca_Template(void) {
+CUpwSca_Abstract::~CUpwSca_Abstract(void) {
 
   delete [] Velocity_i;
   delete [] Velocity_j;
 
 }
 
-void CUpwSca_Template::ComputeResidual(su2double *val_residual,
+void CUpwSca_Abstract::ComputeResidual(su2double *val_residual,
                                        su2double **val_Jacobian_i,
                                        su2double **val_Jacobian_j,
                                        CConfig *config) {
@@ -67,7 +67,7 @@ void CUpwSca_Template::ComputeResidual(su2double *val_residual,
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
 
-  ADPreacc();
+  ExtraADPreaccIn();
 
   if (incompressible) {
     Density_i = V_i[nDim+1];
@@ -97,7 +97,7 @@ void CUpwSca_Template::ComputeResidual(su2double *val_residual,
   a0 = 0.5*(q_ij+fabs(q_ij));
   a1 = 0.5*(q_ij-fabs(q_ij));
 
-  TemplatedComputeResidual(val_residual, val_Jacobian_i, val_Jacobian_j, config);
+  FinishResidualCalc(val_residual, val_Jacobian_i, val_Jacobian_j, config);
 
 
   AD::SetPreaccOut(val_residual, nVar);
@@ -108,17 +108,17 @@ void CUpwSca_Template::ComputeResidual(su2double *val_residual,
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                                unsigned short val_nVar,
                                CConfig *config)
-    : CUpwSca_Template(val_nDim, val_nVar, config) {
+    : CUpwSca_Abstract(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
 }
 
-void CUpwSca_TurbSA::ADPreacc() {
+void CUpwSca_TurbSA::ExtraADPreaccIn() {
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
 }
 
-void CUpwSca_TurbSA::TemplatedComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TurbSA::FinishResidualCalc(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   val_residual[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
   
@@ -128,7 +128,7 @@ void CUpwSca_TurbSA::TemplatedComputeResidual(su2double *val_residual, su2double
   }
 }
 
-CAvgGrad_Template::CAvgGrad_Template(unsigned short val_nDim,
+CAvgGrad_Abstract::CAvgGrad_Abstract(unsigned short val_nDim,
                                      unsigned short val_nVar,
                                      bool correct_grad,
                                      CConfig *config)
@@ -147,7 +147,7 @@ CAvgGrad_Template::CAvgGrad_Template(unsigned short val_nDim,
 
 }
 
-CAvgGrad_Template::~CAvgGrad_Template(void) {
+CAvgGrad_Abstract::~CAvgGrad_Abstract(void) {
 
   delete [] Edge_Vector;
   delete [] Proj_Mean_GradTurbVar_Normal;
@@ -159,7 +159,7 @@ CAvgGrad_Template::~CAvgGrad_Template(void) {
 
 }
 
-void CAvgGrad_Template::ComputeResidual(su2double *val_residual,
+void CAvgGrad_Abstract::ComputeResidual(su2double *val_residual,
                                         su2double **Jacobian_i,
                                         su2double **Jacobian_j,
                                         CConfig *config) {
@@ -172,7 +172,7 @@ void CAvgGrad_Template::ComputeResidual(su2double *val_residual,
   if (correct_gradient) {
     AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j ,nVar);
   }
-  ADPreacc();
+  ExtraADPreaccIn();
 
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
@@ -219,7 +219,7 @@ void CAvgGrad_Template::ComputeResidual(su2double *val_residual,
     }
   }
 
-  TemplatedComputeResidual(val_residual, Jacobian_i, Jacobian_j, config);
+  FinishResidualCalc(val_residual, Jacobian_i, Jacobian_j, config);
 
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
@@ -229,16 +229,16 @@ void CAvgGrad_Template::ComputeResidual(su2double *val_residual,
 CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim,
                                  unsigned short val_nVar, bool correct_grad,
                                  CConfig *config)
-   : CAvgGrad_Template(val_nDim, val_nVar, correct_grad, config), sigma(2./3.) {
+   : CAvgGrad_Abstract(val_nDim, val_nVar, correct_grad, config), sigma(2./3.) {
 }
 
 CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
 }
 
-void CAvgGrad_TurbSA::ADPreacc() {
+void CAvgGrad_TurbSA::ExtraADPreaccIn() {
 }
 
-void CAvgGrad_TurbSA::TemplatedComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TurbSA::FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
   /*--- Compute mean effective viscosity ---*/
   
@@ -261,17 +261,17 @@ CAvgGrad_TurbSA_Neg::CAvgGrad_TurbSA_Neg(unsigned short val_nDim,
                                          unsigned short val_nVar,
                                          bool correct_grad,
                                          CConfig *config)
-    : CAvgGrad_Template(val_nDim, val_nVar, correct_grad, config),
+    : CAvgGrad_Abstract(val_nDim, val_nVar, correct_grad, config),
       sigma(2./3.), cn1(16.0), fn(0.0) {
 }
 
 CAvgGrad_TurbSA_Neg::~CAvgGrad_TurbSA_Neg(void) {
 }
 
-void CAvgGrad_TurbSA_Neg::ADPreacc() {
+void CAvgGrad_TurbSA_Neg::ExtraADPreaccIn() {
 }
 
-void CAvgGrad_TurbSA_Neg::TemplatedComputeResidual(su2double *val_residual,
+void CAvgGrad_TurbSA_Neg::FinishResidualCalc(su2double *val_residual,
                                                    su2double **Jacobian_i,
                                                    su2double **Jacobian_j,
                                                    CConfig *config) {
@@ -650,13 +650,13 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                                  unsigned short val_nVar,
                                  CConfig *config)
-    : CUpwSca_Template(val_nDim, val_nVar, config) {
+    : CUpwSca_Abstract(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
 }
 
-void CUpwSca_TurbSST::ADPreacc() {
+void CUpwSca_TurbSST::ExtraADPreaccIn() {
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+2);
     AD::SetPreaccIn(V_j, nDim+2);
@@ -667,7 +667,7 @@ void CUpwSca_TurbSST::ADPreacc() {
   }
 }
 
-void CUpwSca_TurbSST::TemplatedComputeResidual(su2double *val_residual,
+void CUpwSca_TurbSST::FinishResidualCalc(su2double *val_residual,
                                                su2double **val_Jacobian_i,
                                                su2double **val_Jacobian_j,
                                                CConfig *config) {
@@ -688,7 +688,7 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
                                    unsigned short val_nVar,
                                    su2double *constants, bool correct_grad,
                                    CConfig *config)
- : CAvgGrad_Template(val_nDim, val_nVar, correct_grad, config) {
+ : CAvgGrad_Abstract(val_nDim, val_nVar, correct_grad, config) {
   
   sigma_k1  = constants[0];
   sigma_om1 = constants[2];
@@ -700,11 +700,11 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
 CAvgGrad_TurbSST::~CAvgGrad_TurbSST(void) {
 }
 
-void CAvgGrad_TurbSST::ADPreacc() {
+void CAvgGrad_TurbSST::ExtraADPreaccIn() {
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
 }
 
-void CAvgGrad_TurbSST::TemplatedComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
   su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
   su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
@@ -836,17 +836,17 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim,
                                unsigned short val_nVar,
                                CConfig *config)
-  : CUpwSca_Template(val_nDim, val_nVar, config) {
+  : CUpwSca_Abstract(val_nDim, val_nVar, config) {
 
 }
 
 CUpwSca_TurbML::~CUpwSca_TurbML(void) {
 }
 
-void CUpwSca_TurbML::ADPreacc() {
+void CUpwSca_TurbML::ExtraADPreaccIn() {
 }
 
-void CUpwSca_TurbML::TemplatedComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TurbML::FinishResidualCalc(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
   val_residual[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
   
@@ -859,16 +859,16 @@ void CUpwSca_TurbML::TemplatedComputeResidual(su2double *val_residual, su2double
 CAvgGrad_TurbML::CAvgGrad_TurbML(unsigned short val_nDim,
                                  unsigned short val_nVar, bool correct_grad,
                                  CConfig *config)
-    : CAvgGrad_Template(val_nDim, val_nVar, correct_grad, config), sigma(2./3.) {
+    : CAvgGrad_Abstract(val_nDim, val_nVar, correct_grad, config), sigma(2./3.) {
 }
 
 CAvgGrad_TurbML::~CAvgGrad_TurbML(void) {
 }
 
-void CAvgGrad_TurbML::ADPreacc() {
+void CAvgGrad_TurbML::ExtraADPreaccIn() {
 }
 
-void CAvgGrad_TurbML::TemplatedComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TurbML::FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
 
   /*--- Compute mean effective viscosity ---*/
   
