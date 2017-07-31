@@ -141,46 +141,4 @@ su2double *derivs(su2double x, int m, su2double y[], SUBoom::RayData data);
 su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data);
 su2double **WaveformToPressureSignal(su2double fvec[], unsigned int M, int &Msig);
 su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2double coeffs[]);
-
-class searchTree{
-public:
-  unsigned long nPointsTree;
-  unsigned short nDimTree;
-  int *count;
-  su2double **yNN;
-
-  int **kNN;
-
-  class treeNode{
-    public:
-      long root;
-      unsigned long *ind;
-      long *parent, *left, *right;
-      unsigned short *color;
-      su2double *x, *y, *z, *r, *phi;
-  };
-
-  treeNode nodes;
-
-  searchTree();
-  searchTree(unsigned short nDim, unsigned long nPoints, const su2double **coord,
-         const su2double Minf, const su2double r0, const su2double *phi, unsigned short nPhi);
-
-  void buildRBTree();
-  void insertRB(long i, long j);
-  void insertRB_1(long i);
-  void insertRB_2(long i);
-  void insertRB_3(long i);
-  void insertRB_4(long i);
-  void insertRB_5(long i);
-  void rotateLeft(long i);
-  void rotateRight(long i);
-  void kNNRB(long i, int k, const su2double r0);
-  
-  void buildQuadTree();
-  void kNNQuad();
-
-};
-void MergeSort(searchTree::treeNode nodes, int l, int r, unsigned short nDimTree);
-void merge(searchTree::treeNode nodes, int l, int m, int r, unsigned short nDimTree);
 void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj, su2double *isoparams);
