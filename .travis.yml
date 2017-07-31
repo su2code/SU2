@@ -12,16 +12,15 @@ compiler:
 notifications:
     email:
         recipients:
-            - clarkp@utexas.edu
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - pecos-dev
-        - numerics-refactoring
+        - develop
 
 env:
     global:
-        CXXFLAGS="-O1 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security"
+        CXXFLAGS="-O3 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security" 
     matrix:
         # Serial build and test
         - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
