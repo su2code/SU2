@@ -11143,6 +11143,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool transition     = (config->GetKind_Trans_Model() == BC);
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   
@@ -11362,9 +11363,20 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par += 1;
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
-    
+
+    /*--- Add the intermittency for the BC trans. model. ---*/
+
+    if (transition) {
+      nVar_Par += 1;
+      if (config->GetOutput_FileFormat() == PARAVIEW){
+        Variable_Names.push_back("gamma_BC");
+      } else {
+        Variable_Names.push_back("<greek>g</greek><sub>BC</sub>");
+      }
+    }
+
     /*--- New variables get registered here before the end of the loop. ---*/
-    
+
   }
   
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -11580,6 +11592,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
         }
         
+        /*--- Load data for the intermittency of the BC trans. model. ---*/
+
+        if (transition) {
+          Local_Data[jPoint][iVar] = solver[TURB_SOL]->node[iPoint]->GetGammaBC(); iVar++;
+        }
+
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
         
