@@ -1461,10 +1461,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /*!\par CONFIG_CATEGORY: Optimization Problem*/
   
-  /* DESCRIPTION: Setup for design variables (upper bound) */
-  addDoubleOption("OPT_BOUND_UPPER", DVBound_Upper, 1E6);
-  /* DESCRIPTION: Setup for design variables (lower bound) */
-  addDoubleOption("OPT_BOUND_LOWER", DVBound_Lower, -1E6);
+  /* DESCRIPTION: Scale the line search in the optimizer */
+  addDoubleOption("OPT_RELAX_FACTOR", Opt_RelaxFactor, 1.0);
+
+  /* DESCRIPTION: Bound the line search in the optimizer */
+  addDoubleOption("OPT_LINE_SEARCH_BOUND", Opt_LineSearch_Bound, 1E6);
 
   /*!\par CONFIG_CATEGORY: Wind Gust \ingroup Config*/
   /*--- Options related to wind gust simulations ---*/
@@ -1758,9 +1759,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Free surface damping coefficient */
 	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
-  
-  /* DESCRIPTION: Free surface damping coefficient */
-  addDoubleOption("FFD_SCALE", FFD_Scale, 1.0);
 
   /* DESCRIPTION: Definition of the FFD boxes */
   addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);
@@ -1832,6 +1830,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Flag specifying if the mesh was decomposed */
   addPythonOption("DECOMPOSED");
+
+  /* DESCRIPTION: Optimization gradient factor */
+  addPythonOption("OPT_GRADIENT_FACTOR");
+  
+  /* DESCRIPTION: Upper bound for the optimizer */
+  addPythonOption("OPT_BOUND_UPPER");
+  
+  /* DESCRIPTION: Lower bound for the optimizer */
+  addPythonOption("OPT_BOUND_LOWER");
 
   /* DESCRIPTION: Number of zones of the problem */
   addPythonOption("NZONES");
@@ -2390,6 +2397,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] == MOVING_HTP)))
     Grid_Movement = true;
+
+  /*--- The Line Search should be applied only in the deformation stage. ---*/
+
+  if (Kind_SU2 != SU2_DEF) {
+  	Opt_RelaxFactor = 1.0;
+  }
 
   /*--- If it is not specified, set the mesh motion mach number
    equal to the freestream value. ---*/

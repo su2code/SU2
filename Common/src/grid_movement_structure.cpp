@@ -2571,7 +2571,9 @@ void CVolumetricMovement::SetVolume_Scaling(CGeometry *geometry, CConfig *config
   
   /*--- The scaling factor is the only input to this option. Currently, 
    the mesh must be scaled the same amount in all three directions. ---*/
-  su2double Scale = config->GetDV_Value(0);
+  
+  su2double Scale = config->GetDV_Value(0)*config->GetOpt_RelaxFactor();
+  
   if (rank == MASTER_NODE) {
     cout << "Scaling the mesh by a constant factor of " << Scale << "." << endl;
   }
@@ -2607,12 +2609,13 @@ void CVolumetricMovement::SetVolume_Translation(CGeometry *geometry, CConfig *co
   unsigned short iDim;
   unsigned long iPoint;
   su2double *Coord, deltaX[3] = {0.0,0.0,0.0}, newCoord[3] = {0.0,0.0,0.0};
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Get the unit vector and magnitude of displacement. Note that we
    assume this is the first DV entry since it is for mesh translation.
    Create the displacement vector from the magnitude and direction. ---*/
   
-  su2double Ampl = config->GetDV_Value(0);
+  su2double Ampl = config->GetDV_Value(0)*Scale;
   su2double length = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     deltaX[iDim] = config->GetParamDV(0, iDim);
@@ -2658,6 +2661,7 @@ void CVolumetricMovement::SetVolume_Rotation(CGeometry *geometry, CConfig *confi
   unsigned long iPoint;
   su2double x, y, z;
   su2double *Coord, deltaX[3] = {0.0,0.0,0.0}, newCoord[3] = {0.0,0.0,0.0};
+  su2double Scale = config->GetOpt_RelaxFactor();
 
   /*--- xyz-coordinates of a point on the line of rotation. */
   su2double a = config->GetParamDV(0, 0);
@@ -2673,13 +2677,13 @@ void CVolumetricMovement::SetVolume_Rotation(CGeometry *geometry, CConfig *confi
     w = config->GetParamDV(0, 5)-config->GetParamDV(0, 2);
   
   /*--- The angle of rotation. ---*/
-  su2double theta = config->GetDV_Value(0)*PI_NUMBER/180.0;
+  su2double theta = config->GetDV_Value(0)*Scale*PI_NUMBER/180.0;
   
   /*--- Print to the console. ---*/
   if (rank == MASTER_NODE) {
     cout << "Rotation axis vector: (" << u << ", ";
     cout << v << ", " << w << ")." << endl;
-    cout << "Angle of rotation: " << config->GetDV_Value(0);
+    cout << "Angle of rotation: " << config->GetDV_Value(0)*Scale;
     cout << " degrees." << endl;
   }
   
@@ -2741,6 +2745,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
   unsigned short Degree_Unitary [] = {1,1,1}, BSpline_Unitary [] = {2,2,2};
+  su2double MaxDiff, Current_Scale, Ratio, New_Scale;
 	int rank = MASTER_NODE;
 	string FFDBoxTag;
 	bool allmoving;
@@ -2748,6 +2753,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
   bool cartesian = (config->GetFFD_CoordSystem() == CARTESIAN);
+  su2double BoundLimit = config->GetOpt_LineSearch_Bound();
   
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -2997,7 +3003,42 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
             
             /*--- Recompute cartesian coordinates using the new control point location ---*/
             
-            SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, false);
+            MaxDiff = SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, false);
+            
+            if ((MaxDiff > BoundLimit) && (config->GetKind_SU2() == SU2_DEF)) {
+              
+              if (rank == MASTER_NODE) cout << "Out-of-bounds, re-adjusting scale factor to safisfy line search limit." << endl;
+              
+              Current_Scale = config->GetOpt_RelaxFactor();
+              Ratio = (BoundLimit/MaxDiff);
+              New_Scale = Current_Scale *(Ratio-1.0);
+              config->SetOpt_RelaxFactor(New_Scale);
+              
+              /*--- Apply the design variables to the control point position ---*/
+              
+              for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+                switch ( config->GetDesign_Variable(iDV) ) {
+                  case FFD_CONTROL_POINT_2D : SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_CAMBER_2D :        SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_THICKNESS_2D :     SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_TWIST_2D :         SetFFDTwist_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_CONTROL_POINT :    SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_NACELLE :          SetFFDNacelle(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_GULL :             SetFFDGull(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_TWIST :            SetFFDTwist(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_ROTATION :         SetFFDRotation(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_CONTROL_SURFACE :  SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_CAMBER :           SetFFDCamber(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_THICKNESS :        SetFFDThickness(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                  case FFD_ANGLE_OF_ATTACK :  SetFFDAngleOfAttack(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                }
+              }
+              
+              /*--- Recompute cartesian coordinates using the new control point location ---*/
+              
+              MaxDiff = SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, false);
+              
+            }
             
             /*--- Reparametrization of the parent FFD box ---*/
             
@@ -3989,7 +4030,7 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 	
 }
 
-void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, bool ResetDef) {
+su2double CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, bool ResetDef) {
   
   su2double *CartCoordNew, Diff, my_MaxDiff = 0.0, MaxDiff,
   *ParamCoord, VarCoord[3] = {0.0, 0.0, 0.0}, CartCoordOld[3] = {0.0, 0.0, 0.0};
@@ -4110,6 +4151,8 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
   if (rank == MASTER_NODE)
     cout << "Update cartesian coord        | FFD box: " << FFDBox->GetTag() << ". Max Diff: " << MaxDiff <<"."<< endl;
   
+  return MaxDiff;
+
 }
 
 
@@ -4119,7 +4162,7 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j, iFFDBox, iPlane;
   string design_FFDBox;
-  su2double Scale = config->GetFFD_Scale();
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4255,7 +4298,7 @@ bool CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
   unsigned short index[3], i, j, k, iPlane, iFFDBox;
   bool CheckIndex;
   string design_FFDBox;
-  su2double Scale = config->GetFFD_Scale();
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4414,7 +4457,7 @@ bool CSurfaceMovement::SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFor
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, k, iPlane, iFFDBox;
   string design_FFDBox;
-  su2double Scale = config->GetFFD_Scale();
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4471,7 +4514,7 @@ bool CSurfaceMovement::SetFFDNacelle(CGeometry *geometry, CConfig *config, CFree
   unsigned short index[3], i, j, k, iPlane, iFFDBox, Theta, ThetaMax;
   string design_FFDBox;
   bool SameCP = false;
-  su2double Scale = config->GetFFD_Scale();
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4605,7 +4648,7 @@ bool CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFr
   su2double Ampl, movement[3] = {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iFFDBox;
   string design_FFDBox;
-  su2double Scale = config->GetFFD_Scale();
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4651,7 +4694,7 @@ bool CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, 
   su2double Ampl, movement[3]= {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iFFDBox;
   string design_FFDBox;
-  su2double Scale = config->GetFFD_Scale();
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4704,7 +4747,7 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
   su2double Ampl, movement[3] = {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iPlane, iFFDBox;
   string design_FFDBox;
-  su2double Scale = config->GetFFD_Scale();
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4768,7 +4811,9 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 void CSurfaceMovement::SetFFDAngleOfAttack(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
                                            unsigned short iDV, bool ResetDef) {
   
-  su2double Ampl = config->GetDV_Value(iDV);
+  su2double Scale = config->GetOpt_RelaxFactor();
+
+  su2double Ampl = config->GetDV_Value(iDV)*Scale;
   
   config->SetAoA_Offset(Ampl);
   
@@ -4780,7 +4825,7 @@ bool CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
   su2double Ampl, movement[3] = {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iPlane, iFFDBox;
   string design_FFDBox;
-  su2double Scale = config->GetFFD_Scale();
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4850,6 +4895,7 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
   Variable_P0, Variable_P1, Intersection[3], Variable_Interp;
   unsigned short index[3], iPlane, iFFDBox;
   string design_FFDBox;
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4926,7 +4972,7 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
        otherwise it is difficult to compare with other length based design variables. ---*/
       
       su2double RefLength = config->GetRefLength();
-      su2double theta = atan(config->GetDV_Value(iDV)/RefLength);
+      su2double theta = atan(config->GetDV_Value(iDV)*Scale/RefLength);
       
       /*--- An intermediate value used in computations. ---*/
       
@@ -4983,6 +5029,7 @@ bool CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
   su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
   unsigned short index[3], iFFDBox;
   string design_FFDBox;
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -5010,7 +5057,7 @@ bool CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
     
     /*--- The angle of rotation. ---*/
     
-    su2double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
+    su2double theta = config->GetDV_Value(iDV)*Scale*PI_NUMBER/180.0;
     
     /*--- An intermediate value used in computations. ---*/
     
@@ -5060,6 +5107,7 @@ bool CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *confi
   su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
   unsigned short index[3], iFFDBox;
   string design_FFDBox;
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -5087,7 +5135,7 @@ bool CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *confi
     
     /*--- The angle of rotation. ---*/
     
-    su2double theta = -config->GetDV_Value(iDV)*PI_NUMBER/180.0;
+    su2double theta = -config->GetDV_Value(iDV)*Scale*PI_NUMBER/180.0;
     
     /*--- An intermediate value used in computations. ---*/
     
@@ -5132,7 +5180,8 @@ bool CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *confi
 
 void CSurfaceMovement::SetAngleOfAttack(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
   
-  su2double Ampl = config->GetDV_Value(iDV);
+  su2double Scale = config->GetOpt_RelaxFactor();
+  su2double Ampl = config->GetDV_Value(iDV)*Scale;
   config->SetAoA_Offset(Ampl);
   
 }
@@ -5145,6 +5194,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
   
 	bool upper = true;
+  su2double Scale = config->GetOpt_RelaxFactor();
 
 	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
@@ -5236,7 +5286,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 
 	/*--- Perform multiple airfoil deformation ---*/
   
-	su2double Ampl = config->GetDV_Value(iDV);
+	su2double Ampl = config->GetDV_Value(iDV)*Scale;
 	su2double xk = config->GetParamDV(iDV, 1);
 	const su2double t2 = 3.0;
   
@@ -5298,6 +5348,7 @@ void CSurfaceMovement::SetSurface_Bump(CGeometry *boundary, CConfig *config, uns
 	unsigned long iVertex;
 	unsigned short iMarker;
   su2double VarCoord[3] = {0.0,0.0,0.0}, ek, fk, *Coord, xCoord;
+  su2double Scale = config->GetOpt_RelaxFactor();
 
 	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
@@ -5311,7 +5362,7 @@ void CSurfaceMovement::SetSurface_Bump(CGeometry *boundary, CConfig *config, uns
 
 	/*--- Perform multiple airfoil deformation ---*/
 
-	su2double Ampl = config->GetDV_Value(iDV);
+	su2double Ampl = config->GetDV_Value(iDV)*Scale;
 	su2double x_start = config->GetParamDV(iDV, 0);
 	su2double x_end = config->GetParamDV(iDV, 1);
 	su2double BumpSize = x_end - x_start;
@@ -5353,6 +5404,7 @@ void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned sho
   	TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
   
 	bool upper = true;
+  su2double Scale = config->GetOpt_RelaxFactor();
 
 	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
@@ -5444,7 +5496,7 @@ void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned sho
 
 	/*--- Perform multiple airfoil deformation ---*/
   	
-	su2double Ampl = config->GetDV_Value(iDV);
+  su2double Ampl = config->GetDV_Value(iDV)*Scale;
 	su2double KulfanNum = config->GetParamDV(iDV, 1) - 1.0;
 	su2double maxKulfanNum = config->GetParamDV(iDV, 2) - 1.0;
 	if (KulfanNum < 0) {
@@ -5528,6 +5580,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 	unsigned short iMarker;
   su2double VarCoord[3] = {0.0,0.0,0.0}, *Coord;
 	su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
@@ -5555,7 +5608,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 	
 	/*--- The angle of rotation. ---*/
   
-	su2double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
+	su2double theta = config->GetDV_Value(iDV)*Scale*PI_NUMBER/180.0;
 	
 	/*--- An intermediate value used in computations. ---*/
   
@@ -5599,7 +5652,8 @@ void CSurfaceMovement::SetTranslation(CGeometry *boundary, CConfig *config, unsi
   unsigned long iVertex;
   unsigned short iMarker;
   su2double VarCoord[3] = {0.0,0.0,0.0};
-  su2double Ampl = config->GetDV_Value(iDV);
+  su2double Scale = config->GetOpt_RelaxFactor();
+  su2double Ampl = config->GetDV_Value(iDV)*Scale;
   
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
@@ -5633,7 +5687,8 @@ void CSurfaceMovement::SetScale(CGeometry *boundary, CConfig *config, unsigned s
 	unsigned long iVertex;
   unsigned short iMarker;
 	su2double VarCoord[3] = {0.0,0.0,0.0}, x, y, z, *Coord;
-	su2double Ampl = config->GetDV_Value(iDV);
+  su2double Scale = config->GetOpt_RelaxFactor();
+	su2double Ampl = config->GetDV_Value(iDV)*Scale;
 	
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
