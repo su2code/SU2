@@ -581,9 +581,7 @@ def read_config(filename):
         
     #: for line
 
-    #
-    # Default values for simulation parameters
-    #
+    #hack - twl
     if not data_dict.has_key('DV_VALUE_NEW'):
         data_dict['DV_VALUE_NEW'] = [0]
     if not data_dict.has_key('DV_VALUE_OLD'):
@@ -592,6 +590,8 @@ def read_config(filename):
         data_dict['OPT_ITERATIONS'] = 100
     if not data_dict.has_key('OPT_ACCURACY'):
         data_dict['OPT_ACCURACY'] = 1e-10
+    if not data_dict.has_key('OPT_GRADIENT_FACTOR'):
+        data_dict['OPT_GRADIENT_FACTOR'] = 1.0
     if not data_dict.has_key('OPT_BOUND_UPPER'):
         data_dict['OPT_BOUND_UPPER'] = 1e10
     if not data_dict.has_key('OPT_BOUND_LOWER'):
