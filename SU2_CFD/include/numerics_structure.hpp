@@ -1349,6 +1349,11 @@ public:
   virtual su2double GetCrossProduction(void);
 
   /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetGammaBC(void);
+  
+  /*!
    * \overload
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i
    * \param[in] config - Definition of the particular problem.
@@ -4012,13 +4017,14 @@ private:
   bool incompressible;
   bool rotating_frame;
   bool transition;
+  su2double gamma_BC;
   su2double intermittency;
   su2double Production, Destruction, CrossProduction;
 
 public:
 
   /*!
-   * \brief Constructor of the class.
+   * \brief Constructor of the cla
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4067,6 +4073,12 @@ public:
    * \brief ______________.
    */
   su2double GetProduction(void);
+
+  /*!
+   * \brief  Get the intermittency for the BC trans. model.
+   * \return Value of the intermittency.
+   */
+  su2double GetGammaBC(void);
 
   /*!
    * \brief  ______________.
