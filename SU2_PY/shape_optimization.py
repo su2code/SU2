@@ -83,6 +83,8 @@ def main():
     sys.stdout.write('| - Prof. Nicolas R. Gauger\'s group at Kaiserslautern U. of Technology. |\n')
     sys.stdout.write('| - Prof. Alberto Guardone\'s group at Polytechnic University of Milan.  |\n')
     sys.stdout.write('| - Prof. Rafael Palacios\' group at Imperial College London.            |\n')
+    sys.stdout.write('| - Prof. Edwin van der Weide\' group at the University of Twente.       |\n')
+    sys.stdout.write('| - Prof. Vincent Terrapon\' group at the University of Liege.           |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
     sys.stdout.write('| Copyright (C) 2012-2017 SU2, the open-source CFD code.                |\n')
     sys.stdout.write('|                                                                       |\n')
