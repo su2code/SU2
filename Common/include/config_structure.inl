@@ -1610,6 +1610,8 @@ inline su2double CConfig::GetQuadrature_Factor_Time_ADER_DG(void) {return Quadra
 
 inline su2double CConfig::GetTheta_Interior_Penalty_DGFEM(void) {return Theta_Interior_Penalty_DGFEM;}
 
+inline bool CConfig::GetCompute_Entropy(void) {return Compute_Entropy;}
+
 inline bool CConfig::GetStore_Cart_Grad_BasisFunctions_DGFEM(void) {return Store_Cart_Grad_BasisFunctions_DGFEM;}
 
 inline bool CConfig::GetUse_Lumped_MassMatrix_DGFEM(void) {return Use_Lumped_MassMatrix_DGFEM;}

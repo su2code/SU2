@@ -817,7 +817,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
       else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.49);
 
-      FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
+      FluidModel = new CIdealGas(1.4, config->GetGas_Constant(), config->GetCompute_Entropy());
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
         Density_FreeStream = FluidModel->GetDensity();
@@ -832,7 +832,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
     case IDEAL_GAS:
 
-      FluidModel = new CIdealGas(Gamma, config->GetGas_Constant());
+      FluidModel = new CIdealGas(Gamma, config->GetGas_Constant(), config->GetCompute_Entropy());
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
         Density_FreeStream = FluidModel->GetDensity();
@@ -1054,12 +1054,12 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   switch (config->GetKind_FluidModel()) {
 
     case STANDARD_AIR:
-      FluidModel = new CIdealGas(1.4, Gas_ConstantND);
+      FluidModel = new CIdealGas(1.4, Gas_ConstantND, config->GetCompute_Entropy());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 
     case IDEAL_GAS:
-      FluidModel = new CIdealGas(Gamma, Gas_ConstantND);
+      FluidModel = new CIdealGas(Gamma, Gas_ConstantND, config->GetCompute_Entropy());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 
@@ -5330,6 +5330,10 @@ void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
           BC_HeatFlux_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
                            numerics[CONV_BOUND_TERM], iMarker);
           break;
+        case RIEMANN_BOUNDARY:
+          BC_Riemann(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                     numerics[CONV_BOUND_TERM], iMarker);
+          break;
         case CUSTOM_BOUNDARY:
           BC_Custom(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
                     numerics[CONV_BOUND_TERM]);
@@ -6299,6 +6303,632 @@ void CFEM_DG_EulerSolver::ADER_DG_Iteration(const unsigned long elemBeg,
   }
 }
 
+void CFEM_DG_EulerSolver::BoundaryStates_Euler_Wall(CConfig                  *config,
+                                                    const CSurfaceElementFEM *surfElem,
+                                                    const su2double          *solIntL,
+                                                    su2double                *solIntR) {
+
+  /*--- Apply the inviscid wall boundary conditions to compute the right
+        state in the integration points. There are two options. Either the
+        normal velocity is negated or the normal velocity is set to zero.
+        Some experiments are needed to see which formulation gives better
+        results. ---*/
+  const unsigned short ind  = surfElem->indStandardElement;
+  const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the left and right solution and the normals
+       for this integration point. */
+    const su2double *UL      = solIntL + i*nVar;
+          su2double *UR      = solIntR + i*nVar;
+    const su2double *normals = surfElem->metricNormalsFace.data() + i*(nDim+1);
+
+    /* Compute the normal component of the momentum variables. */
+    su2double rVn = 0.0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim)
+      rVn += UL[iDim+1]*normals[iDim];
+
+    /* If the normal velocity must be mirrored instead of set to zero,
+       the normal component that must be subtracted must be doubled. If the
+       normal velocity must be set to zero, simply comment this line. */
+    //rVn *= 2.0;
+
+    /* Set the right state. The initial value of the total energy is the
+       energy of the left state. */
+    UR[0]      = UL[0];
+    UR[nDim+1] = UL[nDim+1];
+    for(unsigned short iDim=0; iDim<nDim; ++iDim)
+      UR[iDim+1] = UL[iDim+1] - rVn*normals[iDim];
+
+    /*--- Actually, only the internal energy of UR is equal to UL. If the
+          kinetic energy differs for UL and UR, the difference must be
+          subtracted from the total energy of UR to obtain the correct
+          value. ---*/
+    su2double DensityInv = 1.0/UL[0];
+    su2double diffKin    = 0;
+    for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+      const su2double velL = DensityInv*UL[iDim];
+      const su2double velR = DensityInv*UR[iDim];
+      diffKin += velL*velL - velR*velR;
+    }
+
+    UR[nDim+1] -= 0.5*UL[0]*diffKin;
+  }
+}
+
+void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
+                                               const CSurfaceElementFEM *surfElem,
+                                               unsigned short           val_marker,
+                                               const su2double          *solIntL,
+                                               su2double                *solIntR) {
+
+  /*--- Retrieve the specified total conditions for this inlet. ---*/
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  su2double P_Total   = config->GetInlet_Ptotal(Marker_Tag);
+  su2double T_Total   = config->GetInlet_Ttotal(Marker_Tag);
+  su2double *Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+
+  /*--- Non-dim. the inputs if necessary, and compute the total enthalpy. ---*/
+  P_Total /= config->GetPressure_Ref();
+  T_Total /= config->GetTemperature_Ref();
+
+  su2double Gas_Constant = config->GetGas_ConstantND();
+  su2double H_Total      = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
+
+  /*--- Apply the subsonic inlet boundary conditions to compute the right
+        state in the integration points. ---*/
+  const unsigned short ind  = surfElem->indStandardElement;
+  const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the left and right solution and the normals
+       for this integration point. */
+    const su2double *UL      = solIntL + i*nVar;
+          su2double *UR      = solIntR + i*nVar;
+    const su2double *normals = surfElem->metricNormalsFace.data() + i*(nDim+1);
+
+    /*--- Compute the normal velocity, the speed of sound squared and
+          the pressure in this integration point. ---*/
+    const su2double DensityInv = 1.0/UL[0];
+    su2double VelocityNormal = 0.0, Velocity2 = 0.0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+      const su2double vel = UL[iDim+1]*DensityInv;
+      VelocityNormal     += vel*normals[iDim];
+      Velocity2          += vel*vel;
+    }
+
+    su2double StaticEnergy = UL[nDim+1]*DensityInv - 0.5*Velocity2;
+
+    FluidModel->SetTDState_rhoe(UL[0], StaticEnergy);
+    su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+    su2double Pressure    = FluidModel->GetPressure();
+
+    /*--- Compute the Riemann invariant to be extrapolated. ---*/
+    const su2double Riemann = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One + VelocityNormal;
+
+    /*--- Total speed of sound. The expression below is also valid for variable cp,
+          although a linearization around the value of the left state is performed. ---*/
+    const su2double SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - DensityInv*(UL[nDim+1] + Pressure)
+                                      +                  0.5*Velocity2) + SoundSpeed2;
+
+    /*--- Dot product of normal and flow direction. This should be
+          negative due to outward facing boundary normal convention. ---*/
+    su2double alpha = 0.0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim)
+      alpha += normals[iDim]*Flow_Dir[iDim];
+
+    /*--- Coefficients in the quadratic equation for the magnitude of the velocity. ---*/
+    const su2double aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
+    const su2double bb = -1.0*Gamma_Minus_One*alpha*Riemann;
+    const su2double cc =  0.5*Gamma_Minus_One*Riemann*Riemann
+                       -  2.0*SoundSpeed_Total2/Gamma_Minus_One;
+
+    /*--- Solve the equation for the magnitude of the velocity. As this value
+          must be positive and both aa and bb are positive (alpha is negative and
+          Riemann is positive up till Mach = 5.0 or so, which is not really subsonic
+          anymore), it is clear which of the two possible solutions must be taken.
+          Some clipping is present, but this is normally not active. ---*/
+    su2double dd      = bb*bb - 4.0*aa*cc;   dd      = sqrt(max(0.0, dd));
+    su2double Vel_Mag = (-bb + dd)/(2.0*aa); Vel_Mag = max(0.0, Vel_Mag);
+    Velocity2 = Vel_Mag*Vel_Mag;
+
+    /*--- Compute speed of sound from total speed of sound eqn. ---*/
+    SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
+
+    /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
+    su2double Mach2 = Velocity2/SoundSpeed2; Mach2 = min(1.0, Mach2);
+
+    Velocity2 = Mach2*SoundSpeed2;
+    Vel_Mag   = sqrt(Velocity2);
+
+    /*--- Static temperature from the speed of sound relation. ---*/
+    SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
+
+    const su2double Temperature = SoundSpeed2/(Gamma*Gas_Constant);
+
+    /*--- Static pressure using isentropic relation at a point ---*/
+    Pressure = P_Total*pow((Temperature/T_Total), Gamma/Gamma_Minus_One);
+
+    /*--- Density at the inlet from the gas law ---*/
+    const su2double Density = Pressure/(Gas_Constant*Temperature);
+
+    /*--- Store the conservative variables in UR. ---*/
+    UR[0]      = Density;
+    UR[nDim+1] = Pressure/Gamma_Minus_One + 0.5*Density*Velocity2;
+
+    for(unsigned short iDim=0; iDim<nDim; ++iDim)
+      UR[iDim+1] = Density*Vel_Mag*Flow_Dir[iDim];
+  }
+}
+
+void CFEM_DG_EulerSolver::BoundaryStates_Outlet(CConfig                  *config,
+                                                const CSurfaceElementFEM *surfElem,
+                                                unsigned short           val_marker,
+                                                const su2double          *solIntL,
+                                                su2double                *solIntR) {
+
+  /*--- Retrieve the specified back pressure for this outlet.
+        Nondimensionalize, if necessary. ---*/
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  su2double P_Exit = config->GetOutlet_Pressure(Marker_Tag);
+  P_Exit = P_Exit/config->GetPressure_Ref();
+
+  /*--- Apply the subsonic inlet boundary conditions to compute the right
+        state in the integration points. ---*/
+  const unsigned short ind  = surfElem->indStandardElement;
+  const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the left and right solution and the normals
+       for this integration point. */
+    const su2double *UL      = solIntL + i*nVar;
+          su2double *UR      = solIntR + i*nVar;
+    const su2double *normals = surfElem->metricNormalsFace.data() + i*(nDim+1);
+
+    /*--- Compute the normal velocity, the speed of sound squared and
+          the pressure in this integration point. ---*/
+    const su2double DensityInv = 1.0/UL[0];
+    su2double VelocityNormal = 0.0, Velocity2 = 0.0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+      const su2double vel = UL[iDim+1]*DensityInv;
+      VelocityNormal     += vel*normals[iDim];
+      Velocity2          += vel*vel;
+    }
+
+    su2double StaticEnergy = UL[nDim+1]*DensityInv - 0.5*Velocity2;
+
+    FluidModel->SetTDState_rhoe(UL[0], StaticEnergy);
+    su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+    su2double Pressure    = FluidModel->GetPressure();
+
+    /*--- Subsonic exit flow: there is one incoming characteristic,
+          therefore one variable can be specified (back pressure) and is used
+          to update the conservative variables. Compute the entropy and the
+          acoustic Riemann variable. These invariants, as well as the
+          tangential velocity components, are extrapolated. ---*/
+    const su2double Entropy = Pressure*pow(DensityInv, Gamma);
+    const su2double Riemann = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One + VelocityNormal;
+
+    /*--- Compute the density and normal velocity of the right state. ---*/
+    const su2double Density    = pow(P_Exit/Entropy,1.0/Gamma);
+    const su2double SoundSpeed = sqrt(Gamma*P_Exit/Density);
+    const su2double Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+
+    /*--- Store the conservative variables in UR. ---*/
+    Velocity2 = 0.0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+      const su2double vel = UL[iDim+1]*DensityInv
+                          + (Vn_Exit-VelocityNormal)*normals[iDim];
+      Velocity2 += vel*vel;
+      UR[iDim+1] = Density*vel;
+    }
+
+    UR[0]      = Density;
+    UR[nDim+1] = Pressure/Gamma_Minus_One + 0.5*Density*Velocity2;
+  }
+}
+
+void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *config,
+                                                 const CSurfaceElementFEM *surfElem,
+                                                 unsigned short           val_marker,
+                                                 const su2double          *solIntL,
+                                                 su2double                *solIntR) {
+
+  /* Retrieve the corresponding string for this marker. */
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /* Determine the number of integration points for the face. */
+  const unsigned short ind  = surfElem->indStandardElement;
+  const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+  /*--- Make a distinction between the different type of boundary conditions
+        and set the initial guess of the right states in the integration
+        points of the face. ---*/
+  switch( config->GetKind_Data_Riemann(Marker_Tag) ) {
+    case TOTAL_CONDITIONS_PT: {
+
+      /* Total conditions specified. Retrieve the non-dimensional total
+         pressure and temperature as well as the flow direction. */
+      su2double P_Total   = config->GetRiemann_Var1(Marker_Tag);
+      su2double T_Total   = config->GetRiemann_Var2(Marker_Tag);
+      su2double *Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+
+      P_Total /= config->GetPressure_Ref();
+      T_Total /= config->GetTemperature_Ref();
+
+      /* Compute the total enthalpy and entropy from these values. */
+      FluidModel->SetTDState_PT(P_Total, T_Total);
+      const su2double Enthalpy_e = FluidModel->GetStaticEnergy()
+                                 + FluidModel->GetPressure()/FluidModel->GetDensity();
+      const su2double Entropy_e  = FluidModel->GetEntropy();
+
+      /* Loop over the integration points of the face. */
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Easier storage of the left and right solution
+           for this integration point. */
+        const su2double *UL = solIntL + i*nVar;
+        su2double       *UR = solIntR + i*nVar;
+
+        /* Compute the velocity squared of the left point. This value is
+           extrapolated and is therefore also the velocity of the right point. */
+        const su2double DensityInv = 1.0/UL[0];
+        su2double Velocity2_e = 0.0;
+        for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+          const su2double vel = UL[iDim]*DensityInv;
+          Velocity2_e        += vel*vel;
+        }
+
+        /* Determine the static enthalpy, the density and the internal
+           and total energy per unit mass for the right state. */
+        const su2double StaticEnthalpy_e = Enthalpy_e - 0.5*Velocity2_e;
+
+        FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+        const su2double Density_e = FluidModel->GetDensity();
+        const su2double StaticEnergy_e = FluidModel->GetStaticEnergy();
+        const su2double Energy_e       = StaticEnergy_e + 0.5*Velocity2_e;
+
+        /* Set the conservative variables of the right state. */
+        UR[0]      = Density_e;
+        UR[nDim+1] = Density_e*Energy_e;
+
+        const su2double momTot = Density_e*sqrt(Velocity2_e);
+        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+          UR[iDim+1] = momTot*Flow_Dir[iDim];
+      }
+
+      break;
+    }
+
+    case STATIC_SUPERSONIC_INFLOW_PT: {
+
+      /* Supersonic inlet with specified pressure, temperature and Mach
+         number. Retrieve the non-dimensional static pressure and
+         temperature as well as the three components of the Mach number. */
+      su2double P_static = config->GetRiemann_Var1(Marker_Tag);
+      su2double T_static = config->GetRiemann_Var2(Marker_Tag);
+      su2double *Mach    = config->GetRiemann_FlowDir(Marker_Tag);
+
+      P_static /= config->GetPressure_Ref();
+      T_static /= config->GetTemperature_Ref();
+
+      /* Compute the prescribed density, static energy per unit mass
+         and speed of sound. */
+      FluidModel->SetTDState_PT(P_static, T_static);
+      const su2double Density_e      = FluidModel->GetDensity();
+      const su2double StaticEnergy_e = FluidModel->GetStaticEnergy();
+      const su2double SoundSpeed     = FluidModel->GetSoundSpeed();
+
+      /* Determine the magnitude of the Mach number. */
+      su2double MachMag = 0.0;
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        MachMag += Mach[iDim]*Mach[iDim];
+      MachMag = sqrt(MachMag);
+
+      /* Determine the magnitude of the velocity and the prescribed
+         conservative variables. */
+      const su2double VelMag = MachMag*SoundSpeed;
+
+      su2double UCons[5];
+      UCons[0]      = Density_e;
+      UCons[nDim+1] = Density_e*(StaticEnergy_e + 0.5*VelMag*VelMag);
+
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        UCons[iDim+1] = Density_e*Mach[iDim]*SoundSpeed;
+
+      /* Loop over the integration points of the face and set the right
+         state in the integration points. */
+      const unsigned long nBytes = nVar*sizeof(su2double);
+      for(unsigned short i=0; i<nInt; ++i) {
+        su2double *UR = solIntR + i*nVar;
+        memcpy(UR, UCons, nBytes);
+      }
+
+      break;
+    }
+
+    case STATIC_SUPERSONIC_INFLOW_PD: {
+
+      /* Supersonic inlet with specified pressure, temperature and Mach
+         number. Retrieve the non-dimensional static pressure and
+         temperature as well as the three components of the Mach number. */
+      su2double P_static   = config->GetRiemann_Var1(Marker_Tag);
+      su2double Rho_static = config->GetRiemann_Var2(Marker_Tag);
+      su2double *Mach      = config->GetRiemann_FlowDir(Marker_Tag);
+
+      P_static /= config->GetPressure_Ref();
+      Rho_static /= config->GetDensity_Ref();
+
+      /* Compute the prescribed pressure, static energy per unit mass
+         and speed of sound. */
+      FluidModel->SetTDState_Prho(P_static, Rho_static);
+      const su2double Density_e      = FluidModel->GetDensity();
+      const su2double StaticEnergy_e = FluidModel->GetStaticEnergy();
+      const su2double SoundSpeed     = FluidModel->GetSoundSpeed();
+
+      /* Determine the magnitude of the Mach number. */
+      su2double MachMag = 0.0;
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        MachMag += Mach[iDim]*Mach[iDim];
+      MachMag = sqrt(MachMag);
+
+      /* Determine the magnitude of the velocity and the prescribed
+         conservative variables. */
+      const su2double VelMag = MachMag*SoundSpeed;
+
+      su2double UCons[5];
+      UCons[0]      = Density_e;
+      UCons[nDim+1] = Density_e*(StaticEnergy_e + 0.5*VelMag*VelMag);
+
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        UCons[iDim+1] = Density_e*Mach[iDim]*SoundSpeed;
+
+      /* Loop over the integration points of the face and set the right
+         state in the integration points. */
+      const unsigned long nBytes = nVar*sizeof(su2double);
+      for(unsigned short i=0; i<nInt; ++i) {
+        su2double *UR = solIntR + i*nVar;
+        memcpy(UR, UCons, nBytes);
+      }
+
+      break;
+    }
+
+    case DENSITY_VELOCITY: {
+
+      /* Subsonic inlet with specified density, velocity magnitude and
+         flow direction. Retrieve the non-dimensional data. */
+      su2double Density_e = config->GetRiemann_Var1(Marker_Tag);
+      su2double VelMag_e  = config->GetRiemann_Var2(Marker_Tag);
+      su2double *Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+
+      Density_e /= config->GetDensity_Ref();
+      VelMag_e  /= config->GetVelocity_Ref();
+
+      /* Loop over the integration points of the face. */
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Easier storage of the left and right solution
+           for this integration point. */
+        const su2double *UL = solIntL + i*nVar;
+        su2double       *UR = solIntR + i*nVar;
+
+        /* Compute the total energy per unit mass, which is extrapolated. */
+        const su2double Energy_e = UL[nDim+1]/UL[0];
+
+        /* Set the conservative variables of the right state. */
+        UR[0]      = Density_e;
+        UR[nDim+1] = Density_e*Energy_e;
+
+        const su2double momTot = Density_e*VelMag_e;
+        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+          UR[iDim+1] = momTot*Flow_Dir[iDim];
+      }
+
+      break;
+    }
+
+    case STATIC_PRESSURE: {
+
+      /* Subsonic outlet with specified pressure.
+         Retrieve the non-dimensional data. */
+      const su2double Pressure_e = config->GetRiemann_Var1(Marker_Tag)
+                                 / config->GetPressure_Ref();
+
+      /* Loop over the integration points of the face. */
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Easier storage of the left and right solution
+           for this integration point. */
+        const su2double *UL = solIntL + i*nVar;
+        su2double       *UR = solIntR + i*nVar;
+
+        /* Extrapolate the density and set the thermodynamic state. */
+        UR[0] = UL[0];
+        FluidModel->SetTDState_Prho(Pressure_e, UR[0]);
+
+        /* Extrapolate the velocity. As the density is also extrapolated,
+           this means that the momentum variables are identical for UL and UR.
+           Also determine the velocity squared. */
+        const su2double DensityInv = 1.0/UL[0];
+        su2double Velocity2_e = 0.0;
+        for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+          UR[iDim] = UL[iDim];
+
+          const su2double vel = UL[iDim]*DensityInv;
+          Velocity2_e        += vel*vel;
+        }
+
+        /* Compute the total energy per unit volume. */
+        UR[nDim+1] = UR[0]*(FluidModel->GetStaticEnergy() + 0.5*Velocity2_e);
+      }
+
+      break;
+    }
+
+    default: {
+      cout << "Warning! Invalid Riemann input!" << endl;
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  /***************************************************************************/
+  /* Correction of the boundary state using a characteristic reconstruction. */
+  /***************************************************************************/
+
+  /* Make a distinction between 2D and 3D. */
+  switch( nDim ) {
+    case 2: {
+
+      /* Two-dimensional simulation. Loop over the number of integration points. */
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Easier storage of the left and right solution and the normals
+           for this integration point. */
+        const su2double *UL      = solIntL + i*nVar;
+              su2double *UR      = solIntR + i*nVar;
+        const su2double *normals = surfElem->metricNormalsFace.data() + i*(nDim+1);
+
+        /* Compute the difference in conservative variables. */
+        const su2double dr  = UR[0] - UL[0];
+        const su2double dru = UR[1] - UL[1];
+        const su2double drv = UR[2] - UL[2];
+        const su2double drE = UR[3] - UL[3];
+
+        /* Compute the primitive variables of the left state. */
+        const su2double tmp    = 1.0/UL[0];
+        const su2double vxL    = tmp*UL[1];
+        const su2double vyL    = tmp*UL[2];
+        const su2double alphaL = 0.5*(vxL*vxL + vyL*vyL);
+        const su2double eL     = tmp*UL[3] - alphaL;
+        
+        const su2double nx  = normals[0];
+        const su2double ny  = normals[1];
+        const su2double vnL = vxL*nx + vyL*ny;
+
+        FluidModel->SetTDState_rhoe(UL[0], eL);
+
+        const su2double aL  = FluidModel->GetSoundSpeed();
+        const su2double a2L = aL*aL;
+        const su2double pL  = FluidModel->GetPressure();
+        const su2double HL  = (UL[3] + pL)*tmp;
+
+        const su2double ovaL  = 1.0/aL;
+        const su2double ova2L = 1.0/a2L;
+
+        /* Compute the eigenvalues. */
+        su2double lam1 = vnL + aL;
+        su2double lam2 = vnL - aL;
+        su2double lam3 = vnL;
+
+        /* For the characteristic reconstruction, only the outgoing
+           characteristics (negative eigenvalues) must be taken into account.
+           Set the eigenvalues accordingly. */
+        lam1 = (lam1 < 0.0) ? 1.0 : 0.0;
+        lam2 = (lam2 < 0.0) ? 1.0 : 0.0;
+        lam3 = (lam3 < 0.0) ? 1.0 : 0.0;
+
+        /* Some abbreviations, which occur quite often in the reconstruction. */
+        const su2double abv1 = 0.5*(lam1 + lam2);
+        const su2double abv2 = 0.5*(lam1 - lam2);
+        const su2double abv3 = abv1 - lam3;
+
+        const su2double abv4 = Gamma_Minus_One*(alphaL*dr - vxL*dru - vyL*drv + drE);
+        const su2double abv5 = nx*dru + ny*drv - vnL*dr;
+        const su2double abv6 = abv3*abv4*ova2L + abv2*abv5*ovaL;
+        const su2double abv7 = abv2*abv4*ovaL  + abv3*abv5;
+
+        /* Compute the right state. */
+        UR[0] = UL[0] + lam3*dr  + abv6;
+        UR[1] = UL[1] + lam3*dru + vxL*abv6 + nx*abv7;
+        UR[2] = UL[2] + lam3*drv + vyL*abv6 + ny*abv7;
+        UR[3] = UL[3] + lam3*drE + HL*abv6  + vnL*abv7;
+      }
+
+      break;
+    }
+
+    case 3: {
+
+      /* Three-dimensional simulation. Loop over the number of integration points. */
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Easier storage of the left and right solution and the normals
+           for this integration point. */
+        const su2double *UL      = solIntL + i*nVar;
+              su2double *UR      = solIntR + i*nVar;
+        const su2double *normals = surfElem->metricNormalsFace.data() + i*(nDim+1);
+
+        /* Compute the difference in conservative variables. */
+        const su2double dr  = UR[0] - UL[0];
+        const su2double dru = UR[1] - UL[1];
+        const su2double drv = UR[2] - UL[2];
+        const su2double drw = UR[3] - UL[3];
+        const su2double drE = UR[4] - UL[4];
+
+        /* Compute the primitive variables of the left state. */
+        const su2double tmp    = 1.0/UL[0];
+        const su2double vxL    = tmp*UL[1];
+        const su2double vyL    = tmp*UL[2];
+        const su2double vzL    = tmp*UL[3];
+        const su2double alphaL = 0.5*(vxL*vxL + vyL*vyL + vzL*vzL);
+        const su2double eL     = tmp*UL[4] - alphaL;
+
+        const su2double nx  = normals[0];
+        const su2double ny  = normals[1];
+        const su2double nz  = normals[2];
+        const su2double vnL = vxL*nx + vyL*ny + vzL*nz;
+
+        FluidModel->SetTDState_rhoe(UL[0], eL);
+
+        const su2double aL  = FluidModel->GetSoundSpeed();
+        const su2double a2L = aL*aL;
+        const su2double pL  = FluidModel->GetPressure();
+        const su2double HL  = (UL[4] + pL)*tmp;
+
+        const su2double ovaL  = 1.0/aL;
+        const su2double ova2L = 1.0/a2L;
+
+        /* Compute the eigenvalues. */
+        su2double lam1 = vnL + aL;
+        su2double lam2 = vnL - aL;
+        su2double lam3 = vnL;
+
+        /* For the characteristic reconstruction, only the outgoing
+           characteristics (negative eigenvalues) must be taken into account.
+           Set the eigenvalues accordingly. */
+        lam1 = (lam1 < 0.0) ? 1.0 : 0.0;
+        lam2 = (lam2 < 0.0) ? 1.0 : 0.0;
+        lam3 = (lam3 < 0.0) ? 1.0 : 0.0;
+
+        /* Some abbreviations, which occur quite often in the reconstruction. */
+        const su2double abv1 = 0.5*(lam1 + lam2);
+        const su2double abv2 = 0.5*(lam1 - lam2);
+        const su2double abv3 = abv1 - lam3;
+
+        const su2double abv4 = Gamma_Minus_One*(alphaL*dr - vxL*dru - vyL*drv - vzL*drw + drE);
+        const su2double abv5 = nx*dru + ny*drv + nz*drw - vnL*dr;
+        const su2double abv6 = abv3*abv4*ova2L + abv2*abv5*ovaL;
+        const su2double abv7 = abv2*abv4*ovaL  + abv3*abv5;
+
+        /* Compute the right state. */
+        UR[0] = UL[0] + lam3*dr  + abv6;
+        UR[1] = UL[1] + lam3*dru + vxL*abv6 + nx*abv7;
+        UR[2] = UL[2] + lam3*drv + vyL*abv6 + ny*abv7;
+        UR[3] = UL[3] + lam3*drw + vzL*abv6 + nz*abv7;
+        UR[4] = UL[4] + lam3*drE + HL*abv6  + vnL*abv7;
+      }
+
+      break;
+    }
+  }
+}
+
 void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
                                         const unsigned long      surfElemBeg,
                                         const unsigned long      surfElemEnd,
@@ -6319,53 +6949,8 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
-    /*--- Apply the inviscid wall boundary conditions to compute the right
-          state in the integration points. There are two options. Either the
-          normal velocity is negated or the normal velocity is set to zero.
-          Some experiments are needed to see which formulation gives better
-          results. ---*/
-    const unsigned short ind  = surfElem[l].indStandardElement;
-    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-
-    for(unsigned short i=0; i<nInt; ++i) {
-
-      /* Easier storage of the left and right solution and the normals
-         for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
-
-      /* Compute the normal component of the momentum variables. */
-      su2double rVn = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        rVn += UL[iDim+1]*normals[iDim];
-
-      /* If the normal velocity must be mirrored instead of set to zero,
-         the normal component that must be subtracted must be doubled. If the
-         normal velocity must be set to zero, simply comment this line. */
-      //rVn *= 2.0;
-
-      /* Set the right state. The initial value of the total energy is the
-         energy of the left state. */
-      UR[0]      = UL[0];
-      UR[nDim+1] = UL[nDim+1];
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        UR[iDim+1] = UL[iDim+1] - rVn*normals[iDim];
-
-      /*--- Actually, only the internal energy of UR is equal to UL. If the
-            kinetic energy differs for UL and UR, the difference must be
-            subtracted from the total energy of UR to obtain the correct
-            value. ---*/
-      su2double DensityInv = 1.0/UL[0];
-      su2double diffKin    = 0;
-      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-        const su2double velL = DensityInv*UL[iDim];
-        const su2double velR = DensityInv*UR[iDim];
-        diffKin += velL*velL - velR*velR;
-      }
-
-      UR[nDim+1] -= 0.5*UL[0]*diffKin;
-    }
+    /* Compute the right state by applying the inviscid wall BC's. */
+    BoundaryStates_Euler_Wall(config, &surfElem[l], solIntL, solIntR);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -6518,20 +7103,6 @@ void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
                                    CNumerics                *conv_numerics,
                                    unsigned short           val_marker) {
 
-  /*--- Retrieve the specified total conditions for this inlet. ---*/
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  su2double P_Total   = config->GetInlet_Ptotal(Marker_Tag);
-  su2double T_Total   = config->GetInlet_Ttotal(Marker_Tag);
-  su2double *Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
-
-  /*--- Non-dim. the inputs if necessary, and compute the total enthalpy. ---*/
-  P_Total /= config->GetPressure_Ref();
-  T_Total /= config->GetTemperature_Ref();
-
-  su2double Gas_Constant = config->GetGas_ConstantND();
-  su2double H_Total      = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
-
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solIntL = VecTmpMemory.data();
   su2double *solIntR = solIntL + nIntegrationMax*nVar;
@@ -6545,91 +7116,8 @@ void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
-    /*--- Apply the subsonic inlet boundary conditions to compute the right
-          state in the integration points. ---*/
-    const unsigned short ind  = surfElem[l].indStandardElement;
-    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-
-    for(unsigned short i=0; i<nInt; ++i) {
-
-      /* Easier storage of the left and right solution and the normals
-         for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
-
-      /*--- Compute the normal velocity, the speed of sound squared and
-            the pressure in this integration point. ---*/
-      const su2double DensityInv = 1.0/UL[0];
-      su2double VelocityNormal = 0.0, Velocity2 = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-        const su2double vel = UL[iDim+1]*DensityInv;
-        VelocityNormal     += vel*normals[iDim];
-        Velocity2          += vel*vel;
-      }
-
-      su2double StaticEnergy = UL[nDim+1]*DensityInv - 0.5*Velocity2;
-
-      FluidModel->SetTDState_rhoe(UL[0], StaticEnergy);
-      su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
-      su2double Pressure    = FluidModel->GetPressure();
-
-      /*--- Compute the Riemann invariant to be extrapolated. ---*/
-      const su2double Riemann = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One + VelocityNormal;
-
-      /*--- Total speed of sound. The expression below is also valid for variable cp,
-            although a linearization around the value of the left state is performed. ---*/
-      const su2double SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - DensityInv*(UL[nDim+1] + Pressure)
-                                        +                  0.5*Velocity2) + SoundSpeed2;
-
-      /*--- Dot product of normal and flow direction. This should be
-            negative due to outward facing boundary normal convention. ---*/
-      su2double alpha = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        alpha += normals[iDim]*Flow_Dir[iDim];
-
-      /*--- Coefficients in the quadratic equation for the magnitude of the velocity. ---*/
-      const su2double aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
-      const su2double bb = -1.0*Gamma_Minus_One*alpha*Riemann;
-      const su2double cc =  0.5*Gamma_Minus_One*Riemann*Riemann
-                         -  2.0*SoundSpeed_Total2/Gamma_Minus_One;
-
-      /*--- Solve the equation for the magnitude of the velocity. As this value
-            must be positive and both aa and bb are positive (alpha is negative and
-            Riemann is positive up till Mach = 5.0 or so, which is not really subsonic
-            anymore), it is clear which of the two possible solutions must be taken.
-            Some clipping is present, but this is normally not active. ---*/
-      su2double dd      = bb*bb - 4.0*aa*cc;   dd      = sqrt(max(0.0, dd));
-      su2double Vel_Mag = (-bb + dd)/(2.0*aa); Vel_Mag = max(0.0, Vel_Mag);
-      Velocity2 = Vel_Mag*Vel_Mag;
-
-      /*--- Compute speed of sound from total speed of sound eqn. ---*/
-      SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-      /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-      su2double Mach2 = Velocity2/SoundSpeed2; Mach2 = min(1.0, Mach2);
-
-      Velocity2 = Mach2*SoundSpeed2;
-      Vel_Mag   = sqrt(Velocity2);
-
-      /*--- Static temperature from the speed of sound relation. ---*/
-      SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-      const su2double Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-
-      /*--- Static pressure using isentropic relation at a point ---*/
-      Pressure = P_Total*pow((Temperature/T_Total), Gamma/Gamma_Minus_One);
-
-      /*--- Density at the inlet from the gas law ---*/
-      const su2double Density = Pressure/(Gas_Constant*Temperature);
-
-      /*--- Store the conservative variables in UR. ---*/
-      UR[0]      = Density;
-      UR[nDim+1] = Pressure/Gamma_Minus_One + 0.5*Density*Velocity2;
-
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        UR[iDim+1] = Density*Vel_Mag*Flow_Dir[iDim];
-    }
+    /* Compute the right state by applying the subsonic inlet BC's. */
+    BoundaryStates_Inlet(config, &surfElem[l], val_marker, solIntL, solIntR);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -6647,12 +7135,37 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
                                     CNumerics                *conv_numerics,
                                     unsigned short           val_marker) {
 
-  /*--- Retrieve the specified back pressure for this outlet.
-        Nondimensionalize, if necessary. ---*/
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solIntL = VecTmpMemory.data();
+  su2double *solIntR = solIntL + nIntegrationMax*nVar;
+  su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
-  su2double P_Exit = config->GetOutlet_Pressure(Marker_Tag);
-  P_Exit = P_Exit/config->GetPressure_Ref();
+  /*--- Loop over the given range of boundary faces. ---*/
+  unsigned long indResFaces = 0;
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
+
+    /* Compute the left states in the integration points of the face.
+       Use fluxes as a temporary storage array. */
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
+
+    /* Compute the right state by applying the subsonic outlet BC's. */
+    BoundaryStates_Outlet(config, &surfElem[l], val_marker, solIntL, solIntR);
+
+    /* The remainder of the contribution of this boundary face to the residual
+       is the same for all boundary conditions. Hence a generic function can
+       be used to carry out this task. */
+    ResidualInviscidBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                 solIntR, fluxes, resFaces, indResFaces);
+  }
+}
+
+void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
+                                     const unsigned long      surfElemBeg,
+                                     const unsigned long      surfElemEnd,
+                                     const CSurfaceElementFEM *surfElem,
+                                     su2double                *resFaces,
+                                     CNumerics                *conv_numerics,
+                                     unsigned short           val_marker) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solIntL = VecTmpMemory.data();
@@ -6667,60 +7180,8 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
-    /*--- Apply the subsonic inlet boundary conditions to compute the right
-          state in the integration points. ---*/
-    const unsigned short ind  = surfElem[l].indStandardElement;
-    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-
-    for(unsigned short i=0; i<nInt; ++i) {
-
-      /* Easier storage of the left and right solution and the normals
-         for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
-
-      /*--- Compute the normal velocity, the speed of sound squared and
-            the pressure in this integration point. ---*/
-      const su2double DensityInv = 1.0/UL[0];
-      su2double VelocityNormal = 0.0, Velocity2 = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-        const su2double vel = UL[iDim+1]*DensityInv;
-        VelocityNormal     += vel*normals[iDim];
-        Velocity2          += vel*vel;
-      }
-
-      su2double StaticEnergy = UL[nDim+1]*DensityInv - 0.5*Velocity2;
-
-      FluidModel->SetTDState_rhoe(UL[0], StaticEnergy);
-      su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
-      su2double Pressure    = FluidModel->GetPressure();
-
-      /*--- Subsonic exit flow: there is one incoming characteristic,
-            therefore one variable can be specified (back pressure) and is used
-            to update the conservative variables. Compute the entropy and the
-            acoustic Riemann variable. These invariants, as well as the
-            tangential velocity components, are extrapolated. ---*/
-      const su2double Entropy = Pressure*pow(DensityInv, Gamma);
-      const su2double Riemann = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One + VelocityNormal;
-
-      /*--- Compute the density and normal velocity of the right state. ---*/
-      const su2double Density    = pow(P_Exit/Entropy,1.0/Gamma);
-      const su2double SoundSpeed = sqrt(Gamma*P_Exit/Density);
-      const su2double Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
-
-      /*--- Store the conservative variables in UR. ---*/
-      Velocity2 = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-        const su2double vel = UL[iDim+1]*DensityInv
-                            + (Vn_Exit-VelocityNormal)*normals[iDim];
-        Velocity2 += vel*vel;
-        UR[iDim+1] = Density*vel;
-      }
-
-      UR[0]      = Density;
-      UR[nDim+1] = Pressure/Gamma_Minus_One + 0.5*Density*Velocity2;
-    }
+    /* Compute the right state by applying the Riemann BC's. */
+    BoundaryStates_Riemann(config, &surfElem[l], val_marker, solIntL, solIntR);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -11423,53 +11884,8 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
        LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
-    /*--- Apply the inviscid wall boundary conditions to compute the right
-          state in the integration points. There are two options. Either the
-          normal velocity is negated or the normal velocity is set to zero.
-          Some experiments are needed to see which formulation gives better
-          results. ---*/
-    const unsigned short ind  = surfElem[l].indStandardElement;
-    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-
-    for(unsigned short i=0; i<nInt; ++i) {
-
-      /* Easier storage of the left and right solution and the normals
-         for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
-
-      /* Compute the normal component of the momentum variables. */
-      su2double rVn = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        rVn += UL[iDim+1]*normals[iDim];
-
-      /* If the normal velocity must be mirrored instead of set to zero,
-         the normal component that must be subtracted must be doubled. If the
-         normal velocity must be set to zero, simply comment this line. */
-      //rVn *= 2.0;
-
-      /* Set the right state. The initial value of the total energy is the
-         energy of the left state. */
-      UR[0]      = UL[0];
-      UR[nDim+1] = UL[nDim+1];
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        UR[iDim+1] = UL[iDim+1] - rVn*normals[iDim];
-
-      /*--- Actually, only the internal energy of UR is equal to UL. If the
-            kinetic energy differs for UL and UR, the difference must be
-            subtracted from the total energy of UR to obtain the correct
-            value. ---*/
-      su2double DensityInv = 1.0/UL[0];
-      su2double diffKin    = 0;
-      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-        const su2double velL = DensityInv*UL[iDim];
-        const su2double velR = DensityInv*UR[iDim];
-        diffKin += velL*velL - velR*velR;
-      }
-
-      UR[nDim+1] -= 0.5*UL[0]*diffKin;
-    }
+    /* Compute the right state by applying the inviscid wall BC's. */
+    BoundaryStates_Euler_Wall(config, &surfElem[l], solIntL, solIntR);
 
     /* Determine the time level of the boundary face, which is equal
        to the time level of the adjacent element. */
@@ -11478,6 +11894,8 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
 
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
+    const unsigned short ind      = surfElem[l].indStandardElement;
+    const unsigned short nInt     = standardBoundaryFacesSol[ind].GetNIntegration();
     const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
@@ -11939,20 +12357,6 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
                                 CNumerics                *conv_numerics,
                                 unsigned short           val_marker) {
 
-  /*--- Retrieve the specified total conditions for this inlet. ---*/
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  su2double P_Total   = config->GetInlet_Ptotal(Marker_Tag);
-  su2double T_Total   = config->GetInlet_Ttotal(Marker_Tag);
-  su2double *Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
-
-  /*--- Non-dim. the inputs if necessary, and compute the total enthalpy. ---*/
-  P_Total /= config->GetPressure_Ref();
-  T_Total /= config->GetTemperature_Ref();
-
-  su2double Gas_Constant = config->GetGas_ConstantND();
-  su2double H_Total      = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
-
   /*--- Set the pointers for the local arrays. ---*/
   unsigned int sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
@@ -11975,91 +12379,8 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
-    /*--- Apply the subsonic inlet boundary conditions to compute the right
-          state in the integration points. ---*/
-    const unsigned short ind  = surfElem[l].indStandardElement;
-    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-
-    for(unsigned short i=0; i<nInt; ++i) {
-
-      /* Easier storage of the left and right solution and the normals
-         for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
-
-      /*--- Compute the normal velocity, the speed of sound squared and
-            the pressure in this integration point. ---*/
-      const su2double DensityInv = 1.0/UL[0];
-      su2double VelocityNormal = 0.0, Velocity2 = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-        const su2double vel = UL[iDim+1]*DensityInv;
-        VelocityNormal     += vel*normals[iDim];
-        Velocity2          += vel*vel;
-      }
-
-      su2double StaticEnergy = UL[nDim+1]*DensityInv - 0.5*Velocity2;
-
-      FluidModel->SetTDState_rhoe(UL[0], StaticEnergy);
-      su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
-      su2double Pressure    = FluidModel->GetPressure();
-
-      /*--- Compute the Riemann invariant to be extrapolated. ---*/
-      const su2double Riemann = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One + VelocityNormal;
-
-      /*--- Total speed of sound. The expression below is also valid for variable cp,
-            although a linearization around the value of the left state is performed. ---*/
-      const su2double SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - DensityInv*(UL[nDim+1] + Pressure)
-                                        +                  0.5*Velocity2) + SoundSpeed2;
-
-      /*--- Dot product of normal and flow direction. This should be
-            negative due to outward facing boundary normal convention. ---*/
-      su2double alpha = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        alpha += normals[iDim]*Flow_Dir[iDim];
-
-      /*--- Coefficients in the quadratic equation for the magnitude of the velocity. ---*/
-      const su2double aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
-      const su2double bb = -1.0*Gamma_Minus_One*alpha*Riemann;
-      const su2double cc =  0.5*Gamma_Minus_One*Riemann*Riemann
-                         -  2.0*SoundSpeed_Total2/Gamma_Minus_One;
-
-      /*--- Solve the equation for the magnitude of the velocity. As this value
-            must be positive and both aa and bb are positive (alpha is negative and
-            Riemann is positive up till Mach = 5.0 or so, which is not really subsonic
-            anymore), it is clear which of the two possible solutions must be taken.
-            Some clipping is present, but this is normally not active. ---*/
-      su2double dd      = bb*bb - 4.0*aa*cc;   dd      = sqrt(max(0.0, dd));
-      su2double Vel_Mag = (-bb + dd)/(2.0*aa); Vel_Mag = max(0.0, Vel_Mag);
-      Velocity2 = Vel_Mag*Vel_Mag;
-
-      /*--- Compute speed of sound from total speed of sound eqn. ---*/
-      SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-      /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-      su2double Mach2 = Velocity2/SoundSpeed2; Mach2 = min(1.0, Mach2);
-
-      Velocity2 = Mach2*SoundSpeed2;
-      Vel_Mag   = sqrt(Velocity2);
-
-      /*--- Static temperature from the speed of sound relation. ---*/
-      SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-      const su2double Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-
-      /*--- Static pressure using isentropic relation at a point ---*/
-      Pressure = P_Total*pow((Temperature/T_Total), Gamma/Gamma_Minus_One);
-
-      /*--- Density at the inlet from the gas law ---*/
-      const su2double Density = Pressure/(Gas_Constant*Temperature);
-
-      /*--- Store the conservative variables in UR. ---*/
-      UR[0]      = Density;
-      UR[nDim+1] = Pressure/Gamma_Minus_One + 0.5*Density*Velocity2;
-
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        UR[iDim+1] = Density*Vel_Mag*Flow_Dir[iDim];
-    }
+    /* Compute the right state by applying the subsonic inlet BC's. */
+    BoundaryStates_Inlet(config, &surfElem[l], val_marker, solIntL, solIntR);
 
     /* Determine the time level of the boundary face, which is equal
        to the time level of the adjacent element. */
@@ -12068,6 +12389,8 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
 
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
+    const unsigned short ind      = surfElem[l].indStandardElement;
+    const unsigned short nInt     = standardBoundaryFacesSol[ind].GetNIntegration();
     const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
@@ -12095,13 +12418,6 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
                                  CNumerics                *conv_numerics,
                                  unsigned short           val_marker) {
 
-  /*--- Retrieve the specified back pressure for this outlet.
-        Nondimensionalize, if necessary. ---*/
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  su2double P_Exit = config->GetOutlet_Pressure(Marker_Tag);
-  P_Exit = P_Exit/config->GetPressure_Ref();
-
   /*--- Set the pointers for the local arrays. ---*/
   unsigned int sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
@@ -12124,60 +12440,8 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
-    /*--- Apply the subsonic inlet boundary conditions to compute the right
-          state in the integration points. ---*/
-    const unsigned short ind  = surfElem[l].indStandardElement;
-    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-
-    for(unsigned short i=0; i<nInt; ++i) {
-
-      /* Easier storage of the left and right solution and the normals
-         for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
-
-      /*--- Compute the normal velocity, the speed of sound squared and
-            the pressure in this integration point. ---*/
-      const su2double DensityInv = 1.0/UL[0];
-      su2double VelocityNormal = 0.0, Velocity2 = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-        const su2double vel = UL[iDim+1]*DensityInv;
-        VelocityNormal     += vel*normals[iDim];
-        Velocity2          += vel*vel;
-      }
-
-      su2double StaticEnergy = UL[nDim+1]*DensityInv - 0.5*Velocity2;
-
-      FluidModel->SetTDState_rhoe(UL[0], StaticEnergy);
-      su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
-      su2double Pressure    = FluidModel->GetPressure();
-
-      /*--- Subsonic exit flow: there is one incoming characteristic,
-            therefore one variable can be specified (back pressure) and is used
-            to update the conservative variables. Compute the entropy and the
-            acoustic Riemann variable. These invariants, as well as the
-            tangential velocity components, are extrapolated. ---*/
-      const su2double Entropy = Pressure*pow(DensityInv, Gamma);
-      const su2double Riemann = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One + VelocityNormal;
-
-      /*--- Compute the density and normal velocity of the right state. ---*/
-      const su2double Density    = pow(P_Exit/Entropy,1.0/Gamma);
-      const su2double SoundSpeed = sqrt(Gamma*P_Exit/Density);
-      const su2double Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
-
-      /*--- Store the conservative variables in UR. ---*/
-      Velocity2 = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-        const su2double vel = UL[iDim+1]*DensityInv
-                            + (Vn_Exit-VelocityNormal)*normals[iDim];
-        Velocity2 += vel*vel;
-        UR[iDim+1] = Density*vel;
-      }
-
-      UR[0]      = Density;
-      UR[nDim+1] = Pressure/Gamma_Minus_One + 0.5*Density*Velocity2;
-    }
+    /* Compute the right state by applying the subsonic outlet BC's. */
+    BoundaryStates_Outlet(config, &surfElem[l], val_marker, solIntL, solIntR);
 
     /* Determine the time level of the boundary face, which is equal
        to the time level of the adjacent element. */
@@ -12186,6 +12450,8 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
 
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
+    const unsigned short ind      = surfElem[l].indStandardElement;
+    const unsigned short nInt     = standardBoundaryFacesSol[ind].GetNIntegration();
     const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
@@ -12390,6 +12656,67 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
 
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
+    const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
+                          0.0, false, derBasisElem, solIntL,
+                          surfElem[l].DOFsSolElement.data(),
+                          surfElem[l].metricCoorDerivFace.data(),
+                          surfElem[l].metricNormalsFace.data(),
+                          surfElem[l].wallDistance.data(),
+                          gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
+
+    /* The remainder of the contribution of this boundary face to the residual
+       is the same for all boundary conditions. Hence a generic function can
+       be used to carry out this task. */
+    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                solIntR, gradSolInt, fluxes, viscFluxes,
+                                viscosityInt, kOverCvInt, resFaces, indResFaces);
+  }
+}
+
+void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
+                                  const unsigned long      surfElemBeg,
+                                  const unsigned long      surfElemEnd,
+                                  const CSurfaceElementFEM *surfElem,
+                                  su2double                *resFaces,
+                                  CNumerics                *conv_numerics,
+                                  unsigned short           val_marker) {
+
+  /*--- Set the pointers for the local arrays. ---*/
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
+
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+
+  su2double *solIntL      = VecTmpMemory.data();
+  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
+  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
+  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
+  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
+  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
+  su2double *viscFluxes   = fluxes       + sizeFluxes;
+
+  /*--- Loop over the given range of boundary faces. ---*/
+  unsigned long indResFaces = 0;
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
+
+    /* Compute the left states in the integration points of the face.
+       Use fluxes as a temporary storage array. */
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
+
+    /* Compute the right state by applying the Riemann BC's. */
+    BoundaryStates_Riemann(config, &surfElem[l], val_marker, solIntL, solIntR);
+
+    /* Determine the time level of the boundary face, which is equal
+       to the time level of the adjacent element. */
+    const unsigned long  elemID    = surfElem[l].volElemID;
+    const unsigned short timeLevel = volElem[elemID].timeLevel;
+
+    /* Call the general function to compute the viscous flux in normal
+       direction for the face. */
+    const unsigned short ind      = surfElem[l].indStandardElement;
+    const unsigned short nInt     = standardBoundaryFacesSol[ind].GetNIntegration();
     const su2double *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(config, &volElem[elemID], timeLevel, nInt,
