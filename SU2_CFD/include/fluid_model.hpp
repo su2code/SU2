@@ -314,6 +314,7 @@ protected:
           Gamma_Minus_One,       /*!< \brief Heat Capacity Ratio Minus One. */
           Gas_Constant;        /*!< \brief Gas Constant. */
 
+  bool  ComputeEntropy;        /*!< \brief Whether or not to compute entropy. */
 
 public:
 
@@ -326,6 +327,11 @@ public:
 		 * \brief Constructor of the class.
 		 */
 		CIdealGas(su2double gamma, su2double R);
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+		CIdealGas(su2double gamma, su2double R, bool CompEntropy);
 
 
 		/*!

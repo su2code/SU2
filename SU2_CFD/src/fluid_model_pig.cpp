@@ -47,8 +47,18 @@ CIdealGas::CIdealGas(su2double gamma, su2double R ) : CFluidModel() {
   Gamma_Minus_One = Gamma - 1.0;
   Gas_Constant = R;
   Cp = Gamma/Gamma_Minus_One*Gas_Constant;
+
+  ComputeEntropy = true;
 }
 
+CIdealGas::CIdealGas(su2double gamma, su2double R, bool CompEntropy) : CFluidModel() {
+  Gamma = gamma;
+  Gamma_Minus_One = Gamma - 1.0;
+  Gas_Constant = R;
+  Cp = Gamma/Gamma_Minus_One*Gas_Constant;
+
+  ComputeEntropy = CompEntropy;
+}
 
 CIdealGas::~CIdealGas(void) {
 
@@ -61,12 +71,13 @@ void CIdealGas::SetTDState_rhoe (su2double rho, su2double e ) {
   Pressure = Gamma_Minus_One*Density*StaticEnergy;
   Temperature = Gamma_Minus_One*StaticEnergy/Gas_Constant;
   SoundSpeed2 = Gamma*Pressure/Density;
-  Entropy = (1.0/Gamma_Minus_One*log(Temperature) + log(1.0/Density))*Gas_Constant;  // Not used for the FEM solver.
   dPdrho_e = Gamma_Minus_One*StaticEnergy;
   dPde_rho = Gamma_Minus_One*Density;
   dTdrho_e = 0.0;
   dTde_rho = Gamma_Minus_One/Gas_Constant;
 
+  if( ComputeEntropy )
+    Entropy = (1.0/Gamma_Minus_One*log(Temperature) + log(1.0/Density))*Gas_Constant;
 }
 
 void CIdealGas::SetTDState_PT (su2double P, su2double T ) {

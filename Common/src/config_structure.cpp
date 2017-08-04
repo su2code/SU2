@@ -1623,6 +1623,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("QUADRATURE_FACTOR_TIME_ADER_DG", Quadrature_Factor_Time_ADER_DG, 2.0);
   /* DESCRIPTION: Factor for the symmetrizing terms in the DG FEM discretization (1.0 by default) */
   addDoubleOption("THETA_INTERIOR_PENALTY_DG_FEM", Theta_Interior_Penalty_DGFEM, 1.0);
+  /* DESCRIPTION: Compute the entropy in the fluid model (YES, NO) */
+  addBoolOption("COMPUTE_ENTROPY_FLUID_MODEL", Compute_Entropy, true);
   /* DESCRIPTION: Store the Cartesian gradients of the DGFEM basis functions (NO, YES) */
   addBoolOption("STORE_CARTESIAN_GRADIENTS_BASIS_DGFEM", Store_Cart_Grad_BasisFunctions_DGFEM, false);
   /* DESCRIPTION: Use the lumped mass matrix for steady DGFEM computations */

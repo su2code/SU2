@@ -12804,6 +12804,28 @@ public:
                                   su2double                *resFaces,
                                   CNumerics                *conv_numerics,
                                   unsigned short           val_marker);
+
+  /*!
+   * \brief Impose the boundary condition using characteristic reconstruction. It is
+   *        a virtual function, such that it can be overwritten for Navier-Stokes.
+   * \param[in]  config        - Definition of the particular problem.
+   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in]  surfElem      - Array of surface elements for which the boundary
+                                 conditions must be imposed.
+   * \param[out] resFaces      - Array where the residual contribution from the
+                                 surface elements must be stored.
+   * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_Riemann(CConfig                  *config,
+                          const unsigned long      surfElemBeg,
+                          const unsigned long      surfElemEnd,
+                          const CSurfaceElementFEM *surfElem,
+                          su2double                *resFaces,
+                          CNumerics                *conv_numerics,
+                          unsigned short           val_marker);
+
   /*!
    * \brief Impose the user customized boundary condition. It is a virtual
             function, because for Navier-Stokes it is overwritten.
@@ -13268,7 +13290,7 @@ protected:
                                           CNumerics                     *numerics);
   /*!
    * \brief Function, which computes the left state of a boundary face.
-   * \param[in]  config       - Definition of the particular problem.
+   * \param[in]  config   - Definition of the particular problem.
    * \param[in]  surfElem - Surface boundary element for which the left state must be computed.
    * \param[out] solFace  - Temporary storage for the solution in the DOFs.
    * \param[out] solIntL  - Left states in the integration points of the face.
@@ -13278,6 +13300,63 @@ protected:
                                                su2double                *solFace,
                                                su2double                *solIntL);
 
+  /*!
+   * \brief Function, which computes the boundary states in the integration points
+            of the boundary face by applying the inviscid wall boundary conditions.
+   * \param[in]  config   - Definition of the particular problem.
+   * \param[in]  surfElem - Surface boundary element for which the left state must be computed.
+   * \param[in]  solIntL  - Left states in the integration points of the face.
+   * \param[out] solIntR  - Right states in the integration points of the face.
+   */
+  void BoundaryStates_Euler_Wall(CConfig                  *config,
+                                 const CSurfaceElementFEM *surfElem,
+                                 const su2double          *solIntL,
+                                 su2double                *solIntR);
+
+  /*!
+   * \brief Function, which computes the boundary states in the integration points
+            of the boundary face by applying the inlet boundary conditions.
+   * \param[in]  config     - Definition of the particular problem.
+   * \param[in]  surfElem   - Surface boundary element for which the left state must be computed.
+   * \param[in]  val_marker - Surface marker where the boundary condition is applied.
+   * \param[in]  solIntL    - Left states in the integration points of the face.
+   * \param[out] solIntR    - Right states in the integration points of the face.
+   */
+  void BoundaryStates_Inlet(CConfig                  *config,
+                            const CSurfaceElementFEM *surfElem,
+                            unsigned short           val_marker,
+                            const su2double          *solIntL,
+                            su2double                *solIntR);
+
+  /*!
+   * \brief Function, which computes the boundary states in the integration points
+            of the boundary face by applying the outlet boundary conditions.
+   * \param[in]  config     - Definition of the particular problem.
+   * \param[in]  surfElem   - Surface boundary element for which the left state must be computed.
+   * \param[in]  val_marker - Surface marker where the boundary condition is applied.
+   * \param[in]  solIntL    - Left states in the integration points of the face.
+   * \param[out] solIntR    - Right states in the integration points of the face.
+   */
+  void BoundaryStates_Outlet(CConfig                  *config,
+                             const CSurfaceElementFEM *surfElem,
+                             unsigned short           val_marker,
+                             const su2double          *solIntL,
+                             su2double                *solIntR);
+
+  /*!
+   * \brief Function, which computes the boundary states in the integration points
+            of the boundary face by applying the Riemann boundary conditions.
+   * \param[in]  config     - Definition of the particular problem.
+   * \param[in]  surfElem   - Surface boundary element for which the left state must be computed.
+   * \param[in]  val_marker - Surface marker where the boundary condition is applied.
+   * \param[in]  solIntL    - Left states in the integration points of the face.
+   * \param[out] solIntR    - Right states in the integration points of the face.
+   */
+  void BoundaryStates_Riemann(CConfig                  *config,
+                              const CSurfaceElementFEM *surfElem,
+                              unsigned short           val_marker,
+                              const su2double          *solIntL,
+                              su2double                *solIntR);
 private:
 
   /*!
@@ -13703,6 +13782,26 @@ public:
                           su2double                *resFaces,
                           CNumerics                *conv_numerics,
                           unsigned short           val_marker);
+
+  /*!
+   * \brief Impose the boundary condition using characteristic reconstruction.
+   * \param[in]  config        - Definition of the particular problem.
+   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in]  surfElem      - Array of surface elements for which the boundary
+                                 conditions must be imposed.
+   * \param[out] resFaces      - Array where the residual contribution from the
+                                 surface elements must be stored.
+   * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   */
+  void BC_Riemann(CConfig                  *config,
+                  const unsigned long      surfElemBeg,
+                  const unsigned long      surfElemEnd,
+                  const CSurfaceElementFEM *surfElem,
+                  su2double                *resFaces,
+                  CNumerics                *conv_numerics,
+                  unsigned short           val_marker);
 
   /*!
    * \brief Impose the user customized boundary condition.

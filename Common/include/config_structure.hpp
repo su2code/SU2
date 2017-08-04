@@ -888,6 +888,7 @@ private:
   su2double Quadrature_Factor_Curved;        /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
   su2double Quadrature_Factor_Time_ADER_DG;  /*!< \brief Factor applied during quadrature in time for ADER-DG. */
   su2double Theta_Interior_Penalty_DGFEM;    /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
+  bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
   bool Store_Cart_Grad_BasisFunctions_DGFEM; /*!< \brief Flag to know if the Cartesian gradients of the DGFEM basis functions are stored. */
   bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
@@ -7386,6 +7387,12 @@ public:
    * \return The specified factor for the DG discretization.
    */
   su2double GetTheta_Interior_Penalty_DGFEM(void);
+
+  /*!
+   * \brief Function to make available whether or not the entropy must be computed.
+   * \return The boolean whether or not the entropy must be computed.
+   */
+  bool GetCompute_Entropy(void);
 
   /*!
    * \brief Function to make available whether or not the Cartesian gradients
