@@ -218,9 +218,15 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	
 	restart_file.open(mesh_filename.c_str(), ios::in);
 	if (restart_file.fail()) {
-	  if (rank == MASTER_NODE)
-	    cout << "There is no adjoint restart file!!" << endl;
-		exit(EXIT_FAILURE); }
+	  if (rank == MASTER_NODE) cout << "There is no adjoint restart file!!" << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+}
 	
   /*--- Read the header of the file ---*/
   getline(restart_file, text_line);

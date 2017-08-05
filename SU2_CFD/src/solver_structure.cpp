@@ -1145,7 +1145,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   /*--- Sharp edges limiter ---*/
   
-  if (config->GetKind_SlopeLimit() == SOLID_WALL_DISTANCE) {
+  if (config->GetKind_SlopeLimit() == WALL_DISTANCE) {
     
     /*-- Get limiter parameters from the configuration file ---*/
     
@@ -2206,49 +2206,53 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   
 }
 
-void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, string val_filename) {
+void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint_run, string val_filename) {
 
-  su2double AoA_ = config->GetAoA();
-  su2double AoS_ = config->GetAoS();
-  su2double BCThrust_ = config->GetInitial_BCThrust();
-  su2double dCD_dCL_ = config->GetdCD_dCL();
-  su2double dCD_dCM_ = config->GetdCD_dCM();
-  string::size_type position;
-  unsigned long ExtIter_ = 0;
-  ifstream restart_file;
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+	su2double AoA_ = config->GetAoA();
+	su2double AoS_ = config->GetAoS();
+	su2double BCThrust_ = config->GetInitial_BCThrust();
+	su2double dCD_dCL_ = config->GetdCD_dCL();
+ su2double dCMx_dCL_ = config->GetdCMx_dCL();
+ su2double dCMy_dCL_ = config->GetdCMy_dCL();
+ su2double dCMz_dCL_ = config->GetdCMz_dCL();
+	su2double dCD_dCMy_ = config->GetdCD_dCMy();
+	string::size_type position;
+	unsigned long ExtIter_ = 0;
+	ifstream restart_file;
+	bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
 
-  int rank = MASTER_NODE;
+	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  if (config->GetRead_Binary_Restart()) {
+	if (config->GetRead_Binary_Restart()) {
 
-    char fname[100];
-    strcpy(fname, val_filename.c_str());
-    int nVar_Buf = 5;
-    int var_buf[5];
-    int Restart_Iter = 0;
-    passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+		char fname[100];
+		strcpy(fname, val_filename.c_str());
+		int nVar_Buf = 5;
+		int var_buf[5];
+		int Restart_Iter = 0;
+		passivedouble Restart_Meta_Passive[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+		su2double Restart_Meta[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 
 #ifndef HAVE_MPI
 
-    /*--- Serial binary input. ---*/
+		/*--- Serial binary input. ---*/
 
-    FILE *fhw;
-    fhw = fopen(fname,"rb");
+		FILE *fhw;
+		fhw = fopen(fname,"rb");
 
-    /*--- Error check for opening the file. ---*/
+		/*--- Error check for opening the file. ---*/
 
-    if (!fhw) {
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      exit(EXIT_FAILURE);
-    }
+		if (!fhw) {
+			cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+			exit(EXIT_FAILURE);
+		}
 
-    /*--- First, read the number of variables and points. ---*/
+		/*--- First, read the number of variables and points. ---*/
 
-    fread(var_buf, sizeof(int), nVar_Buf, fhw);
+		fread(var_buf, sizeof(int), nVar_Buf, fhw);
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2263,53 +2267,53 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
-    fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
+		fseek(fhw,-(sizeof(int) + 8*sizeof(passivedouble)), SEEK_END);
 
-    /*--- Read the external iteration. ---*/
+		/*--- Read the external iteration. ---*/
 
-    fread(&Restart_Iter, 1, sizeof(int), fhw);
+		fread(&Restart_Iter, 1, sizeof(int), fhw);
 
-    /*--- Read the metadata. ---*/
+		/*--- Read the metadata. ---*/
 
-    fread(Restart_Meta, 5, sizeof(passivedouble), fhw);
+		fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
 
-    /*--- Close the file. ---*/
+		/*--- Close the file. ---*/
 
-    fclose(fhw);
+		fclose(fhw);
 
 #else
 
-    /*--- Parallel binary input using MPI I/O. ---*/
+		/*--- Parallel binary input using MPI I/O. ---*/
 
-    MPI_File fhw;
-    MPI_Offset disp;
-    int rank = MASTER_NODE, ierr;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+		MPI_File fhw;
+		MPI_Offset disp;
+		int rank = MASTER_NODE, ierr;
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    /*--- All ranks open the file using MPI. ---*/
+		/*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+		ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
-    /*--- Error check opening the file. ---*/
+		/*--- Error check opening the file. ---*/
 
-    if (ierr) {
-      if (rank == MASTER_NODE)
-        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-    }
+		if (ierr) {
+			if (rank == MASTER_NODE)
+				cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+			MPI_Barrier(MPI_COMM_WORLD);
+			MPI_Abort(MPI_COMM_WORLD,1);
+			MPI_Finalize();
+		}
 
-    /*--- First, read the number of variables and points (i.e., cols and rows),
+		/*--- First, read the number of variables and points (i.e., cols and rows),
      which we will need in order to read the file later. Also, read the
      variable string names here. Only the master rank reads the header. ---*/
 
-    if (rank == MASTER_NODE)
-      MPI_File_read(fhw, var_buf, nVar_Buf, MPI_INT, MPI_STATUS_IGNORE);
+		if (rank == MASTER_NODE)
+			MPI_File_read(fhw, var_buf, nVar_Buf, MPI_INT, MPI_STATUS_IGNORE);
 
-    /*--- Broadcast the number of variables to all procs and store clearly. ---*/
+		/*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2328,41 +2332,52 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
 
     /*--- Access the metadata. ---*/
 
-    if (rank == MASTER_NODE) {
+		if (rank == MASTER_NODE) {
 
       /*--- External iteration. ---*/
+
       disp = (nVar_Buf*sizeof(int) + var_buf[1]*CGNS_STRING_SIZE*sizeof(char) +
               var_buf[1]*var_buf[2]*sizeof(passivedouble));
       MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
 
-      /*--- Additional doubles for AoA, AoS, etc. ---*/
+			/*--- Additional doubles for AoA, AoS, etc. ---*/
 
       disp = (nVar_Buf*sizeof(int) + var_buf[1]*CGNS_STRING_SIZE*sizeof(char) +
               var_buf[1]*var_buf[2]*sizeof(passivedouble) + 1*sizeof(int));
-      MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
-    }
+		}
 
-    /*--- Communicate metadata. ---*/
+		/*--- Communicate metadata. ---*/
 
-    SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    /*--- All ranks close the file after writing. ---*/
+		/*--- Copy to a su2double structure (because of the SU2_MPI::Bcast
+              doesn't work with passive data)---*/
 
-    MPI_File_close(&fhw);
+		for (unsigned short iVar = 0; iVar < 8; iVar++)
+			Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
+
+		SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+		/*--- All ranks close the file after writing. ---*/
+
+		MPI_File_close(&fhw);
 
 #endif
 
-    /*--- Store intermediate vals from file I/O in correct variables. ---*/
+		/*--- Store intermediate vals from file I/O in correct variables. ---*/
 
-    ExtIter_  = Restart_Iter;
-    AoA_      = Restart_Meta[0];
-    AoS_      = Restart_Meta[1];
-    BCThrust_ = Restart_Meta[2];
-    dCD_dCL_  = Restart_Meta[3];
+		ExtIter_  = Restart_Iter;
+		AoA_      = Restart_Meta[0];
+		AoS_      = Restart_Meta[1];
+		BCThrust_ = Restart_Meta[2];
+		dCD_dCL_  = Restart_Meta[3];
+  dCMx_dCL_  = Restart_Meta[4];
+  dCMy_dCL_  = Restart_Meta[5];
+  dCMz_dCL_  = Restart_Meta[6];
 
-  } else {
+	} else {
 
     /*--- First, check that this is not a binary restart file. ---*/
 
@@ -2453,157 +2468,258 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
 
     /*--- Carry on with ASCII metadata reading. ---*/
 
-    restart_file.open(val_filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
+		restart_file.open(val_filename.data(), ios::in);
+		if (restart_file.fail()) {
+			if (rank == MASTER_NODE) {
+				cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
+				cout << " Computation will continue without updating metadata parameters." << endl;
+			}
+		} else {
 
-      unsigned long iPoint_Global = 0;
-      string text_line;
+			unsigned long iPoint_Global = 0;
+			string text_line;
 
-      /*--- The first line is the header (General description) ---*/
+			/*--- The first line is the header (General description) ---*/
 
-      getline (restart_file, text_line);
+			getline (restart_file, text_line);
 
-      /*--- Space for the solution ---*/
+			/*--- Space for the solution ---*/
 
-      for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+			for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
-        getline (restart_file, text_line);
+				getline (restart_file, text_line);
 
-      }
+			}
 
-      /*--- Space for extra info (if any) ---*/
+			/*--- Space for extra info (if any) ---*/
 
-      while (getline (restart_file, text_line)) {
+			while (getline (restart_file, text_line)) {
 
-        /*--- External iteration ---*/
+				/*--- External iteration ---*/
 
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-        }
+				position = text_line.find ("EXT_ITER=",0);
+				if (position != string::npos) {
+					text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+				}
 
-        /*--- Angle of attack ---*/
+				/*--- Angle of attack ---*/
 
-        position = text_line.find ("AOA=",0);
-        if (position != string::npos) {
-          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-        }
+				position = text_line.find ("AOA=",0);
+				if (position != string::npos) {
+					text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+				}
 
-        /*--- Sideslip angle ---*/
+				/*--- Sideslip angle ---*/
 
-        position = text_line.find ("SIDESLIP_ANGLE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-        }
+				position = text_line.find ("SIDESLIP_ANGLE=",0);
+				if (position != string::npos) {
+					text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+				}
 
-        /*--- BCThrust angle ---*/
+				/*--- BCThrust angle ---*/
 
-        position = text_line.find ("INITIAL_BCTHRUST=",0);
-        if (position != string::npos) {
-          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-        }
+				position = text_line.find ("INITIAL_BCTHRUST=",0);
+				if (position != string::npos) {
+					text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+				}
 
-        if (adjoint && config->GetRestart()) {
+				if (adjoint_run) {
 
-          if (config->GetEval_dCD_dCX() == true) {
+					if (config->GetEval_dOF_dCX() == true) {
 
-          /*--- dCD_dCL coefficient ---*/
+						/*--- dCD_dCL coefficient ---*/
 
-          position = text_line.find ("DCD_DCL_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-          }
+       position = text_line.find ("DCD_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+       }
+       
+       /*--- dCMx_dCL coefficient ---*/
+       
+       position = text_line.find ("DCMX_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
+       }
+       
+       /*--- dCMy_dCL coefficient ---*/
+       
+       position = text_line.find ("DCMY_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
+       }
+       
+       /*--- dCMz_dCL coefficient ---*/
+       
+       position = text_line.find ("DCMZ_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+       }
+       /*--- dCD_dCMy coefficient ---*/
+       
+       position = text_line.find ("DCD_DCMY_VALUE=",0);
+       if (position != string::npos) {
+							text_line.erase (0,15); dCD_dCMy_ = atof(text_line.c_str());
+						}
+       
+					}
 
-          /*--- dCD_dCM coefficient ---*/
+				}
 
-          position = text_line.find ("DCD_DCM_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
-          }
-          }
+			}
 
-        }
-        
-      }
 
-      /*--- Close the restart meta file. ---*/
+			/*--- Close the restart meta file. ---*/
 
-      restart_file.close();
+			restart_file.close();
 
-    }
-  }
+		}
+	}
 
-  /*--- Load the metadata. ---*/
+	/*--- Load the metadata. ---*/
 
-  /*--- Angle of attack ---*/
+	/*--- Only from the direct problem ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
-    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-      cout.precision(6);
-      cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-      cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
-    }
-    config->SetAoA(AoA_ + config->GetAoA_Offset());
-  }
-  else {
-    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-      cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-  }
+	if (!adjoint_run) {
 
-  /*--- Sideslip angle ---*/
+		/*--- Angle of attack ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
-    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-      cout.precision(6);
-      cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-      cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
-    }
-    config->SetAoS(AoS_ + config->GetAoS_Offset());
-  }
-  else {
-    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-      cout <<"WARNING: Discarding the AoS in the solution file." << endl;
-  }
+		if (config->GetDiscard_InFiles() == false) {
+			if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+				cout.precision(6);
+				cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+				cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+			}
+			config->SetAoA(AoA_ + config->GetAoA_Offset());
+		}
+		else {
+			if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+				cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+		}
 
-  /*--- BCThrust angle ---*/
+		/*--- Sideslip angle ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
-    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-      cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-    config->SetInitial_BCThrust(BCThrust_);
-  }
-  else {
-    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-      cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-  }
+		if (config->GetDiscard_InFiles() == false) {
+			if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+				cout.precision(6);
+				cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+				cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+			}
+			config->SetAoS(AoS_ + config->GetAoS_Offset());
+		}
+		else {
+			if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+				cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+		}
 
-  if (adjoint && config->GetRestart()) {
-    if (config->GetEval_dCD_dCX() == true) {
+		/*--- BCThrust angle ---*/
 
-      /*--- dCD_dCL coefficient ---*/
+		if (config->GetDiscard_InFiles() == false) {
+			if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+				cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+			config->SetInitial_BCThrust(BCThrust_);
+		}
+		else {
+			if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+				cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+		}
+
+
+		/*--- The adjoint problem needs this information from the direct solution ---*/
+
+		if (adjoint) {
+
+			if (config->GetEval_dOF_dCX() == false) {
+
+				if (config->GetDiscard_InFiles() == false) {
 
       if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: SU2 will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+        cout <<"WARNING: SU2 will use the dCD/dCL provided in the direct solution file: " << dCD_dCL_ << "." << endl;
       config->SetdCD_dCL(dCD_dCL_);
+      
+      if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCMx/dCL provided in the direct solution file: " << dCMx_dCL_ << "." << endl;
+      config->SetdCMx_dCL(dCMx_dCL_);
+      
+      if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCMy/dCL provided in the direct solution file: " << dCMy_dCL_ << "." << endl;
+      config->SetdCMy_dCL(dCMy_dCL_);
+      
+      if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCMz/dCL provided in the direct solution file: " << dCMz_dCL_ << "." << endl;
+      config->SetdCMz_dCL(dCMz_dCL_);
 
-      /*--- dCD_dCM coefficient ---*/
-
-      if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: SU2 will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
-      config->SetdCD_dCM(dCD_dCM_);
+				}
+				else {
+      
+      if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCD/dCL in the direct solution file." << endl;
+      
+      if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCMx/dCL in the direct solution file." << endl;
+      
+      if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCMy/dCL in the direct solution file." << endl;
+      
+      if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
+      
     }
-  }
 
-  /*--- External iteration ---*/
+			}
 
-  if ((!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint()) ||
-      (adjoint && config->GetRestart()))
-    config->SetExtIter_OffSet(ExtIter_);
+		}
+
+	}
+
+	/*--- Only from the adjoint restart file ---*/
+
+	else {
+
+		/*--- The adjoint problem needs this information from the adjoint solution file ---*/
+
+		if (config->GetEval_dOF_dCX() == true) {
+
+			/*--- If it is a restart it will use the value that was stored in the adjoint solution file  ---*/
+
+			if (config->GetRestart()) {
+
+     /*--- dCD_dCL coefficient ---*/
+     
+     if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+     config->SetdCD_dCL(dCD_dCL_);
+     
+     /*--- dCMx_dCL coefficient ---*/
+     
+     if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCMx/dCL provided in\nthe adjoint solution file: " << dCMx_dCL_ << " ." << endl;
+     config->SetdCMx_dCL(dCMx_dCL_);
+     
+     /*--- dCMy_dCL coefficient ---*/
+     
+     if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCMy/dCL provided in\nthe adjoint solution file: " << dCMy_dCL_ << " ." << endl;
+     config->SetdCMy_dCL(dCMy_dCL_);
+     
+     /*--- dCMz_dCL coefficient ---*/
+     
+     if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCMz/dCL provided in\nthe adjoint solution file: " << dCMz_dCL_ << " ." << endl;
+     config->SetdCMz_dCL(dCMz_dCL_);
+     
+			}
+
+
+		}
+
+	}
+
+
+	/*--- External iteration ---*/
+
+	if ((!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint()) ||
+			(adjoint && config->GetRestart()))
+		config->SetExtIter_OffSet(ExtIter_);
 
 }
 
