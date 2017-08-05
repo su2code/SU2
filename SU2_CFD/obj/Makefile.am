@@ -67,6 +67,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
+  ../include/output_structure.inl \
   ../include/sgs_model.hpp \
   ../include/sgs_model.inl \
   ../include/solver_structure.hpp \
