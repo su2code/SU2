@@ -155,7 +155,7 @@ CVertexMPI::~CVertexMPI() {
 
 }
 
-void CVertexMPI::Change_Orientation(void) { cout << "Not defined orientation change" << endl; }
+void CVertexMPI::Change_Orientation(void) { }
 
 unsigned short CLine::Faces[1][2]={{0,1}};
 
@@ -210,12 +210,13 @@ CLine::~CLine() {
 }
 
 void CLine::Change_Orientation(void) {
- unsigned long iPoint, jPoint;
+	unsigned long Point_0, Point_1;
+  
+	Point_0 = Nodes[0];
+	Point_1 = Nodes[1];
+	Nodes[0] = Point_1;
+	Nodes[1] = Point_0;
 
- iPoint = Nodes[0];
- jPoint = Nodes[1];
- Nodes[0] = jPoint;
- Nodes[1] = iPoint;
 }
 
 unsigned short CTriangle::Faces[3][2] = {{0,1},{1,2},{2,0}};
@@ -276,12 +277,13 @@ CTriangle::~CTriangle() {
 }
 
 void CTriangle::Change_Orientation(void) {
- unsigned long iPoint, Point_2;
- iPoint = Nodes[0];
- Point_2 = Nodes[2];
- Nodes[0] = Point_2;
- Nodes[2] = iPoint;
+	unsigned long Point_0, Point_2;
 
+	Point_0 = Nodes[0];
+	Point_2 = Nodes[2];
+	Nodes[0] = Point_2;
+	Nodes[2] = Point_0;
+  
 }
 
 unsigned short CQuadrilateral::Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
@@ -345,12 +347,13 @@ CQuadrilateral::~CQuadrilateral() {
 }
 
 void CQuadrilateral::Change_Orientation(void) {
- unsigned long jPoint, Point_3;
- jPoint = Nodes[1];
- Point_3 = Nodes[3];
- Nodes[1] = Point_3;
- Nodes[3] = jPoint;
+	unsigned long Point_1, Point_3;
 
+	Point_1 = Nodes[1];
+	Point_3 = Nodes[3];
+	Nodes[1] = Point_3;
+	Nodes[3] = Point_1;
+  
 }
 
 unsigned short CTetrahedron::Faces[4][3]={{0,2,1},{0,1,3},{0,3,2},{1,2,3}};
@@ -413,12 +416,13 @@ CTetrahedron::~CTetrahedron() {
 }
 
 void CTetrahedron::Change_Orientation(void) {
- unsigned long iPoint, jPoint;
- iPoint = Nodes[0];
- jPoint = Nodes[1];
- Nodes[0] = jPoint;
- Nodes[1] = iPoint;
+	unsigned long Point_0, Point_1;
 
+	Point_0 = Nodes[0];
+	Point_1 = Nodes[1];
+	Nodes[0] = Point_1;
+	Nodes[1] = Point_0;
+  
 }
 
 unsigned short CHexahedron::Faces[6][4] = {{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7},{0,3,2,1},{4,5,6,7}};
@@ -483,25 +487,17 @@ CHexahedron::~CHexahedron() {
 }
 
 void CHexahedron::Change_Orientation(void) {
- unsigned long Point_0, Point_1, Point_2, Point_3, Point_4, Point_5, Point_6, Point_7;
- Point_0 = Nodes[0];
- Point_1 = Nodes[1];
- Point_2 = Nodes[2];
- Point_3 = Nodes[3];
- Point_4 = Nodes[4];
- Point_5 = Nodes[5];
- Point_6 = Nodes[6];
- Point_7 = Nodes[7];
+	unsigned long Point_1, Point_3, Point_5, Point_7;
 
- Nodes[0] = Point_7;
- Nodes[1] = Point_4;
- Nodes[2] = Point_5;
- Nodes[3] = Point_6;
- Nodes[4] = Point_3;
- Nodes[5] = Point_0;
- Nodes[6] = Point_1;
- Nodes[7] = Point_2;
-
+	Point_1 = Nodes[1];
+	Point_3 = Nodes[3];
+	Point_5 = Nodes[5];
+	Point_7 = Nodes[7];
+	Nodes[1] = Point_3;
+	Nodes[3] = Point_1;
+	Nodes[5] = Point_7;
+	Nodes[7] = Point_5;
+  
 }
 
 unsigned short CPrism::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
@@ -567,17 +563,17 @@ CPrism::~CPrism() {
 }
 
 void CPrism::Change_Orientation(void) {
- unsigned long Point_0, Point_1, Point_3, Point_4;
- Point_0 = Nodes[0];
- Point_1 = Nodes[1];
- Point_3 = Nodes[3];
- Point_4 = Nodes[4];
+	unsigned long Point_0, Point_1, Point_3, Point_4;
 
- Nodes[0] = Point_1;
- Nodes[1] = Point_0;
- Nodes[3] = Point_4;
- Nodes[4] = Point_3;
-
+	Point_0 = Nodes[0];
+	Point_1 = Nodes[1];
+	Point_3 = Nodes[3];
+	Point_4 = Nodes[4];
+	Nodes[0] = Point_1;
+	Nodes[1] = Point_0;
+	Nodes[3] = Point_4;
+	Nodes[4] = Point_3;
+  
 }
 
 unsigned short CPyramid::Faces[5][4] = {{0,3,2,1},{4,3,0,0},{4,0,1,1},{2,4,1,1},{3,4,2,2}};
@@ -641,7 +637,14 @@ CPyramid::~CPyramid() {
 
 }
 
-void CPyramid::Change_Orientation(void) { cout << "Not defined orientation change" << endl; }
+void CPyramid::Change_Orientation(void) {
+        unsigned long Point_1, Point_3;
+
+        Point_1 = Nodes[1];
+        Point_3 = Nodes[3];
+        Nodes[1] = Point_3;
+        Nodes[3] = Point_1;
+}
 
 CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
