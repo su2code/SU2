@@ -140,30 +140,26 @@ void CConfig::SetMPICommunicator(SU2_Comm Communicator) {
 }
 
 unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
-  string text_line, Marker_Tag;
-  ifstream mesh_file;
-  short nZone = 1; // Default value
-  unsigned short iLine, nLine = 10;
-  char cstr[200];
-  string::size_type position;
+
+  int nZone = 1; /* Default value if nothing is specified. */
   int rank = MASTER_NODE;
-  
+
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-  /*--- Search the mesh file for the 'NZONE' keyword. ---*/
 
   switch (val_format) {
-    case SU2:
+    case SU2: {
 
-      /*--- Open grid file ---*/
+      /*--- Local variables for reading the SU2 file. ---*/
+      string text_line;
+      ifstream mesh_file;
 
-      strcpy (cstr, val_mesh_filename.c_str());
-      mesh_file.open(cstr, ios::in);
+      /*--- Check if the mesh file can be opened for reading. ---*/
+      mesh_file.open(val_mesh_filename.c_str(), ios::in);
       if (mesh_file.fail()) {
         if (rank == MASTER_NODE) {
-          cout << "There is no geometry file called " << cstr << "." << endl;
+          cout << "There is no geometry file called " << val_mesh_filename << "." << endl;
         }
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
@@ -174,26 +170,91 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 #endif
       }
 
-      /*--- Read the SU2 mesh file ---*/
-
-      for (iLine = 0; iLine < nLine ; iLine++) {
-
-        getline (mesh_file, text_line);
+      /*--- Read the SU2 mesh file until the zone data is reached or
+            when it can be decided that it is not present. ---*/
+      while( getline (mesh_file, text_line) ) {
 
         /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
-
-        position = text_line.find ("NZONE=",0);
-        if (position != string::npos) {
+        if(text_line.find ("NZONE=",0) != string::npos) {
           text_line.erase (0,6); nZone = atoi(text_line.c_str());
+          break;
         }
+
+        /*--- If one of the keywords NDIME, NELEM or NPOIN, NMARK is encountered,
+              it can be assumed that the NZONE keyword is not present and the loop
+              can be terminated. ---*/
+        if(text_line.find ("NDIME=",0) != string::npos) break;
+        if(text_line.find ("NELEM=",0) != string::npos) break;
+        if(text_line.find ("NPOIN=",0) != string::npos) break;
+        if(text_line.find ("NMARK=",0) != string::npos) break;
       }
 
+      mesh_file.close();
       break;
+    }
 
+    case CGNS: {
+
+#ifdef HAVE_CGNS
+
+      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+      int fn, nbases, file_type;
+
+      /*--- Check whether the supplied file is truly a CGNS file. ---*/
+      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+        if (rank == MASTER_NODE) {
+          printf( "\n\n   !!! Error !!!\n" );
+          printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+          printf( " Now exiting...\n\n");
+        }
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      /*--- Open the CGNS file for reading. The value of fn returned
+            is the specific index number for this file and will be
+            repeatedly used in the function calls. ---*/
+      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
+
+      /*--- Get the number of databases. This is the highest node
+            in the CGNS heirarchy. ---*/
+      if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
+
+      /*--- Check if there is more than one database. Throw an
+            error if there is because this reader can currently
+            only handle one database. ---*/
+      if ( nbases > 1 ) {
+        if (rank == MASTER_NODE) {
+          printf("\n\n   !!! Error !!!\n" );
+          printf("CGNS reader currently incapable of handling more than 1 database.");
+          printf("Now exiting...\n\n");
+        }
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      /*--- Determine the number of zones present in the first base.
+            Note that the indexing starts at 1 in CGNS. Afterwards
+            close the file again. ---*/
+      if(cg_nzones(fn, 1, &nZone) != CG_OK) cg_error_exit();
+      if (cg_close(fn) != CG_OK) cg_error_exit();
+#endif
+
+      break;
+    }
   }
 
   /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
-
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
   	nZone = config->GetnTimeInstances();
   }
@@ -203,100 +264,122 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
 unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_format) {
 
-  string text_line, Marker_Tag;
-  ifstream mesh_file;
-  short nDim = 3;
-  unsigned short iLine, nLine = 10;
-  char cstr[200];
-  string::size_type position;
+  short nDim = 3;   /* Default value if nothing is specified. */
+  int rank = MASTER_NODE;
 
-  /*--- Open grid file ---*/
-
-  strcpy (cstr, val_mesh_filename.c_str());
-  mesh_file.open(cstr, ios::in);
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   switch (val_format) {
-  case SU2:
+    case SU2: {
 
-    /*--- Read SU2 mesh file ---*/
+      /*--- Local variables for reading the SU2 file. ---*/
+      string text_line;
+      ifstream mesh_file;
 
-    for (iLine = 0; iLine < nLine ; iLine++) {
-
-      getline (mesh_file, text_line);
-
-      /*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
-
-      position = text_line.find ("NDIME=",0);
-      if (position != string::npos) {
-        text_line.erase (0,6); nDim = atoi(text_line.c_str());
+      /*--- Check if the mesh file can be opened for reading. ---*/
+      mesh_file.open(val_mesh_filename.c_str(), ios::in);
+      if (mesh_file.fail()) {
+        if (rank == MASTER_NODE) {
+          cout << "There is no geometry file called " << val_mesh_filename << "." << endl;
+        }
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
       }
-    }
-    break;
 
-  case CGNS:
+      /*--- Read the SU2 mesh file until the dimension data is reached
+            or when it can be decided that it is not present. ---*/
+      while( getline (mesh_file, text_line) ) {
+
+        /*--- Search for the "NDIME" keyword to determine the number
+              of dimensions.  ---*/
+        if(text_line.find ("NDIME=",0) != string::npos) {
+          text_line.erase (0,6); nDim = atoi(text_line.c_str());
+          break;
+        }
+
+        /*--- If one of the keywords NELEM or NPOIN, NMARK is encountered,
+              it can be assumed that the NZONE keyword is not present and
+              the loop can be terminated. ---*/
+        if(text_line.find ("NELEM=",0) != string::npos) break;
+        if(text_line.find ("NPOIN=",0) != string::npos) break;
+        if(text_line.find ("NMARK=",0) != string::npos) break;
+      }
+
+      mesh_file.close();
+      break;
+    }
+
+    case CGNS: {
 
 #ifdef HAVE_CGNS
 
-    /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+      int fn, nbases, file_type;
+      int cell_dim, phys_dim;
+      char basename[CGNS_STRING_SIZE];
 
-    int fn, nbases = 0, nzones = 0, file_type;
-    int cell_dim = 0, phys_dim = 0;
-    char basename[CGNS_STRING_SIZE];
+      /*--- Check whether the supplied file is truly a CGNS file. ---*/
+      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+        if (rank == MASTER_NODE) {
+          printf( "\n\n   !!! Error !!!\n" );
+          printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+          printf( " Now exiting...\n\n");
+        }
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
 
-    /*--- Check whether the supplied file is truly a CGNS file. ---*/
+      /*--- Open the CGNS file for reading. The value of fn returned
+            is the specific index number for this file and will be
+            repeatedly used in the function calls. ---*/
+      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
 
-    if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
-      printf( "\n\n   !!! Error !!!\n" );
-      printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
-      printf( " Now exiting...\n\n");
-      exit(EXIT_FAILURE);
-    }
+      /*--- Get the number of databases. This is the highest node
+            in the CGNS heirarchy. ---*/
+      if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
 
-    /*--- Open the CGNS file for reading. The value of fn returned
-       is the specific index number for this file and will be
-       repeatedly used in the function calls. ---*/
+      /*--- Check if there is more than one database. Throw an
+            error if there is because this reader can currently
+            only handle one database. ---*/
+      if ( nbases > 1 ) {
+        if (rank == MASTER_NODE) {
+          printf("\n\n   !!! Error !!!\n" );
+          printf("CGNS reader currently incapable of handling more than 1 database.");
+          printf("Now exiting...\n\n");
+        }
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
 
-    if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
+      /*--- Read the database. Note that the indexing starts at 1.
+            Afterwards close the file again. ---*/
+      if (cg_base_read(fn, 1, basename, &cell_dim, &phys_dim) != CG_OK) cg_error_exit();
+      if (cg_close(fn) != CG_OK) cg_error_exit();
 
-    /*--- Get the number of databases. This is the highest node
-       in the CGNS heirarchy. ---*/
-
-    if (cg_nbases(fn, &nbases)) cg_error_exit();
-
-    /*--- Check if there is more than one database. Throw an
-       error if there is because this reader can currently
-       only handle one database. ---*/
-
-    if ( nbases > 1 ) {
-      printf("\n\n   !!! Error !!!\n" );
-      printf("CGNS reader currently incapable of handling more than 1 database.");
-      printf("Now exiting...\n\n");
-      exit(EXIT_FAILURE);
-    }
-
-    /*--- Read the databases. Note that the indexing starts at 1. ---*/
-
-    for ( int i = 1; i <= nbases; i++ ) {
-
-      if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
-
-      /*--- Get the number of zones for this base. ---*/
-
-      if (cg_nzones(fn, i, &nzones)) cg_error_exit();
-
-    }
-
-    /*--- Set the problem dimension as read from the CGNS file ---*/
-
-    nDim = cell_dim;
-
+      /*--- Set the problem dimension as read from the CGNS file ---*/
+      nDim = cell_dim;
 #endif
 
-    break;
-
+      break;
+    }
   }
-
-  mesh_file.close();
 
   return (unsigned short) nDim;
 }
@@ -416,8 +499,8 @@ void CConfig::SetPointersNull(void) {
   Kappa_Flow          = NULL;
   Kappa_AdjFlow       = NULL;
   Stations_Bounds    = NULL;
-  ParamDV             = NULL;     
-  DV_Value            = NULL;    
+  ParamDV             = NULL;
+  DV_Value            = NULL;
   Design_Variable     = NULL;
 
   Hold_GridFixed_Coord      = NULL;
@@ -484,7 +567,7 @@ void CConfig::SetPointersNull(void) {
   FFDTag                = NULL;
   nDV_Value             = NULL;
   TagFFDBox             = NULL;
- 
+
   Kind_Data_Riemann        = NULL;
   Riemann_Var1             = NULL;
   Riemann_Var2             = NULL;
@@ -526,7 +609,7 @@ void CConfig::SetPointersNull(void) {
   Aeroelastic_Simulation = false;
 
   nSpanMaxAllZones = 1;
-  
+
 }
 
 void CConfig::SetRunTime_Options(void) {
@@ -543,7 +626,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   iZone = val_iZone;
 
   /*--- Allocate some default arrays needed for lists of doubles. ---*/
-  
+
   default_vel_inf            = new su2double[3];
   default_ffd_axis           = new su2double[3];
   default_eng_cyl            = new su2double[7];
@@ -1516,7 +1599,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RADIUS_GYRATION_SQUARED", RadiusGyrationSquared, 3.48);
   /* DESCRIPTION: Solve the aeroelastic equations every given number of internal iterations. */
   addUnsignedShortOption("AEROELASTIC_ITER", AeroelasticIter, 3);
-  
+
   /*!\par CONFIG_CATEGORY: Wind Gust \ingroup Config*/
   /*--- Options related to wind gust simulations ---*/
 
@@ -1913,31 +1996,31 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
-  
+
   /* DESCRIPTION: Multipoint design Mach number*/
   addPythonOption("MULTIPOINT_MACH_NUMBER");
-  
+
   /* DESCRIPTION: Multipoint design Weight */
   addPythonOption("MULTIPOINT_WEIGHT");
-  
+
   /* DESCRIPTION: Multipoint design Angle of Attack */
   addPythonOption("MULTIPOINT_AOA");
-  
+
   /* DESCRIPTION: Multipoint design Sideslip angle */
   addPythonOption("MULTIPOINT_SIDESLIP_ANGLE");
-  
+
   /* DESCRIPTION: Multipoint design target CL*/
   addPythonOption("MULTIPOINT_TARGET_CL");
-  
+
   /* DESCRIPTION: Multipoint design Reynolds number */
   addPythonOption("MULTIPOINT_REYNOLDS_NUMBER");
-  
+
   /* DESCRIPTION: Multipoint design freestream temperature */
   addPythonOption("MULTIPOINT_FREESTREAM_TEMPERATURE");
-  
+
   /* DESCRIPTION: Multipoint design freestream pressure */
   addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
-  
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -2327,7 +2410,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
 
   }
-  
+
   if(GetBoolTurbomachinery()){
     nBlades = new su2double[nZone];
     FreeStreamTurboNormal= new su2double[3];
@@ -2374,7 +2457,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
 
   }
-  
+
   /*--- Force number of span-wise section to 1 if 2D case ---*/
   if(val_nDim ==2){
     nSpanWiseSections_User=1;
@@ -3139,7 +3222,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   CFL[0] = CFLFineGrid;
 
   /*--- Evaluate when the Cl should be evaluated ---*/
-  
+
   Iter_Fixed_CL        = SU2_TYPE::Int(nExtIter / (su2double(Update_Alpha)+1));
   Iter_Fixed_CM        = SU2_TYPE::Int(nExtIter / (su2double(Update_iH)+1));
   Iter_Fixed_NetThrust = SU2_TYPE::Int(nExtIter / (su2double(Update_BCThrust)+1));
@@ -3276,7 +3359,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
       Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
     }
-    
+
     RefLength = RefLength/12.0;
 
     if ((val_nDim == 2) && (!Axisymmetric)) RefArea = RefArea/12.0;
@@ -3296,7 +3379,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     Stations_Bounds[0] = Stations_Bounds[0]/12.0;
     Stations_Bounds[1] = Stations_Bounds[1]/12.0;
-    
+
     SubsonicEngine_Cyl[0] = SubsonicEngine_Cyl[0]/12.0;
     SubsonicEngine_Cyl[1] = SubsonicEngine_Cyl[1]/12.0;
     SubsonicEngine_Cyl[2] = SubsonicEngine_Cyl[2]/12.0;
@@ -3313,7 +3396,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     exit(EXIT_FAILURE);
   }
-  
+
   /*--- Check for constant lift mode. Initialize the update flag for
    the AoA with each iteration to false  ---*/
 
@@ -3443,7 +3526,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       CFL[iCFL] = Unst_CFL;
   }
 
-  
+
   /*--- If it is a fixed mode problem, then we will add 100 iterations to
     evaluate the derivatives with respect to a change in the AoA and CL ---*/
 
@@ -3508,7 +3591,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_All = nMarker_Max;
 
   /*--- Allocate the memory (markers in each domain) ---*/
-  
+
   Marker_All_TagBound             = new string[nMarker_All];			// Store the tag that correspond with each marker.
   Marker_All_SendRecv             = new short[nMarker_All];				// +#domain (send), -#domain (receive).
   Marker_All_KindBC               = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
@@ -3525,7 +3608,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All];	// Store whether the boundary has a in the MixingPlane interface.
-  
+
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All]             = "SEND_RECEIVE";
@@ -3563,7 +3646,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile];
-  
+
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile]             = "SEND_RECEIVE";
     Marker_CfgFile_KindBC[iMarker_CfgFile]               = 0;
@@ -3950,7 +4033,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_ZoneInterface[iMarker_ZoneInterface])
             indexMarker = (int)(iMarker_ZoneInterface/2+1);
-      Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
+    Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
   }
 
 /*--- Identification of Turbomachinery markers and flag them---*/
@@ -4019,8 +4102,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
-  
-  
+
+
   /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
    the two lines below that use the dt variable. ---*/
   //time_t now = time(0);
@@ -4203,7 +4286,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    
+
     if (RefArea == 0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
     else { cout << "The reference area is " << RefArea;
     	if (SystemMeasurements == US) cout << " in^2." << endl;
@@ -4452,7 +4535,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
 
       }
-      
+
       else if (Design_Variable[iDV] == NO_DEFORMATION) {
         cout << "No deformation of the numerical grid. Just output .su2 file." << endl;
       }
@@ -5280,7 +5363,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         else cout <<"."<< endl;
     }
   }
-  
+
   if (nMarker_Giles != 0) {
       cout << "Giles boundary marker(s): ";
       for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++) {
@@ -5980,7 +6063,7 @@ CConfig::~CConfig(void) {
       delete [] Riemann_FlowDir[iMarker];
     delete [] Riemann_FlowDir;
   }
-  
+
   if (Giles_FlowDir != NULL) {
     for (iMarker = 0; iMarker < nMarker_Giles; iMarker++)
       delete [] Giles_FlowDir[iMarker];
@@ -6115,7 +6198,7 @@ CConfig::~CConfig(void) {
   if (nBlades != NULL) delete [] nBlades;
   if (FreeStreamTurboNormal != NULL) delete [] FreeStreamTurboNormal;
 
- 
+
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
