@@ -1414,8 +1414,11 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   
   unsigned long iPoint;
   unsigned long ExtIter      = config->GetExtIter();
+
   bool disc_adjoint         = config->GetDiscrete_Adjoint();
+  bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -1434,10 +1437,15 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Upwind second order reconstruction ---*/
 
-  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
-
-  if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
-
+  if (limiter_turb){
+    SetSolution_Limiter(geometry, config);
+    
+    /*--- If there is no limiter used for the flow solver we have to compute it here ---*/
+    if (!limiter_flow){
+      solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
+    }
+  }
+  
 }
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -3135,7 +3143,9 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   unsigned long iPoint;
 
   unsigned long ExtIter      = config->GetExtIter();
+
   bool disc_adjoint         = config->GetDiscrete_Adjoint();
+  bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -3155,10 +3165,14 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
-  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
-  
-  if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
-
+  if (limiter_turb){
+    SetSolution_Limiter(geometry, config);
+    
+    /*--- If there is no limiter used for the flow solver we have to compute it here ---*/
+    if (!limiter_flow){
+      solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
+    }
+  }
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
