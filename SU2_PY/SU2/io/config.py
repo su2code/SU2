@@ -590,6 +590,8 @@ def read_config(filename):
         data_dict['OPT_ITERATIONS'] = 100
     if not data_dict.has_key('OPT_ACCURACY'):
         data_dict['OPT_ACCURACY'] = 1e-10
+    if not data_dict.has_key('OPT_RELAX_FACTOR'):
+        data_dict['OPT_RELAX_FACTOR'] = 1.0
     if not data_dict.has_key('OPT_GRADIENT_FACTOR'):
         data_dict['OPT_GRADIENT_FACTOR'] = 1.0
     if not data_dict.has_key('OPT_BOUND_UPPER'):
