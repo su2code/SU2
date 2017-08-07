@@ -3937,6 +3937,9 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
     //nVar_Total = nVar_Consv;
     nVar_Consv = 4;
     cout << "%%%%%%%%%%%%% nVar_Consv in SetBaselineRestart = " << nVar_Consv << endl;
+    /*for (iVar = 0; iVar < nVar_Total; iVar++) {
+        cout << "In SetBaselineRestart, Data[" << iVar << "][iPoint=0] = " << Data[iVar][0] << endl;
+    }*/
     /*--- Retrieve filename from config ---*/
     
     if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
@@ -4185,7 +4188,7 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
         /*--- First, write the number of variables and points. ---*/
         
         fwrite(var_buf, var_buf_size, sizeof(int), fhw);
-        cout << " Check 1" << endl;
+
         /*--- Write the variable names to the file. Note that we are adopting a
          fixed length of 33 for the string length to match with CGNS. This is
          needed for when we read the strings later. ---*/
@@ -4194,19 +4197,17 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
             strcpy(str_buf, Variable_Names[iVar].c_str());
             fwrite(str_buf, CGNS_STRING_SIZE, sizeof(char), fhw);
         }
-        cout << " Check 2" << endl;
+
         /*--- Call to write the entire restart file data in binary in one shot. ---*/
         
         fwrite(buf, nVar_Total*nPoint, sizeof(passivedouble), fhw);
-        cout << " Check 3" << endl;
         /*--- Write the external iteration. ---*/
         
         fwrite(&Restart_ExtIter, 1, sizeof(int), fhw);
-        cout << " Check 4" << endl;
+
         /*--- Write the metadata. ---*/
         
         fwrite(Restart_Metadata, 5, sizeof(passivedouble), fhw);
-        cout << " Check 5" << endl;
         return;
     }
     cout << " Done with restart for binary " << endl;
@@ -7848,8 +7849,12 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         /* For interpolation of solution from one mesh to another */
         cout << "Writing SU2 native restart file." << endl;
           cout << "nPoint to check calling SetBaselineRestart = " << geometry[ZONE_0]->GetnPoint() << endl;
-          if(geometry[ZONE_0]->GetnPoint() < 20000)
+          //if(geometry[ZONE_0]->GetnPoint() < 10000)
+          if(config[iZone]->GetMesh_FileName() == config[iZone]->GetInterpMesh_FileName())
+          {
+              cout << "&&&&&&& Using SetBaselineRestart $$$$$$$$$$" << endl;
               SetBaselineRestart(config[iZone], geometry[iZone], solver, iZone);
+          }
   //      SetBaselineRestart(config[iZone], geometry[iZone], solver, iZone);
         if (Wrt_Vol) {
           
