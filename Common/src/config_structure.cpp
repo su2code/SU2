@@ -1599,6 +1599,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RADIUS_GYRATION_SQUARED", RadiusGyrationSquared, 3.48);
   /* DESCRIPTION: Solve the aeroelastic equations every given number of internal iterations. */
   addUnsignedShortOption("AEROELASTIC_ITER", AeroelasticIter, 3);
+  
+  /*!\par CONFIG_CATEGORY: Optimization Problem*/
+  
+  /* DESCRIPTION: Scale the line search in the optimizer */
+  addDoubleOption("OPT_RELAX_FACTOR", Opt_RelaxFactor, 1.0);
+
+  /* DESCRIPTION: Bound the line search in the optimizer */
+  addDoubleOption("OPT_LINE_SEARCH_BOUND", Opt_LineSearch_Bound, 1E6);
 
   /*!\par CONFIG_CATEGORY: Wind Gust \ingroup Config*/
   /*--- Options related to wind gust simulations ---*/
@@ -1985,9 +1993,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flag specifying if the mesh was decomposed */
   addPythonOption("DECOMPOSED");
 
+  /* DESCRIPTION: Optimization gradient factor */
+  addPythonOption("OPT_GRADIENT_FACTOR");
+  
   /* DESCRIPTION: Upper bound for the optimizer */
   addPythonOption("OPT_BOUND_UPPER");
-
+  
   /* DESCRIPTION: Lower bound for the optimizer */
   addPythonOption("OPT_BOUND_LOWER");
 
@@ -2543,6 +2554,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] == MOVING_HTP)))
     Grid_Movement = true;
+
+  /*--- The Line Search should be applied only in the deformation stage. ---*/
+
+  if (Kind_SU2 != SU2_DEF) {
+  	Opt_RelaxFactor = 1.0;
+  }
 
   /*--- If it is not specified, set the mesh motion mach number
    equal to the freestream value. ---*/
