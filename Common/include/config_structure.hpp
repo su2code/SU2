@@ -106,6 +106,8 @@ private:
   unsigned short FFD_Blending; /*!< \brief Kind of FFD Blending function. */
   su2double* FFD_BSpline_Order; /*!< \brief BSpline order in i,j,k direction. */
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
+  su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
+  su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
@@ -6843,6 +6845,24 @@ public:
    * \return Tolerance of the point inversion algorithm.
    */
   su2double GetFFD_Tol(void);
+  
+  /*!
+   * \brief Get the scale factor for the line search.
+   * \return Scale factor for the line search.
+   */
+  su2double GetOpt_RelaxFactor(void);
+
+  /*!
+   * \brief Get the bound for the line search.
+   * \return Bound for the line search.
+   */
+  su2double GetOpt_LineSearch_Bound(void);
+  
+  /*!
+   * \brief Set the scale factor for the line search.
+   * \param[in] val_scale - scale of the deformation.
+   */
+  void SetOpt_RelaxFactor(su2double val_scale);
   
   /*!
    * \brief Get the node number of the CV to visualize.
