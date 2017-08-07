@@ -8710,7 +8710,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
                    of this DOF start. */
                 const su2double *solDOFDr = gradSolDOFs + j*nVar;
                 const su2double *solDOFDs = solDOFDr    + offDerivSol;
-                const su2double *solDOFDt = solDOFDt    + offDerivSol;
+                const su2double *solDOFDt = solDOFDs    + offDerivSol;
 
                 /* Compute the true value of the metric terms in this DOF. Note that in
                    metricTerms the metric terms scaled by the Jacobian are stored. */
