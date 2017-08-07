@@ -2181,47 +2181,6 @@ public:
 };
 
 /*!
- * \class CUpwSca_TurbML
- * \brief Class for doing a scalar upwind solver for the Spalar-Allmaral turbulence model equations.
- * \ingroup ConvDiscr
- * \author A. Bueno.
- * \version 5.0.0 "Raven"
- */
-class CUpwSca_TurbML : public CUpwSca_Abstract {
-private:
-
-  /*!
-   * \brief Adds any extra variables to AD
-   */
-  void ExtraADPreaccIn();
-
-  /*!
-   * \brief SA specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
-                                su2double **Jacobian_j, CConfig *config);
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwSca_TurbML(void);
-};
-
-/*!
  * \class CUpwSca_TurbSST
  * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
  * \ingroup ConvDiscr
@@ -3100,50 +3059,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CAvgGrad_TurbSA_Neg(void);
-};
-
-/*!
- * \class CAvgGrad_TurbML
- * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
- * \ingroup ViscDiscr
- * \author A. Bueno.
- * \version 5.0.0 "Raven"
- */
-class CAvgGrad_TurbML : public CAvgGrad_Abstract {
-private:
-  su2double sigma;
-  su2double nu_i, nu_j, nu_e;
-
-  /*!
-   * \brief Adds any extra variables to AD
-   */
-  void ExtraADPreaccIn(void);
-
-  /*!
-   * \brief ML specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
-                                su2double **Jacobian_j, CConfig *config);
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGrad_TurbML(unsigned short val_nDim, unsigned short val_nVar,
-                  bool correct_grad, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGrad_TurbML(void);
 };
 
 /*!
