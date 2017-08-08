@@ -58,7 +58,7 @@ using namespace std;
  * \author: C. Pederson
  * \version 5.0.0 "Raven"
  */
-class CHybrid_Visc_Anisotropy{
+class CHybrid_Visc_Anisotropy {
  protected:
   su2double** eddy_visc_anisotropy;
   const unsigned short nDim;
@@ -104,7 +104,7 @@ class CHybrid_Visc_Anisotropy{
    * abstract, in order to allow different possible scalars for different
    * implementations.
    *
-   * @param val_scalar
+   * \param val_scalar
    */
   virtual void SetScalar(su2double val_scalar) = 0;
 };
@@ -148,12 +148,12 @@ class CHybrid_Isotropic_Visc : public CHybrid_Visc_Anisotropy {
  */
 class CHybrid_Aniso_Q : public CHybrid_Visc_Anisotropy {
  protected:
-  su2double** Qstar; /// \brief The approximate two-point structure function at the grid resolution
-  su2double   resolution_adequacy; /// \brief A measure of the ability of the grid to resolve LES
+  su2double** Qstar; ///< \brief The approximate two-point structure function at the grid resolution
+  su2double   resolution_adequacy; ///< \brief A measure of the ability of the grid to resolve LES
   /***
    * \brief Calculates a weight for RANS (vs. LES)
-   * @param r_k - The resolution adequacy
-   * @return The weight given to an isotropic, RANS style eddy viscosity
+   * \param r_k - The resolution adequacy
+   * \return The weight given to an isotropic, RANS style eddy viscosity
    */
   su2double CalculateIsotropyWeight(su2double r_k);
 
@@ -293,7 +293,6 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   su2double C_zeta; /*!> \brief Scaling constant for the transformation tensor zeta */
   su2double **Q,        /*!> \brief An approximate 2nd order structure function tensor */
             **Qapprox;  /*!> \brief An approximate 2nd order structure function tensor (used for temporary calculations) */
-  su2double r_k;        /*!> \brief The resolution adequacy parameter */
   std::vector<std::vector<su2double> > constants;
 
   /*--- Data structures for LAPACK ---*/
@@ -314,6 +313,15 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
    * \return The resolution inadequacy parameter
    */
   su2double CalculateRk(su2double** Q, su2double v2);
+
+  /*!
+   * \brief Projects the resolution on a specific vector
+   * \param[in] resolution_tensor - The tensor representing separation distances
+   * \param[in] direction - The direction vector (assumed to be normalized)
+   * \return The magnitude of the resolution tensor projected on the direction.
+   */
+  su2double GetProjResolution(su2double** resolution_tensor,
+                              vector<su2double> direction);
 
   /**
    * \brief Uses a resolution tensor and a gradient-gradient tensor to build an

@@ -257,6 +257,8 @@ inline su2double CVariable::GetTurbLengthscale(void) { return 0; }
 
 inline su2double CVariable::GetResolutionAdequacy(void) {return 1; }
 
+inline su2double CVariable::GetRANSWeight(void) {return 1; }
+
 inline su2double** CVariable::GetEddyViscAnisotropy(void) { return NULL; }
 
 inline su2double CVariable::GetEddyViscAnisotropy(unsigned short iDim,
@@ -443,6 +445,8 @@ inline void CVariable::SetEddyViscosity(su2double eddy_visc) { }
 inline void CVariable::SetTurbScales(su2double val_turb_T, su2double val_turb_L) { }
 
 inline void CVariable::SetResolutionAdequacy(su2double val_r_k) { }
+
+inline void CVariable::SetRANSWeight(su2double val_w_rans) { }
 
 inline void CVariable::SetEddyViscAnisotropy(su2double** val_anisotropy_i) { }
 
@@ -1192,9 +1196,13 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
   }
 }
 
-inline void CHybridVariable::SetResolutionAdequacy(su2double val_r_k) { resolution_adequacy = val_r_k;}
+inline void CHybridVariable::SetResolutionAdequacy(su2double val_r_k) { Resolution_Adequacy = val_r_k;}
 
-inline su2double CHybridVariable::GetResolutionAdequacy() { return resolution_adequacy; }
+inline su2double CHybridVariable::GetResolutionAdequacy() { return Resolution_Adequacy; }
+
+inline void CHybridVariable::SetRANSWeight(su2double val_w_rans) {RANS_Weight = val_w_rans;}
+
+inline su2double CHybridVariable::GetRANSWeight() { return RANS_Weight; }
 
 inline void CNSVariable::SetEddyViscAnisotropy(su2double** val_anisotropy) {
     // Copy values instead of copying pointers to values that may change

@@ -863,6 +863,12 @@ public:
    */
   virtual su2double GetResolutionAdequacy(void);
 
+  /**
+   * \brief Get the RANS weighting for a hybrid RANS/LES model
+   * \return The RANS weight parameter
+   */
+  virtual su2double GetRANSWeight(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the flow enthalpy.
@@ -1054,6 +1060,12 @@ public:
    * \param[in] val_r_k - The resolution adequacy parameter for hybrid RANS/LES
    */
   virtual void SetResolutionAdequacy(su2double val_r_k);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_w_rans - The RANS weight for a hybrid RANS/LES model
+   */
+  virtual void SetRANSWeight(su2double val_w_rans);
 
   /*!
    * \brief A virtual member.
@@ -3894,7 +3906,8 @@ public:
  */
 class CHybridVariable : public CVariable {
 protected:
-  su2double resolution_adequacy; /*!< \brief A measure of the ability of the grid to resolve the turbulence */
+  su2double Resolution_Adequacy; /*!< \brief A measure of the ability of the grid to resolve the turbulence */
+  su2double RANS_Weight; /*!< \brief The weight given to the RANS solution
 public:
   /*!
    * \brief Constructor of the class.
@@ -3916,16 +3929,28 @@ public:
                     CConfig *config);
 
   /*!
-   * \brief Get the value of the blending coefficient.
-   * \return the value of the eddy viscosity.
+   * \brief Get the value of the resolution adequacy
+   * \return the value of the resolution adequacy
    */
   su2double GetResolutionAdequacy();
 
   /*!
-   * \brief Set the value of the blending coefficient.
-   * \param[in] val_muT - Value of the eddy viscosity.
+   * \brief Set the value of the resolution adequacy
+   * \param[in] val_r_k - The value of the resolution adequacy
    */
   void SetResolutionAdequacy(su2double val_r_k);
+
+  /*!
+   * \brief Get the value of the RANS weight
+   * \return the RANS weight
+   */
+  su2double GetRANSWeight();
+
+  /*!
+   * \brief Set the value of the blending coefficient.
+   * \param[in] val_w_rans - RANS weight
+   */
+  void SetRANSWeight(su2double val_w_rans);
 };
 
 /*!

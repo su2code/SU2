@@ -230,6 +230,9 @@ void CHybrid_Mediator::SetupRANSNumerics(CGeometry* geometry,
 void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
                                               CSolver **solver_container,
                                               unsigned short iPoint) {
+  unsigned short iDim, jDim, kDim, lDim;
+
+
   /*--- Find eigenvalues and eigenvecs for grid-based resolution tensor ---*/
   su2double** ResolutionTensor = geometry->node[iPoint]->GetResolutionTensor();
   su2double* ResolutionValues = geometry->node[iPoint]->GetResolutionValues();
@@ -240,12 +243,12 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
       solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
   CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Qapprox);
   vector<vector<su2double> > zeta = BuildZeta(ResolutionValues);
-  unsigned short iDim, jDim, kDim, lDim;
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       Q[iDim][jDim] = 0.0;
       for (kDim = 0; kDim < nDim; kDim++) {
         for (lDim = 0; lDim < nDim; lDim++) {
+          // Now zeta*Q*zeta, not Q
           Q[iDim][jDim] += zeta[iDim][kDim] * zeta[lDim][jDim] *
                            Qapprox[kDim][lDim];
         }
@@ -253,10 +256,64 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     }
   }
 
+  /*--- Find eigenvalues and eigenvectors ---*/
+  su2double r_k, w_rans;
+  su2double total_vel_differences = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      total_vel_differences += abs(Q[iDim][jDim]);
+    }
+  }
+  if (total_vel_differences > EPS) {
+    /*--- Only calculate r_k, w_rans if there are resolved velocity differences
+     * at resolution scale.  Otherwise, eigenvector calculation is arbitrary */
 
-  su2double min_resolved = TWO3*solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-  su2double r_k = CalculateRk(Q, min_resolved);
+    /*--- Calculate eigenvectors and eigenvalues of zeta*Q*zeta ---*/
+    vector<su2double> eigvalues_zQz;
+    vector<vector<su2double> > eigvectors_zQz;
+    SolveEigen(Q, eigvalues_zQz, eigvectors_zQz);
+    std::vector<su2double>::iterator iter;
+    iter = max_element(eigvalues_zQz.begin(), eigvalues_zQz.end());
+    unsigned short max_index = distance(eigvalues_zQz.begin(), iter);
+    vector<su2double> max_eigenvalue_direction = eigvectors_zQz[max_index];
+
+    /*---Find the largest product of resolved fluctuations at the cutoff---*/
+    // TODO: Incorporate anisotropy ratio here (max-to-min)
+    su2double aniso_ratio = 1.0;
+    su2double C_kQ = 8.0;
+    su2double max_resolved = aniso_ratio*C_kQ*C_sf*TWO3*eigvalues_zQz[max_index];
+
+    /*--- Find the smallest product of unresolved fluctuations at the cutoff ---*/
+    // TODO: Make this more generalized
+    su2double C_mu = 0.22;
+    su2double TurbT = solver_container[TURB_SOL]->node[iPoint]->GetTurbTimescale();
+    su2double k = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+    su2double omega = solver_container[TURB_SOL]->node[iPoint]->GetSolution(1);
+    su2double min_unresolved = TurbT*k*omega/C_mu;
+
+    /*--- Calculate the resolution adequacy parameter ---*/
+    r_k = max_resolved/min_unresolved;
+
+    /*--- Find the dissipation ratio ---*/
+    su2double C_eps = 0.03125;
+    su2double TurbL = solver_container[TURB_SOL]->node[iPoint]->GetTurbLengthscale();
+    su2double d_max = GetProjResolution(ResolutionTensor,
+                                        eigvectors_zQz[max_index]);
+    su2double r_eps = C_eps * pow(r_k, 1.5) * TurbL * d_max;
+
+    /*--- Calculate the RANS weight ---*/
+    su2double w_rans = max(tanh(r_eps - 1), 0.0);
+
+  } else {
+    /*--- If the velocity differences at resolution scale are negligible,
+     * set max_eigenvalue = 0 ---*/
+    r_k = 0.0;
+    w_rans = 0.0;
+  }
+
   solver_container[HYBRID_SOL]->node[iPoint]->SetResolutionAdequacy(r_k);
+  solver_container[HYBRID_SOL]->node[iPoint]->SetRANSWeight(w_rans);
+
 }
 
 void CHybrid_Mediator::SetupHybridParamNumerics(CGeometry* geometry,
@@ -290,6 +347,11 @@ void CHybrid_Mediator::SetupHybridParamNumerics(CGeometry* geometry,
 
   su2double r_k = solver_container[HYBRID_SOL]->node[iPoint]->GetResolutionAdequacy();
   hybrid_param_numerics->SetResolutionAdequacy(r_k);
+
+  /*--- Pass RANS weight into the numerics object ---*/
+
+  su2double w_rans = solver_container[HYBRID_SOL]->node[iPoint]->GetRANSWeight();
+  hybrid_param_numerics->SetRANSWeight(w_rans);
 }
 
 void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
@@ -368,29 +430,30 @@ void CHybrid_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
   visc_numerics->SetEddyViscAnisotropy(aniso_i, aniso_j);
 }
 
-su2double CHybrid_Mediator::CalculateRk(su2double** Q,
-                                        su2double min_resolved) {
-  unsigned int iDim, jDim;
-  su2double total = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0; jDim < nDim; jDim++) {
-      total += abs(Q[iDim][jDim]);
+su2double CHybrid_Mediator::GetProjResolution(su2double** resolution_tensor,
+                                              vector<su2double> direction) {
+
+#ifndef NDEBUG
+  su2double magnitude_squared;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    magnitude_squared += direction[iDim]*direction[iDim];
+  if (abs(magnitude_squared - 1.0) > 1e-7) {
+    cout << "ERROR: The unit vector int the projected resolution calc had a ";
+    cout << "mangitude greater than 1!" << endl;
+    cout << "    Magnitude: " << sqrt(magnitude_squared) << endl;
+    exit(EXIT_FAILURE);
+  }
+#endif
+
+  su2double temp, result = 0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    temp = 0;
+    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+      temp += resolution_tensor[iDim][jDim]*direction[jDim];
     }
+    result += temp*temp;
   }
-  if (total < EPS) {
-    /*--- If the velocity differences at resolution scale are negligible,
-     * return 0 ---*/
-    return 0.0;
-  } else {
-    /*--- Compare resolved and unresolved turbulence ---*/
-    vector<su2double> eigvalues_Q;
-    vector<vector<su2double> > eigvectors_Q;
-    SolveEigen(Q, eigvalues_Q, eigvectors_Q);
-    su2double max_eigenvalue_Q = *max_element(eigvalues_Q.begin(),
-                                              eigvalues_Q.end());
-    su2double max_unresolved = C_sf*TWO3*max_eigenvalue_Q;
-    return max_unresolved / min_resolved;
-  }
+  return sqrt(result);
 }
 
 vector<vector<su2double> > CHybrid_Mediator::LoadConstants(string filename) {

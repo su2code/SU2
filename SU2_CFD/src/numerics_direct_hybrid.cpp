@@ -104,11 +104,8 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
                                                     su2double **val_Jacobian_i,
                                                     su2double **val_Jacobian_j,
                                                     CConfig *config) {
-  su2double udMdx; // Dot product of resolved velocity and resolution tensor gradient
-  su2double max_udMdx; // Max value of the convection of the resolution tensor
-  su2double S_r, // Gentle switch between raising and lowering hybrid parameter
-            S_c, // Source for removing turbulent scales
-            T_c; // Timescale for removal of turbulent scales
+  // FIXME: Add these...
+  su2double w_rans;
 
 #ifndef NDEBUG
   if (Resolution_Adequacy < 0) {
@@ -118,38 +115,107 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
   }
 #endif
 
+  /*--- Raising and lowering alpha based on resolution adequacy ---*/
+
+  /*--- Turbulent timescale, with correction factor of 4 ---*/
+  su2double T_alpha = 4.0*TurbT;
+
+  // Gentle switch between raising and lowering alpha based on resolution
+  su2double S_r;
   if (Resolution_Adequacy >= 1.0)
     S_r = tanh(Resolution_Adequacy - 1.0);
   else
     S_r = tanh(1.0 - 1.0/Resolution_Adequacy);
 
+  /*--- D_r allows alpha to increase past unity in LES regions.
+   * It causes alpha to return rapidly to 1 in RANS regions. ---*/
+  su2double D_r = w_rans * fmax(HybridParameter_i[0] - 1, 0);
 
+  /*--- F_r allows alpha to decrease past 0.
+   * F_r functions as a built-in clipping which maintains C1 continuity.
+   * It causes alpha to return to 0 if it goes briefly negative. ---*/
+  su2double F_r = fmax(HybridParameter_i[0]+S_r, 0);
+
+  val_residual[0] = (S_r + D_r + F_r)/TurbT * Volume;
+
+  /*--- Raising and lowering alpha based on grid coarsening/refinement ---*/
+
+  su2double udMdx; // Dot product of resolved velocity and resolution tensor gradient
+  su2double max_udMdx; // Max value of the convection of the resolution tensor
   for (unsigned int iDim = 0; iDim < nDim; iDim++) {
     for (unsigned int jDim = 0; jDim < nDim; jDim++) {
       udMdx = 0.0;
       for (unsigned int kDim = 0; kDim < nDim; kDim++) {
-        // XXX: This is NOT upwinded.  It could be improved to upwind the product.
+        // XXX: This is NOT upwinded.
         udMdx += V_i[kDim+1] * Resolution_Tensor_Gradient[kDim][iDim][jDim];
       }
+      // FIXME: Max magnitude or max value?
       if (iDim == 0 and jDim == 0) max_udMdx = udMdx;
       else if (udMdx > max_udMdx) max_udMdx = udMdx;
     }
   }
 
   if (abs(max_udMdx) > EPS) {
-    T_c = TurbL/max_udMdx;
-    if (S_r >= 0.0 && T_c >= 0.0)
-      S_c = 1.0;
-    else
-      S_c = 0.0;
-    val_residual[0] = (S_r/TurbT + S_c/T_c) * Volume;
-  } else {
-    // No grid gradients are aligned with nonzero velocities; ignore S_c/Tc
-    val_residual[0] = S_r/TurbT * Volume;
+    // Timescale for grid refinement/coarsening
+    su2double T_c = TurbL/max_udMdx;
+    if (S_r >= 0.0 && T_c >= 0.0) {
+      val_residual[0] += 1.0/T_c * Volume;
+    }
   }
-  val_residual[0] = S_r/TurbT * Volume;
 
-  // Jacobian of \alpha with respect to \alpha
+  /*--- Jacobian of \alpha with respect to \alpha ---*/
   val_Jacobian_i[0][0] = 0.0;
+  if (D_r != 0)
+    val_Jacobian_i[0][0] += w_rans/T_alpha * Volume;
+  if (F_r != 0)
+    val_Jacobian_i[0][0] += 1.0/T_alpha * Volume;
+}
+
+CAvgGrad_HybridConv::CAvgGrad_HybridConv(unsigned short val_nDim,
+                                         unsigned short val_nVar,
+                                         bool correct_grad,
+                                         CConfig *config)
+    : CAvgGrad_Abstract(val_nDim, val_nVar, correct_grad, config),
+      sigma_alpha(10.) {
+}
+
+CAvgGrad_HybridConv::~CAvgGrad_HybridConv(void) {
+}
+
+void CAvgGrad_HybridConv::ExtraADPreaccIn() {
+}
+
+void CAvgGrad_HybridConv::FinishResidualCalc(su2double *val_residual,
+                                                   su2double **Jacobian_i,
+                                                   su2double **Jacobian_j,
+                                                   CConfig *config) {
+
+  /*--- Compute mean effective viscosity ---*/
+  nu_i = Laminar_Viscosity_i + Eddy_Viscosity_i/sigma_alpha;
+  nu_j = Laminar_Viscosity_j + Eddy_Viscosity_j/sigma_alpha;
+
+  val_residual[0] = 0.5*(nu_i + nu_j)*Proj_Mean_Grad[0];
+
+  /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+
+  if (implicit) {
+    Jacobian_i[0][0] = -0.5*(nu_i + nu_j)*proj_vector_ij;
+    Jacobian_j[0][0] = -0.5*(nu_i + nu_j)*proj_vector_ij;
+  }
+
+}
+
+/*!
+ * \brief Define the variables of which the viscous residual is taken
+ */
+void CAvgGrad_HybridConv::SetVariables() {
+  Var_i = HybridParameter_i; Var_j = HybridParameter_j;
+}
+
+/*!
+ * \brief Define the gradients of which the viscous residual is taken
+ */
+void CAvgGrad_HybridConv::SetGradients() {
+  Grad_i = HybridParam_Grad_i; Grad_j = HybridParam_Grad_j;
 }
 

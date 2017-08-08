@@ -531,6 +531,51 @@ void CHybridSolver::Upwind_Residual(CGeometry *geometry,
 
 }
 
+void CHybridSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  unsigned long iEdge, iPoint, jPoint;
+
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    /*--- Points in edge ---*/
+
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+
+    /*--- Points coordinates, and normal vector ---*/
+
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                       geometry->node[jPoint]->GetCoord());
+    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+
+    /*--- Conservative variables w/o reconstruction ---*/
+
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive());
+
+    /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+
+    numerics->SetHybridParameter(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
+    numerics->SetHybridParameterGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
+
+    /*--- Compute residual, and Jacobians ---*/
+
+    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+    /*--- Add and subtract residual, and update Jacobians ---*/
+
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    LinSysRes.AddBlock(jPoint, Residual);
+
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+
+  }
+
+}
+
 void CHybridConvSolver::Source_Residual(CGeometry *geometry,
                                           CSolver **solver_container,
                                           CNumerics *numerics,
@@ -547,6 +592,10 @@ void CHybridConvSolver::Source_Residual(CGeometry *geometry,
     /*--- Conservative variables w/o reconstruction ---*/
 
     numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
+
+    /*--- Pass in the variable of the hybrid parameter itself ---*/
+
+    numerics->SetHybridParameter(node[iPoint]->GetSolution(), NULL);
 
     /*--- Set volume ---*/
 
@@ -1356,7 +1405,7 @@ void CHybridConvSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Upwind second order reconstruction ---*/
 
-  //if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
+  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
 
   /*--- Use the hybrid mediator to set up the solver ---*/
 

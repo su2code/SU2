@@ -718,6 +718,13 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   }
+#ifndef NDEBUG
+  if (IterLinSol >= MaxIter) {
+    cout << "ERROR: Ran to the max number of iterations on the linear solver!" << endl;
+    cout << "       iter = " << IterLinSol << "  max = " << MaxIter << endl;
+    exit(EXIT_FAILURE);
+  }
+#endif
 
   return IterLinSol;
   

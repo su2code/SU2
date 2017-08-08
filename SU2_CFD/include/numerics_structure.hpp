@@ -121,6 +121,9 @@ public:
             TurbL; /*!< \brief Turbulent lengthscale */
   su2double *HybridParameter_i, /*!< \brief Vector of variables for hybrid RANS/LES "hybrid parameters" at point i. */
             *HybridParameter_j; /*!< \brief Vector of variables for hybrid RANS/LES "hybrid parameters" at point j. */
+  su2double **HybridParam_Grad_i, /*!< \brief Gradient of variables for hybrid RANS/LES "hybrid parameters" at point i. */
+            **HybridParam_Grad_j; /*!< \brief Gradient of variables for hybrid RANS/LES "hybrid parameters" at point j. */
+  su2double RANS_Weight; /*!< \brief The weight given to RANS for hybrid RANS/LES */
   su2double turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;      /*!< \brief Turbulent kinetic energy at point j. */
   su2double Pressure_i,  /*!< \brief Pressure at point i. */
@@ -557,6 +560,13 @@ public:
   void SetHybridParameter(su2double* val_hybrid_param_i, su2double* val_hybrid_param_j);
 
   /*!
+     * \brief Set the value of the hybrid RANS/LES blending variable gradient.
+     * \param[in] val_hybrid_param_i - gradient of the hybrid parameter(s) at point i.
+     * \param[in] val_hybrid_param_j - gradient of the hybrid parameter(s) at point j.
+     */
+  void SetHybridParameterGradient(su2double** val_hybrid_grad_i, su2double** val_hybrid_grad_j);
+
+  /*!
    * \brief Set the resolution tensors
    * \param[in] val_resolution_tensor_i - Value of the resolution tensor at point i
    * \param[in] val_resolution_tensor_j - Value of the resolution tensor at point j
@@ -575,6 +585,12 @@ public:
    * \param val_resolution_adequacy - The resolution adequacy parameter
    */
   void SetResolutionAdequacy(su2double val_resolution_adequacy);
+
+  /*!
+   * \brief Sets the RANS weight for a hybrid RANS/LES model
+   * \param val_w_rans - The RANS weight
+   */
+  void SetRANSWeight(su2double val_w_rans);
 
   /*!
      * \brief Set the normalized eddy viscosity anisotropy tensor.
@@ -3001,6 +3017,93 @@ public:
 };
 
 /*!
+ * \class CAvgGrad_Abstract
+ * \brief Template class for computing viscous residual of scalar values
+ * \details This class serves as a template for the scalar viscous residual
+ *   classes.  The general structure of a viscous residual calculation is the
+ *   same for many different  models, which leads to a lot of repeated code.
+ *   By using the template design pattern, these sections of repeated code are
+ *   moved to a shared base class, and the specifics of each model
+ *   are implemented by derived classes.  In order to add a new residual
+ *   calculation for a viscous residual, extend this class and implement
+ *   the pure virtual functions with model-specific behavior.
+ * \ingroup ViscDiscr
+ * \author C. Pederson, A. Bueno, and F. Palacios
+ * \version 5.0.0 "Raven"
+ */
+class CAvgGrad_Abstract : public CNumerics {
+ private:
+
+  /*!
+   * \brief Define the variables of which the viscous residual is taken
+   */
+  virtual void SetVariables() = 0;
+
+  /*!
+   * \brief Define the gradients of which the viscous residual is taken
+   */
+  virtual void SetGradients() = 0;
+
+  /*!
+   * \brief A pure virtual function; Adds any extra variables to AD
+   */
+  virtual void ExtraADPreaccIn() = 0;
+
+  /*!
+   * \brief Model-specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void FinishResidualCalc(su2double *val_residual,
+                                  su2double **Jacobian_i,
+                                  su2double **Jacobian_j,
+                                  CConfig *config) = 0;
+
+ protected:
+  bool implicit, incompressible;
+  bool correct_gradient;
+  unsigned short iVar, iDim;
+  su2double *Var_i,
+            *Var_j;
+  su2double **Grad_i,                  /*!< \brief Gradients to be used from point i */
+            **Grad_j,                  /*!< \brief Gradients to be used from point j */
+            **Mean_Grad;               /*!< \brief Average of gradients at cell face */
+  su2double *Edge_Vector,              /*!< \brief Vector from node i to node j. */
+            *Proj_Mean_Grad_Normal,    /*!< \brief Mean_grad DOT normal */
+            *Proj_Mean_Grad_Edge,      /*!< \brief Mean_grad DOT Edge_Vector */
+            *Proj_Mean_Grad;           /*!< \brief Mean_grad DOT normal, corrected if required*/
+  su2double  dist_ij_2,                       /*!< \brief |Edge_Vector|^2 */
+             proj_vector_ij;                  /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_Abstract(unsigned short val_nDim, unsigned short val_nVar,
+                    bool correct_gradient, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_Abstract(void);
+
+  /*!
+   * \brief Compute the viscous residual using an average of gradients without correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i,
+                       su2double **Jacobian_j, CConfig *config);
+};
+
+/*!
  * \class CAvgGrad_TurbSA
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
@@ -3884,6 +3987,61 @@ public:
    */
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+};
+
+/*!
+ * \class CAvgGrad_Hybrid
+ * \brief Class for computing viscous term using average of gradients (Hybrid coefficient).
+ * \ingroup ViscDiscr
+ * \author C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CAvgGrad_HybridConv : public CAvgGrad_Abstract {
+private:
+
+  const su2double sigma_alpha;
+  su2double nu_i, nu_j;
+
+  /*!
+   * \brief Define the variables of which the viscous residual is taken
+   */
+  void SetVariables();
+
+  /*!
+   * \brief Define the gradients of which the viscous residual is taken
+   */
+  void SetGradients();
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn(void);
+
+  /*!
+   * \brief Hybrid specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
+                                su2double **Jacobian_j, CConfig *config);
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_HybridConv(unsigned short val_nDim, unsigned short val_nVar,
+                      bool correct_grad, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_HybridConv(void);
 };
 
 /*!

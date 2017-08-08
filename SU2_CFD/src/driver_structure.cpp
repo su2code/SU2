@@ -1519,32 +1519,49 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     }
 
 		/*--- Check if the combination of hybridization and RANS model are valid ---*/
-    // TODO: Add in KE model (plus any other supported models)
+    // TODO: Add in zeta-f model (plus any other supported models)
     if (hybrid && !(menter_sst)) {
       cout << "Specified RANS model has not been implemented for hybrid RANS/LES." << endl;
       cout << "Currently supported RANS models: SST" << endl;
       exit(EXIT_FAILURE);
     }
 
+    /*--- Definition of the convective scheme for each equation and mesh level ---*/
+
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
-          // Allow convection (there's no dummy upwinding convection class)
+          /*--- Advection and diffusion are left for testing purposes.
+           * If the hybrid parameter is set to 1 for the entire flow field
+           * and there is no source term, then advection-diffusion should
+           * do absolutely nothing ---*/
           numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
           break;
         case CONVECTIVE:
           numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
           break;
         default:
-          cout << "Convective numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
+          cout << "Convective numerics not found for specified hybrid blending scheme." << endl;
+          exit(EXIT_FAILURE);
       }
     }
 
-    /* VISC_TERM is not necessary; it will be passed as a NULL pointer to a
-     * virtual function from CSolver that does nothing.  As long as
-     * Viscous_Residual is not implemented for the HybridSolver, we do not
-     * need to set up a dummy viscous numerics class.
-     */
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          /*-- See the note under convection numerics --*/
+          numerics_container[iMGlevel][HYBRID_SOL][VISC_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Turb, true, config);
+          break;
+        case CONVECTIVE:
+          numerics_container[iMGlevel][HYBRID_SOL][VISC_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Turb, true, config);
+          break;
+        default:
+            cout << "Viscous numerics not found for specified hybrid blending scheme." << endl;
+            exit(EXIT_FAILURE);
+      }
+    }
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -1556,7 +1573,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
           numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_HybridConv(nDim, nVar_Hybrid, config);
           break;
         default:
-          cout << "Source numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
+          cout << "Source numerics not found for specified hybrid blending scheme." << endl;
+          exit(EXIT_FAILURE);
       }
       numerics_container[iMGlevel][HYBRID_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Hybrid, config);
     }
@@ -1565,10 +1583,13 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
+          /*-- See the note under convection numerics --*/
           numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
+          numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Turb, false, config);
           break;
         case CONVECTIVE:
           numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
+          numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Turb, false, config);
           break;
         default:
           cout << "Boundary numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);

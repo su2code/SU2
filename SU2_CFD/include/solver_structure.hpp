@@ -8857,6 +8857,17 @@ class CHybridSolver: public CSolver {
    void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
 
    /*!
+    * \brief Compute the viscous residuals for the hybrid parameter transport
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] solver_container - Container vector with all the solutions.
+    * \param[in] numerics - Description of the numerical method.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] iMesh - Index of the mesh in multigrid computations.
+    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+    */
+   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+   /*!
     * \brief Compute the spatial integration using a upwind scheme.
     * \param[in] geometry - Geometrical definition of the problem.
     * \param[in] solver_container - Container vector with all the solutions.
@@ -8864,7 +8875,6 @@ class CHybridSolver: public CSolver {
     * \param[in] config - Definition of the particular problem.
     * \param[in] iMesh - Index of the mesh in multigrid computations.
     */
-
    void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                         unsigned short iMesh);
 

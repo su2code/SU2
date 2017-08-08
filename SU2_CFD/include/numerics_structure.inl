@@ -236,6 +236,12 @@ inline void CNumerics::SetHybridParameter(su2double* val_hybrid_param_i,
   HybridParameter_j = val_hybrid_param_j;
 }
 
+inline void CNumerics::SetHybridParameterGradient(su2double** val_hybrid_grad_i,
+                                           su2double** val_hybrid_grad_j) {
+  HybridParam_Grad_i = val_hybrid_grad_i;
+  HybridParam_Grad_j = val_hybrid_grad_j;
+}
+
 inline void CNumerics::SetResolutionTensor(su2double** val_resolution_tensor_i,
                                            su2double** val_resolution_tensor_j){
   Resolution_Tensor_i = val_resolution_tensor_i;
@@ -247,6 +253,8 @@ inline void CNumerics::SetGradResolutionTensor(su2double*** val_grad_tensor) {
 }
 
 inline void CNumerics::SetResolutionAdequacy(su2double val_r_k) { Resolution_Adequacy = val_r_k; }
+
+inline void CNumerics::SetRANSWeight(su2double val_w_rans) { RANS_Weight = val_w_rans; }
 
 inline void CNumerics::SetIntermittency(su2double intermittency_in) { }
 

@@ -2816,3 +2816,102 @@ void CNumerics::CreateBasis(su2double *val_Normal) {
 CSourceNothing::CSourceNothing(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
 CSourceNothing::~CSourceNothing(void) { }
+
+CAvgGrad_Abstract::CAvgGrad_Abstract(unsigned short val_nDim,
+                                     unsigned short val_nVar,
+                                     bool correct_grad,
+                                     CConfig *config)
+    : CNumerics(val_nDim, val_nVar, config), correct_gradient(correct_grad) {
+
+  implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_Grad_Normal = new su2double [nVar];
+  Proj_Mean_Grad_Edge = new su2double [nVar];
+  Proj_Mean_Grad = new su2double [nVar];
+  Mean_Grad = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Mean_Grad[iVar] = new su2double [nDim];
+
+}
+
+CAvgGrad_Abstract::~CAvgGrad_Abstract(void) {
+
+  delete [] Edge_Vector;
+  delete [] Proj_Mean_Grad_Normal;
+  delete [] Proj_Mean_Grad_Edge;
+  delete [] Proj_Mean_Grad;
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] Mean_Grad[iVar];
+  delete [] Mean_Grad;
+
+}
+
+void CAvgGrad_Abstract::ComputeResidual(su2double *val_residual,
+                                        su2double **Jacobian_i,
+                                        su2double **Jacobian_j,
+                                        CConfig *config) {
+
+  SetVariables(); SetGradients();
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(Grad_i, nVar, nDim);
+  AD::SetPreaccIn(Grad_j, nVar, nDim);
+  if (correct_gradient) {
+    AD::SetPreaccIn(Var_i, nVar); AD::SetPreaccIn(Var_j, nVar);
+  }
+  ExtraADPreaccIn();
+
+  if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
+
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
+  }
+  else {
+    AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
+
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+  }
+
+  /*--- Compute vector going from iPoint to jPoint ---*/
+
+  dist_ij_2 = 0; proj_vector_ij = 0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+  }
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
+
+  /*--- Mean gradient approximation ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Mean_Grad_Normal[iVar] = 0.0;
+    Proj_Mean_Grad_Edge[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_Grad[iVar][iDim] = 0.5*(Grad_i[iVar][iDim] + Grad_j[iVar][iDim]);
+      Proj_Mean_Grad_Normal[iVar] += Mean_Grad[iVar][iDim] * Normal[iDim];
+      if (correct_gradient)
+        Proj_Mean_Grad_Edge[iVar] += Mean_Grad[iVar][iDim]*Edge_Vector[iDim];
+    }
+    Proj_Mean_Grad[iVar] = Proj_Mean_Grad_Normal[iVar];
+    if (correct_gradient) {
+      Proj_Mean_Grad[iVar] -= Proj_Mean_Grad_Edge[iVar]*proj_vector_ij -
+      (Var_j[iVar]-Var_i[iVar])*proj_vector_ij;
+    }
+  }
+
+  FinishResidualCalc(val_residual, Jacobian_i, Jacobian_j, config);
+
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
+
+}
+
