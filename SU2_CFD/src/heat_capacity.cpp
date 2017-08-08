@@ -31,6 +31,7 @@
  */
 
 #include "../include/heat_capacity.hpp"
+#include "../../../../FluidProp/api/c/fluidprop.h"
 
 
 CHeatCapacity::CHeatCapacity() {
@@ -93,6 +94,29 @@ void CHeatCapacity_Dimensional::Set_Cv0(su2double T) {
 
 }
 
+void CHeatCapacity_Dimensional::Set_dCv0dT(su2double T) {
+
+	unsigned short i;
+    su2double Cp0, T_limited;
+
+    if (coeff_Cp0[0] == 0.0) {
+    	cout << "Warning: no value set for HEAT_CAPACITY_MODEL" << endl;
+        getchar();
+    }
+
+    if (Constant_Gamma) {
+    	dCv0dT = 0;
+
+    } else {
+
+    	dCv0dT = 0;
+
+        for (i=0;i<5;i++)
+           dCv0dT += i* coeff_Cp0[i] * pow(T, i-1);
+    }
+
+}
+
 
 CHeatCapacity_Dimensionless::CHeatCapacity_Dimensionless() : CHeatCapacity() {
 
@@ -132,6 +156,35 @@ void CHeatCapacity_Dimensionless::Set_Cv0(su2double T) {
 
     Cp0 = Cp0 / Gas_Constant * Gas_ConstantND;
     Cv0 = Cp0 - Gas_ConstantND;
+
+}
+
+void CHeatCapacity_Dimensionless::Set_dCv0dT(su2double T) {
+
+	unsigned short i;
+    su2double Cp0, T_limited;
+
+    if (coeff_Cp0[0] == 0.0) {
+    	cout << "Warning: no value set for HEAT_CAPACITY_MODEL" << endl;
+        getchar();
+    }
+
+
+    if (Constant_Gamma) {
+    	dCv0dT = 0;
+
+    } else {
+    	dCv0dT = 0;
+
+        T_limited = T*Tref;
+
+        for (i=0;i<5;i++) {
+           dCv0dT += i * coeff_Cp0[i] * pow(T_limited, i-1);
+        }
+    }
+
+    dCv0dT = dCv0dT / Gas_Constant * Gas_ConstantND;
+    dCv0dT = dCv0dT * Tref;
 
 }
 

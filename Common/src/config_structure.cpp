@@ -531,6 +531,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   // and none of us that write the parsers want to write a full c++ interpreter. Please
   // play nice with the existing format so that you don't break the existing scripts.
 
+
   /* BEGIN_CONFIG_OPTIONS */
 
   /*!\par CONFIG_CATEGORY: Problem Definition \ingroup Config */
@@ -569,6 +570,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
+  /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
+  addBoolOption("OLD_SOLUTION_1PH", Old_solution_1ph, false);
+  /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
+  addBoolOption("OLD_SOLUTION_TURB", Old_solution_turb, false);
   /*!\brief UPDATE_RESTART_PARAMS \n DESCRIPTION: Update some parameters from a metadata file when restarting \n Options: NO, YES \ingroup Config */
   addBoolOption("UPDATE_RESTART_PARAMS", Update_Restart_Params, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
@@ -582,7 +587,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n DEFAULT: STANDARD_AIR \ingroup Config*/
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
 
-  /*!\par CONFIG_CATEGORY: Freestream Conditions \ingroup Config*/
+  //Teus, 5-11-2014, Input for FluidProp
+  addStringOption("FLUID_SUBLIBRARY", FluidSubLib, string("xxxxxxxx"));
+  addUnsignedShortOption("FLUID_N_COMPONENTS", nComp, 1);
+  addStringListOption("FLUID_COMPONENTS", nComp, CompNames);
+  addDoubleListOption("FLUID_MOLE_FRACS", nComp, MoleFracs);
+  addBoolOption("FLUID_SINGLE_PHASE_ONLY", SinglePhaseOnly, false);
+  addStringOption("FLUID_LOOKUP_TABLE", LookupTable, string("xxxxxxxx"));
+  addUnsignedShortOption("FLUID_ERROR_LEVEL", ErrorLevel, 1);
+  
+  /* CONFIG_CATEGORY: Freestream Conditions */
   /*--- Options related to freestream specification ---*/
 
   /*!\brief GAS_CONSTANT \n DESCRIPTION: Specific gas constant (287.058 J/kg*K (air), only for compressible flows) \ingroup Config*/
@@ -4062,6 +4076,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
+            (Design_Variable[iDV] ==  FFD_DIHEDRAL_ANGLE) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
         if (Design_Variable[iDV] ==  CUSTOM) nParamDV = 1;

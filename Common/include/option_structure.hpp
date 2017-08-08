@@ -432,15 +432,16 @@ enum ENUM_FLUIDMODEL {
 	STANDARD_AIR = 0,
 	IDEAL_GAS = 1, /*!< \brief _____. */
 	VW_GAS = 2,
-	PR_GAS = 3
+	PR_GAS = 3,
+    FLUIDPROP = 4
 };
 
 static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, ENUM_FLUIDMODEL>
 ("STANDARD_AIR", STANDARD_AIR)
 ("IDEAL_GAS", IDEAL_GAS)
 ("VW_GAS", VW_GAS)
-("PR_GAS", PR_GAS);
-
+("PR_GAS", PR_GAS)
+("FLUIDPROP", FLUIDPROP);
 
 /*!
  * \brief types of initialization option
@@ -475,24 +476,55 @@ static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateM
  */
 enum ENUM_VISCOSITYMODEL {
 	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
-	SUTHERLAND = 1
+	SUTHERLAND = 1,
+	FLUIDPROP_VISCOSITY = 2
 };
 
 static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
 ("CONSTANT_VISCOSITY", CONSTANT_VISCOSITY)
-("SUTHERLAND", SUTHERLAND);
+("SUTHERLAND", SUTHERLAND)
+("FLUIDPROP_VISCOSITY", FLUIDPROP_VISCOSITY);
 
 /*!
  * \brief types of thermal conductivity model
  */
 enum ENUM_CONDUCTIVITYMODEL {
 	CONSTANT_CONDUCTIVITY = 0, /*!< \brief _____. */
-	CONSTANT_PRANDTL = 1
+	CONSTANT_PRANDTL = 1,
+	FLUIDPROP_CONDUCTIVITY = 2
 };
 
 static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
 ("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
-("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
+("CONSTANT_PRANDTL", CONSTANT_PRANDTL)
+("FLUIDPROP_CONDUCTIVITY", FLUIDPROP_CONDUCTIVITY);
+
+
+/*!
+ * \brief types of spatial discretizations
+ */
+enum ENUM_GASMODEL {
+  NO_MODEL = 0, /*!< \brief _____. */
+  ARGON = 1,		/*!< \brief _____. */
+  AIR7 = 2,		/*!< \brief _______. */
+  AIR21 = 3,		/*!< \brief _______. */
+  O2 = 4,
+  N2 = 5,
+  AIR5 = 6,
+  ARGON_SID = 7,
+  ONESPECIES = 8
+
+};
+static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_GASMODEL>
+("NONE", NO_MODEL)
+("ARGON", ARGON)
+("AIR-7", AIR7)
+("AIR-21", AIR21)
+("O2", O2)
+("N2", N2)
+("AIR-5", AIR5)
+("ARGON-SID",ARGON_SID)
+("ONESPECIES", ONESPECIES);
 
 /*!
  * \brief types of unsteady mesh motion
@@ -3414,3 +3446,4 @@ public:
     this->omega = NULL;
   }
 };
+

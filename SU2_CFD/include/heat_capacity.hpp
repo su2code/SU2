@@ -59,7 +59,7 @@ using namespace std;
  */
 class CHeatCapacity {
 
-protected: su2double Gas_Constant, Gas_ConstantND, Cv0, Gamma, *coeff_Cp0, Tref, T_Total;
+protected: su2double Gas_Constant, Gas_ConstantND, Cv0, dCv0dT, Gamma, *coeff_Cp0, Tref, T_Total;
            bool Constant_Gamma;
 CConfig *config;
 
@@ -77,15 +77,15 @@ public:
      */
     virtual ~CHeatCapacity(void);
 
-    /*!
-     * \brief return liquid density value.
-     */
     su2double Get_Cv0(void);
 
-    /*!
-     * \brief return liquid density value.
-     */
+    su2double Get_dCv0dT(void);
+
     virtual void Set_Cv0 (su2double T);
+
+    virtual void Set_dCv0dT (su2double T);
+
+
 };
 
 
@@ -105,6 +105,8 @@ public:
      * \brief return liquid density value.
      */
     void Set_Cv0 (su2double T);
+
+    void Set_dCv0dT(su2double T);
 };
 
 class CHeatCapacity_Dimensional : public CHeatCapacity {
@@ -123,6 +125,8 @@ public:
      * \brief return liquid density value.
      */
     void Set_Cv0 (su2double T);
+
+    void Set_dCv0dT(su2double T);
 };
 
 

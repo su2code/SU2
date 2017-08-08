@@ -1149,6 +1149,10 @@ inline void CEulerVariable::SetThermalConductivity(su2double thermalConductivity
   Primitive[nDim+7] = thermalConductivity;
 }
 
+inline void CEulerVariable::SetSpecificHeatCp(su2double Cp) {
+  Primitive[nDim+8] = Cp;
+}
+
 
 
 inline su2double  CVariable::GetRadius() { } 

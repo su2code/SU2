@@ -999,6 +999,10 @@ inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Si
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
 
+inline bool CConfig::GetOld_Solution_1ph(void) {	return Old_solution_1ph; }
+
+inline bool CConfig::GetOld_Solution_Turb(void) {	return Old_solution_turb; }
+
 inline bool CConfig::GetWrt_Binary_Restart(void) {	return Wrt_Binary_Restart; }
 
 inline bool CConfig::GetRead_Binary_Restart(void) {	return Read_Binary_Restart; }
@@ -1538,3 +1542,18 @@ inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
 inline unsigned short CConfig::GetKind_Nucleation_Model(void) { return Kind_Nucleation_Model; }
 
 inline unsigned short CConfig::GetKind_Liquid_Model(void) { return Kind_Liquid_Model; }
+
+
+inline string CConfig::GetFluidSubLib(void) { return FluidSubLib; }
+
+inline unsigned short CConfig::GetnComp(void) { return nComp; }
+
+inline string* CConfig::GetCompNames(void) { return CompNames; }
+
+inline double* CConfig::GetMoleFracs(void) { return MoleFracs; }
+
+inline bool CConfig::HasSinglePhaseOnly(void) { return SinglePhaseOnly; }
+
+inline string CConfig::GetLookupTableName(void) { return LookupTable; }
+
+inline unsigned short CConfig::GetErrorLevel(void) { return ErrorLevel; }

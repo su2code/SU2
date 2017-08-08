@@ -178,6 +178,39 @@ public:
 
 
 /*!
+ * \class CFluidPropViscosity
+ * \brief this class defines a viscosity according the Chung method implemented
+ * in FluidProp (Power law, Sutherland, Chung, etc.)
+ * \author T.P. van der Stelt
+ * \version 1.0
+ */
+class CFluidPropViscosity : public CViscosityModel {
+protected:
+
+public:
+		/*!
+		 * \brief Constructor of the class.
+		 */
+	         CFluidPropViscosity(void);
+
+		/*!
+		 * \brief Destructor of the class.
+		 */
+		virtual ~CFluidPropViscosity(void);
+
+		/*!
+		 * \brief Set Viscosity.
+		 */
+		void SetViscosity(double T, double rho);
+
+		/*!
+		 * \brief Set Viscosity Derivatives.
+		 */
+		void SetDerViscosity(double T, double rho);
+};
+
+
+/*!
  * \class CThermalConductivityModel
  * \brief Main class for defining the Transport-Physical Model
  * a child class for each particular Model (Prandtl-based, etc.)
@@ -296,6 +329,46 @@ public:
      */
     void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
 
+};
+
+
+/*!
+ * \class CFluidPropConductivity
+ * \brief this class defines a thermal conductivity according the Chung method implemented in FluidProp
+ * \author T.P. van der Stelt
+ */
+class CFluidPropConductivity : public CConductivityModel {
+protected:
+		double Pr_const;		/*!< \brief Prandtl's number. */
+
+public:
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+	    	CFluidPropConductivity(void);
+
+		/*!
+		 * \brief Destructor of the class.
+		 */
+		virtual ~CFluidPropConductivity(void);
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+	    	CFluidPropConductivity(double pr_const);
+
+		/*!
+		 * \brief Set Thermal conductivity.
+		 * \brief par1 -> Cp.
+		 * \brief par2 -> Mu.
+		 */
+		void SetConductivity(double T, double rho, double mu, double cp);
+
+		/*!
+		 * \brief Set Thermal conductivity derivatives.
+		 */
+		void SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp);
 };
 
 

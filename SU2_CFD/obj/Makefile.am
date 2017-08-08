@@ -87,6 +87,7 @@ libSU2Core_sources = \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
+  ../src/fluid_model_flp.cpp \
   ../src/heat_capacity.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
@@ -190,6 +191,11 @@ su2_cfd_cxx_flags += @ZLIB_CXX@
 su2_cfd_ldadd += @ZLIB_LD@
 # endif
 
+# if BUILD_FluidProp
+su2_cfd_cxx_flags += @FluidProp_CXX@
+su2_cfd_ldadd += @FluidProp_LD@
+# endif
+
 if BUILD_NORMAL
 libSU2Core_a_SOURCES = $(libSU2Core_sources)
 libSU2Core_a_CXXFLAGS = $(libSU2Core_cxx_flags)
@@ -210,3 +216,5 @@ ___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources) ${libSU2Core_sources}
 ___bin_SU2_CFD_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
 ___bin_SU2_CFD_AD_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_cfd_ldadd}
 endif
+
+

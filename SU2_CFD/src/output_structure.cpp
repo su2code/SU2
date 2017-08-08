@@ -2554,6 +2554,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
+      
     }
     
     /*--- Communicate Mach---*/
@@ -11412,9 +11413,9 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   		nVar_Par += 8;
   		Variable_Names.push_back("Rho_liquid");
   		Variable_Names.push_back("T_liquid");
-  		Variable_Names.push_back("h_liquid");
+  		Variable_Names.push_back("YG/R");
   		Variable_Names.push_back("R_critical");
-  		Variable_Names.push_back("sigma");
+  		Variable_Names.push_back("R");
   		Variable_Names.push_back("Tsat");
   		Variable_Names.push_back("Gamma");
   		Variable_Names.push_back("G");
@@ -11620,9 +11621,12 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
         	if (liquid_props == true) {
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0)); iVar++;
-        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(2)); iVar++;
+
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetMassSource());
+        		Local_Data[jPoint][iVar]/= 3 * solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8);
+        		iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6)); iVar++;
-        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(5)); iVar++;
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(7)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPrimitive(nDim + 9)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(9)); iVar++;

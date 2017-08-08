@@ -555,6 +555,8 @@ private:
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Old_solution_1ph,	/*!< \brief kind of restart solution (for 2phase solver).*/
+  Old_solution_turb, /*!< \brief kind of restart solution (for 2phase solver).*/
   Update_Restart_Params,
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,	/*!< \brief Read binary SU2 native restart files.*/
@@ -850,11 +852,18 @@ private:
   *default_body_force;        /*!< \brief Default body force vector for the COption class. */
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
-
+ string FluidSubLib;         /*!< \brief Name of fluid thermodynamic sub-library.  */
+  unsigned short nComp;       /*!< \brief Number of components in the fluid.  */
+  string* CompNames;          /*!< \brief Names of fluid components.  */
+  double *MoleFracs;          /*!< \brief Mole fractions of fluid components.  */
+  bool SinglePhaseOnly;       /*!< \brief Single phase only: no phase equilibria are considered.  */
+  string LookupTable;         /*!< \brief Name of fluid thermodynamic look-up table.  */
+  unsigned short ErrorLevel;  /*!< \brief Error level diagnostics.  */
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
   
+ 
   map<string, bool> all_options;
   
   /*--- brief param is a map from the option name (config file string) to its decoder (the specific child
@@ -4137,6 +4146,20 @@ public:
   bool GetRestart(void);
 
   /*!
+     * \brief Provides the restart information.
+     * \return Restart information, if <code>TRUE</code> then restart file is single fase.
+  */
+
+  bool GetOld_Solution_1ph(void) ;
+
+  /*!
+     * \brief Provides the restart information.
+     * \return Restart information, if <code>TRUE</code> then restart file is turbulent.
+  */
+
+  bool GetOld_Solution_Turb(void) ;
+
+  /*!
    * \brief Flag for whether binary SU2 native restart files are written.
    * \return Flag for whether binary SU2 native restart files are written, if <code>TRUE</code> then the code will output binary restart files.
    */
@@ -6986,6 +7009,21 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  string GetFluidSubLib(void);
+
+  unsigned short GetnComp(void);
+
+  string* GetCompNames(void);
+
+  su2double* GetMoleFracs(void);
+
+  bool HasSinglePhaseOnly(void);
+
+  string GetLookupTableName(void);
+
+  unsigned short GetErrorLevel(void);
+
 };
 
 #include "config_structure.inl"

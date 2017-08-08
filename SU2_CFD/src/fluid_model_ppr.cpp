@@ -455,6 +455,7 @@ CPengRobinson_Generic::CPengRobinson_Generic(su2double gamma, su2double R, su2do
   TstarCrit = Tstar;
   Zed=1.0;
 
+
   if (w <= 0.49)
         k = 0.37464 + 1.54226 * w - 0.26992 * w*w;
         else
@@ -485,6 +486,74 @@ su2double CPengRobinson_Generic::dalpha2dT2(su2double T) {
 	// alpha call corrected
 
   return ( 0.25 * k * pow(T*TstarCrit, -1.5) * TstarCrit);
+}
+
+su2double CPengRobinson_Generic::dalpha3dT3(su2double T) {
+
+	// alpha call corrected
+
+  return ( -3.0/8.0 * k * pow(TstarCrit, -0.5) * pow(T, -2.5));
+}
+
+
+su2double CPengRobinson_Generic::dCvdrho(su2double T, su2double rho) {
+
+  su2double der, a2T, daT, da2T;
+
+  a2T = alpha2(T);
+  da2T = dalpha2dT2(T);
+  daT = dalphadT(T);
+
+  der = sqrt(a2T) * da2T;
+  der = der + pow( daT, 2);
+  der = -2 * a * der * T;
+
+  der = der * 0.5 / sqrt(2) / b * (-1/pow(rho,2)/(1/rho + b - sqrt(2)*b) +1/pow(rho,2)/(1/rho + b + sqrt(2)*b));
+
+  return der;
+
+}
+
+su2double CPengRobinson_Generic::dCvdT(su2double T, su2double rho) {
+
+  su2double der_2aT, der_fT, der, a2T, daT, da2T, da3T, dCv0dT;
+
+  a2T  = alpha2(T);
+  da2T = dalpha2dT2(T);
+  daT  = dalphadT(T);
+  da3T = dalphadT(T);
+
+  der_2aT = sqrt(a2T) * da2T;
+  der_2aT = der_2aT + pow( daT, 2);
+  der_2aT = -2 * a * der_2aT;
+
+  der_fT  = sqrt(a2T)*da3T + da2T*daT + 2*daT*da2T;
+  der_fT  = -2 * a * T * der_fT;
+
+  der = 0.5 * (log( 1/rho + b - sqrt(2)*b) - log( 1/rho + b + sqrt(2)*b)) / sqrt(2) / b;
+  der = der * (der_2aT + der_fT);
+
+  HeatCapacity->Set_dCv0dT(T);
+  dCv0dT = HeatCapacity->Get_dCv0dT();
+
+  der = der + dCv0dT;
+
+
+}
+
+su2double CPengRobinson_Generic::datanh(su2double rho) {
+
+  su2double f1, f2, f3, datanh;
+
+  f1 = 1 + rho*b;
+  f2 = b * sqrt(2);
+  f3 = rho*f2/f1;
+
+  datanh = 1/(1+f3)* (f2/f1 - b*f3/f1);
+  datanh = datanh - (1/(1-f3) * ( -f2/f1 + f3 * b / f1 ));
+  datanh/= 2;
+
+  return datanh;
 }
 
 
@@ -557,7 +626,7 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
 	// rhoe call corrected
 
-    su2double DpDd_T, DpDT_d, DeDd_T, der, Temperature_new;
+    su2double DpDd_T, DpDT_d, DeDd_T, DeDT_d, Temperature_new;
     su2double error = 1, toll = 1e-9;
     su2double A, B, C, sqrt2, fv, a2T, rho2, atanh;
     unsigned int count_T = 0, ITMAX = 1000;
@@ -645,17 +714,20 @@ void CPengRobinson_Generic::SetTDState_rhoe (su2double rho, su2double e ) {
 
     DpDT_d = Gas_Constant /B + a*k / A * sqrt( a2T/(Temperature*TstarCrit) );
 
-    der = Cv + ( a *k*(k+1)*fv ) / ( 2*b*sqrt(2*Temperature*TstarCrit) );
+    DeDT_d = Cv + ( a *k*(k+1)*fv ) / ( 2*b*sqrt(2*Temperature*TstarCrit) ) + Temperature* dCvdT(Temperature, Density);
 
-    dPde_rho = DpDT_d/der;
+    dPde_rho = DpDT_d/DeDT_d;
 
-    DeDd_T = - a*(1+k) * sqrt( a2T ) / A / (rho2);
+    DeDd_T = - a*(1+k) * sqrt( a2T ) /b / sqrt(2);
+    DeDd_T = DeDd_T * datanh(Density);
+
+    DeDd_T = DeDd_T + Temperature * dCvdrho( Temperature, Density);
 
     dPdrho_e = DpDd_T - dPde_rho*DeDd_T;
 
     SoundSpeed2 = dPdrho_e + Pressure/(rho2)*dPde_rho;
 
-    dTde_rho = 1/der;
+    dTde_rho = 1/DeDT_d;
 
     Zed = Pressure/(Gas_Constant*Temperature*Density);
 

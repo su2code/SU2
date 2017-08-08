@@ -3128,6 +3128,11 @@ public:
   void SetThermalConductivity (su2double k);
 
   void SetGamma (su2double value_Gamma);
+
+  /*!
+   * \brief Set the specific heat Cp.
+   */
+  void SetSpecificHeatCp(su2double Cp);
 };
 
 /*!

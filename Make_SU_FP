@@ -1,0 +1,4 @@
+./bootstrap
+./configure --prefix=/home/arubino/git-local/SU2 --enable-mpi  --with-cc=/usr/bin/mpicc  --with-cxx=/usr/bin/mpicxx CXXFLAGS="-O3" --with-FluidProp-lib=$FLUIDPROP/lib --with-FluidProp-include=$FLUIDPROP/api/c 
+make -j8
+make install

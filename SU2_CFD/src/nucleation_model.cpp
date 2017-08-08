@@ -129,7 +129,7 @@ su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double r
 
 			G = k * (V_l[4] - T);
 
-			if (V_l[7] > V_l[6]) G = G * (1-V_l[6]/V_l[7]);
+			if (V_l[7] > V_l[6] && V_l[7] !=0) G = G * (1-V_l[6]/V_l[7]);
 
 			G = G / V_l[1] / (h - V_l[2]);
 
@@ -180,6 +180,7 @@ su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double r
 				" " << k << " " << Delta << " " << " " << G << " " << h << " " << V_l[2] << " " << V_l[0] - T<< endl;
 				getchar();//exit(EXIT_FAILURE);
 			}
+
 //			cout << "Grate" << G << endl;
     }
 

@@ -99,16 +99,6 @@ void CFluidModel::SetLiquidPhaseModel (CConfig *config) {
 		default: cout << "No liquid model selected, stop" << endl; exit(EXIT_FAILURE); break;
 	}
 
-	if (config->GetKind_Liquid_Model() != WATER) {
-		if (config->GetKind_FluidModel() != PR_GAS || config->Get_ConstantGamma() != false) {
-			cout << "Warning: reference enthalpy for the selected fluid calculated with non-polytropic PR EoS" << endl;
-			cout << "Please check config options FLUID_MODEL and CONSTANT_GAMMA"<< endl;
-			cout << endl;
-			cout << "Press enter to continue anyway (not-recommended)" << endl;
-			getchar();
-		}
-	}
-
 }
 
 

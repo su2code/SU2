@@ -45,7 +45,8 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   bool grid_movement  = config->GetGrid_Movement();
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
-  bool two_phase = (config->GetKind_2phase_Model()!=NONE);
+  bool two_phase = (Kind_Solver== TWO_PHASE_EULER || Kind_Solver== TWO_PHASE_NAVIER_STOKES ||
+		            Kind_Solver== TWO_PHASE_RANS);
 
   char cstr[200], buffer[50];
   string filename;
@@ -952,7 +953,8 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   
-  bool two_phase = (config->GetKind_2phase_Model() != NONE);
+  bool two_phase = (Kind_Solver== TWO_PHASE_EULER || Kind_Solver== TWO_PHASE_NAVIER_STOKES ||
+		            Kind_Solver== TWO_PHASE_RANS);
 
   int iProcessor;
   

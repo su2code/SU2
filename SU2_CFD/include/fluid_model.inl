@@ -99,6 +99,10 @@ inline su2double CIdealGas::GetGamma () {
         return Gamma;
 }
 
+inline su2double CFluidProp::GetGamma () {
+        return Gamma;
+}
+
 inline su2double CFluidModel::GetGamma () { return 0;}
 
 inline void CFluidModel::SetGamma_Trho () {};

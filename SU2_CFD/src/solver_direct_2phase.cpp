@@ -922,6 +922,8 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 	  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 	                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+	  bool Old_Solution_Turb = (config->GetOld_Solution_Turb());
+	  bool Old_Solution_1ph = (config->GetOld_Solution_1ph());
 	  unsigned short iZone = config->GetiZone();
 	  unsigned short nZone = config->GetnZone();
 
@@ -969,61 +971,96 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 	    if (nDim == 3) skipVars += 7;
 	  }
 
-	  if (config->GetKind_Turb_Model() != NONE) {
-		  if (config->GetKind_Turb_Model() == SST)
-			  skipVars += 2;
-		  else
-			  skipVars += 1;
-	  }
+	  if (Old_Solution_Turb == true) {
+		  if (config->GetKind_Turb_Model() != NONE) {
+			  if (config->GetKind_Turb_Model() == SST)
+				  skipVars += 2;
+			  else
+				  skipVars += 1;
+		  }
+	   }
 
 	  /*--- Load data from the restart into correct containers. ---*/
 
 	  counter = 0;
-	  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+	  if (Old_Solution_1ph == true) {
+		  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
 
-	    /*--- Retrieve local index. If this node from the restart file lives
-	     on the current processor, we will load and instantiate the vars. ---*/
+			/*--- Retrieve local index. If this node from the restart file lives
+			 on the current processor, we will load and instantiate the vars. ---*/
 
-	    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+			iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
-	    if (iPoint_Local > -1) {
+			if (iPoint_Local > -1) {
 
-	      /*--- We need to store this point's data, so jump to the correct
-	       offset in the buffer of data from the restart file and load it. ---*/
+			  /*--- We need to store this point's data, so jump to the correct
+			   offset in the buffer of data from the restart file and load it. ---*/
 
-	      index = counter*Restart_Vars[0] + skipVars;
-	      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-	      node[iPoint_Local]->SetSolution(Solution);
-	      iPoint_Global_Local++;
+			  index = counter*Restart_Vars[0] + skipVars;
+			  for (iVar = 0; iVar < nVar; iVar++)
+				  Solution[iVar] = 0.0;
+			  node[iPoint_Local]->SetSolution(Solution);
+			  iPoint_Global_Local++;
 
-	      /*--- Increment the overall counter for how many points have been loaded. ---*/
-	      counter++;
-	    }
+			  /*--- Increment the overall counter for how many points have been loaded. ---*/
+			  counter++;
+			}
 
+		  }
+
+	  }  else   {
+		  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+
+			/*--- Retrieve local index. If this node from the restart file lives
+			 on the current processor, we will load and instantiate the vars. ---*/
+
+			iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+			if (iPoint_Local > -1) {
+
+			  /*--- We need to store this point's data, so jump to the correct
+			   offset in the buffer of data from the restart file and load it. ---*/
+
+			  index = counter*Restart_Vars[0] + skipVars;
+			  for (iVar = 0; iVar < nVar; iVar++)
+				  Solution[iVar] = Restart_Data[index+iVar];
+			  node[iPoint_Local]->SetSolution(Solution);
+			  iPoint_Global_Local++;
+
+			  /*--- Increment the overall counter for how many points have been loaded. ---*/
+			  counter++;
+			}
+		  }
 	  }
+
 
 	  /*--- Detect a wrong solution file ---*/
 
-	  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+	  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+			  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
 
-	#ifndef HAVE_MPI
-	  rbuf_NotMatching = sbuf_NotMatching;
-	#else
-	  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-	#endif
-	  if (rbuf_NotMatching != 0) {
-	    if (rank == MASTER_NODE) {
-	      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
-	      cout << "It could be empty lines at the end of the file." << endl << endl;
-	    }
-	#ifndef HAVE_MPI
-	    exit(EXIT_FAILURE);
-	#else
-	    MPI_Barrier(MPI_COMM_WORLD);
-	    MPI_Abort(MPI_COMM_WORLD,1);
-	    MPI_Finalize();
-	#endif
+			#ifndef HAVE_MPI
+			  rbuf_NotMatching = sbuf_NotMatching;
+			#else
+			  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+			#endif
+			  if (rbuf_NotMatching != 0) {
+				if (rank == MASTER_NODE) {
+				  cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
+				  cout << "It could be empty lines at the end of the file." << endl << endl;
+				}
+			#ifndef HAVE_MPI
+				exit(EXIT_FAILURE);
+			#else
+				MPI_Barrier(MPI_COMM_WORLD);
+				MPI_Abort(MPI_COMM_WORLD,1);
+				MPI_Finalize();
+			#endif
+			  }
+
 	  }
 
 

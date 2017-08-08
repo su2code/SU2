@@ -31,6 +31,7 @@
  */
 
 #include "../include/liquid_phase_model.hpp"
+#include "../../../../FluidProp/api/c/fluidprop.h"
 
 
 CLiquidModel::CLiquidModel() {
@@ -51,6 +52,15 @@ CLiquidModel::CLiquidModel(CConfig *config) {
   Gas_Constant = config->GetGas_Constant();
   Tstar = config->GetTemperature_Critical();
   Fluid = config->GetKind_Liquid_Model();
+
+  if (config->GetKind_FluidModel() == FLUIDPROP) {
+	  Tref = config->GetTemperature_Ref();
+	  Pref = config->GetPressure_Ref();
+	  Dref = config->GetDensity_Ref();
+	  Href = config->GetGas_Constant_Ref() * Tref;
+  } else {
+	  Tref = 1; Pref = 1; Dref = 1; Href = 1;
+  }
 
 }
 
@@ -79,7 +89,7 @@ void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2do
 			SetRCritical(P, T);
 		else
 //			SetRCritical(P, T);
-			SetRCritical(h_v-h_l, P, T);
+			SetRCritical(P, T, T_l);
 
 		//Rc = min(Rc, Rdroplet);
 
@@ -302,6 +312,31 @@ CCO2::CCO2(CConfig *config) : CLiquidModel(config) {
 
     Ptriple = 5.12e5;
     Ttriple = 216.57;
+/*
+//    if (config->GetFluidSubLib() !=  "xxxxxxxx") {
+	// Copy fluid data to CFluidProp object
+		ThermoLib = config->GetFluidSubLib();
+		nComp = config->GetnComp();
+		Comp= config->GetCompNames();
+		Conc = config->GetMoleFracs();
+
+		// Prepare composition array's for fluidprop_setfluid
+		char LocalComp[20][LEN_COMPONENTS];
+		double LocalConc[20];
+		for( int i = 0; i < nComp; i++) {
+			strcpy( LocalComp[i], Comp[i].c_str());
+			LocalConc[i] = Conc[i];
+		}
+
+		// Intialize FluidProp (it opens the libraries)
+		if (!fluidprop_isinit()) init_fluidprop();
+
+		fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );
+		fluidprop_setunits( "SI", " ", " ", " ");
+*/
+		// Set reference state for non-dimensionalization
+
+//    }
 
 }
 
@@ -319,16 +354,21 @@ CCO2::~CCO2(void) {
 
 void CCO2::SetTsat(su2double P) {
 
-	su2double P_limited;
+//	su2double P_limited;
+//	P_limited = P/Pstar;
 
-	P_limited = P/Pstar;
+	double  P_limited = P;
 
-	if (P > Pstar)
+	const char* pair = "Pq";
+
+	Tsat = fluidprop_temperature(pair, P_limited, 0);
+
+/*	if (P > Pstar)
 		Tsat = 0; //outside two phase region
 	else {
 
-		Tsat = -6.2185E-01 * pow(P_limited, 4)  + 1.6817 * pow(P_limited,3)
-		- 1.7566 * pow(P_limited,2) + 1.0431 * P_limited + 6.5160E-01;
+		Tsat = -6.21849859e-01 * pow(P_limited, 4)  + 1.68169254 * pow(P_limited,3)
+		- 1.75660734 * pow(P_limited,2) + 1.04312931 * P_limited + 6.51597220e-01;
 
 		Tsat = Tsat*Tstar;
 
@@ -337,12 +377,19 @@ void CCO2::SetTsat(su2double P) {
 			cout << "Saturation conditions are not reliable" << endl;
 		}
 	}
+*/
 }
 
 void CCO2::SetPsat(su2double T) {
 
-	su2double  T_limited;
+	//su2double  T_limited;
 
+	double  T_limited = T;
+
+	const char* pair = "Tq";
+
+	Psat = fluidprop_pressure(pair, T_limited, 0);
+/*
 	if (T > Tstar)
 		Psat = 0; //outside two phase region
 
@@ -366,41 +413,40 @@ void CCO2::SetPsat(su2double T) {
 		Psat = exp(Psat) * Ptriple;
 
 	}
-
+*/
 }
 
-void CCO2::SetRCritical(su2double dh, su2double P, su2double T) {
+void CCO2::SetRCritical(su2double P, su2double T, su2double T_l) {
+
+    string ErrorMsg;
+	su2double dGv, dGl;
+	double Temp = T;
+	double Press = P;
+	double Press_sat = Psat;
 
 
-	su2double dG, dGsat;
+	const char* pair = "PT_1ph";
+
+/*
+	    if (Tsat > T) {
+			dGibbs = (P) * (Tsat - T) / Tsat;
+			Rc = 2*sigma / (rho_l * dGibbs) ;//* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
+	   } else
+		    Rc = 0;
+*/
+
 
 	if (Psat < P) {
-		dGibbs = T * Gas_Constant * log(P/Psat);
-		Rc = sigma / (rho_l * dGibbs);
-		Rc = Rc * (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
-		Rc = max(Rc, 0.0);
+		dGv = fluidprop_enthalpy(pair, Press, Temp) - Temp * fluidprop_entropy(pair, Press, Temp);
+		dGv = dGv - fluidprop_enthalpy(pair, Press_sat, Temp) + Temp * fluidprop_entropy(pair, Press_sat, Temp);
+		dGv = dGv - 1.0/rho_l * (P - Psat);
+		Rc = 2.0*sigma / (rho_l * dGv);//* 0.5* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
 
-	} else
-		Rc = 0;
-
-/*	if (Psat < P) {
-		dGibbs = T * Gas_Constant * log(P/Psat);
-		Rc = sigma / (rho_l * dGibbs);
-		Rc = Rc * (1 + sqrt( pow(MolMass/36/3.1415/rho_l, 1.0/3.0)*dGibbs*rho_l/sigma ));
-		Rc = max(Rc, 0.0);
-
-	} else
-		Rc = 0;
-*/
+	} else 	Rc = 0.0;
 
 
-/*    if (Tsat > T) {
-		dGibbs = (dh) * (Tsat - T) / Tsat;
-		Rc = 2.0*sigma / (rho_l * dGibbs);
-   } else
-	    Rc = 0;
-*/
-    su2double a = 204.3918, b = 6.06e-4;
+
+//    su2double a = 204.3918, b = 6.06e-4;
 
 //    if (Tsat > T) {
 /*		dG = -Gas_Constant*T*log(P*(1/rho - b)/Gas_Constant/T) + a/2/sqrt(2)*log( (1/rho+(1-sqrt(2))*b) / (1/rho+(1+sqrt(2))*b));
@@ -430,9 +476,30 @@ void CCO2::SetRCritical(su2double P, su2double T) {
 
 	if (Psat < P) {
 		dGibbs = T * Gas_Constant * log(P/Psat);
-		Rc = sigma / (rho_l * dGibbs)*2;
+		Rc = sigma / (rho_l * dGibbs)*2;// * 0.5* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;;
 	} else
 		Rc = 0;
+
+	/*
+		if (Psat < P) {
+			dGibbs = T * Gas_Constant * log(P/Psat);
+			Rc = sigma / (rho_l * dGibbs);
+			Rc = Rc * (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
+			Rc = max(Rc, 0.0);
+
+		} else
+			Rc = 0;
+		*/
+
+	/*	if (Psat < P) {
+			dGibbs = T * Gas_Constant * log(P/Psat);
+			Rc = sigma / (rho_l * dGibbs);
+			Rc = Rc * (1 + sqrt( pow(MolMass/36/3.1415/rho_l, 1.0/3.0)*dGibbs*rho_l/sigma ));
+			Rc = max(Rc, 0.0);
+
+		} else
+			Rc = 0;
+	*/
 
 }
 
@@ -444,7 +511,8 @@ void CCO2::SetSurfaceTension(su2double T, su2double Rdroplet) {
     sigma = 84.72 * pow(sigma, 1.281);
     sigma = sigma * 1.0e-3;
 
-    //if (Rdroplet > 0) sigma = sigma / (1 + 2e-10/Rdroplet);
+    //if (Rdroplet > 0) sigma = sigma / (1 + 2*3.28e-10/Rdroplet);
+    //if (Rc > 0) sigma = sigma / (1 + 2*3.28e-10/Rc);
 }
 
 void CCO2::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
@@ -470,7 +538,7 @@ void CCO2::SetLiquidDensity() {
 
 void CCO2::SetLiquidEnthalpy(su2double h_v) {
 
-	su2double T_limited = T_l;
+//	su2double T_limited = T_l;
 
 //	if (T_l > Tstar) {
 //		h_l = 0;
@@ -479,14 +547,14 @@ void CCO2::SetLiquidEnthalpy(su2double h_v) {
 //	    h_l = 8.9641E-06 * pow(T_limited, 4) - 9.0172E-03 * pow(T_limited, 3) + 3.3989 *pow(T_limited, 2)
 //	      - 5.6672E+02 * T_limited + 3.5023E+04;
 //	    h_l = h_l * 1e3;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
-
+/*
 
 	    h_l = -5.1612E-07 * pow(T_limited, 5) + 6.5716E-04 *pow(T_limited, 4)
 	          - 3.3400E-01 * pow(T_limited, 3) + 8.4682E+01 *pow(T_limited, 2)
 	          - 1.0710E+04 * T_limited + 5.4085E+05;
 
 	    h_l = h_v - h_l * 1000;
-
+*/
 //		if (T_l < Ttriple) {
 //
 //		    h_l = 8.9641E-06 * pow(Ttriple, 4) - 9.0172E-03 * pow(Ttriple, 3) + 3.3989 *pow(Ttriple, 2)
@@ -497,6 +565,17 @@ void CCO2::SetLiquidEnthalpy(su2double h_v) {
 //		}
 //
 //	}
+
+	double T_limited = T_l/Tref;
+
+	double P_limited, hl_sat, hv_sat;
+	const char* pair = "Tq";
+
+
+	hl_sat = fluidprop_enthalpy(pair, T_limited, 0);
+    hv_sat   = fluidprop_enthalpy(pair, T_limited, 1);
+
+    h_l = h_v - (hv_sat - hl_sat)*Href;
 
 }
 
@@ -516,6 +595,28 @@ CR22::CR22(CConfig *config) : CLiquidModel(config) {
     Gas_Constant = config->GetGas_Constant();
     Tstar = config->GetTemperature_Critical();
 
+
+
+/*	// Copy fluid data to CFluidProp object
+	ThermoLib = config->GetFluidSubLib();
+	nComp = config->GetnComp();
+	Comp= config->GetCompNames();
+	Conc = config->GetMoleFracs();
+
+	// Prepare composition array's for fluidprop_setfluid
+	char LocalComp[20][LEN_COMPONENTS];
+	double LocalConc[20];
+	for( int i = 0; i < nComp; i++) {
+		strcpy( LocalComp[i], Comp[i].c_str());
+		LocalConc[i] = Conc[i];
+	}
+
+	// Intialize FluidProp (it opens the libraries)
+	if (!fluidprop_isinit()) init_fluidprop();
+
+	fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );
+	fluidprop_setunits( "SI", " ", " ", " ");
+*/
 }
 
 
@@ -529,12 +630,18 @@ CR22::~CR22(void) {
 
 void CR22::SetTsat(su2double P) {
 
-	su2double P_limited;
+	double P_limited;
+	const char* pair = "Pq";
 
-	P_limited = P/1e5;
+	P_limited = P/Pref;
 
-	Tsat = 4E-06 * pow(P_limited, 5) - 0.0006 * pow(P_limited, 4)  + 0.0346 * pow(P_limited,3)
-	       -0.9326 * pow(P_limited,2) + 14.359 * P_limited + 217.93;
+
+	Tsat = fluidprop_temperature(pair, P_limited, 0);
+
+	Tsat*=Tref;
+
+//	Tsat = 4E-06 * pow(P_limited, 5) - 0.0006 * pow(P_limited, 4)  + 0.0346 * pow(P_limited,3)
+//	       -0.9326 * pow(P_limited,2) + 14.359 * P_limited + 217.93;
 
 
 }
@@ -542,10 +649,15 @@ void CR22::SetTsat(su2double P) {
 void CR22::SetPsat(su2double T) {
 
 
-	su2double  T_limited = T;
+	double  T_limited = T/Tref;
 
-	Psat = 1E-05 * pow(T_limited,3) - 0.0078 * pow(T_limited,2) + 1.7371 * T_limited - 132.32;
-	Psat = Psat * 1e5;
+	const char* pair = "Tq";
+
+	Psat = fluidprop_pressure(pair, T_limited, 0);
+	Psat*=Pref;
+
+//	Psat = 1E-05 * pow(T_limited,3) - 0.0078 * pow(T_limited,2) + 1.7371 * T_limited - 132.32;
+//	Psat = Psat * 1e5;
 
 }
 
@@ -580,18 +692,47 @@ void CR22::SetLiquidDensity() {
 
 void CR22::SetLiquidEnthalpy(su2double h_v) {
 
-	su2double T_limited = T_l;
+	double T_limited = T_l/Tref;
 
-	h_l = -2E-10 * pow(T_limited, 6) + 4E-07 * pow(T_limited, 5) - 0.0003 * pow(T_limited, 4)
-	      + 0.1101 * pow(T_limited, 3) - 23.296 *pow(T_limited, 2) + 2614.9 * T_limited - 121670;
+	double P_limited, hl_sat, hv_sat;
+	const char* pair = "Tq";
 
-    h_l = h_l * 1e3 + 194147.1632;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
+
+	hl_sat = fluidprop_enthalpy(pair, T_limited, 0);
+    hv_sat   = fluidprop_enthalpy(pair, T_limited, 1);
+
+    h_l = h_v - (hv_sat - hl_sat)*Href;
+
+
+//	h_l = -2E-10 * pow(T_limited, 6) + 4E-07 * pow(T_limited, 5) - 0.0003 * pow(T_limited, 4)
+//	      + 0.1101 * pow(T_limited, 3) - 23.296 *pow(T_limited, 2) + 2614.9 * T_limited - 121670;
+//
+//   h_l = h_l * 1e3 + 194147.1632;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
 
 
 }
 
 
+void CR22::SetRCritical(su2double P, su2double T, su2double T_l) {
 
+    string ErrorMsg;
+	su2double dGv, dGl;
+	double Temp = T/Tref;
+	double Press = P/Tref;
+	double Press_sat = Psat/Pref;
+
+
+	const char* pair = "PT_1ph";
+
+	if (Psat < P) {
+		dGv = fluidprop_enthalpy(pair, Press, Temp) - Temp * fluidprop_entropy(pair, Press, Temp);
+		dGv = dGv - fluidprop_enthalpy(pair, Press_sat, Temp) + Temp * fluidprop_entropy(pair, Press_sat, Temp);
+		dGv = dGv*Href - 1.0/rho_l * (P - Psat);
+		Rc = 2.0*sigma / (rho_l * dGv);//* 0.5* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
+
+	} else 	Rc = 0.0;
+
+}
 
 
 
@@ -624,23 +765,23 @@ CR12::~CR12(void) {
 
 void CR12::SetTsat(su2double P) {
 
-	su2double P_limited;
 
-	P_limited = P/1e5;
+	double P_limited;
+	const char* pair = "Pq";
 
-	Tsat = -3E-05 * pow(P_limited, 4)  + 0.0041 * pow(P_limited,3)
-	- 0.1972 * pow(P_limited,2) + 5.6176 * P_limited + 192.93;
+	P_limited = P;
 
+	Tsat = fluidprop_temperature(pair, P_limited, 0);
 
 }
 
 void CR12::SetPsat(su2double T) {
 
+	double  T_limited = T;
 
-	su2double  T_limited = T;
+	const char* pair = "Tq";
 
-	Psat = 3E-05 * pow(T_limited,3) - 0.0187 * pow(T_limited,2) + 3.5625 * T_limited - 232.73;
-	Psat = Psat * 1e5;
+	Psat = fluidprop_pressure(pair, T_limited, 0);
 
 }
 
@@ -676,14 +817,44 @@ void CR12::SetLiquidDensity() {
 
 void CR12::SetLiquidEnthalpy(su2double h_v) {
 
+	double T_limited = T_l;
 
-	su2double T_limited = T_l;
+	double P_limited, h;
+	const char* pair = "Tq";
 
-	h_l = -1E-06 * pow(T_limited, 4) + 0.0009 * pow(T_limited, 3) - 0.3005 * pow(T_limited, 2)
-	+ 47.331 * T_limited - 2947.7;
 
-    h_l = h_l * 1e3 + 151401.6891;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
+	h_l = fluidprop_enthalpy(pair, T_limited, 0);
+    h   = fluidprop_enthalpy(pair, T_limited, 1);
 
+    h_l = h_v - (h-h_l);
+
+
+//	h_l = -1E-06 * pow(T_limited, 4) + 0.0009 * pow(T_limited, 3) - 0.3005 * pow(T_limited, 2)
+//	+ 47.331 * T_limited - 2947.7;
+
+//    h_l = h_l * 1e3 + 151401.6891;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
+
+
+}
+
+void CR12::SetRCritical(su2double P, su2double T, su2double T_l) {
+
+    string ErrorMsg;
+	su2double dGv, dGl;
+	double Temp = T;
+	double Press = P;
+	double Press_sat = Psat;
+
+
+	const char* pair = "PT_1ph";
+
+	if (Psat < P) {
+		dGv = fluidprop_enthalpy(pair, Press, Temp) - Temp * fluidprop_entropy(pair, Press, Temp);
+		dGv = dGv - fluidprop_enthalpy(pair, Press_sat, Temp) + Temp * fluidprop_entropy(pair, Press_sat, Temp);
+		dGv = dGv - 1.0/rho_l * (P - Psat);
+		Rc = 2.0*sigma / (rho_l * dGv);//* 0.5* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
+
+	} else 	Rc = 0.0;
 
 }
 

@@ -64,6 +64,8 @@ protected:
 	su2double rho_l, rho_m, h_l, dGibbs, Tsat, Psat, y, R, T_l, sigma, Rc;
 	su2double Tstar, Gas_Constant, Pstar, Fluid;
 
+	su2double Pref, Tref, Href, Dref;
+
 	su2double Ptriple, Ttriple;
 
 CConfig *config;
@@ -210,6 +212,12 @@ protected:
   su2double *Ei, *ac, *tc, *as, *ts, MolMass;
   unsigned short i;
 
+  string ThermoLib;
+  unsigned int 	nComp;
+  string*	Comp;
+  su2double*	Conc;
+  bool	SinglePhaseOnly;
+
 
 public:
 
@@ -234,7 +242,7 @@ public:
 
   void SetRCritical(su2double P, su2double rho);
 
-  void SetRCritical (su2double h_v, su2double h_l, su2double T);
+  void SetRCritical (su2double dh, su2double T, su2double Tl);
 
   void SetLiquidDensity();
 
@@ -252,6 +260,13 @@ protected:
 
 	  su2double *Ei;
 	  unsigned short i;
+
+
+	  string ThermoLib;
+	  unsigned int 	nComp;
+	  string*	Comp;
+	  su2double*	Conc;
+	  bool	SinglePhaseOnly;
 
 public:
 
@@ -281,6 +296,8 @@ public:
   void SetLiquidEnthalpy(su2double h_v);
 
   void SetSurfaceTension(su2double T, su2double Rdroplet);
+
+  void SetRCritical (su2double P, su2double T, su2double Tl);
 
 
 };
@@ -320,7 +337,7 @@ public:
 
   void SetSurfaceTension(su2double T, su2double Rdroplet);
 
-
+  void SetRCritical (su2double P, su2double T, su2double Tl);
 };
 
 

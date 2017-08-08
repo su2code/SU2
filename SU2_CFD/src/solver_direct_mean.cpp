@@ -3385,7 +3385,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool grid_movement      = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
-  unsigned short two_phase= ((config->GetKind_Solver() == TWO_PHASE_EULER) || (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES)
+  bool two_phase= ((config->GetKind_Solver() == TWO_PHASE_EULER) || (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES)
 		  || (config->GetKind_Solver() == TWO_PHASE_RANS));
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
@@ -3507,6 +3507,30 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         config->SetTemperature_FreeStream(Temperature_FreeStream);
       }
       break;
+
+//#ifdef HAVE_FluidProp
+//      getchar();
+      case FLUIDPROP:
+        FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs(),
+                                    config->HasSinglePhaseOnly(), config->GetLookupTableName(), 1., 1., 1., config->GetErrorLevel());
+        if(free_stream_temp) {
+          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+          Density_FreeStream = FluidModel->GetDensity();
+          config->SetDensity_FreeStream(Density_FreeStream);
+        }
+        else {
+          //printf("SetTDState 1 ...: %f, %f\n", Pressure_FreeStream, Density_FreeStream);
+          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+          //printf("SetTDState 1 finished!\n");
+          Temperature_FreeStream = FluidModel->GetTemperature();
+          config->SetTemperature_FreeStream(Temperature_FreeStream);
+          //printf("Pressure_FreeStream    = %f\n",Pressure_FreeStream);
+          //printf("Density_FreeStream     = %f\n",Density_FreeStream);
+          //printf("Temperature_FreeStream = %f\n",Temperature_FreeStream);
+          //throw(-1);
+        }
+        break;
+//#endif
 
   }
 
@@ -3739,11 +3763,21 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
+//#ifdef HAVE_FluidProp
+   case FLUIDPROP:
+      FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs(),
+                                  config->HasSinglePhaseOnly(), config->GetLookupTableName(), config->GetTemperature_Ref(),
+                                  config->GetPressure_Ref(), config->GetDensity_Ref(), config->GetErrorLevel());
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      printf("Density_FreeStreamND = %f\n",Density_FreeStreamND);
+      break;
+//#endif
+
   }
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
   
-  if (viscous || two_phase != NONE) {
+  if (viscous || two_phase) {
     
     /*--- Constant viscosity model ---*/
     config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
@@ -3763,7 +3797,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   }
   
 
-  if (two_phase != NONE ) {
+  if (two_phase) {
 	    FluidModel->SetLiquidPhaseModel(config);
   }
 
@@ -3825,6 +3859,17 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
       case PR_GAS:
         cout << "Fluid Model: Peng-Robinson "<< endl;
+        cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+        cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
+        cout << "Specific Heat Ratio: "<< Gamma << endl;
+        cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
+        cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
+        cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
+        cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
+        break;
+
+      case FLUIDPROP:
+        cout << "Fluid Model: fluidprop "<< endl;
         cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
         cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
         cout << "Specific Heat Ratio: "<< Gamma << endl;

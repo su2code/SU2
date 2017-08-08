@@ -35,3 +35,6 @@
 
 inline su2double CHeatCapacity::Get_Cv0() { return Cv0; }
 inline void      CHeatCapacity::Set_Cv0( su2double T) {  }
+
+inline su2double CHeatCapacity::Get_dCv0dT() { return dCv0dT; }
+inline void      CHeatCapacity::Set_dCv0dT( su2double T) {  }
