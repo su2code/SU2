@@ -14593,7 +14593,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
   string filename_ = config->GetSolution_FlowFileName();
-  su2double AoA_, AoS_, BCThrust_;
+  su2double AoA_, AoS_, BCThrust_, TotalTime_;
   string::size_type position;
   unsigned long ExtIter_;
 
@@ -14608,7 +14608,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Check for a restart file to check if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
-  
+
   if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
     
     /*--- Multizone problems require the number of the zone to be appended. ---*/
@@ -14724,6 +14724,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
           config->SetExtIter_OffSet(ExtIter_);
       }
       
+      /*--- Angle of attack ---*/
+
+      position = text_line.find ("TOTAL_TIME=",0);
+      if (position != string::npos) {
+        text_line.erase (0,11);
+        config->SetCurrent_UnstTime(atof(text_line.c_str()));
+      }
+
     }
     
     /*--- Close the restart file... we will open this file again... ---*/
@@ -15383,6 +15391,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint] = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
     
+    if (config->GetUnsteady_Simulation() == TIME_STEPPING)
+      config->SetCurrent_UnstTime(0.0);
+
   }
   
   else {
@@ -15983,6 +15994,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 #endif
     for (iPoint = 0; iPoint < nPointDomain; iPoint++)
       node[iPoint]->SetDelta_Time(Global_Delta_Time);
+    config->AddCurrent_UnstTime(Global_Delta_Time);
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy

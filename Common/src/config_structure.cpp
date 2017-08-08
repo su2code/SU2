@@ -5700,8 +5700,15 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                              unsigned long val_extiter) {
 
   /*--- Set the simulation global time ---*/
-  Current_UnstTime = static_cast<su2double>(val_extiter)*Delta_UnstTime;
-  Current_UnstTimeND = static_cast<su2double>(val_extiter)*Delta_UnstTimeND;
+  switch (GetUnsteady_Simulation()) {
+    case TIME_STEPPING:
+      /*--- This is updated from the solver; Do nothing here. ---*/
+      break;
+    case DT_STEPPING_1ST: case DT_STEPPING_2ND:
+      /*--- Fixed time step used.  Just multiply by iterations. ---*/
+      Current_UnstTime = static_cast<su2double>(val_extiter)*Delta_UnstTime;
+      Current_UnstTimeND = static_cast<su2double>(val_extiter)*Delta_UnstTimeND;
+  }
 
   /*--- Set the solver methods ---*/
   switch (val_solver) {

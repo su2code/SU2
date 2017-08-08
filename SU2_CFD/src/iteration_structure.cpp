@@ -637,6 +637,13 @@ void CMeanFlowIteration::Update(COutput *output,
     
   }
   
+  /*--- Verify convergence criteria (based on total time) ---*/
+
+  if (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) {
+    Physical_t = config_container[val_iZone]->GetCurrent_UnstTime();
+    if (Physical_t >=  config_container[val_iZone]->GetTotal_UnstTime())
+      integration_container[val_iZone][FLOW_SOL]->SetConvergence(true);
+  }
 }
 
 void CMeanFlowIteration::Monitor()     { }

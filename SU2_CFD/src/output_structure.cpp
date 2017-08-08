@@ -4043,6 +4043,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
   else
     restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+  if (config->GetUnsteady_Simulation() == TIME_STEPPING)
+    restart_file << "TOTAL_TIME= " << config->GetCurrent_UnstTime() << endl;
   
   restart_file.close();
   
@@ -5326,6 +5328,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
+            if (Unsteady ||
+                config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING)
+              cout << " Unst. Time";
             
             //            if (!fluid_structure) {
             if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
@@ -5380,6 +5385,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
+            if (Unsteady ||
+                config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING)
+              cout << " Unst. Time";
             if (incompressible) cout << "   Res[Press]";
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
             
@@ -5542,6 +5550,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.width(8); cout << iIntIter;
           cout.width(8); cout << iExtIter;
         }
+      }
+      if (Unsteady ||
+          config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) {
+          cout.width(11); cout << config[val_iZone]->GetCurrent_UnstTime();
       }
       
       
@@ -14990,6 +15002,8 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
       restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
     else
       restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+    if (config->GetUnsteady_Simulation() == TIME_STEPPING)
+      restart_file << "TOTAL_TIME= " << config->GetCurrent_UnstTime() << endl;
   }
   
   /*--- All processors close the file. ---*/
