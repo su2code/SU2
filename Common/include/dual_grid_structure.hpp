@@ -3,10 +3,10 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -16,7 +16,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CDualGrid{
 protected:
@@ -135,7 +135,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CPoint : public CDualGrid {
 private:
@@ -742,7 +742,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CEdge : public CDualGrid {
 private:
@@ -879,10 +879,10 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CVertex : public CDualGrid {
-private:
+protected:
 	unsigned long *Nodes;	/*!< \brief Vector to store the global nodes of an element. */
 	su2double *Normal;			/*!< \brief Normal coordinates of the element and its center of gravity. */
 	su2double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
@@ -1242,6 +1242,120 @@ public:
    * \return  - pointer to the vector defining the rotation
    */
   void SetVarRot(su2double* val);
+
+};
+
+/*!
+ * \class CTurboVertex
+ * \brief Class for vertex definition for turbomachinery (equivalent to edges, but for the boundaries).
+ * \author S. Vitale
+ * \version 5.0.0 "Raven"
+ */
+class CTurboVertex : public CVertex {
+private:
+  su2double *TurboNormal;			/*!< \brief Normal for computing correct turbomachinery quantities. */
+  su2double Area;							/*!< \brief Value of the face area associated to the vertex */
+  //	su2double PitchCoord;       /*!< \brief Value of the abscissa pitch wise */
+  su2double AngularCoord;     /*!< \brief Value of the angular coordinate  */
+  su2double DeltaAngularCoord;     /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
+  su2double RelAngularCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
+
+  unsigned long OldVertex;    /*!< \brief Value of the vertex numeration before the ordering */
+  int GlobalIndex;						/*!< \brief Value of the vertex numeration after the ordering and global with respect to MPI partinioning */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_point - Node of the vertex.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   */
+  CTurboVertex(unsigned long val_point, unsigned short val_nDim);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurboVertex(void);
+
+  /*!
+   * \brief set Normal in the turbomachinery frame of reference.
+   * \param[in] val_normal - normal vector.
+   */
+  void SetTurboNormal(su2double *val_normal);
+
+  /*!
+   * \brief set face Area.
+   * \param[in] val_area - value of the face area.
+   */
+  void SetArea(su2double val_area);
+
+  /*!
+   * \brief get face Area associate to the vertex.
+   */
+  su2double GetArea(void);
+
+  /*!
+   * \brief Copy the the turbo normal vector of a face.
+   * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensionaless).
+   */
+  void GetTurboNormal(su2double *val_normal);
+
+  /*!
+   * \brief Get the turbo normal to a face where turboperformance are computed .
+   * \return Dimensionaless normal vector, the modulus is the area of the face.
+   */
+  su2double *GetTurboNormal(void);
+
+  /*!
+   * \brief set vertex value not ordered.
+   * \param[in] val_vertex - value of the vertex before ordering.
+   */
+  void SetOldVertex(unsigned long val_vertex);
+
+  /*!
+   * \brief retrieve vertex value not ordered.
+   */
+  unsigned long GetOldVertex(void);
+
+  /*!
+   * \brief set global index for ordered span-wise turbovertex.
+   */
+  void SetGlobalVertexIndex(int globalindex);
+
+  /*!
+   * \brief get global index for ordered span-wise turbovertex.
+   */
+  int GetGlobalVertexIndex(void);
+
+  /*!
+   * \brief set angular coord.
+   */
+  void SetAngularCoord(su2double angCoord);
+
+  /*!
+   * \brief get angular coord.
+   */
+  su2double GetAngularCoord(void);
+
+  /*!
+   * \brief set angular coord.
+   */
+  void SetDeltaAngularCoord(su2double deltaAngCoord);
+
+  /*!
+   * \brief get angular coord.
+   */
+  su2double GetDeltaAngularCoord(void);
+
+  /*!
+   * \brief set angular coord.
+   */
+  void SetRelAngularCoord(su2double minAngCoord);
+
+  /*!
+   * \brief get angular coord.
+   */
+  su2double GetRelAngularCoord(void);
 
 };
 

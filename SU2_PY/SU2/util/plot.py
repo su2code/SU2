@@ -3,10 +3,10 @@
 ## \file plot.py
 #  \brief python package for plotting
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -52,7 +52,7 @@ def write_plot(filename,plot_format,data_plot,keys_plot=None):
     keys_space = [default_spacing] * len(keys_plot)
     
     header = ''
-    if plot_format == 'TECPLOT':
+    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'):
         header = 'VARIABLES='
         indent_spacing += 10
     indent_spacing = ' '*indent_spacing

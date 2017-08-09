@@ -2,10 +2,10 @@
  * \file fluid_model.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,10 @@ inline su2double CFluidModel::GetdPdrho_e () { return dPdrho_e; }
 inline su2double CFluidModel::GetdPde_rho () { return dPde_rho; }
 inline su2double CFluidModel::GetdTdrho_e () { return dTdrho_e; }
 inline su2double CFluidModel::GetdTde_rho () { return dTde_rho; }
+inline su2double CFluidModel::Getdhdrho_P () {return dhdrho_P;}
+inline su2double CFluidModel::GetdhdP_rho () {return dhdP_rho;}
+inline su2double CFluidModel::Getdsdrho_P () {return dsdrho_P;}
+inline su2double CFluidModel::GetdsdP_rho () {return dsdP_rho;}
 
 inline su2double CFluidModel::GetLaminarViscosity () {
         LaminarViscosity->SetViscosity(Temperature, Density);
@@ -88,3 +92,4 @@ inline void CFluidModel::SetTDState_hs (su2double h, su2double s ) { }
 inline void CFluidModel::SetTDState_rhoT (su2double rho, su2double T ) { }
 inline void CFluidModel::SetEnergy_Prho (su2double P, su2double rho ) { }
 inline void CFluidModel::SetTDState_Ps (su2double P, su2double s ) { }
+inline void CFluidModel::ComputeDerivativeNRBC_Prho (su2double P, su2double rho ){ }

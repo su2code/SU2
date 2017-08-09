@@ -2,10 +2,10 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for physics of the information transfer between zones
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,8 +46,8 @@ CTransfer_FlowTraction::~CTransfer_FlowTraction(void) {
 }
 
 void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
-		   	   	   	   	   	   	   	   	   	   	   CGeometry *flow_geometry, CGeometry *struct_geometry,
-												   CConfig *flow_config, CConfig *struct_config) {
+                                                         CGeometry *flow_geometry, CGeometry *struct_geometry,
+                           CConfig *flow_config, CConfig *struct_config) {
 
   unsigned short iVar;
 
@@ -112,7 +112,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 }
 
 void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,
-					   	   	   	   	   	   	   unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Struct) {
+                                           unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Struct) {
 
 
   unsigned short iVar, jVar;
@@ -143,25 +143,12 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
   Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
 
   // Retrieve the values of pressure and viscosity
-  if (incompressible) {
 
-    Pn = flow_solution->node[Point_Flow]->GetPressureInc();
+  Pn = flow_solution->node[Point_Flow]->GetPressure();
 
-    if (viscous_flow) {
-
-      Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
-      Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosityInc();
-
-    }
-  }
-  else if (compressible) {
-
-    Pn = flow_solution->node[Point_Flow]->GetPressure();
-
-    if (viscous_flow) {
-      Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
-      Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
-    }
+  if (viscous_flow) {
+    Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
+    Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
   }
 
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
@@ -200,8 +187,8 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 }
 
 void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
-												CConfig *fea_config, unsigned long Marker_Struct,
-												unsigned long Vertex_Struct, unsigned long Point_Struct) {
+                        CConfig *fea_config, unsigned long Marker_Struct,
+                        unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
   /*--- Add to the Flow traction ---*/
   fea_solution->node[Point_Struct]->Add_FlowTraction(Target_Variable);
@@ -224,13 +211,13 @@ CTransfer_StructuralDisplacements::~CTransfer_StructuralDisplacements(void) {
 
 
 void CTransfer_StructuralDisplacements::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-		   	   	   	   	   	   	   	   	   	   	   CGeometry *struct_geometry, CGeometry *flow_geometry,
-												   CConfig *struct_config, CConfig *flow_config) {
+                                                         CGeometry *struct_geometry, CGeometry *flow_geometry,
+                           CConfig *struct_config, CConfig *flow_config) {
 
 }
 
 void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
+                                                       unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
   su2double *DisplacementDonor, *DisplacementDonor_Prev;
   unsigned short iVar;
@@ -245,8 +232,8 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 }
 
 void CTransfer_StructuralDisplacements::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
-														   CConfig *flow_config, unsigned long Marker_Flow,
-														   unsigned long Vertex_Flow, unsigned long Point_Flow) {
+                               CConfig *flow_config, unsigned long Marker_Flow,
+                               unsigned long Vertex_Flow, unsigned long Point_Flow) {
 
   su2double VarCoord[3] = {0.0, 0.0, 0.0};
   unsigned short iVar;
@@ -271,13 +258,13 @@ CTransfer_StructuralDisplacements_Original::~CTransfer_StructuralDisplacements_O
 
 
 void CTransfer_StructuralDisplacements_Original::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-		   	   	   	   	   	   	   	   	   	   	   CGeometry *struct_geometry, CGeometry *flow_geometry,
-												   CConfig *struct_config, CConfig *flow_config) {
+                                                         CGeometry *struct_geometry, CGeometry *flow_geometry,
+                           CConfig *struct_config, CConfig *flow_config) {
 
 }
 
 void CTransfer_StructuralDisplacements_Original::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
+                                                       unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
 
   su2double *Coord_Struct, *Displacement_Struct;
@@ -293,8 +280,8 @@ void CTransfer_StructuralDisplacements_Original::GetDonor_Variable(CSolver *stru
 }
 
 void CTransfer_StructuralDisplacements_Original::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
-														   CConfig *flow_config, unsigned long Marker_Flow,
-														   unsigned long Vertex_Flow, unsigned long Point_Flow) {
+                               CConfig *flow_config, unsigned long Marker_Flow,
+                               unsigned long Vertex_Flow, unsigned long Point_Flow) {
 
   su2double *Coord, VarCoord[3] = {0.0, 0.0, 0.0};
   unsigned short iVar;
@@ -324,13 +311,13 @@ CTransfer_ConservativeVars::~CTransfer_ConservativeVars(void) {
 
 
 void CTransfer_ConservativeVars::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-		   	   	   	   	   	   	   	   	   	   	       CGeometry *donor_geometry, CGeometry *target_geometry,
-													   CConfig *donor_config, CConfig *target_config) {
+                                                             CGeometry *donor_geometry, CGeometry *target_geometry,
+                             CConfig *donor_config, CConfig *target_config) {
 
 }
 
 void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
+                                                unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   su2double *Solution;
   unsigned short iVar;
@@ -343,13 +330,154 @@ void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeo
 }
 
 void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-													CConfig *target_config, unsigned long Marker_Target,
-													unsigned long Vertex_Target, unsigned long Point_Target) {
+                          CConfig *target_config, unsigned long Marker_Target,
+                          unsigned long Vertex_Target, unsigned long Point_Target) {
 
-	/*--- Set the target solution with the value of the Target Variable ---*/
-	target_solution->node[Point_Target]->SetSolution(Target_Variable);
+  /*--- Set the target solution with the value of the Target Variable ---*/
+  target_solution->node[Point_Target]->SetSolution(Target_Variable);
 
 }
+
+CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(void) : CTransfer() {
+
+}
+
+CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *donor_config, CConfig *target_config){
+  unsigned short iVar;
+  nVar = val_nVar;
+
+
+  Donor_Variable     = new su2double[nVar + 5];
+  Target_Variable    = new su2double[nVar + 5];
+
+
+
+  for (iVar = 0; iVar < nVar + 5; iVar++){
+    Donor_Variable[iVar]  = 0.0;
+    Target_Variable[iVar] = 0.0;
+  }
+}
+
+CTransfer_MixingPlaneInterface::~CTransfer_MixingPlaneInterface(void) {
+}
+
+
+
+void CTransfer_MixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config){
+
+  unsigned short iSpan;
+  nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
+
+
+  SpanValueCoeffTarget = new su2double[target_config->GetnSpanWiseSections() + 1];
+  SpanLevelDonor       = new unsigned short[target_config->GetnSpanWiseSections() + 1];
+
+
+  for (iSpan = 0; iSpan < target_config->GetnSpanWiseSections() + 1;iSpan++){
+    SpanValueCoeffTarget[iSpan] = 0.0;
+    SpanLevelDonor[iSpan]       = 1;
+  }
+
+}
+
+void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+    CConfig *donor_config, unsigned long Marker_Donor,
+    unsigned long iSpan, unsigned long rank) {
+
+  unsigned short nDim = nVar - 2;
+  bool turbulent = ((donor_config->GetKind_Solver() == RANS) || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
+
+
+
+  Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
+  Donor_Variable[1]	= donor_solution->GetAveragePressure(Marker_Donor, iSpan);
+  Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[0];
+  Donor_Variable[3] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
+
+  if(nDim == 3){
+    Donor_Variable[4] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[2];
+  }
+  else{
+    Donor_Variable[4] = -1.0;
+  }
+
+  if(turbulent){
+    Donor_Variable[5] = donor_solution->GetAverageNu(Marker_Donor, iSpan);
+    Donor_Variable[6] = donor_solution->GetAverageKine(Marker_Donor, iSpan);
+    Donor_Variable[7] = donor_solution->GetAverageOmega(Marker_Donor, iSpan);
+  }
+  else{
+    Donor_Variable[5] = -1.0;
+    Donor_Variable[6] = -1.0;
+    Donor_Variable[7] = -1.0;
+  }
+
+}
+
+
+void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+    CConfig *target_config, unsigned long Marker_Target,
+    unsigned long iSpan, unsigned long rank) {
+
+  unsigned short nDim = nVar - 2;
+  bool turbulent = ((target_config->GetKind_Solver() == RANS) || (target_config->GetKind_Solver() == DISC_ADJ_RANS));
+
+
+  target_solution->SetExtAverageDensity(Marker_Target, iSpan, Target_Variable[0]);
+  target_solution->SetExtAveragePressure(Marker_Target, iSpan, Target_Variable[1]);
+  target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 0, Target_Variable[2]);
+  target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 1, Target_Variable[3]);
+
+  if(nDim == 3){
+    target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 2, Target_Variable[4]);
+  }
+
+  if(turbulent){
+    target_solution->SetExtAverageNu(Marker_Target, iSpan, Target_Variable[5]);
+    target_solution->SetExtAverageKine(Marker_Target, iSpan, Target_Variable[6]);
+    target_solution->SetExtAverageOmega(Marker_Target, iSpan,  Target_Variable[7]);
+  }
+
+}
+
+void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
+  unsigned short iSpan;
+
+  for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){
+    /*--- trnasfer inviscid quantities ---*/
+    target_solution->SetDensityIn(donor_solution->GetDensityIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetPressureIn(donor_solution->GetPressureIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetTurboVelocityIn(donor_solution->GetTurboVelocityIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetDensityOut(donor_solution->GetDensityOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetPressureOut(donor_solution->GetPressureOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetTurboVelocityOut(donor_solution->GetTurboVelocityOut(donorZone, iSpan), donorZone, iSpan);
+
+    /*--- transfer turbulent quantities ---*/
+    target_solution->SetKineIn(donor_solution->GetKineIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetOmegaIn(donor_solution->GetOmegaIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetNuIn(donor_solution->GetNuIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetKineOut(donor_solution->GetKineOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetOmegaOut(donor_solution->GetOmegaOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetNuOut(donor_solution->GetNuOut(donorZone, iSpan), donorZone, iSpan);
+
+  }
+}
+
+void CTransfer_MixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone){
+  unsigned short iSpan;
+
+  for(iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++){
+    target_geometry->SetTurboRadiusIn(donor_geometry->GetTurboRadiusIn(donorZone, iSpan), donorZone, iSpan);
+    target_geometry->SetSpanAreaIn(donor_geometry->GetSpanAreaIn(donorZone, iSpan), donorZone, iSpan);
+    target_geometry->SetTangGridVelIn(donor_geometry->GetTangGridVelIn(donorZone, iSpan), donorZone, iSpan);
+    target_geometry->SetTurboRadiusOut(donor_geometry->GetTurboRadiusOut(donorZone, iSpan), donorZone, iSpan);
+    target_geometry->SetSpanAreaOut(donor_geometry->GetSpanAreaOut(donorZone, iSpan), donorZone, iSpan);
+    target_geometry->SetTangGridVelOut(donor_geometry->GetTangGridVelOut(donorZone, iSpan), donorZone, iSpan);
+  }
+
+}
+
+
 
 CTransfer_SlidingInterface::CTransfer_SlidingInterface(void) : CTransfer() {
 
@@ -365,31 +493,47 @@ CTransfer_SlidingInterface::~CTransfer_SlidingInterface(void) {
 
 
 void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-		   	   	   	   	   	   	   	   	   	   	       CGeometry *donor_geometry, CGeometry *target_geometry,
-													   CConfig *donor_config, CConfig *target_config){
+                                                             CGeometry *donor_geometry, CGeometry *target_geometry,
+                             CConfig *donor_config, CConfig *target_config) {
 
 }
 
 void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor){
+                                                unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  su2double *Solution;
-  unsigned short iVar;
+  unsigned short iVar, nDonorVar;
+  nDonorVar = donor_solution->GetnPrimVar();
 
-  /*--- Retrieve solution and set it as the donor variable ---*/
+  /*---  the number of primitive variables is set to two by default for the turbulent solver ---*/
+  bool turbulent = (nDonorVar == 2) ;
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+  if (turbulent){
+
+    /*---  for turbulent solver retrieve solution and set it as the donor variable ---*/
+    Donor_Variable[0] = donor_solution->node[Point_Donor]->GetSolution(0);
+    Donor_Variable[1] = donor_solution->node[Point_Donor]->GetSolution(1);
+
+  } else{
+
+    /*---  Retrieve primitive variables and set them as the donor variables ---*/
+    for (iVar = 0; iVar < nDonorVar; iVar++)
+      Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+
+  }
 }
 
 void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-													CConfig *target_config, unsigned long Marker_Target,
-													unsigned long Vertex_Target, unsigned long Point_Target){
+                          CConfig *target_config, unsigned long Marker_Target,
+                          unsigned long Vertex_Target, unsigned long Point_Target) {
 
-  unsigned short iVar;
+  unsigned short iVar, iDonorVertex, nTargetVar;
+  nTargetVar = target_solution->GetnPrimVar();
   /*--- Set the Sliding solution with the value of the Target Variable ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, Target_Variable[iVar]);
+  iDonorVertex = target_solution->GetnSlidingStates(Marker_Target, Vertex_Target);
 
+  for (iVar = 0; iVar < nTargetVar+1; iVar++)
+    target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, iDonorVertex, Target_Variable[iVar]);
+
+  target_solution->SetnSlidingStates( Marker_Target, Vertex_Target, iDonorVertex + 1 );
 }

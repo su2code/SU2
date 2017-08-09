@@ -3,10 +3,10 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -16,7 +16,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@ using namespace std;
  * \class CSysVector
  * \brief Class for holding and manipulating vectors needed by linear solvers
  * \author J. Hicken.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * We could use the STL vector as a base class here, but this gives us
  * more flexibility with the underlying data (e.g. we may decide to
@@ -347,7 +347,7 @@ public:
  * \class CMatrixVectorProduct
  * \brief abstract base class for defining matrix-vector products
  * \author J. Hicken.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * The Krylov-subspace solvers require only matrix-vector products and
  * not the actual matrix/Jacobian.  We need some way to indicate which
@@ -372,7 +372,7 @@ inline CMatrixVectorProduct::~CMatrixVectorProduct() {}
  * \class CPreconditioner
  * \brief abstract base class for defining preconditioning operation
  * \author J. Hicken.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * See the remarks regarding the CMatrixVectorProduct class.  The same
  * idea applies here to the preconditioning operation.

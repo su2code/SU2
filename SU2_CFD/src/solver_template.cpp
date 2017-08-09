@@ -2,10 +2,10 @@
  * \file solution_template.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,38 +44,38 @@ void CTemplateSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTemplateSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
 
 void CTemplateSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-																				 CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
+                                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
 
 void CTemplateSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-																				CConfig *config, unsigned short iMesh) { }
+                                        CConfig *config, unsigned short iMesh) { }
 
 void CTemplateSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-																								 CConfig *config, unsigned short iMesh) { }
+                                                 CConfig *config, unsigned short iMesh) { }
 
 void CTemplateSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-																								 CConfig *config, unsigned short iMesh) { }
+                                                 CConfig *config, unsigned short iMesh) { }
 
 void CTemplateSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
-																			unsigned short val_marker) { }
+                                      unsigned short val_marker) { }
 
 void CTemplateSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
 void CTemplateSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-																		 unsigned short val_marker) { }
+                                     unsigned short val_marker) { }
 
 void CTemplateSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
-																 unsigned short val_marker) { }
+                                 unsigned short val_marker) { }
 
 void CTemplateSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
-																	unsigned short val_marker) { }
+                                  unsigned short val_marker) { }
 
 void CTemplateSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
-																		 unsigned short val_marker) { }
+                                     unsigned short val_marker) { }
 
 void CTemplateSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
 void CTemplateSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, 
-																						 CConfig *config, unsigned short iRKStep) { }
+                                             CConfig *config, unsigned short iRKStep) { }
 
 void CTemplateSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
