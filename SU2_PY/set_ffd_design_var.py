@@ -31,7 +31,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import os, time
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
+
 from optparse import OptionParser
 from numpy import *
 
@@ -67,8 +69,8 @@ options.dim  = int(options.dimension)
 
 if options.dim == 3:
   
-  print " "
-  print "% FFD_CONTROL_POINT (X)"
+  print(" ")
+  print("% FFD_CONTROL_POINT (X)")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -84,8 +86,8 @@ if options.dim == 3:
 
   print dvList
 
-  print " "
-  print "% FFD_CONTROL_POINT (Y)"
+  print(" ")
+  print("% FFD_CONTROL_POINT (Y)")
   
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -99,10 +101,10 @@ if options.dim == 3:
           dvList = dvList + "; "
 
 
-  print dvList
+  print(dvList)
 
-  print " "
-  print "% FFD_CONTROL_POINT (Z)"
+  print(" ")
+  print("% FFD_CONTROL_POINT (Z)")
   
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -116,8 +118,9 @@ if options.dim == 3:
           dvList = dvList + "; "
 
 
-  print dvList
+  print(dvList)
 
+<<<<<<< 7b2dd1d82c05dfb37610e9e20da2f0744840cfb1
   print " "
   print "% FFD_NACELLE (RHO)"
 
@@ -135,8 +138,8 @@ if options.dim == 3:
 
   print dvList
 
-  print " "
-  print "% FFD_NACELLE (PHI)"
+  print(" ")
+  print("% FFD_NACELLE (PHI)")
   
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -152,8 +155,8 @@ if options.dim == 3:
 
   print dvList
 
-  print " "
-  print "% FFD_CONTROL_POINT (Z) (MULTIPLE INTERSECTIONS)"
+  print(" ")
+  print("% FFD_CONTROL_POINT (Z) (MULTIPLE INTERSECTIONS)")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -169,8 +172,8 @@ if options.dim == 3:
 
   print dvList
 
-  print " "
-  print "% FFD_CAMBER, FFD_THICKNESS, FFS_TWIST"
+  print(" ")
+  print("% FFD_CAMBER, FFD_THICKNESS, FFS_TWIST")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -195,7 +198,7 @@ if options.dim == 3:
     if iVariable < (options.jOrder):
       dvList = dvList + "; "
 
-  print dvList
+  print(dvList)
 
 if options.dim == 2:
 
@@ -214,8 +217,8 @@ if options.dim == 2:
 
   print dvList
 
-  print " "
-  print "% FFD_CONTROL_POINT (Y)"
+  print(" ")
+  print("% FFD_CONTROL_POINT (Y)")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -227,12 +230,10 @@ if options.dim == 2:
       if iVariable < (options.iOrder*options.jOrder):
         dvList = dvList + "; "
 
-  print dvList
+  print(dvList)
 
-
-
-  print " "
-  print "% FFD_CAMBER & FFD_THICKNESS"
+  print(" ")
+  print("FFD_CAMBER & FFD_THICKNESS")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -249,9 +250,4 @@ if options.dim == 2:
     if iVariable < (options.iOrder):
       dvList = dvList + "; "
 
-  print dvList
-
-
-
-
-
+  print(dvList)

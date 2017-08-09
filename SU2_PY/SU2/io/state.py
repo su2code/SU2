@@ -249,13 +249,12 @@ class State(ordered_bunch):
 
                   if found:
                     files[label] = filename
-                    print 'Found: %s' % filename
-                  
+                    print('Found: %s' % filename)
 
                 else:
                   if os.path.exists(filename):
                       files[label] = filename
-                      print 'Found: %s' % filename
+                      print('Found: %s' % filename)
             else:
                 if label.split("_")[0] in ['DIRECT', 'ADJOINT']:
                     for name in expand_zones(files[label], config):
