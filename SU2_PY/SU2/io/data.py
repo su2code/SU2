@@ -36,8 +36,15 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
-import cPickle as pickle
-from filelock import filelock
+if sys.version_info.major > 2:
+    # Py3 pickle now manage both accelerated cPickle and pure python pickle
+    # See https://docs.python.org/3/whatsnew/3.0.html#library-changes, 4th item.
+    import pickle
+else:
+    import cPickle as pickle
+
+
+from .filelock import filelock
 
 # -------------------------------------------------------------------
 #  Load a Dictionary of Data
@@ -73,7 +80,7 @@ def load_data( file_name, var_names=None   ,
         scipy_loaded = False    
         
     if not os.path.exists(file_name):
-        raise Exception , 'File does not exist: %s' % file_name
+        raise Exception('File does not exist: %s' % file_name)
     
     # process file format
     if file_format == 'infer':
@@ -179,7 +186,7 @@ def save_data( file_name, data_dict, append=False ,
         if append == True and os.path.exists(file_name):
             # check file exists
             if not os.path.exists(file_name):
-                raise Exception , 'Cannot append, file does not exist: %s' % file_name  
+                raise Exception('Cannot append, file does not exist: %s' % file_name)
             # load old data
             data_dict_old = load( file_name   = file_name   ,
                                   var_names   = None        ,

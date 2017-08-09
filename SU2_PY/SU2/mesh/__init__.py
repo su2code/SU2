@@ -2,6 +2,4 @@
 
 __all__ = ['adapt']
 
-import adapt
-
 from tools import *

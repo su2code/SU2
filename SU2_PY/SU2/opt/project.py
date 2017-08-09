@@ -31,6 +31,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
+
 # -------------------------------------------------------------------
 #  Imports
 # -------------------------------------------------------------------
@@ -106,7 +109,7 @@ class Project(object):
         if '*' in folder: folder = su2io.next_folder(folder)        
         if designs is None: designs = []
         
-        print 'New Project: %s' % (folder)
+        print('New Project: %s' % (folder))
         
         # setup config
         config = copy.deepcopy(config)
@@ -135,7 +138,7 @@ class Project(object):
         state.find_files(config)
 
         if 'MESH' not in state.FILES:
-            raise Exception , 'Could not find mesh file: %s' % config.MESH_FILENAME
+            raise Exception('Could not find mesh file: %s' % config.MESH_FILENAME)
         
         self.config  = config      # base config
         self.state   = state       # base state
@@ -191,7 +194,7 @@ class Project(object):
             design = self.new_design(konfig)
             
             if config.get('CONSOLE','VERBOSE') == 'VERBOSE':
-                print os.path.join(self.folder,design.folder)
+                print(os.path.join(self.folder,design.folder))
             timestamp = design.state.tic()
             
             # run design+
@@ -298,7 +301,7 @@ class Project(object):
         if delta == 0.0 and closest:
             design = closest
         else:
-            raise Exception, 'design not found for this config'
+            raise Exception('design not found for this config')
         return design
         
     def closest_design(self,config):

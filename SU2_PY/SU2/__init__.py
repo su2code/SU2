@@ -5,14 +5,6 @@ class EvaluationFailure(RuntimeError):
 class DivergenceFailure(EvaluationFailure):
     pass
 
-
-import run
-import io
-import mesh
-import eval
-import opt
-import util
-
 try:
     import readline
     import rlcompleter

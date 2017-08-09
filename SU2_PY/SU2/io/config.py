@@ -39,12 +39,9 @@ import os, sys, shutil, copy
 import numpy as np
 from ..util import bunch, ordered_bunch, switch
 from .tools import *
-from config_options import *
+from .config_options import *
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ..util.ordered_dict import OrderedDict
+from ..util.ordered_dict import OrderedDict
 
 inf = 1.0e20
 
@@ -86,7 +83,7 @@ class Config(ordered_bunch):
         if args and isinstance(args[0],str):
             filename = args[0]
             args = args[1:]
-        elif kwarg.has_key('filename'):
+        elif 'filename' in kwarg:
             filename = kwarg['filename']
             del kwarg['filename']
         else:
@@ -100,10 +97,10 @@ class Config(ordered_bunch):
             try:
                 self.read(filename)
             except IOError:
-                print 'Could not find config file: %s' % filename
-	    except:
-		print 'Unexpected error: ',sys.exc_info()[0]
-		raise
+                print('Could not find config file: %s' % filename)
+            except:
+                print('Unexpected error: ', sys.exc_info()[0])
+                raise
         
         self._filename = filename
     
@@ -127,13 +124,13 @@ class Config(ordered_bunch):
         try:
             return super(Config,self).__getattr__(k)
         except AttributeError:
-            raise AttributeError , 'Config parameter not found'
+            raise AttributeError('Config parameter not found')
         
     def __getitem__(self,k):
         try:
             return super(Config,self).__getitem__(k)
         except KeyError:
-            raise KeyError , 'Config parameter not found: %s' % k
+            raise KeyError('Config parameter not found: %s' % k)
 
     def unpack_dvs(self,dv_new,dv_old=None):
         """ updates config with design variable vectors
@@ -252,7 +249,7 @@ class Config(ordered_bunch):
         distance = 0.0
         
         for key in keys_check:
-            if konfig_diff.has_key(key):
+            if key in konfig_diff:
                 
                 val1 = konfig_diff[key][0]
                 val2 = konfig_diff[key][1]
@@ -264,7 +261,7 @@ class Config(ordered_bunch):
                     this_diff = np.sqrt( np.sum( (val1-val2)**2 ) )
                 
                 else:
-                    print 'Warning, unexpected config difference'
+                    print('Warning, unexpected config difference')
                     this_diff = inf
                     
                 distance += this_diff
@@ -320,7 +317,7 @@ def read_config(filename):
         this_param = line[0].strip()
         this_value = line[1].strip()
         
-        assert not data_dict.has_key(this_param) , ('Config file has multiple specifications of %s' % this_param )
+        assert this_param not in data_dict, ('Config file has multiple specifications of %s' % this_param )
         for case in switch(this_param):
             
             # comma delimited lists of strings with or without paren's
@@ -582,21 +579,21 @@ def read_config(filename):
     #: for line
 
     #hack - twl
-    if not data_dict.has_key('DV_VALUE_NEW'):
+    if 'DV_VALUE_NEW' not in data_dict:
         data_dict['DV_VALUE_NEW'] = [0]
-    if not data_dict.has_key('DV_VALUE_OLD'):
+    if 'DV_VALUE_OLD' not in data_dict:
         data_dict['DV_VALUE_OLD'] = [0]
-    if not data_dict.has_key('OPT_ITERATIONS'):
+    if 'OPT_ITERATIONS' not in data_dict:
         data_dict['OPT_ITERATIONS'] = 100
-    if not data_dict.has_key('OPT_ACCURACY'):
+    if 'OPT_ACCURACY' not in data_dict:
         data_dict['OPT_ACCURACY'] = 1e-10
-    if not data_dict.has_key('OPT_RELAX_FACTOR'):
+    if 'OPT_RELAX_FACTOR' not in data_dict:
         data_dict['OPT_RELAX_FACTOR'] = 1.0
-    if not data_dict.has_key('OPT_GRADIENT_FACTOR'):
+    if 'OPT_GRADIENT_FACTOR' not in data_dict:
         data_dict['OPT_GRADIENT_FACTOR'] = 1.0
-    if not data_dict.has_key('OPT_BOUND_UPPER'):
+    if 'OPT_BOUND_UPPER' not in data_dict:
         data_dict['OPT_BOUND_UPPER'] = 1e10
-    if not data_dict.has_key('OPT_BOUND_LOWER'):
+    if 'OPT_BOUND_LOWER' not in data_dict:
         data_dict['OPT_BOUND_LOWER'] = -1e10
     if not data_dict.has_key('OPT_COMBINE_OBJECTIVE'):
         data_dict['OPT_COMBINE_OBJECTIVE'] = "NO"
@@ -747,7 +744,7 @@ def write_config(filename,param_dict):
         old_value  = line[1].strip()
         
         # skip if parameter unwanted
-        if not param_dict.has_key(this_param):
+        if this_param not in param_dict:
             output_file.write(raw_line)
             continue
         
@@ -939,7 +936,7 @@ def dump_config(filename,config):
     '''
     
     # HACK - twl
-    if config.has_key('DV_VALUE_NEW'):
+    if 'DV_VALUE_NEW' in config:
         config.DV_VALUE = config.DV_VALUE_NEW
         
     config_file = open(filename,'w')
