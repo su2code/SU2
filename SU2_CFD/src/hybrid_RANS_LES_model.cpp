@@ -302,7 +302,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     su2double r_eps = C_eps * pow(r_k, 1.5) * TurbL * d_max;
 
     /*--- Calculate the RANS weight ---*/
-    su2double w_rans = max(tanh(r_eps - 1), 0.0);
+    w_rans = max(tanh(r_eps - 1), 0.0);
 
   } else {
     /*--- If the velocity differences at resolution scale are negligible,
@@ -434,7 +434,7 @@ su2double CHybrid_Mediator::GetProjResolution(su2double** resolution_tensor,
                                               vector<su2double> direction) {
 
 #ifndef NDEBUG
-  su2double magnitude_squared;
+  su2double magnitude_squared = 0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     magnitude_squared += direction[iDim]*direction[iDim];
   if (abs(magnitude_squared - 1.0) > 1e-7) {

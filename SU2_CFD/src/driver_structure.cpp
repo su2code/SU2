@@ -1552,10 +1552,10 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
           /*-- See the note under convection numerics --*/
-          numerics_container[iMGlevel][HYBRID_SOL][VISC_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Turb, true, config);
+          numerics_container[iMGlevel][HYBRID_SOL][VISC_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Hybrid, true, config);
           break;
         case CONVECTIVE:
-          numerics_container[iMGlevel][HYBRID_SOL][VISC_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Turb, true, config);
+          numerics_container[iMGlevel][HYBRID_SOL][VISC_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Hybrid, true, config);
           break;
         default:
             cout << "Viscous numerics not found for specified hybrid blending scheme." << endl;
@@ -1585,11 +1585,11 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         case RANS_ONLY:
           /*-- See the note under convection numerics --*/
           numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
-          numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Turb, false, config);
+          numerics_container[iMGlevel][HYBRID_SOL][VISC_BOUND_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Hybrid, false, config);
           break;
         case CONVECTIVE:
           numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM] = new CUpwSca_HybridConv(nDim, nVar_Hybrid, config);
-          numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Turb, false, config);
+          numerics_container[iMGlevel][HYBRID_SOL][VISC_BOUND_TERM] = new CAvgGrad_HybridConv(nDim, nVar_Hybrid, false, config);
           break;
         default:
           cout << "Boundary numerics not found for specified hybrid blending scheme." << endl; exit(EXIT_FAILURE);
@@ -2115,12 +2115,12 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   if (hybrid) {
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       delete numerics_container[iMGlevel][HYBRID_SOL][CONV_TERM];
-//      delete numerics_container[iMGlevel][BLENDING_SOL][VISC_TERM];
+      delete numerics_container[iMGlevel][HYBRID_SOL][VISC_TERM];
       delete numerics_container[iMGlevel][HYBRID_SOL][SOURCE_FIRST_TERM];
       delete numerics_container[iMGlevel][HYBRID_SOL][SOURCE_SECOND_TERM];
       /*--- Definition of the boundary condition method ---*/
       delete numerics_container[iMGlevel][HYBRID_SOL][CONV_BOUND_TERM];
-//      delete numerics_container[iMGlevel][BLENDING_SOL][VISC_BOUND_TERM];
+      delete numerics_container[iMGlevel][HYBRID_SOL][VISC_BOUND_TERM];
     }
   }
 

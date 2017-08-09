@@ -104,8 +104,6 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
                                                     su2double **val_Jacobian_i,
                                                     su2double **val_Jacobian_j,
                                                     CConfig *config) {
-  // FIXME: Add these...
-  su2double w_rans;
 
 #ifndef NDEBUG
   if (Resolution_Adequacy < 0) {
@@ -129,7 +127,7 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
 
   /*--- D_r allows alpha to increase past unity in LES regions.
    * It causes alpha to return rapidly to 1 in RANS regions. ---*/
-  su2double D_r = w_rans * fmax(HybridParameter_i[0] - 1, 0);
+  su2double D_r = RANS_Weight * fmax(HybridParameter_i[0] - 1, 0);
 
   /*--- F_r allows alpha to decrease past 0.
    * F_r functions as a built-in clipping which maintains C1 continuity.
@@ -166,7 +164,7 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
   /*--- Jacobian of \alpha with respect to \alpha ---*/
   val_Jacobian_i[0][0] = 0.0;
   if (D_r != 0)
-    val_Jacobian_i[0][0] += w_rans/T_alpha * Volume;
+    val_Jacobian_i[0][0] += RANS_Weight/T_alpha * Volume;
   if (F_r != 0)
     val_Jacobian_i[0][0] += 1.0/T_alpha * Volume;
 }
