@@ -116,7 +116,7 @@ def gradient( func_name, method, config, state=None ):
                 grads = geometry( func_name, config, state )
 
             else:
-                raise Exception('unknown function name: %s' % func_output)
+                raise Exception('unknown function name: %s' % func_name)
 
         # Finite Difference Gradients
         elif method == 'FINDIFF':

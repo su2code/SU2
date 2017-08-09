@@ -84,7 +84,7 @@ if options.dim == 3:
           dvList = dvList + "; "
 
 
-  print dvList
+  print(dvList)
 
   print(" ")
   print("% FFD_CONTROL_POINT (Y)")
@@ -120,9 +120,8 @@ if options.dim == 3:
 
   print(dvList)
 
-<<<<<<< 7b2dd1d82c05dfb37610e9e20da2f0744840cfb1
-  print " "
-  print "% FFD_NACELLE (RHO)"
+  print(" ")
+  print("% FFD_NACELLE (RHO)")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -202,8 +201,8 @@ if options.dim == 3:
 
 if options.dim == 2:
 
-  print " "
-  print "% FFD_CONTROL_POINT (X)"
+  print(" ")
+  print("% FFD_CONTROL_POINT (X)")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -215,7 +214,7 @@ if options.dim == 2:
       if iVariable < (options.iOrder*options.jOrder):
         dvList = dvList + "; "
 
-  print dvList
+  print(dvList)
 
   print(" ")
   print("% FFD_CONTROL_POINT (Y)")
