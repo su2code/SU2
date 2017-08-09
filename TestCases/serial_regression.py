@@ -1072,13 +1072,13 @@ def main():
     pass_list.append(pywrapper_fsi2d.run_test())
     
     # Tests summary
-    print '=================================================================='
-    print 'Summary of the serial tests'
+    print('==================================================================')
+    print('Summary of the serial tests')
     for i, test in enumerate(test_list):
         if (pass_list[i]):
-            print '  passed - %s'%test.tag
+            print ('  passed - %s'%test.tag)
         else:
-            print '* FAILED - %s'%test.tag
+            print ('* FAILED - %s'%test.tag)
     
     if all(pass_list):
         sys.exit(0)
