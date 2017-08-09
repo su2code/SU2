@@ -106,7 +106,8 @@ private:
   unsigned short FFD_Blending; /*!< \brief Kind of FFD Blending function. */
   su2double* FFD_BSpline_Order; /*!< \brief BSpline order in i,j,k direction. */
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
-  su2double FFD_Scale;  	/*!< \brief Scale factor between the design variable value and the control point movement. */
+  su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
+  su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
@@ -139,7 +140,10 @@ private:
   su2double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
   su2double WeightCd; /*!< \brief Weight of the drag coefficient. */
   su2double dCD_dCL; /*!< \brief Weight of the drag coefficient. */
-  su2double dCD_dCM; /*!< \brief Weight of the drag coefficient. */
+  su2double dCMx_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCMy_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCMz_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCMy; /*!< \brief Weight of the drag coefficient. */
   su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
   su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
   su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
@@ -148,8 +152,6 @@ private:
   unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
-  su2double DVBound_Upper;		/*!< \brief Previous value of the design variable. */
-  su2double DVBound_Lower;		/*!< \brief Previous value of the design variable. */
   su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
   su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
@@ -482,7 +484,7 @@ private:
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
   unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-  su2double *Section_WingBounds;                  /*!< \brief Airfoil section limit. */
+  su2double *Stations_Bounds;                  /*!< \brief Airfoil section limit. */
   unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
@@ -494,6 +496,7 @@ private:
   Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -516,7 +519,7 @@ private:
   iH, AoS, AoA_Offset, AoS_Offset, AoA_Sens;		/*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
   bool Fixed_CM_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
-  bool Eval_dCD_dCX;			/*!< \brief Activate fixed CL mode (external flow only). */
+  bool Eval_dOF_dCX;			/*!< \brief Activate fixed CL mode (external flow only). */
   bool Discard_InFiles; /*!< \brief Discard angle of attack in solution and geometry files. */
   su2double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
   su2double Target_CM;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
@@ -527,6 +530,7 @@ private:
   unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_CM;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Iter_dCL_dAlpha;   /*!< \brief Number of iterations to evaluate dCL_dAlpha. */
   unsigned long Update_Alpha;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_iH;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_BCThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
@@ -547,7 +551,6 @@ private:
   Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
   bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
-  bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Update_Restart_Params,
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
@@ -559,7 +562,7 @@ private:
   nMarker_ZoneInterface, /*!< \brief Number of markers in the zone interface. */
   nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
-    nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
   *Marker_Designing,         /*!< \brief Markers to plot. */
@@ -598,7 +601,7 @@ private:
   su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
   su2double *nBlades;						/*!< \brief number of blades for turbomachinery computation. */
   unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
-  unsigned short Axis_Stations;	/*!< \brief Axis orientation. */
+  unsigned short Geo_Description;	/*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
@@ -655,6 +658,7 @@ private:
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
   Wrt_Residuals,              /*!< \brief Write residuals to solution file */
+  Wrt_Surface,                /*!< \brief Write solution at each surface */
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
@@ -1081,8 +1085,8 @@ private:
     COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-  template <class Tenum>
   
+  template <class Tenum>
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                         su2double* & var1, su2double* & var2, su2double** & FlowDir) {
     assert(option_map.find(name) == option_map.end());
@@ -1090,6 +1094,7 @@ private:
     COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
+  
   template <class Tenum>
   void addGilesOption(const string name, unsigned short & nMarker_Giles, string * & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                      su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2) {
@@ -1160,25 +1165,24 @@ public:
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
-
+  
   /*!
    * \brief Destructor of the class.
    */
   ~CConfig(void);
-
-
+  
   /*!
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
    */
   SU2_Comm GetMPICommunicator();
-
+  
   /*!
    * \brief Set the MPI communicator for SU2.
    * \param[in] Communicator - MPI communicator for SU2.
    */
   void SetMPICommunicator(SU2_Comm Communicator);
-
+  
   /*!
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
@@ -1326,12 +1330,9 @@ public:
   unsigned short GetAnalytical_Surface(void);
   
   /*!
-   * \brief Get Information about if there is an analytical definition of the surface for doing the
-   *        grid adaptation.
-   * \return Definition of the surfaces. NONE implies that there isn't any analytical definition
-   *         and it will use and interpolation.
+   * \brief Get Description of the geometry to be analyzed
    */
-  unsigned short GetAxis_Stations(void);
+  unsigned short GetGeo_Description(void);
   
   /*!
    * \brief Creates a tecplot file to visualize the partition made by the DDC software.
@@ -1373,7 +1374,7 @@ public:
    * \brief Get the value of the limits for the sections.
    * \return Value of the limits for the sections.
    */
-  su2double GetSection_WingBounds(unsigned short val_var);
+  su2double GetStations_Bounds(unsigned short val_var);
   
   /*!
    * \brief Get the value of the vector that connects the cartesian axis with a sherical or cylindrical one.
@@ -2288,12 +2289,12 @@ public:
    */
   unsigned short GetFFD_CoordSystem(void);
   
-    /*!
+  /*!
    * \brief Get the kind of FFD Blending function.
    * \return Kind of FFD Blending function.
    */
   unsigned short GetFFD_Blending(void);
-
+  
   /*!
    * \brief Get the kind BSpline Order in i,j,k direction.
    * \return The kind BSpline Order in i,j,k direction.
@@ -2538,12 +2539,6 @@ public:
   bool GetWrt_Unsteady(void);
   
   /*!
-   * \brief Get information about performing a low fidelity simulation.
-   * \return 	<code>TRUE</code> means that a low fidelity simulation will be performed.
-   */
-  bool GetLowFidelitySim(void);
-  
-  /*!
    * \brief Get information about writing a volume solution file.
    * \return <code>TRUE</code> means that a volume solution file will be written.
    */
@@ -2578,6 +2573,12 @@ public:
    * \return <code>TRUE</code> means that residuals will be written to the solution file.
    */
   bool GetWrt_Limiters(void);
+  
+  /*!
+   * \brief Write solution at each surface.
+   * \return <code>TRUE</code> means that the solution at each surface will be written.
+   */
+  bool GetWrt_Surface(void);
   
   /*!
    * \brief Get information about writing residuals to volume solution file.
@@ -2914,7 +2915,7 @@ public:
    * \return Coordinate of the airfoil to slice.
    */
   su2double GetLocationStations(unsigned short val_section);
-
+  
   /*!
    * \brief Get the number of pre-smoothings in a multigrid strategy.
    * \param[in] val_mesh - Index of the grid.
@@ -3200,7 +3201,7 @@ public:
    * \return value of the wing semi span.
    */
   su2double GetSemiSpan(void);
-
+  
   /*!
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
@@ -4032,6 +4033,12 @@ public:
    * \return Number of sections for computing internal volume.
    */
   unsigned short GetnWingStations(void);
+  
+  /*!
+   * \brief Get the location of the waterline.
+   * \return Z location of the waterline.
+   */
+  su2double GetGeo_Waterline_Location(void);
   
   /*!
    * \brief Provides information about the the nodes that are going to be moved on a deformation
@@ -5223,7 +5230,7 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  su2double GetdCD_dCM(void);
+  su2double GetdCD_dCMy(void);
   
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -5247,6 +5254,42 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
+  su2double GetdCMx_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCMx_dCL(su2double val_dcmx_dcl);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCMy_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCMy_dCL(su2double val_dcmy_dcl);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCMz_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCMz_dCL(su2double val_dcmz_dcl);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
   void SetdCL_dAlpha(su2double val_dcl_dalpha);
   
   /*!
@@ -5259,7 +5302,7 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  void SetdCD_dCM(su2double val_dcd_dcm);
+  void SetdCD_dCMy(su2double val_dcd_dcmy);
   
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -6804,10 +6847,22 @@ public:
   su2double GetFFD_Tol(void);
   
   /*!
-   * \brief Get the scale factor between the input design variable and the final movement of the control point.
-   * \return Scale factor between the input design variable and the final movement of the control point.
+   * \brief Get the scale factor for the line search.
+   * \return Scale factor for the line search.
    */
-  su2double GetFFD_Scale(void);
+  su2double GetOpt_RelaxFactor(void);
+
+  /*!
+   * \brief Get the bound for the line search.
+   * \return Bound for the line search.
+   */
+  su2double GetOpt_LineSearch_Bound(void);
+  
+  /*!
+   * \brief Set the scale factor for the line search.
+   * \param[in] val_scale - scale of the deformation.
+   */
+  void SetOpt_RelaxFactor(su2double val_scale);
   
   /*!
    * \brief Get the node number of the CV to visualize.
@@ -6831,7 +6886,7 @@ public:
    * \brief Get information about whether to use fixed CL mode.
    * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
    */
-  bool GetEval_dCD_dCX(void);
+  bool GetEval_dOF_dCX(void);
   
   /*!
    * \brief Get information about whether to use fixed CL mode.
@@ -6856,6 +6911,12 @@ public:
    * \return Number of iterations.
    */
   unsigned long GetUpdate_Alpha(void);
+  
+  /*!
+   * \brief Number of iterations to evaluate dCL_dAlpha.
+   * \return Number of iterations.
+   */
+  unsigned long GetIter_dCL_dAlpha(void);
   
   /*!
    * \brief Get the value of the damping coefficient for fixed CL mode.
