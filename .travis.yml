@@ -12,11 +12,12 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
-  
+            - s.vitale@tudelft.nl
+            - tim.albring@scicomp.uni-kl.de
+
 branches:
     only:
-        - develop
+        - feature_turbomachinery
 
 env:
     global:
@@ -66,7 +67,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b feature_turbomachinery https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Enter the SU2/TestCases/ directory, which is now ready to run
