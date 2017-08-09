@@ -37,7 +37,7 @@
 
 import os, sys, shutil, copy
 import numpy as np
-from ..util import bunch, ordered_bunch, switch
+from ..util import Bunch, OrderedBunch, switch
 from .tools import *
 from .config_options import *
 
@@ -50,11 +50,11 @@ inf = 1.0e20
 #  Configuration Class
 # ----------------------------------------------------------------------
 
-class Config(ordered_bunch):
+class Config(OrderedBunch):
     """ config = SU2.io.Config(filename="")
         
         Starts a config class, an extension of 
-        ordered_bunch()
+        OrderedBunch()
         
         use 1: initialize by reading config file
             config = SU2.io.Config('filename')
@@ -193,7 +193,7 @@ class Config(ordered_bunch):
     def local_files(self):
         """ removes path prefix from all *_FILENAME params
         """
-        for key,value in self.iteritems():
+        for key, value in self.items():
             if key.split('_')[-1] == 'FILENAME':
                 self[key] = os.path.basename(value)    
     
@@ -277,7 +277,7 @@ class Config(ordered_bunch):
     
     def __str__(self):
         output = 'Config: %s' % self._filename
-        for k,v in self.iteritems():
+        for k,v in self.items():
             output +=  '\n    %s= %s' % (k,v)
         return output
 #: class Config
@@ -595,40 +595,40 @@ def read_config(filename):
         data_dict['OPT_BOUND_UPPER'] = 1e10
     if 'OPT_BOUND_LOWER' not in data_dict:
         data_dict['OPT_BOUND_LOWER'] = -1e10
-    if not data_dict.has_key('OPT_COMBINE_OBJECTIVE'):
+    if 'OPT_COMBINE_OBJECTIVE' not in data_dict:
         data_dict['OPT_COMBINE_OBJECTIVE'] = "NO"
-    if not data_dict.has_key('OPT_CONSTRAINT'):
+    if 'OPT_CONSTRAINT' not in data_dict:
         data_dict['OPT_CONSTRAINT'] =  {'INEQUALITY': OrderedDict(), 'EQUALITY': OrderedDict()}
-    if not data_dict.has_key('VALUE_OBJFUNC_FILENAME'):
+    if 'VALUE_OBJFUNC_FILENAME' not in data_dict:
         data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
-    if not data_dict.has_key('GRAD_OBJFUNC_FILENAME'):
+    if 'GRAD_OBJFUNC_FILENAME' not in data_dict:
         data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
-    if not data_dict.has_key('AOA'):
+    if 'AOA' not in data_dict:
         data_dict['AOA'] = 0.0
-    if not data_dict.has_key('SIDESLIP_ANGLE'):
+    if 'SIDESLIP_ANGLE' not in data_dict:
         data_dict['SIDESLIP_ANGLE'] = 0.0
-    if not data_dict.has_key('MACH_NUMBER'):
+    if 'MACH_NUMBER' not in data_dict:
         data_dict['MACH_NUMBER'] = 0.0
-    if not data_dict.has_key('REYNOLDS_NUMBER'):
+    if 'REYNOLDS_NUMBER' not in data_dict:
         data_dict['REYNOLDS_NUMBER'] = 0.0
-    if not data_dict.has_key('TARGET_CL'):
+    if 'TARGET_CL' not in data_dict:
         data_dict['TARGET_CL'] = 0.0
-    if not data_dict.has_key('FREESTREAM_PRESSURE'):
+    if 'FREESTREAM_PRESSURE' not in data_dict:
         data_dict['FREESTREAM_PRESSURE'] = 101325.0
-    if not data_dict.has_key('FREESTREAM_TEMPERATURE'):
+    if 'FREESTREAM_TEMPERATURE' not in data_dict:
         data_dict['FREESTREAM_TEMPERATURE'] = 288.15
 
     #
     # Multipoints requires some particular default values
     #
     multipoints = 1
-    if not data_dict.has_key('MULTIPOINT_WEIGHT'):
+    if 'MULTIPOINT_WEIGHT' not in data_dict:
       data_dict['MULTIPOINT_WEIGHT'] = "(1.0)"
       multipoints = 1
     else:
       multipoints = len(data_dict['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(','))
 
-    if not data_dict.has_key('MULTIPOINT_MACH_NUMBER'):
+    if 'MULTIPOINT_MACH_NUMBER' not in data_dict:
       Mach_Value = data_dict['MACH_NUMBER']
       Mach_List = "("
       for i in range(multipoints):
@@ -637,7 +637,7 @@ def read_config(filename):
       Mach_List += ")"
       data_dict['MULTIPOINT_MACH_NUMBER'] = Mach_List
       
-    if not data_dict.has_key('MULTIPOINT_AOA'):
+    if 'MULTIPOINT_AOA' not in data_dict:
       Alpha_Value = data_dict['AOA']
       Alpha_List = "("
       for i in range(multipoints):
@@ -646,7 +646,7 @@ def read_config(filename):
       Alpha_List += ")"
       data_dict['MULTIPOINT_AOA'] = Alpha_List
 
-    if not data_dict.has_key('MULTIPOINT_SIDESLIP_ANGLE'):
+    if 'MULTIPOINT_SIDESLIP_ANGLE' not in data_dict:
       Beta_Value = data_dict['SIDESLIP_ANGLE']
       Beta_List = "("
       for i in range(multipoints):
@@ -655,7 +655,7 @@ def read_config(filename):
       Beta_List += ")"
       data_dict['MULTIPOINT_SIDESLIP_ANGLE'] = Beta_List
       
-    if not data_dict.has_key('MULTIPOINT_REYNOLDS_NUMBER'):
+    if 'MULTIPOINT_REYNOLDS_NUMBER' not in data_dict:
       Reynolds_Value = data_dict['REYNOLDS_NUMBER']
       Reynolds_List = "("
       for i in range(multipoints):
@@ -664,7 +664,7 @@ def read_config(filename):
       Reynolds_List += ")"
       data_dict['MULTIPOINT_REYNOLDS_NUMBER'] = Reynolds_List
 
-    if not data_dict.has_key('MULTIPOINT_TARGET_CL'):
+    if 'MULTIPOINT_TARGET_CL' not in data_dict:
       TargetCLValue = data_dict['TARGET_CL']
       TargetCL_List = "("
       for i in range(multipoints):
@@ -673,7 +673,7 @@ def read_config(filename):
       TargetCL_List += ")"
       data_dict['MULTIPOINT_TARGET_CL'] = TargetCL_List
 
-    if not data_dict.has_key('MULTIPOINT_FREESTREAM_PRESSURE'):
+    if 'MULTIPOINT_FREESTREAM_PRESSURE' not in data_dict:
       Pressure_Value = data_dict['FREESTREAM_PRESSURE']
       Pressure_List = "("
       for i in range(multipoints):
@@ -682,7 +682,7 @@ def read_config(filename):
       Pressure_List += ")"
       data_dict['MULTIPOINT_FREESTREAM_PRESSURE'] = Pressure_List
 
-    if not data_dict.has_key('MULTIPOINT_FREESTREAM_TEMPERATURE'):
+    if 'MULTIPOINT_FREESTREAM_TEMPERATURE' not in data_dict:
       Temperature_Value = data_dict['FREESTREAM_TEMPERATURE']
       Temperature_List = "("
       for i in range(multipoints):
@@ -695,20 +695,24 @@ def read_config(filename):
     # Default values for optimization parameters (needed for some eval functions
     # that can be called outside of an opt. context.
     #
-    if not data_dict.has_key('OBJECTIVE_FUNCTION'):
+    if 'OBJECTIVE_FUNCTION' not in data_dict:
         data_dict['OBJECTIVE_FUNCTION']='DRAG'
-    if not data_dict.has_key('DV_KIND'):
+    if 'DV_KIND' not in data_dict:
         data_dict['DV_KIND']=['FFD_SETTING']
-    if not data_dict.has_key('DV_PARAM'):
+    if 'DV_PARAM' not in data_dict:
         data_dict['DV_PARAM']={'FFDTAG': ['1'], 'PARAM': [[0.0, 0.5]], 'SIZE': [1]}
-    if not data_dict.has_key('DEFINITION_DV'):
+    if 'DEFINITION_DV' not in data_dict:
         data_dict['DEFINITION_DV']={'FFDTAG': [[]],
             'KIND': ['HICKS_HENNE'],
             'MARKER': [['WING']],
             'PARAM': [[0.0, 0.05]],
             'SCALE': [1.0],
             'SIZE': [1]}
-
+    if 'VALUE_OBJFUNC_FILENAME' not in data_dict:
+        data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
+    if 'GRAD_OBJFUNC_FILENAME' not in data_dict:
+        data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
+ 
     return data_dict
     
 #: def read_config()

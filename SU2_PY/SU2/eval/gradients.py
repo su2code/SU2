@@ -41,7 +41,7 @@ from .. import io   as su2io
 from .. import util as su2util
 from .functions import function, update_mesh
 from ..io import redirect_folder, redirect_output
-import functions
+from SU2.eval import functions
 
 # ----------------------------------------------------------------------
 #  Main Gradient Interface

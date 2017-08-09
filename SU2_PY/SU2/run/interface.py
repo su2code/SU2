@@ -51,10 +51,10 @@ sys.path.append( SU2_RUN )
 base_Command = os.path.join(SU2_RUN,'%s')
 
 # check for slurm
-slurm_job = os.environ.has_key('SLURM_JOBID')
+slurm_job = 'SLURM_JOBID' in os.environ
 
 # Check for custom mpi command
-user_defined = os.environ.has_key('SU2_MPI_COMMAND')
+user_defined = 'SU2_MPI_COMMAND' in os.environ
 
 # set mpi command
 if user_defined:

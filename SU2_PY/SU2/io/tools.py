@@ -689,7 +689,7 @@ def get_dvKind( kindID ):
 def get_dvID( kindName ):
     """ get design variable kind id number from name """
     dv_map = get_dvMap()
-    id_map = dict((v,k) for (k,v) in dv_map.iteritems())
+    id_map = dict((v,k) for (k,v) in dv_map.items())
     try: 
         return id_map[ kindName ]
     except KeyError: 
