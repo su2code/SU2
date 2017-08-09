@@ -2,10 +2,10 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
-  if (config->GetUnsteady_Simulation() == NO){ 
+  if (config->GetUnsteady_Simulation() == NO) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
@@ -94,14 +94,14 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   color = 0;
 
   /*--- For smoothing the numerical grid coordinates ---*/
-  if ( config->GetSmoothNumGrid() ){
+  if ( config->GetSmoothNumGrid() ) {
     Coord_Old = new su2double[nDim];
     Coord_Sum = new su2double[nDim];
   }
 
   /*--- Storage of grid velocities for dynamic meshes ---*/
 
-  if ( config->GetGrid_Movement() ){
+  if ( config->GetGrid_Movement() ) {
     GridVel  = new su2double[nDim];
 
     for (iDim = 0; iDim < nDim; iDim++) 
@@ -110,7 +110,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
     /*--- Gradient of the grid velocity ---*/
     GridVel_Grad = new su2double*[nDim];
 
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (iDim = 0; iDim < nDim; iDim++) {
       GridVel_Grad[iDim] = new su2double[nDim];
       for (jDim = 0; jDim < nDim; jDim++)
         GridVel_Grad[iDim][jDim] = 0.0;
@@ -118,7 +118,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
     /*--- Structures for storing old node coordinates for computing grid 
     velocities via finite differencing with dynamically deforming meshes. ---*/
-    if ( config->GetUnsteady_Simulation() != NO ){
+    if ( config->GetUnsteady_Simulation() != NO ) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
@@ -146,7 +146,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
-  if (config->GetUnsteady_Simulation() == NO){ 
+  if (config->GetUnsteady_Simulation() == NO) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
@@ -186,13 +186,13 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   GlobalIndex = val_globalindex;
 
   /*--- For smoothing the numerical grid coordinates ---*/
-  if ( config->GetSmoothNumGrid() ){
+  if ( config->GetSmoothNumGrid() ) {
     Coord_Old = new su2double[nDim];
     Coord_Sum = new su2double[nDim];
   }
 
   /*--- Storage of grid velocities for dynamic meshes ---*/
-  if ( config->GetGrid_Movement() ){
+  if ( config->GetGrid_Movement() ) {
     GridVel  = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       GridVel[iDim] = 0.0;
@@ -239,7 +239,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   GridVel = NULL;  GridVel_Grad = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
-  if ( config->GetUnsteady_Simulation() == NO ){ 
+  if ( config->GetUnsteady_Simulation() == NO ) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
@@ -347,7 +347,7 @@ void CPoint::SetPoint(unsigned long val_point) {
   /*--- Look for the point in the list ---*/
   new_point = true;
   for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
-  if (Point[iPoint] == val_point){
+  if (Point[iPoint] == val_point) {
     new_point = false; 
     break;
   }
@@ -378,9 +378,9 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {
-	
+    
   unsigned short iDim;
-	
+    
   /*--- Pointers initialization ---*/
   Coord_CG = NULL;
   Normal   = NULL;
@@ -497,7 +497,7 @@ void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Fa
   Dim_Normal[2] =  0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0] );
 
   Normal[0] += Dim_Normal[0]; 
-  Normal[1] += Dim_Normal[1];		
+  Normal[1] += Dim_Normal[1];       
   Normal[2] += Dim_Normal[2];
 
   AD::SetPreaccOut(Normal, nDim);
@@ -588,7 +588,7 @@ CVertex::~CVertex() {
 
 void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
 
-  su2double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, Dim_Normal[3] = {0.0,0.0,0.0};
+  su2double vec_a[3], vec_b[3];
   unsigned short iDim;
 
   AD::StartPreacc();
@@ -602,13 +602,9 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
     vec_b[iDim] = val_coord_FaceElem_CG[iDim]-val_coord_Edge_CG[iDim];
   }
 
-  Dim_Normal[0] =  0.5 * ( vec_a[1] * vec_b[2] - vec_a[2] * vec_b[1]);
-  Dim_Normal[1] = -0.5 * ( vec_a[0] * vec_b[2] - vec_a[2] * vec_b[0]);
-  Dim_Normal[2] =  0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0]);
-
-  Normal[0] += Dim_Normal[0]; 
-  Normal[1] += Dim_Normal[1];	
-  Normal[2] += Dim_Normal[2];
+  Normal[0] += 0.5 * ( vec_a[1] * vec_b[2] - vec_a[2] * vec_b[1]);
+  Normal[1] -= 0.5 * ( vec_a[0] * vec_b[2] - vec_a[2] * vec_b[0]);
+  Normal[2] += 0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0]);
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
@@ -617,18 +613,13 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
 
 void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) {
 
-  su2double Dim_Normal[2];
-
   AD::StartPreacc();
   AD::SetPreaccIn(val_coord_Elem_CG, nDim);
   AD::SetPreaccIn(val_coord_Edge_CG, nDim);
   AD::SetPreaccIn(Normal, nDim);
 
-  Dim_Normal[0] =   val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
-  Dim_Normal[1] = -(val_coord_Elem_CG[0]-val_coord_Edge_CG[0]);
-
-  Normal[0] += Dim_Normal[0]; 
-  Normal[1] += Dim_Normal[1];
+  Normal[0] += val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
+  Normal[1] -= (val_coord_Elem_CG[0]-val_coord_Edge_CG[0]);
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
@@ -643,10 +634,33 @@ void CVertex::AddNormal(su2double *val_face_normal) {
 
 }
 
-void CVertex::Allocate_DonorInfo(void) {
-
+void CVertex::Allocate_DonorInfo(void){
+  
+  if( Donor_Points != NULL )  delete [] Donor_Points;
+  if( Donor_Proc   != NULL )  delete [] Donor_Proc;
+  if( Donor_Coeff  != NULL )  delete [] Donor_Coeff;  
+  
   Donor_Points = new unsigned long[nDonor_Points];
   Donor_Proc   = new unsigned long[nDonor_Points];
   Donor_Coeff  = new su2double[nDonor_Points];
+}
+
+CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim){
+	unsigned short iDim;
+ /*--- Pointers initialization ---*/
+	TurboNormal = NULL;
+	/*--- Allocate node, and face normal ---*/
+	TurboNormal = new su2double [nDim];
+
+	/*--- Initializate the structure ---*/
+	for (iDim = 0; iDim < nDim; iDim ++) TurboNormal[iDim] = 0.0;
+
+}
+
+CTurboVertex::~CTurboVertex() {
+
+	if (Normal != NULL) delete[] Normal;
+	if (Nodes != NULL) delete[] Nodes;
+	if (TurboNormal != NULL) delete [] TurboNormal;
 
 }

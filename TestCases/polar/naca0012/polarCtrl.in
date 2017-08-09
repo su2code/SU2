@@ -1,0 +1,9 @@
+# Control file for polar sweep run (default).
+# Note that this file is currently set for the QuickStart NACA 0012 case.
+Pitch axis       : Z
+# One of the following lists of values (> 1) given at a time.
+angles of attack : 0.0, 2.0, 4.0, 6.0, 8.0 
+# roll angles :  0.0, 45.0, 48.0, 50.0, 52.0, 55.0, 60.0, 90.0
+# side slip angle : 3.0
+# Mach ramp numbers : 0.3, 0.4, 0.6
+input base file  : inv_NACA0012.cfg

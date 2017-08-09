@@ -3,10 +3,10 @@
 ## \file project.py
 #  \brief package for optimization projects
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -111,6 +111,21 @@ class Project(object):
         # setup config
         config = copy.deepcopy(config)
         
+        # data_dict creation does not preserve the ordering of the config file.
+        # This section ensures that the order of markers and objectives match 
+        # It is only needed when more than one objective is used.
+        def_objs = config['OPT_OBJECTIVE']
+        if len(def_objs)>1:
+            objectives = def_objs.keys()
+            marker_monitoring = []
+            weights = []
+            for i_obj, this_obj in enumerate(objectives):
+                marker_monitoring+=[def_objs[this_obj]['MARKER']]
+                weights+=[str(def_objs[this_obj]['SCALE'])]
+            config['MARKER_MONITORING'] = marker_monitoring
+            config['OBJECTIVE_WEIGHT'] = ",".join(weights)
+            config['OBJECTIVE_FUNCTION'] = ",".join(objectives)
+        
         # setup state
         if state is None:
             state = su2io.State()
@@ -118,8 +133,7 @@ class Project(object):
             state  = copy.deepcopy(state)
             state  = su2io.State(state)
         state.find_files(config)
-        if 'OUTFLOW_GENERALIZED' in config.OPT_OBJECTIVE:
-            state.FILES['DownstreamFunction'] = 'downstream_function.py'
+
         if 'MESH' not in state.FILES:
             raise Exception , 'Could not find mesh file: %s' % config.MESH_FILENAME
         
@@ -266,7 +280,6 @@ class Project(object):
         """
          # local konfig
         konfig = copy.deepcopy(config)
-        
         # find closest design
         closest,delta = self.closest_design(konfig)
         # found existing design

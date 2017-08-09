@@ -5,10 +5,10 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -18,7 +18,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,7 +57,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CGridMovement {
 public:
@@ -81,11 +81,194 @@ public:
   
 };
 
+/*!
+ * \class CFreeFormBlending
+ * \brief Class that defines the particular kind of blending function for the free form deformation.
+ * \author T. Albring
+ * \version 5.0.0 "Raven"
+ */
+class CFreeFormBlending {
+
+protected:
+  unsigned short Order, /*!< \brief Order of the polynomial basis. */
+   Degree,              /*!< \brief Degree (Order - 1) of the polynomial basis. */
+   nControl;            /*!< \brief Number of control points. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CFreeFormBlending();
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CFreeFormBlending();
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   */
+  virtual su2double GetBasis(short val_i, su2double val_t);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
+   * \param[in] val_order - Order of the derivative.
+   */
+  virtual su2double GetDerivative(short val_i, su2double val_t, short val_order);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_order - The new order of the function.
+   * \param[in] n_controlpoints - the new number of control points.
+   */
+  virtual void SetOrder(short val_order, short n_controlpoints);
+
+  /*!
+   * \brief Returns the current order of the function.
+   */
+  su2double GetOrder();
+
+  /*!
+   * \brief Returns the current degree of the function.
+   */
+  su2double GetDegree();
+};
+
+/*!
+ * \class CBSplineBlending
+ * \brief Class that defines the blending using uniform BSplines.
+ * \author T. Albring
+ * \version 5.0.0 "Raven"
+ */
+class CBSplineBlending : public CFreeFormBlending{
+
+private:
+  vector<su2double>          U;  /*!< \brief The knot vector for uniform BSplines on the interval [0,1]. */
+  vector<vector<su2double> > N;  /*!< \brief The temporary matrix holding the j+p basis functions up to order p. */
+  unsigned short KnotSize;       /*!< \brief The size of the knot vector. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CBSplineBlending(short val_order, short n_controlpoints);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CBSplineBlending();
+
+  /*!
+   * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   */
+  su2double GetBasis(short val_i, su2double val_t);
+
+  /*!
+   * \brief Returns the value of the derivative of the i-th basis function.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
+   * \param[in] val_order - Order of the derivative.
+   */
+  su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
+
+  /*!
+   * \brief Set the order and number of control points.
+   * \param[in] val_order - The new order of the function.
+   * \param[in] n_controlpoints - the new number of control points.
+   */
+  void SetOrder(short val_order, short n_controlpoints);
+
+};
+
+/*!
+ * \class CBezierBlending
+ * \brief Class that defines the blending using Bernsteinpolynomials (Bezier Curves).
+ * \author F. Palacios, T. Albring
+ * \version 5.0.0 "Raven"
+ */
+class CBezierBlending : public CFreeFormBlending{
+
+private:
+
+  vector<su2double> binomial; /*!< \brief Temporary vector for the Bernstein evaluation. */
+
+  /*!
+   * \brief Returns the value of the i-th Bernstein polynomial of order n.
+   * \param[in] val_n - Order of the Bernstein polynomial.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   */
+  su2double GetBernstein(short val_n, short val_i, su2double val_t);
+
+  /*!
+   * \brief Returns the value of the derivative of the i-th Bernstein polynomial of order n.
+   * \param[in] val_n - Order of the Bernstein polynomial.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   * \param[in] val_order - Order of the derivative.
+   */
+  su2double GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order_der);
+
+  /*!
+   * \brief Get the binomial coefficient n over i, defined as n!/(m!(n-m)!)
+   * \note If the denominator is 0, the value is 1.
+   * \param[in] n - Upper coefficient.
+   * \param[in] m - Lower coefficient.
+   * \return Value of the binomial coefficient n over m.
+   */
+  su2double Binomial(unsigned short n, unsigned short m);
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_order - Max. order of the basis functions.
+   * \param[in] n_controlpoints - Not used here.
+   */
+  CBezierBlending(short val_order, short n_controlpoints);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CBezierBlending();
+
+  /*!
+   * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   */
+  su2double GetBasis(short val_i, su2double val_t);
+
+  /*!
+   * \brief Returns the value of the derivative of the i-th basis function.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
+   * \param[in] val_order - Order of the derivative.
+   */
+  su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
+
+  /*!
+   * \brief Set the order and number of control points.
+   * \param[in] val_order - The new order of the function.
+   * \param[in] n_controlpoints - the new number of control points.
+   */
+  void SetOrder(short val_order, short n_controlpoints);
+
+};
+
 /*! 
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -124,6 +307,9 @@ public:
   vector<unsigned short> Fix_JPlane;  /*!< \brief Fix FFD J plane. */
   vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
 
+  CFreeFormBlending** BlendingFunction;
+
+
 public:
 	
 	/*! 
@@ -137,7 +323,7 @@ public:
 	 * \param[in] val_mDegree - Degree of the FFDBox in the j direction.
 	 * \param[in] val_nDegree - Degree of the FFDBox in the k direction.
 	 */	
-	CFreeFormDefBox(unsigned short val_lDegree, unsigned short val_mDegree, unsigned short val_nDegree);
+  CFreeFormDefBox(unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending);
 
 	/*! 
 	 * \brief Destructor of the class. 
@@ -471,7 +657,62 @@ public:
 	 * \param[in] original - Original box (before deformation).
 	 */		
 	void SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bool original);
-	
+		
+  /*!
+   * \brief Set the paraview file of the FFD chuck structure.
+   * \param[in] iFFDBox - Index of the FFD box.
+   * \param[in] original - Original box (before deformation).
+   */
+  void SetParaview(CGeometry *geometry, unsigned short iFFDBox, bool original);
+
+  /*!
+   * \brief Set Cylindrical to Cartesians_ControlPoints.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCyl2Cart_ControlPoints(CConfig *config);
+  
+  /*!
+   * \brief Set Cartesians to Cylindrical ControlPoints.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCart2Cyl_ControlPoints(CConfig *config);
+  
+  /*!
+   * \brief Set Cylindrical to Cartesians_CornerPoints.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCyl2Cart_CornerPoints(CConfig *config);
+  
+  /*!
+   * \brief Set Cartesians to Cylindrical CornerPoints.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCart2Cyl_CornerPoints(CConfig *config);
+  
+  /*!
+   * \brief Set Spherical to Cartesians ControlPoints.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSphe2Cart_ControlPoints(CConfig *config);
+  
+  /*!
+   * \brief SetCartesians to Spherical ControlPoints.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCart2Sphe_ControlPoints(CConfig *config);
+  
+  /*!
+   * \brief Set Spherical to Cartesians_CornerPoints.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSphe2Cart_CornerPoints(CConfig *config);
+  
+  /*!
+   * \brief Set Cartesians to Spherical Corner Points.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCart2Sphe_CornerPoints(CConfig *config);
+
 	/*! 
 	 * \brief Set the cartesian coords of a point in R^3 and convert them to the parametric coords of
 	 *        our parametrization of a paralellepiped.
@@ -513,24 +754,6 @@ public:
 	 * \return Pointer to the cartesian coordinates of a point.
 	 */		
 	su2double *EvalCartesianCoord(su2double *ParamCoord);
-	
-	/*! 
-	 * \brief Set the Bernstein polynomial, defined as B_i^n(t) = Binomial(n, i)*t^i*(1-t)^(n-i).
-	 * \param[in] val_n - Degree of the Bernstein polynomial.
-	 * \param[in] val_i - Order of the Bernstein polynomial.
-	 * \param[in] val_t - Value of the parameter where the polynomial is evaluated.
-	 * \return Value of the Bernstein polynomial.
-	 */		
-	su2double GetBernstein(short val_n, short val_i, su2double val_t);
-	
-	/*! 
-	 * \brief Get the binomial coefficient n over i, defined as n!/(m!(n-m)!)
-	 * \note If the denominator is 0, the value is 1.
-	 * \param[in] n - Upper coefficient.
-	 * \param[in] m - Lower coefficient.
-	 * \return Value of the binomial coefficient n over m.
-	 */
-	su2double Binomial(unsigned short n, unsigned short m);
 	
 	/*! 
 	 * \brief Get the order in the l direction of the FFD FFDBox.
@@ -585,18 +808,6 @@ public:
 	void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox);
 	
 	/*! 
-	 * \brief The "order" derivative of the i-th Bernstein polynomial of degree n, evaluated at t, 
-	 *        is calculated as  (B_i^n(t))^{order}(t) = n*(GetBernstein(n-1, i-1, t)-GetBernstein(n-1, i, t)), 
-	 *        having in account that if i=0, GetBernstein(n-1,-1, t) = 0.
-	 * \param[in] val_n - Degree of the Bernstein polynomial.
-	 * \param[in] val_i - Order of the Bernstein polynomial.
-	 * \param[in] val_t - Value of the parameter where the polynomial is evaluated.
-	 * \param[in] val_order - Order of the derivative.
-	 * \return Value of the Derivative of the Bernstein polynomial.
-	 */		
-	su2double GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order);
-  
-	/*! 
 	 * \brief The routine computes the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2  evaluated at (u, v, w).
 	 * \param[in] val_coord - Parametric coordiates of the target point.
 	 * \param[in] xyz - Cartesians coordinates of the point.
@@ -613,7 +824,7 @@ public:
 	 * \param[in] xyz - Cartesians coordinates of the target point to compose the functional.
 	 * \param[in] val_Hessian - Value of the hessian.
 	 */
-	void GetFFDHessian(su2double *uvw, su2double *xyz, su2double **val_Hessian);
+  void GetFFDHessian(su2double *uvw, su2double *xyz, su2double **val_Hessian);
   
 	/*! 
 	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -627,7 +838,7 @@ public:
 	 * \param[in] lmn - Degree of the FFD box.
 	 * \return __________.
 	 */		
-	su2double GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn);
+  su2double GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn);
 	
 	/*! 
 	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -672,8 +883,8 @@ public:
 	 * \param[in] lmn - Degree of the FFD box.
 	 * \return __________.
 	 */
-	su2double GetDerivative4(su2double *uvw, unsigned short val_diff, unsigned short val_diff2,
-						   unsigned short *ijk, unsigned short *lmn);
+  su2double GetDerivative4(su2double *uvw, unsigned short val_diff, unsigned short val_diff2,
+               unsigned short *ijk, unsigned short *lmn);
 	
 	/*! 
 	 * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -691,8 +902,8 @@ public:
 	 * \param[in] lmn - Degree of the FFD box.
 	 * \return __________.
 	 */		
-	su2double GetDerivative5(su2double *uvw, unsigned short dim, unsigned short diff_this, unsigned short diff_this_also,
-						  unsigned short *lmn);
+  su2double GetDerivative5(su2double *uvw, unsigned short dim, unsigned short diff_this, unsigned short diff_this_also,
+              unsigned short *lmn);
 	
 	/*! 
 	 * \brief Euclidean norm of a vector.
@@ -739,7 +950,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -932,14 +1143,20 @@ public:
 	 */
   void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume);
   
-  
   /*!
 	 * \brief Compute the minimum distance to the nearest deforming surface.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
 	 */
   void ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance);
-    
+
+  /*!
+	 * \brief Compute the minimum distance to the nearest solid surface.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+	 */
+  void ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance);
+
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1071,7 +1288,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -1079,14 +1296,14 @@ protected:
 	unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxes. */
 	unsigned short nLevel;	/*!< \brief Level of the FFD FFDBoxes (parent/child). */
 	bool FFDBoxDefinition;	/*!< \brief If the FFD FFDBox has been defined in the input file. */
+
+public:
   vector<su2double> GlobalCoordX[MAX_NUMBER_FFD];
   vector<su2double> GlobalCoordY[MAX_NUMBER_FFD];
   vector<su2double> GlobalCoordZ[MAX_NUMBER_FFD];
   vector<string> GlobalTag[MAX_NUMBER_FFD];
   vector<unsigned long> GlobalPoint[MAX_NUMBER_FFD];
 
-public:
-	
 	/*! 
 	 * \brief Constructor of the class.
 	 */
@@ -1106,6 +1323,15 @@ public:
 	 */
 	void SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
+	/*!
+	 * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetSurface_Bump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+
   /*!
    * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
    * \param[in] boundary - Geometry of the boundary.
@@ -1310,6 +1536,15 @@ public:
    */
   void CheckFFDIntersections(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
   
+  /*!
+   * \brief Check the intersections of the FFD with the surface
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iFFDBox - _____________________.
+   */
+  void CheckFFDDimension(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
+
 	/*! 
 	 * \brief _____________________.
 	 * \param[in] geometry - _____________________.
@@ -1335,67 +1570,97 @@ public:
 	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] iFFDBox - _____________________.
 	 */		
-	void SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
-	
+  su2double SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, bool ResetDef);
+  	
   /*!
-	 * \brief Set the deformation of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */
-	void SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
-
-	/*! 
-	 * \brief Set the deformation of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */		
-	void SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
-	
-  /*!
-	 * \brief Set a camber deformation of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */
-	void SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
-	
-	/*!
-	 * \brief Set a thickness deformation of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */
-	void SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
+   * \brief Set the deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
   
-	/*! 
-	 * \brief Set a camber deformation of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */		
-	void SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
-	
-	/*! 
-	 * \brief Set a thickness deformation of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */		
-	void SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
+  /*!
+   * \brief Set the deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  
+  /*!
+   * \brief Set the deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  
+  /*!
+   * \brief Set the deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDNacelle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  
+  /*!
+   * \brief Set a camber deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  
+  /*!
+   * \brief Set a camber deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDTwist_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  
+  /*!
+   * \brief Set a thickness deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  
+  /*!
+   * \brief Set a camber deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  
+  /*!
+   * \brief Set a thickness deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
   
   /*!
    * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -1406,37 +1671,37 @@ public:
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   void SetFFDAngleOfAttack(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
-
-	/*! 
-	 * \brief Set a twist angle deformation of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */		
-	void SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
-	
-	/*! 
-	 * \brief Set a rotation angle deformation of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */		
-	void SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
-	
-  /*!
-	 * \brief Set a rotation angle deformation in a control surface of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */
-	void SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
   
+  /*!
+   * \brief Set a twist angle deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  
+  /*!
+   * \brief Set a rotation angle deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+  
+  /*!
+   * \brief Set a rotation angle deformation in a control surface of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  bool SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+    
 	/*! 
 	 * \brief Read the free form information from the grid input file.
 	 * \note If there is no control point information, and no parametric 
@@ -1472,7 +1737,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config);
+  void WriteFFDInfo(CSurfaceMovement **surface_movement, CGeometry **geometry, CConfig **config);
 	
 	/*! 
 	 * \brief Get information about if there is a complete FFDBox definition, or it is necessary to 

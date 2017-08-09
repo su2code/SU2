@@ -3,10 +3,10 @@
 ## \file continuous_adjoint.py
 #  \brief Python script for continuous adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -100,12 +100,6 @@ def continuous_adjoint( filename           ,
 
     # Adjoint Solution
 
-    # If using chain rule update coefficients using gradients as defined in downstream_function (local file)
-    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:
-        import downstream_function # Must be defined in run folder
-        chaingrad = downstream_function.downstream_gradient(config,state,step)
-        # Set coefficients for gradients
-        config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
     # Run all-at-once 
     if compute:
         info = SU2.run.adjoint(config)

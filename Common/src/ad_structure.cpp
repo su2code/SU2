@@ -1,11 +1,11 @@
 /*!
- * \file dataype_structure.cpp
- * \brief Main subroutines for the datatype structures.
+ * \file ad_structure.cpp
+ * \brief Main subroutines for the algorithmic differentiation (AD) structure.
  * \author T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -100,16 +100,14 @@ namespace AD {
        * Note that the output variables need a new index since we did a reset of the tape section. ---*/
 
       for (iVarOut = 0; iVarOut < nVarOut; iVarOut++) {
-        index_out = su2double::GradientData();
-        if (nNonzero[iVarOut] != 0) {
-          globalTape.store(index_out, nNonzero[iVarOut]);
+        if (nNonzero[iVarOut] != 0){
+          globalTape.store(0.0, localOutputValues[iVarOut]->getGradientData(), nNonzero[iVarOut]);
           for (iVarIn = 0; iVarIn < nVarIn; iVarIn++) {
             index_in =  localInputValues[iVarIn];
            globalTape.pushJacobi(local_jacobi[iVarOut*nVarIn+iVarIn],
                local_jacobi[iVarOut*nVarIn+iVarIn], local_jacobi[iVarOut*nVarIn+iVarIn], index_in);
           }
         }
-        localOutputValues[iVarOut]->getGradientData() = index_out;
       }
 
       /*--- Clear local vectors and reset indicator ---*/
@@ -126,3 +124,39 @@ namespace AD {
   }
 #endif
 }
+
+
+/*--- If we compile under OSX we have to overload some of the operators for
+ *   complex numbers to avoid the use of the standard operators
+ *  (they use a lot of functions that are only defined for doubles) ---*/
+
+#ifdef __APPLE__
+
+namespace std{
+  template<>
+  su2double abs(const complex<su2double>& x){
+    return sqrt(x.real()*x.real() + x.imag()*x.imag());
+  }
+
+  template<>
+  complex<su2double> operator/(const complex<su2double>& x, const complex<su2double>& y){
+
+    su2double d    = (y.real()*y.real() + y.imag()*y.imag());
+    su2double real = (x.real()*y.real() + x.imag()*y.imag())/d;
+    su2double imag = (x.imag()*y.real() - x.real()*y.imag())/d;
+
+    return complex<su2double>(real, imag);
+
+  }
+
+  template<>
+  complex<su2double> operator*(const complex<su2double>& x, const complex<su2double>& y){
+
+    su2double real = (x.real()*y.real() - x.imag()*y.imag());
+    su2double imag = (x.imag()*y.real() + x.real()*y.imag());
+
+    return complex<su2double>(real, imag);
+
+  }
+}
+#endif

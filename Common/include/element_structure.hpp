@@ -4,10 +4,10 @@
  *        The subroutines and functions are in the <i>element_structure.cpp</i>
  *        and <i>element_linear.cpp</i> files.
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -17,7 +17,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,7 @@ using namespace std;
  * \class CElement
  * \brief Main class for defining the element structure.
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CElement {
@@ -395,7 +395,7 @@ public:
  * \class CTRIA1
  * \brief Tria element with 1 Gauss Points
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTRIA1 : public CElement {
@@ -443,7 +443,7 @@ public:
  * \class CQUAD4
  * \brief Quadrilateral element with 4 Gauss Points
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CQUAD4 : public CElement {
@@ -496,7 +496,7 @@ public:
  * \class CQUAD4P1
  * \brief Quadrilateral element with 4 Gauss Points and 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CQUAD4P1 : public CQUAD4 {
@@ -537,7 +537,7 @@ public:
  * \class CTETRA1
  * \brief Tetrahedral element with 1 Gauss Point
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTETRA1 : public CElement {
@@ -584,7 +584,7 @@ public:
  * \class CHEXA8
  * \brief Hexahedral element with 8 Gauss Points
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CHEXA8 : public CElement {
@@ -637,7 +637,7 @@ public:
  * \class CHEXA8P1
  * \brief Hexahedral element with 8 Gauss Points and 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CHEXA8P1 : public CHEXA8 {

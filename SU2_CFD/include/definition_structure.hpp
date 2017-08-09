@@ -3,10 +3,10 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -16,7 +16,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,23 +54,6 @@
 
 
 using namespace std;
-
-/*! 
- * \brief Gets the number of zones in the mesh file.
- * \param[in] val_mesh_filename - Name of the file with the grid information.
- * \param[in] val_format - Format of the file with the grid information.
- * \param[in] config - Definition of the particular problem.
- * \return Total number of zones in the grid file.
- */
-unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
-
-/*! 
- * \brief Gets the number of dimensions in the mesh file
- * \param[in] val_mesh_filename - Name of the file with the grid information.
- * \param[in] val_format - Format of the file with the grid information.
- * \return Total number of domains in the grid file.
- */
-unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
 
 /*!
  * \brief Performs an analysis of the mesh partitions for distributed memory calculations.
