@@ -149,6 +149,11 @@ def read_history( History_filename, nZones = 1):
         respectively.
     """
     
+
+     if nZones > 1:
+         History_filename = History_filename.split(".")
+         History_filename = History_filename[0] + "_0." + History_filename[1]
+
     # read plot file
     plot_data = read_plot( History_filename )
     
