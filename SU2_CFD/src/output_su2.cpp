@@ -239,8 +239,6 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
   }
   
-  output_file.close();
-
 }
 
 void COutput::SetSU2_MeshBinary(CConfig *config, CGeometry *geometry) { }
