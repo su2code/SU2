@@ -284,7 +284,7 @@ int main(int argc, char *argv[]) {
   bool NewFile = false;
   if (config_container[ZONE_0]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
   
-  output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, NewFile, true);
+  output->SetMesh_Files(geometry_container, config_container, nZone, NewFile, true);
   
   if (config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
   
@@ -292,7 +292,7 @@ int main(int argc, char *argv[]) {
     
     if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
     
-    surface_movement[ZONE_0]->WriteFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0]);
+    surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
     
   }
   

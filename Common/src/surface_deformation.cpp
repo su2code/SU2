@@ -5668,7 +5668,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
     Pilot_file.open(Pilot_filename, ios::out);
 
     Pilot_file << "TITLE= \"Pilot point positions.\"" << endl;
-    if (geometry[iZone]->GetnDim() == 2) Pilot_file << "VARIABLES = \"x\", \"y\"" << endl;
+    if (geometry[ZONE_0]->GetnDim() == 2) Pilot_file << "VARIABLES = \"x\", \"y\"" << endl;
     else Pilot_file << "VARIABLES = \"x\", \"y\", \"z\"" << endl;
 
     for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++){
@@ -5680,7 +5680,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
           Coord[2] = FFDBox[iFFDBox]->CSPPilotPointsZ[iGroup][iPilotPoints];
           CartCoord = FFDBox[iFFDBox]->EvalCartesianCoord(Coord);
           Pilot_file << scientific << CartCoord[0] << "\t" << CartCoord[1];
-          if (geometry[iZone]->GetnDim() ==3) Pilot_file << scientific << "\t" << CartCoord[2];
+          if (geometry[ZONE_0]->GetnDim() ==3) Pilot_file << scientific << "\t" << CartCoord[2];
           Pilot_file << "\n";
         }
       }
