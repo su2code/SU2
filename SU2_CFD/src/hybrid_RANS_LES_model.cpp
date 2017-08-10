@@ -261,7 +261,13 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
       total_vel_differences += abs(Q[iDim][jDim]);
     }
   }
-  if (total_vel_differences > EPS) {
+  if (geometry->node[iPoint]->GetSolidBoundary()) {
+    /*--- At solid walls, force the RANS weight to 1 and the
+     * resolution adequacy to 0 (no resolved fluctuations) ---*/
+    r_k = 0.0;
+    w_rans = 1.0;
+
+  } else if (total_vel_differences > EPS) {
     /*--- Only calculate r_k, w_rans if there are resolved velocity differences
      * at resolution scale.  Otherwise, eigenvector calculation is arbitrary */
 
@@ -296,7 +302,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     su2double TurbL = solver_container[TURB_SOL]->node[iPoint]->GetTurbLengthscale();
     su2double d_max = GetProjResolution(ResolutionTensor,
                                         eigvectors_zQz[max_index]);
-    su2double r_eps = C_eps * pow(r_k, 1.5) * TurbL * d_max;
+    su2double r_eps = C_eps * pow(r_k, 1.5) * TurbL / d_max;
 
     /*--- Calculate the RANS weight ---*/
     w_rans = max(tanh(r_eps - 1), 0.0);
@@ -369,7 +375,7 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
       total += abs(Q[iDim][jDim]);
     }
   }
-  if (total < EPS) {
+  if (total < 9*EPS) {
     /*--- If there are negligible velocity differences at the resolution scale,
      * set the tensor to the Kroneckor delta ---*/
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -382,16 +388,25 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
     su2double norm = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       for (jDim = 0; jDim < nDim; jDim++) {
-        norm += Q[iDim][jDim]*Q[iDim][jDim];
+        norm += Q[iDim][jDim]*Q[jDim][iDim];
       }
     }
-    norm = sqrt(norm)/sqrt(nDim);
+    norm = sqrt(norm);
     for (iDim=0; iDim < nDim; iDim++) {
       for (jDim = 0; jDim < nDim; jDim++) {
-        Q[iDim][iDim] /= norm;
+        Q[iDim][jDim] /= norm;
       }
     }
   }
+
+#ifndef NDEBUG
+  su2double trace = Q[0][0] + Q[1][1] + Q[2][2];
+  if (trace > 1e7 || trace < 1e-7) {
+      cout << "ERROR: Trace of the stress anisotropy was unusual." << endl;
+      cout << "       Trace: " << trace << endl;
+      exit(EXIT_FAILURE);
+  }
+#endif
 
   hybrid_anisotropy->SetTensor(Q);
 

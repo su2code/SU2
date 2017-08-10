@@ -1225,11 +1225,14 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
     pk = max(pk,0.0);
 
-    if (config->isHybrid_Turb_Model()) pk = pk*HybridParameter_i[0];
-
     zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
     pw = max(pw,0.0);
+
+    if (config->isHybrid_Turb_Model()) {
+      pk *= HybridParameter_i[0];
+      pw *= HybridParameter_i[0];
+    }
     
     val_residual[0] += pk*Volume;
     val_residual[1] += alfa_blended*Density_i*pw*Volume;
@@ -1253,6 +1256,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     su2double d_pw_d_omega = 0;
     if (zeta == TurbVar_i[1])
       d_pw_d_omega = -2.0/3.0*diverg;
+
+    if (config->isHybrid_Turb_Model()) d_pw_d_omega *= HybridParameter_i[0];
 
     val_Jacobian_i[0][0] = d_pk_d_k*Volume/Density_i -
                            beta_star*TurbVar_i[1]*Volume;

@@ -125,16 +125,15 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
   else
     S_r = tanh(1.0 - 1.0/Resolution_Adequacy);
 
-  /*--- D_r allows alpha to increase past unity in LES regions.
-   * It causes alpha to return rapidly to 1 in RANS regions. ---*/
-  su2double D_r = RANS_Weight * fmax(HybridParameter_i[0] - 1, 0);
+  /*--- D_r causes alpha > 1 to return rapidly to 1 in RANS regions.
+   * But if RANS_Weight << 1, alpha can go above 1. ---*/
+  su2double D_r = RANS_Weight * fmax(HybridParameter_i[0] + S_r - 1, 0);
 
-  /*--- F_r allows alpha to decrease past 0.
-   * F_r functions as a built-in clipping which maintains C1 continuity.
-   * It causes alpha to return to 0 if it goes briefly negative. ---*/
-  su2double F_r = fmax(HybridParameter_i[0]+S_r, 0);
+  /*--- F_r causes alpha to return to 0 if it goes briefly negative.
+   * F_r functions as a built-in clipping which maintains C1 continuity  ---*/
+  su2double F_r = fmin(HybridParameter_i[0] + S_r, 0);
 
-  val_residual[0] = (S_r + D_r + F_r)/TurbT * Volume;
+  val_residual[0] = (S_r - D_r - F_r)/T_alpha * Volume;
 
   /*--- Raising and lowering alpha based on grid coarsening/refinement ---*/
 
@@ -144,7 +143,7 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
     for (unsigned int jDim = 0; jDim < nDim; jDim++) {
       udMdx = 0.0;
       for (unsigned int kDim = 0; kDim < nDim; kDim++) {
-        // XXX: This is NOT upwinded.
+        // This is NOT upwinded.
         udMdx += V_i[kDim+1] * Resolution_Tensor_Gradient[kDim][iDim][jDim];
       }
       // FIXME: Max magnitude or max value?
