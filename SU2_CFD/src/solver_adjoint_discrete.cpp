@@ -574,6 +574,9 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = config->GetnZone();
+
   /*--- Restart the solution from file information ---*/
 
   filename = config->GetSolution_AdjFileName();
@@ -583,6 +586,11 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
 
   /*--- Read and store the restart metadata. ---*/
 
