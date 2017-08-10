@@ -119,12 +119,14 @@ def function( func_name, config, state=None ):
     else:
         func_out = state['FUNCTIONS'][func_name]
 
-    if config['OPT_OBJECTIVE'].has_key(func_name_string):
-        marker = config['OPT_OBJECTIVE'][func_name_string]['MARKER']
-        if su2io.per_surface_map.has_key(func_name_string):
-            name = su2io.per_surface_map[func_name_string]+'_'+marker
-            if state['FUNCTIONS'].has_key(name):
-                func_out = state['FUNCTIONS'][name]
+    if config.get('OPT_OBJECTIVE') != None:
+        if config['OPT_OBJECTIVE'].has_key(func_name_string):
+            marker = config['OPT_OBJECTIVE'][func_name_string]['MARKER']
+            if su2io.per_surface_map.has_key(func_name_string):
+                name = su2io.per_surface_map[func_name_string]+'_'+marker
+                if state['FUNCTIONS'].has_key(name):
+                    func_out = state['FUNCTIONS'][name]
+
 
     
     return copy.deepcopy(func_out)
