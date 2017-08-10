@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
   }
-  
+    
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
@@ -292,7 +292,7 @@ int main(int argc, char *argv[]) {
     
     if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
     
-    surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
+    surface_movement[ZONE_0]->WriteFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0]);
     
   }
   

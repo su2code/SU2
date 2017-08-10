@@ -397,6 +397,9 @@ private:
   nMG_PostSmooth,                             /*!< \brief Number of MG post-smooth parameters found in config file. */
   nMG_CorrecSmooth;                           /*!< \brief Number of MG correct-smooth parameters found in config file. */
   short *FFD_Fix_IDir, *FFD_Fix_JDir, *FFD_Fix_KDir;	/*!< \brief Exact sections. */
+  string CSP_PilotPointFile;
+  unsigned short CSP_EnergyDefinition;
+  su2double CSP_ElasticModulus;
   unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
   *MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
@@ -490,6 +493,7 @@ private:
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
   *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
+  unsigned short FFD_Longitudinal_Axis; /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
   Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
@@ -511,6 +515,8 @@ private:
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
   bool FFD_Symmetry_Plane;	/*!< \brief FFD symmetry plane. */
+  string *CSP_ConstraintGroups;
+  unsigned short nCSP_ConstraintGroups;
   su2double Mach;		/*!< \brief Mach number. */
   su2double Reynolds;	/*!< \brief Reynolds number. */
   su2double Froude;	/*!< \brief Froude number. */
@@ -1382,6 +1388,12 @@ public:
    */
   su2double GetFFD_Axis(unsigned short val_var);
   
+  /*!
+   * \brief Get the longitudinal axis for cylindrical coordinates.
+   * \return The  longitudinal axis.
+   */
+  unsigned short GetFFD_Longitudinal_Axis();
+
   /*!
    * \brief Get the value of the bulk modulus.
    * \return Value of the bulk modulus.
@@ -2258,6 +2270,12 @@ public:
    * \return Name of the FFD box.
    */
   string GetTagFFDBox(unsigned short val_ffd);
+
+  unsigned short GetnCSP_ConstraintGroups();
+
+  string GetCSP_ConstraintGroup(unsigned short val_group);
+  
+  su2double GetCSP_ElasticModulus();
   
   /*!
    * \brief Get the number of design variables.
@@ -7248,6 +7266,18 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  /*!
+   * \brief GetCSP_PilotPointFile
+   * \return
+   */
+  string GetCSP_PilotPointFile();
+
+  /*!
+   * \brief GetCSP_EnergyDefinition
+   * \return
+   */
+  unsigned short GetCSP_EnergyDefinition();
 };
 
 #include "config_structure.inl"

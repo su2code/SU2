@@ -337,6 +337,8 @@ inline su2double CConfig::GetStations_Bounds(unsigned short val_var) { return St
 
 inline su2double CConfig::GetFFD_Axis(unsigned short val_var) { return FFD_Axis[val_var]; }
 
+inline unsigned short CConfig::GetFFD_Longitudinal_Axis(){return FFD_Longitudinal_Axis;}
+
 inline su2double CConfig::GetBulk_Modulus(void) { return Bulk_Modulus; }
 
 inline su2double CConfig::GetArtComp_Factor(void) { return ArtComp_Factor; }
@@ -1593,3 +1595,13 @@ inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
 inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 
 inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
+
+inline string CConfig::GetCSP_PilotPointFile(){return CSP_PilotPointFile;}
+
+inline su2double CConfig::GetCSP_ElasticModulus(){return CSP_ElasticModulus;}
+
+inline unsigned short CConfig::GetCSP_EnergyDefinition(){return CSP_EnergyDefinition;}
+
+inline string CConfig::GetCSP_ConstraintGroup(unsigned short val_group){return CSP_ConstraintGroups[val_group];}
+
+inline unsigned short CConfig::GetnCSP_ConstraintGroups(){return nCSP_ConstraintGroups;}

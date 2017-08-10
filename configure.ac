@@ -137,7 +137,9 @@ AC_ARG_ENABLE(complex,
 AC_ARG_ENABLE(normal,
     AS_HELP_STRING([--disable-normal], [build executables with normal datatype (default = yes)]),
     [build_NORMAL=$enableval], [build_NORMAL="yes"])
-
+AC_ARG_WITH(Eigen-include,
+    AS_HELP_STRING([--with-Eigen-include[=ARG]], [Eigen include directory, ARG = path to Eigen header file]),
+    [with_eigen_include=$withval], [with_eigen_include="no"])
 # Check for the old  MPI option so that we can throw an error
 AC_ARG_WITH(MPI,
 AS_HELP_STRING(),
@@ -465,6 +467,31 @@ fi
 AC_SUBST([LAPACK_CXX])
 AC_SUBST([LAPACK_LD])
 
+##########################
+
+# check for lib
+Eigenheader=Eigen
+have_Eigen="no"
+
+
+# check for header
+
+if test "$with_eigen_include" != "no"
+  then
+    AC_CHECK_FILE([$with_eigen_include/$Eigenheader],[have_Eigen='yes'],[have_Eigen='no'])
+  if test "$have_Eigen" == "no"
+  then
+    AC_MSG_ERROR([Eigen requested but header file not found.])
+  fi
+else
+  have_Eigen="no"
+fi
+
+
+if test "$have_Eigen" != "no"
+then
+  CXX=$CXX" -DHAVE_EIGEN -I"$with_eigen_include""
+fi
 ###########################
 # Determine what versions of the code to build
 
@@ -599,8 +626,9 @@ Build Configuration Summary:
     SZIP support:         $have_SZIP
     ZLIB support:         $have_ZLIB
     Mutation++ support:   $have_Mutationpp
-    Jsoncpp support: 	  $have_Jsoncpp
+    Jsoncpp support: 	    $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    Eigen support:        $have_Eigen
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX

@@ -662,6 +662,8 @@ def get_dvMap():
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
                20  : "FFD_TWIST_2D"          ,
+               21  : "FFD_DIRECT_MANIPULATION",
+               22  : "FFD_DIRECT_MANIPULATION_2D",
                50  : "CUSTOM"                ,
                51  : "CST"                   ,
                101 : "ANGLE_OF_ATTACK"       ,

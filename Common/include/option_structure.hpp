@@ -1261,7 +1261,9 @@ enum ENUM_PARAM {
   SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
   NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
-  FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
+  FFD_ANGLE_OF_ATTACK = 102,	 /*!< \brief Angle of attack for FFD problem. */
+  FFD_DIRECT_MANIPULATION = 26,
+  FFD_DIRECT_MANIPULATION_2D = 27
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1290,7 +1292,9 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
 ("NO_DEFORMATION", NO_DEFORMATION)
-("CST", CST);
+("CST", CST)
+("FFD_DIRECT_MANIPULATION", FFD_DIRECT_MANIPULATION)
+("FFD_DIRECT_MANIPULATION_2D", FFD_DIRECT_MANIPULATION_2D);
 
 
 /*!
@@ -1303,6 +1307,19 @@ enum ENUM_FFD_BLENDING{
 static const map<string, ENUM_FFD_BLENDING> Blending_Map = CCreateMap<string, ENUM_FFD_BLENDING>
 ("BSPLINE_UNIFORM", BSPLINE_UNIFORM)
 ("BEZIER", BEZIER);
+
+/*!
+ * \brief Energy definition for constrained based shape parameterization
+ */
+enum ENUM_CSP_ENERGY{
+  LEAST_SQUARES = 0,
+  LAPLACIAN_ENERGY = 1,
+  ELASTIC_ENERGY = 2
+};
+static const map<string, ENUM_CSP_ENERGY> CSP_Energy_Map = CCreateMap<string, ENUM_CSP_ENERGY>
+("LEAST_SQUARES", LEAST_SQUARES)
+("LAPLACIAN_ENERGY", LAPLACIAN_ENERGY)
+("ELASTIC_ENERGY", ELASTIC_ENERGY);
 
 /*!
  * \brief types of solvers for solving linear systems
@@ -1420,6 +1437,16 @@ static const map<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = CCreateMap<
 ("AIRFOIL", TWOD_AIRFOIL)
 ("WING", WING)
 ("FUSELAGE", FUSELAGE);
+
+enum ENUM_AXIS_DEFINITON{
+  X_AXIS = 0,
+  Y_AXIS = 1,
+  Z_AXIS = 2
+};
+static const map<string, ENUM_AXIS_DEFINITON> Axis_Stations_Map = CCreateMap<string, ENUM_AXIS_DEFINITON>
+("X_AXIS", X_AXIS)
+("Y_AXIS", Y_AXIS)
+("Z_AXIS", Z_AXIS);
 
 /*!
  * \brief types of schemes for unsteady computations
@@ -2263,6 +2290,8 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
+        case FFD_DIRECT_MANIPULATION: nParamDV = 4; break;
+        case FFD_DIRECT_MANIPULATION_2D: nParamDV = 3; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2290,7 +2319,9 @@ public:
              (this->design_variable[iDV] == FFD_ROTATION) ||
              (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
              (this->design_variable[iDV] == FFD_CAMBER) ||
-             (this->design_variable[iDV] == FFD_THICKNESS))) {
+             (this->design_variable[iDV] == FFD_THICKNESS) ||
+             (this->design_variable[iDV] == FFD_DIRECT_MANIPULATION) ||
+             (this->design_variable[iDV] == FFD_DIRECT_MANIPULATION_2D))) {
               ss >> this->FFDTag[iDV];
               this->paramDV[iDV][iParamDV] = 0;
             }
@@ -2381,6 +2412,23 @@ public:
         case FFD_CONTROL_POINT_2D:
           if((this->paramDV[iDV][3] == 0) &&
              (this->paramDV[iDV][4] == 0)) {
+            nValueDV = 2;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        case FFD_DIRECT_MANIPULATION:
+          if((this->paramDV[iDV][1] == 0) &&
+             (this->paramDV[iDV][2] == 0) &&
+             (this->paramDV[iDV][3] == 0)) {
+            nValueDV = 3;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        case FFD_DIRECT_MANIPULATION_2D:
+          if((this->paramDV[iDV][1] == 0) &&
+             (this->paramDV[iDV][2] == 0)) {
             nValueDV = 2;
           } else {
             nValueDV = 1;
