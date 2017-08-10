@@ -243,6 +243,8 @@ inline void CPoint::AddNormal(su2double *val_face_normal) { }
 
 inline su2double** CPoint::GetResolutionTensor(void) const { return ResolutionTensor; }
 
+inline su2double CPoint::GetResolutionTensor(unsigned short iDim, unsigned short jDim) const { return ResolutionTensor[iDim][jDim]; }
+
 inline su2double** CPoint::GetResolutionVectors(void) { return ResolutionVectors; }
 
 inline su2double* CPoint::GetResolutionValues(void) { return ResolutionValues; }

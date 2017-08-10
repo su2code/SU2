@@ -770,6 +770,16 @@ public:
   su2double** GetResolutionTensor(void) const;
 
   /*!
+   * \brief Gets a specific element of the resolution tensor array
+   * \param[in] iDim - The first array index
+   * \param[in] jDim - The second array index
+   * \return A tensor representing the separation distances
+   *         across the cell in the global coordinates.
+   */
+  su2double GetResolutionTensor(unsigned short iDim,
+                                unsigned short jDim) const;
+
+  /*!
    * \brief Sets the gradient of the resolution tensor for the control volume.
    *
    * The format is dM_{jk}/dx_{i}

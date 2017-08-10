@@ -70,52 +70,49 @@ CHybrid_Isotropic_Visc::CHybrid_Isotropic_Visc(unsigned short nDim)
 }
 
 void CHybrid_Isotropic_Visc::CalculateViscAnisotropy() {
-};
+}
 
 CHybrid_Aniso_Q::CHybrid_Aniso_Q(unsigned short nDim)
-  : CHybrid_Visc_Anisotropy(nDim) {
+  : rans_weight(1.0), CHybrid_Visc_Anisotropy(nDim) {
 }
 
 void CHybrid_Aniso_Q::CalculateViscAnisotropy() {
-  // TODO: Update this with new anisotropy model.
-  su2double w_RANS = CalculateIsotropyWeight(resolution_adequacy);
 #ifndef NDEBUG
-  if (w_RANS < 0 || w_RANS > 1) {
+  if (rans_weight < 0 || rans_weight > 1) {
     cout << "ERROR: Isotropic weighting in hybrid RANS/LES was not in range [0,1]" << endl;
-    cout << "       weight = " << w_RANS << endl;
+    cout << "       weight = " << rans_weight << endl;
     exit(EXIT_FAILURE);
   }
 #endif
-  su2double w_LES = (1.0 - w_RANS);
+  su2double LES_weight = (1.0 - rans_weight);
 
   unsigned short iDim, jDim;
 
   // Qstar is already normalized.
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
-      eddy_visc_anisotropy[iDim][jDim] = w_RANS*double(iDim == jDim);
-      eddy_visc_anisotropy[iDim][jDim] += w_LES*sqrt(nDim)*
+      eddy_visc_anisotropy[iDim][jDim] = rans_weight*double(iDim == jDim);
+      eddy_visc_anisotropy[iDim][jDim] += LES_weight*sqrt(nDim) *
                                           Qstar[iDim][jDim];
     }
   }
 }
 
-inline su2double CHybrid_Aniso_Q::CalculateIsotropyWeight(su2double r_k) {
-#ifndef NDEBUG
-  if (r_k < 0.0) {
-    cout << "ERROR: Resolution adequacy was negative! Value: " << r_k << endl;
-    exit(EXIT_FAILURE);
-  }
-#endif
-  return 1.0 - min(1.0/r_k, su2double(1.0));
-}
 
 inline void CHybrid_Aniso_Q::SetTensor(su2double** val_approx_struct_func) {
   Qstar = val_approx_struct_func;
 }
 
-inline void CHybrid_Aniso_Q::SetScalar(su2double val_r_k) {
-  resolution_adequacy = val_r_k;
+inline void CHybrid_Aniso_Q::SetScalars(vector<su2double> val_scalars) {
+#ifndef NDEBUG
+  if (val_scalars.size() != 1) {
+    cout << "ERROR: Improper number of scalars passed to anisotropy model!" << endl;
+    cout << "       Expected: 1" << endl;
+    cout << "       Found:    " << val_scalars.size() << endl;
+    exit(EXIT_FAILURE);
+  }
+#endif
+  rans_weight = val_scalars[0];
 }
 
 
@@ -381,24 +378,17 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
       }
     }
   } else {
-    /*--- Compute eigenvalues and normalize by max eigenvalue ---*/
-    vector<su2double> eigvalues_Q;
-    vector<vector<su2double> > eigvectors_Q;
-    SolveEigen(Q, eigvalues_Q, eigvectors_Q);
-    vector<vector<su2double> > D(3, vector<su2double>(3));
-    su2double max_eigvalue = *max_element(eigvalues_Q.begin(), eigvalues_Q.end());
-    for (iDim=0; iDim < nDim; iDim++) {
-      D[iDim][iDim] = eigvalues_Q[iDim]/max_eigvalue;
+    /*--- Normalize the approximate structure function tensor ---*/
+    su2double norm = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        norm += Q[iDim][jDim]*Q[iDim][jDim];
+      }
     }
-    for (int iDim = 0; iDim < nDim; iDim++) {
-      for (int jDim = 0; jDim < nDim; jDim++) {
-        Q[iDim][jDim] = 0.0;
-        for (int kDim = 0; kDim < nDim; kDim++) {
-          for (int lDim = 0; lDim < nDim; lDim++) {
-            Q[iDim][jDim] += eigvectors_Q[kDim][iDim] * D[kDim][lDim] *
-                             eigvectors_Q[lDim][jDim];
-          }
-        }
+    norm = sqrt(norm)/sqrt(nDim);
+    for (iDim=0; iDim < nDim; iDim++) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        Q[iDim][iDim] /= norm;
       }
     }
   }
@@ -407,8 +397,9 @@ void CHybrid_Mediator::SetupStressAnisotropy(CGeometry* geometry,
 
   /*--- Retrieve and pass along the resolution adequacy parameter ---*/
 
-  su2double r_k = solver_container[HYBRID_SOL]->node[iPoint]->GetResolutionAdequacy();
-  hybrid_anisotropy->SetScalar(r_k);
+  vector<su2double> scalars;
+  scalars.push_back(solver_container[HYBRID_SOL]->node[iPoint]->GetRANSWeight());
+  hybrid_anisotropy->SetScalars(scalars);
 }
 
 void CHybrid_Mediator::SetupResolvedFlowNumerics(CGeometry* geometry,
@@ -654,25 +645,27 @@ unsigned short iDim, jDim;
   /*--- Check the values ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    if (eigval[iDim] < 0.0) {
-      if (eigval[iDim] > -1e-6) {
+    if (eigval[iDim] < 0.0 && eigval[iDim] > -1e-6) {
         eigvalues[iDim] = 0.0;
-      } else {
-        su2double max_val = max(eigval[0], max(eigval[1], eigval[2]));
-        if (log10(max_val/abs(eigval[iDim])) > 10) {
-          // If the condition number is bad...
-          eigvalues[iDim] = 0.0;
-        } else {
-          cout << "ERROR: The solver returned a large negative eigenvalue!" << endl;
-          cout << "    Eigenvalues: [";
-          cout << eigval[0] << ", ";
-          cout << eigval[1] << ", ";
-          cout << eigval[2] << "]" << endl;
-          exit(EXIT_FAILURE);
-        }
-      }
+    } else if (eigval[iDim] < -1e-6) {
+      cout << "ERROR: The solver returned a large negative eigenvalue!" << endl;
+      cout << "    Eigenvalues: [";
+      cout << eigval[0] << ", ";
+      cout << eigval[1] << ", ";
+      cout << eigval[2] << "]" << endl;
+      exit(EXIT_FAILURE);
     }
   }
+
+  su2double max_val = max(eigval[0], max(eigval[1], eigval[2]));
+  for (iDim = 0; iDim < nDim; iDim++) {
+    if (eigvalues[iDim] > 0 && log10(max_val/eigvalues[iDim]) > 10) {
+      // If the condition number is bad, give up
+      eigvalues[iDim] = 0.0;
+    }
+  }
+
+  /*--- Normalize the eigenvectors by the L2 norm of each vector ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
     su2double norm = 0.0;

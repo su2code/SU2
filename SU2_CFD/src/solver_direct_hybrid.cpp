@@ -725,10 +725,10 @@ void CHybridSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
   if (!adjoint) {
 
-    /*--- Update and clip hybrid solution ---*/
+    /*--- Update hybrid solution ---*/
 
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        node[iPoint]->AddClippedSolution(0, LinSysSol[iPoint], lower_limit, upper_limit);
+        node[iPoint]->AddSolution(0, LinSysSol[iPoint]);
       }
   }
 

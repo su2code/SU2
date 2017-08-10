@@ -93,20 +93,20 @@ class CHybrid_Visc_Anisotropy {
    * left abstract, in order to allow different possible tensors for different
    * implementations.
    *
-   * \param[in] val_tensor
+   * \param[in] val_tensor - The tensor used in the model
    */
   virtual void SetTensor(su2double** val_tensor) = 0;
 
   /**
    * \brief Sets a scalar used in the anisotropy model.
    *
-   * In the SGS anisotropy, this is the resolution inadequacy.  This is left
-   * abstract, in order to allow different possible scalars for different
-   * implementations.
+   * In the SGS anisotropy, this is the resolution inadequacy and/or
+   * the RANS weighting parameter.  This is left abstract, in order to allow
+   * different possible scalars for different implementations.
    *
-   * \param val_scalar
+   * \param val_scalars - The scalars for the model
    */
-  virtual void SetScalar(su2double val_scalar) = 0;
+  virtual void SetScalars(vector<su2double> val_scalars) = 0;
 };
 
 /*!
@@ -136,7 +136,7 @@ class CHybrid_Isotropic_Visc : public CHybrid_Visc_Anisotropy {
    * \brief This method does nothing. No scalars are needed.
    * \param val_scalar
    */
-  void SetScalar(su2double val_scalar) {}
+  void SetScalars(vector<su2double> val_scalars) {}
 };
 
 /*!
@@ -149,13 +149,7 @@ class CHybrid_Isotropic_Visc : public CHybrid_Visc_Anisotropy {
 class CHybrid_Aniso_Q : public CHybrid_Visc_Anisotropy {
  protected:
   su2double** Qstar; ///< \brief The approximate two-point structure function at the grid resolution
-  su2double   resolution_adequacy; ///< \brief A measure of the ability of the grid to resolve LES
-  /***
-   * \brief Calculates a weight for RANS (vs. LES)
-   * \param r_k - The resolution adequacy
-   * \return The weight given to an isotropic, RANS style eddy viscosity
-   */
-  su2double CalculateIsotropyWeight(su2double r_k);
+  su2double   rans_weight; ///< \brief The weight given to the isotropic (RANS) portion
 
  public:
   /**
@@ -171,10 +165,10 @@ class CHybrid_Aniso_Q : public CHybrid_Visc_Anisotropy {
   void SetTensor(su2double** val_approx_struct_func);
 
   /**
-   * \brief Sets the resolution adequacy parameter
-   * \param[in] val_r_k
+   * \brief Sets the RANS weight
+   * \param[in] val_scalars
    */
-  void SetScalar(su2double val_r_k);
+  void SetScalars(vector<su2double> val_scalars);
 
   /**
    * \brief Tells the hybrid model to calculate the turbulent stress anisotropy.
