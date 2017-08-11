@@ -719,6 +719,16 @@ public:
    unsigned long FindProbeLocElement_fromNearestNode(CGeometry *geometry,
                                                     unsigned long pointID,
                                                     su2double *probe_loc);
+
+    /*!
+     * \brief To find the element in which the probe is located given the nearest node - for stretched cells
+     * \param[in] geometry - geometry container of the mesh in which probe is to be located
+     * \param[in] pointID  - Nearest node point number in the geometry
+     * \param[in] probe_loc - coordinates of probe to be located
+     */
+    unsigned long FindProbeLocElement_fromNearestNodeElem(CGeometry *geometry,
+                                                      unsigned long pointID,
+                                                      su2double *probe_loc);
     
   /*!
    * \brief Probing flow solution data at a point using ADT search

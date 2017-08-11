@@ -538,7 +538,7 @@ bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], 
 
 
 bool CGeometry::SegmentIntersectsSegment(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]) {
-    
+
     su2double det, diff0_A, diff0_B, diff1_A, diff1_B, intersect[2];
     
     diff0_A = point0[0] - point1[0];
@@ -577,22 +577,88 @@ bool CGeometry::SegmentIntersectsSegment(su2double point0[2], su2double point1[2
     +(intersect[1] - vert1[1])*(intersect[1] - vert1[1]);
     
     length2 = diff0_B*diff0_B + diff1_B*diff1_B;
+    //cout << "dist0 = " << dist0 << ", dist1 = " << dist1 << ", length1 = " << length1 << endl;
+    //cout << "dist2 = " << dist2 << ", dist3 = " << dist3 << ", length2 = " << length2 << endl;
+    //if ( (dist0 > length1) || (dist1 > length1) || (dist2 > length2) || (dist3 > length2)) {
+    if ( ((dist0 - length1) > 1e-10) || ((dist1 - length1) > 1e-10) || ((dist2 - length2) > 1e-10) || ((dist3 - length2) > 1e-10))  {
+    //cout << " In inside false criterion " << endl;
+        return false;
+    }
     
-    if ( (dist0 > length1) || (dist1 > length1) || (dist2 > length2) || (dist3 > length2)) {
+    /* Case where the probe location is on the edge connecting the mesh nodes */
+    /* To be revisited later to correct it */
+    // Changed for now for the NearestNodeElem Routine
+    if (dist0 < 1e-10 || dist1 < 1e-10)
+    {
+        return false;
+        //return true;
+    }
+    
+    return true;
+}
+
+bool CGeometry::SegmentIntersectsSegment_Edge(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]) {
+    /*cout << "In SegIntersectsSeg Edge routine" << endl;
+    cout << "nearestnode[0] = " << point1[0] << ", nearestnode[1]=" << point1[2] << endl;
+    cout << "facepoint1[0] = " << vert0[0] << ", facpoint1[1]= " << vert0[1] << endl;
+    cout << "facepoint2[0] = " << vert1[0] << ", facpoint2[1]= " << vert1[1] << endl;*/
+    
+    su2double det, diff0_A, diff0_B, diff1_A, diff1_B, intersect[2];
+    
+    diff0_A = point0[0] - point1[0];
+    diff1_A = point0[1] - point1[1];
+    diff0_B = vert0[0] - vert1[0];
+    diff1_B = vert0[1] - vert1[1];
+    
+    det = (diff0_A)*(diff1_B) - (diff1_A)*(diff0_B);
+    
+    if (det == 0) return false;
+    
+    /*--- Compute point of intersection ---*/
+    
+    intersect[0] = ((point0[0]*point1[1] - point0[1]*point1[0])*diff0_B
+                    -(vert0[0]* vert1[1]  - vert0[1]* vert1[0])*diff0_A)/det;
+    
+    intersect[1] =  ((point0[0]*point1[1] - point0[1]*point1[0])*diff1_B
+                     -(vert0[0]* vert1[1]  - vert0[1]* vert1[0])*diff1_A)/det;
+
+    /*--- Check that the point is between the two surface points ---*/
+    
+    su2double dist0, dist1, length1, dist2, dist3, length2;
+    
+    dist0 = (intersect[0] - point0[0])*(intersect[0] - point0[0])
+    +(intersect[1] - point0[1])*(intersect[1] - point0[1]);
+    
+    dist1 = (intersect[0] - point1[0])*(intersect[0] - point1[0])
+    +(intersect[1] - point1[1])*(intersect[1] - point1[1]);
+    
+    length1 = diff0_A*diff0_A + diff1_A*diff1_A;
+    
+    dist2 = (intersect[0] - vert0[0])*(intersect[0] - vert0[0])
+    +(intersect[1] - vert0[1])*(intersect[1] - vert0[1]);
+    
+    dist3 = (intersect[0] - vert1[0])*(intersect[0] - vert1[0])
+    +(intersect[1] - vert1[1])*(intersect[1] - vert1[1]);
+    
+    length2 = diff0_B*diff0_B + diff1_B*diff1_B;
+
+    if ( ((dist0 - length1) > 1e-12) || ((dist1 - length1) > 1e-12) || ((dist2 - length2) > 1e-12) || ((dist3 - length2) > 1e-12)) {
         //cout << " In inside false criterion " << endl;
         return false;
     }
     
     /* Case where the probe location is on the edge connecting the mesh nodes */
     /* To be revisited later to correct it */
-    if (dist0 < 1e-13 || dist1 < 1e-13)
+    // Changed for now for the NearestNodeElem Routine
+    /*if (dist0 < 1e-13 || dist1 < 1e-13)
     {
-        //cout << " Probe on edge connecting nodes of mesh " << endl;
-        return false;
-    }
+        //return false;
+        return true;
+    }*/
     
     return true;
 }
+
 
 bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
                                           su2double vert0[3], su2double vert1[3], su2double vert2[3]) {

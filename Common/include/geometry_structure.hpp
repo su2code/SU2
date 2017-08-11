@@ -902,7 +902,10 @@ public:
    * \brief Segment Intersects Segment (for finding if a point is located in an elemt)
    */
   bool SegmentIntersectsSegment(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]);
-    
+  
+  /*!
+   * Diff from above one when segment intersects at the edge point (last tow lones of the code differ */
+  bool SegmentIntersectsSegment_Edge(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]);
   /*!
    * \brief Register the coordinates of the mesh nodes.
    * \param[in] config
