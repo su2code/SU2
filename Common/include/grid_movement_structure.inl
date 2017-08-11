@@ -40,3 +40,11 @@ inline su2double CVolumetricMovement::Determinant_3x3(su2double A00, su2double A
 inline void CVolumetricMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nIterMesh = val_nIterMesh; }
 
 inline unsigned long CVolumetricMovement::Get_nIterMesh() { return nIterMesh; }
+
+inline void CGridMovement::CrossProduct (su2double *v1, su2double *v2, su2double *v3) {
+  v3[0] = v1[1]*v2[2]-v1[2]*v2[1];
+  v3[1] = v1[2]*v2[0]-v1[0]*v2[2];
+  v3[2] = v1[0]*v2[1]-v1[1]*v2[0];
+}
+
+inline su2double CGridMovement::DotProduct (su2double *v1, su2double *v2) { su2double scalar = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]; return scalar; }

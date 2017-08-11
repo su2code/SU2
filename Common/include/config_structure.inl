@@ -1102,6 +1102,10 @@ inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short 
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
+inline void CConfig::SetMarker_All_DeformTangential(unsigned short val_marker, unsigned short val_def_tan) { Marker_All_DeformTangential[val_marker] = val_def_tan; }
+
+inline void CConfig::SetMarker_All_DeformNormal(unsigned short val_marker, unsigned short val_def_norm) { Marker_All_DeformNormal[val_marker] = val_def_norm; }
+
 inline void CConfig::SetMarker_All_PerBound(unsigned short val_marker, short val_perbound) { Marker_All_PerBound[val_marker] = val_perbound; }
 
 inline short CConfig::GetMarker_All_PerBound(unsigned short val_marker) { return Marker_All_PerBound[val_marker]; }
@@ -1137,6 +1141,10 @@ inline unsigned short CConfig::GetMarker_All_MixingPlaneInterface(unsigned short
 inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { return Marker_All_DV[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) { return Marker_All_Moving[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_DeformNormal(unsigned short val_marker) { return Marker_All_DeformNormal[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_DeformTangential(unsigned short val_marker) { return Marker_All_DeformTangential[val_marker]; }
 
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
 

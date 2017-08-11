@@ -62,6 +62,24 @@ public:
 	 * \brief Destructor of the class. 
 	 */
          virtual ~CGridMovement(void);
+  
+  /*!
+   * \brief Compute the cross product.
+   * \param[in] v1 - First input vector.
+   * \param[in] v2 - Second input vector.
+   * \param[out] v3 - Output vector wuth the cross product.
+   */
+  void CrossProduct(su2double *v1, su2double *v2, su2double *v3);
+
+  /*!
+   * \brief Compute the doc product.
+   * \param[in] v1 - First input vector.
+   * \param[in] v2 - Sencond input vector.
+   * \return Dot product between <i>v1</i>, and <i>v2</i>.
+   */
+  su2double DotProduct(su2double *v1, su2double *v2);
+
+  
 };
 
 
@@ -153,6 +171,13 @@ public:
   void SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
                             unsigned short nNodes, su2double ElemVolume, su2double ElemDistance);
     
+  void SetTangential_BC(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
+  unsigned short nNodes);
+
+  su2double Get_Tangent3D(su2double* Normal, su2double* t1, su2double* t2);
+  su2double Get_Tangent2D(su2double* Normal, su2double* t1);
+  void Transform_DoFs(CGeometry *geometry, CConfig *config, CSysVector& vector, bool transpose);
+
   /*!
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.

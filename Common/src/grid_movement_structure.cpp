@@ -303,6 +303,10 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     delete mat_vec;
     delete precond;
     
+    /*--- Transform DoFs back to x,y,z coordinate system ---*/
+
+    Transform_DoFs(geometry, config, LinSysSol, true);
+
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
 
@@ -817,6 +821,10 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
     if (nDim == 2) SetFEA_StiffMatrix2D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, ElemVolume, ElemDistance);
     if (nDim == 3) SetFEA_StiffMatrix3D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, ElemVolume, ElemDistance);
     
+    /*--- Set the tangential boundary condition --- */
+
+    SetTangential_BC(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes);
+
     AddFEA_StiffMatrix(geometry, StiffMatrix_Elem, PointCorners, nNodes);
     
 	}
@@ -828,6 +836,189 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   delete [] StiffMatrix_Elem;
   
   return MinVolume;
+
+}
+
+su2double CVolumetricMovement::Get_Tangent2D(su2double* Normal, su2double* t1){
+
+  su2double UnitNormal[3];
+  su2double Area = 0.0;
+  unsigned short iDim = 0;
+
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++){
+    Area += Normal[iDim]*Normal[iDim];
+    UnitNormal[iDim] = Normal[iDim];
+  }
+
+  Area = sqrt(Area);
+
+  for (iDim = 0; iDim < nDim; iDim++){
+    UnitNormal[iDim] /= Area;
+  }
+
+  t1[0] = -UnitNormal[1];
+  t1[1] =  UnitNormal[0];
+
+  return Area;
+}
+
+su2double CVolumetricMovement::Get_Tangent3D(su2double* Normal, su2double* t1, su2double* t2){
+  su2double UnitI[] = {1, 0, 0}, UnitJ[] = {0, 1, 0}, UnitK[] = {0, 0, 1}, UnitNormal[3];
+  su2double nCrossI[3], nCrossJ[3], nCrossK[3], AbsnCrossI, AbsnCrossJ, AbsnCrossK, Area = 0.0;
+  unsigned short iDim = 0;
+
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++){
+    Area += Normal[iDim]*Normal[iDim];
+    UnitNormal[iDim] = Normal[iDim];
+  }
+
+  Area = sqrt(Area);
+
+  for (iDim = 0; iDim < nDim; iDim++){
+    UnitNormal[iDim] /= Area;
+  }
+
+  CrossProduct(UnitNormal, UnitI, nCrossI);
+  CrossProduct(UnitNormal, UnitJ, nCrossJ);
+  CrossProduct(UnitNormal, UnitK, nCrossK);
+  AbsnCrossI = sqrt(DotProduct(nCrossI, nCrossI));
+  AbsnCrossJ = sqrt(DotProduct(nCrossJ, nCrossJ));
+  AbsnCrossK = sqrt(DotProduct(nCrossK, nCrossK));
+
+  /*--- Choose a tangential vector t1 (we choose more or less an arbitrary one)---*/
+
+  if (max(max(AbsnCrossI, AbsnCrossJ), AbsnCrossK) == AbsnCrossI){
+    for (iDim = 0; iDim < nDim; iDim++) t1[iDim] = nCrossI[iDim];
+
+  }
+  else if (max(max(AbsnCrossI, AbsnCrossJ), AbsnCrossK) == AbsnCrossJ){
+    for (iDim = 0; iDim < nDim; iDim++) t1[iDim] = nCrossJ[iDim];
+
+  }
+  else if (max(max(AbsnCrossI, AbsnCrossJ), AbsnCrossK) == AbsnCrossK){
+    for (iDim = 0; iDim < nDim; iDim++) t1[iDim] = nCrossK[iDim];
+  }
+
+  /*--- Compute tangential vector t2 ---*/
+
+  CrossProduct(UnitNormal, t1, t2);
+
+  /*--- Return norm of normal vector ---*/
+
+  return Area;
+}
+
+
+void CVolumetricMovement::SetTangential_BC(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes){
+
+  su2double** TransformationMatrix = NULL, **StiffMatrix_Elem_BC = NULL;
+  unsigned long StiffMatrix_nElem = 0;
+  unsigned short iVar = 0, jVar = 0, kVar = 0, iNodes = 0, iMarker = 0, iDim = 0;
+  su2double* Normal;
+  su2double t1[3], t2[3], Area = 0;
+  long iVertex;
+
+  /*--- We transform the local coordinate system of each node on the tangential boundary,
+   * to coincide with the tangential and normal direction. ---*/
+
+  /*--- Allocate maximum size (quadrilateral and hexahedron) ---*/
+
+  if (nDim == 2) StiffMatrix_nElem = 8;
+  else StiffMatrix_nElem = 24;
+
+   TransformationMatrix = new su2double* [StiffMatrix_nElem];
+   StiffMatrix_Elem_BC  = new su2double* [StiffMatrix_nElem];
+
+  for (iVar = 0; iVar < StiffMatrix_nElem; iVar++){
+    TransformationMatrix[iVar] = new su2double [StiffMatrix_nElem];
+    StiffMatrix_Elem_BC[iVar]  = new su2double[StiffMatrix_nElem];
+
+    for (jVar = 0; jVar < StiffMatrix_nElem; jVar++){
+      TransformationMatrix[iVar][jVar] = 0.0;
+      StiffMatrix_Elem_BC[iVar][jVar] = 0.0;
+    }
+    TransformationMatrix[iVar][iVar] = 1.0;
+  }
+
+  for (iNodes = 0; iNodes < nNodes; iNodes++) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+      if ((config->GetMarker_All_DeformTangential(iMarker) == YES) ||
+          (config->GetMarker_All_DeformNormal(iMarker) == YES) ||
+          (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)){
+
+        iVertex = geometry->node[PointCorners[iNodes]]->GetVertex(iMarker);
+
+        /*--- Determine whether the point is on the tangential boundary ---*/
+
+        if (iVertex != -1){
+
+          /*--- Compute the entries of the transformation matrix ---*/
+
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+          if (nDim == 2){
+
+            /*--- Get one tangential vector in 2D ---*/
+
+            Area = Get_Tangent2D(Normal, t1);
+
+            for (iDim = 0; iDim < nDim; iDim++){
+              TransformationMatrix[iNodes*nDim+0][iNodes*nDim+iDim] = t1[iDim];
+              TransformationMatrix[iNodes*nDim+1][iNodes*nDim+iDim] = Normal[iDim]/Area;
+            }
+          } else {
+
+            /*--- Get two tangential vectors in 3D ---*/
+
+            Area = Get_Tangent3D(Normal, t1, t2);
+
+            for (iDim = 0; iDim < nDim; iDim++){
+              TransformationMatrix[iNodes*nDim+0][iNodes*nDim+iDim] = t1[iDim];
+              TransformationMatrix[iNodes*nDim+1][iNodes*nDim+iDim] = t2[iDim];
+              TransformationMatrix[iNodes*nDim+2][iNodes*nDim+iDim] = Normal[iDim]/Area;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Postmultiply by transposed Transformation matrix --- */
+
+  for (iVar = 0; iVar < nNodes*nDim; iVar++){
+    for (jVar = 0; jVar < nNodes*nDim; jVar++){
+      for (kVar = 0; kVar < nNodes*nDim; kVar++){
+        StiffMatrix_Elem_BC[iVar][jVar] += StiffMatrix_Elem[iVar][kVar] * TransformationMatrix[jVar][kVar];
+      }
+    }
+  }
+
+  for (iVar = 0; iVar < nNodes*nDim; iVar++){
+    for (jVar = 0; jVar < nNodes*nDim; jVar++){
+      StiffMatrix_Elem[iVar][jVar] = 0.0;
+    }
+  }
+
+  /*--- Premultiply by Transformation matrix ---*/
+
+  for (iVar = 0; iVar < nNodes*nDim; iVar++){
+    for (jVar = 0; jVar < nNodes*nDim; jVar++){
+      for (kVar = 0; kVar < nNodes*nDim; kVar++){
+        StiffMatrix_Elem[iVar][jVar] += TransformationMatrix[iVar][kVar] * StiffMatrix_Elem_BC[kVar][jVar];
+      }
+    }
+  }
+
+
+  for (iVar = 0; iVar < StiffMatrix_nElem; iVar++)
+    delete [] TransformationMatrix[iVar];
+  delete [] TransformationMatrix;
+
+  for (iVar = 0; iVar < StiffMatrix_nElem; iVar++)
+    delete [] StiffMatrix_Elem_BC[iVar];
+  delete [] StiffMatrix_Elem_BC;
 
 }
 
@@ -1877,7 +2068,9 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
          (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
+         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)&&
+         (config->GetMarker_All_DeformTangential(iMarker) == NO) &&
+         (config->GetMarker_All_DeformNormal(iMarker) == NO)))  {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -1890,38 +2083,6 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     }
   }
 
-  /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
-
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-	  if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
-
-	    for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
-	    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-	      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-	      VarCoord = geometry->node[iPoint]->GetCoord();
-	      for (iDim = 0; iDim < nDim; iDim++)
-	        MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
-	    }
-	    for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
-	    if (nDim==3) {
-	      if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
-	      if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
-	      if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
-	    }
-	    else {
-	      if ((MeanCoord[0] <= MeanCoord[1]) ) axis = 0;
-	      if ((MeanCoord[1] <= MeanCoord[0]) ) axis = 1;
-	    }
-
-	    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-	      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-	      total_index = iPoint*nDim + axis;
-	      LinSysRes[total_index] = 0.0;
-	      LinSysSol[total_index] = 0.0;
-	      StiffMatrix.DeleteValsRowi(total_index);
-	    }
-	  }
-	}
 
 	/*--- Set the known displacements, note that some points of the moving surfaces
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
@@ -1977,10 +2138,121 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 		}
 	}
 
+  /*--- Transform DoFs to normal and tangential coordinate system ---*/
 
+  Transform_DoFs(geometry, config, LinSysSol, false);
+  Transform_DoFs(geometry, config, LinSysRes, false);
+
+  /*--- Apply tangential boundary condition on the specified markers or if it is a symmetry plane ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    if ((config->GetMarker_All_DeformTangential(iMarker) == YES) ||
+        (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)){
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//        if (geometry->node[iPoint]->GetDomain()){
+
+          /*--- Delete the rows corresponding to the normal component and set the RHS to zero ---*/
+
+          if (nDim == 2){
+            LinSysRes[iPoint*nDim+1] = 0; LinSysSol[iPoint*nDim+1] = 0;
+            StiffMatrix.DeleteValsRowi(iPoint*nDim+1);
+          }else {
+            LinSysRes[iPoint*nDim+2] = 0; LinSysSol[iPoint*nDim+2] = 0;
+            StiffMatrix.DeleteValsRowi(iPoint*nDim+2);
+          }
+        }
+      }
+//    }
 }
 
-void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config) {
+    /*--- Apply normal boundary condition on the specified markers ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    if ((config->GetMarker_All_DeformNormal(iMarker) == YES )){
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//        if (geometry->node[iPoint]->GetDomain()){
+
+          /*--- Delete the rows corresponding to the tangential component(s) and set the RHS to zero---*/
+
+          if (nDim == 2){
+            LinSysRes[iPoint*nDim+0] = 0; LinSysSol[iPoint*nDim+0] = 0;
+            StiffMatrix.DeleteValsRowi(iPoint*nDim+0);
+          }else {
+            LinSysRes[iPoint*nDim+0] = 0; LinSysSol[iPoint*nDim+0] = 0;
+            LinSysRes[iPoint*nDim+1] = 0; LinSysSol[iPoint*nDim+1] = 0;
+            StiffMatrix.DeleteValsRowi(iPoint*nDim+0);
+            StiffMatrix.DeleteValsRowi(iPoint*nDim+1);
+          }
+//        }
+      }
+    }
+  }
+}
+
+void CVolumetricMovement::Transform_DoFs(CGeometry *geometry, CConfig *config, CSysVector& vector, bool transpose){
+
+  unsigned short iDim, iMarker;
+  unsigned long iPoint, iVertex;
+  su2double *Normal, t1[3], t2[3], TempSol[3], Area;
+
+  /*--- Transform entries vector back to x,y,z coordinate system (transpose = true) or
+   * to tangential and normal coordinate system (transpose = true) ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    if ((config->GetMarker_All_DeformTangential(iMarker) == YES )||
+        (config->GetMarker_All_DeformNormal(iMarker) == YES) ||
+        (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)){
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+//        if (geometry->node[iPoint]->GetDomain()){
+
+          for (iDim = 0; iDim < nDim; iDim++){
+            TempSol[iDim] = 0.0;
+          }
+          if (nDim == 2){
+            Area = Get_Tangent2D(Normal, t1);
+            if (transpose){
+              for (iDim = 0; iDim < nDim; iDim++){
+                TempSol[iDim] += vector[iPoint*nDim+0]*t1[iDim];
+                TempSol[iDim] += vector[iPoint*nDim+1]*Normal[iDim]/Area;
+              }
+            } else {
+              for (iDim = 0; iDim < nDim; iDim++){
+                TempSol[0] += vector[iPoint*nDim+iDim]*t1[iDim];
+                TempSol[1] += vector[iPoint*nDim+iDim]*Normal[iDim]/Area;
+              }
+            }
+          } else {
+            Area = Get_Tangent3D(Normal, t1, t2);
+            if (transpose){
+              for (iDim = 0; iDim < nDim; iDim++){
+                TempSol[iDim] += vector[iPoint*nDim+0]*t1[iDim];
+                TempSol[iDim] += vector[iPoint*nDim+1]*t2[iDim];
+                TempSol[iDim] += vector[iPoint*nDim+2]*Normal[iDim]/Area;
+              }
+            } else {
+              for (iDim = 0; iDim < nDim; iDim++){
+                TempSol[0] += vector[iPoint*nDim+iDim]*t1[iDim];
+                TempSol[1] += vector[iPoint*nDim+iDim]*t2[iDim];
+                TempSol[2] += vector[iPoint*nDim+iDim]*Normal[iDim]/Area;
+              }
+            }
+          }
+
+          for (iDim = 0; iDim < nDim; iDim++){
+            vector[iPoint*nDim+iDim] = TempSol[iDim];
+          }
+//        }
+      }
+    }
+  }
+}
+
+void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config){
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
 
@@ -2011,6 +2283,12 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
       }
     }
   }
+
+  /*--- Transform DoFs in vectors to normal and tangential coordinate system ---*/
+
+  Transform_DoFs(geometry, config, LinSysSol, false);
+  Transform_DoFs(geometry, config, LinSysRes, false);
+
 }
 
 void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config) {

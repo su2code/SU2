@@ -298,6 +298,8 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_Moving       = NULL;   Marker_All_Moving        = NULL;
   Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
   Marker_CfgFile_ZoneInterface = NULL;
+  Marker_CfgFile_DeformNormal=NULL; Marker_All_DeformNormal=NULL; Marker_DeformNormal=NULL;
+  Marker_CfgFile_DeformTangential=NULL; Marker_All_DeformTangential=NULL; Marker_DeformTangential=NULL;
   
   Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
   Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
@@ -1578,6 +1580,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("DEFORM_LINEAR_SOLVER", Kind_Deform_Linear_Solver, Linear_Solver_Map, FGMRES);
   /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
   addEnumOption("DEFORM_LINEAR_SOLVER_PREC", Kind_Deform_Linear_Solver_Prec, Linear_Solver_Prec_Map, LU_SGS);
+
+  addStringListOption("MARKER_DEFORM_NORMAL", nMarker_DeformNormal, Marker_DeformNormal);
+  addStringListOption("MARKER_DEFORM_TANGENTIAL", nMarker_DeformTangential, Marker_DeformTangential);
 
   /*!\par CONFIG_CATEGORY: Rotorcraft problem \ingroup Config*/
   /*--- option related to rotorcraft problems ---*/
@@ -3362,7 +3367,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Load_Sine,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D,
-  iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
+  iMarker_Turbomachinery, iMarker_MixingPlaneInterface, iMarker_DeformNormal, iMarker_DeformTangential;
 
   int size = SINGLE_NODE;
   
@@ -3409,7 +3414,9 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All];	// Store whether the boundary has a in the MixingPlane interface.
-  
+  Marker_All_DeformNormal           = new unsigned short[nMarker_All];
+  Marker_All_DeformTangential       = new unsigned short[nMarker_All];
+
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All]             = "SEND_RECEIVE";
@@ -3447,7 +3454,9 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile];
-  
+  Marker_CfgFile_DeformNormal         = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_DeformTangential     = new unsigned short[nMarker_CfgFile];
+
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile]             = "SEND_RECEIVE";
     Marker_CfgFile_KindBC[iMarker_CfgFile]               = 0;
@@ -3464,6 +3473,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_Turbomachinery[iMarker_CfgFile]       = 0;
     Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]   = 0;
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = 0;
+    Marker_CfgFile_DeformNormal[iMarker_CfgFile]          = 0;
+    Marker_CfgFile_DeformTangential[iMarker_CfgFile]      = 0;
   }
 
   /*--- Allocate memory to store surface information (Analyze BC) ---*/
@@ -3479,7 +3490,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
      Surface_IDC[iMarker_Analyze] = 0.0;
      Surface_IDC_Mach[iMarker_Analyze] = 0.0;
      Surface_IDR[iMarker_Analyze] = 0.0;
-   }
+  }
 
   /*--- Populate the marker information in the config file (all domains) ---*/
 
@@ -3887,6 +3898,20 @@ void CConfig::SetMarkers(unsigned short val_software) {
     for (iMarker_Out_1D = 0; iMarker_Out_1D < nMarker_Out_1D; iMarker_Out_1D++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Out_1D[iMarker_Out_1D])
         Marker_CfgFile_Out_1D[iMarker_CfgFile] = YES;
+  }
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_DeformNormal[iMarker_CfgFile] = NO;
+    for (iMarker_DeformNormal = 0; iMarker_DeformNormal < nMarker_DeformNormal; iMarker_DeformNormal++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DeformNormal[iMarker_DeformNormal])
+        Marker_CfgFile_DeformNormal[iMarker_CfgFile] = YES;
+  }
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_DeformTangential[iMarker_CfgFile] = NO;
+    for (iMarker_DeformTangential = 0; iMarker_DeformTangential < nMarker_DeformTangential; iMarker_DeformTangential++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DeformTangential[iMarker_DeformTangential])
+        Marker_CfgFile_DeformTangential[iMarker_CfgFile] = YES;
   }
 
 }
@@ -5485,6 +5510,20 @@ unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
   return Marker_CfgFile_Moving[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_DeformNormal(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_DeformNormal[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_DeformTangential(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_DeformTangential[iMarker_CfgFile];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -5626,11 +5665,18 @@ CConfig::~CConfig(void) {
   if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
   
+  if (Marker_CfgFile_DeformNormal != NULL) delete [] Marker_CfgFile_DeformNormal;
+  if (Marker_All_DeformNormal  != NULL) delete [] Marker_All_DeformNormal ;
+  if (Marker_CfgFile_DeformTangential != NULL) delete [] Marker_CfgFile_DeformTangential;
+  if (Marker_All_DeformTangential != NULL) delete [] Marker_All_DeformTangential ;
+
   if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
 
   if (Marker_DV!= NULL)               delete[] Marker_DV;
   if (Marker_Moving != NULL)           delete[] Marker_Moving;
+  if (Marker_DeformNormal != NULL) delete [] Marker_DeformNormal;
+  if (Marker_DeformTangential != NULL) delete [] Marker_DeformTangential;
   if (Marker_Monitoring != NULL)      delete[] Marker_Monitoring;
   if (Marker_Designing != NULL)       delete[] Marker_Designing;
   if (Marker_GeoEval != NULL)         delete[] Marker_GeoEval;
