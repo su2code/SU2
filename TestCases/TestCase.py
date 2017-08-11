@@ -169,22 +169,25 @@ class TestCase:
         if iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
-        print('test_iter=%d \n'%self.test_iter, end=" ")
+        print('test_iter=%d' % self.test_iter)
 
-        print('test_vals (stored): ', end=" ")
-        for j in self.test_vals:
-            print('%f,'%j)
-        print()
+        print(
+            'test_vals (stored): ' + ', '.join(
+                '{:f}'.format(j) for j in test_vals
+            )
+        )
 
-        print('sim_vals (computed): ', end=" ")
-        for j in sim_vals:
-            print('%f,'%j, end=" ")
-        print('\n', end=" ")
+        print(
+            'sim_vals (computed): ' + ', '.join(
+                '{:f}'.format(j) for j in sim_vals
+            )
+        )
 
-        print('delta_vals: ', end=" ")
-        for j in delta_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print(
+            'delta_vals: ' + ', '.join(
+                '{:f}'.format(j) for j in delta_vals
+            )
+        )
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -360,22 +363,25 @@ class TestCase:
         if iter_missing:
             print('ERROR: The optimizer iteration number %d could not be found.'%self.test_iter)
 
-        print('test_iter=%d \n'%self.test_iter, end=" ")
+        print('test_iter=%d' % self.test_iter)
 
-        print('test_vals (stored): ', end=" ")
-        for j in self.test_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print(
+            'test_vals (stored): ' + ', '.join(
+                '{:f}'.format(j) for j in test_vals
+            )
+        )
 
-        print('sim_vals (computed): ', end=" ")
-        for j in sim_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print(
+            'sim_vals (computed): ' + ', '.join(
+                '{:f}'.format(j) for j in sim_vals
+            )
+        )
 
-        print('delta_vals: ', end=" ")
-        for j in delta_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print(
+            'delta_vals: ' + ', '.join(
+                '{:f}'.format(j) for j in delta_vals
+            )
+        )
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -504,20 +510,23 @@ class TestCase:
         if iter_missing:
             print('ERROR: The SU2_GEO values could not be found.')
 
-        print('test_vals (stored): ', end=" ")
-        for j in self.test_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print(
+            'test_vals (stored): ' + ', '.join(
+                '{:f}'.format(j) for j in test_vals
+            )
+        )
 
-        print('sim_vals (computed): ', end=" ")
-        for j in sim_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print(
+            'sim_vals (computed): ' + ', '.join(
+                '{:f}'.format(j) for j in sim_vals
+            )
+        )
 
-        print('delta_vals: ', end=" ")
-        for j in delta_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print(
+            'delta_vals: ' + ', '.join(
+                '{:f}'.format(j) for j in delta_vals
+            )
+        )
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -627,22 +636,26 @@ class TestCase:
         if iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
     
-        print('test_iter=%d \n'%self.test_iter, end=" ")
-    
-        print('test_vals (stored): ', end=" ")
-        for j in self.test_vals:
-            print('%e'%j, end=" ")
-        print()
-    
-        print('sim_vals (computed): ', end=" ")
-        for j in sim_vals:
-            print('%e'%j, end=" ")
-        print()
-    
-        print('delta_vals: ', end=" ")
-        for j in delta_vals:
-            print('%e'%j, end=" ")
-        print()
+        print('test_iter=%d' % self.test_iter)
+
+        print(
+            'test_vals (stored): ' + ', '.join(
+                '{:f}'.format(j) for j in test_vals
+            )
+        )
+
+        print(
+            'sim_vals (computed): ' + ', '.join(
+                '{:f}'.format(j) for j in sim_vals
+            )
+        )
+
+        print(
+            'delta_vals: ' + ', '.join(
+                '{:f}'.format(j) for j in delta_vals
+            )
+        )
+
     
         print('test duration: %.2f min'%(running_time/60.0))
         #print('==================== End Test: %s ====================\n'%self.tag)
