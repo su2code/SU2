@@ -17,7 +17,7 @@ notifications:
 
 branches:
     only:
-        - feature_turbomachinery
+        - feature_turbo_ffd
 
 env:
     global:
