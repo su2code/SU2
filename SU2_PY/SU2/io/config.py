@@ -926,10 +926,10 @@ def write_config(filename,param_dict):
     # check that all params were used
     for this_param in param_dict.keys():
         if not this_param in ['JOB_NUMBER']:
-            print ( 'Warning: Parameter %s not found in config file and was not written' % (this_param) )
+            print('Warning: Parameter %s not found in config file and was not written' % (this_param))
         
     output_file.close()
-    os.remove( temp_filename )
+    os.remove(temp_filename)
     
 #: def write_config()
 
