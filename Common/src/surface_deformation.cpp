@@ -70,8 +70,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
     /*--- Read the FFD information from the config file ---*/
 
-//   ReadFFDInfo(geometry, config, FFDBox);
-    SetBoundingFFDBox(geometry, config, FFDBox);
+   ReadFFDInfo(geometry, config, FFDBox);
+//    SetBoundingFFDBox(geometry, config, FFDBox);
 
     /*--- If there is a FFDBox in the input file ---*/
 
@@ -782,6 +782,12 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
       CartCoord[0] = FFDBox->CSPPilotPointsX[iGroup][iPilotPoint];
       CartCoord[1] = FFDBox->CSPPilotPointsY[iGroup][iPilotPoint];
       CartCoord[2] = FFDBox->CSPPilotPointsZ[iGroup][iPilotPoint];
+
+      if (cylindrical){
+        FFDBox->SetCart2Cyl(CartCoord, config);
+      }else if (spherical || polar){
+        FFDBox->SetCart2Sphe(CartCoord, config);
+      }
 
       ParamCoord = FFDBox->GetParametricCoord_Iterative(iPilotPoint, CartCoord, ParamCoordGuess, config);
 
@@ -2171,13 +2177,13 @@ void CSurfaceMovement::SetConstrainedShapeParam(CGeometry *geometry, CConfig *co
 
     for (iDV = 0; iDV < config->GetnDV(); iDV++){
       if ((config->GetDesign_Variable(iDV) == FFD_DIRECT_MANIPULATION || config->GetDesign_Variable(iDV) == FFD_DIRECT_MANIPULATION_2D)
-          &&  config->GetFFDTag(iDV) == FFDBox->CSPPilotGroupNames[iGroup]){
+          &&  config->GetFFDTag(iDV) == FFDBox->CSPPilotGroupNames[iGroup] && (FFDBox->GetnSurfacePoint() != 0)){
         GroupActive[iGroup] = true;   
       }
     }
 
     for (iConstraint = 0; iConstraint < nConstraints; iConstraint++){
-      if (config->GetCSP_ConstraintGroup(iConstraint) == FFDBox->CSPPilotGroupNames[iGroup]){
+      if ((config->GetCSP_ConstraintGroup(iConstraint) == FFDBox->CSPPilotGroupNames[iGroup]) && (FFDBox->GetnSurfacePoint() != 0)){
         GroupActive[iGroup] = true;
       }
     }
@@ -6833,25 +6839,13 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
 
   if (cylindrical) {
 
-    X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-
-    Xbar =  Coord[0] - X_0; Ybar =  Coord[1] - Y_0; Zbar =  Coord[2] - Z_0;
-
-    Coord[0] = sqrt(Ybar*Ybar + Zbar*Zbar);
-    Coord[1] = atan2(Zbar, Ybar); if (Coord[1] > PI_NUMBER/2.0) Coord[1] -= 2.0*PI_NUMBER;
-    Coord[2] = Xbar;
+    SetCart2Cyl(Coord, config);
 
   }
 
   else if (spherical || polar) {
 
-    X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-
-    Xbar =  Coord[0] - X_0; Ybar =  Coord[1] - Y_0; Zbar =  Coord[2] - Z_0;
-
-    Coord[0] = sqrt(Xbar*Xbar + Ybar*Ybar + Zbar*Zbar);
-    Coord[1] = atan2(Zbar, Ybar);  if (Coord[1] > PI_NUMBER/2.0) Coord[1] -= 2.0*PI_NUMBER;
-    Coord[2] = acos(Xbar/Coord[0]);
+    SetSphe2Cart(Coord, config);
 
   }
 
