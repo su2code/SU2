@@ -92,8 +92,6 @@ class Design(object):
         
         if '*' in folder: folder = su2io.next_folder(folder)
         
-#        print "New Design: %s" % folder
-        
         config = copy.deepcopy(config)
         state  = copy.deepcopy(state)
         state  = su2io.State(state)

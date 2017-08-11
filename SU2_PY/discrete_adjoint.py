@@ -169,16 +169,16 @@ def discrete_design( filename           ,
 #        Definition_DV = config['DEFINITION_DV']
 #        n_dv = len(Definition_DV['KIND'])
 #        grads_dd  = grad_directdiff[ADJ_NAME]
-#        print "Validation Summary"
-#        print "--------------------------"
-#        print "VARIABLE   " + "DISCRETE ADJOINT"  + "  DIRECT DIFFERENTIATION" + "  ERROR (%)"
+#        print("Validation Summary")
+#        print("--------------------------")
+#        print("VARIABLE   " + "DISCRETE ADJOINT"  + "  DIRECT DIFFERENTIATION" + "  ERROR (%)")
 #        for idv in range(n_dv):
 #            if abs(grads[idv]) > abs(grads_dd[idv]):
 #                this_err = abs(grads[idv]/grads_dd[idv])
 #            else:
 #                this_err = abs(grads_dd[idv]/grads[idv])
 
-#            print str(idv) + "         " + str(grads[idv]) + "         " + str(grads_dd[idv]) + "        " + str((this_err-1)*100)  + ' %'
+#            print(str(idv) + "         " + str(grads[idv]) + "         " + str(grads_dd[idv]) + "        " + str((this_err-1)*100)  + ' %')
 
     
     return state

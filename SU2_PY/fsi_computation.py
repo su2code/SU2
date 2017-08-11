@@ -82,7 +82,7 @@ def main():
           sys.path.append(os.getcwd())
 	  print("Setting working directory : {}".format(os.getcwd()))
       else: 
-	  print ("Working directory is set to {}".format(os.getcwd()))
+	  print("Working directory is set to {}".format(os.getcwd()))
 
   # starts timer
   start = timer.time()

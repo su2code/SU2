@@ -50,7 +50,7 @@ class Bunch(dict):
         Including update()...
         
         >>> b.update({ 'ponies': 'are pretty!' }, hello=42)
-        >>> print repr(b)
+        >>> print(repr(b))
         Bunch(foo=Bunch(lol=True), hello=42, ponies='are pretty!')
         
         As well as iteration...
@@ -186,7 +186,7 @@ class Bunch(dict):
         """ Invertible* string-form of a Bunch.
             
             >>> b = Bunch(foo=Bunch(lol=True), hello=42, ponies='are pretty!')
-            >>> print repr(b)
+            >>> print(repr(b))
             Bunch(foo=Bunch(lol=True), hello=42, ponies='are pretty!')
             >>> eval(repr(b))
             Bunch(foo=Bunch(lol=True), hello=42, ponies='are pretty!')

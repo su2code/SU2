@@ -57,7 +57,7 @@ def parLocator(keyWord,b,n,iDoNot,verbose):
 # string.index and not string.find is used here, since index raises
 # exception when search is failed
                         if verbose: 
-                            print 'parLocator: '+str(i)+' found:  '+str(b[i])
+                            print('parLocator: '+str(i)+' found:  '+str(b[i]))
                         iFocus=i
                         break
                     else:
@@ -67,7 +67,7 @@ def parLocator(keyWord,b,n,iDoNot,verbose):
             
     if iFocus == -1:
         if verbose: 
-            print 'parLocator: Keyword ->'+str(keyWord)+'<-  not found'
+            print('parLocator: Keyword ->'+str(keyWord)+'<-  not found')
     return iFocus
     
 def stringLocator(keyWord,b,n,verbose):
@@ -81,7 +81,7 @@ def stringLocator(keyWord,b,n,verbose):
         try:
             ii=lineString.index(keyWord)
             if verbose: 
-                print 'parLocator: '+str(i)+' found:  '+str(b[i])        
+                print('parLocator: '+str(i)+' found:  '+str(b[i]))
             iFocus=i
             break        
         except ValueError:
@@ -89,7 +89,7 @@ def stringLocator(keyWord,b,n,verbose):
             
     if iFocus == -1:
         if verbose: 
-            print 'parLocator: Keyword ->'+str(keyWord)+'<-  not found'
+            print('parLocator: Keyword ->'+str(keyWord)+'<-  not found')
     
     return iFocus
     
@@ -107,7 +107,7 @@ def readList(dataFile,iLine,verbose):
     nData=size(lData)     
  
     if verbose:
-        print 'readList nData = '+str(nData)
+        print('readList nData = '+str(nData))
     fData=map(float,lData)
     return fData,nData
 
@@ -121,7 +121,7 @@ def readParameter(dataFile,nLines,keyWord,iDoNot,verbose):
     ipar = parLocator(keyWord,dataFile,nLines,iDoNot,verbose)
     if ipar == -1:
         if verbose:
-            print ' failed to locate '+keyWord+' in base input file; Set value to 1'
+            print(' failed to locate '+keyWord+' in base input file; Set value to 1')
         paVal = 1
     else:
         paLine=dataFile[ipar]
@@ -134,7 +134,7 @@ def readParameter(dataFile,nLines,keyWord,iDoNot,verbose):
 
     if verbose:
         if ipar != -1:
-            print keyWord+' = '+paVal
+            print(keyWord + ' = ' + paVal)
 
     return paVal,ipar
 
@@ -157,7 +157,7 @@ def setContribution(dataFile,nLines,keyWord,iDoNot,verbose):
     ipar = parLocator(keyWord,dataFile,nLines,iDoNot,verbose)
     if ipar == -1:
         if verbose:
-            print ' failed to locate '+keyWord+' in base input file; Set value to 1'
+            print(' failed to locate '+keyWord+' in base input file; Set value to 1')
         paVal = 1
     else:
         paLine=dataFile[ipar]
@@ -193,7 +193,7 @@ def setContribution(dataFile,nLines,keyWord,iDoNot,verbose):
 
     if verbose:
         if ipar != -1:
-            print ' part: '+nameText+' remove contribution: '+str(removeContribution)
+            print(' part: '+nameText+' remove contribution: '+str(removeContribution))
 
     return nameText,removeContribution,ipar
 
@@ -225,7 +225,7 @@ def setPolaraType(ctrl,nc,verbose):
                 raise SystemExit('ERROR in control file: only Y or Z can be given for control keyWord  ->'+keyWordPitchAxis+'<-')
             
     if verbose:
-        print 'Pitch axis is '+PA.upper()
+        print('Pitch axis is '+PA.upper())
 #
 # angles definitions:
 #   alpha ... angle of attack
@@ -388,13 +388,13 @@ def setPolaraType(ctrl,nc,verbose):
 #-------------------------------------------------------------------------------------------
     if verbose:
         if polarSweepType == 1 :
-            print 'Sweep type: '+str(polarSweepType)+' in alpha. nAalpha = '+str(nAalpha)+' phi = '+str(phi)
+            print('Sweep type: '+str(polarSweepType)+' in alpha. nAalpha = '+str(nAalpha)+' phi = '+str(phi))
         elif polarSweepType == 2 :
-            print 'Sweep type: '+str(polarSweepType)+' in alpha. nAalpha = '+str(nAalpha)+' beta = '+str(beta)
+            print('Sweep type: '+str(polarSweepType)+' in alpha. nAalpha = '+str(nAalpha)+' beta = '+str(beta))
         elif polarSweepType == 3 :
-            print 'Sweep type: '+str(polarSweepType)+' in phi. nPhi = '+str(nPhi)+' alpha = ',str(alpha)
+            print('Sweep type: '+str(polarSweepType)+' in phi. nPhi = '+str(nPhi)+' alpha = ',str(alpha))
         elif polarSweepType == 4 :
-            print  'Sweep type: '+str(polarSweepType)+' in Mach. nMach = '+str(nMach)
+            print('Sweep type: '+str(polarSweepType)+' in Mach. nMach = '+str(nMach))
 
     return PA,polarSweepType,velDirOption,nAalpha,nBeta,nPhi,nMach,alpha,beta,phi,MachList,polarVar
    
@@ -645,7 +645,7 @@ def updatedControlFile(ctrl,nc,parAngle,ctrlFile,verbose):
     fc.writelines(ctrl)
     fc.close()
 
-    print 'More cases were added. Original ctrl file saved at '+ctrlFile+'.bck File '+ctrlFile+' updated'
+    print('More cases were added. Original ctrl file saved at '+ctrlFile+'.bck File '+ctrlFile+' updated')
 
 
     return
@@ -718,12 +718,12 @@ def retrievePhysicalData(b,n,polarSweepType,verbose):
     thermoParLoc=[iprGamma,iprGasC,iprTFreeS]
 
     if verbose:
-        print 'base case parameters of Mach ramp'
-        print '---------------------------------'
-        print ' M = '+sNonDimNum[0]+' Reynolds = '+sNonDimNum[2]
+        print('base case parameters of Mach ramp')
+        print('---------------------------------')
+        print(' M = '+sNonDimNum[0]+' Reynolds = '+sNonDimNum[2])
         if refParExist:
-            print ' Pref = '+str(refPar[0])+' rhor = '+str(refPar[1])+' Tr = '+str(refPar[2])
-            print ' gamma = '+str(thermoPar[0])+ ' Gas Const = '+str(thermoPar[1])+' T_freeStream = '+str(thermoPar[2])
+            print(' Pref = '+str(refPar[0])+' rhor = '+str(refPar[1])+' Tr = '+str(refPar[2]))
+            print(' gamma = '+str(thermoPar[0])+ ' Gas Const = '+str(thermoPar[1])+' T_freeStream = '+str(thermoPar[2]))
 
 
     return nonDimNum,nonDimNumLoc,refParExist,refPar,refParLoc,thermoPar,thermoParLoc 
@@ -752,7 +752,7 @@ def extractUy(filename,outFile,inDepVar,depVar,verbose):
     data=fc.readlines()
     nc=size(data)
     fc.close()
-    print str(nc)+' lines were written from file '+filename+'. File closed'
+    print(str(nc)+' lines were written from file '+filename+'. File closed')
 
 # --------------Retreive the variables names in the Tecplot file
 
@@ -765,7 +765,7 @@ def extractUy(filename,outFile,inDepVar,depVar,verbose):
         raise SystemExit('ERROR: failed to trace ZONE list in input file')
     
     izo=izo-1  #  last variables line
-    print 'list of variables traced between lines '+str(ivb)+' and ',str(izo)
+    print('list of variables traced between lines '+str(ivb)+' and ',str(izo))
 
     varListLines=data[ivb:izo]
     nV=len(varListLines)
@@ -789,7 +789,7 @@ def extractUy(filename,outFile,inDepVar,depVar,verbose):
             except ValueError:
                 pass   # do nothing
 
-    print 'inDepVar: '+inDepVar+' : '+str(iX+1)+' . DepVar: '+depVar+' : '+str(iY+1)+' of '+str(nV)+' variables'
+    print('inDepVar: '+inDepVar+' : '+str(iX+1)+' . DepVar: '+depVar+' : '+str(iY+1)+' of '+str(nV)+' variables')
 
 # find out how many nodes
 
@@ -800,7 +800,7 @@ def extractUy(filename,outFile,inDepVar,depVar,verbose):
     i1=data[inodes].index('=')+1
     i2=data[inodes].index(',')
     Nodes=int(data[inodes][i1:i2])
-    print 'Nodes = ',str(Nodes)
+    print('Nodes = ',str(Nodes))
 #
 # now map the whole matrix 
 #
@@ -879,7 +879,6 @@ def locateSteps(d,nd,nCol):
         madydx2=(mmxadydx+mmnadydx)/2
         iic=where(adydx<eps*madydx)
         iic2=where(adydx<eps*madydx2)
-#        print 'dbg ic = '+str(ic)+' '+str(madydx)+' '+str(madydx2)+' '+str(size(iic))+' '+str(size(iic2))
         nStairs.append(size(iic)+size(iic2))
     
     nStM=max(nStairs)
@@ -920,7 +919,7 @@ def testComponentSum(cbdOutput,verbose):
         nd=size(d)
         fd.close()
         if verbose:
-            print 'CBD file '+cbdOutput+' loaded by testComponentSum'
+            print('CBD file '+cbdOutput+' loaded by testComponentSum')
 
     except IOError:
         raise SystemExit('testComponentSum: Failed to find file '+cbdOutput)
@@ -946,9 +945,9 @@ def testComponentSum(cbdOutput,verbose):
     iErr=find_index(errorA, 0.005)
     nER=size(iErr)
     if nER > 0:
-        print 'testComponentSum: Error is components sumation in file '+cbdOutput
+        print('testComponentSum: Error is components sumation in file '+cbdOutput)
         for i in range(0,nER):
-            print 'Error found in '+coeffNames[iErr[i]]+' Error = '+str(100*errorA[iErr[i]])+' %'
+            print('Error found in '+coeffNames[iErr[i]]+' Error = '+str(100*errorA[iErr[i]])+' %')
 
         corrDataLine='  %12.5e  %12.5e  %12.5e  %12.5e  %12.5e  %12.5e  '%(sumD[0],sumD[1],
                                                                            sumD[2],sumD[3],sumD[4],sumD[5])
@@ -1002,8 +1001,8 @@ def loadData(filename,delim):
                 
                 data.append(map(float, row))
             except ValueError:  
-                print 'Line doesnt match map float: '
-                print row
+                print('Line doesnt match map float: ')
+                print(row)
     # check square matrix
     N1=len(data[0])
     dout=[]
@@ -1011,7 +1010,7 @@ def loadData(filename,delim):
         if N1 <= 1:
             N1=len(data[i])
         if len(data[i]) != N1 :
-            print 'WARNING: Line '+str(i)+': size does not match. Skipped'
+            print('WARNING: Line '+str(i)+': size does not match. Skipped')
         else:
             dout.append(data[i])
 

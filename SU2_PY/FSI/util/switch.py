@@ -16,15 +16,15 @@ class switch(object):
             # ...
             if case('y'): pass
             if case('z'):
-                print "c is lowercase!"
+                print("c is lowercase!")
                 break
             if case('A'): pass
             # ...
             if case('Z'):
-                print "c is uppercase!"
+                print("c is uppercase!")
                 break
             if case(): # default
-                print "I dunno what c was!"
+                print("I dunno what c was!")
         
         source: Brian Beck, PSF License, ActiveState Code
         http://code.activestate.com/recipes/410692/
