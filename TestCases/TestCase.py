@@ -39,7 +39,7 @@ import difflib
 
 def print_vals(vals, name="Values"):
     """Print an array of floats."""
-    print(name + ': ' + ', '.join('{:f}'.format(j) for v in vals))
+    print(name + ': ' + ', '.join('{:f}'.format(v) for v in vals))
 
 
 class TestCase:
