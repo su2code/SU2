@@ -106,7 +106,8 @@ enum SU2_COMPONENT {
   SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
   SU2_MSH = 4,	/*!< \brief Running the SU2_MSH software. */
   SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 6 	/*!< \brief Running the SU2_SOL software. */
+  SU2_SOL = 6, 	/*!< \brief Running the SU2_SOL software. */
+  SU2_ERR = 7   /*!< \brief Running the SU2_ERR software. */
 };
 
 const unsigned int EXIT_DIVERGENCE = 2; /*!< \brief Exit code (divergence). */
