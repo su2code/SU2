@@ -15031,7 +15031,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   if (compressible)        { skipVar += skipMult*(nDim+2); }
   if (sst && !frozen_visc) { skipVar += skipMult*2;}
   if (sa && !frozen_visc)  { skipVar += skipMult*1;}
-  if (grid_movement)       { skipVar += nDim;}
 
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;

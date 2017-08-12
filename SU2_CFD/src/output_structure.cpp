@@ -11607,10 +11607,11 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     /*--- Add Entropy, Total Pressure and Isentropic Mach Number---*/
     if(turbo){
-      nVar_Par += 3;
+      nVar_Par += 4;
       Variable_Names.push_back("Entropy");
       Variable_Names.push_back("Total_Pressure");
       Variable_Names.push_back("MachIs");
+      Variable_Names.push_back("SoundSpeed");
     }
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
     
@@ -11879,10 +11880,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           else
             MachIs        = sqrt(2.0*(-TotalEnthalpyBC + Enthalpy))/SoundSpeed;
 
+          FluidModel->SetTDState_Prho(Pressure, Density);
+          SoundSpeed    = FluidModel->GetSoundSpeed();
+
           /*--- Store the values on the Data container for the solution ---*/
           Local_Data[jPoint][iVar] = Entropy; iVar++;
           Local_Data[jPoint][iVar] = TotalPressure; iVar++;
           Local_Data[jPoint][iVar] = MachIs; iVar++;
+          Local_Data[jPoint][iVar] = SoundSpeed; iVar++;
         }
 
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
