@@ -247,7 +247,7 @@ def get_headerMap(nZones = 1):
                  "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
                  "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
  
-    return history_header_map   	 
+    return history_header_map        
 
 def getTurboPerfIndex(nZones = 1):
 
@@ -361,16 +361,16 @@ optnames_geo = [ "AIRFOIL_AREA"                   ,
                  
 PerStation = []
 for i in range(20):
-	PerStation.append("STATION" + str(i) + "_AREA")
-	PerStation.append("STATION" + str(i) + "_LENGTH")
-    	PerStation.append("STATION" + str(i) + "_WIDTH")
-    	PerStation.append("STATION" + str(i) + "_WATERLINE_WIDTH")
-    	PerStation.append("STATION" + str(i) + "_HEIGHT")
-    	PerStation.append("STATION" + str(i) + "_THICKNESS")
-    	PerStation.append("STATION" + str(i) + "_CHORD")
-    	PerStation.append("STATION" + str(i) + "_LE_RADIUS")
-    	PerStation.append("STATION" + str(i) + "_TOC")
-    	PerStation.append("STATION" + str(i) + "_TWIST")
+    PerStation.append("STATION" + str(i) + "_AREA")
+    PerStation.append("STATION" + str(i) + "_LENGTH")
+    PerStation.append("STATION" + str(i) + "_WIDTH")
+    PerStation.append("STATION" + str(i) + "_WATERLINE_WIDTH")
+    PerStation.append("STATION" + str(i) + "_HEIGHT")
+    PerStation.append("STATION" + str(i) + "_THICKNESS")
+    PerStation.append("STATION" + str(i) + "_CHORD")
+    PerStation.append("STATION" + str(i) + "_LE_RADIUS")
+    PerStation.append("STATION" + str(i) + "_TOC")
+    PerStation.append("STATION" + str(i) + "_TWIST")
 
 optnames_geo.extend(PerStation)
                  
