@@ -56,3 +56,6 @@ bin/
 
 # ignore swap files
 *.swp
+
+TestData
+*.stl
