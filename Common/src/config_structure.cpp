@@ -1726,8 +1726,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("THETA_INTERIOR_PENALTY_DG_FEM", Theta_Interior_Penalty_DGFEM, 1.0);
   /* DESCRIPTION: Compute the entropy in the fluid model (YES, NO) */
   addBoolOption("COMPUTE_ENTROPY_FLUID_MODEL", Compute_Entropy, true);
-  /* DESCRIPTION: Store the Cartesian gradients of the DGFEM basis functions (NO, YES) */
-  addBoolOption("STORE_CARTESIAN_GRADIENTS_BASIS_DGFEM", Store_Cart_Grad_BasisFunctions_DGFEM, false);
   /* DESCRIPTION: Use the lumped mass matrix for steady DGFEM computations */
   addBoolOption("USE_LUMPED_MASSMATRIX_DGFEM", Use_Lumped_MassMatrix_DGFEM, false);
   /* DESCRIPTION: Only compute the exact Jacobian of the spatial discretization (NO, YES) */
@@ -4844,13 +4842,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
 
         if(Kind_Solver != FEM_EULER) {
-          if(fabs(Theta_Interior_Penalty_DGFEM) > 1.e-8) {
-            if( Store_Cart_Grad_BasisFunctions_DGFEM )
-              cout << "Cartesian gradients of the basis functions are stored for the symmetrizing terms" << endl;
-            else
-              cout << "Cartesian gradients of the basis functions are recomputed for the symmetrizing terms" << endl;
-          }
-
           cout << "Theta symmetrizing terms interior penalty: " << Theta_Interior_Penalty_DGFEM << endl;
         }
       }
