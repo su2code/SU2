@@ -228,7 +228,6 @@ void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
 
   metricNormalsFace     = other.metricNormalsFace;
   metricCoorDerivFace   = other.metricCoorDerivFace;
-  metricElem            = other.metricElem;
   coorIntegrationPoints = other.coorIntegrationPoints;
   wallDistance          = other.wallDistance;
 }
@@ -2000,37 +1999,6 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
                      matDerBasisInt, vecRHS.data(), derivCoor);
 }
 
-void CMeshFEM::ComputeMetricTermsSIP(const unsigned short nIntegration,
-                                     const unsigned short nDOFs,
-                                     const su2double      *derBasisElemTrans,
-                                     const su2double      *derivCoor,
-                                     su2double            *metricSIP) {
-
-  /*--- Create the Cartesian derivatives of the basis functions in the integration
-        points. The array metricSIP is used to store these derivatives. ---*/
-  unsigned int ii = 0;
-  for(unsigned short j=0; j<nDOFs; ++j) {
-    for(unsigned short i=0; i<nIntegration; ++i, ii+=nDim) {
-
-      /* Easier storage of the derivatives of the basis function w.r.t. the
-         parametric coordinates, the location where to store the Cartesian
-         derivatives of the basis functions, and the metric terms in this
-         integration point. */
-      const su2double *derParam    = derBasisElemTrans + ii;
-      const su2double *metricTerms = derivCoor + i*nDim*nDim;
-            su2double *derCar      = metricSIP + ii;
-
-      /*--- Loop over the dimensions to compute the Cartesian derivatives
-            of the basis functions. ---*/
-      for(unsigned short k=0; k<nDim; ++k) {
-        derCar[k] = 0.0;
-        for(unsigned short l=0; l<nDim; ++l)
-          derCar[k] += derParam[l]*metricTerms[k+l*nDim];
-      }
-    }
-  }
-}
-
 void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
                                   const unsigned short nDOFs,
                                   const su2double      *dr,
@@ -2124,14 +2092,8 @@ void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
 void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
                                         CConfig      *config) {
 
-  /*--- Determine whether or not the viscous terms are needed and whether or
-        not the Cartesian gradients of the basis functions are stored. ---*/
-  bool viscousTerms = false, CartGradBasisFunctionsStored = false;
-  if(config->GetKind_Solver() != FEM_EULER) {
-    viscousTerms = true;
-    if(fabs(config->GetTheta_Interior_Penalty_DGFEM()) > 1.e-8)
-      CartGradBasisFunctionsStored = config->GetStore_Cart_Grad_BasisFunctions_DGFEM();
-  }
+  /* Determine whether or not the viscous terms are needed. */
+  const bool viscousTerms = (config->GetKind_Solver() != FEM_EULER);
 
   /*--- Loop over the boundary faces stored on this rank. ---*/
   for(unsigned long i=0; i<boundary->surfElem.size(); ++i) {
@@ -2141,24 +2103,18 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
     /*---         Depending on the case, not all of this memory is needed.   ---*/
     /*---         - Unit normals + area (nDim+1 per integration point)       ---*/
     /*---         - drdx, dsdx, etc. (nDim*nDim per integration point)       ---*/
-    /*---         - Derivatives of the element basis functions               ---*/
-    /*---           (nDim*nDOFsElem per integration point)                   ---*/
     /*--------------------------------------------------------------------------*/
 
     /* Determine the corresponding standard face element and get the
        relevant information from it. */
-    const unsigned short ind       = boundary->surfElem[i].indStandardElement;
-    const unsigned short nInt      = standardBoundaryFacesSol[ind].GetNIntegration();
-    const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
+    const unsigned short ind  = boundary->surfElem[i].indStandardElement;
+    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Allocate the several metric terms. ---*/
     boundary->surfElem[i].metricNormalsFace.resize(nInt*(nDim+1));
 
-    if( viscousTerms ) {
+    if( viscousTerms )
       boundary->surfElem[i].metricCoorDerivFace.resize(nInt*nDim*nDim);
-      if( CartGradBasisFunctionsStored )
-        boundary->surfElem[i].metricElem.resize(nInt*nDOFsElem*nDim);
-    }
 
     /*--------------------------------------------------------------------------*/
     /*--- Step 2: Determine the actual metric data in the integration points ---*/
@@ -2184,18 +2140,6 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
       ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
                                       boundary->surfElem[i].DOFsGridElement.data(),
                                       boundary->surfElem[i].metricCoorDerivFace.data());
-
-      /* Compute the metric terms needed for the SIP treatment of the viscous
-         terms, if needed. Note that now the standard element of the solution
-         must be taken. */
-      if( CartGradBasisFunctionsStored ) {
-        nDOFs = standardBoundaryFacesSol[ind].GetNDOFsElem();
-        const su2double *derBasisElemTrans = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegrationTranspose();
-
-        ComputeMetricTermsSIP(nInt, nDOFs, derBasisElemTrans,
-                              boundary->surfElem[i].metricCoorDerivFace.data(),
-                              boundary->surfElem[i].metricElem.data());
-      }
     }
   }
 }
@@ -4858,14 +4802,8 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
 
 void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
 
-  /*--- Determine whether or not the viscous terms are needed and whether or
-        not the Cartesian gradients of the basis functions are stored. ---*/
-  bool viscousTerms = false, CartGradBasisFunctionsStored = false;
-  if(config->GetKind_Solver() != FEM_EULER) {
-    viscousTerms = true;
-    if(fabs(config->GetTheta_Interior_Penalty_DGFEM()) > 1.e-8)
-      CartGradBasisFunctionsStored = config->GetStore_Cart_Grad_BasisFunctions_DGFEM();
-  }
+  /* Determine whether or not the viscous terms are needed. */
+  bool viscousTerms = (config->GetKind_Solver() != FEM_EULER);
 
   /* Loop over the internal matching faces. */
   for(unsigned long i=0; i<matchingFaces.size(); ++i) {
@@ -4876,17 +4814,12 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
     /*---         - Unit normals + area (nDim+1 per integration point)       ---*/
     /*---         - drdx, dsdx, etc. for both sides (nDim*nDim per           ---*/
     /*---                                            integration point)      ---*/
-    /*---         - Derivatives of the element basis functions for both sides---*/
-    /*---           (nDim*nDOFsElem0, nDim*nDOFsElem1 per integration point) ---*/
     /*--------------------------------------------------------------------------*/
 
     /* Determine the corresponding standard face element and get the
        relevant information from it. */
     const unsigned short ind  = matchingFaces[i].indStandardElement;
     const unsigned short nInt = standardMatchingFacesSol[ind].GetNIntegration();
-
-    const unsigned short nDOFsElemSol0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
-    const unsigned short nDOFsElemSol1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
 
     /* Allocate the memory for the vectors to store the different face
        metric terms. */
@@ -4895,11 +4828,6 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
     if( viscousTerms ) {
       matchingFaces[i].metricCoorDerivFace0.resize(nInt*nDim*nDim);
       matchingFaces[i].metricCoorDerivFace1.resize(nInt*nDim*nDim);
-
-      if( CartGradBasisFunctionsStored ) {
-        matchingFaces[i].metricElemSide0.resize(nInt*nDOFsElemSol0*nDim);
-        matchingFaces[i].metricElemSide1.resize(nInt*nDOFsElemSol1*nDim);
-      }
     }
 
     /*--------------------------------------------------------------------------*/
@@ -4930,18 +4858,6 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
                                       matchingFaces[i].DOFsGridElementSide0.data(),
                                       matchingFaces[i].metricCoorDerivFace0.data());
 
-      /* Compute the metric terms on side 0 needed for the SIP treatment
-         of the viscous terms, if needed. Note that now the standard element
-         of the solution must be taken. */
-      if( CartGradBasisFunctionsStored ) {
-        nDOFs = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
-        dr    = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
-
-        ComputeMetricTermsSIP(nInt, nDOFs, dr,
-                              matchingFaces[i].metricCoorDerivFace0.data(),
-                              matchingFaces[i].metricElemSide0.data());
-      }
-
       /* Compute the derivatives of the parametric coordinates w.r.t. the
          Cartesian coordinates, i.e. drdx, drdy, etc. in the integration points
          on side 1 of the face. */
@@ -4951,18 +4867,6 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
       ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
                                       matchingFaces[i].DOFsGridElementSide1.data(),
                                       matchingFaces[i].metricCoorDerivFace1.data());
-
-      /* Compute the metric terms on side 1 needed for the SIP treatment
-         of the viscous terms, if needed. Note that now the standard element
-         of the solution must be taken. */
-      if( CartGradBasisFunctionsStored ) {
-        nDOFs = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
-        dr    = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
-
-        ComputeMetricTermsSIP(nInt, nDOFs, dr,
-                              matchingFaces[i].metricCoorDerivFace1.data(),
-                              matchingFaces[i].metricElemSide1.data());
-      }
     }
   }
 }
