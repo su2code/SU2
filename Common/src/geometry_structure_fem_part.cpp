@@ -303,11 +303,18 @@ void BoundaryFaceClass::Copy(const BoundaryFaceClass &other) {
 }
 
 MatchingFaceClass::MatchingFaceClass() {
-  nCornerPoints  = 0;
-  nDim           = 0;
-  nPoly          = 0;
-  nDOFsElem      = 0;
-  elemID         = 0;
+  nCornerPoints = 0;
+  nDim          = 0;
+  nPoly         = 0;
+  nDOFsElem     = 0;
+  elemType      = 0;
+  elemID        = 0;
+
+  cornerCoor[0][0] = cornerCoor[0][1] = cornerCoor[0][2] = 0.0;
+  cornerCoor[1][0] = cornerCoor[1][1] = cornerCoor[1][2] = 0.0;
+  cornerCoor[2][0] = cornerCoor[2][1] = cornerCoor[2][2] = 0.0;
+  cornerCoor[3][0] = cornerCoor[3][1] = cornerCoor[3][2] = 0.0;
+  
   tolForMatching = 0.0;
 }
 
@@ -2800,40 +2807,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                    *config,
                                                       vector<FaceOfElementClass> &localFaces) {
 
-  /*--- Create the MPI datatype for the communication of facesDonor. ---*/
-  MatchingFaceClass thisMatchingFace;
-
-#ifdef HAVE_MPI
-  int blockLen[] = {1, 1, 1, 1, 1, 1, 12, 1};
-  MPI_Datatype type[] = {MPI_UNSIGNED_SHORT, MPI_UNSIGNED_SHORT,
-                         MPI_UNSIGNED_SHORT, MPI_UNSIGNED_SHORT,
-                         MPI_UNSIGNED_SHORT, MPI_UNSIGNED_LONG,
-                         MPI_DOUBLE,         MPI_DOUBLE};
-  MPI_Aint disp[8];
-  MPI_Get_address(&thisMatchingFace.nCornerPoints,  disp);
-  MPI_Get_address(&thisMatchingFace.nDim,           disp+1);
-  MPI_Get_address(&thisMatchingFace.nPoly,          disp+2);
-  MPI_Get_address(&thisMatchingFace.nDOFsElem,      disp+3);
-  MPI_Get_address(&thisMatchingFace.elemType,       disp+4);
-  MPI_Get_address(&thisMatchingFace.elemID,         disp+5);
-  MPI_Get_address( thisMatchingFace.cornerCoor,     disp+6);
-  MPI_Get_address(&thisMatchingFace.tolForMatching, disp+7);
-
-  MPI_Aint base;
-  MPI_Get_address(&thisMatchingFace, &base);
-  // for(unsigned short i=0; i<8; ++i) disp[i] = MPI_Aint_diff(disp[i], base);
-  for(unsigned short i=0; i<8; ++i) disp[i] = disp[i] - base;
-
-  MPI_Datatype MPI_MATCHINGFACE_TYPE_HELP;
-  MPI_Type_create_struct(8, blockLen, disp, type, &MPI_MATCHINGFACE_TYPE_HELP);
-
-  MPI_Datatype MPI_MATCHINGFACE_TYPE;
-  MPI_Aint sizeofentry = sizeof(thisMatchingFace);
-  MPI_Type_create_resized(MPI_MATCHINGFACE_TYPE_HELP, 0, sizeofentry,
-                          &MPI_MATCHINGFACE_TYPE);
-  MPI_Type_commit(&MPI_MATCHINGFACE_TYPE);
-#endif
-
   /*--- Determine a mapping from the global point ID to the local index
         of the points.            ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
@@ -2867,7 +2840,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
       su2double sinTheta = sin(theta), sinPhi = sin(phi), sinPsi = sin(psi);
 
       /*--- Compute the rotation matrix. Note that the implicit
-       ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
       su2double rotMatrix[3][3];
       rotMatrix[0][0] =  cosPhi*cosPsi;
       rotMatrix[1][0] =  cosPhi*sinPsi;
@@ -2962,14 +2935,104 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
 
         int sizeGlobal = displs.back() + recvCounts.back();
 
+        /*--- SU2_MPI does not support the communication of derived data types,
+              at least not at the moment when this was coded. Therefore the data
+              from facesDonor is copied into buffers of primitive types, which
+              are communicated. ---*/
+        vector<unsigned short> shortLocBuf(5*sizeLocal);
+        vector<unsigned long>  longLocBuf(sizeLocal);
+        vector<su2double>      doubleLocBuf(13*sizeLocal);
+
+        unsigned long cS=0, cL=0, cD=0;
+        for(vector<MatchingFaceClass>::const_iterator fIt =facesDonor.begin();
+                                                      fIt!=facesDonor.end(); ++fIt) {
+          shortLocBuf[cS++] = fIt->nCornerPoints;
+          shortLocBuf[cS++] = fIt->nDim;
+          shortLocBuf[cS++] = fIt->nPoly;
+          shortLocBuf[cS++] = fIt->nDOFsElem;
+          shortLocBuf[cS++] = fIt->elemType;
+
+          longLocBuf[cL++] = fIt->elemID;
+
+          doubleLocBuf[cD++] = fIt->cornerCoor[0][0];
+          doubleLocBuf[cD++] = fIt->cornerCoor[0][1];
+          doubleLocBuf[cD++] = fIt->cornerCoor[0][2];
+
+          doubleLocBuf[cD++] = fIt->cornerCoor[1][0]; 
+          doubleLocBuf[cD++] = fIt->cornerCoor[1][1]; 
+          doubleLocBuf[cD++] = fIt->cornerCoor[1][2];
+
+          doubleLocBuf[cD++] = fIt->cornerCoor[2][0]; 
+          doubleLocBuf[cD++] = fIt->cornerCoor[2][1]; 
+          doubleLocBuf[cD++] = fIt->cornerCoor[2][2];
+
+          doubleLocBuf[cD++] = fIt->cornerCoor[3][0]; 
+          doubleLocBuf[cD++] = fIt->cornerCoor[3][1]; 
+          doubleLocBuf[cD++] = fIt->cornerCoor[3][2];
+
+          doubleLocBuf[cD++] = fIt->tolForMatching;
+        }
+
         /*--- Gather the faces from all ranks to all ranks. Use Allgatherv
               for this purpose.                  ---*/
-        vector<MatchingFaceClass> bufLocalFaces = facesDonor;
-        facesDonor.resize(sizeGlobal);
+        vector<unsigned short> shortGlobBuf(5*sizeGlobal);
+        vector<unsigned long>  longGlobBuf(sizeGlobal);
+        vector<su2double>      doubleGlobBuf(13*sizeGlobal);
 
-        MPI_Allgatherv(bufLocalFaces.data(), sizeLocal, MPI_MATCHINGFACE_TYPE,
-                       facesDonor.data(), recvCounts.data(), displs.data(),
-                       MPI_MATCHINGFACE_TYPE, MPI_COMM_WORLD);
+        MPI_Allgatherv(longLocBuf.data(), longLocBuf.size(), MPI_UNSIGNED_LONG,
+                       longGlobBuf.data(), recvCounts.data(), displs.data(),
+                       MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+        for(int i=0; i<size; ++i) {
+          recvCounts[i] *= 5; displs[i] *= 5;         
+        }
+
+        MPI_Allgatherv(shortLocBuf.data(), shortLocBuf.size(), MPI_UNSIGNED_SHORT,
+                       shortGlobBuf.data(), recvCounts.data(), displs.data(),
+                       MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
+
+        for(int i=0; i<size; ++i) {
+          recvCounts[i] /=  5; displs[i] /=  5;
+          recvCounts[i] *= 13; displs[i] *= 13;
+        }
+
+        MPI_Allgatherv(doubleLocBuf.data(), doubleLocBuf.size(), MPI_DOUBLE,
+                       doubleGlobBuf.data(), recvCounts.data(), displs.data(),
+                       MPI_DOUBLE, MPI_COMM_WORLD);
+
+        /*--- Copy the data back into facesDonor, which will contain the
+              global information after the copies. ---*/
+        facesDonor.resize(sizeGlobal);
+        cS = cL = cD = 0;
+
+        for(vector<MatchingFaceClass>::iterator fIt =facesDonor.begin();
+                                                fIt!=facesDonor.end(); ++fIt) {
+          fIt->nCornerPoints = shortGlobBuf[cS++];
+          fIt->nDim          = shortGlobBuf[cS++];
+          fIt->nPoly         = shortGlobBuf[cS++];
+          fIt->nDOFsElem     = shortGlobBuf[cS++];
+          fIt->elemType      = shortGlobBuf[cS++];
+
+          fIt->elemID = longGlobBuf[cL++];
+
+          fIt->cornerCoor[0][0] = doubleGlobBuf[cD++];
+          fIt->cornerCoor[0][1] = doubleGlobBuf[cD++];
+          fIt->cornerCoor[0][2] = doubleGlobBuf[cD++];
+
+          fIt->cornerCoor[1][0] = doubleGlobBuf[cD++];
+          fIt->cornerCoor[1][1] = doubleGlobBuf[cD++];
+          fIt->cornerCoor[1][2] = doubleGlobBuf[cD++];
+
+          fIt->cornerCoor[2][0] = doubleGlobBuf[cD++];
+          fIt->cornerCoor[2][1] = doubleGlobBuf[cD++];
+          fIt->cornerCoor[2][2] = doubleGlobBuf[cD++];
+
+          fIt->cornerCoor[3][0] = doubleGlobBuf[cD++];
+          fIt->cornerCoor[3][1] = doubleGlobBuf[cD++];
+          fIt->cornerCoor[3][2] = doubleGlobBuf[cD++];
+
+          fIt->tolForMatching = doubleGlobBuf[cD++];
+        }
       }
 #endif
 
@@ -3009,6 +3072,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         /*--- Store the data for this boundary element also in thisMatchingFace,
               such that a search can be carried out in donorFaces. Note that the
               periodic transformation must be applied to the coordinates. ---*/
+        MatchingFaceClass thisMatchingFace;
         thisMatchingFace.nDim          = nDim;
         thisMatchingFace.nCornerPoints = nPointsPerFace[0];
         thisMatchingFace.elemID        = low->elemID0;
@@ -3052,12 +3116,6 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
       }
     }
   }
-
-#ifdef HAVE_MPI
-  /*--- Free the MPI datatype for the communication of facesDonor. ---*/
-  MPI_Type_free(&MPI_MATCHINGFACE_TYPE);
-  MPI_Type_free(&MPI_MATCHINGFACE_TYPE_HELP);
-#endif
 }
 
 void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config) {
