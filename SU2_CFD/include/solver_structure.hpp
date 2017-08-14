@@ -701,7 +701,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Evaluate_ObjFunc(CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -981,7 +981,7 @@ public:
    */
   virtual void BC_Giles(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-	
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -993,7 +993,7 @@ public:
    */
   virtual void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1028,7 +1028,7 @@ public:
    */
   virtual void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1040,7 +1040,7 @@ public:
    */
   virtual void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1063,7 +1063,7 @@ public:
    */
   virtual void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                          CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1074,7 +1074,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   virtual void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1085,7 +1085,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   virtual void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-    
+
 	/*!
 	 * \brief Impose the symmetry boundary condition using the residual.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1096,7 +1096,7 @@ public:
    */
   virtual void BC_Dielec(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                          CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1107,7 +1107,7 @@ public:
    */
   virtual void BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                             CConfig *config, unsigned short val_marker);
-   
+
  /*!
    * \brief Get the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
@@ -1262,7 +1262,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Momentum_Forces(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1449,7 +1449,7 @@ public:
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   virtual void SetTotal_SolidCD(su2double val_Total_SolidCD);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
@@ -1516,14 +1516,14 @@ public:
    * \param[in] val_weight - Value of the weight for the custom objective function.
    */
   virtual void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
    * \param[in] val_weight - Value of the weight for the custom objective function.
    */
   virtual void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_CT - Value of the total thrust coefficient.
@@ -2181,7 +2181,7 @@ public:
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   virtual su2double GetTotal_SolidCD(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
@@ -2271,13 +2271,13 @@ public:
    * \return Value of the moment x coefficient (inviscid + viscous contribution).
    */
   virtual su2double GetTotal_CoPx(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the moment y coefficient (inviscid + viscous contribution).
    */
   virtual su2double GetTotal_CoPy(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the moment y coefficient (inviscid + viscous contribution).
@@ -2343,7 +2343,7 @@ public:
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CMx_Inv(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
@@ -2361,13 +2361,13 @@ public:
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CoPx_Inv(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CoPy_Inv(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
@@ -2439,13 +2439,13 @@ public:
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CoPx_Visc(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CoPy_Visc(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
@@ -2516,13 +2516,13 @@ public:
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CoPx_Mnt(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CoPy_Mnt(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
@@ -3298,7 +3298,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetSensitivity(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] Set value of interest: 0 - Initial value, 1 - Current value.
@@ -3455,7 +3455,7 @@ public:
    * \param[in] kind_recording - Kind of AD recording.
    */
   virtual void SetRecording(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3815,7 +3815,7 @@ public:
    * \brief Constructor of the class.
    */
   CBaselineSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3889,36 +3889,6 @@ protected:
   CVolumeElementFEM *volElem;   /*!< \brief Array of the local volume elements, including halos. */
 
   vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in all the DOFs. */
-
-private:
-
-#ifdef HAVE_MPI
-  int nCommRequests;                 /*!< \brief Number of communication requests in the persistent communication.
-                                      These are both sending and receiving requests. */
-  vector<MPI_Request> commRequests;  /*!< \brief Communication requests in the persistent communication.
-                                      These are both sending and receiving requests. */
-  vector<MPI_Datatype> commTypes;    /*!< \brief MPI derived data types for communicating the solution
-                                      variables of the DOFS. */
-
-  vector<MPI_Request> reverseCommRequests; /*!< \brief Communication requests in the persistent reverse communication.
-                                            These are both sending and receiving requests. */
-  vector<MPI_Datatype> reverseCommTypes;   /*!< \brief MPI derived data types for communicating the residuals
-                                            of the DOFs in the halo elements. */
-
-  vector<vector<unsigned long> > reverseElementsRecv; /*!< \brief Element ID's for which residuals must be
-                                                       updated via the reverse communication pattern. */
-  vector<vector<su2double> >     reverseCommRecvBuf;  /*!< \brief Receive buffers used to receive the residual
-                                                       data in the reverse communication pattern. */
-#endif
-
-  vector<unsigned long> elementsRecvSelfComm;  /*!< \brief The halo elements for self communication.  */
-  vector<unsigned long> elementsSendSelfComm;  /*!< \brief The donor elements for self communication. */
-
-  vector<su2double> rotationMatricesPeriodicity;             /*!< \brief Vector, which contains the rotation matrices
-                                                              for the rotational periodic transformations. */
-  vector<vector<unsigned long> > halosRotationalPeriodicity; /*!< \brief Vector of vectors, which contain the indices
-                                                              of halo elements for which a periodic
-                                                              transformation must be applied. */
 
 public:
 
@@ -4245,7 +4215,7 @@ protected:
              **KineOut,
              **OmegaOut,
              **NuOut;
-  
+
   complex<su2double> ***CkInflow,
                      ***CkOutflow1,
                      ***CkOutflow2;
@@ -4609,7 +4579,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Evaluate_ObjFunc(CConfig *config);
-  
+
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
    *
@@ -4734,7 +4704,7 @@ public:
    */
   void BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                   CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
+
 
   /*!
    * \brief Impose the boundary condition using characteristic recostruction.
@@ -4770,8 +4740,8 @@ public:
    */
   void BC_Giles(CGeometry *geometry, CSolver **solver_container,
                         CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
-  
+
+
   /*!
    * \brief Impose a subsonic inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -5368,7 +5338,7 @@ public:
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   su2double GetTotal_SolidCD(void);
-  
+
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
@@ -5422,7 +5392,7 @@ public:
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   su2double GetTotal_IDR(void);
- 
+
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
@@ -5458,13 +5428,13 @@ public:
    * \return Value of the moment x coefficient (inviscid + viscous contribution).
    */
   su2double GetTotal_CoPx(void);
-  
+
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional y moment coefficient.
    * \return Value of the moment y coefficient (inviscid + viscous contribution).
    */
   su2double GetTotal_CoPy(void);
-  
+
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional z moment coefficient.
    * \return Value of the moment z coefficient (inviscid + viscous contribution).
@@ -5572,7 +5542,7 @@ public:
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   void SetTotal_SolidCD(su2double val_Total_SolidCD);
-  
+
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
@@ -5639,7 +5609,7 @@ public:
    * \param[in] val_weight - Value of the weight for the custom objective function.
    */
   void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
-  
+
   /*!
    * \brief Add the value of the custom objective function.
    * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
@@ -5694,19 +5664,19 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CoPx_Inv(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CoPy_Inv(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CoPz_Inv(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
@@ -5772,13 +5742,13 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CoPx_Mnt(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CoPy_Mnt(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
@@ -5938,7 +5908,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
-  
+
   /*!
    * \brief Value of the characteristic global index at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -5946,7 +5916,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   void SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal);
-  
+
   /*!
    * \brief Value of the characteristic global index at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -5954,7 +5924,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   void SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal);
-  
+
   /*!
    * \brief Value of the characteristic global index at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -5967,43 +5937,43 @@ public:
    * \brief Provide the averaged total pressure at a marker.
    */
   su2double GetOneD_TotalPress(void);
-  
+
   /*!
    * \brief Set the value of averaged total pressure
    * \param[in] val_exit_pt - value of the averaged pressure
    */
   void SetOneD_TotalPress(su2double AveragePressure);
-  
+
   /*!
    * \brief Provide the averaged Mach number at a marker.
    */
   su2double GetOneD_Mach(void);
-  
+
   /*!
    * \brief Set the averaged Mach number at a marker.
    */
   void SetOneD_Mach(su2double AverageMach);
-  
+
   /*!
    * \brief Provide the averaged Temperature number at a marker.
    */
   su2double GetOneD_Temp(void);
-  
+
   /*!
    * \brief Set the averaged Temperature at a marker.
    */
   void SetOneD_Temp(su2double AverageTemperature);
-  
+
   /*!
    * \brief Provide the averaged mass flow rate at a marker.
    */
   su2double GetOneD_MassFlowRate(void);
-  
+
   /*!
    * \brief Set the averaged mass flow rate at a marker.
    */
   void SetOneD_MassFlowRate(su2double MassFlowRate);
-  
+
   /*!
      * \brief Get the one-dimensionalized pressure at a marker.(same as area averaged pressure)
      */
@@ -6054,7 +6024,7 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] flow_geometry - Geometrical definition of the problem.
@@ -6064,7 +6034,7 @@ public:
    */
   void SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config,
                             CGeometry **fea_geometry, CSolver ***fea_solution);
-  
+
 /*!
    * \brief A virtual member.
    * \param[in] flow_geometry - Geometrical definition of the problem.
@@ -6074,7 +6044,7 @@ public:
    */
   void SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config,
                                 CGeometry **fea_geometry, CSolver ***fea_solution);
-  
+
   /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -6091,7 +6061,7 @@ public:
    * \param[in] val_vertex   - vertex index
    */
   void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
-      
+
   /*!
    * \brief Set the outer state for fluid interface nodes.
    * \param[in] val_marker   - marker index
@@ -6116,7 +6086,7 @@ public:
    * \param[in] val_vertex - vertex index
    */
   int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
-    
+
   /*!
    * \brief Set the initial condition for the Euler Equations.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -6125,19 +6095,19 @@ public:
    * \param[in] ExtIter - External iteration.
    */
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-  
+
   /*!
    * \brief Set the freestream pressure.
    * \param[in] Value of freestream pressure.
    */
   void SetPressure_Inf(su2double p_inf);
-  
+
   /*!
    * \brief Set the freestream temperature.
    * \param[in] Value of freestream temperature.
    */
   void SetTemperature_Inf(su2double t_inf);
-  
+
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
@@ -8005,13 +7975,13 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CoPx_Visc(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CoPy_Visc(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
@@ -8736,7 +8706,7 @@ public:
   void BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
 
-  
+
   /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -12129,7 +12099,7 @@ public:
    * \param[in] kind_recording - Kind of AD recording.
    */
   void SetRecording(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -12382,34 +12352,33 @@ protected:
 private:
 
 #ifdef HAVE_MPI
-  vector<int> nCommRequests;                 /*!< \brief Number of communication requests in the persistent communication
-                                                         for all time levels. These are both sending and receiving requests. */
-  vector<vector<MPI_Request> > commRequests;  /*!< \brief Communication requests in the persistent communication for all
+  vector<vector<MPI_Request> > commRequests;  /*!< \brief Communication requests in the communication of the solution for all
                                                           time levels. These are both sending and receiving requests. */
-  vector<MPI_Datatype> commTypes;    /*!< \brief MPI derived data types for communicating the solution
-                                                 variables of the DOFS. */
 
-  vector<vector<MPI_Request> > reverseCommRequests; /*!< \brief Communication requests in the persistent reverse communication
-                                                                for all time levels. These are both sending and receiving requests. */
-  vector<MPI_Datatype> reverseCommTypes;   /*!< \brief MPI derived data types for communicating the residuals
-                                                       of the DOFs in the halo elements. */
+  vector<vector<vector<unsigned long> > > elementsRecvMPIComm;  /*!< \brief Triple vector, which contains the halo elements
+                                                                            for MPI communication for all time levels. */
+  vector<vector<vector<unsigned long> > > elementsSendMPIComm;  /*!< \brief Triple vector, which contains the donor elements
+                                                                            for MPI communication for all time levels. */
 
-  vector<vector<vector<unsigned long> > > reverseElementsRecv; /*!< \brief Element ID's for which residuals must be
-                                                                           updated via the reverse communication pattern
-                                                                           for all time levels. */
-  vector<vector<vector<su2double> > >     reverseCommRecvBuf;  /*!< \brief Receive buffers used to receive the residual
-                                                                           data in the reverse communication pattern
-                                                                           for all time levels. */
+  vector<vector<int> > ranksRecvMPI; /*!< \brief Double vector, which contains the ranks from which the halo elements
+                                                 are received for all time levels. */
+  vector<vector<int> > ranksSendMPI; /*!< \brief Double vector, which contains the ranks to which the donor elements
+                                                 are sent for all time levels. */
+
+  vector<vector<vector<su2double> > > commRecvBuf;  /*!< \brief Receive buffers used to receive the solution data
+                                                                in the communication pattern for all time levels. */
+  vector<vector<vector<su2double> > > commSendBuf;  /*!< \brief Send buffers used to send the solution data
+                                                                in the communication pattern for all time levels. */
 #endif
 
-  vector<vector<unsigned long> > elementsRecvSelfComm;  /*!< \brief The halo elements for self communication
-                                                                    for all time levels.  */
-  vector<vector<unsigned long> > elementsSendSelfComm;  /*!< \brief The donor elements for self communication
-                                                                    for all time levels. */
+  vector<vector<unsigned long> > elementsRecvSelfComm;  /*!< \brief Double vector, which contains the halo elements
+                                                                    for self communication for all time levels. */
+  vector<vector<unsigned long> > elementsSendSelfComm;  /*!< \brief Double vector, which contains the donor elements
+                                                                    for self communication for all time levels. */
 
   vector<su2double> rotationMatricesPeriodicity;    /*!< \brief Vector, which contains the rotation matrices
                                                                 for the rotational periodic transformations. */
-  vector<vector<vector<unsigned long> > > halosRotationalPeriodicity; /*!< \brief Vector of vectors, which contain the indices
+  vector<vector<vector<unsigned long> > > halosRotationalPeriodicity; /*!< \brief Triple vector, which contains the indices
                                                                                   of halo elements for which a periodic
                                                                                   transformation must be applied for all
                                                                                   time levels. */
@@ -13301,10 +13270,12 @@ protected:
   /*!
    * \brief Routine that initiates the non-blocking communication between ranks
             for the givem time level.
+   * \param[in] config    - Definition of the particular problem.
    * \param[in] timeLevel - The time level for which the communication must be
                             initiated.
    */
-  void Initiate_MPI_Communication(const unsigned short timeLevel);
+  void Initiate_MPI_Communication(CConfig *config,
+                                  const unsigned short timeLevel);
 
   /*!
    * \brief Routine that initiates the reverse non-blocking communication
