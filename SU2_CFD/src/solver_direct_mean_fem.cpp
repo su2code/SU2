@@ -10726,10 +10726,6 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
                                      unsigned long       &indResFaces,
                                      CNumerics           *numerics) {
 
-  /* Determine whether or not the Cartesian gradients of the basis functions
-     are stored. */
-  const bool CartGradBasisFunctionsStored = config->GetStore_Cart_Grad_BasisFunctions_DGFEM();
-
   /*--- Set the pointers for the local arrays. ---*/
   double tick = 0.0;
   double tick2 = 0.0;
@@ -10737,7 +10733,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
   unsigned int sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*nVar;
 
   su2double *solIntL       = VecTmpMemory.data();
   su2double *solIntR       = solIntL       + nIntegrationMax*nVar;
@@ -10903,133 +10899,37 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     config->Tock(tick, "ER_1_4", 4);
 
     /*------------------------------------------------------------------------*/
-    /*--- Step 5: Compute the symmetrizing terms, if present, in the       ---*/
-    /*---         integration points of this matching face.                ---*/
+    /*--- Step 5: Compute and distribute the symmetrizing terms, if        ---*/
+    /*---         present. Note that these terms must be distributed to    ---*/
+    /*---         DOFs of the adjacent element, not only of the face.      ---*/
     /*------------------------------------------------------------------------*/
 
     if( symmetrizingTermsPresent ) {
 
       config->Tick(&tick);
-      /* Compute the symmetrizing fluxes in the nDim directions. */
+      /* Compute the symmetrizing fluxes in the nDim directions in the
+         integration points of the face. */
       SymmetrizingFluxesFace(nInt, solIntL, solIntR, viscosityIntL, viscosityIntR,
                              kOverCvIntL, kOverCvIntR,
                              matchingInternalFaces[l].metricNormalsFace.data(),
                              fluxes);
 
-      /*--- Multiply the fluxes just computed by their integration weights and
-            -theta/2. The parameter theta is the parameter in the Interior Penalty
-            formulation, the factor 1/2 comes in from the averaging and the minus
-            sign is from the convention that the viscous fluxes come with a minus
-            sign in this code. ---*/
+      /* Transform the fluxes, such that they must be multiplied with the
+         gradients w.r.t. the parametric coordinates rather than the
+         Cartesian coordinates of the basis functions. Also a multiplication
+         with the integration weight and the theta parameter is carried out.
+         Use gradSolInt as a buffer to store the parametric fluxes.
+         First side 0 of the face.  */
+      su2double *paramFluxes = gradSolInt;
       const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
 
-      for(unsigned short i=0; i<nInt; ++i) {
-        su2double *flux        = fluxes + i*nVar*nDim;
-        const su2double wTheta = -halfTheta*weights[i];
-
-        for(unsigned short j=0; j<(nVar*nDim); ++j)
-          flux[j] *= wTheta;
-      }
-      config->Tock(tick, "ER_1_5", 4);
-
-      /*------------------------------------------------------------------------*/
-      /*--- Step 6: Distribute the symmetrizing terms to the DOFs. Note that ---*/
-      /*---         these terms must be distributed to all the DOFs of the   ---*/
-      /*---         adjacent elements, not only to the DOFs of the face.     ---*/
-      /*------------------------------------------------------------------------*/
+      TransformSymmetrizingFluxes(nInt, halfTheta, fluxes, weights,
+                                  matchingInternalFaces[l].metricCoorDerivFace0.data(),
+                                  paramFluxes);
 
       /* Easier storage of the number of DOFs for the adjacent elements. */
       const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
       const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
-
-      config->Tick(&tick);
-
-      /* The Cartesian gradients of the element basis functions of side 0
-         are needed. Check if this data is stored. */
-      const su2double *cartGrad;
-      if( CartGradBasisFunctionsStored )
-        cartGrad = matchingInternalFaces[l].metricElemSide0.data();
-      else {
-
-        /* The gradients are not stored. Use the array gradSolInt to store
-           these derivatives. Get the derivatives w.r.t. the parametric
-           coordinates of the element on side 0 of the face. */
-        const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
-
-        /* Make a distinction between two and three space dimensions
-           in order to have the most efficient code. */
-        switch( nDim ) {
-
-          case 2: {
-
-            /*--- Two dimensional computation. Create the Cartesian derivatives
-                  of the basis functions of the DOFs of the element of side 0
-                  of the face in the integration points. ---*/
-            for(unsigned short j=0; j<nDOFsElem0; ++j) {
-              for(unsigned short i=0; i<nInt; ++i) {
-
-                /* Easier storage of the derivatives of the basis function w.r.t. the
-                   parametric coordinates, the location where to store the Cartesian
-                   derivatives of the basis functions, and the metric terms in this
-                   integration point. */
-                const unsigned int ii = 2*(j*nInt + i);   // The 2 is nDim.
-
-                const su2double *derParam    = derBasisElemTrans + ii;
-                const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0.data()
-                                             + 4*i;               // The 4 is nDim*nDim;
-                      su2double *derCar      = gradSolInt + ii;
-
-                /*--- Compute the Cartesian derivatives of this basis function
-                      in this integration point. ---*/
-                derCar[0] = derParam[0]*metricTerms[0] + derParam[1]*metricTerms[2];
-                derCar[1] = derParam[0]*metricTerms[1] + derParam[1]*metricTerms[3];
-              }
-            }
-
-            break;
-          }
-
-          /*------------------------------------------------------------------*/
-
-          case 3: {
-
-            /*--- Three dimensional computation. Create the Cartesian derivatives
-                  of the basis functions of the DOFs of the element of side 0
-                  of the face in the integration points. ---*/
-            for(unsigned short j=0; j<nDOFsElem0; ++j) {
-              for(unsigned short i=0; i<nInt; ++i) {
-
-                /* Easier storage of the derivatives of the basis function w.r.t. the
-                   parametric coordinates, the location where to store the Cartesian
-                   derivatives of the basis functions, and the metric terms in this
-                   integration point. */
-                const unsigned int ii = 3*(j*nInt + i);   // The 3 is nDim.
-
-                const su2double *derParam    = derBasisElemTrans + ii;
-                const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0.data()
-                                             + 9*i;               // The 9 is nDim*nDim;
-                      su2double *derCar      = gradSolInt + ii;
-
-                /*--- Compute the Cartesian derivatives of this basis function
-                      in this integration point. ---*/
-                derCar[0] = derParam[0]*metricTerms[0] + derParam[1]*metricTerms[3]
-                          + derParam[2]*metricTerms[6];
-                derCar[1] = derParam[0]*metricTerms[1] + derParam[1]*metricTerms[4]
-                          + derParam[2]*metricTerms[7];
-                derCar[2] = derParam[0]*metricTerms[2] + derParam[1]*metricTerms[5]
-                          + derParam[2]*metricTerms[8];
-              }
-            }
-
-            break;
-          }
-        }
-
-
-        /* Set the pointer of gradSolInt to cartGrad, such that the latter can
-           be used in the call to the matrix multiplication. */
-        cartGrad = gradSolInt;
-      }
 
       /* Set the pointer where to store the current residual and update the
          counter indResFaces. */
@@ -11038,93 +10938,20 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
       /* Call the general function to carry out the matrix product to compute
          the residual for side 0. */
+      const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
       config->GEMM_Tick(&tick2);
-      DenseMatrixProduct(nDOFsElem0, nVar, nInt*nDim, cartGrad, fluxes, resElem0);
+      DenseMatrixProduct(nDOFsElem0, nVar, nInt*nDim, derBasisElemTrans, paramFluxes, resElem0);
       config->GEMM_Tock(tick2, "ResidualFaces3", nDOFsElem0, nVar, nInt*nDim);
 
-      /* The Cartesian gradients of the element basis functions of side 1
-         are needed. Check if this data is stored. */
-      if( CartGradBasisFunctionsStored )
-        cartGrad = matchingInternalFaces[l].metricElemSide1.data();
-      else {
-
-        /* The Cartesian gradients must be computed. Get the derivatives w.r.t.
-           the parametric coordinates of the element on side 1 of the face. */
-        const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
-
-        /* Make a distinction between two and three space dimensions
-           in order to have the most efficient code. */
-        switch( nDim ) {
-
-          case 2: {
-
-            /*--- Two dimensional computation. Create the Cartesian derivatives
-                  of the basis functions of the DOFs of the element of side 1
-                  of the face in the integration points. ---*/
-            for(unsigned short j=0; j<nDOFsElem1; ++j) {
-              for(unsigned short i=0; i<nInt; ++i) {
-
-                /* Easier storage of the derivatives of the basis function w.r.t. the
-                   parametric coordinates, the location where to store the Cartesian
-                   derivatives of the basis functions, and the metric terms in this
-                   integration point. */
-                const unsigned int ii = 2*(j*nInt + i);   // The 2 is nDim.
-
-                const su2double *derParam    = derBasisElemTrans + ii;
-                const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
-                                             + 4*i;               // The 4 is nDim*nDim;
-                      su2double *derCar      = gradSolInt + ii;
-
-                /*--- Compute the Cartesian derivatives of this basis function
-                      in this integration point. ---*/
-                derCar[0] = derParam[0]*metricTerms[0] + derParam[1]*metricTerms[2];
-                derCar[1] = derParam[0]*metricTerms[1] + derParam[1]*metricTerms[3];
-              }
-            }
-
-            break;
-          }
-
-          /*------------------------------------------------------------------*/
-
-          case 3: {
-
-            /*--- Three dimensional computation. Create the Cartesian derivatives
-                  of the basis functions of the DOFs of the element of side 1
-                  of the face in the integration points. ---*/
-            for(unsigned short j=0; j<nDOFsElem1; ++j) {
-              for(unsigned short i=0; i<nInt; ++i) {
-
-                /* Easier storage of the derivatives of the basis function w.r.t. the
-                   parametric coordinates, the location where to store the Cartesian
-                   derivatives of the basis functions, and the metric terms in this
-                   integration point. */
-                const unsigned int ii = 3*(j*nInt + i);   // The 3 is nDim.
-
-                const su2double *derParam    = derBasisElemTrans + ii;
-                const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
-                                             + 9*i;               // The 9 is nDim*nDim;
-                      su2double *derCar      = gradSolInt + ii;
-
-                /*--- Compute the Cartesian derivatives of this basis function
-                      in this integration point. ---*/
-                derCar[0] = derParam[0]*metricTerms[0] + derParam[1]*metricTerms[3]
-                          + derParam[2]*metricTerms[6];
-                derCar[1] = derParam[0]*metricTerms[1] + derParam[1]*metricTerms[4]
-                          + derParam[2]*metricTerms[7];
-                derCar[2] = derParam[0]*metricTerms[2] + derParam[1]*metricTerms[5]
-                          + derParam[2]*metricTerms[8];
-              }
-            }
-
-            break;
-          }
-        }
-
-        /* Set the pointer of gradSolInt to cartGrad, such that the latter can
-           be used in the call to the matrix multiplication. */
-        cartGrad = gradSolInt;
-      }
+      /* Transform the fluxes, such that they must be multiplied with the
+         gradients w.r.t. the parametric coordinates rather than the
+         Cartesian coordinates of the basis functions. Also a multiplication
+         with the integration weight and the theta parameter is carried out.
+         Use gradSolInt as a buffer to store the parametric fluxes.
+         Now side 1 of the face.  */
+      TransformSymmetrizingFluxes(nInt, halfTheta, fluxes, weights,
+                                  matchingInternalFaces[l].metricCoorDerivFace1.data(),
+                                  paramFluxes);
 
       /* Set the pointer where to store the current residual and update the
          counter indResFaces. */
@@ -11135,11 +10962,12 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
          the residual for side 1. Note that the symmetrizing residual should not
          be negated, because two minus signs enter the formulation for side 1,
          which cancel each other. */
+      derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
       config->GEMM_Tick(&tick2);
-      DenseMatrixProduct(nDOFsElem1, nVar, nInt*nDim, cartGrad, fluxes, resElem1);
+      DenseMatrixProduct(nDOFsElem1, nVar, nInt*nDim, derBasisElemTrans, paramFluxes, resElem1);
       config->GEMM_Tock(tick2, "ResidualFaces4", nDOFsElem1, nVar, nInt*nDim);
     }
-    config->Tock(tick, "ER_1_6", 4);
+    config->Tock(tick, "ER_1_5", 4);
   }
 }
 
@@ -11814,6 +11642,115 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
     }
   }
 }
+
+void CFEM_DG_NSSolver::TransformSymmetrizingFluxes(const unsigned short nInt,
+                                                   const su2double      halfTheta,
+                                                   const su2double      *symmFluxes,
+                                                   const su2double      *weights,
+                                                   const su2double      *metricCoorFace,
+                                                         su2double      *paramFluxes) {
+
+  /*--- Transform the fluxes, such that they must be multiplied with the
+        gradients w.r.t. the parametric coordinates rather than the
+        Cartesian coordinates of the basis functions. This involves the
+        multiplication with the metric terms. Also multiply the fluxes with
+        their integration weights and -theta/2. The parameter theta is the
+        parameter in the Interior Penalty formulation, the factor 1/2 comes in
+        from the averaging and the minus sign is from the convention that the
+        viscous fluxes come with a minus sign in this code. ---*/
+
+  /* Make a distinction between two and three space dimensions
+     in order to have the most efficient code. */
+  switch( nDim ) {
+
+    case 2: {
+      /* Two-dimensional computation. Loop over the integration
+         points to correct the fluxes. */
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Easier storage of the location where the the fluxes
+           are stored for this integration point as well as an
+           abbreviation for the integration weights time halfTheta. */
+        const su2double *flux  =  symmFluxes + i*nVar*nDim;
+        const su2double wTheta = -halfTheta*weights[i];
+        su2double *paramFlux   =  paramFluxes + i*nVar*nDim;
+
+        /* Compute the modified metric terms. */
+        const su2double *metricTerms = metricCoorFace + 4*i;   // The 4 is nDim*nDim;
+        const su2double drdx = wTheta*metricTerms[0];
+        const su2double drdy = wTheta*metricTerms[1];
+        const su2double dsdx = wTheta*metricTerms[2];
+        const su2double dsdy = wTheta*metricTerms[3];
+
+        /* Parametric fluxes in r-direction. */
+        paramFlux[0] = flux[0]*drdx + flux[4]*drdy;
+        paramFlux[1] = flux[1]*drdx + flux[5]*drdy;
+        paramFlux[2] = flux[2]*drdx + flux[6]*drdy;
+        paramFlux[3] = flux[3]*drdx + flux[7]*drdy;
+            
+        /* Parametric fluxes in s-direction. */
+        paramFlux[4] = flux[0]*dsdx + flux[4]*dsdy;
+        paramFlux[5] = flux[1]*dsdx + flux[5]*dsdy;
+        paramFlux[6] = flux[2]*dsdx + flux[6]*dsdy;
+        paramFlux[7] = flux[3]*dsdx + flux[7]*dsdy;
+      }
+
+      break;
+    }
+
+    case 3: {
+      /* Three-dimensional computation. Loop over the integration
+         points to correct the fluxes. */
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Easier storage of the location where the the fluxes
+           are stored for this integration point as well as an
+           abbreviation for the integration weights time halfTheta. */
+        const su2double *flux  =  symmFluxes + i*nVar*nDim;
+        const su2double wTheta = -halfTheta*weights[i];
+        su2double *paramFlux   =  paramFluxes + i*nVar*nDim;
+
+        /* Compute the modified metric terms. */
+        const su2double *metricTerms = metricCoorFace + 9*i;   // The 9 is nDim*nDim;
+        const su2double drdx = wTheta*metricTerms[0];
+        const su2double drdy = wTheta*metricTerms[1];
+        const su2double drdz = wTheta*metricTerms[2];
+
+        const su2double dsdx = wTheta*metricTerms[3];
+        const su2double dsdy = wTheta*metricTerms[4];
+        const su2double dsdz = wTheta*metricTerms[5];
+
+        const su2double dtdx = wTheta*metricTerms[6];
+        const su2double dtdy = wTheta*metricTerms[7];
+        const su2double dtdz = wTheta*metricTerms[8];
+
+        /* Parametric fluxes in r-direction. */
+        paramFlux[0] = flux[0]*drdx + flux[5]*drdy + flux[10]*drdz;
+        paramFlux[1] = flux[1]*drdx + flux[6]*drdy + flux[11]*drdz;
+        paramFlux[2] = flux[2]*drdx + flux[7]*drdy + flux[12]*drdz;
+        paramFlux[3] = flux[3]*drdx + flux[8]*drdy + flux[13]*drdz;
+        paramFlux[4] = flux[4]*drdx + flux[9]*drdy + flux[14]*drdz;
+
+        /* Parametric fluxes in s-direction. */
+        paramFlux[5] = flux[0]*dsdx + flux[5]*dsdy + flux[10]*dsdz;
+        paramFlux[6] = flux[1]*dsdx + flux[6]*dsdy + flux[11]*dsdz;
+        paramFlux[7] = flux[2]*dsdx + flux[7]*dsdy + flux[12]*dsdz;
+        paramFlux[8] = flux[3]*dsdx + flux[8]*dsdy + flux[13]*dsdz;
+        paramFlux[9] = flux[4]*dsdx + flux[9]*dsdy + flux[14]*dsdz;
+
+        /* Parametric fluxes in t-direction. */
+        paramFlux[10] = flux[0]*dtdx + flux[5]*dtdy + flux[10]*dtdz;
+        paramFlux[11] = flux[1]*dtdx + flux[6]*dtdy + flux[11]*dtdz;
+        paramFlux[12] = flux[2]*dtdx + flux[7]*dtdy + flux[12]*dtdz;
+        paramFlux[13] = flux[3]*dtdx + flux[8]*dtdy + flux[13]*dtdz;
+        paramFlux[14] = flux[4]*dtdx + flux[9]*dtdy + flux[14]*dtdz;
+      }
+
+      break;
+    }
+  }
+}
+
 
 void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
                                      const unsigned long      surfElemBeg,
@@ -12828,10 +12765,6 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
   double tick = 0.0;
 
-  /* Determine whether or not the Cartesian gradients of the basis functions
-     are stored. */
-  const bool CartGradBasisFunctionsStored = config->GetStore_Cart_Grad_BasisFunctions_DGFEM();
-
   /*--- Get the required information from the standard element. ---*/
   const unsigned short ind          = surfElem->indStandardElement;
   const unsigned short nInt         = standardBoundaryFacesSol[ind].GetNIntegration();
@@ -12890,8 +12823,9 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   config->GEMM_Tock(tick, "ResidualViscousBoundaryFace1", nDOFs, nVar, nInt);
 
   /*------------------------------------------------------------------------*/
-  /*--- Step 3: Compute the symmetrizing terms, if present, in the       ---*/
-  /*---         integration points of this boundary face.                ---*/
+  /*--- Step 3: Compute and distribute the symmetrizing terms, if        ---*/
+  /*---         present. Note that these terms must be distributed to    ---*/
+  /*---         DOFs of the adjacent element, not only of the face.      ---*/
   /*------------------------------------------------------------------------*/
 
   if( symmetrizingTermsPresent ) {
@@ -12901,77 +12835,29 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                            viscosityInt, kOverCvInt, kOverCvInt,
                            surfElem->metricNormalsFace.data(), fluxes);
 
-    /*--- Multiply the fluxes just computed by their integration weights and
-          -theta/2. The parameter theta is the parameter in the Interior Penalty
-          formulation, the factor 1/2 comes in from the averaging and the minus
-          sign is from the convention that the viscous fluxes comes with a minus
-          sign in this code. ---*/
+    /* Transform the fluxes, such that they must be multiplied with the
+       gradients w.r.t. the parametric coordinates rather than the
+       Cartesian coordinates of the basis functions. Also a multiplication
+       with the integration weight and the theta parameter is carried out.
+       Use gradSolInt as a buffer to store the parametric fluxes. */
+    su2double *paramFluxes = gradSolInt;
     const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
 
-    for(unsigned short i=0; i<nInt; ++i) {
-      su2double *flux        = fluxes + i*nVar*nDim;
-      const su2double wTheta = -halfTheta*weights[i];
-
-      for(unsigned short j=0; j<(nVar*nDim); ++j)
-        flux[j] *= wTheta;
-    }
-
-    /*------------------------------------------------------------------------*/
-    /*--- Step 4: Distribute the symmetrizing terms to the DOFs. Note that ---*/
-    /*---         these terms must be distributed to all the DOFs of the   ---*/
-    /*---         adjacent element, not only to the DOFs of the face.      ---*/
-    /*------------------------------------------------------------------------*/
+    TransformSymmetrizingFluxes(nInt, halfTheta, fluxes, weights,
+                                surfElem->metricCoorDerivFace.data(), 
+                                paramFluxes);
 
     /* Easier storage of the position in the residual array for this face
        and update the corresponding counter. */
     su2double *resElem = resFaces + indResFaces*nVar;
     indResFaces       += nDOFsElem;
 
-    /* The Cartesian gradients of the basis functions of the adjacent element
-         are needed. Check if this data is stored. */
-    const su2double *cartGrad;
-    if( CartGradBasisFunctionsStored )
-      cartGrad = surfElem->metricElem.data();
-    else {
-
-      /* Get the derivatives of the basis functions w.r.t. the parametric
-         coordinates of the element. */
-      const su2double *derBasisElemTrans = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegrationTranspose();
-
-      /*--- Create the Cartesian derivatives of the basis functions in the
-            integration points. Use gradSolInt for storage. ---*/
-      unsigned int ii = 0;
-      for(unsigned short j=0; j<nDOFsElem; ++j) {
-        for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
-
-          /* Easier storage of the derivatives of the basis function w.r.t. the
-             parametric coordinates, the location where to store the Cartesian
-             derivatives of the basis functions, and the metric terms in this
-             integration point. */
-          const su2double *derParam    = derBasisElemTrans + ii;
-          const su2double *metricTerms = surfElem->metricCoorDerivFace.data()
-                                       + i*nDim*nDim;
-                su2double *derCar      = gradSolInt + ii;
-
-          /*--- Loop over the dimensions to compute the Cartesian derivatives
-                of the basis functions. ---*/
-          for(unsigned short k=0; k<nDim; ++k) {
-            derCar[k] = 0.0;
-            for(unsigned short l=0; l<nDim; ++l)
-              derCar[k] += derParam[l]*metricTerms[k+l*nDim];
-          }
-        }
-      }
-
-      /* Set the pointer of gradSolInt to cartGrad, such that the latter can
-           be used in the call to the matrix multiplication. */
-        cartGrad = gradSolInt;
-    }
-
     /* Call the general function to carry out the matrix product to compute
        the residual. */
+    const su2double *derBasisElemTrans = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegrationTranspose();
+
     config->GEMM_Tick(&tick);
-    DenseMatrixProduct(nDOFsElem, nVar, nInt*nDim, cartGrad, fluxes, resElem);
+    DenseMatrixProduct(nDOFsElem, nVar, nInt*nDim, derBasisElemTrans, paramFluxes, resElem);
     config->GEMM_Tock(tick, "ResidualViscousBoundaryFace2", nDOFsElem, nVar, nInt*nDim);
   }
 }
