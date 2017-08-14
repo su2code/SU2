@@ -362,12 +362,6 @@ public:
                                                        integration points of the face. */
   vector<su2double> metricCoorDerivFace1;  /*!< \brief The terms dxdr, dydr, etc. of side 1 in the
                                                        integration points of the face. */
-  vector<su2double> metricElemSide0;       /*!< \brief The Cartesian gradients of the basis function of the
-                                                       adjacent element on side 0 in the integration points
-                                                       of the face. Needed for the SIP term. */
-  vector<su2double> metricElemSide1;       /*!< \brief The Cartesian gradients of the basis function of the
-                                                       adjacent element on side 1 in the integration points
-                                                       of the face. Needed for the SIP term. */
 
   vector<su2double> coorIntegrationPoints;  /*!< \brief Coordinates for the integration points of this face. */
   vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
@@ -418,9 +412,6 @@ public:
                                                        The normals point out of the adjacent element. */
   vector<su2double> metricCoorDerivFace;   /*!< \brief The terms drdx, dsdx, etc. in the integration
                                                        points of the face. */
-  vector<su2double> metricElem;            /*!< \brief The Cartesian gradients of the basis function of the
-                                                       adjacent element in the integration points of the
-                                                       face. Needed for the SIP term. */
   vector<su2double> coorIntegrationPoints; /*!< \brief The coordinates of the integration points of the face. */
   vector<su2double> wallDistance;          /*!< \brief The wall distances of the integration points
                                                        of the face. */
@@ -732,26 +723,6 @@ protected:
                                     const su2double      *matDerBasisInt,
                                     const unsigned long  *DOFs,
                                     su2double            *derivCoor);
-  /*!
-  * \brief Function, which computes the metric terms needed for the SIP
-           treatment of the viscous terms. This is a dot product between the
-           Cartesian gradients of the basis functions and the normal.
-  * \param[in]  nIntegration      - Number of integration points on the face.
-  * \param[in]  nDOFs             - Number of DOFs of the grid associated with the
-                                    neighboring element.
-  * \param[in]  derBasisElemTrans - Matrix, which contains derivatives of the basis
-                                    functions of the element w.r.t. the parametric
-                                    coordinates.
-  * \param[in]  derivCoor         - Array, which contains the derivatives of the
-                                    parametric coordinates w.r.t. the Cartesian ones.
-  * \param[out] metricSIP         - Storage for the metrics of the SIP term in the
-                                    integration points.
-  */
-  void ComputeMetricTermsSIP(const unsigned short nIntegration,
-                             const unsigned short nDOFs,
-                             const su2double      *derBasisElemTrans,
-                             const su2double      *derivCoor,
-                             su2double            *metricSIP);
   /*!
   * \brief Function, which computes the information of the normals in the
            integration points of a face.

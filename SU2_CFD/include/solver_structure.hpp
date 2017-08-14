@@ -14125,7 +14125,7 @@ private:
                                      integration points of side 1.
    * \param[in]  metricNormalsFace - Metric terms in the integration points, which
                                      contain the normals.
-   * \param[out] symmFluxes        - Penalty fluxes in the integration points.
+   * \param[out] symmFluxes        - Symmetrizing fluxes in the integration points.
    */
   void SymmetrizingFluxesFace(const unsigned short nInt,
                               const su2double      *solInt0,
@@ -14136,6 +14136,27 @@ private:
                               const su2double      *kOverCvInt1,
                               const su2double      *metricNormalsFace,
                                     su2double      *symmFluxes);
+
+  /*!
+   * \brief Function, which transforms the symmetrizing fluxes in the integration points
+            such that they are suited to be multiplied by the parametric gradients of
+            the basis functions.
+   * \param[in]  nInt              - Number of integration points of the face.
+   * \param[in]  halfTheta         - Half times the theta parameter in the symmetrizing terms.
+   * \param[in]  symmFluxes        - Symmetrizing fluxes to be multiplied by the Cartesian
+                                     gradients of the basis functions.
+   * \param[in]  weights           - Integration weights of the integration points.
+   * \param[in]  metricCoorFace    - Derivatives of the parametric coordinates w.r.t. the
+                                     Cartesian coordinates in the integration points of
+                                     the face.
+   * \param[out] paramFluxes       - Parametric fluxes in the integration points.
+   */
+  void TransformSymmetrizingFluxes(const unsigned short nInt,
+                                   const su2double      halfTheta,
+                                   const su2double      *symmFluxes,
+                                   const su2double      *weights,
+                                   const su2double      *metricCoorFace,
+                                         su2double      *paramFluxes);
 
   /*!
    * \brief Function to compute the viscous normal fluxes in the integration points of a face.
