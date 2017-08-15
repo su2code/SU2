@@ -82,7 +82,7 @@ class TestCase:
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s" % (self.su2_exec, self.cfg_file,logfilename)
+        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -199,7 +199,7 @@ class TestCase:
 
         # Assemble the shell command to run
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s -f %s > %s" % (self.su2_exec, self.cfg_file, logfilename)
+        command = "%s -f %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -266,7 +266,7 @@ class TestCase:
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s" % (self.su2_exec, self.cfg_file,logfilename)
+        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -387,7 +387,7 @@ class TestCase:
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s" % (self.su2_exec, self.cfg_file,logfilename)
+        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -515,7 +515,7 @@ class TestCase:
     
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s" % (self.su2_exec, self.cfg_file,logfilename)
+        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
     
         # Run SU2
         workdir = os.getcwd()
