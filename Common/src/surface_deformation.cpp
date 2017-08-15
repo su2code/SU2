@@ -2163,19 +2163,28 @@ void CSurfaceMovement::SetConstrainedShapeParam(CGeometry *geometry, CConfig *co
     SystemMatrix.block(0, TotalnControl, TotalnControl, nParameter) = -ConstraintMatrix.transpose();
     SystemMatrix.block(TotalnControl, 0, nParameter, TotalnControl) = ConstraintMatrix;
 
+    EigenSparseMatrix SparseSystem(SystemMatrix.sparseView());
+
     /* Set up the KKT right-hand side--- */
 
     SystemRHS.block(TotalnControl, 0, nParameter, 1) = ParameterValues;
 
     if (nGroup > 0){
 
-      Eigen::ColPivHouseholderQR<EigenMatrix> QRSystemMatrix;
+//      Eigen::ColPivHouseholderQR<EigenMatrix> QRSystemMatrix;
 
-      /*--- QR decomposition of the system matrix ---*/
+//      /*--- QR decomposition of the system matrix ---*/
 
-      QRSystemMatrix = SystemMatrix.colPivHouseholderQr();
+//      QRSystemMatrix = SystemMatrix.colPivHouseholderQr();
 
-      SystemSol = QRSystemMatrix.solve(SystemRHS);
+//      SystemSol = QRSystemMatrix.solve(SystemRHS);
+
+      Eigen::SparseLU<EigenSparseMatrix> solver;
+
+      solver.compute(SparseSystem);
+
+      SystemSol = solver.solve(SystemRHS);
+
       ControlPointPositions = SystemSol.block(0, 0, TotalnControl, 1);
 
       if (rank == MASTER_NODE){
@@ -7195,9 +7204,11 @@ void CFreeFormDefBox::GetLaplacianEnergyMatrix3D(EigenMatrix &Matrix){
   unsigned short iDim;
   unsigned long Index_ijk, Index_ip1jk, Index_im1jk, Index_ijp1k, Index_ijm1k, Index_ijkp1, Index_ijkm1;
 
-  EigenMatrix StencilMatrix(TotalControl, TotalControl);
+//  EigenMatrix StencilMatrix(TotalControl, TotalControl);
 
-  StencilMatrix = EigenMatrix::Zero(TotalControl, TotalControl);
+//  StencilMatrix = EigenMatrix::Zero(TotalControl, TotalControl);
+
+  EigenSparseMatrix StencilMatrix(TotalControl, TotalControl);
 
   const su2double OneThird  = 1.0/3.0;
   const su2double OneFourth = 1.0/4.0;
@@ -7216,175 +7227,175 @@ void CFreeFormDefBox::GetLaplacianEnergyMatrix3D(EigenMatrix &Matrix){
           Index_ijkp1 = iControl*mControl*nControl*nDim + jControl*nControl*nDim + (kControl + 1)*nDim+iDim;
           Index_ijkm1 = iControl*mControl*nControl*nDim + jControl*nControl*nDim + (kControl - 1)*nDim+iDim;
 
-          StencilMatrix(Index_ijk, Index_ijk) = -1.0;
+          StencilMatrix.insert(Index_ijk, Index_ijk) = -1.0;
 
           if ((iControl == 0) && (jControl == 0) && (kControl == 0)){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneThird;
           }
           else if ((iControl == lControl - 1) && (jControl == 0) && (kControl == 0)){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneThird;
           }
           else if ((iControl == 0) && (jControl ==  mControl - 1) && (kControl == 0)){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneThird;
           }
           else if ((iControl == 0) && (jControl ==  0) && (kControl == nControl - 1)){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneThird;
           }
           else if ((iControl == 0) && (jControl ==  mControl - 1) && (kControl == nControl - 1)){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneThird;
           }
           else if ((iControl == lControl - 1) && (jControl == 0) && (kControl == nControl - 1)){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneThird;
           }
           else if ((iControl == lControl - 1) && (jControl == mControl - 1) && (kControl == 0)){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneThird;
           }
           else if ((iControl == lControl - 1) && (jControl == mControl - 1) && (kControl == nControl - 1)){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneThird;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneThird;
           }
           else if ((iControl == lControl -1) && (kControl == 0)){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFourth;
           }
           else if ((jControl == mControl -1) && (kControl == 0)){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFourth;
           }
           else if ((iControl == lControl -1) && (kControl == nControl - 1)){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFourth;
           }
           else if ((jControl == mControl -1) && (kControl == nControl - 1)){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFourth;
           }
           else if ((iControl == 0) && (kControl == 0)){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFourth;
           }
           else if ((jControl == 0) && (kControl == 0)){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFourth;
           }
           else if ((jControl == mControl - 1) && (iControl == 0)){
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFourth;
           }
           else if ((jControl == mControl - 1) && (iControl == lControl - 1)){
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFourth;
           }
           else if ((jControl == 0) && (iControl == lControl - 1)){
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFourth;
           }
           else if ((jControl == 0) && (iControl == 0)){
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFourth;
           }
           else if ((iControl == 0) && (kControl == nControl - 1)){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFourth;
           }
           else if ((jControl == 0) && (kControl == nControl - 1)){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFourth;
           }
           else if(iControl == 0){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFive;
           }
           else if(iControl == lControl - 1){
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFive;
           }
           else if(jControl == 0){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFive;
           }
           else if(jControl == mControl - 1){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFive;
           }
           else if(kControl == 0){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneFive;
           }
           else if(kControl == nControl - 1){
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
-            StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneFive;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneFive;
           }
           else {
-            StencilMatrix(Index_ijk, Index_ip1jk) = OneSix;
-            StencilMatrix(Index_ijk, Index_im1jk) = OneSix;
-            StencilMatrix(Index_ijk, Index_ijp1k) = OneSix;
-            StencilMatrix(Index_ijk, Index_ijm1k) = OneSix;
-            StencilMatrix(Index_ijk, Index_ijkp1) = OneSix;
-            StencilMatrix(Index_ijk, Index_ijkm1) = OneSix;
+            StencilMatrix.insert(Index_ijk, Index_ip1jk) = OneSix;
+            StencilMatrix.insert(Index_ijk, Index_im1jk) = OneSix;
+            StencilMatrix.insert(Index_ijk, Index_ijp1k) = OneSix;
+            StencilMatrix.insert(Index_ijk, Index_ijm1k) = OneSix;
+            StencilMatrix.insert(Index_ijk, Index_ijkp1) = OneSix;
+            StencilMatrix.insert(Index_ijk, Index_ijkm1) = OneSix;
           }
         }
       }
     }
   }
-  Matrix = StencilMatrix.transpose()*StencilMatrix;
+  Matrix = EigenMatrix(StencilMatrix.transpose()*StencilMatrix);
 }
 
 CFreeFormBlending::CFreeFormBlending(){}

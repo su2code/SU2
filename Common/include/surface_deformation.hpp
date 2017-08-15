@@ -51,12 +51,15 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/SVD>
+#include <Eigen/SparseCore>
+#include <Eigen/SparseLU>
 #endif
 
 /*--- Typedefs of Eigen matrix, vector and SVD---*/
 
 #ifdef HAVE_EIGEN
   typedef Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic> EigenMatrix;
+  typedef Eigen::SparseMatrix<su2double> EigenSparseMatrix;
   typedef Eigen::Matrix<su2double, Eigen::Dynamic, 1> EigenVector;
   typedef Eigen::JacobiSVD<EigenMatrix> EigenSVD;
 #endif
