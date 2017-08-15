@@ -154,6 +154,8 @@ def DEF(config):
     
     # must run with rank 1
     processes = konfig['NUMBER_PART']
+    if konfig.get('MARKER_DEFORM_TANGENTIAL') != None:
+        processes = 1
     
     the_Command = 'SU2_DEF ' + tempname
     the_Command = build_command( the_Command , processes )
@@ -178,13 +180,18 @@ def DOT(config):
 
         processes = konfig['NUMBER_PART']
 
+        if konfig.get('MARKER_DEFORM_TANGENTIAL') != None:
+            processes = 1
+
         the_Command = 'SU2_DOT_AD ' + tempname
     else:
     
         tempname = 'config_DOT.cfg'
         konfig.dump(tempname)
-    
+
         processes = konfig['NUMBER_PART']
+        if konfig.get('MARKER_DEFORM_TANGENTIAL') != None:
+            processes = 1
     
         the_Command = 'SU2_DOT ' + tempname
 
