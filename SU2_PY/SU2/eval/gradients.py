@@ -318,7 +318,8 @@ def stability( func_name, config, state=None, step=1e-2 ):
 
     # find base func name
     matches = [ k for k in su2io.optnames_aero if k in func_name ]
-    if not len(matches) == 1: raise Exception('could not find stability function name')
+    if not len(matches) == 1:
+        raise Exception('could not find stability function name')
     base_name = matches[0]    
 
     ADJ_NAME = 'ADJOINT_'+base_name
@@ -446,7 +447,8 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     
     # find base func name
     matches = [ k for k in su2io.optnames_aero if k in func_name ]
-    if not len(matches) == 1: raise Exception, 'could not find multipoint function name'
+    if not len(matches) == 1:
+        raise Exception('could not find multipoint function name')
     base_name = matches[0]
     
     ADJ_NAME = 'ADJOINT_' + base_name
