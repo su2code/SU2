@@ -4022,19 +4022,21 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
     finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(2));
     rot_z_ini = config_container[ZONE_0]->GetRampRotatingFrame_Coeff(0);
-    print = false;
-    if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
+    print = (ExtIter+1)%(config_container[ZONE_0]->GetWrt_Con_Freq()*40) ==0 && ExtIter <= 2*finalRamp_Iter;
+
+    if((ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter) || ExtIter == finalRamp_Iter){
 
       for (iZone = 0; iZone < nZone; iZone++) {
         rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
         if(abs(rot_z_final) > 0.0){
-          rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
-          config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
-          if(rank == MASTER_NODE && print && ExtIter > 0) {
-            cout << endl << " Updated rotating frame grid velocities";
-            cout << " for zone " << iZone << "." << endl;
+          if(ExtIter == finalRamp_Iter){
+            rot_z = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
           }
-          geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, print);
+          else{
+            rot_z = rot_z_ini + su2double(ExtIter)*( rot_z_final - rot_z_ini)/su2double(finalRamp_Iter);
+          }
+          config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
+          geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, false);
           geometry_container[iZone][MESH_0]->SetShroudVelocity(config_container[iZone]);
         }
       }
@@ -4050,6 +4052,18 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
         transfer_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
       }
 
+    }
+
+    if(print){
+      for (iZone = 0; iZone < nZone; iZone++) {
+        rot_z= config_container[iZone]->GetRotation_Rate_Z(iZone);
+        if(abs(rot_z) > 0.0){
+          if(rank == MASTER_NODE && print) {
+            cout << endl << "---------------------- Check on Rotating Frame Ramp ----------------------" << endl;
+            cout << "Current Angular velocity about z axes: "<< rot_z << " rad/s." <<  endl;
+          }
+        }
+      }
     }
   }
 

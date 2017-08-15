@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
   geometry_container = new CGeometry*[nZone];
   surface_movement   = new CSurfaceMovement*[nZone];
   grid_movement      = new CVolumetricMovement*[nZone];
-  output             = new COutput(config_container[ZONE_0]);
+  output             = new COutput(config);
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
