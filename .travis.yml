@@ -4,7 +4,7 @@
 dist: trusty
 sudo: required
 
-language: cpp
+language: python
 
 compiler:
     - gcc
