@@ -32,10 +32,8 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function, division, absolute_import
-
 from optparse import OptionParser, BadOptionError
 import sys,time, os, subprocess, os.path, glob, re, shutil, fileinput
-import commands
 from subprocess import call
 
 # "Pass-through" option parsing -- an OptionParser that ignores
