@@ -4,8 +4,8 @@
  * \author R. Sanchez
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -3145,7 +3145,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerFSI = (fea_config->GetMarker_n_FSIinterface())/2;
+  nMarkerFSI = (fea_config->GetMarker_n_ZoneInterface())/2;
   nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();    // Retrieve total number of markers on Fluid side
   
   // Parameters for the calculations
@@ -3180,7 +3180,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
     
     /*--- Current fluid marker ---*/
     for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++) {
-      if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSI+1)) {
+      if (flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == (iMarkerFSI+1)) {
         Marker_Flow = iMarkerFlow;
       }
     }
@@ -3291,7 +3291,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
+  nMarkerFSI     = (flow_config->GetMarker_n_ZoneInterface())/2;
   nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
   nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
   
@@ -3321,8 +3321,8 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
     /*--- On the structural side ---*/
     
     for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerStruct) equals the index we are looping at ---*/
-      if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerStruct) equals the index we are looping at ---*/
+      if ( fea_config->GetMarker_All_ZoneInterface(iMarkerStruct) == iMarkerFSI ) {
         /*--- We have identified the local index of the FEA marker ---*/
         /*--- Store the number of local points that belong to Marker_Struct on each processor ---*/
         /*--- This includes the halo nodes ---*/
@@ -3342,8 +3342,8 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
     /*--- On the fluid side ---*/
     
     for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == iMarkerFSI ) {
         /*--- We have identified the local index of the Flow marker ---*/
         /*--- Store the number of local points that belong to Marker_Flow on each processor ---*/
         /*--- This includes the halo nodes ---*/
@@ -4030,7 +4030,7 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[0] + skipVars;
+      index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nSolVar; iVar++) Sol[iVar] = Restart_Data[index+iVar];
 
       for (iVar = 0; iVar < nVar; iVar++) {

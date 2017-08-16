@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -138,7 +138,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
     
   }
 
@@ -436,7 +436,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   AoA_Prev = 0.0;
   Total_CL_Prev = 0.0; Total_CD_Prev = 0.0;
-  
+  Total_CMx_Prev = 0.0; Total_CMy_Prev = 0.0; Total_CMz_Prev = 0.0;
+
   /*--- Read farfield conditions ---*/
 
   Density_Inf     = config->GetDensity_FreeStreamND();
@@ -2097,12 +2098,11 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   unsigned long ExtIter = config->GetExtIter();
   bool adjoint          = config->GetContinuous_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) ||
                            (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) ||
                            (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
   bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) &&
-                           (!low_fidelity) && (ExtIter <= config->GetLimiterIter()));
+                           (ExtIter <= config->GetLimiterIter()));
   bool center           = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
                            (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
@@ -2118,7 +2118,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Upwind second order reconstruction ---*/
   
-  if ((second_order && !center) && ((iMesh == MESH_0) || low_fidelity) && !Output) {
+  if ((second_order && !center) && (iMesh == MESH_0) && !Output) {
     
     /*--- Gradient computation ---*/
     
@@ -2141,7 +2141,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && ((iMesh == MESH_0) || low_fidelity)) {
+    if ((center_jst) && (iMesh == MESH_0)) {
       SetDissipation_Switch(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
@@ -2401,7 +2401,6 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool second_order  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
-  bool low_fidelity  = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool grid_movement = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -2422,7 +2421,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     
     /*--- Set undivided laplacian and pressure-based sensor ---*/
     
-    if ((second_order || low_fidelity)) {
+    if (second_order) {
       numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
       numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
     }
@@ -2464,11 +2463,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned short iDim, iVar;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool low_fidelity  = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order  = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) ||
                             (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) &&
-                           ((iMesh == MESH_0) || low_fidelity));
-  bool limiter       = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && !low_fidelity);
+                           (iMesh == MESH_0));
+  bool limiter       = (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
 
   /*--- Loop over all the edges ---*/
@@ -2950,8 +2948,8 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
   su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta            = config->GetAoS()*PI_NUMBER/180.0;
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
-  su2double RefLengthMoment = config->GetRefLengthMoment();
+  su2double RefArea    = config->GetRefArea();
+  su2double RefLength = config->GetRefLength();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double *Origin         = config->GetRefOriginMoment(0);
   bool grid_movement        = config->GetGrid_Movement();
@@ -2975,7 +2973,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
       RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
 
-  factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
+  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
   /*-- Variables initialization ---*/
 
@@ -3046,7 +3044,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
         Pressure = node[iPoint]->GetPressure();
 
-        CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefAreaCoeff;
+        CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefArea;
 
         /*--- Note that the pressure coefficient is computed at the
          halo cells (for visualization purposes), but not the forces ---*/
@@ -3077,10 +3075,10 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           /*--- Moment with respect to the reference axis ---*/
 
           if (nDim == 3) {
-            MomentInviscid[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLengthMoment;
-            MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLengthMoment;
+            MomentInviscid[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLength;
+            MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLength;
           }
-          MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLengthMoment;
+          MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLength;
         }
 
       }
@@ -3301,8 +3299,8 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
   su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta            = config->GetAoS()*PI_NUMBER/180.0;
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
-  su2double RefLengthMoment = config->GetRefLengthMoment();
+  su2double RefArea    = config->GetRefArea();
+  su2double RefLength = config->GetRefLength();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double *Origin         = config->GetRefOriginMoment(0);
   bool grid_movement        = config->GetGrid_Movement();
@@ -3325,7 +3323,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
       RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
 
-  factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
+  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
   /*-- Variables initialization ---*/
 
@@ -3418,17 +3416,17 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
           /*--- Moment with respect to the reference axis ---*/
 
           if (iDim == 3) {
-            MomentInviscid[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLengthMoment;
-            MomentX_Force[1] += (-Force[1]*MomentDist[2])/RefLengthMoment;
-            MomentX_Force[2] += (Force[2]*MomentDist[1])/RefLengthMoment;
+            MomentInviscid[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLength;
+            MomentX_Force[1] += (-Force[1]*MomentDist[2])/RefLength;
+            MomentX_Force[2] += (Force[2]*MomentDist[1])/RefLength;
 
-            MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLengthMoment;
-            MomentY_Force[0] += (Force[0]*MomentDist[2])/RefLengthMoment;
-            MomentY_Force[2] += (-Force[2]*MomentDist[0])/RefLengthMoment;
+            MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLength;
+            MomentY_Force[0] += (Force[0]*MomentDist[2])/RefLength;
+            MomentY_Force[2] += (-Force[2]*MomentDist[0])/RefLength;
           }
-          MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLengthMoment;
-          MomentZ_Force[0] += (-Force[0]*MomentDist[1])/RefLengthMoment;
-          MomentZ_Force[1] += (Force[1]*MomentDist[0])/RefLengthMoment;
+          MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLength;
+          MomentZ_Force[0] += (-Force[0]*MomentDist[1])/RefLength;
+          MomentZ_Force[1] += (Force[1]*MomentDist[0])/RefLength;
 
         }
 
@@ -4217,7 +4215,7 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
   su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3] = {0.0,0.0,0.0},
-  AoA_inc = 0.0, Vel_Infty_Mag, Delta_AoA, Old_AoA, dCL_dAlpha_, dCD_dCL_;
+  AoA_inc = 0.0, Vel_Infty_Mag, Delta_AoA, Old_AoA;
   
   unsigned short iDim;
   
@@ -4249,12 +4247,8 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     
     if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
       AoA_Counter++;
-      if ((AoA_Counter != 0) &&
-          (AoA_Counter != 1) &&
-          (AoA_Counter != Update_Alpha) &&
-          (AoA_Counter != Update_Alpha + 2) &&
-          (AoA_Counter != Update_Alpha + 4) ) Update_AoA = true;
-      else Update_AoA = false;
+      if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
+      Update_AoA = true;
     }
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
@@ -4341,22 +4335,7 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
       cout.precision(4);
       cout << "Previous AoA: " << Old_AoA << " deg";
       cout << ", new AoA: " << config->GetAoA() << " deg." << endl;
-      
-      cout.precision(7);
-      if ((fabs(Delta_AoA) > EPS) && (AoA_Counter != 2))  {
-        
-        dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/Delta_AoA;
-        dCD_dCL_ = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
-        
-        cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
-        cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
-        
-      }
-      
-      Total_CD_Prev = Total_CD;
-      Total_CL_Prev = Total_CL;
-      AoA_Prev =config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
-      
+
       cout << "-------------------------------------------------------------------------" << endl << endl;
     }
     
@@ -5085,7 +5064,7 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
 
     for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
-      if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+      if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
 
         for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
@@ -5141,7 +5120,7 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
 
   /*--- Number of markers on the FSI interface ---*/
 
-  nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
+  nMarkerFSI     = (flow_config->GetMarker_n_ZoneInterface())/2;
   nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
   nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
 
@@ -5167,8 +5146,8 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
     /*--- On the structural side ---*/
 
     for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFEA) equals the index we are looping at ---*/
-      if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ){
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFEA) equals the index we are looping at ---*/
+      if ( fea_config->GetMarker_All_ZoneInterface(iMarkerStruct) == iMarkerFSI ){
         /*--- We have identified the local index of the FEA marker ---*/
         /*--- Store the number of local points that belong to markFEA on each processor ---*/
         /*--- This includes the halo nodes ---*/
@@ -5188,8 +5167,8 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
     /*--- On the fluid side ---*/
 
     for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ){
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == iMarkerFSI ){
         /*--- We have identified the local index of the Flow marker ---*/
         /*--- Store the number of local points that belong to markFlow on each processor ---*/
         /*--- This includes the halo nodes ---*/
@@ -5457,7 +5436,7 @@ void CIncEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolum
 
     for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
-      if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+      if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
 
         for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
@@ -5504,7 +5483,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   ifstream restart_file;
   
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry[iZone]->GetnZone();
+  unsigned short nZone = config->GetnZone();
 
   string restart_filename = config->GetSolution_FlowFileName();
 
@@ -5559,7 +5538,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[0] + skipVars;
+      index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
@@ -5586,11 +5565,11 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         if (!steady_restart) {
 
           /*--- Rewind the index to retrieve the Coords. ---*/
-          index = counter*Restart_Vars[0];
+          index = counter*Restart_Vars[1];
           for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
 
           /*--- Move the index forward to get the grid velocities. ---*/
-          index = counter*Restart_Vars[0] + skipVars + nVar;
+          index = counter*Restart_Vars[1] + skipVars + nVar;
           for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
@@ -5782,7 +5761,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
     
   }
 
@@ -6110,7 +6089,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   AoA_Prev = 0.0;
   Total_CL_Prev = 0.0; Total_CD_Prev = 0.0;
-  
+  Total_CMx_Prev = 0.0; Total_CMy_Prev = 0.0; Total_CMz_Prev = 0.0;
+
   /*--- Read farfield conditions from config ---*/
   
   Density_Inf   = config->GetDensity_FreeStreamND();
@@ -6645,8 +6625,8 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta            = config->GetAoS()*PI_NUMBER/180.0;
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
-  su2double RefLengthMoment = config->GetRefLengthMoment();
+  su2double RefArea    = config->GetRefArea();
+  su2double RefLength = config->GetRefLength();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double *Origin         = config->GetRefOriginMoment(0);
   bool grid_movement        = config->GetGrid_Movement();
@@ -6668,7 +6648,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
       RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
 
-  factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
+  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
   /*--- Variables initialization ---*/
 
@@ -6798,10 +6778,10 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           /*--- Moment with respect to the reference axis ---*/
 
           if (iDim == 3) {
-            MomentViscous[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLengthMoment;
-            MomentViscous[1] += (Force[0]*MomentDist[2] - Force[2]*MomentDist[0])/RefLengthMoment;
+            MomentViscous[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLength;
+            MomentViscous[1] += (Force[0]*MomentDist[2] - Force[2]*MomentDist[0])/RefLength;
           }
-          MomentViscous[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLengthMoment;
+          MomentViscous[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLength;
 
         }
 

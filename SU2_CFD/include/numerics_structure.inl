@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -230,6 +230,8 @@ inline su2double CNumerics::GetDestruction(void) { return 0; }
 
 inline su2double CNumerics::GetCrossProduction(void) { return 0; }
 
+inline su2double CNumerics::GetGammaBC(void) { return 0.0; }
+
 inline void CNumerics::SetTurbKineticEnergy(su2double val_turb_ke_i, su2double val_turb_ke_j) {
   turb_ke_i = val_turb_ke_i;
   turb_ke_j = val_turb_ke_j;
@@ -425,6 +427,8 @@ inline void CSourcePieceWise_TurbSA::SetDestruction(su2double val_destruction) {
 inline void CSourcePieceWise_TurbSA::SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
 
 inline su2double CSourcePieceWise_TurbSA::GetProduction(void) { return Production; }
+
+inline su2double CSourcePieceWise_TurbSA::GetGammaBC(void) { return gamma_BC; }
 
 inline su2double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction; }
 

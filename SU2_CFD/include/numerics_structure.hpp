@@ -7,8 +7,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -993,50 +993,78 @@ public:
   void GetRMatrix(su2double val_pressure, su2double val_soundspeed,
                   su2double val_density, su2double* val_velocity,
                   su2double** val_invR_invPe);
-  /*!
-   * \brief Computation of the matrix R.
-   * \param[in] val_soundspeed - value of the sound speed.
-   * \param[in] val_density - value of the density.
-   * \param[in] val_normal - value of the unit normal.
-   * \param[out] R_Matrix - Pointer to the matrix of conversion from entropic to conserved variables.
-   */
-  void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double* val_normal, su2double **R_Matrix);
+	/*!
+	 * \brief Computation of the matrix R.
+	 * \param[in] val_soundspeed - value of the sound speed.
+	 * \param[in] val_density - value of the density.
+	 * \param[out] R_Matrix - Pointer to the matrix of conversion from entropic to conserved variables.
+	 */
+	void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix);
 
+	/*!
+	 * \brief Computation of the matrix R.
+	 * \param[in] val_soundspeed - value of the sound speed.
+	 * \param[in] val_density - value of the density.
+	 * \param[out] L_Matrix - Pointer to the matrix of conversion from conserved to entropic variables.
+	 */
+	void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix);
 
+        /*!
+         * \brief Computation of the flow Residual Jacoboan Matrix for Non Reflecting BC.
+         * \param[in] val_soundspeed - value of the sound speed.
+         * \param[in] val_density - value of the density.
+         * \param[out] R_c - Residual Jacoboan Matrix
+         * \param[out] R_c_inv- inverse of the Residual Jacoboan Matrix .
+         */
+        void ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv);
 
-  /*!
-   * \brief Computation of the matrix R.
-   * \param[in] val_soundspeed - value of the sound speed.
-   * \param[in] val_density - value of the density.
-   * \param[in] val_normal - value of the unit normal.
-   * \param[out] L_Matrix - Pointer to the matrix of conversion from conserved to entropic variables.
-   */
-  void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double* val_normal, su2double **L_Matrix);
+        /*!
+         * \brief Computate the inverse of a 3x3 matrix
+         * \param[in]  matrix     - the matrix to invert
+         * \param[out] invMatrix  - inverse matrix.
+         */
+        void InvMatrix3D(su2double **matrix, su2double **invMatrix);
 
-  /*!
-   * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
-   *        in the form $Tg |Lambda| Td = Pc{-1}|Pc (A.Normal)|$.
-   * \param[in] Beta2 - A variable in used to define absPeJacobian matrix.
-   * \param[in] r_hat - A variable in used to define absPeJacobian matrix.
-   * \param[in] s_hat - A variable in used to define absPeJacobian matrix.
-   * \param[in] t_hat - A variable in used to define absPeJacobian matrix.
-   * \param[in] rB2a2 - A variable in used to define absPeJacobian matrix.
-   * \param[in] val_Lambda - Eigenvalues of the Preconditioned Jacobian.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
-   */
-  void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
+        /*!
+         * \brief Computate the inverse of a 4x4 matrix
+         * \param[in]  matrix    - the matrix to invert
+         * \param[out] invMatrix - inverse matrix.
+         */
+        void InvMatrix4D(su2double **matrix, su2double **invMatrix);
+
+	/*!
+	 * \brief Computation of the matrix R.
+	 * \param[in] val_soundspeed - value of the sound speed.
+	 * \param[in] val_density - value of the density.
+	 * \param[in] prim_jump - pointer to the vector containing the primitive variable jump (drho, dV, dp).
+	 * \param[out]char_jump - pointer to the vector containing the characteristic variable jump.
+	 */
+	void GetCharJump(su2double val_soundspeed, su2double val_density, su2double *prim_jump, su2double *char_jump);
+
+	/*!
+	 * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
+	 *        in the form $Tg |Lambda| Td = Pc{-1}|Pc (A.Normal)|$.
+	 * \param[in] Beta2 - A variable in used to define absPeJacobian matrix.
+	 * \param[in] r_hat - A variable in used to define absPeJacobian matrix.
+	 * \param[in] s_hat - A variable in used to define absPeJacobian matrix.
+	 * \param[in] t_hat - A variable in used to define absPeJacobian matrix.
+	 * \param[in] rB2a2 - A variable in used to define absPeJacobian matrix.
+	 * \param[in] val_Lambda - Eigenvalues of the Preconditioned Jacobian.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
+	 */
+	void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
     
-  /*!
-   * \brief Computation of the matrix P (artificial compresibility), this matrix diagonalize the conservative Jacobians in
-   *        the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_betainv2 - Value of the compresibility factor.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_p_tensor - Pointer to the P matrix.
-   */
-  void GetPArtCompMatrix(su2double *val_density, su2double *val_velocity,
+	/*!
+	 * \brief Computation of the matrix P (artificial compresibility), this matrix diagonalize the conservative Jacobians in
+	 *        the form $P^{-1}(A.Normal)P=Lambda$.
+	 * \param[in] val_density - Value of the density.
+	 * \param[in] val_velocity - Value of the velocity.
+	 * \param[in] val_betainv2 - Value of the compresibility factor.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[out] val_p_tensor - Pointer to the P matrix.
+	 */
+	void GetPArtCompMatrix(su2double *val_density, su2double *val_velocity,
                          su2double *val_betainv2, su2double *val_normal,
                          su2double **val_p_tensor);
   
@@ -1319,6 +1347,11 @@ public:
    * \param[in] val_crossproduction - Value of the CrossProduction.
    */
   virtual su2double GetCrossProduction(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetGammaBC(void);
   
   /*!
    * \overload
@@ -4029,6 +4062,7 @@ private:
   bool incompressible;
   bool rotating_frame;
   bool transition;
+  su2double gamma_BC;
   su2double intermittency;
   su2double Production, Destruction, CrossProduction;
   
@@ -4084,6 +4118,12 @@ public:
    * \brief ______________.
    */
   su2double GetProduction(void);
+
+  /*!
+   * \brief  Get the intermittency for the BC trans. model.
+   * \return Value of the intermittency.
+   */
+  su2double GetGammaBC(void);
   
   /*!
    * \brief  ______________.

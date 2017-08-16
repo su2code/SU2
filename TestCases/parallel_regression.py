@@ -5,8 +5,8 @@
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -94,7 +94,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-5.930145,-0.546310,0.300089,0.019393] #last 4 columns
+    fixedCL_naca0012.test_vals = [-5.767126,-0.377182,0.299930,0.019384] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -339,12 +339,12 @@ def main():
     contadj_oneram6.tol       = 0.00001
     test_list.append(contadj_oneram6)
 
-    # Inviscid WEDGE: generalized adjoint and custom DV
+    # Inviscid WEDGE: tests averaged outflow total pressure adjoint
     contadj_wedge             = TestCase('contadj_wedge')
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10  
-    contadj_wedge.test_vals = [2.780403, -3.223266, -1448300.000000, -0.000000] #last 4 columns
+    contadj_wedge.test_vals = [2.856008, -2.767216, 1.0029e+06, 7.0328e-14] #last 4 columns
     contadj_wedge.su2_exec  = "parallel_computation.py -f"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
@@ -355,7 +355,7 @@ def main():
     contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixed_CL_naca0012.test_iter = 500
-    contadj_fixed_CL_naca0012.test_vals = [-2.921695, -8.474107, 0.250530, 0.000003] #last 4 columns
+    contadj_fixed_CL_naca0012.test_vals = [-2.093175,-6.967350,2.4987e-01,-1.9392e-05] #last 4 columns
     contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_fixed_CL_naca0012.timeout   = 1600
     contadj_fixed_CL_naca0012.tol       = 0.00001
@@ -555,7 +555,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 100
-    edge_VW.test_vals = [-5.058481, 1.115321, -0.000009, 0.000000] #last 4 columns
+    edge_VW.test_vals = [-5.059867, 1.114232, -0.000009, 0.000000] #last 4 columns
     edge_VW.su2_exec  = "parallel_computation.py -f"
     edge_VW.timeout   = 1600
     edge_VW.tol       = 0.00001
@@ -566,11 +566,70 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 100
-    edge_PPR.test_vals = [-5.486409, 0.654417, -0.000037, 0.000000] #last 4 columns
+    edge_PPR.test_vals = [-5.487473, 0.653442, -0.000037, 0.000000] #last 4 columns
     edge_PPR.su2_exec  = "parallel_computation.py -f"
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
     test_list.append(edge_PPR)
+    
+    ######################################
+    ### Turbomachinery                 ###
+    ######################################	
+
+    # Jones APU Turbocharger
+    Jones_tc           = TestCase('jones_turbocharger')
+    Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc.cfg_file  = "Jones.cfg"
+    Jones_tc.test_iter = 29
+    Jones_tc.test_vals = [-5.563796, -0.197664, 92.039250, 0.708515] #last 4 columns
+    Jones_tc.su2_exec  = "parallel_computation.py -f"
+    Jones_tc.timeout   = 1600
+    Jones_tc.tol       = 0.00001
+    test_list.append(Jones_tc)
+
+	# Jones APU Turbocharger restart
+    Jones_tc_rst           = TestCase('jones_turbocharger_restart')
+    Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
+    Jones_tc_rst.test_iter = 30
+    Jones_tc_rst.test_vals = [-3.936718, -0.754654, 8.277812e+01, 2.715092e+00] #last 4 columns
+    Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
+    Jones_tc_rst.timeout   = 1600
+    Jones_tc_rst.tol       = 0.00001
+    test_list.append(Jones_tc_rst)
+
+    # 2D axial stage
+    axial_stage2D           = TestCase('axial_stage2D')
+    axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
+    axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
+    axial_stage2D.test_iter = 100
+    axial_stage2D.test_vals = [-1.534374, 6.555997, 7.559178e+01, 7.911872e-01] #last 4 columns
+    axial_stage2D.su2_exec  = "parallel_computation.py -f"
+    axial_stage2D.timeout   = 1600
+    axial_stage2D.tol       = 0.00001
+    test_list.append(axial_stage2D)
+    
+    # 2D transonic stator
+    transonic_stator           = TestCase('transonic_stator')
+    transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator.cfg_file  = "transonic_stator.cfg"
+    transonic_stator.test_iter = 100
+    transonic_stator.test_vals = [-0.053921, 4.588521, 8.511798e+00, 7.254821e-03] #last 4 columns
+    transonic_stator.su2_exec  = "parallel_computation.py -f"
+    transonic_stator.timeout   = 1600
+    transonic_stator.tol       = 0.00001
+    test_list.append(transonic_stator)
+    
+    # 2D transonic stator restart
+    transonic_stator_rst           = TestCase('transonic_stator_restart')
+    transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
+    transonic_stator_rst.test_iter = 300
+    transonic_stator_rst.test_vals = [-0.682536, 4.593684, 6.248191e+00, 3.774933e-03] #last 4 columns
+    transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
+    transonic_stator_rst.timeout   = 1600
+    transonic_stator_rst.tol       = 0.00001
+    test_list.append(transonic_stator_rst)
 
     ######################################
     ### Sliding Mesh                   ###
@@ -591,9 +650,9 @@ def main():
     # Channel_2D
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
-    channel_2D.cfg_file  = "channel_2D_NN.cfg"
+    channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 4
-    channel_2D.test_vals = [-1.498340, 4.541397, 0.000000, 0.000000] #last 4 columns
+    channel_2D.test_vals = [-1.656855, 4.263163, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -603,26 +662,61 @@ def main():
     # Channel_3D
     channel_3D           = TestCase('channel_3D')
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
-    channel_3D.cfg_file  = "channel_3D_NN.cfg"
+    channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [-1.998330, 3.957669, 0.000000, 0.000000] #last 4 columns
+    channel_3D.test_vals = [-1.999171, 3.956649, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "parallel_computation.py -f"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
     channel_3D.unsteady  = True
     test_list.append(channel_3D)
 
-#    # Pipe
-#    pipe           = TestCase('pipe')
-#    pipe.cfg_dir   = "sliding_interface/pipe"
-#    pipe.cfg_file  = "pipe_NN.cfg"
-#    pipe.test_iter = 2
-#    pipe.test_vals = [-3.503708, 3.194241, 0.000000, 0.000000] #last 4 columns
-#    pipe.su2_exec  = "parallel_computation.py -f"
-#    pipe.timeout   = 1600
-#    pipe.tol       = 0.00001
-#    pipe.unsteady  = True
-#    test_list.append(pipe)
+    # Pipe
+    pipe           = TestCase('pipe')
+    pipe.cfg_dir   = "sliding_interface/pipe"
+    pipe.cfg_file  = "pipe_NN.cfg"
+    pipe.test_iter = 2
+    pipe.test_vals = [-3.503708, 3.194241, 0.000000, 0.000000] #last 4 columns
+    pipe.su2_exec  = "parallel_computation.py -f"
+    pipe.timeout   = 1600
+    pipe.tol       = 0.00001
+    pipe.unsteady  = True
+    test_list.append(pipe)
+
+    # Rotating cylinders
+    rotating_cylinders           = TestCase('rotating_cylinders')
+    rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
+    rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
+    rotating_cylinders.test_iter = 3
+    rotating_cylinders.test_vals = [-1.253466, 4.531328, 0.000000, 0.000000] #last 4 columns
+    rotating_cylinders.su2_exec  = "parallel_computation.py -f"
+    rotating_cylinders.timeout   = 1600
+    rotating_cylinders.tol       = 0.00001
+    rotating_cylinders.unsteady  = True
+    test_list.append(rotating_cylinders)
+
+    # Supersonic vortex shedding
+    supersonic_vortex_shedding           = TestCase('supersonic_vortex_shedding')
+    supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
+    supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
+    supersonic_vortex_shedding.test_iter = 5
+    supersonic_vortex_shedding.test_vals = [-1.124863, 4.604517, 0.000000, 0.000000] #last 4 columns
+    supersonic_vortex_shedding.su2_exec  = "parallel_computation.py -f"
+    supersonic_vortex_shedding.timeout   = 1600
+    supersonic_vortex_shedding.tol       = 0.00001
+    supersonic_vortex_shedding.unsteady  = True
+    test_list.append(supersonic_vortex_shedding)
+
+    # Bars_SST_2D
+    bars_SST_2D           = TestCase('bars_SST_2D')
+    bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
+    bars_SST_2D.cfg_file  = "bars.cfg"
+    bars_SST_2D.test_iter = 13
+    bars_SST_2D.test_vals = [-2.319527, 0.922201, 0.001254, 0.093163] #last 4 columns
+    bars_SST_2D.su2_exec  = "SU2_CFD"
+    bars_SST_2D.timeout   = 1600
+    bars_SST_2D.tol       = 0.00001
+    test_list.append(bars_SST_2D)
 
     ##########################
     ### FEA - FSI          ###
