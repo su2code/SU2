@@ -28,6 +28,10 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import division, print_function, absolute_import
+from numpy import *
+
+
 def parLocator(keyWord,b,n,iDoNot,verbose):
 
 #---- -- locate the relevant line in base input file
@@ -472,7 +476,6 @@ def processAddAngle(addRunStr,nPolara,parAngle,angleEqualCriterion):
 # Note that parAngle can receive also MachList
 #--------------------------------------------------------------------
 
-    from numpy import size, sort 
 
 #------------ create a list out of entered angles
 
@@ -740,7 +743,6 @@ def fMachIsentropic(Mach,Gamma):
 #
 def extractUy(filename,outFile,inDepVar,depVar,verbose):
 
-    exec 'from numpy import *'
     import os
     import sys 
     from polarSweepLib import stringLocator
@@ -836,8 +838,6 @@ def loadArray(Fin,nCol):
 #
 # load a polar-sweep file as an array
 #
-    from numpy import size
-
     f=open(Fin,'r')
     b=f.readlines()
     n=size(b)
@@ -862,8 +862,6 @@ def locateSteps(d,nd,nCol):
 #
 # read polarsweep files and identify steps
 #
-    from numpy import size,array,diff,where
-
     eps=0.001
     nColD=nCol-2  # cxbase and quality are not checked
     a=array(d)
@@ -909,7 +907,6 @@ def testComponentSum(cbdOutput,verbose):
 #
 # check cbd summation
 #
-    from numpy import size
     from polarSweepLib import stringLocator, loadArray
 
     coeffNames=['Cfx','Cfy','Cfz','Cmx','Cmy','Cmz']
