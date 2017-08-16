@@ -698,25 +698,39 @@ public:
   void WriteSpanWiseValuesFiles(CGeometry ***geometry, CConfig **config, unsigned short val_iZone);
 
   /*!
-   * \brief Give the Entropy Generation performance parameters for turbomachinery.
+   * \brief Give the entropy generation performance parameters for turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
    * \param[in] iSpan - span section.
    */
   su2double GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
-   * \brief Give the Entropy Generation performance parameters for turbomachinery.
+   * \brief Give the flow outlet angle  performance parameters for turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
    * \param[in] iSpan - span section.
    */
   su2double GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
-   * \brief Give the Entropy Generation performance parameters for turbomachinery.
+   * \brief Give the inlet mass-flow rate performance parameters for turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
    * \param[in] iSpan - span section.
    */
   su2double GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan);
+
+  /*!
+   * \brief Give the total pressure loss performance parameters for turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   * \param[in] iSpan - span section.
+   */
+  su2double GetTotalPressureLoss(unsigned short iMarkerTP, unsigned short iSpan);
+
+  /*!
+   * \brief Give the kinetic energy loss performance parameters for turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   * \param[in] iSpan - span section.
+   */
+  su2double GetKineticEnergyLoss(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
    * \brief Write the output file for harmonic balance for each time-instance.

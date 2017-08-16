@@ -42,7 +42,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
   unsigned short nMarkerTP = config->GetnMarker_Turbomachinery();
   FluidModel = solver_container->GetFluidModel();
   su2double area, absVel2, soundSpeed, mach, tangVel, tangVel2, *relVel, relVel2;
-  su2double relPressureIn, relPressureOut, enthalpyOutIs, relVelOutIs2;
+  su2double relPressureIn, relPressureOut, enthalpyOutIs, relVelOutIs2, VelSpout_T;
   relVel = new su2double[nDim];
   su2double muLam, kine, omega, nu;
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
@@ -63,6 +63,11 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());
       TotalEnthalpyIn_BC[iMarkerTP][iSpan] = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
       EntropyIn_BC[iMarkerTP][iSpan]       = FluidModel->GetEntropy();
+      if (iSpan == config->GetnSpan_iZones(iMarkerTP)){
+        FluidModel->SetTDState_Ps(PressureOut_BC[iMarkerTP][iSpan],EntropyIn_BC[iMarkerTP][iSpan]);
+        enthalpyOutIs = FluidModel->GetStaticEnergy() + PressureOut_BC[iMarkerTP][iSpan]/FluidModel->GetDensity();
+        VelSpout_T = sqrt(2*(TotalEnthalpyIn_BC[iMarkerTP][iSpan] - enthalpyOutIs))/config->GetTotalPressureIn_BC();
+      }
     }
   }
 
@@ -239,7 +244,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       }
 
       /*--- TURBO-PERFORMANCE---*/
-      EntropyGen[iMarkerTP][iSpan]         = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
+      EntropyGen[iMarkerTP][iSpan]         = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/VelSpout_T;
       EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
       TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
       KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
@@ -270,7 +275,8 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       MassFlowIn[nBladesRow + iStage][nSpanWiseSections]            = MassFlowIn[iStage*2][config->GetnSpan_iZones(iStage*2)];
       MassFlowOut[nBladesRow + iStage][nSpanWiseSections]           = MassFlowOut[iStage*2 + 1][config->GetnSpan_iZones(iStage*2+1)];
       EntropyGen[nBladesRow + iStage][nSpanWiseSections]            = EntropyGen[iStage*2 + 1][config->GetnSpan_iZones(iStage*2 +1)] + EntropyGen[iStage*2][config->GetnSpan_iZones(iStage*2)];
-
+      TotalPressureLoss[nBladesRow + iStage][nSpanWiseSections]     = TotalPressureLoss[iStage*2 + 1][config->GetnSpan_iZones(iStage*2 +1)] + TotalPressureLoss[iStage*2][config->GetnSpan_iZones(iStage*2)];
+      KineticEnergyLoss[nBladesRow + iStage][nSpanWiseSections]     = KineticEnergyLoss[iStage*2 + 1][config->GetnSpan_iZones(iStage*2 +1)] + KineticEnergyLoss[iStage*2][config->GetnSpan_iZones(iStage*2)];
     }
 
     /*---Compute turbo performance for full machine---*/
@@ -290,8 +296,12 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
     MassFlowOut[nBladesRow + nStages][nSpanWiseSections]            = MassFlowOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)];
 
     EntropyGen[nBladesRow + nStages][nSpanWiseSections]             = 0.0;
+    TotalPressureLoss[nBladesRow + nStages][nSpanWiseSections]      = 0.0;
+    KineticEnergyLoss[nBladesRow + nStages][nSpanWiseSections]      = 0.0;
     for(iBlade = 0; iBlade < nBladesRow; iBlade++ ){
       EntropyGen[nBladesRow + nStages][nSpanWiseSections]          += EntropyGen[iBlade][config->GetnSpan_iZones(iBlade)];
+      TotalPressureLoss[nBladesRow + nStages][nSpanWiseSections]   += TotalPressureLoss[iBlade][config->GetnSpan_iZones(iBlade)];
+      KineticEnergyLoss[nBladesRow + nStages][nSpanWiseSections]   += KineticEnergyLoss[iBlade][config->GetnSpan_iZones(iBlade)];
     }
   }
 
