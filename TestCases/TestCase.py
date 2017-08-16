@@ -29,10 +29,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
-from __future__ import print_function
-
-
+from __future__ import print_function, division, absolute_import
 import time, os, subprocess, datetime, sys
 import difflib
 
