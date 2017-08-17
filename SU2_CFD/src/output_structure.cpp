@@ -5615,7 +5615,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       }
 
       /*--- Write the solution on the screen and history file ---*/
-      if (val_iZone == 0){
+      if (val_iZone == 0 || iExtIter == 0 || iExtIter == (config[val_iZone]->GetnExtIter() -1)){
         cout.precision(6);
         cout.setf(ios::fixed, ios::floatfield);
         if (!fem) {
@@ -5657,7 +5657,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || iExtIter == 0 || iExtIter == (config[val_iZone]->GetnExtIter() -1)){
 
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
@@ -5724,7 +5724,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || iExtIter == 0 || iExtIter == (config[val_iZone]->GetnExtIter() -1)){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
