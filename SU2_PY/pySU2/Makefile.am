@@ -42,12 +42,12 @@ SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
 SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
 SWIG_SO_REAL = _pysu2.${SO_EXT}
 
-PYTHON_INCLUDE = -I/usr/include/python2.7
+# Macro to get Python paths
+AM_PATH_PYTHON()
+PYTHON_INCLUDE = -I${PYTHON_EXEC_PREFIX}/include/python${PYTHON_VERSION}
 #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
 MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
-                 -I/usr/local/lib/python2.7/site-packages/mpi4py/include \
-                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
-                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
+                 -I${pythondir}/mpi4py/include \
                  -I/Library/Python/2.7/site-packages/mpi4py/include
 
 SWIG = swig
@@ -57,7 +57,8 @@ pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
 
 PY_INCLUDE = ${PYTHON_INCLUDE} -I${MPI4PY_INCLUDE}
 
-PY_LIB = -lpython2.7 \
+PY_LIB = -lpython${PYTHON_VERSION} \
+         -L${PYTHON_EXEC_PREFIX}/lib \
          -L/usr/lib \
          -L/usr/lib/x86_64-linux-gnu
          
