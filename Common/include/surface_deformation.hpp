@@ -1080,7 +1080,7 @@ public:
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
    */
-  void Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+  void Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter, bool print);
 
   /*!
    * \brief Computes the displacement of a translating surface for a dynamic mesh simulation.

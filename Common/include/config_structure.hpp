@@ -554,6 +554,7 @@ private:
   unsigned long Wrt_Sol_Freq,	/*!< \brief Writing solution frequency. */
   Wrt_Sol_Freq_DualTime,	/*!< \brief Writing solution frequency for Dual Time. */
   Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
+  Wrt_Con_Freq_MultiZone,           /*!< \brief Writing convergence history frequency at video for fluif multi-zone problems. */
   Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
   bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
@@ -2581,6 +2582,12 @@ public:
    */
   unsigned long GetWrt_Con_Freq(void);
   
+  /*!
+   * \brief Get the frequency for printing at video the convergence history for multi-zone fluid problems.
+   * \return frequency.
+   */
+  unsigned long GetWrt_Con_Freq_MultiZone(void);
+
   /*!
    * \brief Get the frequency for writing the convergence file in Dual Time.
    * \return It writes the convergence file with this frequency.

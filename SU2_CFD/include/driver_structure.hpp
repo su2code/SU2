@@ -186,7 +186,7 @@ public:
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
-  void InitStaticMeshMovement();
+  void InitStaticMeshMovement(bool print);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.

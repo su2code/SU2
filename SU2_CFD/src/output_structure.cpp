@@ -5013,7 +5013,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
     
     bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter() -1)));
-    
+    bool write_hist_mtz = (iExtIter % (config[val_iZone]->GetWrt_Con_Freq_MultiZone()) == 0 || iExtIter == (config[val_iZone]->GetnExtIter() -1));
+
     /*--- Analogous for dynamic problems (as of now I separate the problems, it may be worthy to do all together later on ---*/
     bool write_heads_FEM;
     if (nonlinear_analysis) write_heads_FEM = (iIntIter == 0);
@@ -5615,7 +5616,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       }
 
       /*--- Write the solution on the screen and history file ---*/
-      if (val_iZone == 0){
+      if (val_iZone == 0 || write_hist_mtz){
         cout.precision(6);
         cout.setf(ios::fixed, ios::floatfield);
         if (!fem) {
@@ -5657,7 +5658,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || write_hist_mtz){
 
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
@@ -5724,7 +5725,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || write_hist_mtz){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -5849,7 +5850,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || write_hist_mtz){
             if (DualTime_Iteration || !Unsteady){
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -5893,7 +5894,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || write_hist_mtz){
             if (DualTime_Iteration || !Unsteady){
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);

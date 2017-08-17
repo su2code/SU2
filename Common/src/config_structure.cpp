@@ -1342,6 +1342,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief WRT_CON_FREQ
    *  \n DESCRIPTION: Writing convergence history frequency  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
+  /*!\brief WRT_CON_FREQ_MLTZ
+   *  \n DESCRIPTION: Writing convergence history frequencyat video for fluid multizone problem  \ingroup Config*/
+  addUnsignedLongOption("WRT_CON_FREQ_MTZ",  Wrt_Con_Freq_MultiZone, 99999);
   /*!\brief WRT_CON_FREQ_DUALTIME
    *  \n DESCRIPTION: Writing convergence history frequency for the dual time  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);

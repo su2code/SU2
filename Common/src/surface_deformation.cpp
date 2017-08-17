@@ -3208,7 +3208,7 @@ void CSurfaceMovement::SetScale(CGeometry *boundary, CConfig *config, unsigned s
 }
 
 void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
-                                    unsigned short iZone, unsigned long iter) {
+                                    unsigned short iZone, unsigned long iter, bool print) {
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
