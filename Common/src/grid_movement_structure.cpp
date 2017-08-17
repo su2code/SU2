@@ -5908,7 +5908,7 @@ void CSurfaceMovement::SetScale(CGeometry *boundary, CConfig *config, unsigned s
 }
 
 void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
-                                    unsigned short iZone, unsigned long iter) {
+                                    unsigned short iZone, unsigned long iter, bool print) {
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -5947,7 +5947,7 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
       xDot[1]   = config->GetTranslation_Rate_Y(jMarker)/Vel_Ref;
       xDot[2]   = config->GetTranslation_Rate_Z(jMarker)/Vel_Ref;
       
-      if (rank == MASTER_NODE && iter == 0) {
+      if (rank == MASTER_NODE && iter == 0 && print) {
         cout << " Storing grid velocity for marker: ";
         cout << Marker_Tag << "." << endl;
         cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];

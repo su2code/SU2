@@ -350,7 +350,7 @@ CDriver::CDriver(char* confFile,
   if(initStaticMovement){
     if (rank == MASTER_NODE)cout << endl <<"--------------------- Initialize Static Mesh Movement --------------------" << endl;
 
-      InitStaticMeshMovement();
+      InitStaticMeshMovement(true);
   }
 
  if (config_container[ZONE_0]->GetBoolTurbomachinery()){
@@ -2576,7 +2576,7 @@ void CDriver::Interface_Preprocessing() {
 
 }
 
-void CDriver::InitStaticMeshMovement(){
+void CDriver::InitStaticMeshMovement(bool print){
 
   unsigned short iMGlevel;
   unsigned short Kind_Grid_Movement;
@@ -2595,11 +2595,11 @@ void CDriver::InitStaticMeshMovement(){
 
       /*--- Fixed wall velocities: set the grid velocities only one time
          before the first iteration flow solver. ---*/
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE && print)
         cout << endl << " Setting the moving wall velocities." << endl;
 
       surface_movement[iZone]->Moving_Walls(geometry_container[iZone][MESH_0],
-          config_container[iZone], iZone, 0);
+          config_container[iZone], iZone, 0, print);
 
       /*--- Update the grid velocities on the coarser multigrid levels after
            setting the moving wall velocities for the finest mesh. ---*/
@@ -2613,7 +2613,7 @@ void CDriver::InitStaticMeshMovement(){
       /*--- Steadily rotating frame: set the grid velocities just once
          before the first iteration flow solver. ---*/
 
-      if (rank == MASTER_NODE) {
+      if (rank == MASTER_NODE && print) {
         cout << endl << " Setting rotating frame grid velocities";
         cout << " for zone " << iZone << "." << endl;
       }
@@ -2622,7 +2622,7 @@ void CDriver::InitStaticMeshMovement(){
            rotating reference frame. ---*/
 
       for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, true);
+        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, print);
         geometry_container[iZone][iMGlevel]->SetShroudVelocity(config_container[iZone]);
       }
 
@@ -2634,7 +2634,7 @@ void CDriver::InitStaticMeshMovement(){
          the calculation (similar to rotating frame, but there is no extra
          source term for translation). ---*/
 
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE && print)
         cout << endl << " Setting translational grid velocities." << endl;
 
       /*--- Set the translational velocity on all grid levels. ---*/
@@ -4518,6 +4518,9 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+
+  /*--- Recording the setting of the steady grid movement needed to compute the correct sensitivity ---*/
+  InitStaticMeshMovement(false);
 
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
