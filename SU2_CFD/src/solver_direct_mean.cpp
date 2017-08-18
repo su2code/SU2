@@ -16607,43 +16607,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
   CSkinFriction = NULL;    Cauchy_Serie = NULL; HF_Visc = NULL;
   
-  /*--- Initialize quantities for the average process for internal flow ---*/
-
-  AverageVelocity 				    = NULL;
-  AverageTurboVelocity 				= NULL;
-  ExtAverageTurboVelocity 			= NULL;
-  AverageFlux 						= NULL;
-  SpanTotalFlux 					= NULL;
-  AveragePressure  					= NULL;
-  RadialEquilibriumPressure         = NULL;
-  ExtAveragePressure  				= NULL;
-  AverageDensity   					= NULL;
-  ExtAverageDensity   				= NULL;
-  AverageNu                         = NULL;
-  AverageKine                       = NULL;
-  AverageOmega                      = NULL;
-  ExtAverageNu                      = NULL;
-  ExtAverageKine                    = NULL;
-  ExtAverageOmega                   = NULL;
-
-
-  /*--- Initialize primitive quantities for turboperformace ---*/
-
-  DensityIn                     = NULL;
-  PressureIn                    = NULL;
-  TurboVelocityIn               = NULL;
-  DensityOut                    = NULL;
-  PressureOut                   = NULL;
-  TurboVelocityOut              = NULL;
-
-
-  /*--- Initialize quantities for Giles BC ---*/
-
-  CkInflow                      = NULL;
-  CkOutflow1			= NULL;
-  CkOutflow2			= NULL;
-
-
 
   /*--- Set the gamma value ---*/
   
