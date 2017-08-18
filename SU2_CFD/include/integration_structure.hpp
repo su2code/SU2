@@ -317,7 +317,7 @@ public:
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, 
+  virtual void SetRestricted_Residual(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
                     CGeometry *geo_coarse, CConfig *config);
   
   /*! 

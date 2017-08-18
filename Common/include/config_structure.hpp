@@ -510,10 +510,10 @@ private:
   Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
   Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
-  Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
   Kappa_1st_Heat,     /*!< \brief 1st order dissipation coefficient for heat equation. */
   Kappa_2nd_Heat,     /*!< \brief 2nd order dissipation coefficient for heat equation. */
-  Kappa_4th_Heat;     /*!< \brief 4th order dissipation coefficient for heat equation.   
+  Kappa_4th_Heat;     /*!< \brief 4th order dissipation coefficient for heat equation. */  
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */

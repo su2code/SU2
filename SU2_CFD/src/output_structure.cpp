@@ -5924,7 +5924,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               cout << endl;
               cout.unsetf(ios_base::floatfield);
->>>>>>> 45fd6bfbcf534e7495878dc604722e8478d14a7a
             }
           }
           break;

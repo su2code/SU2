@@ -4317,18 +4317,8 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-<<<<<<< HEAD
-  void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
-
-||||||| merged common ancestors
-  void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
-  
-=======
   unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
   
->>>>>>> 45fd6bfbcf534e7495878dc604722e8478d14a7a
   /*!
    * \brief Compute a pressure sensor switch.
    * \param[in] geometry - Geometrical definition of the problem.

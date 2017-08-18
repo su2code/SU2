@@ -46,7 +46,8 @@ CHeatVariable::CHeatVariable(su2double val_Heat, unsigned short val_nDim, unsign
 : CVariable(val_nDim, val_nvar, config) {
 
   unsigned short iVar, iMesh, nMGSmooth = 0;
-  bool low_fidelity = config->GetLowFidelitySim();
+  //bool low_fidelity = config->GetLowFidelitySim();
+  bool low_fidelity = false;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
