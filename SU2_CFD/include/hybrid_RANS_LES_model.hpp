@@ -364,7 +364,8 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
    * \param[in] values_M - The cell-to-cell distances in the "principal
    *            "directions"
    */
-  vector<vector<su2double> > BuildZeta(su2double* values_M);
+  vector<vector<su2double> > BuildZeta(su2double* values_M,
+                                       su2double** vectors_M);
 
 
   /**

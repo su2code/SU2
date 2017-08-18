@@ -73,9 +73,9 @@ int main() {
   CConfig* test_config = new CConfig();
 
   su2double eigvalues_M[nDim];
-  eigvalues_M[0] = 1.0;
-  eigvalues_M[1] = 10.0;
-  eigvalues_M[2] = 1.0;
+  eigvalues_M[0] = 2.0;
+  eigvalues_M[1] = 2.0;
+  eigvalues_M[2] = 2.0;
   su2double** eigvecs_M = new su2double*[nDim];
   for (int iDim = 0; iDim < nDim; iDim++) {
     eigvecs_M[iDim] = new su2double[nDim];
@@ -93,20 +93,23 @@ int main() {
 
   vector<vector<su2double> > zeta = mediator.BuildZeta(eigvalues_M, eigvecs_M);
 
-  // Check the magnitude
-  su2double mag = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-      mag += zeta[iDim][jDim];
-    }
-  }
-  mag = sqrt(mag/3);
+  su2double tol = 1e-8;
 
-  if (mag <= 1.0) {
-    cout << "The magnitude of the zeta transform matrix was <= 1.0 for a stretched cell!" << endl;
-    cout << "  Magnitude: " << mag << endl;
-    return_flag = 1;
+  // Check the eigenvectors
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    for (int jDim = 0; jDim < nDim; jDim++) {
+      if (abs(zeta[iDim][jDim] - (iDim == jDim)) > tol) {
+        cout.precision(16);
+        cout << "ERROR: Zeta was not calculated correctly." << endl;
+        cout << "    Calculated:" << endl;
+        print_matrix(zeta);
+        return_flag = 1;
+        break;
+      }
+    }
+    if (return_flag != 0) break;
   }
+
 
   /**-------------------------------------------------------------------------
    * TEARDOWN

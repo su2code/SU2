@@ -197,7 +197,7 @@ CHybrid_Mediator::CHybrid_Mediator(int nDim, CConfig* config, string filename)
   /*--- Calculate scaling constants so that zeta -> kroneckor delta for
    * isotropic cells ---*/
   vector<su2double> temp_values = GetEigValues_Q(vector<su2double>(3, 1.0));
-  C_zeta = pow(temp_values[0],0.5);
+  C_zeta = pow(temp_values[0], 0.5);
 }
 
 CHybrid_Mediator::~CHybrid_Mediator() {
@@ -228,6 +228,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
                                               CSolver **solver_container,
                                               unsigned short iPoint) {
   unsigned short iDim, jDim, kDim, lDim;
+  const su2double TKE_MIN = 1e-9;
 
 
   /*--- Find eigenvalues and eigenvecs for grid-based resolution tensor ---*/
@@ -239,7 +240,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
   su2double** PrimVar_Grad =
       solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
   CalculateApproxStructFunc(ResolutionTensor, PrimVar_Grad, Qapprox);
-  vector<vector<su2double> > zeta = BuildZeta(ResolutionValues);
+  vector<vector<su2double> > zeta = BuildZeta(ResolutionValues, ResolutionVectors);
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       Q[iDim][jDim] = 0.0;
@@ -261,13 +262,10 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
       total_vel_differences += abs(Q[iDim][jDim]);
     }
   }
-  if (geometry->node[iPoint]->GetSolidBoundary()) {
-    /*--- At solid walls, force the RANS weight to 1 and the
-     * resolution adequacy to 0 (no resolved fluctuations) ---*/
-    r_k = 0.0;
-    w_rans = 1.0;
 
-  } else if (total_vel_differences > EPS) {
+  su2double k = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+  const su2double MIN_VEL_DIFF = fmax(EPS, 1e-7*sqrt(k));
+  if (total_vel_differences > MIN_VEL_DIFF) {
     /*--- Only calculate r_k, w_rans if there are resolved velocity differences
      * at resolution scale.  Otherwise, eigenvector calculation is arbitrary */
 
@@ -290,12 +288,11 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     // TODO: Make this more generalized
     su2double C_mu = 0.22;
     su2double TurbT = solver_container[TURB_SOL]->node[iPoint]->GetTurbTimescale();
-    su2double k = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
     su2double omega = solver_container[TURB_SOL]->node[iPoint]->GetSolution(1);
     su2double min_unresolved = TurbT*k*omega/C_mu;
 
     /*--- Calculate the resolution adequacy parameter ---*/
-    r_k = max_resolved/min_unresolved;
+    r_k = fmax(max_resolved, TKE_MIN) / fmax(min_unresolved, TKE_MIN);
 
     /*--- Find the dissipation ratio ---*/
     su2double C_eps = 0.03125;
@@ -305,11 +302,8 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     su2double r_eps = C_eps * pow(r_k, 1.5) * TurbL / d_max;
 
     /*--- Calculate the RANS weight ---*/
-    w_rans = max(tanh(r_eps - 1), 0.0);
-
+    w_rans = fmax(tanh(r_eps - 1), 0.0);
   } else {
-    /*--- If the velocity differences at resolution scale are negligible,
-     * set max_eigenvalue = 0 ---*/
     r_k = 0.0;
     w_rans = 0.0;
   }
@@ -444,8 +438,8 @@ su2double CHybrid_Mediator::GetProjResolution(su2double** resolution_tensor,
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     magnitude_squared += direction[iDim]*direction[iDim];
   if (abs(magnitude_squared - 1.0) > 1e-7) {
-    cout << "ERROR: The unit vector int the projected resolution calc had a ";
-    cout << "mangitude greater than 1!" << endl;
+    cout << "ERROR: The unit vector for the projected resolution calc had a ";
+    cout << "magnitude greater than 1!" << endl;
     cout << "    Magnitude: " << sqrt(magnitude_squared) << endl;
     exit(EXIT_FAILURE);
   }
@@ -507,8 +501,8 @@ vector<su2double> CHybrid_Mediator::GetEigValues_Q(vector<su2double> eigvalues_M
   su2double theta = acos(max(a,b)/r);
 
   /*--- Convert to more convenient log coordinates ---*/
-  su2double x = log(sin(2*theta));
-  su2double y = log(r);
+  su2double y = log(sin(2*theta));
+  su2double x = log(r);
 
   vector<su2double> g(3);
   for (int iDim = 0; iDim < nDim; iDim++) {
@@ -539,10 +533,11 @@ vector<su2double> CHybrid_Mediator::GetEigValues_Q(vector<su2double> eigvalues_M
   return eigvalues_Q;
 }
 
-vector<vector<su2double> > CHybrid_Mediator::BuildZeta(su2double* values_M) {
+vector<vector<su2double> > CHybrid_Mediator::BuildZeta(su2double* values_M,
+                                                       su2double** vectors_M) {
 
 #ifdef HAVE_LAPACK
-  unsigned short iDim;
+  unsigned short iDim, jDim, kDim, lDim;
 
   vector<su2double> eigvalues_M;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -550,9 +545,21 @@ vector<vector<su2double> > CHybrid_Mediator::BuildZeta(su2double* values_M) {
 
   /*--- Solve for the modified resolution tensor  ---*/
   vector<su2double> eigvalues_Zeta = GetEigValues_Zeta(eigvalues_M);
+  vector<vector<su2double> > temp(3, vector<su2double>(3));
   vector<vector<su2double> > zeta(3, vector<su2double>(3));
   for (iDim = 0; iDim < nDim; iDim++) {
-    zeta[iDim][iDim] = eigvalues_Zeta[iDim];
+    temp[iDim][iDim] = eigvalues_Zeta[iDim];
+  }
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      zeta[iDim][jDim] = 0.0;
+      for (kDim = 0; kDim < nDim; kDim++) {
+        for (lDim = 0; lDim < nDim; lDim++) {
+          zeta[iDim][jDim] += vectors_M[kDim][iDim] * temp[kDim][lDim] *
+                              vectors_M[lDim][jDim];
+        }
+      }
+    }
   }
   return zeta;
 #else
@@ -672,23 +679,28 @@ unsigned short iDim, jDim;
     }
   }
 
-  su2double max_val = max(eigval[0], max(eigval[1], eigval[2]));
-  for (iDim = 0; iDim < nDim; iDim++) {
-    if (eigvalues[iDim] > 0 && log10(max_val/eigvalues[iDim]) > 10) {
-      // If the condition number is bad, give up
-      eigvalues[iDim] = 0.0;
-    }
-  }
+//  su2double max_val = max(eigval[0], max(eigval[1], eigval[2]));
+//  for (iDim = 0; iDim < nDim; iDim++) {
+//    if (eigvalues[iDim] > 0 && log10(max_val/eigvalues[iDim]) > 10) {
+//      // If the condition number is bad, give up
+//      eigvalues[iDim] = 0.0;
+//    }
+//  }
 
   /*--- Normalize the eigenvectors by the L2 norm of each vector ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      eigvectors[iDim][jDim] = mat[iDim*nDim+jDim];
+    }
+  }
 
   for (iDim = 0; iDim < nDim; iDim++) {
     su2double norm = 0.0;
     for (jDim = 0; jDim < nDim; jDim++)
-      norm += mat[iDim*nDim+jDim]*mat[iDim*nDim+jDim];
+      norm += eigvectors[iDim][jDim]*eigvectors[iDim][jDim];
     norm = sqrt(norm);
     for (jDim = 0; jDim < nDim; jDim++) {
-      eigvectors[iDim][jDim] = mat[iDim*nDim+jDim]/norm;
+      eigvectors[iDim][jDim] /= norm;
     }
   }
 #else

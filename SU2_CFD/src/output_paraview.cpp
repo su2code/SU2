@@ -713,6 +713,23 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
         }
       }
       VarCounter += 9;
+      Paraview_File << "\nTENSORS Resolution_Tensor float\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (!surf_sol || LocalIndex[iPoint+1] != 0) {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          for (int iDim = 0; iDim < 3; iDim++) {
+            for (int jDim = 0; jDim < 3; jDim++) {
+              Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+              VarCounter++;
+            }
+            Paraview_File << endl;
+          }
+          Paraview_File << endl;
+          VarCounter -= 9;
+        }
+      }
+      VarCounter += 9;
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
           // No extra variables
