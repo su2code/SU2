@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -645,3 +645,22 @@ void CVertex::Allocate_DonorInfo(void){
   Donor_Coeff  = new su2double[nDonor_Points];
 }
 
+CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim){
+	unsigned short iDim;
+ /*--- Pointers initialization ---*/
+	TurboNormal = NULL;
+	/*--- Allocate node, and face normal ---*/
+	TurboNormal = new su2double [nDim];
+
+	/*--- Initializate the structure ---*/
+	for (iDim = 0; iDim < nDim; iDim ++) TurboNormal[iDim] = 0.0;
+
+}
+
+CTurboVertex::~CTurboVertex() {
+
+	if (Normal != NULL) delete[] Normal;
+	if (Nodes != NULL) delete[] Nodes;
+	if (TurboNormal != NULL) delete [] TurboNormal;
+
+}

@@ -4,8 +4,8 @@
  * \author F. Palacios
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -218,9 +218,15 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	
 	restart_file.open(mesh_filename.c_str(), ios::in);
 	if (restart_file.fail()) {
-	  if (rank == MASTER_NODE)
-	    cout << "There is no adjoint restart file!!" << endl;
-		exit(EXIT_FAILURE); }
+	  if (rank == MASTER_NODE) cout << "There is no adjoint restart file!!" << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+}
 	
   /*--- Read the header of the file ---*/
   getline(restart_file, text_line);
@@ -279,8 +285,9 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
     if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
     if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
     if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
-    if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)      SPRINTF (buffer, "_pe.dat");
+    if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)     SPRINTF (buffer, "_pe.dat");
     if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == CUSTOM_OBJFUNC)          SPRINTF (buffer, "_custom.dat");
 	}
 
 	strcat(cstr, buffer);
@@ -3550,8 +3557,9 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
     if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
     if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
     if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
-    if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)      SPRINTF (buffer, "_pe.dat");
+    if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)     SPRINTF (buffer, "_pe.dat");
     if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == CUSTOM_OBJFUNC)          SPRINTF (buffer, "_custom.dat");
   }
   
 	strcat(cstr, buffer);

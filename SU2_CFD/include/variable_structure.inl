@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -302,6 +302,10 @@ inline void CVariable::SetForceProj_Vector(su2double *val_ForceProj_Vector) { }
 inline void CVariable::SetObjFuncSource(su2double *val_ObjFuncSource) { }
 
 inline void CVariable::SetIntBoundary_Jump(su2double *val_IntBoundary_Jump) { }
+
+inline su2double CVariable::GetGammaBC(void) { return 0; }
+
+inline void CVariable::SetGammaBC(su2double val_gamma) { }
 
 inline void CVariable::SetEnthalpy(void) { }
 
@@ -1086,6 +1090,10 @@ inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2d
 inline void CTurbSAVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
 inline su2double CTurbSAVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
+
+inline su2double CTurbSAVariable::GetGammaBC(void) { return gamma_BC; }
+
+inline void CTurbSAVariable::SetGammaBC(su2double val_gamma) { gamma_BC = val_gamma; }
 
 inline void CTurbMLVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 

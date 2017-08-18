@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -153,10 +153,10 @@ int main(int argc, char *argv[]) {
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
-
-  /*--- Definition of the output class (one for all the zones) ---*/
-  output = new COutput();
-
+  
+	/*--- Definition of the output class (one for all the zones) ---*/
+	output = new COutput(config_container[ZONE_0]);
+  
   /*---  Check whether this is an FSI, fluid unsteady, harmonic balance or structural dynamic simulation and call the
    solution merging routines accordingly.---*/
 

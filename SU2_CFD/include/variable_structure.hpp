@@ -6,8 +6,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -1018,6 +1018,17 @@ public:
    */
   virtual void SetIntBoundary_Jump(su2double *val_IntBoundary_Jump);
   
+  /*!
+   * \brief A virtual member.
+   * \return Value of the gamma_BC of B-C transition model.
+   */
+  virtual su2double GetGammaBC(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetGammaBC(su2double val_gamma);
+
   /*!
    * \brief A virtual member.
    * \param[in] eddy_visc - Value of the eddy viscosity.
@@ -3638,6 +3649,10 @@ public:
  */
 
 class CTurbSAVariable : public CTurbVariable {
+
+private:
+  su2double gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -3672,6 +3687,18 @@ public:
    * \return Value of the harmonic balance source term for the index <i>val_var</i>.
    */
   su2double GetHarmonicBalance_Source(unsigned short val_var);
+
+  /*!
+   * \brief Get the intermittency of the BC transition model.
+   * \return Value of the intermittency of the BC transition model.
+   */
+  su2double GetGammaBC(void);
+
+  /*!
+   * \brief Set the intermittency of the BC transition model.
+   * \param[in] val_gamma - New value of the intermittency.
+   */
+  void SetGammaBC(su2double val_gamma);
   
 };
 

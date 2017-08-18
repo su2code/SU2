@@ -4,8 +4,8 @@
  * \author F. Palacios, A. Bueno
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -538,7 +538,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
 
 //  BC Transition Model variables
   su2double vmag, rey, re_theta, re_theta_t, re_v;
-  su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, gamma_BC, term1, term2, term_exponential;
+  su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, term1, term2, term_exponential;
 
   if (incompressible) {
     Density_i = V_i[nDim+1];
