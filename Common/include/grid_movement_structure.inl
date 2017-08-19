@@ -225,12 +225,12 @@ inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned sh
   return false;
 }
 
-inline su2double CFreeFormBlending::GetBasis(short val_i, su2double val_t){return 0.0;}
+inline su2double CFreeFormBlending::GetBasis(short val_i, su2double val_t) {return 0.0;}
 
-inline su2double CFreeFormBlending::GetDerivative(short val_i, su2double val_t, short val_order){return 0.0;}
+inline su2double CFreeFormBlending::GetDerivative(short val_i, su2double val_t, short val_order) {return 0.0;}
 
-inline void CFreeFormBlending::SetOrder(short Order, short n_controlpoints){}
+inline void CFreeFormBlending::SetOrder(short Order, short n_controlpoints) {}
 
-inline su2double CFreeFormBlending::GetOrder(){return Order;}
+inline su2double CFreeFormBlending::GetOrder() {return Order;}
 
-inline su2double CFreeFormBlending::GetDegree(){return Degree;}
+inline su2double CFreeFormBlending::GetDegree() {return Degree;}

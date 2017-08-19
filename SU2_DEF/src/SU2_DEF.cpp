@@ -84,7 +84,6 @@ int main(int argc, char *argv[]) {
   geometry_container = new CGeometry*[nZone];
   surface_movement   = new CSurfaceMovement*[nZone];
   grid_movement      = new CVolumetricMovement*[nZone];
-  output             = new COutput(config_container[ZONE_0]);
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
@@ -181,19 +180,15 @@ int main(int argc, char *argv[]) {
     
   }
 
-  if (config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
+  /*--- initialization of output structure  ---*/
+  
+  output  = new COutput(config_container[ZONE_0]);
+  
+  /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
+  
+  if (config_container[ZONE_0]->GetVisualize_Deformation()) {
     
-    /*--- initialization of output structure  ---*/
-    
-    output  = new COutput(config_container[ZONE_0]);
-    
-    /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
-    
-    if (config_container[ZONE_0]->GetVisualize_Deformation()) {
-      
-      output->SetMesh_Files(geometry_container, config_container, nZone, true, false);
-      
-    }
+    output->SetMesh_Files(geometry_container, config_container, nZone, true, false);
     
   }
   

@@ -929,7 +929,7 @@ inline unsigned short CConfig::GetKind_Engine_Inflow(void) { return Kind_Engine_
 
 inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
 
-inline su2double* CConfig::GetFreeStreamTurboNormal(void){return FreeStreamTurboNormal;}
+inline su2double* CConfig::GetFreeStreamTurboNormal(void) {return FreeStreamTurboNormal;}
 
 inline unsigned short CConfig::GetKind_AverageProcess(void) { return Kind_AverageProcess; }
 
@@ -971,7 +971,7 @@ inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachiner
 
 inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane;}
 
-inline bool CConfig::GetSpatialFourier(void){return SpatialFourier;}
+inline bool CConfig::GetSpatialFourier(void) {return SpatialFourier;}
 
 inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[val_iZone];}
 
@@ -987,7 +987,7 @@ inline unsigned short CConfig::GetnMarker_Turbomachinery(void) { return nMarker_
 
 inline unsigned short CConfig::GetnMarker_Shroud(void) { return nMarker_Shroud;}
 
-inline string CConfig::GetMarker_Shroud(unsigned short val_marker){return Marker_Shroud[val_marker];}
+inline string CConfig::GetMarker_Shroud(unsigned short val_marker) {return Marker_Shroud[val_marker];}
 
 inline unsigned short CConfig::GetnMarker_TurboPerformance(void) { return nMarker_TurboPerformance;}
 
@@ -1009,7 +1009,7 @@ inline string CConfig::GetMarker_TurboPerf_BoundIn(unsigned short index) { retur
 
 inline string CConfig::GetMarker_TurboPerf_BoundOut(unsigned short index) { return Marker_TurboBoundOut[index];}
 
-inline string CConfig::GetMarker_PerBound(unsigned short val_marker){return Marker_PerBound[val_marker];}
+inline string CConfig::GetMarker_PerBound(unsigned short val_marker) {return Marker_PerBound[val_marker];}
 
 inline unsigned short CConfig::GetnLocationStations(void) { return nLocationStations; }
 
@@ -1342,7 +1342,7 @@ inline bool CConfig::GetFrozen_Visc_Cont(void) { return Frozen_Visc_Cont; }
 
 inline bool CConfig::GetFrozen_Visc_Disc(void) { return Frozen_Visc_Disc; }
 
-inline bool CConfig::GetFrozen_Limiter_Disc(void){ return Frozen_Limiter_Disc; }
+inline bool CConfig::GetFrozen_Limiter_Disc(void) { return Frozen_Limiter_Disc; }
 
 inline bool CConfig::GetSens_Remove_Sharp(void) { return Sens_Remove_Sharp; }
 
@@ -1590,6 +1590,6 @@ inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
 
 inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
 
-inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
+inline unsigned short CConfig::GetFFD_Blending(void) {return FFD_Blending;}
 
-inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
+inline su2double* CConfig::GetFFD_BSplineOrder() {return FFD_BSpline_Order;}

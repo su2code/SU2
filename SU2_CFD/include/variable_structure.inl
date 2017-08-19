@@ -35,7 +35,7 @@
 
 inline bool CVariable::SetDensity(void) { return 0; }
 
-inline void CVariable::SetDensity(su2double val_density){ }
+inline void CVariable::SetDensity(su2double val_density) { }
 
 inline void CVariable::SetVelSolutionOldDVector(void) { }
 

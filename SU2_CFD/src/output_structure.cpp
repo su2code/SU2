@@ -127,7 +127,7 @@ COutput::COutput(CConfig *config) {
   /*--- Initialize turbo flag ---*/
   turbo = config->GetBoolTurbomachinery();
 
-  if(turbo){
+  if (turbo) {
     /*--- Initializate quantities for turboperformace ---*/
     nSpanWiseSections = config->GetnSpanMaxAllZones();
     nMarkerTurboPerf  = config->GetnMarker_TurboPerformance();
@@ -183,7 +183,7 @@ COutput::COutput(CConfig *config) {
     NuFactorIn                    = new su2double*[nMarkerTurboPerf];
     NuFactorOut                   = new su2double*[nMarkerTurboPerf];
 
-    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++) {
       TotalStaticEfficiency   [iMarker] = new su2double [nSpanWiseSections + 1];
       TotalTotalEfficiency    [iMarker] = new su2double [nSpanWiseSections + 1];
       KineticEnergyLoss       [iMarker] = new su2double [nSpanWiseSections + 1];
@@ -235,7 +235,7 @@ COutput::COutput(CConfig *config) {
       NuFactorOut             [iMarker] = new su2double [nSpanWiseSections + 1];
 
 
-      for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+      for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++) {
         TotalStaticEfficiency   [iMarker][iSpan] = 0.0;
         TotalTotalEfficiency    [iMarker][iSpan] = 0.0;
         KineticEnergyLoss       [iMarker][iSpan] = 0.0;
@@ -291,7 +291,7 @@ COutput::COutput(CConfig *config) {
         TurboVelocityIn         [iMarker][iSpan] = new su2double[4];
         TurboVelocityOut        [iMarker][iSpan] = new su2double[4];
 
-        for (iDim = 0; iDim < 4; iDim++){
+        for (iDim = 0; iDim < 4; iDim++) {
           MachIn           [iMarker][iSpan][iDim]   = 0.0;
           MachOut          [iMarker][iSpan][iDim]   = 0.0;
           TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
@@ -310,16 +310,16 @@ COutput::~COutput(void) {
 
   /*--- Delete turboperformance pointers initiliazed at constrction  ---*/
   unsigned short iMarker, iSpan;
-  if(turbo){
-    for(iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++){
-      for(iSpan=0; iSpan<nSpanWiseSections+1; iSpan++){
+  if (turbo) {
+    for (iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++) {
+      for (iSpan=0; iSpan<nSpanWiseSections+1; iSpan++) {
         delete [] MachIn          [iMarker][iSpan];
         delete [] MachOut         [iMarker][iSpan];
         delete [] TurboVelocityIn [iMarker][iSpan];
         delete [] TurboVelocityOut[iMarker][iSpan];
       }
     }
-    for(iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++){
+    for (iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++) {
       delete [] TotalStaticEfficiency[iMarker];
       delete [] TotalTotalEfficiency [iMarker];
       delete [] KineticEnergyLoss    [iMarker];
@@ -959,7 +959,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           if (nDim == 3) {
             Buffer_Send_Coord_z[nVertex_Surface] = Coord[2];
             Buffer_Send_Phi_z[nVertex_Surface] = Solution[3];
-            if(config->GetKind_Regime() == COMPRESSIBLE) Buffer_Send_PsiE[nVertex_Surface] = Solution[4];
+            if (config->GetKind_Regime() == COMPRESSIBLE) Buffer_Send_PsiE[nVertex_Surface] = Solution[4];
           }
           if (config->GetDiscrete_Adjoint()) {
             Buffer_Send_Sens_x[nVertex_Surface] = AdjSolver->node[iPoint]->GetSensitivity(0);
@@ -2793,9 +2793,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
 
           Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure();
-          if (compressible){
+          if (compressible) {
             Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature();
-          } else{
+          } else {
             Buffer_Send_Res[jPoint] =  0.0;
           }
           Buffer_Send_Vol[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea;
@@ -4281,7 +4281,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   
   /*--- Write file name with extension ---*/
   string filename = config->GetConv_FileName();
-  if(config->GetnZone() > 1){
+  if (config->GetnZone() > 1) {
     filename = config->GetMultizone_HistoryFileName(filename, val_iZone);
   }
   strcpy (cstr, filename.data());
@@ -4347,7 +4347,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
     aeroelastic_coeff += ",\"pitch_"  + Monitoring_Tag + "\"";
   }
 
-  if (turbo){
+  if (turbo) {
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
 
       stringstream tag;
@@ -4597,9 +4597,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_AvgPress = 0.0, OneD_AvgDensity = 0.0, OneD_AvgVelocity = 0.0, OneD_AvgEnthalpy = 0.0,
     Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
-    Total_AoA = 0.0,
-    Total_RadialDistortion = 0.0, Total_CircumferentialDistortion = 0.0,
-    Ave_Total_RadialDistortion = 0.0, Ave_Total_CircumferentialDistortion = 0.0;
+    Total_AoA = 0.0;
 
     unsigned short iSpan;
 
@@ -4831,14 +4829,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         if (turbo) {
           /*--- Loop over the nMarker of turboperformance and get the desired values ---*/
           for (iMarker_Monitoring = 0; iMarker_Monitoring < nTurboPerf; iMarker_Monitoring++) {
-            for(iSpan=0; iSpan<nSpanWiseSections+1; iSpan++){
-              if ((iMarker_Monitoring == 0) && (direct_diff != NO_DERIVATIVE)){
+            for (iSpan=0; iSpan<nSpanWiseSections+1; iSpan++) {
+              if ((iMarker_Monitoring == 0) && (direct_diff != NO_DERIVATIVE)) {
                 D_TotalPressure_Loss = SU2_TYPE::GetDerivative(TotalPressureLoss[iMarker_Monitoring][iSpan]);
                 D_FlowAngle_Out      = 180.0/PI_NUMBER*SU2_TYPE::GetDerivative(FlowAngleOut[iMarker_Monitoring][iSpan]);
               }
             }
           }
-          if (direct_diff != NO_DERIVATIVE){
+          if (direct_diff != NO_DERIVATIVE) {
             D_TotalStaticEfficiency = SU2_TYPE::GetDerivative(TotalStaticEfficiency[nTurboPerf-1][nSpanWiseSections]);
             D_TotalTotalEfficiency  = SU2_TYPE::GetDerivative(TotalTotalEfficiency[nTurboPerf-1][nSpanWiseSections]);
             D_EntropyGen            = SU2_TYPE::GetDerivative(EntropyGen[nTurboPerf-1][nSpanWiseSections]);
@@ -5137,11 +5135,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
             }
 
-            if (turbo){
-              for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_TurboPerformance(); iMarker_Monitoring++){
-                if (iMarker_Monitoring == 0){
+            if (turbo) {
+              for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
+                if (iMarker_Monitoring == 0) {
                   SPRINTF(turbo_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
-                }else{
+                }else {
                   SPRINTF(surface_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
                   strcat(turbo_coeff, surface_coeff);
                 }
@@ -5278,7 +5276,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
         }
       }
-      if (val_iZone == 0){
+      if (val_iZone == 0) {
         /*--- Write the screen header---*/
         if (  (!fem && ((write_heads) && !(!DualTime_Iteration && Unsteady))) ||
             (fem && ((write_heads_FEM) && !(!DualTime_Iteration && nonlinear_analysis)))
@@ -5345,7 +5343,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   cout << endl << "-------------------------------------------------------------------------" << endl;
                   cout << endl;
                 }
-                if (turbo && write_turbo && val_iZone== 0){
+                if (turbo && write_turbo && val_iZone== 0) {
                   WriteTurboPerfConvHistory(config[val_iZone]);
                 }
                 break;
@@ -5423,13 +5421,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
               
-            else if (turbo){
+            else if (turbo) {
 
-              if(nZone  < 2){
+              if (nZone  < 2) {
                 /*--- single zone output ---*/
                 cout << "     Res[Rho]" << "     Res[RhoE]"  << "  TotPresLoss(%)" << "  Entropy Gen.(%)" << endl;
               }
-              else{
+              else {
                 /* --- multi-zone output ---*/
                 cout << "     Res[Rho]" << "     Res[RhoE]"  << " TTEfficiency(%)" << " Entropy Gen.(%)" << endl;
               }
@@ -5485,12 +5483,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else if (rotating_frame && nDim == 3 && !turbo ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
-            else if (turbo){
-              if (nZone < 2){
+            else if (turbo) {
+              if (nZone < 2) {
                 /*--- single zone output ---*/
                 cout << "  TotPresLoss(%)" << "  Entropy Gen.(%)" << endl;
               }
-              else{
+              else {
                 /*--- multi zone output ---*/
                 cout << " TTEfficiency(%)" << " Entropy Gen.(%)" << endl;
 
@@ -5555,7 +5553,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
               else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
               if (disc_adj) {
-                if (!turbo){
+                if (!turbo) {
                   cout << "    Sens_Press" << "      Sens_AoA" << endl;
                 } else {
                   cout << " Sens_PressOut" << " Sens_TotTempIn" << endl;
@@ -5600,7 +5598,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 else cout << "     Res[Psi_E]";
               }
               if (disc_adj) {
-                if (!turbo){
+                if (!turbo) {
                   cout << "    Sens_Press" << "      Sens_AoA" << endl;
                 } else {
                   cout << " Sens_PressOut" << " Sens_TotTempIn" << endl;                }
@@ -5615,7 +5613,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       }
 
       /*--- Write the solution on the screen and history file ---*/
-      if (val_iZone == 0){
+      if (val_iZone == 0) {
         cout.precision(6);
         cout.setf(ios::fixed, ios::floatfield);
         if (!fem) {
@@ -5657,9 +5655,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0) {
 
-            if(DualTime_Iteration || !Unsteady) {
+            if (DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
               cout.width(13); cout << log10(residual_flow[0]);
@@ -5686,11 +5684,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else if (turbo) {
                 cout.setf(ios::scientific, ios::floatfield);
                 /*--- singlezone output---*/
-                if (nZone < 2){
+                if (nZone < 2) {
                   cout.width(15); cout << TotalPressureLoss[0][nSpanWiseSections]*100.0;
                   cout.width(15); cout << EntropyGen[0][nSpanWiseSections]*100.0;
                 }
-                else{
+                else {
                   /*--- multizone output---*/
                   cout.width(15); cout << TotalTotalEfficiency[nTurboPerf -1][nSpanWiseSections]*100.0;
                   cout.width(15); cout << EntropyGen[nTurboPerf -1][nSpanWiseSections]*100.0;
@@ -5724,8 +5722,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
-            if(DualTime_Iteration || !Unsteady) {
+          if (val_iZone == 0) {
+            if (DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
 
@@ -5758,16 +5756,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout << Total_CNearFieldOF; }
               else if (turbo) {
                 cout.setf(ios::scientific, ios::floatfield);
-                if (nZone < 2){
+                if (nZone < 2) {
                   /*--- single zone output ---*/
                   cout.width(15); cout << TotalPressureLoss[0][nSpanWiseSections]*100.0;
                   cout.width(15); cout << EntropyGen[0][nSpanWiseSections]*100.0;
                 }
-                else{
+                else {
                   /*--- multi zone output ---*/
                   cout.width(15); cout << TotalTotalEfficiency[nTurboPerf - 1][nSpanWiseSections]*100.0;
                   cout.width(15); cout << EntropyGen[nTurboPerf -1][nSpanWiseSections]*100.0;
-                  if (direct_diff){
+                  if (direct_diff) {
                     cout.width(15); cout << D_EntropyGen;
                   }
                 }
@@ -5792,7 +5790,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << wave_coeff << wave_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0) {
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_wave[0]);
@@ -5807,7 +5805,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0) {
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_heat[0]);
@@ -5849,8 +5847,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
-            if (DualTime_Iteration || !Unsteady){
+          if (val_iZone == 0) {
+            if (DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
               if (compressible) {
@@ -5865,7 +5863,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (disc_adj) {
                 cout.precision(4);
                 cout.setf(ios::scientific, ios::floatfield);
-                if (!turbo){
+                if (!turbo) {
                   cout.width(14); cout << Total_Sens_Press;
                   cout.width(14); cout << Total_Sens_AoA;
                 } else {
@@ -5893,8 +5891,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
-            if (DualTime_Iteration || !Unsteady){
+          if (val_iZone == 0) {
+            if (DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
               cout.width(17); cout << log10(residual_adjflow[0]);
@@ -5911,7 +5909,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 }
               }
               if (disc_adj) {
-                if (!turbo){
+                if (!turbo) {
                   cout.width(14); cout << Total_Sens_Press;
                   cout.width(14); cout << Total_Sens_AoA;
                 } else {
@@ -6718,7 +6716,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Breakdown_file << "Reference viscosity: " << config[val_iZone]->GetViscosity_Ref();
       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
-      if (compressible){
+      if (compressible) {
         Breakdown_file << "Reference conductivity: " << config[val_iZone]->GetConductivity_Ref();
         if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " W/m^2.K." << "\n";
         else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf/ft.s.R." << "\n";
@@ -7860,14 +7858,14 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
   /*--- Read the name of the output and input file ---*/
 
   if (rank == MASTER_NODE) {
-    if (su2_file){
+    if (su2_file) {
       str = config[ZONE_0]->GetMesh_Out_FileName();
       strcpy (out_file, str.c_str());
       strcpy (cstr, out_file);
       output_file.precision(15);
       output_file.open(cstr, ios::out);
 
-      if (val_nZone > 1){
+      if (val_nZone > 1) {
         output_file << "NZONE= " << val_nZone << endl;
       }
     }
@@ -7954,7 +7952,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
   }
 
   if (rank == MASTER_NODE) {
-    if (su2_file){
+    if (su2_file) {
       output_file.close();
     }
   }
@@ -8051,7 +8049,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           else
             Tot_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
           
-          switch (OneD_Type){
+          switch (OneD_Type) {
           case ONED_MFLUX:
             Pressure1D += RhoUA*Pressure;
             Velocity1D+=RhoUA*Vn*Vn; // V.n Magnitude
@@ -10450,7 +10448,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
+      if ((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
 
@@ -10493,7 +10491,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
 }
 
-void COutput::WriteTurboPerfConvHistory(CConfig *config){
+void COutput::WriteTurboPerfConvHistory(CConfig *config) {
 
   unsigned short iMarker_Monitoring;
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
@@ -10508,11 +10506,11 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
 
   cout << endl << "------------------------- Turbomachinery Summary ------------------------" << endl;
   cout << endl;
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Turbomachinery(); iMarker_Monitoring++){
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Turbomachinery(); iMarker_Monitoring++) {
     cout << endl << "----------------------------- Blade " << iMarker_Monitoring + 1 << " -----------------------------------" << endl;
     inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring);
     outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(iMarker_Monitoring);
-    if(iMarker_Monitoring == 0){
+    if (iMarker_Monitoring == 0) {
       cout << "BC Inlet convergence monitoring marker " << inMarker_Tag << " : "<<endl;
       cout << endl;
       cout << "     Inlet Total Enthalpy" << "     Inlet Total Enthalpy BC" << "     err(%)" <<  endl;
@@ -10533,8 +10531,8 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
       cout.width(25); cout << abs((AbsFlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/FlowAngleIn_BC[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
       cout << endl;
       cout << endl;
-      if(turbulent){
-        if(menter_sst){
+      if (turbulent) {
+        if (menter_sst) {
           cout << "     Inlet TurbIntensity" << "      Inlet TurbIntensity BC" << "      err(%)" <<  endl;
           cout.width(25); cout << TurbIntensityIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
           cout.width(25); cout << config->GetTurbulenceIntensity_FreeStream();
@@ -10548,7 +10546,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
           cout << endl;
           cout << endl;
         }
-        else{
+        else {
           cout << "     Inlet Nu Factor" << "          Inlet Nu Factor BC" << "          err(%)" <<  endl;
           cout.width(25); cout << NuFactorIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
           cout.width(25); cout << config->GetNuFactor_FreeStream();
@@ -10558,7 +10556,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
         }
       }
     }
-    if(iMarker_Monitoring == config->GetnMarker_Turbomachinery() -1 ){
+    if (iMarker_Monitoring == config->GetnMarker_Turbomachinery() -1 ) {
       // if BC outlet
       cout << "BC outlet convergence monitoring  marker " << outMarker_Tag << " : "<<endl;
       cout << endl;
@@ -10578,7 +10576,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
     cout.width(25); cout << abs((MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)] - MassFlowOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/MassFlowIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])*100.0;
     cout << endl;
     cout << endl;
-    //if(stator)
+    //if (stator)
     //cout << "     Inlet Total Enthalpy " << "    Outlet Total Enthalpy" << "     err(%)" <<  endl;
     //else
     cout << "     Inlet Total Rothalpy " << "    Outlet Total Rothalpy" << "       err(%)" <<  endl;
@@ -10632,7 +10630,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
     cout << endl;
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << endl;
-    if(nZone > 0 && iMarker_Monitoring < config->GetnMarker_Turbomachinery() -1){
+    if (nZone > 0 && iMarker_Monitoring < config->GetnMarker_Turbomachinery() -1) {
       cout << endl << "---------- Mixing-Plane Interface between Blade " << iMarker_Monitoring + 1 << " and Blade " << iMarker_Monitoring + 2 << " -----------" << endl;
       cout << endl;
       inMarkerTag_Mix = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring + 1);
@@ -10666,10 +10664,10 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
       cout.width(25); cout << EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
       cout.width(25); cout << EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)]*config->GetEnergy_Ref()/config->GetTemperature_Ref();
       cout.width(25); cout << abs((EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - EntropyOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/EntropyIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
-      if(turbulent){
+      if (turbulent) {
         cout << endl;
         cout << endl;
-        if(menter_sst){
+        if (menter_sst) {
           cout << "     Outlet TurbIntensity " << "    Inlet TurbIntensity" << "         err(%)" <<  endl;
           cout.width(25); cout << TurbIntensityOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
           cout.width(25); cout << TurbIntensityIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)];
@@ -10681,7 +10679,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
           cout.width(25); cout << Turb2LamViscRatioIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)];
           cout.width(25); cout << abs((Turb2LamViscRatioIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)] - Turb2LamViscRatioOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)])/Turb2LamViscRatioIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring+1)])*100.0;
         }
-        else{
+        else {
           cout << "     Outlet Nu Factor " << "        Inlet Nu Factor" << "             err(%)" <<  endl;
           cout.width(25); cout << NuFactorOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
           cout.width(25); cout << NuFactorIn[iMarker_Monitoring + 1][config->GetnSpan_iZones(iMarker_Monitoring +1)];
@@ -10694,9 +10692,9 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
     }
 
   }
-  if(nZone > 1){
+  if (nZone > 1) {
     /*--- Stage Performance ---*/
-    for(iStage = 0; iStage < nStages; iStage++ ){
+    for (iStage = 0; iStage < nStages; iStage++ ) {
       cout << endl << "----------------------------- Stage " << iStage + 1 << " -----------------------------------" << endl;
       inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(iStage*2);
       outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(iStage*2+1);
@@ -10718,7 +10716,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
     cout << endl;
 
     /*--- Full Machine Performance ---*/
-    // if(turbine)
+    // if (turbine)
     cout << endl << "---------------------------- Turbine ------------------------------------" << endl;
     inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(0);
     outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(nBladesRow-1);
@@ -10766,7 +10764,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
 
 
   /*--- Start of write file turboperformance spanwise ---*/
-  if (rank == MASTER_NODE){
+  if (rank == MASTER_NODE) {
     SpanWiseValuesIn = geometry[val_iZone][MESH_0]->GetSpanWiseValue(1);
     SpanWiseValuesOut = geometry[val_iZone][MESH_0]->GetSpanWiseValue(2);
 
@@ -10775,7 +10773,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     /*--- Writing Span wise inflow thermodynamic quantities. ---*/
     spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_thermodynamic_values.dat";
     char buffer[50];
-    if (nZone > 1){
+    if (nZone > 1) {
       unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
       spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
       SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
@@ -10805,7 +10803,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile.width(30); myfile << "\"NuFactor[-]\"";
     myfile << endl;
 
-    for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
+    for (iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++) {
 
       myfile.width(30); myfile << SpanWiseValuesIn[iSpan];
       myfile.width(15); myfile << iSpan;
@@ -10817,9 +10815,9 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
       myfile.width(30); myfile << TotalEnthalpyIn      [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref();
       myfile.width(30); myfile << DensityIn            [val_iZone][iSpan]*config[ZONE_0]->GetDensity_Ref();
       myfile.width(30); myfile << EntropyIn            [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
-      if(TurbIntensityIn[val_iZone][iSpan] > 1.0){
+      if (TurbIntensityIn[val_iZone][iSpan] > 1.0) {
         myfile.width(30); myfile << TurbIntensityIn      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
-      }else{
+      }else {
         myfile.width(30); myfile << TurbIntensityIn      [val_iZone][iSpan];
       }
       myfile.width(30); myfile << Turb2LamViscRatioIn  [val_iZone][iSpan];
@@ -10831,7 +10829,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
 
     /*--- Writing Span wise outflow thermodynamic quantities. ---*/
     spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_thermodynamic_values.dat";
-    if (nZone > 1){
+    if (nZone > 1) {
       unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
       spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
       SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
@@ -10861,7 +10859,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile << endl;
 
 
-    for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
+    for (iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++) {
 
       myfile.width(30); myfile << SpanWiseValuesOut[iSpan];
       myfile.width(15); myfile << iSpan;
@@ -10873,9 +10871,9 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
       myfile.width(30); myfile << TotalEnthalpyOut      [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref();
       myfile.width(30); myfile << DensityOut            [val_iZone][iSpan]*config[ZONE_0]->GetDensity_Ref();
       myfile.width(30); myfile << EntropyOut            [val_iZone][iSpan]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
-      if(TurbIntensityOut[val_iZone][iSpan] > 1.0){
+      if (TurbIntensityOut[val_iZone][iSpan] > 1.0) {
         myfile.width(30); myfile << TurbIntensityOut      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
-      }else{
+      }else {
         myfile.width(30); myfile << TurbIntensityOut      [val_iZone][iSpan];
       }
       myfile.width(30); myfile << Turb2LamViscRatioOut  [val_iZone][iSpan];
@@ -10887,7 +10885,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
 
     /*--- Writing Span wise inflow kinematic quantities. ---*/
     spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_kinematic_values.dat";
-        if (nZone > 1){
+        if (nZone > 1) {
           unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
           spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
           SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
@@ -10916,26 +10914,26 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
         myfile << endl;
 
 
-        for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
+        for (iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++) {
 
           myfile.width(30); myfile << SpanWiseValuesIn[iSpan];
           myfile.width(15); myfile << iSpan;
-          for (iDim = 0; iDim < 4; iDim++){
+          for (iDim = 0; iDim < 4; iDim++) {
           	myfile.width(30); myfile << MachIn              [val_iZone][iSpan][iDim];
           }
-          for (iDim = 0; iDim < 4; iDim++){
+          for (iDim = 0; iDim < 4; iDim++) {
           	myfile.width(30); myfile << TurboVelocityIn     [val_iZone][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();
           }
-          if(AbsFlowAngleIn[val_iZone][iSpan] != AbsFlowAngleIn[val_iZone][iSpan]){
+          if (AbsFlowAngleIn[val_iZone][iSpan] != AbsFlowAngleIn[val_iZone][iSpan]) {
           	myfile.width(30); myfile << "0.0000";
           }
-          else{
+          else {
           	myfile.width(30); myfile << AbsFlowAngleIn     [val_iZone][iSpan]*180.0/PI_NUMBER;
           }
-          if(FlowAngleIn[val_iZone][iSpan] != FlowAngleIn[val_iZone][iSpan]){
+          if (FlowAngleIn[val_iZone][iSpan] != FlowAngleIn[val_iZone][iSpan]) {
           	myfile.width(30); myfile << "0.0000";
           }
-          else{
+          else {
           	myfile.width(30); myfile << FlowAngleIn      [val_iZone][iSpan]*180.0/PI_NUMBER;
           }
           myfile << endl;
@@ -10945,7 +10943,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
 
         /*--- Writing Span wise outflow thermodynamic quantities. ---*/
         spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_kinematic_values.dat";
-        if (nZone > 1){
+        if (nZone > 1) {
         	unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
         	spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
         	SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
@@ -10974,26 +10972,26 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
         myfile << endl;
 
 
-        for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
+        for (iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++) {
 
         	myfile.width(30); myfile << SpanWiseValuesOut[iSpan];
         	myfile.width(15); myfile << iSpan;
-        	for (iDim = 0; iDim < 4; iDim++){
+        	for (iDim = 0; iDim < 4; iDim++) {
         		myfile.width(30); myfile << MachOut              [val_iZone][iSpan][iDim];
         	}
-        	for (iDim = 0; iDim < 4; iDim++){
+        	for (iDim = 0; iDim < 4; iDim++) {
         		myfile.width(30); myfile << TurboVelocityOut     [val_iZone][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();
         	}
-        	if(AbsFlowAngleOut[val_iZone][iSpan] != AbsFlowAngleOut[val_iZone][iSpan]){
+        	if (AbsFlowAngleOut[val_iZone][iSpan] != AbsFlowAngleOut[val_iZone][iSpan]) {
         		myfile.width(30); myfile << "0.0000";
         	}
-        	else{
+        	else {
         		myfile.width(30); myfile << AbsFlowAngleOut      [val_iZone][iSpan]*180.0/PI_NUMBER;
         	}
-        	if(FlowAngleOut[val_iZone][iSpan] != FlowAngleOut[val_iZone][iSpan]){
+        	if (FlowAngleOut[val_iZone][iSpan] != FlowAngleOut[val_iZone][iSpan]) {
         		myfile.width(30); myfile << "0.0000";
         	}
-        	else{
+        	else {
         		myfile.width(30); myfile << FlowAngleOut      [val_iZone][iSpan]*180.0/PI_NUMBER;
         	}
         	myfile << endl;
@@ -11049,11 +11047,11 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     //          myfile.width(30); myfile << FlowAngleIn          [iMarker_Monitoring-1][iSpan]*180.0/PI_NUMBER;
     //          myfile.width(30); myfile << FlowAngleOut         [iMarker_Monitoring-1][iSpan]*180.0/PI_NUMBER;
     //
-    //          for (iDim = 0; iDim < 4; iDim++){
+    //          for (iDim = 0; iDim < 4; iDim++) {
     //            myfile.width(30); myfile << MachIn              [iMarker_Monitoring-1][iSpan][iDim];
     //            myfile.width(30); myfile << MachOut             [iMarker_Monitoring-1][iSpan][iDim];
     //          }
-    //          for (iDim = 0; iDim < 4; iDim++){
+    //          for (iDim = 0; iDim < 4; iDim++) {
     //            myfile.width(30); myfile << TurboVelocityIn     [iMarker_Monitoring-1][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();;
     //            myfile.width(30); myfile << TurboVelocityOut    [iMarker_Monitoring-1][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();;
     //          }
@@ -11392,7 +11390,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     Variable_Names.clear();
     
     /*--- write span-wise value for turbomachinery ---*/
-    if(config[ZONE_0]->GetBoolTurbomachinery()){
+    if (config[ZONE_0]->GetBoolTurbomachinery()) {
       if (rank == MASTER_NODE) cout << "Writing span-wise values file."<<endl;
       WriteSpanWiseValuesFiles(geometry, config, iZone);
     }
@@ -11588,7 +11586,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     nVar_Par += 3;
     Variable_Names.push_back("Temperature");
-		if (config->GetOutput_FileFormat() == PARAVIEW){
+		if (config->GetOutput_FileFormat() == PARAVIEW) {
 			Variable_Names.push_back("Pressure_Coefficient");
 		} else {
 			Variable_Names.push_back("C<sub>p</sub>");
@@ -11598,7 +11596,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-			if (config->GetOutput_FileFormat() == PARAVIEW){
+			if (config->GetOutput_FileFormat() == PARAVIEW) {
 				nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
 				nVar_Par += 2;
 				Variable_Names.push_back("Skin_Friction_Coefficient_X");
@@ -11627,7 +11625,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (Kind_Solver == RANS) {
       nVar_Par += 1;
-			if (config->GetOutput_FileFormat() == PARAVIEW){
+			if (config->GetOutput_FileFormat() == PARAVIEW) {
 				Variable_Names.push_back("Eddy_Viscosity");
 			} else {
 				Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
@@ -11645,7 +11643,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
 
     if (transition) {
       nVar_Par += 1;
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if (config->GetOutput_FileFormat() == PARAVIEW) {
         Variable_Names.push_back("gamma_BC");
       } else {
         Variable_Names.push_back("<greek>g</greek><sub>BC</sub>");

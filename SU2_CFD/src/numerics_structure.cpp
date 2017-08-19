@@ -173,8 +173,8 @@ CNumerics::~CNumerics(void) {
   if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
   if (Vector != NULL) delete [] Vector;
 
-  if(Enthalpy_formation != NULL) delete [] Enthalpy_formation;
-  if(Theta_v != NULL) delete [] Theta_v;
+  if (Enthalpy_formation != NULL) delete [] Enthalpy_formation;
+  if (Theta_v != NULL) delete [] Theta_v;
 
   if (l != NULL) delete [] l;
   if (m != NULL) delete [] m;
@@ -996,7 +996,7 @@ void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 }
 
-void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv){
+void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv) {
   su2double rhoc, cc;
   su2double dhdrho_P, dhdP_rho, dsdrho_P,dsdP_rho;
 
@@ -1010,7 +1010,7 @@ void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double press
   dsdrho_P  = FluidModel->Getdsdrho_P();
   dsdP_rho  = FluidModel->GetdsdP_rho();
 
-  if (nDim == 2){
+  if (nDim == 2) {
 
     R_c[0][0] = -1/cc*dsdrho_P;                   //a11
     R_c[0][1] = 0.0;                                //a12
@@ -1026,7 +1026,7 @@ void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double press
 
     InvMatrix3D(R_c, R_c_inv);
   }
-  else{
+  else {
     R_c[0][0] = -1/cc*dsdrho_P;                     //a11
     R_c[0][1] = 0.0;                                //a12
     R_c[0][2] = 0.0;                                //a13
@@ -1051,7 +1051,7 @@ void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double press
   }
 }
 
-void CNumerics::InvMatrix3D(su2double **matrix, su2double **invMatrix){
+void CNumerics::InvMatrix3D(su2double **matrix, su2double **invMatrix) {
 
   su2double invDet;
 
@@ -1073,7 +1073,7 @@ void CNumerics::InvMatrix3D(su2double **matrix, su2double **invMatrix){
 
 }
 
-void CNumerics::InvMatrix4D(su2double **matrix, su2double **invMatrix){
+void CNumerics::InvMatrix4D(su2double **matrix, su2double **invMatrix) {
   su2double invDet;
 
   invDet = 1 /
@@ -1109,7 +1109,7 @@ void CNumerics::InvMatrix4D(su2double **matrix, su2double **invMatrix){
 
 }
 
-void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2double *delta_prim, su2double *delta_char){
+void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2double *delta_prim, su2double *delta_char) {
 
   su2double cc, rhoc;
   cc = val_soundspeed*val_soundspeed;

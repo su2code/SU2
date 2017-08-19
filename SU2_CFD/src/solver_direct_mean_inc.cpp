@@ -447,7 +447,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   
-  switch(direct_diff){
+  switch(direct_diff) {
     case NO_DERIVATIVE:
       /*--- Default ---*/
       break;
@@ -2349,7 +2349,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
       /*--- Sets the regular CFL equal to the unsteady CFL ---*/
       
@@ -2358,7 +2358,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
        it computes the time step based on the unsteady CFL ---*/
       
-      if (config->GetCFL(iMesh) == 0.0){
+      if (config->GetCFL(iMesh) == 0.0) {
         node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
       } else {
         node[iPoint]->SetDelta_Time(Global_Delta_Time);
@@ -4177,7 +4177,7 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node[iPoint]->GetLimiter_Primitive(iVar)){
+        if (limiter < node[iPoint]->GetLimiter_Primitive(iVar)) {
           node[iPoint]->SetLimiter_Primitive(iVar, limiter);
           AD::SetPreaccOut(node[iPoint]->GetLimiter_Primitive()[iVar]);
         }
@@ -4193,7 +4193,7 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node[jPoint]->GetLimiter_Primitive(iVar)){
+        if (limiter < node[jPoint]->GetLimiter_Primitive(iVar)) {
           node[jPoint]->SetLimiter_Primitive(iVar, limiter);
           AD::SetPreaccOut(node[jPoint]->GetLimiter_Primitive()[iVar]);
         }
@@ -5066,7 +5066,7 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
 
       if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
 
-        for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+        for (iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
           iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
@@ -5129,7 +5129,7 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
   /*--- Outer loop over the markers on the FSI interface: compute one by one ---*/
   /*--- The tags are always an integer greater than 1: loop from 1 to nMarkerFSI ---*/
 
-  for (iMarkerFSI = 1; iMarkerFSI <= nMarkerFSI; iMarkerFSI++){
+  for (iMarkerFSI = 1; iMarkerFSI <= nMarkerFSI; iMarkerFSI++) {
 
     Marker_Struct = -1;
     Marker_Flow = -1;
@@ -5145,9 +5145,9 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
 
     /*--- On the structural side ---*/
 
-    for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
+    for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++) {
       /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFEA) equals the index we are looping at ---*/
-      if ( fea_config->GetMarker_All_ZoneInterface(iMarkerStruct) == iMarkerFSI ){
+      if ( fea_config->GetMarker_All_ZoneInterface(iMarkerStruct) == iMarkerFSI ) {
         /*--- We have identified the local index of the FEA marker ---*/
         /*--- Store the number of local points that belong to markFEA on each processor ---*/
         /*--- This includes the halo nodes ---*/
@@ -5166,9 +5166,9 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
 
     /*--- On the fluid side ---*/
 
-    for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
+    for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++) {
       /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == iMarkerFSI ){
+      if ( flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == iMarkerFSI ) {
         /*--- We have identified the local index of the Flow marker ---*/
         /*--- Store the number of local points that belong to markFlow on each processor ---*/
         /*--- This includes the halo nodes ---*/
@@ -5246,12 +5246,12 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
     for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
       Buffer_Send_DonorIndices[iVertex] = -1;
 
-    if (Marker_Struct >= 0){
+    if (Marker_Struct >= 0) {
 
       /*--- We have identified the local index of the FEA marker ---*/
       /*--- We loop over all the vertices in that marker and in that particular processor ---*/
 
-      for (iVertex = 0; iVertex < nLocalVertexStruct; iVertex++){
+      for (iVertex = 0; iVertex < nLocalVertexStruct; iVertex++) {
 
             Point_Struct = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetNode();
 
@@ -5264,15 +5264,15 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
             /*--- The displacements come from the predicted solution ---*/
             Displacement_Struct = fea_solution[MESH_0][FEA_SOL]->node[Point_Struct]->GetSolution_Pred();
 
-        for (iDim = 0; iDim < nDim; iDim++){
+        for (iDim = 0; iDim < nDim; iDim++) {
           Buffer_Send_StructCoord[iVertex*nDim+iDim] = Coord_Struct[iDim] + Displacement_Struct[iDim];
         }
         /*--- If this processor owns the node ---*/
-        if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()){
+        if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()) {
           Buffer_Send_DonorIndices[2*iVertex]     = Point_Flow;
           Buffer_Send_DonorIndices[2*iVertex + 1] = Processor_Flow;
         }
-        else{
+        else {
           /*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
           Buffer_Send_DonorIndices[2*iVertex]     = -1;
           Buffer_Send_DonorIndices[2*iVertex + 1] = -1;
@@ -5292,11 +5292,11 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
 
     /*--- Now we pack the information to send it over to the different processors ---*/
 
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE) {
 
       /*--- We set the counter to 0 ---*/
       Counter_Processor_Flow = new long[nProcessor];
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         Counter_Processor_Flow[iProcessor] = 0;
       }
 
@@ -5312,7 +5312,7 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
 
       /*--- For every processor from which we have received information ---*/
       /*--- (This is, for every processor on the structural side) ---*/
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
 
         /*--- This is the initial index on the coordinates buffer for that particular processor on the structural side ---*/
         iProcessor_Struct = iProcessor*nBuffer_StructCoord;
@@ -5341,7 +5341,7 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
            */
 
           /*--- We check that we are not setting the value for a halo node ---*/
-          if (Point_Flow_Rcv != -1){
+          if (Point_Flow_Rcv != -1) {
             iProcessor_Flow = Processor_Flow_Rcv*nBuffer_FlowNewCoord;
             iIndex_Flow = Processor_Flow_Rcv*nBuffer_SetIndex;
             iPoint_Flow = Counter_Processor_Flow[Processor_Flow_Rcv]*nDim;
@@ -5368,16 +5368,16 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
     long indexPoint_iVertex, Point_Flow_Check;
 
     /*--- For the flow marker we are studying ---*/
-    if (Marker_Flow >= 0){
+    if (Marker_Flow >= 0) {
 
       /*--- We have identified the local index of the Flow marker ---*/
       /*--- We loop over all the vertices in that marker and in that particular processor ---*/
 
-      for (iVertex = 0; iVertex < nLocalVertexFlow; iVertex++){
+      for (iVertex = 0; iVertex < nLocalVertexFlow; iVertex++) {
 
         Point_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNode();
 
-        if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()){
+        if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()) {
           /*--- Find the index of the point Point_Flow in the buffer Buffer_Recv_SetIndex ---*/
           indexPoint_iVertex = std::distance(Buffer_Recv_SetIndex, std::find(Buffer_Recv_SetIndex, Buffer_Recv_SetIndex + MaxLocalVertexFlow, Point_Flow));
 
@@ -5438,14 +5438,14 @@ void CIncEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolum
 
       if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
 
-        for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+        for (iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
           for (iDim = 0; iDim < nDim; iDim++)
             VarCoord[iDim]=0.0;
 
           nDonor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints();
 
-          for (iDonor = 0; iDonor < nDonor; iDonor++){
+          for (iDonor = 0; iDonor < nDonor; iDonor++) {
             iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(iDonor);
             coeff = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(iDonor);
 
@@ -5675,14 +5675,14 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
 }
 
-void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
+void CIncEulerSolver::SetFreeStream_Solution(CConfig *config) {
 
   unsigned long iPoint;
   unsigned short iDim;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint]->SetSolution(0, Pressure_Inf);
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (iDim = 0; iDim < nDim; iDim++) {
       node[iPoint]->SetSolution(iDim+1, Density_Inf*Velocity_Inf[iDim]);
     }
   }
@@ -6103,7 +6103,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   
-  switch(direct_diff){
+  switch(direct_diff) {
     case NO_DERIVATIVE:
       break;
     case D_DENSITY:

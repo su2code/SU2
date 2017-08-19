@@ -113,7 +113,7 @@ void CIdealGas::SetTDState_rhoT (su2double rho, su2double T ) {
 
 }
 
-void CIdealGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho ){
+void CIdealGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho ) {
 
 	su2double dPdT_rho,dPdrho_T, dPds_rho;
 

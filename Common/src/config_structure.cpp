@@ -2164,7 +2164,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
           Marker_Monitoring[iMarker] = marker;
       }
-      else if(nObj>1) {
+      else if (nObj>1) {
         cout <<"When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n "<<
             "For multiple surfaces per objective, list the objective multiple times. \n"<<
             "For multiple objectives per marker either use one marker overall or list the marker multiple times."<<endl;
@@ -2247,7 +2247,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Check for unsupported features. ---*/
 
-  if ((Kind_Regime == INCOMPRESSIBLE) && (Unsteady_Simulation == HARMONIC_BALANCE)){
+  if ((Kind_Regime == INCOMPRESSIBLE) && (Unsteady_Simulation == HARMONIC_BALANCE)) {
     cout << "Harmonic Balance not yet implemented for the incompressible solver." << endl;
     exit(EXIT_FAILURE);
   }
@@ -2277,14 +2277,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   }
   
-  if(GetBoolTurbomachinery()){
+  if (GetBoolTurbomachinery()) {
     nBlades = new su2double[nZone];
     FreeStreamTurboNormal= new su2double[3];
   }
 
   /*--- Check if Giles are used with turbo markers ---*/
 
-  if (nMarker_Giles > 0 && !GetBoolTurbomachinery()){
+  if (nMarker_Giles > 0 && !GetBoolTurbomachinery()) {
     cout << "Giles Boundary conditions can only be used with turbomachinery markers" << endl;
     exit(EXIT_FAILURE);
   }
@@ -2325,16 +2325,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- Force number of span-wise section to 1 if 2D case ---*/
-  if(val_nDim ==2){
+  if (val_nDim ==2) {
     nSpanWiseSections_User=1;
     Kind_SpanWise= EQUISPACED;
   }
 
   /*--- Set number of TurboPerformance markers ---*/
-  if(nMarker_Turbomachinery > 0){
-    if(nMarker_Turbomachinery > 1){
+  if (nMarker_Turbomachinery > 0) {
+    if (nMarker_Turbomachinery > 1) {
       nMarker_TurboPerformance = nMarker_Turbomachinery + int(nMarker_Turbomachinery/2) + 1;
-    }else{
+    }else {
       nMarker_TurboPerformance = nMarker_Turbomachinery;
     }
   } else {
@@ -2343,30 +2343,30 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- Set number of TurboPerformance markers ---*/
-  if(nMarker_Turbomachinery != 0){
+  if (nMarker_Turbomachinery != 0) {
     nSpan_iZones = new unsigned short[nZone];
   }
 
   /*--- Set number of TurboPerformance markers ---*/
-  if(RampRotatingFrame && !DiscreteAdjoint){
+  if (RampRotatingFrame && !DiscreteAdjoint) {
     FinalRotation_Rate_Z = new su2double[nZone];
-    for(iZone=0; iZone <nZone; iZone ++){
+    for (iZone=0; iZone <nZone; iZone ++) {
       FinalRotation_Rate_Z[iZone] = Rotation_Rate_Z[iZone];
-      if(abs(FinalRotation_Rate_Z[iZone]) > 0.0){
+      if (abs(FinalRotation_Rate_Z[iZone]) > 0.0) {
         Rotation_Rate_Z[iZone] = RampRotatingFrame_Coeff[0];
       }
     }
   }
 
-  if(RampOutletPressure && !DiscreteAdjoint){
-    for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
-      if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ){
+  if (RampOutletPressure && !DiscreteAdjoint) {
+    for (iMarker = 0; iMarker < nMarker_Giles; iMarker++) {
+      if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ) {
         FinalOutletPressure   = Giles_Var1[iMarker];
         Giles_Var1[iMarker] = RampOutletPressure_Coeff[0];
       }
     }
-    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
-      if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
+    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++) {
+      if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM) {
         FinalOutletPressure      = Riemann_Var1[iMarker];
         Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
       }
@@ -2374,7 +2374,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- Check on extra Relaxation factor for Giles---*/
-  if(ExtraRelFacGiles[1] > 0.5){
+  if (ExtraRelFacGiles[1] > 0.5) {
     ExtraRelFacGiles[1] = 0.5;
   }
 
@@ -3196,8 +3196,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
 
-  if ((Kind_Turb_Model != SA) && (Kind_Trans_Model == BC)){
-    if (rank == MASTER_NODE){
+  if ((Kind_Turb_Model != SA) && (Kind_Trans_Model == BC)) {
+    if (rank == MASTER_NODE) {
       cout << "Config error: BC transition model currently only available in combination with SA turbulence model!" << endl;
     }
     exit(EXIT_FAILURE);
@@ -3244,7 +3244,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   AD_Mode = YES;
 #else
   if (AD_Mode == YES) {
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE) {
       cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
       cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
     }
@@ -3254,7 +3254,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (DiscreteAdjoint) {
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD) {
-      if (rank == MASTER_NODE){
+      if (rank == MASTER_NODE) {
         cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
         cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
       }
@@ -3274,8 +3274,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         exit(EXIT_FAILURE);
       }
 
-      if (Unst_AdjointIter- long(nExtIter) < 0){
-        if (rank == MASTER_NODE){
+      if (Unst_AdjointIter- long(nExtIter) < 0) {
+        if (rank == MASTER_NODE) {
           cout << "Invalid iteration number requested for unsteady adjoint. " << endl;
           cout << "Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER." << endl;
         }
@@ -3833,13 +3833,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
     unsigned short indexMarker=0;
     Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = NO;
     Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = NO;
-    for (iMarker_Turbomachinery = 0; iMarker_Turbomachinery < nMarker_Turbomachinery; iMarker_Turbomachinery++){
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundIn[iMarker_Turbomachinery]){
+    for (iMarker_Turbomachinery = 0; iMarker_Turbomachinery < nMarker_Turbomachinery; iMarker_Turbomachinery++) {
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundIn[iMarker_Turbomachinery]) {
         indexMarker=(iMarker_Turbomachinery+1);
         Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
         Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = INFLOW;
       }
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_Turbomachinery]){
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_Turbomachinery]) {
         indexMarker=(iMarker_Turbomachinery+1);
         Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
         Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = OUTFLOW;
@@ -5492,7 +5492,7 @@ CConfig::~CConfig(void) {
 
   /*--- Delete all of the option objects in the global option map ---*/
     
-  for(map<string, COptionBase*>::iterator itr = option_map.begin(); itr != option_map.end(); itr++) {
+  for (map<string, COptionBase*>::iterator itr = option_map.begin(); itr != option_map.end(); itr++) {
     delete itr->second;
   }
  
@@ -5980,7 +5980,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case ENTROPY_GENERATION:      AdjExt = "_entg";      break;
       }
     }
-    else{
+    else {
       AdjExt = "_combo";
     }
     Filename.append(AdjExt);
@@ -6527,13 +6527,13 @@ unsigned short CConfig::GetKind_Data_Giles(string val_marker) {
 su2double CConfig::GetPressureOut_BC() {
   unsigned short iMarker_BC;
   su2double pres_out = 0.0;
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
-    if (Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker_BC] == RADIAL_EQUILIBRIUM ){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++) {
+    if (Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker_BC] == RADIAL_EQUILIBRIUM ) {
       pres_out = Giles_Var1[iMarker_BC];
     }
   }
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-    if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker_BC] == RADIAL_EQUILIBRIUM){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++) {
+    if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker_BC] == RADIAL_EQUILIBRIUM) {
       pres_out = Riemann_Var1[iMarker_BC];
     }
   }
@@ -6543,13 +6543,13 @@ su2double CConfig::GetPressureOut_BC() {
 
 void CConfig::SetPressureOut_BC(su2double val_press) {
   unsigned short iMarker_BC;
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
-    if (Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker_BC] == RADIAL_EQUILIBRIUM ){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++) {
+    if (Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker_BC] == RADIAL_EQUILIBRIUM ) {
       Giles_Var1[iMarker_BC] = val_press*Pressure_Ref;
     }
   }
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-    if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker_BC] == RADIAL_EQUILIBRIUM){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++) {
+    if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker_BC] == RADIAL_EQUILIBRIUM) {
       Riemann_Var1[iMarker_BC] = val_press*Pressure_Ref;
     }
   }
@@ -6558,17 +6558,17 @@ void CConfig::SetPressureOut_BC(su2double val_press) {
 su2double CConfig::GetTotalPressureIn_BC() {
   unsigned short iMarker_BC;
   su2double tot_pres_in = 0.0;
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
-    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++) {
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D) {
       tot_pres_in = Giles_Var1[iMarker_BC];
     }
   }
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++) {
+    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ) {
       tot_pres_in = Riemann_Var1[iMarker_BC];
     }
   }
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if (nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS) {
     tot_pres_in = Inlet_Ptotal[0];
   }
   return tot_pres_in/Pressure_Ref;
@@ -6577,18 +6577,18 @@ su2double CConfig::GetTotalPressureIn_BC() {
 su2double CConfig::GetTotalTemperatureIn_BC() {
   unsigned short iMarker_BC;
   su2double tot_temp_in = 0.0;
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
-    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++) {
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D) {
       tot_temp_in = Giles_Var2[iMarker_BC];
     }
   }
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++) {
+    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ) {
       tot_temp_in = Riemann_Var2[iMarker_BC];
     }
   }
 
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if (nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS) {
     tot_temp_in = Inlet_Ttotal[0];
   }
   return tot_temp_in/Temperature_Ref;
@@ -6596,18 +6596,18 @@ su2double CConfig::GetTotalTemperatureIn_BC() {
 
 void CConfig::SetTotalTemperatureIn_BC(su2double val_temp) {
   unsigned short iMarker_BC;
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
-    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++) {
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D) {
       Giles_Var2[iMarker_BC] = val_temp*Temperature_Ref;
     }
   }
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++) {
+    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ) {
       Riemann_Var2[iMarker_BC] = val_temp*Temperature_Ref;
     }
   }
 
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if (nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS) {
     Inlet_Ttotal[0] = val_temp*Temperature_Ref;
   }
 }
@@ -6615,18 +6615,18 @@ void CConfig::SetTotalTemperatureIn_BC(su2double val_temp) {
 su2double CConfig::GetFlowAngleIn_BC() {
   unsigned short iMarker_BC;
   su2double alpha_in = 0.0;
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
-    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++) {
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D) {
       alpha_in = atan(Giles_FlowDir[iMarker_BC][1]/Giles_FlowDir[iMarker_BC][0]);
     }
   }
-  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-  	if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++) {
+  	if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ) {
   		alpha_in = atan(Riemann_FlowDir[iMarker_BC][1]/Riemann_FlowDir[iMarker_BC][0]);
   	}
   }
 
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if (nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS) {
   	alpha_in = atan(Inlet_FlowDir[0][1]/Inlet_FlowDir[0][0]);
   }
 
@@ -7020,7 +7020,7 @@ su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<
   return y;
 }
 
-void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
+void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal) {
 
   FreeStreamTurboNormal[0] = turboNormal[0];
   FreeStreamTurboNormal[1] = turboNormal[1];

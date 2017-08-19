@@ -291,14 +291,14 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   /*--- Matrices to impose clamped boundary conditions ---*/
   
   mZeros_Aux = new su2double *[nDim];
-  for(iDim = 0; iDim < nDim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++)
     mZeros_Aux[iDim] = new su2double[nDim];
   
   mId_Aux = new su2double *[nDim];
-  for(iDim = 0; iDim < nDim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++)
     mId_Aux[iDim] = new su2double[nDim];
   
-  for(iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       mZeros_Aux[iDim][jDim] = 0.0;
       mId_Aux[iDim][jDim] = 0.0;
@@ -345,7 +345,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   
   /*--- If dynamic, we also need to communicate the old solution ---*/
   
-  if(dynamic) Set_MPI_Solution_Old(geometry, config);
+  if (dynamic) Set_MPI_Solution_Old(geometry, config);
   
 }
 
@@ -1043,7 +1043,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case LOAD_BOUNDARY:
         /*--- Only if the load is nonzero - reduces computational cost ---*/
-        if(config->GetLoad_Value(config->GetMarker_All_TagBound(iMarker)) != 0 ) {
+        if (config->GetLoad_Value(config->GetMarker_All_TagBound(iMarker)) != 0 ) {
           /*--- For all the vertices in the marker iMarker ---*/
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             /*--- Retrieve the point ID ---*/
@@ -1825,7 +1825,7 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
       /*--- If the problem is dynamic ---*/
       /*--- Enforce that in the previous time step all nodes had 0 U, U', U'' ---*/
       
-      if(dynamic) {
+      if (dynamic) {
         
         node[iPoint]->SetSolution_time_n(Solution);
         node[iPoint]->SetSolution_Vel_time_n(Solution);
@@ -2524,7 +2524,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
         (linear_analysis && restart && initial_calc_restart)) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (jPoint = 0; jPoint < nPoint; jPoint++) {
-          for(iVar = 0; iVar < nVar; iVar++) {
+          for (iVar = 0; iVar < nVar; iVar++) {
             for (jVar = 0; jVar < nVar; jVar++) {
               Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
             }
@@ -2845,7 +2845,7 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
         (linear_analysis && restart && initial_calc_restart)) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (jPoint = 0; jPoint < nPoint; jPoint++) {
-          for(iVar = 0; iVar < nVar; iVar++) {
+          for (iVar = 0; iVar < nVar; iVar++) {
             for (jVar = 0; jVar < nVar; jVar++) {
               Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
             }
@@ -3134,7 +3134,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   su2double Ramp_Time = fea_config->GetRamp_Time();
   
   if (CurrentTime <= Static_Time) { ModAmpl=0.0; }
-  else if((CurrentTime > Static_Time) &&
+  else if ((CurrentTime > Static_Time) &&
           (CurrentTime <= (Static_Time + Ramp_Time)) &&
           (Ramp_Load)) {
     ModAmpl = (CurrentTime-Static_Time) / Ramp_Time;

@@ -226,7 +226,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   if (nDim == 3) Phi_Inf[2] = 0.0;
   
   /*--- If outflow objective, nonzero initialization ---*/
-  if ((config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)){
+  if ((config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)) {
     su2double SoundSpeed,*vel_inf,R,vel2,vel;
     R = config->GetGas_ConstantND();
     vel_inf = config->GetVelocity_FreeStreamND();
@@ -240,7 +240,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
     // Assumes +x flow direction
     // Assume v.n = |v|, n = -v/|v|
 
-    for (iDim=0; iDim<nDim; iDim++){
+    for (iDim=0; iDim<nDim; iDim++) {
       Phi_Inf[iDim] +=PsiE_Inf*(SoundSpeed*SoundSpeed/Gamma_Minus_One/vel2-1)*vel_inf[iDim];
       // Assumes n in direction of v
       Phi_Inf[iDim]+=vel_inf[iDim]/vel*(0.5);
@@ -259,9 +259,9 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE || config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
-    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
-      if (config->GetMarker_All_Monitoring(iMarker) == YES){
+  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE || config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE) {
+    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++) {
+      if (config->GetMarker_All_Monitoring(iMarker) == YES) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
@@ -3921,9 +3921,9 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
-    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
-      if (config->GetMarker_All_Monitoring(iMarker) == YES){
+  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE) {
+    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++) {
+      if (config->GetMarker_All_Monitoring(iMarker) == YES) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {

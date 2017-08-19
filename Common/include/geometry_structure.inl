@@ -87,7 +87,7 @@ inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_T
 
 inline void CGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) { }
 
-inline void CGeometry::SetShroudVelocity(CConfig *config){ }
+inline void CGeometry::SetShroudVelocity(CConfig *config) { }
 
 inline void CGeometry::SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print) { }
 
@@ -167,11 +167,11 @@ inline unsigned long CGeometry::GetnVertexSpan(unsigned short val_marker, unsign
 
 inline unsigned long CGeometry::GetnFreqSpan(unsigned short val_marker, unsigned short val_span) { return (nTotVertexSpan[val_marker][val_span]/2 -1); }
 
-inline unsigned long CGeometry::GetnVertexSpanMax(unsigned short marker_flag){return nVertexSpanMax[marker_flag];}
+inline unsigned long CGeometry::GetnVertexSpanMax(unsigned short marker_flag) {return nVertexSpanMax[marker_flag];}
 
-inline unsigned long CGeometry::GetnFreqSpanMax(unsigned short marker_flag){return (nVertexSpanMax[marker_flag]/2 -1);}
+inline unsigned long CGeometry::GetnFreqSpanMax(unsigned short marker_flag) {return (nVertexSpanMax[marker_flag]/2 -1);}
 
-inline void CGeometry::SetnVertexSpanMax(unsigned short marker_flag, unsigned long nVertMax){nVertexSpanMax[marker_flag] = nVertMax;}
+inline void CGeometry::SetnVertexSpanMax(unsigned short marker_flag, unsigned long nVertMax) {nVertexSpanMax[marker_flag] = nVertMax;}
 
 inline unsigned long CGeometry::GetnEdge(void) { return nEdge; }
 
@@ -191,51 +191,51 @@ inline void CGeometry::UpdateTurboVertex(CConfig *config,unsigned short val_iZon
 
 inline void CGeometry::SetAvgTurboValue(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
 
-inline void CGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){ }
+inline void CGeometry::GatherInOutAverageValues(CConfig *config, bool allocate) { }
 
-inline su2double* CGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span){ return NULL;}
+inline su2double* CGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span) { return NULL;}
 
-inline su2double* CGeometry::GetAverageGridVel(unsigned short val_marker, unsigned short val_span){ return NULL;}
+inline su2double* CGeometry::GetAverageGridVel(unsigned short val_marker, unsigned short val_span) { return NULL;}
 
-inline su2double CGeometry::GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline su2double* CGeometry::GetAverageNormal(unsigned short val_marker, unsigned short val_span){return NULL;}
+inline su2double* CGeometry::GetAverageNormal(unsigned short val_marker, unsigned short val_span) {return NULL;}
 
-inline su2double CGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline su2double CGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline su2double CGeometry::GetTangGridVelIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetTangGridVelIn(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline su2double CGeometry::GetTangGridVelOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetTangGridVelOut(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline su2double CGeometry::GetSpanAreaIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetSpanAreaIn(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline su2double CGeometry::GetSpanAreaOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetSpanAreaOut(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline su2double CGeometry::GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline su2double CGeometry::GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline void CGeometry::SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
+inline void CGeometry::SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span) { }
 
-inline void CGeometry::SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span){ }
+inline void CGeometry::SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span) { }
 
-inline void CGeometry::SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
+inline void CGeometry::SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span) { }
 
-inline void CGeometry::SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span){ }
+inline void CGeometry::SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span) { }
 
-inline void CGeometry::SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
+inline void CGeometry::SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span) { }
 
-inline void CGeometry::SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span){ }
+inline void CGeometry::SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span) { }
 
-inline unsigned long CGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return 0;}
+inline unsigned long CGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span) {return 0;}
 
-inline su2double CGeometry::GetMinAngularCoord(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetMinAngularCoord(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline su2double CGeometry::GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
-inline su2double CGeometry::GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span){return 0.0;}
+inline su2double CGeometry::GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span) {return 0.0;}
 
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
@@ -421,48 +421,48 @@ inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim,
 
 inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {Sensitivity[iPoint*nDim+iDim] = val;}
 
-inline su2double* CPhysicalGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span){return AverageTurboNormal[val_marker][val_span];}
+inline su2double* CPhysicalGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span) {return AverageTurboNormal[val_marker][val_span];}
 
-inline su2double* CPhysicalGeometry::GetAverageGridVel(unsigned short val_marker, unsigned short val_span){return AverageGridVel[val_marker][val_span]; }
+inline su2double* CPhysicalGeometry::GetAverageGridVel(unsigned short val_marker, unsigned short val_span) {return AverageGridVel[val_marker][val_span]; }
 
-inline su2double CPhysicalGeometry::GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span){return AverageTangGridVel[val_marker][val_span]; }
+inline su2double CPhysicalGeometry::GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span) {return AverageTangGridVel[val_marker][val_span]; }
 
-inline su2double* CPhysicalGeometry::GetAverageNormal(unsigned short val_marker, unsigned short val_span){return AverageNormal[val_marker][val_span];}
+inline su2double* CPhysicalGeometry::GetAverageNormal(unsigned short val_marker, unsigned short val_span) {return AverageNormal[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span){return SpanArea[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span) {return SpanArea[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return TurboRadius[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span) {return TurboRadius[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetTangGridVelIn(unsigned short val_marker, unsigned short val_span){return TangGridVelIn[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetTangGridVelIn(unsigned short val_marker, unsigned short val_span) {return TangGridVelIn[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetTangGridVelOut(unsigned short val_marker, unsigned short val_span){return TangGridVelOut[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetTangGridVelOut(unsigned short val_marker, unsigned short val_span) {return TangGridVelOut[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetSpanAreaIn(unsigned short val_marker, unsigned short val_span){return SpanAreaIn[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetSpanAreaIn(unsigned short val_marker, unsigned short val_span) {return SpanAreaIn[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetSpanAreaOut(unsigned short val_marker, unsigned short val_span){return SpanAreaOut[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetSpanAreaOut(unsigned short val_marker, unsigned short val_span) {return SpanAreaOut[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span){return TurboRadiusIn[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span) {return TurboRadiusIn[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span){return TurboRadiusOut[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span) {return TurboRadiusOut[val_marker][val_span];}
 
-inline void CPhysicalGeometry::SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span){TangGridVelIn[val_marker][val_span] = value;}
+inline void CPhysicalGeometry::SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span) {TangGridVelIn[val_marker][val_span] = value;}
 
-inline void CPhysicalGeometry::SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span){TangGridVelOut[val_marker][val_span] = value;}
+inline void CPhysicalGeometry::SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span) {TangGridVelOut[val_marker][val_span] = value;}
 
-inline void CPhysicalGeometry::SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span){SpanAreaIn[val_marker][val_span] = value;}
+inline void CPhysicalGeometry::SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span) {SpanAreaIn[val_marker][val_span] = value;}
 
-inline void CPhysicalGeometry::SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span){SpanAreaOut[val_marker][val_span] = value;}
+inline void CPhysicalGeometry::SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span) {SpanAreaOut[val_marker][val_span] = value;}
 
-inline void CPhysicalGeometry::SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span){ TurboRadiusIn[val_marker][val_span] = value;}
+inline void CPhysicalGeometry::SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span) { TurboRadiusIn[val_marker][val_span] = value;}
 
-inline void CPhysicalGeometry::SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span){TurboRadiusOut[val_marker][val_span] = value;}
+inline void CPhysicalGeometry::SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span) {TurboRadiusOut[val_marker][val_span] = value;}
 
-inline unsigned long CPhysicalGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return nTotVertexSpan[val_marker][val_span];}
+inline unsigned long CPhysicalGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span) {return nTotVertexSpan[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetMinAngularCoord(unsigned short val_marker, unsigned short val_span){return MinAngularCoord[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetMinAngularCoord(unsigned short val_marker, unsigned short val_span) {return MinAngularCoord[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span){return MaxAngularCoord[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span) {return MaxAngularCoord[val_marker][val_span];}
 
-inline su2double CPhysicalGeometry::GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span){return MinRelAngularCoord[val_marker][val_span];}
+inline su2double CPhysicalGeometry::GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span) {return MinRelAngularCoord[val_marker][val_span];}
 
 inline void CGeometry::Check_Periodicity(CConfig* config) {}

@@ -94,7 +94,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/
 
-  if (config->GetBoolGiles() && config->GetSpatialFourier()){
+  if (config->GetBoolGiles() && config->GetSpatialFourier()) {
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], INFLOW);
 
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
@@ -137,10 +137,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Giles(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	break;
       case RIEMANN_BOUNDARY:
-      	if (config->GetBoolTurbomachinery()){
+      	if (config->GetBoolTurbomachinery()) {
       		solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
-      	else{
+      	else {
       		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
       	break;

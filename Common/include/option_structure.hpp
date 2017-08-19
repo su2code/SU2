@@ -1865,8 +1865,8 @@ public:
   }
 
   ~COptionDoubleArray() {
-     if(def  != NULL) delete [] def; 
-     if(vals != NULL) delete [] vals; 
+     if (def  != NULL) delete [] def; 
+     if (vals != NULL) delete [] vals; 
   };
   string SetValue(vector<string> option_value) {
     // Check that the size is correct
@@ -2370,7 +2370,7 @@ public:
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
       switch (this->design_variable[iDV]) {
         case FFD_CONTROL_POINT:
-          if((this->paramDV[iDV][4] == 0) &&
+          if ((this->paramDV[iDV][4] == 0) &&
              (this->paramDV[iDV][5] == 0) &&
              (this->paramDV[iDV][6] == 0)) {
             nValueDV = 3;
@@ -2379,7 +2379,7 @@ public:
           }
           break;
         case FFD_CONTROL_POINT_2D:
-          if((this->paramDV[iDV][3] == 0) &&
+          if ((this->paramDV[iDV][3] == 0) &&
              (this->paramDV[iDV][4] == 0)) {
             nValueDV = 2;
           } else {
@@ -3217,7 +3217,7 @@ class COptionTurboPerformance : public COptionBase {
 
 public:
   COptionTurboPerformance(const string option_field_name, unsigned short & nMarker_TurboPerf,
-                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut){
+                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut) {
     this->name = option_field_name;
   }
 

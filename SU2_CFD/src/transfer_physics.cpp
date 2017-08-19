@@ -92,14 +92,14 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
   if (CurrentTime <= Static_Time)
     ModAmpl=0.0;
-  else if((CurrentTime > Static_Time) &&
+  else if ((CurrentTime > Static_Time) &&
   (CurrentTime <= (Static_Time + Ramp_Time)) && (Ramp_Load)) {
     ModAmpl = (CurrentTime-Static_Time) / Ramp_Time;
     ModAmpl = max(ModAmpl,0.0);
     ModAmpl = min(ModAmpl,1.0);
     Physical_Constants[1] = ModAmpl;
   }
-  else if((CurrentTime > Static_Time) &&
+  else if ((CurrentTime > Static_Time) &&
   (CurrentTime <= (Static_Time + Sigmoid_Time)) && (Sigmoid_Load)) {
     SigAux = (CurrentTime-Static_Time) / Sigmoid_Time;
     ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
@@ -342,7 +342,7 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(void) : CTransfer
 
 }
 
-CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *donor_config, CConfig *target_config){
+CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *donor_config, CConfig *target_config) {
   unsigned short iVar;
   nVar = val_nVar;
 
@@ -352,7 +352,7 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short va
 
 
 
-  for (iVar = 0; iVar < nVar + 5; iVar++){
+  for (iVar = 0; iVar < nVar + 5; iVar++) {
     Donor_Variable[iVar]  = 0.0;
     Target_Variable[iVar] = 0.0;
   }
@@ -363,7 +363,7 @@ CTransfer_MixingPlaneInterface::~CTransfer_MixingPlaneInterface(void) {
 
 
 
-void CTransfer_MixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config){
+void CTransfer_MixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config) {
 
   unsigned short iSpan;
   nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
@@ -373,7 +373,7 @@ void CTransfer_MixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CC
   SpanLevelDonor       = new unsigned short[target_config->GetnSpanWiseSections() + 1];
 
 
-  for (iSpan = 0; iSpan < target_config->GetnSpanWiseSections() + 1;iSpan++){
+  for (iSpan = 0; iSpan < target_config->GetnSpanWiseSections() + 1;iSpan++) {
     SpanValueCoeffTarget[iSpan] = 0.0;
     SpanLevelDonor[iSpan]       = 1;
   }
@@ -394,19 +394,19 @@ void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, 
   Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[0];
   Donor_Variable[3] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
 
-  if(nDim == 3){
+  if (nDim == 3) {
     Donor_Variable[4] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[2];
   }
-  else{
+  else {
     Donor_Variable[4] = -1.0;
   }
 
-  if(turbulent){
+  if (turbulent) {
     Donor_Variable[5] = donor_solution->GetAverageNu(Marker_Donor, iSpan);
     Donor_Variable[6] = donor_solution->GetAverageKine(Marker_Donor, iSpan);
     Donor_Variable[7] = donor_solution->GetAverageOmega(Marker_Donor, iSpan);
   }
-  else{
+  else {
     Donor_Variable[5] = -1.0;
     Donor_Variable[6] = -1.0;
     Donor_Variable[7] = -1.0;
@@ -428,11 +428,11 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
   target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 0, Target_Variable[2]);
   target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 1, Target_Variable[3]);
 
-  if(nDim == 3){
+  if (nDim == 3) {
     target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 2, Target_Variable[4]);
   }
 
-  if(turbulent){
+  if (turbulent) {
     target_solution->SetExtAverageNu(Marker_Target, iSpan, Target_Variable[5]);
     target_solution->SetExtAverageKine(Marker_Target, iSpan, Target_Variable[6]);
     target_solution->SetExtAverageOmega(Marker_Target, iSpan,  Target_Variable[7]);
@@ -440,10 +440,10 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 
 }
 
-void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
+void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone) {
   unsigned short iSpan;
 
-  for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){
+  for (iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++) {
     /*--- trnasfer inviscid quantities ---*/
     target_solution->SetDensityIn(donor_solution->GetDensityIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetPressureIn(donor_solution->GetPressureIn(donorZone, iSpan), donorZone, iSpan);
@@ -463,10 +463,10 @@ void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, C
   }
 }
 
-void CTransfer_MixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone){
+void CTransfer_MixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone) {
   unsigned short iSpan;
 
-  for(iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++){
+  for (iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++) {
     target_geometry->SetTurboRadiusIn(donor_geometry->GetTurboRadiusIn(donorZone, iSpan), donorZone, iSpan);
     target_geometry->SetSpanAreaIn(donor_geometry->GetSpanAreaIn(donorZone, iSpan), donorZone, iSpan);
     target_geometry->SetTangGridVelIn(donor_geometry->GetTangGridVelIn(donorZone, iSpan), donorZone, iSpan);
@@ -507,13 +507,13 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
   /*---  the number of primitive variables is set to two by default for the turbulent solver ---*/
   bool turbulent = (nDonorVar == 2) ;
 
-  if (turbulent){
+  if (turbulent) {
 
     /*---  for turbulent solver retrieve solution and set it as the donor variable ---*/
     Donor_Variable[0] = donor_solution->node[Point_Donor]->GetSolution(0);
     Donor_Variable[1] = donor_solution->node[Point_Donor]->GetSolution(1);
 
-  } else{
+  } else {
 
     /*---  Retrieve primitive variables and set them as the donor variables ---*/
     for (iVar = 0; iVar < nDonorVar; iVar++)

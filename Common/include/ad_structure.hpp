@@ -151,12 +151,12 @@ namespace AD{
 
 #ifdef CODI_REVERSE_TYPE
 #define AD_BEGIN_PASSIVE         \
-  if(AD::globalTape.isActive()) {\
+  if (AD::globalTape.isActive()) {\
      AD::globalTape.setPassive();\
      AD::Status = true;          \
   }
 #define AD_END_PASSIVE           \
-  if(AD::Status) {               \
+  if (AD::Status) {               \
      AD::globalTape.setActive(); \
      AD::Status = false;         \
   }

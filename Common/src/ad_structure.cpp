@@ -51,7 +51,7 @@ namespace AD {
 
   void EndPreacc() {
 
-    if(PreaccActive) {
+    if (PreaccActive) {
       unsigned short iVarOut, iVarIn;
       unsigned short nVarOut, nVarIn;
       su2double::GradientData index_out, index_in;
@@ -100,7 +100,7 @@ namespace AD {
        * Note that the output variables need a new index since we did a reset of the tape section. ---*/
 
       for (iVarOut = 0; iVarOut < nVarOut; iVarOut++) {
-        if (nNonzero[iVarOut] != 0){
+        if (nNonzero[iVarOut] != 0) {
           globalTape.store(0.0, localOutputValues[iVarOut]->getGradientData(), nNonzero[iVarOut]);
           for (iVarIn = 0; iVarIn < nVarIn; iVarIn++) {
             index_in =  localInputValues[iVarIn];
@@ -134,12 +134,12 @@ namespace AD {
 
 namespace std{
   template<>
-  su2double abs(const complex<su2double>& x){
+  su2double abs(const complex<su2double>& x) {
     return sqrt(x.real()*x.real() + x.imag()*x.imag());
   }
 
   template<>
-  complex<su2double> operator/(const complex<su2double>& x, const complex<su2double>& y){
+  complex<su2double> operator/(const complex<su2double>& x, const complex<su2double>& y) {
 
     su2double d    = (y.real()*y.real() + y.imag()*y.imag());
     su2double real = (x.real()*y.real() + x.imag()*y.imag())/d;
@@ -150,7 +150,7 @@ namespace std{
   }
 
   template<>
-  complex<su2double> operator*(const complex<su2double>& x, const complex<su2double>& y){
+  complex<su2double> operator*(const complex<su2double>& x, const complex<su2double>& y) {
 
     su2double real = (x.real()*y.real() - x.imag()*y.imag());
     su2double imag = (x.imag()*y.real() + x.real()*y.imag());

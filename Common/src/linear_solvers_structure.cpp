@@ -708,7 +708,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   }
 
 
-  if(TapeActive) {
+  if (TapeActive) {
     /*--- Start recording if it was stopped for the linear solver ---*/
 
     AD::StartRecording();

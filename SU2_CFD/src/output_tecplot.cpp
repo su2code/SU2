@@ -750,7 +750,7 @@ void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, unsigne
   if (surf_sol) strcpy(cstr, "surface_grid");
   else strcpy(cstr, "volumetric_grid");
   
-  if (config->GetnZone() > 1){
+  if (config->GetnZone() > 1) {
     char appstr[200];
     SPRINTF(appstr, "_%u", val_iZone);
     strcat(cstr, appstr);

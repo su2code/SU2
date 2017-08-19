@@ -207,7 +207,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
   T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
     rho = P/(T*Gas_Constant);
 
-    if(Zed<0.9999) {
+    if (Zed<0.9999) {
       x1 = rho;
       x2 = rho/Zed;
 
@@ -254,7 +254,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
     count++;
     }while(abs(fmid) > toll && count<ITMAX);
 
-    if(count==ITMAX) {
+    if (count==ITMAX) {
       cout <<"Too many bisections in rtbis" << endl;
     }
 
@@ -266,7 +266,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
   cons_P= abs((Pressure -P)/P);
   cons_s= abs((Entropy-s)/s);
 
-  if(cons_P >1e-3 || cons_s >1e-3) {
+  if (cons_P >1e-3 || cons_s >1e-3) {
     cout<< "TD consistency not verified in hs call"<< endl;
   }
 
@@ -275,7 +275,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 }
 
 
-void CVanDerWaalsGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho ){
+void CVanDerWaalsGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho ) {
 
 	su2double dPdT_rho,dPdrho_T, dPds_rho;
 

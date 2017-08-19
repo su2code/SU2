@@ -679,7 +679,7 @@ inline void CSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_conta
 										 CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config,
-																								CNumerics *conv_numerics,unsigned short marker_flag){}
+																								CNumerics *conv_numerics,unsigned short marker_flag) {}
 
 inline void CSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
@@ -889,124 +889,124 @@ inline void CSolver::SetFSI_ConvValue(unsigned short val_index, su2double val_cr
 
 inline su2double CSolver::GetFSI_ConvValue(unsigned short val_index) { return 0.0; }
 
-inline void CSolver::RegisterSolution(CGeometry *geometry_container, CConfig *config){}
+inline void CSolver::RegisterSolution(CGeometry *geometry_container, CConfig *config) {}
 
-inline void CSolver::RegisterOutput(CGeometry *geometry_container, CConfig *config){}
+inline void CSolver::RegisterOutput(CGeometry *geometry_container, CConfig *config) {}
 
-inline void CSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
+inline void CSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {}
 
-inline void CSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
+inline void CSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) {}
 
-inline void CSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){}
+inline void CSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {}
 
-inline void CSolver::SetSensitivity(CGeometry *geometry, CConfig *config){}
+inline void CSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {}
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 
-inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config){}
+inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config) {}
 
-inline void CSolver::SetPressure_Inf(su2double p_inf){}
+inline void CSolver::SetPressure_Inf(su2double p_inf) {}
 
-inline void CSolver::SetTemperature_Inf(su2double t_inf){}
+inline void CSolver::SetTemperature_Inf(su2double t_inf) {}
 
-inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){}
+inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {}
 
-inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
+inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {}
 
-inline void CSolver::SetFreeStream_Solution(CConfig *config){}
+inline void CSolver::SetFreeStream_Solution(CConfig *config) {}
 
 inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     node[iPoint]->SetSolution_New();
 }
 
-inline void CSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){}
+inline void CSolver::InitTurboContainers(CGeometry *geometry, CConfig *config) {}
 
-inline void CSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
+inline void CSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {}
 
-inline void CSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
+inline void CSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {}
 
-inline void CSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry){ }
+inline void CSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry) { }
 
-inline su2double CSolver::GetAverageDensity(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+inline su2double CSolver::GetAverageDensity(unsigned short valMarker, unsigned short valSpan) {return 0.0;}
 
-inline su2double CSolver::GetAveragePressure(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+inline su2double CSolver::GetAveragePressure(unsigned short valMarker, unsigned short valSpan) {return 0.0;}
 
-inline su2double* CSolver::GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan){return NULL;}
+inline su2double* CSolver::GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) {return NULL;}
 
-inline su2double CSolver::GetAverageNu(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+inline su2double CSolver::GetAverageNu(unsigned short valMarker, unsigned short valSpan) {return 0.0;}
 
-inline su2double CSolver::GetAverageKine(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+inline su2double CSolver::GetAverageKine(unsigned short valMarker, unsigned short valSpan) {return 0.0;}
 
-inline su2double CSolver::GetAverageOmega(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+inline su2double CSolver::GetAverageOmega(unsigned short valMarker, unsigned short valSpan) {return 0.0;}
 
-inline su2double CSolver::GetExtAverageNu(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+inline su2double CSolver::GetExtAverageNu(unsigned short valMarker, unsigned short valSpan) {return 0.0;}
 
-inline su2double CSolver::GetExtAverageKine(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+inline su2double CSolver::GetExtAverageKine(unsigned short valMarker, unsigned short valSpan) {return 0.0;}
 
-inline su2double CSolver::GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+inline su2double CSolver::GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) {return 0.0;}
 
-inline void CSolver::SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity){ }
+inline void CSolver::SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity) { }
 
-inline void CSolver::SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure){ }
+inline void CSolver::SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure) { }
 
-inline void CSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity){ }
+inline void CSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity) { }
 
-inline void CSolver::SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu){ }
+inline void CSolver::SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu) { }
 
-inline void CSolver::SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine){ }
+inline void CSolver::SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine) { }
 
-inline void CSolver::SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega){ }
+inline void CSolver::SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega) { }
 
-inline su2double CSolver::GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan) {return 0;}
 
-inline su2double CSolver::GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan) {return 0;}
 
-inline su2double* CSolver::GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan){return NULL;}
+inline su2double* CSolver::GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) {return NULL;}
 
-inline su2double CSolver::GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan) {return 0;}
 
-inline su2double CSolver::GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan) {return 0;}
 
-inline su2double* CSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return NULL;}
+inline su2double* CSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) {return NULL;}
 
-inline su2double CSolver::GetKineIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetKineIn(unsigned short inMarkerTP, unsigned short valSpan) {return 0;}
 
-inline su2double CSolver::GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan) {return 0;}
 
-inline su2double CSolver::GetNuIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetNuIn(unsigned short inMarkerTP, unsigned short valSpan) {return 0;}
 
-inline su2double CSolver::GetKineOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetKineOut(unsigned short inMarkerTP, unsigned short valSpan) {return 0;}
 
-inline su2double CSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan) {return 0;}
 
-inline su2double CSolver::GetNuOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetNuOut(unsigned short inMarkerTP, unsigned short valSpan) {return 0;}
 
-inline void CSolver::SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetTurboVelocityIn(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetTurboVelocityIn(su2double *value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetTurboVelocityOut(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetTurboVelocityOut(su2double *value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+inline void CSolver::SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) { }
 
-inline void CSolver::SetFreeStream_TurboSolution(CConfig *config){ }
+inline void CSolver::SetFreeStream_TurboSolution(CConfig *config) { }
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
@@ -1359,130 +1359,130 @@ inline su2double CEulerSolver::GetOneD_AvgEnthalpy(void) {return OneD_Enthalpy1D
 
 inline void CEulerSolver::SetOneD_AvgEnthalpy(su2double Enthalpy1D) {OneD_Enthalpy1D = Enthalpy1D; }
 
-inline su2double CEulerSolver::GetAverageDensity(unsigned short valMarker, unsigned short valSpan){return AverageDensity[valMarker][valSpan];}
+inline su2double CEulerSolver::GetAverageDensity(unsigned short valMarker, unsigned short valSpan) {return AverageDensity[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetAveragePressure(unsigned short valMarker, unsigned short valSpan){return AveragePressure[valMarker][valSpan];}
+inline su2double CEulerSolver::GetAveragePressure(unsigned short valMarker, unsigned short valSpan) {return AveragePressure[valMarker][valSpan];}
 
-inline su2double* CEulerSolver::GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan){return AverageTurboVelocity[valMarker][valSpan];}
+inline su2double* CEulerSolver::GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) {return AverageTurboVelocity[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetAverageNu(unsigned short valMarker, unsigned short valSpan){return AverageNu[valMarker][valSpan];}
+inline su2double CEulerSolver::GetAverageNu(unsigned short valMarker, unsigned short valSpan) {return AverageNu[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetAverageKine(unsigned short valMarker, unsigned short valSpan){return AverageKine[valMarker][valSpan];}
+inline su2double CEulerSolver::GetAverageKine(unsigned short valMarker, unsigned short valSpan) {return AverageKine[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetAverageOmega(unsigned short valMarker, unsigned short valSpan){return AverageOmega[valMarker][valSpan];}
+inline su2double CEulerSolver::GetAverageOmega(unsigned short valMarker, unsigned short valSpan) {return AverageOmega[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetExtAverageNu(unsigned short valMarker, unsigned short valSpan){return ExtAverageNu[valMarker][valSpan];}
+inline su2double CEulerSolver::GetExtAverageNu(unsigned short valMarker, unsigned short valSpan) {return ExtAverageNu[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetExtAverageKine(unsigned short valMarker, unsigned short valSpan){return ExtAverageKine[valMarker][valSpan];}
+inline su2double CEulerSolver::GetExtAverageKine(unsigned short valMarker, unsigned short valSpan) {return ExtAverageKine[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan){return ExtAverageOmega[valMarker][valSpan];}
+inline su2double CEulerSolver::GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) {return ExtAverageOmega[valMarker][valSpan];}
 
-inline void CEulerSolver::SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity){ExtAverageDensity[valMarker][valSpan] = valDensity;}
+inline void CEulerSolver::SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity) {ExtAverageDensity[valMarker][valSpan] = valDensity;}
 
-inline void CEulerSolver::SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure){ExtAveragePressure[valMarker][valSpan] = valPressure;}
+inline void CEulerSolver::SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure) {ExtAveragePressure[valMarker][valSpan] = valPressure;}
 
-inline void CEulerSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity){ExtAverageTurboVelocity[valMarker][valSpan][valIndex] = valTurboVelocity;}
+inline void CEulerSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity) {ExtAverageTurboVelocity[valMarker][valSpan][valIndex] = valTurboVelocity;}
 
-inline void CEulerSolver::SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu){ExtAverageNu[valMarker][valSpan] = valNu;}
+inline void CEulerSolver::SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu) {ExtAverageNu[valMarker][valSpan] = valNu;}
 
-inline void CEulerSolver::SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine){ExtAverageKine[valMarker][valSpan] = valKine;}
+inline void CEulerSolver::SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine) {ExtAverageKine[valMarker][valSpan] = valKine;}
 
-inline void CEulerSolver::SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega){ExtAverageOmega[valMarker][valSpan] = valOmega;}
+inline void CEulerSolver::SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega) {ExtAverageOmega[valMarker][valSpan] = valOmega;}
 
-inline su2double  CEulerSolver::GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan){return DensityIn[inMarkerTP][valSpan];}
+inline su2double  CEulerSolver::GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan) {return DensityIn[inMarkerTP][valSpan];}
 
-inline su2double  CEulerSolver::GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan){return PressureIn[inMarkerTP][valSpan];}
+inline su2double  CEulerSolver::GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan) {return PressureIn[inMarkerTP][valSpan];}
 
-inline su2double* CEulerSolver::GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityIn[inMarkerTP][valSpan];}
+inline su2double* CEulerSolver::GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) {return TurboVelocityIn[inMarkerTP][valSpan];}
 
-inline su2double  CEulerSolver::GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan){return DensityOut[inMarkerTP][valSpan];}
+inline su2double  CEulerSolver::GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan) {return DensityOut[inMarkerTP][valSpan];}
 
-inline su2double  CEulerSolver::GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan){return PressureOut[inMarkerTP][valSpan];}
+inline su2double  CEulerSolver::GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan) {return PressureOut[inMarkerTP][valSpan];}
 
-inline su2double* CEulerSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityOut[inMarkerTP][valSpan];}
+inline su2double* CEulerSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) {return TurboVelocityOut[inMarkerTP][valSpan];}
 
-inline su2double CEulerSolver::GetKineIn(unsigned short inMarkerTP, unsigned short valSpan){return KineIn[inMarkerTP][valSpan];}
+inline su2double CEulerSolver::GetKineIn(unsigned short inMarkerTP, unsigned short valSpan) {return KineIn[inMarkerTP][valSpan];}
 
-inline su2double CEulerSolver::GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan){return OmegaIn[inMarkerTP][valSpan];}
+inline su2double CEulerSolver::GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan) {return OmegaIn[inMarkerTP][valSpan];}
 
-inline su2double CEulerSolver::GetNuIn(unsigned short inMarkerTP, unsigned short valSpan){return NuIn[inMarkerTP][valSpan];}
+inline su2double CEulerSolver::GetNuIn(unsigned short inMarkerTP, unsigned short valSpan) {return NuIn[inMarkerTP][valSpan];}
 
-inline su2double CEulerSolver::GetKineOut(unsigned short inMarkerTP, unsigned short valSpan){return KineOut[inMarkerTP][valSpan];}
+inline su2double CEulerSolver::GetKineOut(unsigned short inMarkerTP, unsigned short valSpan) {return KineOut[inMarkerTP][valSpan];}
 
-inline su2double CEulerSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan){return OmegaOut[inMarkerTP][valSpan];}
+inline su2double CEulerSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan) {return OmegaOut[inMarkerTP][valSpan];}
 
-inline su2double CEulerSolver::GetNuOut(unsigned short inMarkerTP, unsigned short valSpan){return NuOut[inMarkerTP][valSpan];}
+inline su2double CEulerSolver::GetNuOut(unsigned short inMarkerTP, unsigned short valSpan) {return NuOut[inMarkerTP][valSpan];}
 
-inline void CEulerSolver::SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){DensityIn[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {DensityIn[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){PressureIn[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {PressureIn[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetTurboVelocityIn(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){
+inline void CEulerSolver::SetTurboVelocityIn(su2double *value, unsigned short inMarkerTP, unsigned short valSpan) {
   unsigned short iDim;
 
-  for(iDim = 0; iDim < nDim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++)
     TurboVelocityIn[inMarkerTP][valSpan][iDim] = value[iDim];
 }
 
-inline void CEulerSolver::SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){DensityOut[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {DensityOut[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){PressureOut[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {PressureOut[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetTurboVelocityOut(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){
+inline void CEulerSolver::SetTurboVelocityOut(su2double *value, unsigned short inMarkerTP, unsigned short valSpan) {
   unsigned short iDim;
 
-  for(iDim = 0; iDim < nDim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++)
     TurboVelocityOut[inMarkerTP][valSpan][iDim] = value[iDim];
 }
 
-inline void CEulerSolver::SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KineIn[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {KineIn[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){OmegaIn[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {OmegaIn[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){NuIn[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {NuIn[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KineOut[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {KineOut[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){OmegaOut[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {OmegaOut[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){NuOut[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {NuOut[inMarkerTP][valSpan] = value;}
 
 inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short kind_turb) {
 
-  if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
+  if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ) {
     turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
     turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
     turboVelocity[0] = cartesianVelocity[2];
   }
-  else{
+  else {
     turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
     turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
-    if (marker_flag == INFLOW){
+    if (marker_flag == INFLOW) {
       turboVelocity[0] *= -1.0;
       turboVelocity[1] *= -1.0;
     }
-    if(nDim == 3)
+    if (nDim == 3)
       turboVelocity[2] = cartesianVelocity[2];
   }
 }
 
-inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short kind_turb){
+inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short kind_turb) {
 
-  if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
+  if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)) {
     cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
     cartesianVelocity[1] = turboVelocity[2]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
     cartesianVelocity[2] = turboVelocity[0];
   }
-  else{
+  else {
     cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
     cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
 
-    if (marker_flag == INFLOW){
+    if (marker_flag == INFLOW) {
       cartesianVelocity[0] *= -1.0;
       cartesianVelocity[1] *= -1.0;
     }
 
-    if(nDim == 3)
+    if (nDim == 3)
       cartesianVelocity[2] = turboVelocity[2];
   }
 }
@@ -1813,13 +1813,13 @@ inline su2double CIncEulerSolver::GetOneD_FluxAvgVelocity(void) {return OneD_Vel
 
 inline void CIncEulerSolver::SetOneD_FluxAvgVelocity(su2double VelocityRef) {OneD_VelocityRef = VelocityRef; }
 
-inline su2double CIncEulerSolver::GetOneD_FluxAvgEntalpy(void) {return OneD_EnthalpyRef;}
+inline su2double CIncEulerSolver::GetOneD_FluxAvgEnthalpy(void) {return OneD_EnthalpyRef;}
 
-inline void CIncEulerSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) {OneD_EnthalpyRef = EnthalpyRef; }
+inline void CIncEulerSolver::SetOneD_FluxAvgEnthalpy(su2double EnthalpyRef) {OneD_EnthalpyRef = EnthalpyRef; }
 
-inline void CIncEulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf = p_inf;}
+inline void CIncEulerSolver::SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf;}
 
-inline void CIncEulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
+inline void CIncEulerSolver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
 
 inline void CIncEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboObj = ComboObj; }
 
@@ -1933,7 +1933,7 @@ inline void CFEM_ElasticitySolver::SetLoad_Increment(su2double val_loadIncrement
 
 inline void CFEM_ElasticitySolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { FSI_Conv[val_index] = val_criteria; }
 
-inline su2double CFEM_ElasticitySolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
+inline su2double CFEM_ElasticitySolver::GetFSI_ConvValue(unsigned short val_index) { return FSI_Conv[val_index]; }
 
 inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
@@ -1953,59 +1953,59 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_BPress() { return Total_Sens_BPre
 
 inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
-inline void CEulerSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ 
+inline void CEulerSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component) { 
   SlidingState[val_marker][val_vertex][val_state][donor_index] = component; 
 }
 
-inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ }
+inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component) { }
 
 inline su2double CEulerSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return 0; }
 
-inline int CEulerSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return SlidingStateNodes[val_marker][val_vertex]; }
+inline int CEulerSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) { return SlidingStateNodes[val_marker][val_vertex]; }
 
-inline int CSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return 0; }
+inline int CSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
-inline void CEulerSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
+inline void CEulerSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value) { SlidingStateNodes[val_marker][val_vertex] = value; }
 
-inline void CSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){}
+inline void CSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value) {}
 
-inline void CSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){}
+inline void CSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) {}
 
-inline void CEulerSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){	
+inline void CEulerSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) {	
   int iVar;
 
-  for( iVar = 0; iVar < nPrimVar+1; iVar++){
-    if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+  for ( iVar = 0; iVar < nPrimVar+1; iVar++) {
+    if ( SlidingState[val_marker][val_vertex][iVar] != NULL )
       delete [] SlidingState[val_marker][val_vertex][iVar];
   }
 
-  for( iVar = 0; iVar < nPrimVar+1; iVar++)
+  for ( iVar = 0; iVar < nPrimVar+1; iVar++)
     SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
 }
 
 
 
-inline void CTurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ 
+inline void CTurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component) { 
   SlidingState[val_marker][val_vertex][val_state][donor_index] = component; 
 }
 
-inline int CTurbSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return SlidingStateNodes[val_marker][val_vertex]; }
+inline int CTurbSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) { return SlidingStateNodes[val_marker][val_vertex]; }
 
-inline void CTurbSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){	
+inline void CTurbSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) {	
   int iVar;
 
-  for( iVar = 0; iVar < nVar+1; iVar++){
-    if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+  for ( iVar = 0; iVar < nVar+1; iVar++) {
+    if ( SlidingState[val_marker][val_vertex][iVar] != NULL )
       delete [] SlidingState[val_marker][val_vertex][iVar];
   }
 
-  for( iVar = 0; iVar < nVar+1; iVar++)
+  for ( iVar = 0; iVar < nVar+1; iVar++)
     SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
 }
 
-inline void CTurbSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
+inline void CTurbSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value) { SlidingStateNodes[val_marker][val_vertex] = value; }
 
 inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
 
@@ -2015,8 +2015,8 @@ inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
     node[iPoint]->SetSolution(0, nu_tilde_Inf);
 }
 
-inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint]->SetSolution(0, kine_Inf);
     node[iPoint]->SetSolution(1, omega_Inf);
   }
