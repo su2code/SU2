@@ -112,6 +112,21 @@ def main():
     discadj_incomp_cylinder.tol       = 0.00001
     test_list.append(discadj_incomp_cylinder)
 
+    ######################################
+    ### Disc. adj. incompressible RANS ###
+    ######################################
+
+    # Adjoint Incompressible Turbulent NACA 0012
+    discadj_incomp_turb_NACA0012           = TestCase('discadj_incomp_turb_NACA0012')
+    discadj_incomp_turb_NACA0012.cfg_dir   = "incomp_rans/naca0012"
+    discadj_incomp_turb_NACA0012.cfg_file  = "naca0012_disc.cfg"
+    discadj_incomp_turb_NACA0012.test_iter = 100
+    discadj_incomp_turb_NACA0012.test_vals = [-3.627633, -1.624979, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012.su2_exec  = "SU2_CFD_AD"
+    discadj_incomp_turb_NACA0012.timeout   = 1600
+    discadj_incomp_turb_NACA0012.tol       = 0.00001
+    test_list.append(discadj_incomp_turb_NACA0012)
+
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
     #######################################################
