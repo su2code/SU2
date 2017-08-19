@@ -496,12 +496,12 @@ su2double*** CPoint::GetResolutionGradient() {
 }
 
 void CPoint::AddResolutionValue(unsigned short iDim, su2double scalar_value) {
-  if (iDim < nDim) ResolutionValues[iDim] = scalar_value;
+  if (iDim < nDim) ResolutionValues[iDim] += scalar_value;
 }
 
 void CPoint::AddResolutionVector(unsigned short iDim, unsigned short jDim,
                                  su2double scalar_value) {
-  if (iDim < nDim && jDim < nDim) ResolutionVectors[iDim][jDim] = scalar_value;
+  if (iDim < nDim && jDim < nDim) ResolutionVectors[iDim][jDim] += scalar_value;
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {

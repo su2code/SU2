@@ -189,7 +189,7 @@ CHybrid_Mediator::CHybrid_Mediator(int nDim, CConfig* config, string filename)
     constants[2][12] = -0.0000092567404;
     constants[2][13] =  0.0000125295721;
     constants[2][14] = -0.0000180552959;
-  
+
   } else {
     constants = LoadConstants(filename);
   }
@@ -228,7 +228,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
                                               CSolver **solver_container,
                                               unsigned short iPoint) {
   unsigned short iDim, jDim, kDim, lDim;
-  const su2double TKE_MIN = 1e-9;
+  const su2double TKE_MIN = 1e-16;
 
 
   /*--- Find eigenvalues and eigenvecs for grid-based resolution tensor ---*/
@@ -247,8 +247,8 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
       for (kDim = 0; kDim < nDim; kDim++) {
         for (lDim = 0; lDim < nDim; lDim++) {
           // Now zeta*Q*zeta, not Q
-          Q[iDim][jDim] += zeta[iDim][kDim] * zeta[lDim][jDim] *
-                           Qapprox[kDim][lDim];
+          Q[iDim][jDim] += zeta[iDim][kDim] * Qapprox[kDim][lDim] *
+                           zeta[lDim][jDim];
         }
       }
     }
@@ -294,6 +294,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     /*--- Calculate the resolution adequacy parameter ---*/
     r_k = fmax(max_resolved, TKE_MIN) / fmax(min_unresolved, TKE_MIN);
 
+
     /*--- Find the dissipation ratio ---*/
     su2double C_eps = 0.03125;
     su2double TurbL = solver_container[TURB_SOL]->node[iPoint]->GetTurbLengthscale();
@@ -303,6 +304,34 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
 
     /*--- Calculate the RANS weight ---*/
     w_rans = fmax(tanh(r_eps - 1), 0.0);
+
+    /*---- DEBUGGING ---*/
+//    su2double u_1 = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(1);
+//    if (abs(u_1 - (22.4+19.14)) < 0.1) {
+//      cout << "-------- Freestream solution ----------" << endl;
+//      cout << "M:            " << endl;
+//      cout << "  [[" << ResolutionTensor[0][0] << ", " << ResolutionTensor[0][1] << ", " << ResolutionTensor[0][2] << "]" << endl;
+//      cout << "   [" << ResolutionTensor[1][0] << ", " << ResolutionTensor[1][1] << ", " << ResolutionTensor[1][2] << "]" << endl;
+//      cout << "   [" << ResolutionTensor[2][0] << ", " << ResolutionTensor[2][1] << ", " << ResolutionTensor[2][2] << "]]" << endl;
+//      cout << "M eigvals:    " << "[" << ResolutionValues[0] << ", " << ResolutionValues[1] << ", " << ResolutionValues[2] << "]" << endl;
+//      cout << "Qapprox:            " << endl;
+//      cout << "  [[" << Qapprox[0][0] << ", " << Qapprox[0][1] << ", " << Qapprox[0][2] << "]" << endl;
+//      cout << "   [" << Qapprox[1][0] << ", " << Qapprox[1][1] << ", " << Qapprox[1][2] << "]" << endl;
+//      cout << "   [" << Qapprox[2][0] << ", " << Qapprox[2][1] << ", " << Qapprox[2][2] << "]]" << endl;
+//      cout << "Q:            " << endl;
+//      cout << "  [[" << Q[0][0] << ", " << Q[0][1] << ", " << Q[0][2] << "]" << endl;
+//      cout << "   [" << Q[1][0] << ", " << Q[1][1] << ", " << Q[1][2] << "]" << endl;
+//      cout << "   [" << Q[2][0] << ", " << Q[2][1] << ", " << Q[2][2] << "]]" << endl;
+//      cout << "Eigvals of Q: " << "[" << eigvalues_zQz[0] << ", " << eigvalues_zQz[1] << ", " << eigvalues_zQz[2] << "]" << endl;
+//      cout << "Max eigval:   " << eigvalues_zQz[max_index] << endl;
+//      cout << "Max resolved: " << max_resolved << endl;
+//      cout << "Min resolved: " << min_unresolved << endl;
+//      cout << "r_k:          " << r_k << endl;
+//      cout << "Turb length:  " << TurbL << endl;
+//      cout << "d_max:        " << d_max << endl;
+//      cout << "r_eps:        " << r_eps << endl;
+//      cout << "RANS Weight:  " << w_rans << endl;
+//    }
   } else {
     r_k = 0.0;
     w_rans = 0.0;
@@ -546,7 +575,7 @@ vector<vector<su2double> > CHybrid_Mediator::BuildZeta(su2double* values_M,
   /*--- Solve for the modified resolution tensor  ---*/
   vector<su2double> eigvalues_Zeta = GetEigValues_Zeta(eigvalues_M);
   vector<vector<su2double> > temp(3, vector<su2double>(3));
-  vector<vector<su2double> > zeta(3, vector<su2double>(3));
+  vector<vector<su2double> > zeta(3, vector<su2double>(3,0));
   for (iDim = 0; iDim < nDim; iDim++) {
     temp[iDim][iDim] = eigvalues_Zeta[iDim];
   }

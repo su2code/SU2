@@ -576,8 +576,8 @@ void CHybrid_Mediator::CalculateApproxStructFunc(T val_ResolutionTensor,
         for (lDim = 0; lDim < nDim; lDim++)
           for (mDim = 0; mDim < nDim; mDim++)
             val_Q[iDim][jDim] += val_ResolutionTensor[iDim][mDim]*
-                             val_PrimVar_Grad[mDim+1][kDim]*
-                             val_PrimVar_Grad[lDim+1][kDim]*
+                             val_PrimVar_Grad[kDim+1][mDim]*
+                             val_PrimVar_Grad[kDim+1][lDim]*
                              val_ResolutionTensor[lDim][jDim];
 }
 
