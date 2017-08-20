@@ -331,7 +331,14 @@ private:
   su2double *ActDisk_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *Surface_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Surface_MassFlow;    /*!< \brief Massflow at the boundaries. */
+  su2double *Surface_Mach;    /*!< \brief Mach number at the boundaries. */
+  su2double *Surface_Temperature;    /*!< \brief Temperature at the boundaries. */
+  su2double *Surface_Pressure;    /*!< \brief Pressure at the boundaries. */
+  su2double *Surface_Density;    /*!< \brief Density at the boundaries. */
+  su2double *Surface_NormalVelocity;    /*!< \brief Normal velocity at the boundaries. */
+  su2double *Surface_TotalTemperature;   /*!< \brief Total temperature at the boundaries. */
+  su2double *Surface_TotalPressure;    /*!< \brief Total pressure at the boundaries. */
   su2double *Surface_DC60;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Surface_IDC;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Surface_IDC_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -6431,12 +6438,61 @@ public:
   void SetSurface_DC60(unsigned short val_imarker, su2double val_surface_distortion);
 
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the massflow at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_massflow - Value of the mass flow.
    */
   void SetSurface_MassFlow(unsigned short val_imarker, su2double val_surface_massflow);
 
+  /*!
+   * \brief Set the mach number at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_massflow - Value of the mach number.
+   */
+  void SetSurface_Mach(unsigned short val_imarker, su2double val_surface_mach);
+
+  /*!
+   * \brief Set the temperature at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_massflow - Value of the temperature.
+   */
+  void SetSurface_Temperature(unsigned short val_imarker, su2double val_surface_temperature);
+
+  /*!
+   * \brief Set the pressure at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_massflow - Value of the pressure.
+   */
+  void SetSurface_Pressure(unsigned short val_imarker, su2double val_surface_pressure);
+
+  /*!
+   * \brief Set the density at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_density - Value of the density.
+   */
+  void SetSurface_Density(unsigned short val_imarker, su2double val_surface_density);
+
+  /*!
+   * \brief Set the normal velocity at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_normalvelocity - Value of the normal velocity.
+   */
+  void SetSurface_NormalVelocity(unsigned short val_imarker, su2double val_surface_normalvelocity);
+
+  /*!
+   * \brief Set the total temperature at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_totaltemperature - Value of the total temperature.
+   */
+  void SetSurface_TotalTemperature(unsigned short val_imarker, su2double val_surface_totaltemperature);
+
+  /*!
+   * \brief Set the total pressure at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_totalpressure - Value of the total pressure.
+   */
+  void SetSurface_TotalPressure(unsigned short val_imarker, su2double val_surface_totalpressure);
+  
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -6606,12 +6662,60 @@ public:
   su2double GetSurface_DC60(unsigned short val_imarker);
 
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Get the massflow at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \return The massflow.
    */
   su2double GetSurface_MassFlow(unsigned short val_imarker);
 
+  /*!
+   * \brief Get the mach number at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The mach number.
+   */
+  su2double GetSurface_Mach(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the temperature at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The temperature.
+   */
+  su2double GetSurface_Temperature(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the pressure at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The pressure.
+   */
+  su2double GetSurface_Pressure(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the density at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The density.
+   */
+  su2double GetSurface_Density(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the normal velocity at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The normal velocity.
+   */
+  su2double GetSurface_NormalVelocity(unsigned short val_imarker);
+  /*!
+   * \brief Get the total temperature at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The total temperature.
+   */
+  su2double GetSurface_TotalTemperature(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the total pressure at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The total pressure.
+   */
+  su2double GetSurface_TotalPressure(unsigned short val_imarker);
+   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
