@@ -225,7 +225,7 @@ void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short
   
   unsigned short iDim, jDim;
   
-  for(iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       Kab[nodeA][nodeB][iDim*nDim+jDim] += val_Kab[iDim][jDim];
     }
@@ -236,7 +236,7 @@ void CElement::Add_Kab_T(su2double **val_Kab, unsigned short nodeA, unsigned sho
   
   unsigned short iDim, jDim;
   
-  for(iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       Kab[nodeA][nodeB][iDim*nDim+jDim] += val_Kab[jDim][iDim];
     }
@@ -247,7 +247,7 @@ void CElement::Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned s
   
   unsigned short iDim, jDim;
   
-  for(iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       Kk_ab[nodeA][nodeB][iDim*nDim+jDim] += val_Kk_ab[iDim][jDim];
     }
@@ -258,7 +258,7 @@ void CElement::Add_Kt_a(su2double *val_Kt_a, unsigned short nodeA) {
   
   unsigned short iDim;
   
-  for(iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
     Kt_a[nodeA][iDim] += val_Kt_a[iDim];
   }
   
@@ -268,7 +268,7 @@ void CElement::Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA) {
   
   unsigned short iDim;
   
-  for(iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
     FDL_a[nodeA][iDim] += val_FDL_a[iDim];
   }
   
@@ -281,15 +281,15 @@ void CElement::clearElement(void) {
   
   nDimSq = nDim*nDim;
   
-  for(iNode = 0; iNode < nNodes; iNode++) {
-    for(iDim = 0; iDim < nDim; iDim++) {
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
       if (Kt_a != NULL) Kt_a[iNode][iDim] = 0.0;
       if (FDL_a != NULL) FDL_a[iNode][iDim] = 0.0;
     }
     for (jNode = 0; jNode < nNodes; jNode++) {
       if (Ks_ab != NULL) Ks_ab[iNode][jNode] = 0.0;
       if (Mab != NULL) Mab[iNode][jNode] = 0.0;
-      for(iDim = 0; iDim < nDimSq; iDim++) {
+      for (iDim = 0; iDim < nDimSq; iDim++) {
         if (Kab != NULL) Kab[iNode][jNode][iDim] = 0.0;
       }
     }
@@ -303,7 +303,7 @@ void CElement::clearStress(void) {
   if (nDim == 2) nStress = 3;
   else nStress = 6;
   
-  for(iNode = 0; iNode < nNodes; iNode++) {
+  for (iNode = 0; iNode < nNodes; iNode++) {
     for (iStress = 0; iStress < nStress; iStress++) {
       NodalStress[iNode][iStress] = 0.0;
     }

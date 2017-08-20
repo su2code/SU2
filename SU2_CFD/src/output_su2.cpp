@@ -43,7 +43,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
   string Grid_Marker, text_line, Marker_Tag, str;
   string::size_type position;
 
-  if (config->GetnZone() > 1){
+  if (config->GetnZone() > 1) {
     output_file << "IZONE= " << val_iZone+1 << endl;
   }
 
@@ -178,7 +178,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
 
           text_line.erase (0,8); SendTo = atoi(text_line.c_str());
 
-          if (Marker_Tag == "SEND_RECEIVE"){
+          if (Marker_Tag == "SEND_RECEIVE") {
             output_file << "SEND_TO= " << SendTo << endl;
           }
           for (iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {

@@ -1117,7 +1117,7 @@ if (sM > 0.0) {
 
     IntermediateState[0] = rhoSL * Density_i;
     for (iDim = 0; iDim < nDim; iDim++)
-      IntermediateState[iDim+1] = rhoSL * ( Density_i * Velocity_i[iDim] + ( pStar - Pressure_i ) / ( sL - ProjVelocity_i ) * UnitNormal[iDim] ) ;
+      IntermediateState[iDim+1] = rhoSL * ( Density_i * Velocity_i[iDim] + ( pStar - Pressure_i ) / ( sL - ProjVelocity_i ) * UnitNormal[iDim] );
     IntermediateState[nVar-1] = rhoSL * ( Density_i * Energy_i - ( Pressure_i * ProjVelocity_i - pStar * sM) / ( sL - ProjVelocity_i ) );
 
 
@@ -1146,7 +1146,7 @@ if (sM > 0.0) {
 
     IntermediateState[0] = rhoSR * Density_j;
     for (iDim = 0; iDim < nDim; iDim++)
-      IntermediateState[iDim+1] = rhoSR * ( Density_j * Velocity_j[iDim] + ( pStar - Pressure_j ) / ( sR - ProjVelocity_j ) * UnitNormal[iDim] ) ;
+      IntermediateState[iDim+1] = rhoSR * ( Density_j * Velocity_j[iDim] + ( pStar - Pressure_j ) / ( sR - ProjVelocity_j ) * UnitNormal[iDim] );
     IntermediateState[nVar-1] = rhoSR * ( Density_j * Energy_j - ( Pressure_j * ProjVelocity_j - pStar * sM ) / ( sR - ProjVelocity_j ) );
 
 
@@ -1640,7 +1640,7 @@ if (sM > 0.0) {
 
     IntermediateState[0] = rhoSL * Density_i;
     for (iDim = 0; iDim < nDim; iDim++)
-      IntermediateState[iDim+1] = rhoSL * ( Density_i * Velocity_i[iDim] + ( pStar - Pressure_i ) / ( sL - ProjVelocity_i ) * UnitNormal[iDim] ) ;
+      IntermediateState[iDim+1] = rhoSL * ( Density_i * Velocity_i[iDim] + ( pStar - Pressure_i ) / ( sL - ProjVelocity_i ) * UnitNormal[iDim] );
     IntermediateState[nVar-1] = rhoSL * ( Density_i * Energy_i - ( Pressure_i * ProjVelocity_i - pStar * sM) / ( sL - ProjVelocity_i ) );
 
 
@@ -1669,7 +1669,7 @@ if (sM > 0.0) {
 
     IntermediateState[0] = rhoSR * Density_j;
     for (iDim = 0; iDim < nDim; iDim++)
-      IntermediateState[iDim+1] = rhoSR * ( Density_j * Velocity_j[iDim] + ( pStar - Pressure_j ) / ( sR - ProjVelocity_j ) * UnitNormal[iDim] ) ;
+      IntermediateState[iDim+1] = rhoSR * ( Density_j * Velocity_j[iDim] + ( pStar - Pressure_j ) / ( sR - ProjVelocity_j ) * UnitNormal[iDim] );
     IntermediateState[nVar-1] = rhoSR * ( Density_j * Energy_j - ( Pressure_j * ProjVelocity_j - pStar * sM ) / ( sR - ProjVelocity_j ) );
 
 
@@ -2047,7 +2047,7 @@ int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(su2double (*val_Jacobian_i)[5]
   su2double Rrho = sqrt(Density_j/Density_i);
   su2double tmp = 1.0/(1.0+Rrho);
   su2double velRoe[3];
-  for (int i=0; i<3; i++)
+  for (int i= 0; i<3; i++)
     velRoe[i] = tmp*(uL[i] + uR[i]*Rrho);
   su2double uRoe  = vecDotVec3d(velRoe, nVec);
   su2double hRoe = tmp*(hL + hR*Rrho);
@@ -2071,7 +2071,7 @@ int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(su2double (*val_Jacobian_i)[5]
     if (sL > 0.0) {
       
       su2double nVecArea[3];
-      for (int i=0; i<3; i++) nVecArea[i] = nVec[i]*area;
+      for (int i= 0; i<3; i++) nVecArea[i] = nVec[i]*area;
       
       calcJacobianA(val_Jacobian_i, uL, pL, Density_i, nVecArea, 0.5*(gammaL+gammaR), 0.0);
       
@@ -2087,7 +2087,7 @@ int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(su2double (*val_Jacobian_i)[5]
       su2double rhoSL = Density_i*sLmuL*invSLmSs;
       su2double rhouSL[3];
       
-      for (int i=0; i<3; i++)
+      for (int i= 0; i<3; i++)
         rhouSL[i] = (Density_i*uL[i]*sLmuL+(pStar-pL)*nVec[i])*invSLmSs;
       
       su2double eSL = (sLmuL*eL-pL*unL+pStar*sM)*invSLmSs;
@@ -2158,7 +2158,7 @@ int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(su2double (*val_Jacobian_i)[5]
       su2double sRmuR = sR-unR;
       su2double rhoSR = Density_j*sRmuR*invSRmSs;
       su2double rhouSR[3];
-      for (int i=0; i<3; i++)
+      for (int i= 0; i<3; i++)
         rhouSR[i] = (Density_j*uR[i]*sRmuR+(pStar-pR)*nVec[i])*invSRmSs;
       su2double eSR = (sRmuR*eR-pR*unR+pStar*sM)*invSRmSs;
       su2double gammaLM1 = (gammaL-1.0);
@@ -2220,7 +2220,7 @@ int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(su2double (*val_Jacobian_i)[5]
     else {
       
       su2double nVecArea[3];
-      for (int i=0; i<3; i++)        nVecArea[i] = nVec[i]*area;
+      for (int i= 0; i<3; i++)        nVecArea[i] = nVec[i]*area;
       calcJacobianA(val_Jacobian_j, uR, pR, Density_j, nVecArea, 0.5*(gammaL+gammaR), 0.0);
       
       for (iVar = 0; iVar < nVar; iVar++)
@@ -4177,8 +4177,8 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
       Jacobian_i[3][2] = Gamma*U_i[3]/U_i[0] - 1/2*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
       Jacobian_i[3][3] = Gamma*U_i[2]/U_i[0];
       
-      for (iVar=0; iVar < nVar; iVar++)
-      for (jVar=0; jVar < nVar; jVar++)
+      for (iVar= 0; iVar < nVar; iVar++)
+      for (jVar= 0; jVar < nVar; jVar++)
       Jacobian_i[iVar][jVar] *= yinv*Volume;
       
     }
@@ -4186,9 +4186,9 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
   
   else {
     
-    for (iVar=0; iVar < nVar; iVar++) {
+    for (iVar= 0; iVar < nVar; iVar++) {
       val_residual[iVar] = 0.0;
-      for (jVar=0; jVar < nVar; jVar++)
+      for (jVar= 0; jVar < nVar; jVar++)
       Jacobian_i[iVar][jVar] = 0.0;
     }
     

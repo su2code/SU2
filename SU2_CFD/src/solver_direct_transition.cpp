@@ -33,7 +33,7 @@
 
 #include "../include/solver_structure.hpp"
 
-CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
+CTransLMSolver::CTransLMSolver(void) : CTurbSolver() { }
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
@@ -444,7 +444,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Set both interior and exterior point to current value ---*/
-      for (iVar=0; iVar < nVar; iVar++) {
+      for (iVar= 0; iVar < nVar; iVar++) {
         U_domain[iVar] = node[iPoint]->GetSolution(iVar);
         U_wall[iVar]   = node[iPoint]->GetSolution(iVar);   
       }

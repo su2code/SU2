@@ -226,12 +226,12 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   if (nDim == 3) Phi_Inf[2] = 0.0;
   
   /*--- If outflow objective, nonzero initialization ---*/
-  if ((config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)){
+  if ((config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)) {
     su2double SoundSpeed,*vel_inf,R,vel2,vel;
     R = config->GetGas_ConstantND();
     vel_inf = config->GetVelocity_FreeStreamND();
-    vel2=0;
-    for (iDim=0; iDim<nDim; iDim++)
+    vel2= 0;
+    for (iDim= 0; iDim<nDim; iDim++)
       vel2 +=vel_inf[iDim]*vel_inf[iDim];
     vel = pow(vel2,0.5);
     SoundSpeed= pow(Gamma*config->GetTemperature_FreeStreamND()*R, 0.5);
@@ -240,7 +240,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
     // Assumes +x flow direction
     // Assume v.n = |v|, n = -v/|v|
 
-    for (iDim=0; iDim<nDim; iDim++){
+    for (iDim= 0; iDim<nDim; iDim++) {
       Phi_Inf[iDim] +=PsiE_Inf*(SoundSpeed*SoundSpeed/Gamma_Minus_One/vel2-1)*vel_inf[iDim];
       // Assumes n in direction of v
       Phi_Inf[iDim]+=vel_inf[iDim]/vel*(0.5);
@@ -259,9 +259,9 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE || config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
-    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
-      if (config->GetMarker_All_Monitoring(iMarker) == YES){
+  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE || config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All();  iMarker++) {
+      if (config->GetMarker_All_Monitoring(iMarker) == YES) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
@@ -1087,13 +1087,13 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; ForceProj_Vector[2] = 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
             break;
           case THRUST_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
@@ -1103,7 +1103,7 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLength; ForceProj_Vector[1] = -(x - x_origin)/RefLength; ForceProj_Vector[2] = 0; }
             break;
           case FIGURE_OF_MERIT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) {
@@ -2572,7 +2572,7 @@ void CAdjIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_con
 
         /*--- Adjoint velocities ---*/
         for (iDim = 0; iDim < nDim; iDim++) {
-          Jacobian_ii[iDim+1][0] = -Normal[iDim] * (BetaInc2 / DensityInc) ;
+          Jacobian_ii[iDim+1][0] = -Normal[iDim] * (BetaInc2 / DensityInc);
           for (jDim = 0; jDim < nDim; jDim++)
             Jacobian_ii[iDim+1][jDim+1] = - Normal[iDim] * Velocity[jDim];
         }
@@ -3756,7 +3756,7 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double Area=0.0, *Normal = NULL, myArea_Monitored;
+  su2double Area= 0.0, *Normal = NULL, myArea_Monitored;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -3880,7 +3880,7 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Sensitivity definition and coefficient on all markers ---*/
   CSensitivity = new su2double* [nMarker];
-  for (iMarker=0; iMarker<nMarker; iMarker++) {
+  for (iMarker= 0; iMarker<nMarker; iMarker++) {
     CSensitivity[iMarker] = new su2double [geometry->nVertex[iMarker]];
   }
   Sens_Geo   = new su2double[nMarker];
@@ -3921,9 +3921,9 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
-    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
-      if (config->GetMarker_All_Monitoring(iMarker) == YES){
+  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All();  iMarker++) {
+      if (config->GetMarker_All_Monitoring(iMarker) == YES) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
@@ -4340,7 +4340,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
 
           temp_sens = 0.0;
           
-          /*--- Term: sigma_partial = \Sigma_{ji} n_i \partial_n v_j ---*/
+          /*--- Term: sigma_partial = \Sigma_{ ji } n_i \partial_n v_j ---*/
           
           for (iDim = 0; iDim < nDim; iDim++) {
             for (jDim = 0; jDim < nDim; jDim++)
@@ -4426,14 +4426,14 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
             for (iDim = 0; iDim < nDim; iDim++)
               vartheta_partial += vartheta * normal_grad_v_ux[iDim] * UnitNormal[iDim];
             
-            /*--- Form sigma_partial = n_i ( \Sigma_Phi_{ij} + \Sigma_Psi5v_{ij} ) \partial_n (v - u_x)_j ---*/
+            /*--- Form sigma_partial = n_i ( \Sigma_Phi_{ ij } + \Sigma_Psi5v_{ ij } ) \partial_n (v - u_x)_j ---*/
             
             sigma_partial = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               for (jDim = 0; jDim < nDim; jDim++)
                 sigma_partial += UnitNormal[iDim]*(Sigma[iDim][jDim]+Sigma_Psi5v[iDim][jDim])*normal_grad_v_ux[jDim];
             
-            /*--- Form psi5_tau_partial = \Psi_5 * \partial_n (v - u_x)_i * tau_{ij} * n_j ---*/
+            /*--- Form psi5_tau_partial = \Psi_5 * \partial_n (v - u_x)_i * tau_{ ij } * n_j ---*/
             
             psi5_tau_partial = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
@@ -4444,7 +4444,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
             
             psi5_p_div_vel = -Psi[nDim+1]*Pressure*div_vel;
             
-            /*--- Form psi5_tau_grad_vel = \Psi_5 * tau_{ij} : \nabla( v ) ---*/
+            /*--- Form psi5_tau_grad_vel = \Psi_5 * tau_{ ij } : \nabla( v ) ---*/
             
             psi5_tau_grad_vel = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
@@ -4667,7 +4667,7 @@ void CAdjIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_c
   su2double *d, q, l1psi, phi[3] = {0.0,0.0,0.0};
   su2double *GridVel;
   su2double Laminar_Viscosity;
-  su2double kGTdotn=0.0, Area=0.0, Xi=0.0;
+  su2double kGTdotn= 0.0, Area= 0.0, Xi= 0.0;
   
   su2double *Psi = new su2double[nVar];
   su2double **Tau = new su2double* [nDim];

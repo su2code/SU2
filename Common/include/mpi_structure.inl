@@ -252,7 +252,7 @@ inline void CAdjointMPIWrapper::Allgather(void *sendbuf, int sendcnt, MPI_Dataty
 }
 
 inline void CAdjointMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf, int recvcnt, MPI_Datatype recvtype,int source, int recvtag, MPI_Comm comm, MPI_Status *status) {
-  if(sendtype != MPI_DOUBLE) {
+  if (sendtype != MPI_DOUBLE) {
     MPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
   } else {
     AMPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);

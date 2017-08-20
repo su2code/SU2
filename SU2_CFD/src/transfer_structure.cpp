@@ -52,7 +52,7 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
   Physical_Constants = new su2double[val_nConst];
   Donor_Variable     = new su2double[val_nVar];
   
-  if( config->GetFSI_Simulation() )
+  if ( config->GetFSI_Simulation() )
     Target_Variable = new su2double[val_nVar];
   else
     Target_Variable = new su2double[val_nVar+1];
@@ -182,7 +182,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 
     if (rank == MASTER_NODE) {
       for (iRank = 0; iRank < nProcessor; iRank++) {
-        if( Buffer_Recv_mark[iRank] != -1 ) {
+        if ( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -195,7 +195,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 
     if (rank == MASTER_NODE) {
       for (iRank = 0; iRank < nProcessor; iRank++) {
-        if( Buffer_Recv_mark[iRank] != -1 ) {
+        if ( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -209,17 +209,17 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1) {
+    if (Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
     nLocalVertexDonor  = 0;
     nLocalVertexTarget = 0;
 
-    if( Marker_Donor != -1 )
+    if ( Marker_Donor != -1 )
       nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
 
-    if( Marker_Target != -1 )
+    if ( Marker_Target != -1 )
       nLocalVertexTarget = target_geometry->GetnVertex(Marker_Target);
 
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;                               // Retrieve total number of vertices on Donor marker
@@ -418,7 +418,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
       Buffer_Recv_TargetIndices[iVariable] = Buffer_Send_TargetIndices[iVariable];
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check =0;
+    long indexPoint_iVertex, Point_Target_Check = 0;
     
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -573,7 +573,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
     if (rank == MASTER_NODE) {
       for (iRank = 0; iRank < nProcessor; iRank++) {
-        if( Buffer_Recv_mark[iRank] != -1 ) {
+        if ( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -586,7 +586,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
     if (rank == MASTER_NODE) {
       for (iRank = 0; iRank < nProcessor; iRank++) {
-        if( Buffer_Recv_mark[iRank] != -1 ) {
+        if ( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -600,14 +600,14 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1) {
+    if (Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
     nLocalVertexDonorOwned = 0;
     nLocalVertexDonor      = 0;
 
-    if( Marker_Donor != -1 ) {
+    if ( Marker_Donor != -1 ) {
       nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
 
       for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
@@ -736,7 +736,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check=0;
+    long indexPoint_iVertex, Point_Target_Check= 0;
 
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -900,7 +900,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
     if (rank == MASTER_NODE) {
       for (iRank = 0; iRank < nProcessor; iRank++) {
-        if( Buffer_Recv_mark[iRank] != -1 ) {
+        if ( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -913,7 +913,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
     if (rank == MASTER_NODE) {
       for (iRank = 0; iRank < nProcessor; iRank++) {
-        if( Buffer_Recv_mark[iRank] != -1 ) {
+        if ( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -927,14 +927,14 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1) {
+    if (Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
     nLocalVertexDonorOwned = 0;
     nLocalVertexDonor      = 0;
     
-    if( Marker_Donor != -1 ) {
+    if ( Marker_Donor != -1 ) {
         nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
     
         for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
@@ -1063,7 +1063,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-    long indexPoint_iVertex, Point_Target_Check=0;
+    long indexPoint_iVertex, Point_Target_Check= 0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
 
@@ -1083,12 +1083,12 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
           nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
           Point_Target_Check = -1;
           
-          if(!fsi){
+          if (!fsi) {
                 target_solution->SetnSlidingStates(Marker_Target, iVertex, nDonorPoints); // This is to allocate
                 target_solution->SetSlidingStateStructure(Marker_Target, iVertex);
                 target_solution->SetnSlidingStates(Marker_Target, iVertex, 0); // Reset counter to 0
           }
-          else{
+          else {
                 /*--- As we will be adding data, we need to set the variable to 0 ---*/
                 for (iVar = 0; iVar < nVar; iVar++) 
                     Target_Variable[iVar] = 0.0;
@@ -1114,7 +1114,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
                 cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
                 exit(EXIT_FAILURE);
             }
-            else{
+            else {
                 for (iVar = 0; iVar < nVar; iVar++)
                     Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
                     
@@ -1256,7 +1256,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
     if (rank == MASTER_NODE) {
       for (iRank = 0; iRank < nProcessor; iRank++) {
-        if( Buffer_Recv_mark[iRank] != -1 ) {
+        if ( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -1269,7 +1269,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
     if (rank == MASTER_NODE) {
       for (iRank = 0; iRank < nProcessor; iRank++) {
-        if( Buffer_Recv_mark[iRank] != -1 ) {
+        if ( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -1283,13 +1283,13 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1) {
+    if (Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
     nLocalVertexDonor  = 0;
 
-    if( Marker_Donor != -1 )
+    if ( Marker_Donor != -1 )
         nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
     
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;      // Retrieve total number of vertices on Donor marker
@@ -1444,7 +1444,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
 
 void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
-    CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
+    CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt) {
 
   unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
@@ -1471,9 +1471,9 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
   nSpanTarget    = target_config->GetnSpanWiseSections();
 
   /*--- On the donor side ---*/
-  for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+  for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
     /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
-    if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ){
+    if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ) {
       /*--- We have identified the local index of the Donor marker ---*/
       /*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
       /*--- Store the identifier for the structural marker ---*/
@@ -1493,7 +1493,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 #ifdef HAVE_MPI
   BuffMarkerDonor          = new int[size];
   BuffDonorFlag            = new int[size];
-  for (iSize=0; iSize<size;iSize++){
+  for (iSize= 0; iSize<size; iSize++) {
     BuffMarkerDonor[iSize]            = -1;
     BuffDonorFlag[iSize]              = -1;
   }
@@ -1506,8 +1506,8 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
   Donor_Flag= -1;
 
 
-  for (iSize=0; iSize<size;iSize++){
-    if(BuffMarkerDonor[iSize] > 0.0){
+  for (iSize= 0; iSize<size; iSize++) {
+    if (BuffMarkerDonor[iSize] > 0.0) {
       Marker_Donor = BuffMarkerDonor[iSize];
       Donor_Flag   = BuffDonorFlag[iSize];
       break;
@@ -1519,9 +1519,9 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 
   /*--- On the target side we have to identify the marker as well ---*/
 
-  for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+  for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
     /*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
-    if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
+    if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ) {
       /*--- Store the identifier for the fluid marker ---*/
 
       // here i should then store it in the target zone
@@ -1538,29 +1538,29 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
     }
   }
 
-  if (Marker_Target != -1 && Marker_Donor != -1){
+  if (Marker_Target != -1 && Marker_Donor != -1) {
 
     SpanValuesDonor  = donor_geometry->GetSpanWiseValue(Donor_Flag);
     SpanValuesTarget = target_geometry->GetSpanWiseValue(Target_Flag);
 
 
-    for(iSpan = 1; iSpan <nSpanTarget-1; iSpan++){
+    for (iSpan = 1; iSpan <nSpanTarget-1; iSpan++) {
       dist  = 10E+06;
       dist2 = 10E+06;
-      for(jSpan = 0; jSpan < nSpanDonor;jSpan++){
+      for (jSpan = 0; jSpan < nSpanDonor; jSpan++) {
         test = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         test2 = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
-        if(test < dist && SpanValuesTarget[iSpan] > SpanValuesDonor[jSpan]){
+        if (test < dist && SpanValuesTarget[iSpan] > SpanValuesDonor[jSpan]) {
           dist = test;
           kSpan = jSpan;
         }
-        if(test2 < dist2){
+        if (test2 < dist2) {
           dist2 = test2;
           tSpan =jSpan;
         }
 
       }
-      switch(donor_config->GetKind_MixingPlaneInterface()){
+      switch(donor_config->GetKind_MixingPlaneInterface()) {
       case MATCHING:
         SpanLevelDonor[iSpan]        = iSpan;
         SpanValueCoeffTarget[iSpan]  = 0.0;
@@ -1587,7 +1587,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 
 void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
     CGeometry *donor_geometry, CGeometry *target_geometry,
-    CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
+    CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt) {
   unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
   unsigned short iSpan, nSpanDonor, nSpanTarget;
@@ -1623,7 +1623,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   avgKineDonor                     = new su2double[nSpanDonor];
   avgOmegaDonor                    = new su2double[nSpanDonor];
 
-  for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
+  for (iSpan = 0; iSpan < nSpanDonor; iSpan++) {
     avgDensityDonor[iSpan]         = -1.0;
     avgPressureDonor[iSpan]        = -1.0;
     avgNormalVelDonor[iSpan]       = -1.0;
@@ -1644,7 +1644,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   avgOmegaTarget                   = new su2double[nSpanTarget];
 
 
-  for (iSpan = 0; iSpan < nSpanTarget; iSpan++){
+  for (iSpan = 0; iSpan < nSpanTarget; iSpan++) {
     avgDensityTarget[iSpan]        = -1.0;
     avgPressureTarget[iSpan]       = -1.0;
     avgNormalVelTarget[iSpan]      = -1.0;
@@ -1666,9 +1666,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
   /*--- On the donor side ---*/
 
-  for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+  for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
     /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
-    if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ){
+    if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ) {
       /*--- We have identified the local index of the Donor marker ---*/
       /*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
       /*--- Store the identifier for the structural marker ---*/
@@ -1683,8 +1683,8 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   }
   /*--- Here we want to make available the quantities for all the processors and collect them in a buffer
    * for each span of the donor the span-wise height vector also so that then we can interpolate on the target side  ---*/
-  if (Marker_Donor != -1){
-    for(iSpan = 0; iSpan < nSpanDonor; iSpan++){
+  if (Marker_Donor != -1) {
+    for (iSpan = 0; iSpan < nSpanDonor; iSpan++) {
       GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iSpan, rank);
       avgDensityDonor[iSpan]          = Donor_Variable[0];
       avgPressureDonor[iSpan]         = Donor_Variable[1];
@@ -1709,7 +1709,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   BuffAvgOmegaDonor                   = new su2double[nSpanSize];
   BuffMarkerDonor                     = new int[size];
 
-  for (iSpan=0;iSpan<nSpanSize;iSpan++){
+  for (iSpan= 0; iSpan<nSpanSize; iSpan++) {
     BuffAvgDensityDonor[iSpan]        = -1.0;
     BuffAvgPressureDonor[iSpan]       = -1.0;
     BuffAvgNormalVelDonor[iSpan]      = -1.0;
@@ -1720,7 +1720,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     BuffAvgOmegaDonor[iSpan]          = -1.0;
   }
 
-  for (iSize=0; iSize<size;iSize++){
+  for (iSize= 0; iSize<size; iSize++) {
     BuffMarkerDonor[iSize]            = -1;
   }
 
@@ -1734,7 +1734,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   SU2_MPI::Allgather(avgOmegaDonor, nSpanDonor , MPI_DOUBLE, BuffAvgOmegaDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
   SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
 
-  for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
+  for (iSpan = 0; iSpan < nSpanDonor; iSpan++) {
     avgDensityDonor[iSpan]            = -1.0;
     avgPressureDonor[iSpan]           = -1.0;
     avgNormalVelDonor[iSpan]          = -1.0;
@@ -1747,9 +1747,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
   Marker_Donor= -1;
 
-  for (iSize=0; iSize<size;iSize++){
-    if(BuffAvgDensityDonor[nSpanDonor*iSize] > 0.0){
-      for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
+  for (iSize= 0; iSize<size; iSize++) {
+    if (BuffAvgDensityDonor[nSpanDonor*iSize] > 0.0) {
+      for (iSpan = 0; iSpan < nSpanDonor; iSpan++) {
         avgDensityDonor[iSpan]        = BuffAvgDensityDonor[nSpanDonor*iSize + iSpan];
         avgPressureDonor[iSpan]       = BuffAvgPressureDonor[nSpanDonor*iSize + iSpan];
         avgNormalVelDonor[iSpan]      = BuffAvgNormalVelDonor[nSpanDonor*iSize + iSpan];
@@ -1776,9 +1776,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 #endif
 
   /*--- On the target side we have to identify the marker as well ---*/
-  for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+  for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
     /*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
-    if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
+    if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ) {
       /*--- Store the identifier for the fluid marker ---*/
       Marker_Target = iMarkerTarget;
       /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -1791,10 +1791,10 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   }
 
 
-  if (Marker_Target != -1 && Marker_Donor != -1){
+  if (Marker_Target != -1 && Marker_Donor != -1) {
 
     /*--- linear interpolation of the average value of for the internal span-wise levels ---*/
-    for(iSpan = 1; iSpan < nSpanTarget -2 ; iSpan++){
+    for (iSpan = 1; iSpan < nSpanTarget -2 ; iSpan++) {
       avgDensityTarget[iSpan]                = SpanValueCoeffTarget[iSpan]*(avgDensityDonor[SpanLevelDonor[iSpan] + 1] - avgDensityDonor[SpanLevelDonor[iSpan]]);
       avgDensityTarget[iSpan]               += avgDensityDonor[SpanLevelDonor[iSpan]];
       avgPressureTarget[iSpan]               = SpanValueCoeffTarget[iSpan]*(avgPressureDonor[SpanLevelDonor[iSpan] + 1] - avgPressureDonor[SpanLevelDonor[iSpan]]);
@@ -1846,7 +1846,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
 
     /*---finally, the interpolated value is sent  to the target zone ---*/
-    for(iSpan = 0; iSpan < nSpanTarget ; iSpan++){
+    for (iSpan = 0; iSpan < nSpanTarget ; iSpan++) {
       Target_Variable[0]                     = avgDensityTarget[iSpan];
       Target_Variable[1]                     = avgPressureTarget[iSpan];
       Target_Variable[2]                     = avgNormalVelTarget[iSpan];
@@ -1883,7 +1883,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
 }
 
-void CTransfer::GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
+void CTransfer::GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone) {
 
 
   /*--- here we made the strong assumption that the mesh zone order follow the same order of the turbomachinery markers ---*/
@@ -1891,7 +1891,7 @@ void CTransfer::GatherAverageValues(CSolver *donor_solution, CSolver *target_sol
 
 }
 
-void CTransfer::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone){
+void CTransfer::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone) {
 
 
   /*--- here we made the strong assumption that the mesh zone order follow the same order of the turbomachinery markers ---*/

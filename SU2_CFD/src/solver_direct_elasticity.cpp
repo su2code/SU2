@@ -291,14 +291,14 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   /*--- Matrices to impose clamped boundary conditions ---*/
   
   mZeros_Aux = new su2double *[nDim];
-  for(iDim = 0; iDim < nDim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++)
     mZeros_Aux[iDim] = new su2double[nDim];
   
   mId_Aux = new su2double *[nDim];
-  for(iDim = 0; iDim < nDim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++)
     mId_Aux[iDim] = new su2double[nDim];
   
-  for(iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       mZeros_Aux[iDim][jDim] = 0.0;
       mId_Aux[iDim][jDim] = 0.0;
@@ -345,7 +345,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   
   /*--- If dynamic, we also need to communicate the old solution ---*/
   
-  if(dynamic) Set_MPI_Solution_Old(geometry, config);
+  if (dynamic) Set_MPI_Solution_Old(geometry, config);
   
 }
 
@@ -1043,7 +1043,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case LOAD_BOUNDARY:
         /*--- Only if the load is nonzero - reduces computational cost ---*/
-        if(config->GetLoad_Value(config->GetMarker_All_TagBound(iMarker)) != 0 ) {
+        if (config->GetLoad_Value(config->GetMarker_All_TagBound(iMarker)) != 0 ) {
           /*--- For all the vertices in the marker iMarker ---*/
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             /*--- Retrieve the point ID ---*/
@@ -1106,12 +1106,12 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) { nNodes = 4; EL_KIND = EL_QUAD; }
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1174,12 +1174,12 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) { nNodes = 4; EL_KIND = EL_QUAD; }
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1256,13 +1256,13 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    { nNodes = 4; EL_KIND = EL_QUAD; }
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1316,12 +1316,12 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) { nNodes = 4; EL_KIND = EL_QUAD; }
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1401,12 +1401,12 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) { nNodes = 4; EL_KIND = EL_QUAD; }
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1673,12 +1673,12 @@ void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solv
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) { nNodes = 4; EL_KIND = EL_QUAD; }
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1747,7 +1747,7 @@ void CFEM_ElasticitySolver::Compute_IntegrationConstants(CConfig *config) {
       //      //  su2double gamma =  config->Get_Int_Coeffs(1);
       //      su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
       //
-      //      a_dt[0]= (1 / (beta*pow(Delta_t,2.0))) * ((1 - alpha_m) / (1 - alpha_f)) ;
+      //      a_dt[0]= (1 / (beta*pow(Delta_t,2.0))) * ((1 - alpha_m) / (1 - alpha_f));
       //      a_dt[1]= 0.0 ;
       //      a_dt[2]= (1 - alpha_m) / (beta*Delta_t);
       //      a_dt[3]= ((1 - 2*beta)*(1-alpha_m) / (2*beta)) - alpha_m;
@@ -1825,7 +1825,7 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
       /*--- If the problem is dynamic ---*/
       /*--- Enforce that in the previous time step all nodes had 0 U, U', U'' ---*/
       
-      if(dynamic) {
+      if (dynamic) {
         
         node[iPoint]->SetSolution_time_n(Solution);
         node[iPoint]->SetSolution_Vel_time_n(Solution);
@@ -2144,7 +2144,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
             b_curr[iDim] = nodeCoord_curr[2][iDim]-nodeCoord_curr[0][iDim];
           }
           
-          su2double Ni=0, Nj=0, Nk=0;
+          su2double Ni= 0, Nj= 0, Nk= 0;
           
           /*--- Reference configuration ---*/
           Ni = a_ref[1]*b_ref[2] - a_ref[2]*b_ref[1];
@@ -2215,7 +2215,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
             BD_curr[iDim] = nodeCoord_curr[3][iDim]-nodeCoord_curr[1][iDim];
           }
           
-          su2double Ni=0, Nj=0, Nk=0;
+          su2double Ni= 0, Nj= 0, Nk= 0;
           
           /*--- Reference configuration ---*/
           Ni=AC_ref[1]*BD_ref[2]-AC_ref[2]*BD_ref[1];
@@ -2291,7 +2291,7 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
                                         unsigned short val_marker) {
   
   su2double a[3], b[3], AC[3], BD[3];
-  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
+  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3= 0;
   su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
   su2double Length_Elem = 0.0, Area_Elem = 0.0;
   unsigned short iDim;
@@ -2331,8 +2331,8 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
   
   /*--- Compute the norm of the vector that was passed in the config file ---*/
   su2double Norm = 1.0;
-  if (nDim==2) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]);
-  if (nDim==3) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]+Load_Dir_Local[2]*Load_Dir_Local[2]);
+  if (nDim== 2) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]);
+  if (nDim== 3) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]+Load_Dir_Local[2]*Load_Dir_Local[2]);
   
   for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
     
@@ -2368,7 +2368,7 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
           b[iDim] = Coord_2[iDim]-Coord_0[iDim];
         }
         
-        su2double Ni=0 , Nj=0, Nk=0;
+        su2double Ni= 0 , Nj= 0, Nk= 0;
         
         Ni=a[1]*b[2]-a[2]*b[1];
         Nj=-a[0]*b[2]+a[2]*b[0];
@@ -2385,7 +2385,7 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
           BD[iDim] = Coord_3[iDim]-Coord_1[iDim];
         }
         
-        su2double Ni=0 , Nj=0, Nk=0;
+        su2double Ni= 0 , Nj= 0, Nk= 0;
         
         Ni=AC[1]*BD[2]-AC[2]*BD[1];
         Nj=-AC[0]*BD[2]+AC[2]*BD[0];
@@ -2524,7 +2524,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
         (linear_analysis && restart && initial_calc_restart)) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (jPoint = 0; jPoint < nPoint; jPoint++) {
-          for(iVar = 0; iVar < nVar; iVar++) {
+          for (iVar = 0; iVar < nVar; iVar++) {
             for (jVar = 0; jVar < nVar; jVar++) {
               Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
             }
@@ -2702,7 +2702,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSol
   
   /*--- Update solution and set it to be the solution after applying relaxation---*/
   
-  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint= 0; iPoint < nPointDomain; iPoint++) {
     
     valSolutionPred = node[iPoint]->GetSolution_Pred();
     
@@ -2845,7 +2845,7 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
         (linear_analysis && restart && initial_calc_restart)) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (jPoint = 0; jPoint < nPoint; jPoint++) {
-          for(iVar = 0; iVar < nVar; iVar++) {
+          for (iVar = 0; iVar < nVar; iVar++) {
             for (jVar = 0; jVar < nVar; jVar++) {
               Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
             }
@@ -3133,8 +3133,8 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   bool Ramp_Load = fea_config->GetRamp_Load();
   su2double Ramp_Time = fea_config->GetRamp_Time();
   
-  if (CurrentTime <= Static_Time) { ModAmpl=0.0; }
-  else if((CurrentTime > Static_Time) &&
+  if (CurrentTime <= Static_Time) { ModAmpl= 0.0; }
+  else if ((CurrentTime > Static_Time) &&
           (CurrentTime <= (Static_Time + Ramp_Time)) &&
           (Ramp_Load)) {
     ModAmpl = (CurrentTime-Static_Time) / Ramp_Time;
@@ -3708,27 +3708,27 @@ void CFEM_ElasticitySolver::PredictStruct_Displacement(CGeometry **fea_geometry,
   su2double *solDisp, *solVel, *solVel_tn, *valPred;
   
   //To nPointDomain: we need to communicate the predicted solution after setting it
-  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
-    if (predOrder==0) fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
-    else if (predOrder==1) {
+  for (iPoint= 0; iPoint < nPointDomain; iPoint++) {
+    if (predOrder== 0) fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
+    else if (predOrder== 1) {
       
       solDisp = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
       solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
       valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
       
-      for (iDim=0; iDim < nDim; iDim++) {
+      for (iDim= 0; iDim < nDim; iDim++) {
         valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
       }
       
     }
-    else if (predOrder==2) {
+    else if (predOrder== 2) {
       
       solDisp = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
       solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
       solVel_tn = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel_time_n();
       valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
       
-      for (iDim=0; iDim < nDim; iDim++) {
+      for (iDim= 0; iDim < nDim; iDim++) {
         valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
       }
       
@@ -3799,7 +3799,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
         if (iFSIIter == 0) historyFile_FSI << " " << endl ;
         historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
         historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
-        if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() ;
+        if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax();
         else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() << "," ;
       }
       
@@ -3884,7 +3884,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
     
   }
   
-  if (writeHistFSI && (rank == MASTER_NODE)) {historyFile_FSI.close();}
+  if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI.close(); }
   
 }
 
@@ -3918,7 +3918,7 @@ void CFEM_ElasticitySolver::SetAitken_Relaxation(CGeometry **fea_geometry,
     }
     
     // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine
-    for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint= 0; iPoint < nPointDomain; iPoint++) {
       
       /*--- Retrieve pointers to the predicted and calculated solutions ---*/
       dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
@@ -3931,7 +3931,7 @@ void CFEM_ElasticitySolver::SetAitken_Relaxation(CGeometry **fea_geometry,
       fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Old(dispCalc);
       
       /*--- Apply the Aitken relaxation ---*/
-      for (iDim=0; iDim < nDim; iDim++) {
+      for (iDim= 0; iDim < nDim; iDim++) {
         dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
       }
       
@@ -3947,7 +3947,7 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
   unsigned long iPoint;
   su2double *valSolutionPred;
   
-  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint= 0; iPoint < nPointDomain; iPoint++) {
     
     valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
     

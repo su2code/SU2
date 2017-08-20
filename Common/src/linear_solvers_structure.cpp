@@ -272,7 +272,7 @@ int rank = 0;
     precond(r, z);
     
     /*--- Calculate Gram-Schmidt coefficient beta,
-		 beta = dotProd(r_{i+1}, z_{i+1}) / dotProd(r_{i}, z_{i}) ---*/
+		 beta = dotProd(r_{ i+1 }, z_{ i+1 }) / dotProd(r_{ i }, z_{ i }) ---*/
     beta = 1.0 / r_dot_z;
     r_dot_z = dotProd(r, z);
     beta *= r_dot_z;
@@ -536,7 +536,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     
 		beta = (rho / rho_prime) * (alpha /omega);
 		
-		/*--- p_{i} = r_{i-1} + beta * p_{i-1} - beta * omega * v_{i-1} ---*/
+		/*--- p_{ i } = r_{ i-1 } + beta * p_{ i-1 } - beta * omega * v_{ i-1 } ---*/
     
 		su2double beta_omega = -beta*omega;
 		p.Equals_AX_Plus_BY(beta, p, beta_omega, v);
@@ -552,7 +552,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     su2double r_0_v = dotProd(r_0, v);
     alpha = rho / r_0_v;
     
-		/*--- s_{i} = r_{i-1} - alpha * v_{i} ---*/
+		/*--- s_{ i } = r_{ i-1 } - alpha * v_{ i } ---*/
     
 		s.Equals_AX_Plus_BY(1.0, r, -alpha, v);
 		
@@ -708,7 +708,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   }
 
 
-  if(TapeActive) {
+  if (TapeActive) {
     /*--- Start recording if it was stopped for the linear solver ---*/
 
     AD::StartRecording();

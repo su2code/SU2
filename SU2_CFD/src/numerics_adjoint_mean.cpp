@@ -152,7 +152,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (su2double *val_residual_i, su2double *val
   val_residual_j[nVar-1] = -(Q_r * psi5 + l1psi * Gamma_Minus_One);
   
   
-  /*--- f_{roe} = P^{-T} |lambda| P^T \delta \psi ---*/
+  /*--- f_{ roe } = P^{-T } |lambda| P^T \delta \psi ---*/
   
   psi1_l = Psi_i[0];
   psi2_l = Psi_i[1];
@@ -1320,7 +1320,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 //      val_residual[nVar-1] -= (Gamma*alpha_coeff)/Density*Volume;
 //      
 //      // this should improve stability (when commented):
-//      /*--- Terms 3: -partial{T^s}_GradVel x GradN ---*/
+//      /*--- Terms 3: -partial{ T^s }_GradVel x GradN ---*/
 //      //      su2double Ms_coeff = (cb1*TurbVar_i[0]-cw1*TurbVar_i[0]*TurbVar_i[0]/dist_0_2*dfw_g*dg_r*dr_Shat);
 //      //      Ms_coeff *= TurbPsi_i[0]/(Omega + TURB_EPS);
 //      //
@@ -1590,8 +1590,8 @@ void CSourceAxisymmetric_AdjFlow::ComputeResidual(su2double *val_residual, su2do
   Jacobian_Axisymmetric[3][2] = Gamma*U_i[3]/U_i[0] - 1/2*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
   Jacobian_Axisymmetric[3][3] = Gamma*U_i[2]/U_i[0];
   
-  for (int iVar=0; iVar<4; iVar++)
-    for (int jVar=0; jVar<4; jVar++)
+  for (int iVar= 0; iVar<4; iVar++)
+    for (int jVar= 0; jVar<4; jVar++)
       Jacobian_Axisymmetric[iVar][jVar] *= yinv*Volume;
   
   /* -- Residual = transpose(Jacobian) * psi --*/

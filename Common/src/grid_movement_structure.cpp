@@ -238,7 +238,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     CSysSolve *system  = new CSysSolve();
     
-    if (LinSysRes.norm() != 0.0){
+    if (LinSysRes.norm() != 0.0) {
       switch (config->GetKind_Deform_Linear_Solver()) {
         
         /*--- Solve the linear system (GMRES with restart) ---*/
@@ -1903,7 +1903,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	        MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
 	    }
 	    for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
-	    if (nDim==3) {
+	    if (nDim== 3) {
 	      if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
 	      if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
 	      if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
@@ -2034,7 +2034,7 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
     }
   } else if (Kind_SU2 == SU2_DOT) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -2233,7 +2233,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   /*--- Set the moment computation center to the new location after
    incrementing the position with the rotation. ---*/
   
-  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (unsigned short jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     
     Center_Moment[0] = config->GetRefOriginMoment_X(jMarker);
     Center_Moment[1] = config->GetRefOriginMoment_Y(jMarker);
@@ -2566,7 +2566,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   /*--- Set the moment computation center to the new location after
    incrementing the position with the plunging. ---*/
   
-  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (unsigned short jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
     Center[2] = config->GetRefOriginMoment_Z(jMarker) + deltaX[2];
@@ -2685,7 +2685,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   /*--- Set the moment computation center to the new location after
    incrementing the position with the translation. ---*/
   
-  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (unsigned short jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
     Center[2] = config->GetRefOriginMoment_Z(jMarker) + deltaX[2];
@@ -2881,12 +2881,12 @@ CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 	FFDBoxDefinition = false;
 }
 
-CSurfaceMovement::~CSurfaceMovement(void) {}
+CSurfaceMovement::~CSurfaceMovement(void) { }
 
 void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
   
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
-  unsigned short Degree_Unitary [] = {1,1,1}, BSpline_Unitary [] = {2,2,2};
+  unsigned short Degree_Unitary [] = {1,1,1 }, BSpline_Unitary [] = {2,2,2 };
   su2double MaxDiff, Current_Scale, Ratio, New_Scale;
 	 int rank = MASTER_NODE;
 	 string FFDBoxTag;
@@ -3482,9 +3482,9 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
         for (kOrder = 0; kOrder < 2; kOrder++) {
           
           lOrder = 0; mOrder = 0; nOrder = 0;
-          if (iOrder == 1) {lOrder = FFDBox->GetlOrder()-1;}
-          if (jOrder == 1) {mOrder = FFDBox->GetmOrder()-1;}
-          if (kOrder == 1) {nOrder = FFDBox->GetnOrder()-1;}
+          if (iOrder == 1) { lOrder = FFDBox->GetlOrder()-1; }
+          if (jOrder == 1) { mOrder = FFDBox->GetmOrder()-1; }
+          if (kOrder == 1) { nOrder = FFDBox->GetnOrder()-1; }
           
           Coord = FFDBox->GetCoordControlPoints(lOrder, mOrder, nOrder);
           
@@ -3625,7 +3625,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   
   if (BoxFFD) {
     FFDBox->SetOriginalControlPoints();
-    if (config->GetFFD_Blending() == BEZIER){
+    if (config->GetFFD_Blending() == BEZIER) {
       FFDBox->BlendingFunction[0]->SetOrder(FFDBox->GetlOrder(), FFDBox->GetlOrder());
       FFDBox->BlendingFunction[1]->SetOrder(FFDBox->GetmOrder(), FFDBox->GetmOrder());
       FFDBox->BlendingFunction[2]->SetOrder(FFDBox->GetnOrder(), FFDBox->GetnOrder());
@@ -3793,7 +3793,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   
   if (config->GetFFD_Continuity() != USER_INPUT) {
     
-    /*--- Check intersection with plane i=0 ---*/
+    /*--- Check intersection with plane i= 0 ---*/
     
     su2double *IPlane_Coord_0_A = FFDBox->GetCoordControlPoints(0, 0, 0);
     su2double *IPlane_Coord_1_A = FFDBox->GetCoordControlPoints(0, 0, nDegree);
@@ -3813,7 +3813,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
     su2double *IPlane_Coord_1_B_ = FFDBox->GetCoordControlPoints(lDegree, mDegree, 0);
     su2double *IPlane_Coord_2_B_ = FFDBox->GetCoordControlPoints(lDegree, 0, nDegree);
     
-    /*--- Check intersection with plane j=0 ---*/
+    /*--- Check intersection with plane j= 0 ---*/
     
     su2double *JPlane_Coord_0_A = FFDBox->GetCoordControlPoints(0,      0, 0);
     su2double *JPlane_Coord_1_A = FFDBox->GetCoordControlPoints(0,      0, nDegree);
@@ -3833,7 +3833,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
     su2double *JPlane_Coord_1_B_ = FFDBox->GetCoordControlPoints(lDegree, mDegree, 0);
     su2double *JPlane_Coord_2_B_ = FFDBox->GetCoordControlPoints(0,      mDegree, nDegree);
     
-    /*--- Check intersection with plane k=0 ---*/
+    /*--- Check intersection with plane k= 0 ---*/
     
     su2double *KPlane_Coord_0_A = FFDBox->GetCoordControlPoints(0,      0,      0);
     su2double *KPlane_Coord_1_A = FFDBox->GetCoordControlPoints(0,      mDegree, 0);
@@ -3965,16 +3965,16 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
                 } else {
                   
                   if (!IPlane_Intersect_A) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true;}
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true; }
                   }
                   if (!IPlane_Intersect_B) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true;}
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true; }
                   }
                   if (!JPlane_Intersect_A) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true;}
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true; }
                   }
                   if (!JPlane_Intersect_B) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true;}
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true; }
                   }
                 }
               }
@@ -4026,33 +4026,33 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
         cout << "The FFD planes ";
         
         if (cartesian) {
-          if (IPlane_Intersect_A) cout << "i=0, ";
+          if (IPlane_Intersect_A) cout << "i= 0, ";
           if (IPlane_Intersect_B) cout << "i="<< lDegree << ", ";
-          if (JPlane_Intersect_A) cout << "j=0, ";
+          if (JPlane_Intersect_A) cout << "j= 0, ";
           if (JPlane_Intersect_B) cout << "j="<< mDegree << ", ";
-          if (KPlane_Intersect_A) cout << "k=0, ";
+          if (KPlane_Intersect_A) cout << "k= 0, ";
           if (KPlane_Intersect_B) cout << "k="<< nDegree << ", ";
         }
         else if (cylindrical) {
-          if (IPlane_Intersect_A) cout << "r=0, ";
+          if (IPlane_Intersect_A) cout << "r= 0, ";
           if (IPlane_Intersect_B) cout << "r="<< lDegree << ", ";
-          if (JPlane_Intersect_A) cout << "theta=0, ";
+          if (JPlane_Intersect_A) cout << "theta= 0, ";
           if (JPlane_Intersect_B) cout << "theta="<< mDegree << ", ";
-          if (KPlane_Intersect_A) cout << "z=0, ";
+          if (KPlane_Intersect_A) cout << "z= 0, ";
           if (KPlane_Intersect_B) cout << "z="<< nDegree << ", ";
         }
         else if (spherical) {
-          if (IPlane_Intersect_A) cout << "r=0, ";
+          if (IPlane_Intersect_A) cout << "r= 0, ";
           if (IPlane_Intersect_B) cout << "r="<< lDegree << ", ";
-          if (JPlane_Intersect_A) cout << "theta=0, ";
+          if (JPlane_Intersect_A) cout << "theta= 0, ";
           if (JPlane_Intersect_B) cout << "theta="<< mDegree << ", ";
-          if (KPlane_Intersect_A) cout << "phi=0, ";
+          if (KPlane_Intersect_A) cout << "phi= 0, ";
           if (KPlane_Intersect_B) cout << "phi="<< nDegree << ", ";
         }
         else if (polar) {
-          if (IPlane_Intersect_A) cout << "r=0, ";
+          if (IPlane_Intersect_A) cout << "r= 0, ";
           if (IPlane_Intersect_B) cout << "r="<< lDegree << ", ";
-          if (KPlane_Intersect_A) cout << "theta=0, ";
+          if (KPlane_Intersect_A) cout << "theta= 0, ";
           if (KPlane_Intersect_B) cout << "theta="<< nDegree << ", ";
         }
         
@@ -4360,7 +4360,7 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
       
       Ampl = config->GetDV_Value(iDV)*Scale;
       
-      if (polar){
+      if (polar) {
         movement[0] = config->GetParamDV(iDV, 3)*Ampl;
         movement[1] = 0.0;
         movement[2] = config->GetParamDV(iDV, 4)*Ampl;
@@ -4372,7 +4372,7 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
       }
       
     } else {
-      if (polar){
+      if (polar) {
         movement[0] = config->GetDV_Value(iDV, 0);
         movement[1] = 0.0;
         movement[2] = config->GetDV_Value(iDV, 1);
@@ -4385,7 +4385,7 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
       
     }
     
-    if (polar){
+    if (polar) {
     	index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
     	index[1] = 0;
      index[2] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
@@ -5698,8 +5698,8 @@ void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned sho
 		std::cout << "Warning: Kulfan number should be less than provided maximum." << std::endl;
 	}
 
-	if (config->GetParamDV(iDV, 0) == NO) { upper = false;}
-	if (config->GetParamDV(iDV, 0) == YES) { upper = true;}
+	if (config->GetParamDV(iDV, 0) == NO) { upper = false; }
+	if (config->GetParamDV(iDV, 0) == YES) { upper = true; }
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -6075,7 +6075,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
    incrementing the position with the translation. This new
    location will be used for subsequent mesh motion for the given marker.---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
     
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
@@ -6092,7 +6092,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
   /*--- Set the moment computation center to the new location after
    incrementing the position with the translation. ---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + VarCoord[1];
     Center[2] = config->GetRefOriginMoment_Z(jMarker) + VarCoord[2];
@@ -6197,7 +6197,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
    incrementing the position with the translation. This new
    location will be used for subsequent mesh motion for the given marker.---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
     
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
@@ -6214,7 +6214,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
   /*--- Set the moment computation center to the new location after
    incrementing the position with the plunging. ---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + VarCoord[1];
     Center[2] = config->GetRefOriginMoment_Z(jMarker) + VarCoord[2];
@@ -6527,7 +6527,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
    incrementing the position with the rotation. This new
    location will be used for subsequent mesh motion for the given marker.---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
     
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
@@ -6570,7 +6570,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
   /*--- Set the moment computation center to the new location after
    incrementing the position with the rotation. ---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
       
     Center_Aux[0] = config->GetRefOriginMoment_X(jMarker);
     Center_Aux[1] = config->GetRefOriginMoment_Y(jMarker);
@@ -7198,8 +7198,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   if (Xcoord[0] == 1.0) AddBegin = false;
   if (Xcoord[Xcoord.size()-1] == 1.0) AddEnd = false;
   
-  if (AddBegin) { Xcoord.insert(Xcoord.begin(), 1.0);   Ycoord.insert(Ycoord.begin(), 0.0);}
-  if (AddEnd) { Xcoord.push_back(1.0);                Ycoord.push_back(0.0);}
+  if (AddBegin) { Xcoord.insert(Xcoord.begin(), 1.0);   Ycoord.insert(Ycoord.begin(), 0.0); }
+  if (AddEnd) { Xcoord.push_back(1.0);                Ycoord.push_back(0.0); }
   
   /*--- Change the orientation (depend on the input file, and the mesh file) ---*/
   
@@ -7466,7 +7466,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         }
 
         getline (mesh_file, text_line);
-        if (text_line.substr(0,12) != "FFD_BLENDING"){
+        if (text_line.substr(0,12) != "FFD_BLENDING") {
           if (rank == MASTER_NODE) {
             cout << endl << "Deprecated FFD information found in mesh file." << endl;
             cout << "FFD information generated with SU2 version <= 4.3 is incompatible with the current version." << endl;
@@ -7475,10 +7475,10 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           exit(EXIT_FAILURE);
         }
         text_line.erase(0,14);
-        if (text_line == "BEZIER"){
+        if (text_line == "BEZIER") {
           Blending = BEZIER;
         }
-        if (text_line == "BSPLINE_UNIFORM"){
+        if (text_line == "BSPLINE_UNIFORM") {
           Blending = BSPLINE_UNIFORM;
         }
 
@@ -7487,21 +7487,21 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           text_line.erase (0,17); SplineOrder[0] = atoi(text_line.c_str());
           getline (mesh_file, text_line);
           text_line.erase (0,17); SplineOrder[1] = atoi(text_line.c_str());
-          if (nDim == 3){
+          if (nDim == 3) {
             getline (mesh_file, text_line);
             text_line.erase (0,17); SplineOrder[2] = atoi(text_line.c_str());
           } else {
             SplineOrder[2] = 2;
           }
         }
-        if (rank == MASTER_NODE){
-          if (Blending == BSPLINE_UNIFORM){
+        if (rank == MASTER_NODE) {
+          if (Blending == BSPLINE_UNIFORM) {
             cout << "FFD Blending using B-Splines. ";
             cout << "Order: " << SplineOrder[0] << ", " << SplineOrder[1];
             if (nDim == 3) cout << ", " << SplineOrder[2];
             cout << ". " << endl;
           }
-          if (Blending == BEZIER){
+          if (Blending == BEZIER) {
             cout << "FFD Blending using Bezier Curves." << endl;
           }
         }
@@ -7745,9 +7745,9 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
   unsigned short nDim = geometry->GetnDim(), iDim;
-  unsigned short SplineOrder[3]={2,2,2};
+  unsigned short SplineOrder[3]={2,2,2 };
 
-  for (iDim = 0; iDim < 3; iDim++){
+  for (iDim = 0; iDim < 3; iDim++) {
     SplineOrder[iDim] = SU2_TYPE::Short(config->GetFFD_BSplineOrder()[iDim]);
   }
 
@@ -7812,14 +7812,14 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 			else cout << "Degrees: " << degree[0] << ", " << degree[1] << ", " << degree[2] << "." << endl;
     }
     
-    if (rank == MASTER_NODE){
-      if (config->GetFFD_Blending() == BSPLINE_UNIFORM){
+    if (rank == MASTER_NODE) {
+      if (config->GetFFD_Blending() == BSPLINE_UNIFORM) {
         cout << "FFD Blending using B-Splines. ";
         cout << "Order: " << SplineOrder[0] << ", " << SplineOrder[1];
         if (nDim == 3) cout << ", " << SplineOrder[2];
         cout << ". " << endl;
       }
-      if (config->GetFFD_Blending() == BEZIER){
+      if (config->GetFFD_Blending() == BEZIER) {
         cout << "FFD Blending using Bezier Curves." << endl;
       }
     }
@@ -8182,17 +8182,17 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
 
   unsigned short nDim = geometry[ZONE_0]->GetnDim();
   
-  for (iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone++){
+  for (iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone++) {
 
     /*--- Merge the parallel FFD info ---*/
   
     surface_movement[iZone]->MergeFFDInfo(geometry[iZone], config[iZone]);
 
-    if (iZone > 0){
+    if (iZone > 0) {
 
       /* --- Merge the per-zone FFD info from the other zones into ZONE_0 ---*/
 
-      for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++){
+      for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) {
 
         surface_movement[ZONE_0]->GlobalCoordX[iFFDBox].insert(surface_movement[ZONE_0]->GlobalCoordX[iFFDBox].end(),
                                                                surface_movement[iZone]->GlobalCoordX[iFFDBox].begin(),
@@ -8387,12 +8387,12 @@ CFreeFormDefBox::CFreeFormDefBox(unsigned short Degree[], unsigned short BSpline
 
   BlendingFunction = new CFreeFormBlending*[nDim];
 
-  if (kind_blending == BEZIER){
+  if (kind_blending == BEZIER) {
     BlendingFunction[0] = new CBezierBlending(lOrder, lOrder);
     BlendingFunction[1] = new CBezierBlending(mOrder, mOrder);
     BlendingFunction[2] = new CBezierBlending(nOrder, nOrder);
   }
-  if (kind_blending == BSPLINE_UNIFORM){
+  if (kind_blending == BSPLINE_UNIFORM) {
     BlendingFunction[0] = new CBSplineBlending(BSplineOrder[0], lOrder);
     BlendingFunction[1] = new CBSplineBlending(BSplineOrder[1], mOrder);
     BlendingFunction[2] = new CBSplineBlending(BSplineOrder[2], nOrder);
@@ -8422,7 +8422,7 @@ CFreeFormDefBox::~CFreeFormDefBox(void) {
 		delete [] Coord_Corner_Points[iCornerPoints];
 	delete [] Coord_Corner_Points;
 
-  for (iDim = 0; iDim < nDim; iDim++){
+  for (iDim = 0; iDim < nDim; iDim++) {
     delete BlendingFunction[iDim];
   }
   delete [] BlendingFunction;
@@ -9139,7 +9139,7 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
          ((ParamCoord[1] < 0.0) || (ParamCoord[1] > 1.0))  ||
          ((ParamCoord[2] < 0.0) || (ParamCoord[2] > 1.0)))) {
 
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         ParamCoord[iDim] = ParamCoordGuess[iDim];
       }
       SOR_Factor = 0.9*SOR_Factor;
@@ -9175,11 +9175,11 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
 
   unsigned short Index[5][7] = {
-    {0, 1, 2, 5, 0, 1, 2},
-    {0, 2, 7, 5, 0, 2, 7},
-    {0, 2, 3, 7, 0, 2, 3},
-    {0, 5, 7, 4, 0, 5, 7},
-    {2, 7, 5, 6, 2, 7, 5}};
+    {0, 1, 2, 5, 0, 1, 2 },
+    {0, 2, 7, 5, 0, 2, 7 },
+    {0, 2, 3, 7, 0, 2, 3 },
+    {0, 5, 7, 4, 0, 5, 7 },
+    {2, 7, 5, 6, 2, 7, 5 }};
   unsigned short nDim = geometry->GetnDim();
   
   for (iDim = 0; iDim < nDim; iDim++)
@@ -9209,11 +9209,11 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
     
   }
   
-  /*--- 1st tetrahedron {V0, V1, V2, V5}
-   2nd tetrahedron {V0, V2, V7, V5}
-   3th tetrahedron {V0, V2, V3, V7}
-   4th tetrahedron {V0, V5, V7, V4}
-   5th tetrahedron {V2, V7, V5, V6} ---*/
+  /*--- 1st tetrahedron { V0, V1, V2, V5 }
+   2nd tetrahedron { V0, V2, V7, V5 }
+   3th tetrahedron { V0, V2, V3, V7 }
+   4th tetrahedron { V0, V5, V7, V4 }
+   5th tetrahedron { V2, V7, V5, V6 } ---*/
   
   for (iVar = 0; iVar < 5; iVar++) {
     Inside = true;
@@ -9243,11 +9243,11 @@ void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, u
 	bool Inside = false;
 	
 	unsigned short Index[5][7] = {
-		{0, 1, 2, 5, 0, 1, 2},
-		{0, 2, 7, 5, 0, 2, 7},
-		{0, 2, 3, 7, 0, 2, 3},
-		{0, 5, 7, 4, 0, 5, 7},
-		{2, 7, 5, 6, 2, 7, 5}};
+		{0, 1, 2, 5, 0, 1, 2 },
+		{0, 2, 7, 5, 0, 2, 7 },
+		{0, 2, 3, 7, 0, 2, 3 },
+		{0, 5, 7, 4, 0, 5, 7 },
+		{2, 7, 5, 6, 2, 7, 5 }};
 	
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		if (config->GetMarker_All_DV(iMarker) == YES)
@@ -9257,11 +9257,11 @@ void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, u
 				
 				Coord = geometry->node[iPoint]->GetCoord();
 				
-				/*--- 1st tetrahedron {V0, V1, V2, V5}
-				 2nd tetrahedron {V0, V2, V7, V5}
-				 3th tetrahedron {V0, V2, V3, V7}
-				 4th tetrahedron {V0, V5, V7, V4}
-				 5th tetrahedron {V2, V7, V5, V6} ---*/
+				/*--- 1st tetrahedron { V0, V1, V2, V5 }
+				 2nd tetrahedron { V0, V2, V7, V5 }
+				 3th tetrahedron { V0, V2, V3, V7 }
+				 4th tetrahedron { V0, V5, V7, V4 }
+				 5th tetrahedron { V2, V7, V5, V6 } ---*/
 				
 				for (iVar = 0; iVar < 5; iVar++) {
 					Inside = true;
@@ -9384,17 +9384,17 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
 	return value;
 }
 
-CFreeFormBlending::CFreeFormBlending(){}
+CFreeFormBlending::CFreeFormBlending() { }
 
-CFreeFormBlending::~CFreeFormBlending(){}
+CFreeFormBlending::~CFreeFormBlending() { }
 
-CBSplineBlending::CBSplineBlending(short val_order, short n_controlpoints): CFreeFormBlending(){
+CBSplineBlending::CBSplineBlending(short val_order, short n_controlpoints): CFreeFormBlending() {
   SetOrder(val_order, n_controlpoints);
 }
 
-CBSplineBlending::~CBSplineBlending(){}
+CBSplineBlending::~CBSplineBlending() { }
 
-void CBSplineBlending::SetOrder(short val_order, short n_controlpoints){
+void CBSplineBlending::SetOrder(short val_order, short n_controlpoints) {
 
   unsigned short iKnot;
 
@@ -9412,10 +9412,10 @@ void CBSplineBlending::SetOrder(short val_order, short n_controlpoints){
 
   /*--- The next knots are equidistantly distributed in [0,1] ---*/
 
-  for (iKnot = 0; iKnot < nControl - Order; iKnot++){
+  for (iKnot = 0; iKnot < nControl - Order; iKnot++) {
     U[Order + iKnot] = su2double(iKnot+1)/su2double(nControl - Order + 1);
   }
-  for (iKnot = nControl - Order; iKnot < nControl; iKnot++){
+  for (iKnot = nControl - Order; iKnot < nControl; iKnot++) {
     U[Order + iKnot]  = 1.0;
   }
 
@@ -9424,31 +9424,31 @@ void CBSplineBlending::SetOrder(short val_order, short n_controlpoints){
   N.resize(Order, vector<su2double>(Order, 0.0));
 }
 
-su2double CBSplineBlending::GetBasis(short val_i, su2double val_t){
+su2double CBSplineBlending::GetBasis(short val_i, su2double val_t) {
 
   /*--- Evaluation is based on the algorithm from "The NURBS Book (Les Piegl and Wayne Tiller)" ---*/
 
   /*--- Special cases ---*/
 
-  if ((val_i == 0 && val_t == U[0]) || (val_i == (short)U.size()-1 && val_t == U.back())) {return 1.0;}
+  if ((val_i == 0 && val_t == U[0]) || (val_i == (short)U.size()-1 && val_t == U.back())) { return 1.0; }
 
   /*--- Local property of BSplines ---*/
 
-  if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])){ return 0.0;}
+  if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])) { return 0.0; }
 
   unsigned short j,k;
   su2double saved, temp;
 
-  for (j = 0; j < Order; j++){
+  for (j = 0; j < Order; j++) {
     if ((val_t >= U[val_i+j]) && (val_t < U[val_i+j+1])) N[j][0] = 1.0;
     else N[j][0] = 0;
   }
 
-  for (k = 1; k < Order; k++){
+  for (k = 1; k < Order; k++) {
     if (N[0][k-1] == 0.0) saved = 0.0;
     else saved = ((val_t - U[val_i])*N[0][k-1])/(U[val_i+k] - U[val_i]);
-    for (j = 0; j < Order-k; j++){
-      if (N[j+1][k-1] == 0.0){
+    for (j = 0; j < Order-k; j++) {
+      if (N[j+1][k-1] == 0.0) {
         N[j][k] = saved; saved = 0.0;
       } else {
         temp     = N[j+1][k-1]/(U[val_i+j+k+1] - U[val_i+j+1]);
@@ -9460,9 +9460,9 @@ su2double CBSplineBlending::GetBasis(short val_i, su2double val_t){
   return N[0][Order-1];
 }
 
-su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short val_order_der){
+su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short val_order_der) {
 
-  if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])){ return 0.0;}
+  if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])) { return 0.0; }
 
   /*--- Evaluate the i+p basis functions up to the order p (stored in the matrix N). ---*/
 
@@ -9470,14 +9470,14 @@ su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short va
 
   /*--- Use the recursive definition for the derivative (hardcoded for 1st and 2nd derivative). ---*/
 
-  if (val_order_der == 0){ return N[0][Order-1];}
+  if (val_order_der == 0) { return N[0][Order-1]; }
 
-  if (val_order_der == 1){
+  if (val_order_der == 1) {
     return (Order-1.0)/(1e-10 + U[val_i+Order-1] - U[val_i]  )*N[0][Order-2]
          - (Order-1.0)/(1e-10 + U[val_i+Order]   - U[val_i+1])*N[1][Order-2];
   }
 
-  if (val_order_der == 2 && Order > 2){
+  if (val_order_der == 2 && Order > 2) {
     const su2double left = (Order-2.0)/(1e-10 + U[val_i+Order-2] - U[val_i])  *N[0][Order-3]
                          - (Order-2.0)/(1e-10 + U[val_i+Order-1] - U[val_i+1])*N[1][Order-3];
 
@@ -9490,12 +9490,12 @@ su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short va
 
   /*--- Higher order derivatives are not implemented, so we exit if they are requested. ---*/
 
-  if (val_order_der > 2){
+  if (val_order_der > 2) {
     int rank = MASTER_NODE;
 #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE) {
       cout << "Higher order derivatives for BSplines are not implemented." << endl;
     }
     exit(EXIT_FAILURE);
@@ -9503,23 +9503,23 @@ su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short va
   return 0.0;
 }
 
-CBezierBlending::CBezierBlending(short val_order, short n_controlpoints){
+CBezierBlending::CBezierBlending(short val_order, short n_controlpoints) {
   SetOrder(val_order, n_controlpoints);
 }
 
-CBezierBlending::~CBezierBlending(){}
+CBezierBlending::~CBezierBlending() { }
 
-void CBezierBlending::SetOrder(short val_order, short n_controlpoints){
+void CBezierBlending::SetOrder(short val_order, short n_controlpoints) {
   Order  = val_order;
   Degree = Order - 1;
   binomial.resize(Order+1, 0.0);
 }
 
-su2double CBezierBlending::GetBasis(short val_i, su2double val_t){
+su2double CBezierBlending::GetBasis(short val_i, su2double val_t) {
   return GetBernstein(Degree, val_i, val_t);
 }
 
-su2double CBezierBlending::GetBernstein(short val_n, short val_i, su2double val_t){
+su2double CBezierBlending::GetBernstein(short val_n, short val_i, su2double val_t) {
 
   su2double value = 0.0;
 
@@ -9543,11 +9543,11 @@ su2double CBezierBlending::GetBernstein(short val_n, short val_i, su2double val_
   return value;
 }
 
-su2double CBezierBlending::GetDerivative(short val_i, su2double val_t, short val_order_der){
+su2double CBezierBlending::GetDerivative(short val_i, su2double val_t, short val_order_der) {
   return GetBernsteinDerivative(Degree, val_i, val_t, val_order_der);
 }
 
-su2double CBezierBlending::GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order_der){
+su2double CBezierBlending::GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order_der) {
 
   su2double value = 0.0;
 
@@ -9574,7 +9574,7 @@ su2double CBezierBlending::GetBernsteinDerivative(short val_n, short val_i, su2d
   return value;
 }
 
-su2double CBezierBlending::Binomial(unsigned short n, unsigned short m){
+su2double CBezierBlending::Binomial(unsigned short n, unsigned short m) {
 
   unsigned short i, j;
   su2double result;

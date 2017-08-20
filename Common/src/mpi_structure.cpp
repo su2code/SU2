@@ -136,7 +136,7 @@ void CAuxMPIWrapper::Wait(MPI_Request *request, MPI_Status *status) {
 
   /* Search for request in case there is also a aux. request and finalize this comm. ---*/
 
-  if((CommInfoIterator = CommInfoMap.find(request)) != CommInfoMap.end()) {
+  if ((CommInfoIterator = CommInfoMap.find(request)) != CommInfoMap.end()) {
     FinalizeCommunication(CommInfoIterator);
   }
 }
@@ -192,7 +192,7 @@ void CAuxMPIWrapper::Waitall(int nrequests, MPI_Request *request,
   /*--- Wait for aux. requests and finish communication ---*/
 
   for (int iVal = 0; iVal < nrequests; iVal++) {
-    if((CommInfoIterator = CommInfoMap.find(&request[iVal])) != CommInfoMap.end()) {
+    if ((CommInfoIterator = CommInfoMap.find(&request[iVal])) != CommInfoMap.end()) {
       FinalizeCommunication(CommInfoIterator);
     }
   }
@@ -207,7 +207,7 @@ void CAuxMPIWrapper::Waitany(int nrequests, MPI_Request *request,
 
   /*--- Wait for particular aux. request and finish communication ---*/
 
-  if((CommInfoIterator = CommInfoMap.find(&request[*index])) != CommInfoMap.end()) {
+  if ((CommInfoIterator = CommInfoMap.find(&request[*index])) != CommInfoMap.end()) {
     FinalizeCommunication(CommInfoIterator);
   }
 
@@ -331,7 +331,7 @@ void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
         delete [] RecvValueBuffer;
         delete [] RecvAuxBuffer;
       }
-    } else if(op == MPI_MAX || op == MPI_MIN) {
+    } else if (op == MPI_MAX || op == MPI_MIN) {
       ValRank* SendValLoc = new ValRank[count];
       ValRank* RecvValLoc = new ValRank[count];
       double temp = 0;

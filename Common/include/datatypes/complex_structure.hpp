@@ -51,21 +51,21 @@ inline double real(const double& r);
 
 class CComplexType : public std::complex<double> {
 public:
-  CComplexType() : std::complex<double>() {}
+  CComplexType() : std::complex<double>() { }
 
-  CComplexType(const double& d) : std::complex<double>(d) {}
+  CComplexType(const double& d) : std::complex<double>(d) { }
 
-  CComplexType(const double& r, const double& i) : std::complex<double>(r,i) {}
+  CComplexType(const double& r, const double& i) : std::complex<double>(r,i) { }
 
-  CComplexType(const std::complex<double>& z) : std::complex<double>(z) {}
+  CComplexType(const std::complex<double>& z) : std::complex<double>(z) { }
 
-  CComplexType(const std::complex<float>& z) : std::complex<double>(z) {}
+  CComplexType(const std::complex<float>& z) : std::complex<double>(z) { }
 
-  operator double() { return this->real();}
+  operator double() { return this->real(); }
 
-  operator int() { return int(this->real());}
+  operator int() { return int(this->real()); }
 
-  operator short() { return short(this->real());}
+  operator short() { return short(this->real()); }
 
   /*--- To get rid of some ambiguities, we need to reimplement some operators
    * (although they are already implemented for std::complex). ---*/

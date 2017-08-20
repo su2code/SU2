@@ -308,14 +308,14 @@ void CGeometry::TestGeometry(void) {
   para_file << endl;
   para_file << endl;
   
-  for (unsigned short iMarker =0; iMarker < nMarker; iMarker++) {
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
     para_file << "Marker index: " << iMarker << endl;
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       para_file << "   Vertex index: " << iVertex << endl;
       para_file << "      Point index: " << vertex[iMarker][iVertex]->GetNode() << endl;
       para_file << "      Point coordinates : ";
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        para_file << node[vertex[iMarker][iVertex]->GetNode()]->GetCoord(iDim) << "\t";}
+        para_file << node[vertex[iMarker][iVertex]->GetNode()]->GetCoord(iDim) << "\t"; }
       para_file << endl;
       vertex[iMarker][iVertex]->GetNormal(Normal);
       para_file << "         Face normal : ";
@@ -336,13 +336,13 @@ void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned l
   u = new su2double [n];
   
   if (yp1 > 0.99e30)			// The lower boundary condition is set either to be "nat
-    y2[0]=u[0]=0.0;			  // -ural"
+    y2[0]=u[0]= 0.0;			  // -ural"
   else {									// or else to have a specified first derivative.
     y2[0] = -0.5;
     u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
   }
   
-  for (i=2; i<=n-1; i++) {									//  This is the decomposition loop of the tridiagonal al-
+  for (i= 2; i<=n-1; i++) {									//  This is the decomposition loop of the tridiagonal al-
     sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);		//	gorithm. y2 and u are used for tem-
     p=sig*y2[i-2]+2.0;										//	porary storage of the decomposed
     y2[i-1]=(sig-1.0)/p;										//	factors.
@@ -355,13 +355,13 @@ void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned l
   }
   
   if (ypn > 0.99e30)						// The upper boundary condition is set either to be
-    qn=un=0.0;									// "natural"
+    qn=un= 0.0;									// "natural"
   else {												// or else to have a specified first derivative.
-    qn=0.5;
+    qn= 0.5;
     un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
   }
   y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-1; k>=1; k--)					// This is the backsubstitution loop of the tridiagonal
+  for (k=n-1; k>= 1; k--)					// This is the backsubstitution loop of the tridiagonal
     y2[k-1]=y2[k-1]*y2[k]+u[k-1];	  // algorithm.
   
   delete[] u;
@@ -646,7 +646,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
     if (config->GetMarker_All_GeoEval(iMarker) == YES) {
       
       for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-        PointIndex=0;
+        PointIndex= 0;
         
         for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
@@ -1208,7 +1208,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   
   unsigned short iMesh;
   geometry_container[MESH_0]->Set_MPI_Coord(config);
-  if (config->GetGrid_Movement()){
+  if (config->GetGrid_Movement()) {
     geometry_container[MESH_0]->Set_MPI_GridVel(config);
   }
   
@@ -1609,7 +1609,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
           Dist += (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim])*
           (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim]);
         }
-        if (Dist!=0.0) Dist = sqrt(Dist);
+        if (Dist!= 0.0) Dist = sqrt(Dist);
         else Dist = 0.0;
         if (Dist < MinDist) MinDist = Dist;
       }
@@ -1913,7 +1913,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   MPI_Status status, status2;
   unsigned long source;
-  int recv_count=0;
+  int recv_count= 0;
   
   int offset = 17;
   MPI_Status *send_stat = new MPI_Status[offset+size];
@@ -1996,17 +1996,17 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- Counters needed to track numbers of points, elements, etc. ---*/
   
-  unsigned long nPointTotal_r_tot=0;
-  unsigned long nPointDomainTotal_r_tot=0;
-  unsigned long nPointGhost_r_tot=0;
-  unsigned long nPointPeriodic_r_tot=0;
-  unsigned long nElemTotal_r_tot=0;
-  unsigned long nElemTriangle_r_tot=0;
-  unsigned long nElemQuadrilateral_r_tot=0;
-  unsigned long nElemTetrahedron_r_tot=0;
-  unsigned long nElemHexahedron_r_tot=0;
-  unsigned long nElemPrism_r_tot=0;
-  unsigned long nElemPyramid_r_tot=0;
+  unsigned long nPointTotal_r_tot= 0;
+  unsigned long nPointDomainTotal_r_tot= 0;
+  unsigned long nPointGhost_r_tot= 0;
+  unsigned long nPointPeriodic_r_tot= 0;
+  unsigned long nElemTotal_r_tot= 0;
+  unsigned long nElemTriangle_r_tot= 0;
+  unsigned long nElemQuadrilateral_r_tot= 0;
+  unsigned long nElemTetrahedron_r_tot= 0;
+  unsigned long nElemHexahedron_r_tot= 0;
+  unsigned long nElemPrism_r_tot= 0;
+  unsigned long nElemPyramid_r_tot= 0;
   
   unsigned long Buffer_Size_Coord = 0;
   unsigned long Buffer_Size_Color = 0;
@@ -2113,7 +2113,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Divide the elements in color list to speed up the grid partitioning ---*/
   
   map<unsigned long,unsigned long> Local_to_global_elem;
-  for (unsigned long i=0; i<geometry->GetGlobal_nElem(); i++) {
+  for (unsigned long i= 0; i<geometry->GetGlobal_nElem(); i++) {
     map<unsigned long, unsigned long>::const_iterator MI = geometry->Global_to_Local_Elem.find(i);
     if (MI != geometry->Global_to_Local_Elem.end()) {
       Local_to_global_elem[geometry->Global_to_Local_Elem[i]] = i;
@@ -2125,7 +2125,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long *local_colour_values = new unsigned long[geometry->GetGlobal_nPoint()];
   unsigned long *local_colour_temp   = new unsigned long[geometry->ending_node[rank]-geometry->starting_node[rank]];
   
-  for (unsigned long i=0; i<geometry->ending_node[rank]-geometry->starting_node[rank]; i++) {
+  for (unsigned long i= 0; i<geometry->ending_node[rank]-geometry->starting_node[rank]; i++) {
     local_colour_temp[i]=geometry->node[i]->GetColor();
     local_colour_values[geometry->starting_node[rank]+i]=local_colour_temp[i];
   }
@@ -2136,8 +2136,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  int comm_counter=0;
-  for (iDomain=0; iDomain < (unsigned long)size; iDomain++) {
+  int comm_counter= 0;
+  for (iDomain= 0; iDomain < (unsigned long)size; iDomain++) {
     if (iDomain != (unsigned long)rank) {
       SU2_MPI::Isend(local_colour_temp, geometry->ending_node[rank]-geometry->starting_node[rank],
                      MPI_UNSIGNED_LONG, iDomain, iDomain,  MPI_COMM_WORLD, &send_req[comm_counter]);
@@ -2145,7 +2145,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     }
   }
   
-  for (iDomain=0; iDomain < (unsigned long)size-1; iDomain++) {
+  for (iDomain= 0; iDomain < (unsigned long)size-1; iDomain++) {
     MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status2);
     source = status2.MPI_SOURCE;
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
@@ -2819,31 +2819,31 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       for (iter = 0; iter < nElemPyramid_s[iDomain]*N_POINTS_PYRAMID; iter++)
         Buffer_Receive_Pyramid_loc[iter] =  Buffer_Send_Pyramid[ElemPyramid_Counter*N_POINTS_PYRAMID+iter];
       
-      for (unsigned long i=0; i<nElemTotal_s[iDomain]; i++) {
+      for (unsigned long i= 0; i<nElemTotal_s[iDomain]; i++) {
         Buffer_Receive_GlobElem_loc[i]=Buffer_Send_GlobElem[ElemTotal_Counter+i];
       }
       
-      for (unsigned long i=0; i<nElemTriangle_s[iDomain]; i++) {
+      for (unsigned long i= 0; i<nElemTriangle_s[iDomain]; i++) {
         Buffer_Receive_Triangle_presence_loc[i]=Local_to_global_Triangle[ElemTriangle_Counter+i];
       }
       
-      for (unsigned long i=0; i<nElemQuadrilateral_s[iDomain]; i++) {
+      for (unsigned long i= 0; i<nElemQuadrilateral_s[iDomain]; i++) {
         Buffer_Receive_Quadrilateral_presence_loc[i]=Local_to_global_Quadrilateral[ElemQuadrilateral_Counter+i];
       }
       
-      for (unsigned long i=0; i<nElemTetrahedron_s[iDomain]; i++) {
+      for (unsigned long i= 0; i<nElemTetrahedron_s[iDomain]; i++) {
         Buffer_Receive_Tetrahedron_presence_loc[i]=Local_to_global_Tetrahedron[ElemTetrahedron_Counter+i];
       }
       
-      for (unsigned long i=0; i<nElemHexahedron_s[iDomain]; i++) {
+      for (unsigned long i= 0; i<nElemHexahedron_s[iDomain]; i++) {
         Buffer_Receive_Hexahedron_presence_loc[i]=Local_to_global_Hexahedron[ElemHexahedron_Counter+i];
       }
       
-      for (unsigned long i=0; i<nElemPrism_s[iDomain]; i++) {
+      for (unsigned long i= 0; i<nElemPrism_s[iDomain]; i++) {
         Buffer_Receive_Prism_presence_loc[i]=Local_to_global_Prism[ElemPrism_Counter+i];
       }
       
-      for (unsigned long i=0; i<nElemPyramid_s[iDomain]; i++) {
+      for (unsigned long i= 0; i<nElemPyramid_s[iDomain]; i++) {
         Buffer_Receive_Pyramid_presence_loc[i]=Local_to_global_Pyramid[ElemPyramid_Counter+i];
       }
     }
@@ -2930,7 +2930,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       /*--- Loop over all of the points that we have recv'd and store the
        coords, global index, and colors ---*/
       
-      unsigned long index=0;
+      unsigned long index= 0;
       for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
         
         /*--- If this rank owns the current point ---*/
@@ -4668,7 +4668,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   /*--- initialize pointers for turbomachinery computations  ---*/
   nSpanWiseSections       = new unsigned short[2];
   SpanWiseValue           = new su2double*[2];
-  for (iMarker = 0; iMarker < 2; iMarker++){
+  for (iMarker = 0; iMarker < 2; iMarker++) {
     nSpanWiseSections[iMarker]      = 0;
     SpanWiseValue[iMarker]          = NULL;
   }
@@ -4686,7 +4686,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   MinAngularCoord                   = new su2double*[nMarker];
   MinRelAngularCoord                = new su2double*[nMarker];
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
     nVertexSpan[iMarker]            = NULL;
     nTotVertexSpan[iMarker]         = NULL;
     turbovertex[iMarker]            = NULL;
@@ -4710,7 +4710,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   SpanAreaOut 			= new su2double*[config->GetnMarker_TurboPerformance()];
   TurboRadiusOut 		= new su2double*[config->GetnMarker_TurboPerformance()];
 
-  for (iMarker = 0; iMarker < config->GetnMarker_TurboPerformance(); iMarker++){
+  for (iMarker = 0; iMarker < config->GetnMarker_TurboPerformance(); iMarker++) {
     TangGridVelIn[iMarker]		= NULL;
     SpanAreaIn[iMarker]			= NULL;
     TurboRadiusIn[iMarker]		= NULL;
@@ -5622,7 +5622,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         for (iPoint = 0; iPoint < nPoint; iPoint++) {
           getline (mesh_file, text_line);
           istringstream point_line(text_line);
-          if (nDim == 2) {point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; }
+          if (nDim == 2) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; }
           else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; }
           
           /*--- Compute the CG of the actuator disk surface ---*/
@@ -5763,11 +5763,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         if (iCount == 2) {  stream_line >> nPoint;  stream_line >> nPointDomain; }
         else if (iCount == 1) { stream_line >> nPoint; }
         
-        Counter =0;
+        Counter = 0;
         for (iPoint = 0; iPoint < nPoint; iPoint++) {
           getline (mesh_file, text_line);
           istringstream point_line(text_line);
-          if (nDim == 2) {point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; }
+          if (nDim == 2) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; }
           else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; }
           
           if (MapVolumePointBool[iPoint]) {
@@ -6215,7 +6215,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
+                for (unsigned short j= 0; j<N_POINTS_TRIANGLE; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_triangle[j]);
                 }
 #endif
@@ -6346,7 +6346,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                for (unsigned short j= 0; j<N_POINTS_TETRAHEDRON; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
                 }
 #endif
@@ -6602,14 +6602,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Building the graph adjacency structure." << endl;
   
-  unsigned long loc_adjc_size=0;
+  unsigned long loc_adjc_size= 0;
   vector<unsigned long> adjac_vec;
   unsigned long adj_elem_size;
   
   xadj = new idx_t [npoint_procs[rank]+1];
-  xadj[0]=0;
+  xadj[0]= 0;
   vector<unsigned long> temp_adjacency;
-  unsigned long local_count=0;
+  unsigned long local_count= 0;
   
   /*--- Here, we transfer the adjacency information from a multi-dim vector
    on a node-by-node basis into a single vector container. First, we sort
@@ -7041,7 +7041,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         Tag_to_Marker = new string [nMarker_Max];
         
         bool duplicate = false;
-        iMarker=0;
+        iMarker= 0;
         do {
           
           getline (mesh_file, text_line);
@@ -7961,7 +7961,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         
         if (rank == MASTER_NODE) {
           for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ )
-            if (isMixed[ii]) {currentElem = "Mixed"; break;}
+            if (isMixed[ii]) { currentElem = "Mixed"; break; }
           cout << "Loading section " << sectionNames[j-1][s-1];
           cout << " of element type " << currentElem << "." << endl;
         }
@@ -8176,7 +8176,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
           int *nElem_Flag = new int[size];
           
-          for (int ii=0; ii < size; ii++) {
+          for (int ii= 0; ii < size; ii++) {
             nElem_Send[ii] = 0;
             nElem_Recv[ii] = 0;
             nElem_Flag[ii]= -1;
@@ -8227,7 +8227,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
            communications simpler. ---*/
           
           int nSends = 0, nRecvs = 0;
-          for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+          for (int ii= 0; ii < size; ii++) nElem_Flag[ii] = -1;
           
           for (int ii = 0; ii < size; ii++) {
             
@@ -8252,7 +8252,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
            position as we load up the send buffer. ---*/
           
           unsigned long *index = new unsigned long[size];
-          for (int ii=0; ii < size; ii++) index[ii] = connSize*nElem_Send[ii];
+          for (int ii= 0; ii < size; ii++) index[ii] = connSize*nElem_Send[ii];
           
           /*--- Loop through our elements and load the elems and their
            additional data that we will send to the other procs. ---*/
@@ -8319,7 +8319,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           send_req = new MPI_Request[nSends];
           recv_req = new MPI_Request[nRecvs];
           unsigned long iMessage = 0;
-          for (int ii=0; ii<size; ii++) {
+          for (int ii= 0; ii<size; ii++) {
             if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
               int ll     = connSize*nElem_Recv[ii];
               int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
@@ -8335,7 +8335,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           /*--- Launch the non-blocking sends of the connectivity. ---*/
           
           iMessage = 0;
-          for (int ii=0; ii<size; ii++) {
+          for (int ii= 0; ii<size; ii++) {
             if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
               int ll = connSize*nElem_Send[ii];
               int kk = nElem_Send[ii+1] - nElem_Send[ii];
@@ -8493,9 +8493,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_TRIANGLE+1][i];
-              for (unsigned short ii=0; ii<N_POINTS_TRIANGLE; ii++) {
+              for (unsigned short ii= 0; ii<N_POINTS_TRIANGLE; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
-                  for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
+                  for (unsigned short j= 0; j<N_POINTS_TRIANGLE; j++) {
                     if (ii!=j) {
                       adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
@@ -8514,7 +8514,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               }
               global_id = connElems[k][s][N_POINTS_QUADRILATERAL+1][i];
               
-              for (unsigned short ii=0; ii<N_POINTS_QUADRILATERAL; ii++) {
+              for (unsigned short ii= 0; ii<N_POINTS_QUADRILATERAL; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   
                   /*--- Build adjacency assuming the VTK connectivity ---*/
@@ -8536,9 +8536,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_TETRAHEDRON+1][i];
-              for (unsigned short ii=0; ii<N_POINTS_TETRAHEDRON; ii++) {
+              for (unsigned short ii= 0; ii<N_POINTS_TETRAHEDRON; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
-                  for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                  for (unsigned short j= 0; j<N_POINTS_TETRAHEDRON; j++) {
                     if (ii!=j) {
                       adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
@@ -8557,7 +8557,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               }
               global_id = connElems[k][s][N_POINTS_HEXAHEDRON+1][i];
               
-              for (unsigned short ii=0; ii<N_POINTS_HEXAHEDRON; ii++) {
+              for (unsigned short ii= 0; ii<N_POINTS_HEXAHEDRON; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   
                   /*--- Build adjacency assuming the VTK connectivity ---*/
@@ -8586,7 +8586,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               }
               global_id = connElems[k][s][N_POINTS_PRISM+1][i];
               
-              for (unsigned short ii=0; ii<N_POINTS_PRISM; ii++) {
+              for (unsigned short ii= 0; ii<N_POINTS_PRISM; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   
                   /*--- Build adjacency assuming the VTK connectivity ---*/
@@ -8615,7 +8615,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               }
               global_id = connElems[k][s][N_POINTS_PYRAMID+1][i];
               
-              for (unsigned short ii=0; ii<N_POINTS_PYRAMID; ii++) {
+              for (unsigned short ii= 0; ii<N_POINTS_PYRAMID; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   
                   /*--- Build adjacency assuming the VTK connectivity ---*/
@@ -8694,19 +8694,19 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Building the graph adjacency structure." << endl;
   
-  unsigned long loc_adjc_size=0;
+  unsigned long loc_adjc_size= 0;
   vector<unsigned long> adjac_vec;
   unsigned long adj_elem_size;
   vector<unsigned long>::iterator it;
   
   xadj = new idx_t[npoint_procs[rank]+1];
-  xadj[0]=0;
+  xadj[0]= 0;
   vector<unsigned long> temp_adjacency;
-  unsigned long local_count=0;
+  unsigned long local_count= 0;
   
   for (unsigned long i = 0; i < nPoint; i++) {
     
-    for (unsigned long j=0; j<adj_nodes[i].size(); j++) {
+    for (unsigned long j= 0; j<adj_nodes[i].size(); j++) {
       temp_adjacency.push_back(adj_nodes[i][j]);
     }
     
@@ -8718,7 +8718,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     xadj[local_count+1]=xadj[local_count]+loc_adjc_size;
     local_count++;
     
-    for (unsigned long j=0; j<loc_adjc_size; j++) {
+    for (unsigned long j= 0; j<loc_adjc_size; j++) {
       adjac_vec.push_back(temp_adjacency[j]);
     }
     temp_adjacency.clear();
@@ -9315,7 +9315,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
           find = false;
           for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
             Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
-            if (Point_Surface == Point_Domain) {find = true; break;}
+            if (Point_Surface == Point_Domain) { find = true; break; }
           }
           if (!find) break;
         }
@@ -9458,8 +9458,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
 
   unsigned long nVertex_SolidWall = 0;
-  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+  for (unsigned short iMarker= 0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if ( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       nVertex_SolidWall += GetnVertex(iMarker);
     }
@@ -9475,13 +9475,13 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    and their local point IDs. ---*/
 
   unsigned long ii = 0, jj = 0;
-  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+  for (unsigned short iMarker= 0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if ( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
-      for(unsigned long iVertex=0; iVertex<GetnVertex(iMarker); ++iVertex) {
+      for (unsigned long iVertex= 0; iVertex<GetnVertex(iMarker); ++iVertex) {
         unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
-        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        for (unsigned short iDim= 0; iDim<nDim; ++iDim)
           Coord_bound[ii++] = node[iPoint]->GetCoord(iDim);
       }
     }
@@ -9495,12 +9495,12 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    of the no-slip boundary nodes. Store the minimum distance to the wall
    for each interior mesh node. ---*/
 
-  if( WallADT.IsEmpty() ) {
+  if ( WallADT.IsEmpty() ) {
   
     /*--- No solid wall boundary nodes in the entire mesh.
      Set the wall distance to zero for all nodes. ---*/
     
-    for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint)
+    for (unsigned long iPoint= 0; iPoint<GetnPoint(); ++iPoint)
       node[iPoint]->SetWall_Distance(0.0);
   }
   else {
@@ -9508,7 +9508,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
     
-    for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
+    for (unsigned long iPoint= 0; iPoint<GetnPoint(); ++iPoint) {
       
       su2double dist;
       unsigned long pointID;
@@ -10059,36 +10059,36 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
   nSpan = 0;
   nSpan_loc = 0;
-  if (nDim == 2){
+  if (nDim == 2) {
     nSpanWiseSections[marker_flag-1] = 1;
     //TODO (turbo) make it more genral
-    if(marker_flag == OUTFLOW)	config->SetnSpanWiseSections(1);
+    if (marker_flag == OUTFLOW)	config->SetnSpanWiseSections(1);
 
     /*---Initilize the vector of span-wise values that will be ordered ---*/
     SpanWiseValue[marker_flag -1] = new su2double[1];
-    for (iSpan = 0; iSpan < 1; iSpan++){
+    for (iSpan = 0; iSpan < 1; iSpan++) {
       SpanWiseValue[marker_flag -1][iSpan] = 0;
     }
   }
-  else{
-    if(SpanWise_Kind == AUTOMATIC){
+  else {
+    if (SpanWise_Kind == AUTOMATIC) {
       /*--- loop to find inflow of outflow marker---*/
-      for (iMarker = 0; iMarker < nMarker; iMarker++){
-        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+        for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
               for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
                 iPoint = vertex[iMarker][iVertex]->GetNode();
 
                 /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
                  * in order to caount the number of Span ---*/
-                for (jMarker = 0; jMarker < nMarker; jMarker++){
+                for (jMarker = 0; jMarker < nMarker; jMarker++) {
                   if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
                     SendRecv = config->GetMarker_All_SendRecv(jMarker);
                     jVertex = node[iPoint]->GetVertex(jMarker);
                     if (jVertex != -1) {
                       isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
-                      if (isPeriodic && (SendRecv < 0)){
+                      if (isPeriodic && (SendRecv < 0)) {
                         nSpan++;
 
                       }
@@ -10118,28 +10118,28 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
       nSpanWiseSections[marker_flag -1] = nSpan;
       valueSpan = new su2double[nSpan];
 
-      for (iSpan = 0; iSpan < nSpan; iSpan ++ ){
+      for (iSpan = 0; iSpan < nSpan; iSpan ++ ) {
         valueSpan[iSpan] = -1001.0;
       }
 
 
       /*--- store the local span-wise value for each processor ---*/
       nSpan_loc = 0;
-      for (iMarker = 0; iMarker < nMarker; iMarker++){
-        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+        for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
               for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
                 iPoint = vertex[iMarker][iVertex]->GetNode();
-                for (jMarker = 0; jMarker < nMarker; jMarker++){
+                for (jMarker = 0; jMarker < nMarker; jMarker++) {
                   if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
                     SendRecv = config->GetMarker_All_SendRecv(jMarker);
                     jVertex = node[iPoint]->GetVertex(jMarker);
                     if (jVertex != -1) {
                       isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
-                      if (isPeriodic && (SendRecv < 0)){
+                      if (isPeriodic && (SendRecv < 0)) {
                         coord = node[iPoint]->GetCoord();
-                        switch (config->GetKind_TurboMachinery(val_iZone)){
+                        switch (config->GetKind_TurboMachinery(val_iZone)) {
                         case CENTRIFUGAL:
                           valueSpan[nSpan_loc] = coord[2];
                           break;
@@ -10150,18 +10150,18 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                           valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                           break;
                         case CENTRIPETAL_AXIAL:
-                          if (marker_flag == OUTFLOW){
+                          if (marker_flag == OUTFLOW) {
                             valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                           }
-                          else{
+                          else {
                             valueSpan[nSpan_loc] = coord[2];
                           }
                           break;
                         case AXIAL_CENTRIFUGAL:
-                          if (marker_flag == INFLOW){
+                          if (marker_flag == INFLOW) {
                             valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                           }
-                          else{
+                          else {
                             valueSpan[nSpan_loc] = coord[2];
                           }
                           break;
@@ -10184,18 +10184,18 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
       MyTotValueSpan    				= new su2double[nSpan_max*size];
       MyValueSpan								= new su2double[nSpan_max];
       My_nSpan_loc							= new int[size];
-      for(iSpan = 0; iSpan < nSpan_max; iSpan++){
+      for (iSpan = 0; iSpan < nSpan_max; iSpan++) {
         MyValueSpan[iSpan] = -1001.0;
-        for (iSize = 0; iSize< size; iSize++){
+        for (iSize = 0; iSize< size; iSize++) {
           MyTotValueSpan[iSize*nSpan_max + iSpan] = -1001.0;
         }
       }
 
-      for(iSpan = 0; iSpan <nSpan_loc; iSpan++){
+      for (iSpan = 0; iSpan <nSpan_loc; iSpan++) {
         MyValueSpan[iSpan] = valueSpan[iSpan];
       }
 
-      for(iSpan = 0; iSpan <nSpan; iSpan++){
+      for (iSpan = 0; iSpan <nSpan; iSpan++) {
         valueSpan[iSpan] = -1001.0;
       }
 
@@ -10203,8 +10203,8 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
       SU2_MPI::Allgather(&nSpan_loc, 1 , MPI_INT, My_nSpan_loc, 1, MPI_INT, MPI_COMM_WORLD);
 
       jSpan = 0;
-      for (iSize = 0; iSize< size; iSize++){
-        for(iSpan = 0; iSpan < My_nSpan_loc[iSize]; iSpan++){
+      for (iSize = 0; iSize< size; iSize++) {
+        for (iSpan = 0; iSpan < My_nSpan_loc[iSize]; iSpan++) {
           valueSpan[jSpan] = MyTotValueSpan[iSize*nSpan_max + iSpan];
           jSpan++;
         }
@@ -10216,8 +10216,8 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
       // check if the value are gathered correctly
       //
-      //  for (iSpan = 0; iSpan < nSpan; iSpan++){
-      //  	if(rank == MASTER_NODE){
+      //  for (iSpan = 0; iSpan < nSpan; iSpan++) {
+      //  	if (rank == MASTER_NODE) {
       //  		cout << setprecision(16)<<  iSpan +1 << " with a value of " <<valueSpan[iSpan]<< " at flag " << marker_flag <<endl;
       //  	}
       //  }
@@ -10225,22 +10225,22 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
       /*--- Find the minimum value among the span-wise values  ---*/
       min = 10.0E+06;
-      for (iSpan = 0; iSpan < nSpan; iSpan++){
-        if(valueSpan[iSpan]< min) min = valueSpan[iSpan];
+      for (iSpan = 0; iSpan < nSpan; iSpan++) {
+        if (valueSpan[iSpan]< min) min = valueSpan[iSpan];
       }
 
       /*---Initilize the vector of span-wise values that will be ordered ---*/
       SpanWiseValue[marker_flag -1] = new su2double[nSpan];
-      for (iSpan = 0; iSpan < nSpan; iSpan++){
+      for (iSpan = 0; iSpan < nSpan; iSpan++) {
         SpanWiseValue[marker_flag -1][iSpan] = 0;
       }
 
       /*---Ordering the vector of span-wise values---*/
       SpanWiseValue[marker_flag -1][0] = min;
-      for (iSpan = 1; iSpan < nSpan; iSpan++){
+      for (iSpan = 1; iSpan < nSpan; iSpan++) {
         min = 10.0E+06;
-        for (jSpan = 0; jSpan < nSpan; jSpan++){
-          if((valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) < min && (valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) > EPS){
+        for (jSpan = 0; jSpan < nSpan; jSpan++) {
+          if ((valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) < min && (valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) > EPS) {
             min    = valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1];
             kSpan = jSpan;
           }
@@ -10251,31 +10251,31 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
       delete [] valueSpan;
     }
     /*--- Compute equispaced Span-wise sections using number of section specified by the User---*/
-    else{
+    else {
       /*--- Initialize number of span---*/
       nSpanWiseSections[marker_flag-1] = config->Get_nSpanWiseSections_User();
       SpanWiseValue[marker_flag -1] = new su2double[config->Get_nSpanWiseSections_User()];
-      for (iSpan = 0; iSpan < config->Get_nSpanWiseSections_User(); iSpan++){
+      for (iSpan = 0; iSpan < config->Get_nSpanWiseSections_User(); iSpan++) {
         SpanWiseValue[marker_flag -1][iSpan] = 0;
       }
       /*--- Compute maximum and minimum value span-wise---*/
       min = 10.0E+06;
       max = -10.0E+06;
-      for (iMarker = 0; iMarker < nMarker; iMarker++){
-        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+        for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
               for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
                 iPoint = vertex[iMarker][iVertex]->GetNode();
-                for (jMarker = 0; jMarker < nMarker; jMarker++){
+                for (jMarker = 0; jMarker < nMarker; jMarker++) {
                   if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
                     SendRecv = config->GetMarker_All_SendRecv(jMarker);
                     jVertex = node[iPoint]->GetVertex(jMarker);
                     if (jVertex != -1) {
                       isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
-                      if (isPeriodic && (SendRecv < 0)){
+                      if (isPeriodic && (SendRecv < 0)) {
                         coord = node[iPoint]->GetCoord();
-                        switch (config->GetKind_TurboMachinery(val_iZone)){
+                        switch (config->GetKind_TurboMachinery(val_iZone)) {
                         case CENTRIFUGAL: case CENTRIPETAL:
                           if (coord[2] < min) min = coord[2];
                           if (coord[2] > max) max = coord[2];
@@ -10286,24 +10286,24 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                           if (radius > max) max = radius;
                           break;
                         case CENTRIPETAL_AXIAL:
-                          if (marker_flag == OUTFLOW){
+                          if (marker_flag == OUTFLOW) {
                             radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                             if (radius < min) min = radius;
                             if (radius > max) max = radius;
                           }
-                          else{
+                          else {
                             if (coord[2] < min) min = coord[2];
                             if (coord[2] > max) max = coord[2];
                           }
                           break;
 
                         case AXIAL_CENTRIFUGAL:
-                          if (marker_flag == INFLOW){
+                          if (marker_flag == INFLOW) {
                             radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                             if (radius < min) min = radius;
                             if (radius > max) max = radius;
                           }
-                          else{
+                          else {
                             if (coord[2] < min) min = coord[2];
                             if (coord[2] > max) max = coord[2];
                           }
@@ -10331,21 +10331,21 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
       //  	cout <<"max  " << max << endl;
       /*--- compute height value for each spanwise section---*/
       delta = (max - min)/(nSpanWiseSections[marker_flag-1] -1);
-      for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+      for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
         SpanWiseValue[marker_flag - 1][iSpan]= min + delta*iSpan;
       }
     }
 
 
-    if(marker_flag == OUTFLOW){
-      if(nSpanWiseSections[INFLOW -1] != nSpanWiseSections[OUTFLOW - 1]){
-        if(rank == MASTER_NODE){
+    if (marker_flag == OUTFLOW) {
+      if (nSpanWiseSections[INFLOW -1] != nSpanWiseSections[OUTFLOW - 1]) {
+        if (rank == MASTER_NODE) {
           cout << " At the moment only turbomachinery with the same amount of span-wise section can be simulated" << endl;
           cout <<"nSpan inflow "<< nSpanWiseSections[INFLOW] << " nSpan outflow " << nSpanWiseSections[OUTFLOW]<<endl;
         }
         exit(EXIT_FAILURE);
       }
-      else{
+      else {
         config->SetnSpanWiseSections(nSpanWiseSections[OUTFLOW -1]);
       }
     }
@@ -10398,7 +10398,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
   nTotVertex_gb      = new int[nSpanWiseSections[marker_flag-1]];
   nVertexSpanHalo    = new int[nSpanWiseSections[marker_flag-1]];
-  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
     nTotVertex_gb[iSpan]   = -1;
     nVertexSpanHalo[iSpan] = 0;
     minAngPitch[iSpan]     = 10.0E+06;
@@ -10419,25 +10419,25 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   /*--- Initialize the new Vertex structure. The if statement ensures that these vectors are initialized
    * only once even if the routine is called more than once.---*/
 
-  if (allocate){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+  if (allocate) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
             nVertexSpan[iMarker]                 = new long[nSpanWiseSections[marker_flag-1]];
             turbovertex[iMarker]                 = new CTurboVertex** [nSpanWiseSections[marker_flag-1]];
             nTotVertexSpan[iMarker]              = new unsigned long [nSpanWiseSections[marker_flag-1] +1];
             MaxAngularCoord[iMarker]             = new su2double [nSpanWiseSections[marker_flag-1]];
             MinAngularCoord[iMarker]             = new su2double [nSpanWiseSections[marker_flag-1]];
             MinRelAngularCoord[iMarker]          = new su2double [nSpanWiseSections[marker_flag-1]];
-            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+            for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
               nVertexSpan[iMarker][iSpan]        = 0;
               turbovertex[iMarker][iSpan]        = NULL;
               MinAngularCoord[iMarker][iSpan]    = 10.0E+06;
               MaxAngularCoord[iMarker][iSpan]    = -10.0E+06;
               MinRelAngularCoord[iMarker][iSpan] = 10.0E+06;
             }
-            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1] +1; iSpan++){
+            for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1] +1; iSpan++) {
               nTotVertexSpan[iMarker][iSpan]     = 0;
             }
           }
@@ -10448,23 +10448,23 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
   //this works only for turbomachinery rotating around the Z-Axes.
   // the reordering algorithm pitch-wise assumes that X-coordinate of each boundary vertex is positive so that reordering can be based on the Y-coordinate.
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
 
             /*--- compute the amount of vertexes for each span-wise section to initialize the CTurboVertex pointers and auxiliary pointers  ---*/
             for (iVertex = 0; (unsigned long)iVertex  < nVertex[iMarker]; iVertex++) {
               iPoint = vertex[iMarker][iVertex]->GetNode();
-              if (nDim == 3){
+              if (nDim == 3) {
                 dist = 10E+06;
                 jSpan = -1;
                 coord = node[iPoint]->GetCoord();
 
-                switch (config->GetKind_TurboMachinery(val_iZone)){
+                switch (config->GetKind_TurboMachinery(val_iZone)) {
                 case CENTRIFUGAL: case CENTRIPETAL:
-                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                    if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                    if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))) {
                       dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
                       jSpan=iSpan;
                     }
@@ -10472,26 +10472,26 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   break;
                 case AXIAL:
                   radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                    if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                    if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))) {
                       dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
                       jSpan=iSpan;
                     }
                   }
                   break;
                 case CENTRIPETAL_AXIAL:
-                  if (marker_flag == OUTFLOW){
+                  if (marker_flag == OUTFLOW) {
                     radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))) {
                         dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
                         jSpan=iSpan;
                       }
                     }
                   }
-                  else{
-                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                  else {
+                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))) {
                         dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
                         jSpan=iSpan;
                       }
@@ -10500,18 +10500,18 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   break;
 
                 case AXIAL_CENTRIFUGAL:
-                  if (marker_flag == INFLOW){
+                  if (marker_flag == INFLOW) {
                     radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))) {
                         dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
                         jSpan=iSpan;
                       }
                     }
                   }
-                  else{
-                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                  else {
+                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))) {
                         dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
                         jSpan=iSpan;
                       }
@@ -10522,21 +10522,21 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               }
 
               /*--- 2D problem do not need span-wise separation---*/
-              else{
+              else {
                 jSpan = 0;
               }
 
-              if(node[iPoint]->GetDomain()){
+              if (node[iPoint]->GetDomain()) {
                 nVertexSpan[iMarker][jSpan]++;
               }
               nVertexSpanHalo[jSpan]++;
             }
 
             /*--- initialize the CTurboVertex pointers and auxiliary pointers  ---*/
-            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-              if (allocate){
+            for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+              if (allocate) {
                 turbovertex[iMarker][iSpan] = new CTurboVertex* [nVertexSpan[iMarker][iSpan]];
-                for (iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++){
+                for (iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++) {
                   turbovertex[iMarker][iSpan][iVertex] = NULL;
                 }
               }
@@ -10546,7 +10546,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               checkAssign[iSpan]                       = new bool [nVertexSpanHalo[iSpan]];
               area[iSpan]                              = new su2double [nVertexSpanHalo[iSpan]];
               unitnormal[iSpan]                        = new su2double* [nVertexSpanHalo[iSpan]];
-              for (iVertex = 0; iVertex < nVertexSpanHalo[iSpan]; iVertex++){
+              for (iVertex = 0; iVertex < nVertexSpanHalo[iSpan]; iVertex++) {
                 unitnormal[iSpan][iVertex]             = new su2double [nDim];
               }
               angPitch[iSpan]                          = new su2double [nVertexSpanHalo[iSpan]];
@@ -10557,15 +10557,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
             /*--- store the vertexes in a ordered manner in span-wise directions but not yet ordered pitch-wise ---*/
             for (iVertex = 0; (unsigned long)iVertex < nVertex[iMarker]; iVertex++) {
               iPoint = vertex[iMarker][iVertex]->GetNode();
-              if(nDim == 3){
+              if (nDim == 3) {
                 dist  = 10E+06;
                 jSpan = -1;
 
                 coord = node[iPoint]->GetCoord();
-                switch (config->GetKind_TurboMachinery(val_iZone)){
+                switch (config->GetKind_TurboMachinery(val_iZone)) {
                 case CENTRIFUGAL: case CENTRIPETAL:
-                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                    if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                    if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))) {
                       dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
                       jSpan=iSpan;
                     }
@@ -10573,25 +10573,25 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   break;
                 case AXIAL:
                   radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                    if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                    if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))) {
                       dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
                       jSpan=iSpan;
                     }
                   }
                   break;
                 case CENTRIPETAL_AXIAL:
-                  if(marker_flag == OUTFLOW){
+                  if (marker_flag == OUTFLOW) {
                     radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))) {
                         dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
                         jSpan=iSpan;
                       }
                     }
-                  }else{
-                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                  }else {
+                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))) {
                         dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
                         jSpan=iSpan;
                       }
@@ -10600,17 +10600,17 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   break;
 
                 case AXIAL_CENTRIFUGAL:
-                  if(marker_flag == INFLOW){
+                  if (marker_flag == INFLOW) {
                     radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))) {
                         dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
                         jSpan=iSpan;
                       }
                     }
-                  }else{
-                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                  }else {
+                    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))) {
                         dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
                         jSpan=iSpan;
                       }
@@ -10620,7 +10620,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 }
               }
               /*--- 2D problem do not need span-wise separation---*/
-              else{
+              else {
                 jSpan = 0;
               }
               /*--- compute the face area associated with the vertex ---*/
@@ -10635,7 +10635,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               disordered[jSpan][nVertexSpanHalo[jSpan]]  = iPoint;
               oldVertex3D[jSpan][nVertexSpanHalo[jSpan]] = iVertex;
               area[jSpan][nVertexSpanHalo[jSpan]]        = Area;
-              for (iDim = 0; iDim < nDim; iDim++){
+              for (iDim = 0; iDim < nDim; iDim++) {
                 unitnormal[jSpan][nVertexSpanHalo[jSpan]][iDim] = NormalArea[iDim];
               }
               checkAssign[jSpan][nVertexSpanHalo[jSpan]] = false;
@@ -10644,22 +10644,22 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
             /*--- using the auxiliary container reordered the vertexes pitch-wise direction at each span ---*/
             // the reordering algorithm can be based on the Y-coordinate.
-            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+            for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
 
               /*--- find the local minimum and maximum pitch-wise for each processor---*/
               min    = 10E+06;
               minInt = 10E+06;
               max    = -10E+06;
-              for(iSpanVertex = 0; iSpanVertex < nVertexSpanHalo[iSpan]; iSpanVertex++){
+              for (iSpanVertex = 0; iSpanVertex < nVertexSpanHalo[iSpan]; iSpanVertex++) {
                 iPoint = disordered[iSpan][iSpanVertex];
                 coord = node[iPoint]->GetCoord();
                 /*--- find nodes at minimum pitch among all nodes---*/
-                if (coord[1]<min){
+                if (coord[1]<min) {
                   min = coord[1];
-                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
                     MinAngularCoord[iMarker][iSpan] = coord[1];
                   }
-                  else{
+                  else {
                   MinAngularCoord[iMarker][iSpan] = atan(coord[1]/coord[0]);
                   }
                   minAngPitch[iSpan]= MinAngularCoord[iMarker][iSpan];
@@ -10667,26 +10667,26 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 }
 
                 /*--- find nodes at minimum pitch among the internal nodes---*/
-                if (coord[1]<minInt){
-                  if(node[iPoint]->GetDomain()){
+                if (coord[1]<minInt) {
+                  if (node[iPoint]->GetDomain()) {
                     minInt = coord[1];
-                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
                       minIntAngPitch[iSpan] = coord[1];
                     }
-                    else{
+                    else {
                       minIntAngPitch[iSpan] = atan(coord[1]/coord[0]);
                     }
                   }
                 }
 
                 /*--- find nodes at maximum pitch among the internal nodes---*/
-                if (coord[1]>max){
-                  if(node[iPoint]->GetDomain()){
+                if (coord[1]>max) {
+                  if (node[iPoint]->GetDomain()) {
                     max =coord[1];
-                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
                       MaxAngularCoord[iMarker][iSpan] = coord[1];
                     }
-                    else{
+                    else {
                       MaxAngularCoord[iMarker][iSpan] = atan(coord[1]/coord[0]);
                     }
                     maxAngPitch[iSpan]= MaxAngularCoord[iMarker][iSpan];
@@ -10697,27 +10697,27 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               iInternalVertex = 0;
 
               /*--- reordering the vertex pitch-wise, store the ordered vertexes span-wise and pitch-wise---*/
-              for(iSpanVertex = 0; iSpanVertex<nVertexSpanHalo[iSpan]; iSpanVertex++){
+              for (iSpanVertex = 0; iSpanVertex<nVertexSpanHalo[iSpan]; iSpanVertex++) {
                 dist = 10E+06;
                 ordered[iSpan][iSpanVertex] = disordered[iSpan][kSpanVertex];
                 checkAssign[iSpan][kSpanVertex] = true;
                 coord = node[ordered[iSpan][iSpanVertex]]->GetCoord();
                 target = coord[1];
-                if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
                    angPitch[iSpan][iSpanVertex]=coord[1];
                 }
-                else{
+                else {
                   angPitch[iSpan][iSpanVertex]=atan(coord[1]/coord[0]);
                 }
-                if(iSpanVertex == 0){
-                  deltaAngPitch[iSpan][iSpanVertex]=0.0;
+                if (iSpanVertex == 0) {
+                  deltaAngPitch[iSpan][iSpanVertex]= 0.0;
                 }
-                else{
+                else {
                   deltaAngPitch[iSpan][iSpanVertex]= angPitch[iSpan][iSpanVertex] - angPitch[iSpan][iSpanVertex - 1];
                 }
                 /*---create turbovertex structure only for the internal nodes---*/
-                if(node[ordered[iSpan][iSpanVertex]]->GetDomain()){
-                  if (allocate){
+                if (node[ordered[iSpan][iSpanVertex]]->GetDomain()) {
+                  if (allocate) {
                     turbovertex[iMarker][iSpan][iInternalVertex] = new CTurboVertex(ordered[iSpan][iSpanVertex], nDim);
                   }
                   turbovertex[iMarker][iSpan][iInternalVertex]->SetArea(area[iSpan][kSpanVertex]);
@@ -10725,15 +10725,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   turbovertex[iMarker][iSpan][iInternalVertex]->SetOldVertex(oldVertex3D[iSpan][kSpanVertex]);
                   turbovertex[iMarker][iSpan][iInternalVertex]->SetAngularCoord(angPitch[iSpan][iSpanVertex]);
                   turbovertex[iMarker][iSpan][iInternalVertex]->SetDeltaAngularCoord(deltaAngPitch[iSpan][iSpanVertex]);
-                  switch (config->GetKind_TurboMachinery(val_iZone)){
+                  switch (config->GetKind_TurboMachinery(val_iZone)) {
                   case CENTRIFUGAL:
                     Normal2 = 0.0;
-                    for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-                    if (marker_flag == INFLOW){
+                    for (iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                    if (marker_flag == INFLOW) {
                       TurboNormal[0] = -coord[0]/sqrt(Normal2);
                       TurboNormal[1] = -coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
-                    }else{
+                    }else {
                       TurboNormal[0] = coord[0]/sqrt(Normal2);
                       TurboNormal[1] = coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
@@ -10741,12 +10741,12 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                     break;
                   case CENTRIPETAL:
                     Normal2 = 0.0;
-                    for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-                    if (marker_flag == OUTFLOW){
+                    for (iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                    if (marker_flag == OUTFLOW) {
                       TurboNormal[0] = -coord[0]/sqrt(Normal2);
                       TurboNormal[1] = -coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
-                    }else{
+                    }else {
                       TurboNormal[0] = coord[0]/sqrt(Normal2);
                       TurboNormal[1] = coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
@@ -10754,24 +10754,24 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                     break;
                   case AXIAL:
                     Normal2 = 0.0;
-                    for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-                    if(nDim == 3){
-                      if (marker_flag == INFLOW){
+                    for (iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                    if (nDim == 3) {
+                      if (marker_flag == INFLOW) {
                         TurboNormal[0] = coord[0]/sqrt(Normal2);
                         TurboNormal[1] = coord[1]/sqrt(Normal2);
                         TurboNormal[2] = 0.0;
-                      }else{
+                      }else {
                         TurboNormal[0] = coord[0]/sqrt(Normal2);
                         TurboNormal[1] = coord[1]/sqrt(Normal2);
                         TurboNormal[2] = 0.0;
                       }
                     }
-                    else{
-                      if (marker_flag == INFLOW){
+                    else {
+                      if (marker_flag == INFLOW) {
                         TurboNormal[0] = -1.0;
                         TurboNormal[1] = 0.0;
                         TurboNormal[2] = 0.0;
-                      }else{
+                      }else {
                         TurboNormal[0] = 1.0;
                         TurboNormal[1] = 0.0;
                         TurboNormal[2] = 0.0;
@@ -10781,12 +10781,12 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                     break;
                   case CENTRIPETAL_AXIAL:
                     Normal2 = 0.0;
-                    for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-                    if (marker_flag == INFLOW){
+                    for (iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                    if (marker_flag == INFLOW) {
                       TurboNormal[0] = coord[0]/sqrt(Normal2);
                       TurboNormal[1] = coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
-                    }else{
+                    }else {
                       TurboNormal[0] = coord[0]/sqrt(Normal2);
                       TurboNormal[1] = coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
@@ -10795,12 +10795,12 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
                   case AXIAL_CENTRIFUGAL:
                     Normal2 = 0.0;
-                    for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-                    if (marker_flag == INFLOW){
+                    for (iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                    if (marker_flag == INFLOW) {
                       TurboNormal[0] = coord[0]/sqrt(Normal2);
                       TurboNormal[1] = coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
-                    }else{
+                    }else {
                       TurboNormal[0] = coord[0]/sqrt(Normal2);
                       TurboNormal[1] = coord[1]/sqrt(Normal2);
                       TurboNormal[2] = 0.0;
@@ -10813,9 +10813,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 }
 
 
-                for(jSpanVertex = 0; jSpanVertex<nVertexSpanHalo[iSpan]; jSpanVertex++){
+                for (jSpanVertex = 0; jSpanVertex<nVertexSpanHalo[iSpan]; jSpanVertex++) {
                   coord = node[disordered[iSpan][jSpanVertex]]->GetCoord();
-                  if(dist >= (coord[1] - target) && !checkAssign[iSpan][jSpanVertex] && (coord[1] - target) >= 0.0){
+                  if (dist >= (coord[1] - target) && !checkAssign[iSpan][jSpanVertex] && (coord[1] - target) >= 0.0) {
                     dist= coord[1] - target;
                     kSpanVertex =jSpanVertex;
                   }
@@ -10823,7 +10823,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               }
             }
 
-            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+            for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
 
               delete [] ordered[iSpan];
               delete [] disordered[iSpan];
@@ -10833,7 +10833,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               delete [] angPitch[iSpan];
               delete [] deltaAngPitch[iSpan];
 
-              for(iVertex=0; iVertex < nVertexSpanHalo[iSpan]; iVertex++){
+              for (iVertex= 0; iVertex < nVertexSpanHalo[iSpan]; iVertex++) {
                 delete [] unitnormal[iSpan][iVertex];
               }
               delete [] unitnormal[iSpan];
@@ -10847,7 +10847,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   nVertMax = 0;
 
   /*--- compute global max and min pitch per span ---*/
-  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
     nVert    = 0;
 
 #ifdef HAVE_MPI
@@ -10863,15 +10863,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
     /*--- compute the relative angular pitch with respect to the minimum value ---*/
 
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
             nVert = nVertexSpan[iMarker][iSpan];
             MinAngularCoord[iMarker][iSpan]    = minAngPitch[iSpan];
             MaxAngularCoord[iMarker][iSpan]    = maxAngPitch[iSpan];
             MinRelAngularCoord[iMarker][iSpan] = minIntAngPitch[iSpan] - minAngPitch[iSpan];
-            for(iSpanVertex = 0; iSpanVertex< nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+            for (iSpanVertex = 0; iSpanVertex< nVertexSpan[iMarker][iSpan]; iSpanVertex++) {
              turbovertex[iMarker][iSpan][iSpanVertex]->SetRelAngularCoord(MinAngularCoord[iMarker][iSpan]);
             }
           }
@@ -10881,21 +10881,21 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 
 #ifdef HAVE_MPI
-    My_nVert = nVert;nVert = 0;
+    My_nVert = nVert; nVert = 0;
     SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
     /*--- to be set for all the processor to initialize an appropriate number of frequency for the NR BC ---*/
-    if(nVert > nVertMax){
+    if (nVert > nVertMax) {
       SetnVertexSpanMax(marker_flag,nVert);
     }
     /*--- for all the processor should be known the amount of total turbovertex per span  ---*/
     nTotVertex_gb[iSpan]= nVert;
 
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
             nTotVertexSpan[iMarker][iSpan]= nVert;
             nTotVertexSpan[iMarker][nSpanWiseSections[marker_flag-1]]+= nVert;
           }
@@ -10908,14 +10908,14 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   /*--- Printing Tec file to check the global ordering of the turbovertex pitch-wise ---*/
   /*--- Send all the info to the MASTERNODE ---*/
 
-  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
     x_loc[iSpan]             = new su2double[nTotVertex_gb[iSpan]];
     y_loc[iSpan]             = new su2double[nTotVertex_gb[iSpan]];
     z_loc[iSpan]             = new su2double[nTotVertex_gb[iSpan]];
     angCoord_loc[iSpan]      = new su2double[nTotVertex_gb[iSpan]];
     deltaAngCoord_loc[iSpan] = new su2double[nTotVertex_gb[iSpan]];
     rank_loc[iSpan]          = new int[nTotVertex_gb[iSpan]];
-    for(iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++){
+    for (iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++) {
       x_loc[iSpan][iSpanVertex]             = -1.0;
       y_loc[iSpan][iSpanVertex]             = -1.0;
       z_loc[iSpan][iSpanVertex]             = -1.0;
@@ -10925,20 +10925,20 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
     }
   }
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-          for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-            for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
+          for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+            for (iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++) {
               iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
               coord  = node[iPoint]->GetCoord();
               x_loc[iSpan][iSpanVertex]   = coord[0];
               y_loc[iSpan][iSpanVertex]   = coord[1];
-              if (nDim == 3){
+              if (nDim == 3) {
                 z_loc[iSpan][iSpanVertex] = coord[2];
               }
-              else{
+              else {
                 z_loc[iSpan][iSpanVertex] = 0.0;
               }
               angCoord_loc[iSpan][iSpanVertex]      = turbovertex[iMarker][iSpan][iSpanVertex]->GetRelAngularCoord();
@@ -10952,8 +10952,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 #ifdef HAVE_MPI
 
-  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-    if (rank == MASTER_NODE){
+  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+    if (rank == MASTER_NODE) {
       x_gb                = new su2double[nTotVertex_gb[iSpan]*size];
       y_gb                = new su2double[nTotVertex_gb[iSpan]*size];
       z_gb                = new su2double[nTotVertex_gb[iSpan]*size];
@@ -10961,8 +10961,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       deltaAngCoord_gb    = new su2double[nTotVertex_gb[iSpan]*size];
       checkAssign_gb      = new bool[nTotVertex_gb[iSpan]*size];
 
-     for(iSize= 0; iSize < size; iSize++){
-       for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+     for (iSize= 0; iSize < size; iSize++) {
+       for (iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++) {
          checkAssign_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex] = false;
        }
      }
@@ -10973,8 +10973,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
     SU2_MPI::Gather(angCoord_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, angCoord_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(deltaAngCoord_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, deltaAngCoord_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for(iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++){
+    if (rank == MASTER_NODE) {
+      for (iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++) {
         x_loc[iSpan][iSpanVertex]             = -1.0;
         y_loc[iSpan][iSpanVertex]             = -1.0;
         z_loc[iSpan][iSpanVertex]             = -1.0;
@@ -10985,15 +10985,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 
       min = 10.0E+06;
-      for(iSize= 0; iSize < size; iSize++){
-        if (angCoord_gb[iSize*nTotVertex_gb[iSpan]] < min && angCoord_gb[iSize*nTotVertex_gb[iSpan]] >= 0.0){
+      for (iSize= 0; iSize < size; iSize++) {
+        if (angCoord_gb[iSize*nTotVertex_gb[iSpan]] < min && angCoord_gb[iSize*nTotVertex_gb[iSpan]] >= 0.0) {
           kSize = iSize;
           min = angCoord_gb[iSize*nTotVertex_gb[iSpan]];
         }
       }
 
       kSpanVertex = 0;
-      for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+      for (iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++) {
         x_loc[iSpan][iSpanVertex]              = x_gb[kSize*nTotVertex_gb[iSpan] + kSpanVertex];
         y_loc[iSpan][iSpanVertex]              = y_gb[kSize*nTotVertex_gb[iSpan] + kSpanVertex];
         z_loc[iSpan][iSpanVertex]              = z_gb[kSize*nTotVertex_gb[iSpan] + kSpanVertex];
@@ -11003,9 +11003,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
         target = angCoord_loc[iSpan][iSpanVertex];
         checkAssign_gb[kSize*nTotVertex_gb[iSpan] + kSpanVertex] = true;
         min = 10.0E+06;
-        for(jSize= 0; jSize < size; jSize++){
-          for(jSpanVertex = 0; jSpanVertex < nTotVertex_gb[iSpan]; jSpanVertex++){
-            if (angCoord_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex] < min && (angCoord_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex] - target) >= 0.0 && !checkAssign_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex]){
+        for (jSize= 0; jSize < size; jSize++) {
+          for (jSpanVertex = 0; jSpanVertex < nTotVertex_gb[iSpan]; jSpanVertex++) {
+            if (angCoord_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex] < min && (angCoord_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex] - target) >= 0.0 && !checkAssign_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex]) {
               kSize = jSize;
               kSpanVertex = jSpanVertex;
               min = angCoord_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex];
@@ -11022,8 +11022,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 #endif
 
-  if (rank == MASTER_NODE){
-    if (marker_flag == INFLOW && val_iZone ==0){
+  if (rank == MASTER_NODE) {
+    if (marker_flag == INFLOW && val_iZone == 0) {
       std::string sPath = "TURBOMACHINERY";
       mode_t nMode = 0733; // UNIX style permissions
       int nError = 0;
@@ -11036,15 +11036,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
         cout << "TURBOMACHINERY folder creation failed." <<endl;
       }
     }
-    if (marker_flag == INFLOW){
+    if (marker_flag == INFLOW) {
       multizone_filename = "TURBOMACHINERY/spanwise_division_inflow.dat";
     }
-    else{
+    else {
       multizone_filename = "TURBOMACHINERY/spanwise_division_outflow.dat";
     }
     char buffer[50];
 
-    if (GetnZone() > 1){
+    if (GetnZone() > 1) {
       unsigned short lastindex = multizone_filename.find_last_of(".");
       multizone_filename = multizone_filename.substr(0, lastindex);
       SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
@@ -11067,19 +11067,19 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
     myfile.width(20); myfile << "\"Relative Angular Coord \"" ;
     myfile.width(20); myfile << "\"Delta Angular Coord \"" ;
     myfile.width(20); myfile << "\"processor\"" <<endl;
-    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-      for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+    for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+      for (iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++) {
         radius = sqrt(x_loc[iSpan][iSpanVertex]*x_loc[iSpan][iSpanVertex] + y_loc[iSpan][iSpanVertex]*y_loc[iSpan][iSpanVertex]);
         myfile.width(10); myfile << iSpan;
         myfile.width(20); myfile << x_loc[iSpan][iSpanVertex];
         myfile.width(20); myfile << y_loc[iSpan][iSpanVertex];
         myfile.width(20); myfile << z_loc[iSpan][iSpanVertex];
         myfile.width(20); myfile << radius;
-        if (nDim ==2 && config->GetKind_TurboMachinery(val_iZone)){
+        if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone)) {
           myfile.width(20); myfile << angCoord_loc[iSpan][iSpanVertex];
           myfile.width(20); myfile << deltaAngCoord_loc[iSpan][iSpanVertex];
         }
-        else{
+        else {
           myfile.width(20); myfile << angCoord_loc[iSpan][iSpanVertex]*180.0/PI_NUMBER;
           myfile.width(20); myfile << deltaAngCoord_loc[iSpan][iSpanVertex]*180.0/PI_NUMBER;
         }
@@ -11090,7 +11090,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   }
 
 
-  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+  for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
     delete [] x_loc[iSpan];
     delete [] y_loc[iSpan];
     delete [] z_loc[iSpan];
@@ -11133,24 +11133,24 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZ
   /*--- Initialize auxiliary pointers ---*/
   TurboNormal      = new su2double[3];
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-          for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
-            for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
+          for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
+            for (iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++) {
               iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
               coord  = node[iPoint]->GetCoord();
               /*--- compute appropriate turbo normal ---*/
-              switch (config->GetKind_TurboMachinery(val_iZone)){
+              switch (config->GetKind_TurboMachinery(val_iZone)) {
               case CENTRIFUGAL:
                 Normal2 = 0.0;
-                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-                if (marker_flag == INFLOW){
+                for (iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW) {
                   TurboNormal[0] = -coord[0]/sqrt(Normal2);
                   TurboNormal[1] = -coord[1]/sqrt(Normal2);
                   TurboNormal[2] = 0.0;
-                }else{
+                }else {
                   TurboNormal[0] = coord[0]/sqrt(Normal2);
                   TurboNormal[1] = coord[1]/sqrt(Normal2);
                   TurboNormal[2] = 0.0;
@@ -11158,12 +11158,12 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZ
                 break;
               case CENTRIPETAL:
                 Normal2 = 0.0;
-                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-                if (marker_flag == OUTFLOW){
+                for (iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == OUTFLOW) {
                   TurboNormal[0] = -coord[0]/sqrt(Normal2);
                   TurboNormal[1] = -coord[1]/sqrt(Normal2);
                   TurboNormal[2] = 0.0;
-                }else{
+                }else {
                   TurboNormal[0] = coord[0]/sqrt(Normal2);
                   TurboNormal[1] = coord[1]/sqrt(Normal2);
                   TurboNormal[2] = 0.0;
@@ -11171,24 +11171,24 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZ
                 break;
               case AXIAL:
                 Normal2 = 0.0;
-                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-                if(nDim == 3){
-                  if (marker_flag == INFLOW){
+                for (iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (nDim == 3) {
+                  if (marker_flag == INFLOW) {
                     TurboNormal[0] = coord[0]/sqrt(Normal2);
                     TurboNormal[1] = coord[1]/sqrt(Normal2);
                     TurboNormal[2] = 0.0;
-                  }else{
+                  }else {
                     TurboNormal[0] = coord[0]/sqrt(Normal2);
                     TurboNormal[1] = coord[1]/sqrt(Normal2);
                     TurboNormal[2] = 0.0;
                   }
                 }
-                else{
-                  if (marker_flag == INFLOW){
+                else {
+                  if (marker_flag == INFLOW) {
                     TurboNormal[0] = -1.0;
                     TurboNormal[1] = 0.0;
                     TurboNormal[2] = 0.0;
-                  }else{
+                  }else {
                     TurboNormal[0] = 1.0;
                     TurboNormal[1] = 0.0;
                     TurboNormal[2] = 0.0;
@@ -11198,12 +11198,12 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZ
                 break;
               case CENTRIPETAL_AXIAL:
                 Normal2 = 0.0;
-                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-                if (marker_flag == INFLOW){
+                for (iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW) {
                   TurboNormal[0] = coord[0]/sqrt(Normal2);
                   TurboNormal[1] = coord[1]/sqrt(Normal2);
                   TurboNormal[2] = 0.0;
-                }else{
+                }else {
                   TurboNormal[0] = coord[0]/sqrt(Normal2);
                   TurboNormal[1] = coord[1]/sqrt(Normal2);
                   TurboNormal[2] = 0.0;
@@ -11212,12 +11212,12 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZ
 
               case AXIAL_CENTRIFUGAL:
                 Normal2 = 0.0;
-                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-                if (marker_flag == INFLOW){
+                for (iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW) {
                   TurboNormal[0] = coord[0]/sqrt(Normal2);
                   TurboNormal[1] = coord[1]/sqrt(Normal2);
                   TurboNormal[2] = 0.0;
-                }else{
+                }else {
                   TurboNormal[0] = coord[0]/sqrt(Normal2);
                   TurboNormal[1] = coord[1]/sqrt(Normal2);
                   TurboNormal[2] = 0.0;
@@ -11261,28 +11261,28 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 #endif
 
   /*--- Intialization of the vector for the interested boundary ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-          if(allocate){
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
+          if (allocate) {
             AverageTurboNormal[iMarker]               = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageNormal[iMarker]                    = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageGridVel[iMarker]                   = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageTangGridVel[iMarker]               = new su2double [nSpanWiseSections[marker_flag-1] + 1];
             SpanArea[iMarker]                         = new su2double [nSpanWiseSections[marker_flag-1] + 1];
             TurboRadius[iMarker]                      = new su2double [nSpanWiseSections[marker_flag-1] + 1];
-            for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1] + 1; iSpan++){
+            for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1] + 1; iSpan++) {
               AverageTurboNormal[iMarker][iSpan]      = new su2double [nDim];
               AverageNormal[iMarker][iSpan]           = new su2double [nDim];
               AverageGridVel[iMarker][iSpan]          = new su2double [nDim];
             }
           }
-          for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1] + 1; iSpan++){
+          for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1] + 1; iSpan++) {
             AverageTangGridVel[iMarker][iSpan]          = 0.0;
             SpanArea[iMarker][iSpan]                    = 0.0;
             TurboRadius[iMarker][iSpan]                 = 0.0;
-            for(iDim=0; iDim < nDim; iDim++){
+            for (iDim= 0; iDim < nDim; iDim++) {
               AverageTurboNormal[iMarker][iSpan][iDim]  = 0.0;
               AverageNormal[iMarker][iSpan][iDim]       = 0.0;
               AverageGridVel[iMarker][iSpan][iDim]      = 0.0;
@@ -11296,30 +11296,30 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 
 
   /*--- start computing the average quantities span wise --- */
-  for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+  for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++) {
 
     /*--- Forces initialization for contenitors to zero ---*/
-    for (iDim=0; iDim<nDim; iDim++) {
-      TotalTurboNormal[iDim]	=0.0;
-      TotalNormal[iDim]         =0.0;
-      TotalGridVel[iDim]        =0.0;
+    for (iDim= 0; iDim<nDim; iDim++) {
+      TotalTurboNormal[iDim]	= 0.0;
+      TotalNormal[iDim]         = 0.0;
+      TotalGridVel[iDim]        = 0.0;
     }
     TotalArea = 0.0;
     TotalRadius = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-            for(iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++){
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
+            for (iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++) {
               iPoint = turbovertex[iMarker][iSpan][iVertex]->GetNode();
               turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
               turbovertex[iMarker][iSpan][iVertex]->GetNormal(Normal);
               coord  = node[iPoint]->GetCoord();
 
-              if (nDim == 3){
+              if (nDim == 3) {
                 radius = sqrt(coord[0]*coord[0] + coord[1]*coord[1]);
               }
-              else{
+              else {
                 radius = 0.0;
               }
               Area = turbovertex[iMarker][iSpan][iVertex]->GetArea();
@@ -11329,7 +11329,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
                 TotalTurboNormal[iDim]  +=TurboNormal[iDim];
                 TotalNormal[iDim]       +=Normal[iDim];
               }
-              if (grid_movement){
+              if (grid_movement) {
                 gridVel = node[iPoint]->GetGridVel();
                 for (iDim = 0; iDim < nDim; iDim++) TotalGridVel[iDim] +=gridVel[iDim];
               }
@@ -11363,14 +11363,14 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
     SU2_MPI::Allreduce(MyTotalNormal, TotalNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(MyTotalGridVel, TotalGridVel, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    delete [] MyTotalTurboNormal;delete [] MyTotalNormal; delete [] MyTotalGridVel;
+    delete [] MyTotalTurboNormal; delete [] MyTotalNormal; delete [] MyTotalGridVel;
 
 #endif
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
 
 
             SpanArea[iMarker][iSpan]           = TotalArea;
@@ -11378,40 +11378,40 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 
             turboNormal2    = 0.0;
             Normal2         = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++){
+            for (iDim = 0; iDim < nDim; iDim++) {
               turboNormal2 += TotalTurboNormal[iDim]*TotalTurboNormal[iDim];
               Normal2      += TotalNormal[iDim]*TotalNormal[iDim];
             }
-            for (iDim = 0; iDim < nDim; iDim++){
+            for (iDim = 0; iDim < nDim; iDim++) {
               AverageTurboNormal[iMarker][iSpan][iDim] = TotalTurboNormal[iDim]/sqrt(turboNormal2);
               AverageNormal[iMarker][iSpan][iDim]      = TotalNormal[iDim]/sqrt(Normal2);
             }
-            if (grid_movement){
-              for (iDim = 0; iDim < nDim; iDim++){
+            if (grid_movement) {
+              for (iDim = 0; iDim < nDim; iDim++) {
                 AverageGridVel[iMarker][iSpan][iDim]   =TotalGridVel[iDim]/nTotVertexSpan[iMarker][iSpan];
               }
-              switch (config->GetKind_TurboMachinery(val_iZone)){
+              switch (config->GetKind_TurboMachinery(val_iZone)) {
               case CENTRIFUGAL:case CENTRIPETAL:
-                if (marker_flag == INFLOW ){
+                if (marker_flag == INFLOW ) {
                   AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
                 }
-                else{
+                else {
                   AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
                 }
                 break;
               case AXIAL:
-                if (marker_flag == INFLOW && nDim == 2){
+                if (marker_flag == INFLOW && nDim == 2) {
                   AverageTangGridVel[iMarker][iSpan]= -AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1] + AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
                 }
-                else{
+                else {
                   AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
                 }
                   break;
               case CENTRIPETAL_AXIAL:
-                if (marker_flag == OUTFLOW){
+                if (marker_flag == OUTFLOW) {
                   AverageTangGridVel[iMarker][iSpan]= (AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
                 }
-                else{
+                else {
                   AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
                 }
                 break;
@@ -11435,7 +11435,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
             /*--- Compute the 1D average values ---*/
             AverageTangGridVel[iMarker][nSpanWiseSections[marker_flag-1]]             += AverageTangGridVel[iMarker][iSpan]/nSpanWiseSections[marker_flag-1];
             SpanArea[iMarker][nSpanWiseSections[marker_flag-1]]                       += SpanArea[iMarker][iSpan];
-            for(iDim=0; iDim < nDim; iDim++){
+            for (iDim= 0; iDim < nDim; iDim++) {
               AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]     += AverageTurboNormal[iMarker][iSpan][iDim];
               AverageNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]          += AverageNormal[iMarker][iSpan][iDim];
               AverageGridVel[iMarker][nSpanWiseSections[marker_flag-1]][iDim]         += AverageGridVel[iMarker][iSpan][iDim]/nSpanWiseSections[marker_flag-1];
@@ -11448,18 +11448,18 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
   }
 
   /*--- Normalize 1D normals---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
           turboNormal2 = 0.0;
           Normal2 		= 0.0;
 
-          for (iDim = 0; iDim < nDim; iDim++){
+          for (iDim = 0; iDim < nDim; iDim++) {
             turboNormal2 += AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]*AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim];
             Normal2      += AverageNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]*AverageNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim];
           }
-          for (iDim = 0; iDim < nDim; iDim++){
+          for (iDim = 0; iDim < nDim; iDim++) {
             AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim] /=sqrt(turboNormal2);
             AverageNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim] /=sqrt(Normal2);
           }
@@ -11478,7 +11478,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 }
 
 
-void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){
+void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate) {
 
   unsigned short iMarker, iMarkerTP;
   unsigned short iSpan, i, n1, n2, n1t,n2t, iDim;
@@ -11496,8 +11496,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
   turboNormal = new su2double[nDim];
   Pitch = 0.0;
 
-  if(allocate){
-    for (iMarkerTP=0; iMarkerTP < config->GetnMarker_TurboPerformance(); iMarkerTP++){
+  if (allocate) {
+    for (iMarkerTP= 0; iMarkerTP < config->GetnMarker_TurboPerformance(); iMarkerTP++) {
       SpanAreaIn[iMarkerTP]       = new su2double[config->GetnSpanMaxAllZones() +1];
       TangGridVelIn[iMarkerTP]    = new su2double[config->GetnSpanMaxAllZones() +1];
       TurboRadiusIn[iMarkerTP]    = new su2double[config->GetnSpanMaxAllZones() +1];
@@ -11505,7 +11505,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
       TangGridVelOut[iMarkerTP]   = new su2double[config->GetnSpanMaxAllZones() +1];
       TurboRadiusOut[iMarkerTP]   = new su2double[config->GetnSpanMaxAllZones() +1];
 
-      for (iSpan= 0; iSpan < config->GetnSpanMaxAllZones() + 1 ; iSpan++){
+      for (iSpan= 0; iSpan < config->GetnSpanMaxAllZones() + 1 ; iSpan++) {
         SpanAreaIn[iMarkerTP][iSpan]       = 0.0;
         TangGridVelIn[iMarkerTP][iSpan]    = 0.0;
         TurboRadiusIn[iMarkerTP][iSpan]    = 0.0;
@@ -11518,7 +11518,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
 
 
-  for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
+  for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++) {
 #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -11533,16 +11533,16 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
     TurbGeoIn  = new su2double[n1];
     TurbGeoOut = new su2double[n2];
 
-    for (i=0;i<n1;i++)
+    for (i= 0; i<n1; i++)
       TurbGeoIn[i]    = -1.0;
-    for (i=0;i<n2;i++)
+    for (i= 0; i<n2; i++)
       TurbGeoOut[i]   = -1.0;
 #endif
     pitchIn           =  0.0;
     areaIn            = -1.0;
     tangGridVelIn     = -1.0;
     radiusIn          = -1.0;
-    for(iDim = 0; iDim < nDim; iDim++){
+    for (iDim = 0; iDim < nDim; iDim++) {
       turboNormal[iDim] = -1.0;
     }
 
@@ -11552,18 +11552,18 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
     markerTP          = -1;
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-      for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW) {
             markerTP          = iMarkerTP;
-            if (iSpan < nSpanWiseSections){
+            if (iSpan < nSpanWiseSections) {
               pitchIn         = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
             }
             areaIn            = SpanArea[iMarker][iSpan];
             tangGridVelIn     = AverageTangGridVel[iMarker][iSpan];
             radiusIn          = TurboRadius[iMarker][iSpan];
-            for(iDim = 0; iDim < nDim; iDim++) turboNormal[iDim] = AverageTurboNormal[iMarker][iSpan][iDim];
+            for (iDim = 0; iDim < nDim; iDim++) turboNormal[iDim] = AverageTurboNormal[iMarker][iSpan][iDim];
 
 
 #ifdef HAVE_MPI
@@ -11577,8 +11577,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
           }
 
           /*--- retrieve outlet information ---*/
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
-            if (iSpan < nSpanWiseSections){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW) {
+            if (iSpan < nSpanWiseSections) {
               pitchIn       = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
             }
             areaOut         = SpanArea[iMarker][iSpan];
@@ -11597,12 +11597,12 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 #ifdef HAVE_MPI
     TotTurbGeoIn       = new su2double[n1t];
     TotTurbGeoOut      = new su2double[n2t];
-    for (i=0;i<n1t;i++)
+    for (i= 0; i<n1t; i++)
       TotTurbGeoIn[i]  = -1.0;
-    for (i=0;i<n2t;i++)
+    for (i= 0; i<n2t; i++)
       TotTurbGeoOut[i] = -1.0;
     TotMarkerTP = new int[size];
-    for(i=0; i<size; i++){
+    for (i= 0; i<size; i++) {
       TotMarkerTP[i]    = -1;
     }
 
@@ -11610,11 +11610,11 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
     SU2_MPI::Allgather(TurbGeoOut, n2, MPI_DOUBLE,TotTurbGeoOut, n2, MPI_DOUBLE, MPI_COMM_WORLD);
     SU2_MPI::Allgather(&markerTP, 1, MPI_INT,TotMarkerTP, 1, MPI_INT, MPI_COMM_WORLD);
 
-    delete [] TurbGeoIn, delete [] TurbGeoOut;
+    delete [] TurbGeoIn; delete [] TurbGeoOut;
 
 
-    for (i=0;i<size;i++){
-      if(TotTurbGeoIn[n1*i] > 0.0){
+    for (i= 0; i<size; i++) {
+      if (TotTurbGeoIn[n1*i] > 0.0) {
         areaIn              = 0.0;
         areaIn              = TotTurbGeoIn[n1*i];
         tangGridVelIn       = 0.0;
@@ -11632,7 +11632,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
         markerTP            = TotMarkerTP[i];
       }
 
-      if(TotTurbGeoOut[n2*i] > 0.0){
+      if (TotTurbGeoOut[n2*i] > 0.0) {
         areaOut             = 0.0;
         areaOut             = TotTurbGeoOut[n2*i];
         tangGridVelOut      = 0.0;
@@ -11642,7 +11642,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
       }
     }
 
-    delete [] TotTurbGeoIn, delete [] TotTurbGeoOut; delete [] TotMarkerTP;
+    delete [] TotTurbGeoIn; delete [] TotTurbGeoOut; delete [] TotMarkerTP;
 
 
 #endif
@@ -11651,16 +11651,16 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
     if (iSpan == nSpanWiseSections) {
       config->SetFreeStreamTurboNormal(turboNormal);
-      if (config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL && nDim == 2){
+      if (config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL && nDim == 2) {
         nBlades = 1/Pitch;
       }
-      else{
+      else {
         nBlades = 2*PI_NUMBER/Pitch;
       }
       config->SetnBlades(config->GetiZone(), nBlades);
     }
 
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE) {
       /*----Quantities needed for computing the turbomachinery performance -----*/
       SpanAreaIn[markerTP -1][iSpan]       = areaIn;
       TangGridVelIn[markerTP -1][iSpan]    = tangGridVelIn;
@@ -12481,8 +12481,8 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
           Coord_j = geometry_donor->node[jPoint]->GetCoord();
           if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
           if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
-//          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = node[jPoint]->GetGlobalIndex();}
-          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = geometry_donor->node[jPoint]->GetGlobalIndex();}
+//          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = node[jPoint]->GetGlobalIndex(); }
+          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = geometry_donor->node[jPoint]->GetGlobalIndex(); }
         }
       
       maxdist = max(maxdist, mindist);
@@ -12925,7 +12925,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   output_file.precision(15);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim) ;
+      output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim);
 #ifndef HAVE_MPI
     output_file << "\t" << iPoint << endl;
 #else
@@ -13743,9 +13743,9 @@ void CPhysicalGeometry::SetShroudVelocity(CConfig *config) {
   RotVel[2] = 0.0;
 
   /*--- Loop over all vertex in the shroud marker and set the rotational velocity to 0.0 ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-    for(iMarkerShroud=0; iMarkerShroud < config->GetnMarker_Shroud(); iMarkerShroud++){
-      if(config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iMarkerShroud= 0; iMarkerShroud < config->GetnMarker_Shroud(); iMarkerShroud++) {
+      if (config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)) {
         for (iVertex = 0; iVertex  < nVertex[iMarker]; iVertex++) {
           iPoint = vertex[iMarker][iVertex]->GetNode();
           node[iPoint]->SetGridVel(RotVel);
@@ -14673,7 +14673,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
           for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++) {
             if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
               for (iVertex = 0; iVertex < nVertex[jMarker]; iVertex++) {
-                if (pPoint == vertex[jMarker][iVertex]->GetNode()) {kMarker = jMarker; jVertex = iVertex;}
+                if (pPoint == vertex[jMarker][iVertex]->GetNode()) { kMarker = jMarker; jVertex = iVertex; }
               }
             }
           }
@@ -14780,7 +14780,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
         Ycoord[iVertex_Wall] = node[iPoint]->GetCoord(1);
-        if (nDim==3) Zcoord[iVertex_Wall] = node[iPoint]->GetCoord(2);
+        if (nDim== 3) Zcoord[iVertex_Wall] = node[iPoint]->GetCoord(2);
         Face_Normal = vertex[iMarker][iVertex]->GetNormal();
         FaceArea[iVertex_Wall] = fabs(Face_Normal[nDim-1]);
         iVertex_Wall ++;
@@ -14800,7 +14800,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   /*--- Create vectors and distribute the values among the different PhiAngle queues ---*/
   Xcoord_plane.resize(XCoordList.size());
   Ycoord_plane.resize(XCoordList.size());
-  if (nDim==3) Zcoord_plane.resize(XCoordList.size());
+  if (nDim== 3) Zcoord_plane.resize(XCoordList.size());
   FaceArea_plane.resize(XCoordList.size());
   Plane_points.resize(XCoordList.size());
   
@@ -14819,7 +14819,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
           else iCoord = ixCoord+1;
           Xcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(0) );
           Ycoord_plane[iCoord].push_back(node[iPoint]->GetCoord(1) );
-          if (nDim==3) Zcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(2) );
+          if (nDim== 3) Zcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(2) );
           FaceArea_plane[iCoord].push_back(node[iPoint]->GetVolume());   ///// CHECK AREA CALCULATION
           Plane_points[iCoord].push_back(iPoint );
           loop_on = false;
@@ -14837,7 +14837,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
           auxXCoord = Xcoord_plane[ixCoord][jVertex]; Xcoord_plane[ixCoord][jVertex] = Xcoord_plane[ixCoord][jVertex+1]; Xcoord_plane[ixCoord][jVertex+1] = auxXCoord;
           auxYCoord = Ycoord_plane[ixCoord][jVertex]; Ycoord_plane[ixCoord][jVertex] = Ycoord_plane[ixCoord][jVertex+1]; Ycoord_plane[ixCoord][jVertex+1] = auxYCoord;
           auxPoint = Plane_points[ixCoord][jVertex]; Plane_points[ixCoord][jVertex] = Plane_points[ixCoord][jVertex+1]; Plane_points[ixCoord][jVertex+1] = auxPoint;
-          if (nDim==3) {
+          if (nDim== 3) {
             auxZCoord = Zcoord_plane[ixCoord][jVertex]; Zcoord_plane[ixCoord][jVertex] = Zcoord_plane[ixCoord][jVertex+1]; Zcoord_plane[ixCoord][jVertex+1] = auxZCoord;
           }
           auxArea = FaceArea_plane[ixCoord][jVertex]; FaceArea_plane[ixCoord][jVertex] = FaceArea_plane[ixCoord][jVertex+1]; FaceArea_plane[ixCoord][jVertex+1] = auxArea;
@@ -15025,9 +15025,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   if (incompressible)      { skipVar += skipMult*(nDim+1); }
   if (compressible)        { skipVar += skipMult*(nDim+2); }
-  if (sst && !frozen_visc) { skipVar += skipMult*2;}
-  if (sa && !frozen_visc)  { skipVar += skipMult*1;}
-  if (grid_movement)       { skipVar += nDim;}
+  if (sst && !frozen_visc) { skipVar += skipMult*2; }
+  if (sa && !frozen_visc)  { skipVar += skipMult*1; }
+  if (grid_movement)       { skipVar += nDim; }
 
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
@@ -15049,7 +15049,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     filename = config->GetUnsteady_FileName(filename, nExtIter-1);
   }
 
-	if (config->GetnZone() > 1){
+	if (config->GetnZone() > 1) {
 		filename = config->GetMultizone_FileName(filename, config->GetiZone());
 	}
 
@@ -15459,7 +15459,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     if (iPoint_Local > -1) {
 
       point_line >> index;
-      for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
+      for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val; }
       for (iDim = 0; iDim < nDim; iDim++) {
         point_line >> Sens;
         Sensitivity[iPoint_Local*nDim+iDim] = Sens;
@@ -16343,7 +16343,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     /*--- Compute the wing volume using a composite Simpson's rule ---*/
 
     Wing_Volume = 0.0;
-    for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
+    for (iPlane = 0; iPlane < nPlane-2; iPlane+= 2) {
       if (Xcoord_Airfoil[iPlane].size() > 1) {
         Wing_Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
       }
@@ -16631,7 +16631,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
     /*--- Compute the fuselage volume using a composite Simpson's rule ---*/
 
     Fuselage_Volume = 0.0;
-    for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
+    for (iPlane = 0; iPlane < nPlane-2; iPlane+= 2) {
       if (Xcoord_Airfoil[iPlane].size() > 1) {
       	Fuselage_Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
       }
@@ -17784,7 +17784,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
   
   /*--- Update or not the values of faces at the edge ---*/
   if (action != ALLOCATE) {
-    for (iEdge=0; iEdge < nEdge; iEdge++)
+    for (iEdge= 0; iEdge < nEdge; iEdge++)
       edge[iEdge]->SetZeroValues();
   }
   
@@ -17949,9 +17949,9 @@ void CMultiGridGeometry::SetShroudVelocity(CConfig *config) {
   RotVel[2] = 0.0;
 
   /*--- Loop over all vertex in the shroud marker and set the rotational velocity to 0.0 ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-    for(iMarkerShroud=0; iMarkerShroud < config->GetnMarker_Shroud(); iMarkerShroud++){
-      if(config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iMarkerShroud= 0; iMarkerShroud < config->GetnMarker_Shroud(); iMarkerShroud++) {
+      if (config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)) {
         for (iVertex = 0; iVertex  < nVertex[iMarker]; iVertex++) {
           iPoint = vertex[iMarker][iVertex]->GetNode();
           node[iPoint]->SetGridVel(RotVel);
@@ -18141,7 +18141,7 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
         Ycoord[iVertex_Wall] = node[iPoint]->GetCoord(1);
-        if (nDim==3) Zcoord[iVertex_Wall] = node[iPoint]->GetCoord(2);
+        if (nDim== 3) Zcoord[iVertex_Wall] = node[iPoint]->GetCoord(2);
         Face_Normal = vertex[iMarker][iVertex]->GetNormal();
         FaceArea[iVertex_Wall] = fabs(Face_Normal[nDim-1]);
         iVertex_Wall ++;
@@ -18161,7 +18161,7 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   /*--- Create vectors and distribute the values among the different PhiAngle queues ---*/
   Xcoord_plane.resize(XCoordList.size());
   Ycoord_plane.resize(XCoordList.size());
-  if (nDim==3) Zcoord_plane.resize(XCoordList.size());
+  if (nDim== 3) Zcoord_plane.resize(XCoordList.size());
   FaceArea_plane.resize(XCoordList.size());
   Plane_points.resize(XCoordList.size());
   
@@ -18180,7 +18180,7 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
           else iCoord = ixCoord+1;
           Xcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(0) );
           Ycoord_plane[iCoord].push_back(node[iPoint]->GetCoord(1) );
-          if (nDim==3) Zcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(2) );
+          if (nDim== 3) Zcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(2) );
           FaceArea_plane[iCoord].push_back(node[iPoint]->GetVolume());   ///// CHECK AREA CALCULATION
           Plane_points[iCoord].push_back(iPoint );
           loop_on = false;
@@ -18198,7 +18198,7 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
           auxXCoord = Xcoord_plane[ixCoord][jVertex]; Xcoord_plane[ixCoord][jVertex] = Xcoord_plane[ixCoord][jVertex+1]; Xcoord_plane[ixCoord][jVertex+1] = auxXCoord;
           auxYCoord = Ycoord_plane[ixCoord][jVertex]; Ycoord_plane[ixCoord][jVertex] = Ycoord_plane[ixCoord][jVertex+1]; Ycoord_plane[ixCoord][jVertex+1] = auxYCoord;
           auxPoint = Plane_points[ixCoord][jVertex]; Plane_points[ixCoord][jVertex] = Plane_points[ixCoord][jVertex+1]; Plane_points[ixCoord][jVertex+1] = auxPoint;
-          if (nDim==3) {
+          if (nDim== 3) {
             auxZCoord = Zcoord_plane[ixCoord][jVertex]; Zcoord_plane[ixCoord][jVertex] = Zcoord_plane[ixCoord][jVertex+1]; Zcoord_plane[ixCoord][jVertex+1] = auxZCoord;
           }
           auxArea = FaceArea_plane[ixCoord][jVertex]; FaceArea_plane[ixCoord][jVertex] = FaceArea_plane[ixCoord][jVertex+1]; FaceArea_plane[ixCoord][jVertex+1] = auxArea;
@@ -18657,7 +18657,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   output_file << "NPOIN= " << nPoint << "\t" << nPoint - GhostPoints << endl;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << node[NewSort[iPoint]]->GetCoord(iDim) ;
+      output_file << scientific << "\t" << node[NewSort[iPoint]]->GetCoord(iDim);
     output_file << "\t" << iPoint << endl;
   }
   
@@ -18890,7 +18890,7 @@ void CMultiGridQueue::RemoveCV(unsigned long val_remove_point) {
   unsigned short Size_QueueCV = 0;
   check = false;
   for (iPoint = 0; iPoint < QueueCV.size(); iPoint ++)
-    if (QueueCV[iPoint].size() != 0) { Size_QueueCV = iPoint; check = true;}
+    if (QueueCV[iPoint].size() != 0) { Size_QueueCV = iPoint; check = true; }
   
   /*--- Resize the queue, if check = false, the queue is empty, at least
    we need one element in the queue ---*/
@@ -18997,7 +18997,7 @@ bool CMultiGridQueue::EmptyQueue(void) {
   }
   else {
     for (iPoint = 1; iPoint < QueueCV.size(); iPoint ++)
-      if (QueueCV[iPoint].size() != 0) { check = false; break;}
+      if (QueueCV[iPoint].size() != 0) { check = false; break; }
   }
   
   return check;

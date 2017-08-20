@@ -94,7 +94,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/
 
-  if (config->GetBoolGiles() && config->GetSpatialFourier()){
+  if (config->GetBoolGiles() && config->GetSpatialFourier()) {
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], INFLOW);
 
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
@@ -137,10 +137,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Giles(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	break;
       case RIEMANN_BOUNDARY:
-      	if (config->GetBoolTurbomachinery()){
+      	if (config->GetBoolTurbomachinery()) {
       		solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
-      	else{
+      	else {
       		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
       	break;
@@ -682,7 +682,7 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
   
   if (fsi) {
     
-    su2double WAitk=0.0;
+    su2double WAitk= 0.0;
     
     WAitk = solver->GetWAitken_Dyn();
     solver->SetWAitken_Dyn_tn1(WAitk);
@@ -725,7 +725,7 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
   
   if (fsi) {
     
-    su2double WAitk=0.0;
+    su2double WAitk= 0.0;
     
     WAitk = solver_container[FEA_SOL]->GetWAitken_Dyn();
     solver_container[FEA_SOL]->SetWAitken_Dyn_tn1(WAitk);
@@ -859,7 +859,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     nPointDomain = fea_geometry->GetnPointDomain();
     nDim = fea_geometry->GetnDim();
     
-    for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint= 0; iPoint < nPointDomain; iPoint++) {
       
       deltaURad = 0.0;
       
@@ -889,7 +889,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     deltaURes_recv         = deltaURes;
 #endif
     
-    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << deltaURes_recv << "," ;}
+    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << deltaURes_recv << "," ; }
     
     if (iFSIIter == 1) {
       fea_solver->SetFSI_ConvValue(0,deltaURes_recv);
@@ -897,7 +897,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       
       if (logResidualFSI_initial < logResidualFSI_criteria) Convergence_FSI = true;
       
-      if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI_initial;}
+      if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI_initial; }
       
     }
     else {
@@ -916,11 +916,11 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI < magResidualFSI_criteria)) Convergence_FSI = true;
     }
     
-    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << endl;}
+    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << endl; }
     
   }
   
-  if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI.close();}
+  if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI.close(); }
   
   /*--- Apply the same convergence criteria to all the processors ---*/
   

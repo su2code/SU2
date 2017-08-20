@@ -7544,12 +7544,12 @@ public:
   /*!
    * \brief Get the flux averaged enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
    */
-  su2double GetOneD_FluxAvgEntalpy(void);
+  su2double GetOneD_FluxAvgEnthalpy(void);
   
   /*!
    * \brief Set the flux averaged enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
    */
-  void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
+  void SetOneD_FluxAvgEnthalpy(su2double EnthalpyRef);
   
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.

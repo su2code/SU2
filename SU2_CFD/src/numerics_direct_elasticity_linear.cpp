@@ -146,7 +146,7 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *c
           Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
           Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
         }
-        else if (nDim ==3) {
+        else if (nDim == 3) {
           Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
           Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
           Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
@@ -267,7 +267,7 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element, CCon
         Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
         Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
       }
-      else if (nDim ==3) {
+      else if (nDim == 3) {
         Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
         Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
         Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];

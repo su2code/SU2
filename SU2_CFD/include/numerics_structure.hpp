@@ -957,7 +957,7 @@ public:
   
   /*!
    * \brief Computation of the matrix P, this matrix diagonalize the conservative Jacobians in
-   *        the form $P^{-1}(A.Normal)P=Lambda$.
+   *        the form $P^{-1 }(A.Normal)P=Lambda$.
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Value of the velocity.
    * \param[in] val_soundspeed - Value of the sound speed.
@@ -1043,7 +1043,7 @@ public:
 
 	/*!
 	 * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
-	 *        in the form $Tg |Lambda| Td = Pc{-1}|Pc (A.Normal)|$.
+	 *        in the form $Tg |Lambda| Td = Pc{-1 }|Pc (A.Normal)|$.
 	 * \param[in] Beta2 - A variable in used to define absPeJacobian matrix.
 	 * \param[in] r_hat - A variable in used to define absPeJacobian matrix.
 	 * \param[in] s_hat - A variable in used to define absPeJacobian matrix.
@@ -1057,7 +1057,7 @@ public:
     
 	/*!
 	 * \brief Computation of the matrix P (artificial compresibility), this matrix diagonalize the conservative Jacobians in
-	 *        the form $P^{-1}(A.Normal)P=Lambda$.
+	 *        the form $P^{-1 }(A.Normal)P=Lambda$.
 	 * \param[in] val_density - Value of the density.
 	 * \param[in] val_velocity - Value of the velocity.
 	 * \param[in] val_betainv2 - Value of the compresibility factor.
@@ -1069,8 +1069,8 @@ public:
                          su2double **val_p_tensor);
   
   /*!
-   * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
-   * in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \brief Computation of the matrix P^{-1 }, this matrix diagonalize the conservative Jacobians
+   * in the form $P^{-1 }(A.Normal)P=Lambda$.
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Value of the velocity.
    * \param[in] val_soundspeed - Value of the sound speed.
@@ -1083,8 +1083,8 @@ public:
                       su2double *val_normal);
   
   /*!
-   * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
-   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \brief Computation of the matrix P^{-1 }, this matrix diagonalize the conservative Jacobians
+   *        in the form $P^{-1 }(A.Normal)P=Lambda$.
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Value of the velocity.
    * \param[in] val_soundspeed - Value of the sound speed.
@@ -1096,8 +1096,8 @@ public:
                       su2double **val_invp_tensor);
 
   /*!
-   * \brief Computation of the matrix P^{-1} (artificial compresibility), this matrix diagonalize the conservative Jacobians
-   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \brief Computation of the matrix P^{-1 } (artificial compresibility), this matrix diagonalize the conservative Jacobians
+   *        in the form $P^{-1 }(A.Normal)P=Lambda$.
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Value of the velocity.
    * \param[in] val_betainv2 - Value of the compresibility factor.
@@ -1147,7 +1147,7 @@ public:
   virtual void ComputeResidual_TransLM(su2double *val_residual,
                                        su2double **val_Jacobian_i,
                                        su2double **val_Jacobian_j, CConfig *config,
-                                       su2double &gamma_sep) ;
+                                       su2double &gamma_sep);
   
   /*!
    * \overload
@@ -3477,7 +3477,7 @@ public:
   /*!
    * \brief Sets value of first blending function.
    */
-  void SetF1blending(su2double val_F1_i, su2double val_F1_j) { F1_i = val_F1_i; F1_j = val_F1_j;}
+  void SetF1blending(su2double val_F1_i, su2double val_F1_j) { F1_i = val_F1_i; F1_j = val_F1_j; }
   
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients wtih correction.
@@ -3539,7 +3539,7 @@ public:
   /*!
    * \brief Sets value of first blending function.
    */
-  void SetF1blending(su2double val_F1_i, su2double val_F1_j) { F1_i = val_F1_i; F1_j = val_F1_j;}
+  void SetF1blending(su2double val_F1_i, su2double val_F1_j) { F1_i = val_F1_i; F1_j = val_F1_j; }
   
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients wtih correction.

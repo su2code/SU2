@@ -116,7 +116,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       if (iDim == jDim) delta[iDim][jDim] = 1.0;
-      else delta[iDim][jDim]=0.0;
+      else delta[iDim][jDim]= 0.0;
     }
   }
 
@@ -173,8 +173,8 @@ CNumerics::~CNumerics(void) {
   if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
   if (Vector != NULL) delete [] Vector;
 
-  if(Enthalpy_formation != NULL) delete [] Enthalpy_formation;
-  if(Theta_v != NULL) delete [] Theta_v;
+  if (Enthalpy_formation != NULL) delete [] Enthalpy_formation;
+  if (Theta_v != NULL) delete [] Theta_v;
 
   if (l != NULL) delete [] l;
   if (m != NULL) delete [] m;
@@ -453,24 +453,24 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
     
     val_p_tensor[0][0] = 1.0;
-    val_p_tensor[0][1]=0.0;
-    val_p_tensor[0][2]=0.5*rhooc;
-    val_p_tensor[0][3]=0.5*rhooc;
+    val_p_tensor[0][1]= 0.0;
+    val_p_tensor[0][2]= 0.5*rhooc;
+    val_p_tensor[0][3]= 0.5*rhooc;
     
     val_p_tensor[1][0]=val_velocity[0];
     val_p_tensor[1][1]=*val_density*val_normal[1];
-    val_p_tensor[1][2]=0.5*(val_velocity[0]*rhooc+val_normal[0]**val_density);
-    val_p_tensor[1][3]=0.5*(val_velocity[0]*rhooc-val_normal[0]**val_density);
+    val_p_tensor[1][2]= 0.5*(val_velocity[0]*rhooc+val_normal[0]**val_density);
+    val_p_tensor[1][3]= 0.5*(val_velocity[0]*rhooc-val_normal[0]**val_density);
     
     val_p_tensor[2][0]=val_velocity[1];
     val_p_tensor[2][1]=-*val_density*val_normal[0];
-    val_p_tensor[2][2]=0.5*(val_velocity[1]*rhooc+val_normal[1]**val_density);
-    val_p_tensor[2][3]=0.5*(val_velocity[1]*rhooc-val_normal[1]**val_density);
+    val_p_tensor[2][2]= 0.5*(val_velocity[1]*rhooc+val_normal[1]**val_density);
+    val_p_tensor[2][3]= 0.5*(val_velocity[1]*rhooc-val_normal[1]**val_density);
     
-    val_p_tensor[3][0]=0.5*sqvel;
+    val_p_tensor[3][0]= 0.5*sqvel;
     val_p_tensor[3][1]=*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
-    val_p_tensor[3][2]=0.5*(0.5*sqvel*rhooc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
-    val_p_tensor[3][3]=0.5*(0.5*sqvel*rhooc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
+    val_p_tensor[3][2]= 0.5*(0.5*sqvel*rhooc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
+    val_p_tensor[3][3]= 0.5*(0.5*sqvel*rhooc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
     
   }
   else {
@@ -480,32 +480,32 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     val_p_tensor[0][0]=val_normal[0];
     val_p_tensor[0][1]=val_normal[1];
     val_p_tensor[0][2]=val_normal[2];
-    val_p_tensor[0][3]=0.5*rhooc;
-    val_p_tensor[0][4]=0.5*rhooc;
+    val_p_tensor[0][3]= 0.5*rhooc;
+    val_p_tensor[0][4]= 0.5*rhooc;
     
     val_p_tensor[1][0]=val_velocity[0]*val_normal[0];
     val_p_tensor[1][1]=val_velocity[0]*val_normal[1]-*val_density*val_normal[2];
     val_p_tensor[1][2]=val_velocity[0]*val_normal[2]+*val_density*val_normal[1];
-    val_p_tensor[1][3]=0.5*(val_velocity[0]*rhooc+*val_density*val_normal[0]);
-    val_p_tensor[1][4]=0.5*(val_velocity[0]*rhooc-*val_density*val_normal[0]);
+    val_p_tensor[1][3]= 0.5*(val_velocity[0]*rhooc+*val_density*val_normal[0]);
+    val_p_tensor[1][4]= 0.5*(val_velocity[0]*rhooc-*val_density*val_normal[0]);
     
     val_p_tensor[2][0]=val_velocity[1]*val_normal[0]+*val_density*val_normal[2];
     val_p_tensor[2][1]=val_velocity[1]*val_normal[1];
     val_p_tensor[2][2]=val_velocity[1]*val_normal[2]-*val_density*val_normal[0];
-    val_p_tensor[2][3]=0.5*(val_velocity[1]*rhooc+*val_density*val_normal[1]);
-    val_p_tensor[2][4]=0.5*(val_velocity[1]*rhooc-*val_density*val_normal[1]);
+    val_p_tensor[2][3]= 0.5*(val_velocity[1]*rhooc+*val_density*val_normal[1]);
+    val_p_tensor[2][4]= 0.5*(val_velocity[1]*rhooc-*val_density*val_normal[1]);
     
     val_p_tensor[3][0]=val_velocity[2]*val_normal[0]-*val_density*val_normal[1];
     val_p_tensor[3][1]=val_velocity[2]*val_normal[1]+*val_density*val_normal[0];
     val_p_tensor[3][2]=val_velocity[2]*val_normal[2];
-    val_p_tensor[3][3]=0.5*(val_velocity[2]*rhooc+*val_density*val_normal[2]);
-    val_p_tensor[3][4]=0.5*(val_velocity[2]*rhooc-*val_density*val_normal[2]);
+    val_p_tensor[3][3]= 0.5*(val_velocity[2]*rhooc+*val_density*val_normal[2]);
+    val_p_tensor[3][4]= 0.5*(val_velocity[2]*rhooc-*val_density*val_normal[2]);
     
-    val_p_tensor[4][0]=0.5*sqvel*val_normal[0]+*val_density*val_velocity[1]*val_normal[2]-*val_density*val_velocity[2]*val_normal[1];
-    val_p_tensor[4][1]=0.5*sqvel*val_normal[1]-*val_density*val_velocity[0]*val_normal[2]+*val_density*val_velocity[2]*val_normal[0];
-    val_p_tensor[4][2]=0.5*sqvel*val_normal[2]+*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
-    val_p_tensor[4][3]=0.5*(0.5*sqvel*rhooc+*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
-    val_p_tensor[4][4]=0.5*(0.5*sqvel*rhooc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
+    val_p_tensor[4][0]= 0.5*sqvel*val_normal[0]+*val_density*val_velocity[1]*val_normal[2]-*val_density*val_velocity[2]*val_normal[1];
+    val_p_tensor[4][1]= 0.5*sqvel*val_normal[1]-*val_density*val_velocity[0]*val_normal[2]+*val_density*val_velocity[2]*val_normal[0];
+    val_p_tensor[4][2]= 0.5*sqvel*val_normal[2]+*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
+    val_p_tensor[4][3]= 0.5*(0.5*sqvel*rhooc+*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
+    val_p_tensor[4][4]= 0.5*(0.5*sqvel*rhooc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
     
   }
   
@@ -526,24 +526,24 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     zeta = sqvel - (*val_kappa*0.5*sqvel + *val_chi)/(*val_kappa);
 
     val_p_tensor[0][0] = 1.0;
-    val_p_tensor[0][1]=0.0;
-    val_p_tensor[0][2]=0.5*rhooc;
-    val_p_tensor[0][3]=0.5*rhooc;
+    val_p_tensor[0][1]= 0.0;
+    val_p_tensor[0][2]= 0.5*rhooc;
+    val_p_tensor[0][3]= 0.5*rhooc;
 
     val_p_tensor[1][0]=val_velocity[0];
     val_p_tensor[1][1]=*val_density*val_normal[1];
-    val_p_tensor[1][2]=0.5*(val_velocity[0]*rhooc+val_normal[0]**val_density);
-    val_p_tensor[1][3]=0.5*(val_velocity[0]*rhooc-val_normal[0]**val_density);
+    val_p_tensor[1][2]= 0.5*(val_velocity[0]*rhooc+val_normal[0]**val_density);
+    val_p_tensor[1][3]= 0.5*(val_velocity[0]*rhooc-val_normal[0]**val_density);
 
     val_p_tensor[2][0]=val_velocity[1];
     val_p_tensor[2][1]=-*val_density*val_normal[0];
-    val_p_tensor[2][2]=0.5*(val_velocity[1]*rhooc+val_normal[1]**val_density);
-    val_p_tensor[2][3]=0.5*(val_velocity[1]*rhooc-val_normal[1]**val_density);
+    val_p_tensor[2][2]= 0.5*(val_velocity[1]*rhooc+val_normal[1]**val_density);
+    val_p_tensor[2][3]= 0.5*(val_velocity[1]*rhooc-val_normal[1]**val_density);
 
     val_p_tensor[3][0]= zeta;
     val_p_tensor[3][1]=*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
-    val_p_tensor[3][2]=0.5*(*val_enthalpy*rhooc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]);
-    val_p_tensor[3][3]=0.5*(*val_enthalpy*rhooc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]);
+    val_p_tensor[3][2]= 0.5*(*val_enthalpy*rhooc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]);
+    val_p_tensor[3][3]= 0.5*(*val_enthalpy*rhooc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]);
   }
   else {
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1]+val_velocity[2]*val_velocity[2];
@@ -552,32 +552,32 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     val_p_tensor[0][0]=val_normal[0];
     val_p_tensor[0][1]=val_normal[1];
     val_p_tensor[0][2]=val_normal[2];
-    val_p_tensor[0][3]=0.5*rhooc;
-    val_p_tensor[0][4]=0.5*rhooc;
+    val_p_tensor[0][3]= 0.5*rhooc;
+    val_p_tensor[0][4]= 0.5*rhooc;
 
     val_p_tensor[1][0]=val_velocity[0]*val_normal[0];
     val_p_tensor[1][1]=val_velocity[0]*val_normal[1]-*val_density*val_normal[2];
     val_p_tensor[1][2]=val_velocity[0]*val_normal[2]+*val_density*val_normal[1];
-    val_p_tensor[1][3]=0.5*(val_velocity[0]*rhooc+*val_density*val_normal[0]);
-    val_p_tensor[1][4]=0.5*(val_velocity[0]*rhooc-*val_density*val_normal[0]);
+    val_p_tensor[1][3]= 0.5*(val_velocity[0]*rhooc+*val_density*val_normal[0]);
+    val_p_tensor[1][4]= 0.5*(val_velocity[0]*rhooc-*val_density*val_normal[0]);
 
     val_p_tensor[2][0]=val_velocity[1]*val_normal[0]+*val_density*val_normal[2];
     val_p_tensor[2][1]=val_velocity[1]*val_normal[1];
     val_p_tensor[2][2]=val_velocity[1]*val_normal[2]-*val_density*val_normal[0];
-    val_p_tensor[2][3]=0.5*(val_velocity[1]*rhooc+*val_density*val_normal[1]);
-    val_p_tensor[2][4]=0.5*(val_velocity[1]*rhooc-*val_density*val_normal[1]);
+    val_p_tensor[2][3]= 0.5*(val_velocity[1]*rhooc+*val_density*val_normal[1]);
+    val_p_tensor[2][4]= 0.5*(val_velocity[1]*rhooc-*val_density*val_normal[1]);
 
     val_p_tensor[3][0]=val_velocity[2]*val_normal[0]-*val_density*val_normal[1];
     val_p_tensor[3][1]=val_velocity[2]*val_normal[1]+*val_density*val_normal[0];
     val_p_tensor[3][2]=val_velocity[2]*val_normal[2];
-    val_p_tensor[3][3]=0.5*(val_velocity[2]*rhooc+*val_density*val_normal[2]);
-    val_p_tensor[3][4]=0.5*(val_velocity[2]*rhooc-*val_density*val_normal[2]);
+    val_p_tensor[3][3]= 0.5*(val_velocity[2]*rhooc+*val_density*val_normal[2]);
+    val_p_tensor[3][4]= 0.5*(val_velocity[2]*rhooc-*val_density*val_normal[2]);
 
     val_p_tensor[4][0]=zeta*val_normal[0]+*val_density*val_velocity[1]*val_normal[2]-*val_density*val_velocity[2]*val_normal[1];
     val_p_tensor[4][1]=zeta*val_normal[1]-*val_density*val_velocity[0]*val_normal[2]+*val_density*val_velocity[2]*val_normal[0];
     val_p_tensor[4][2]=zeta*val_normal[2]+*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
-    val_p_tensor[4][3]=0.5*(*val_enthalpy*rhooc+*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2]));
-    val_p_tensor[4][4]=0.5*(*val_enthalpy*rhooc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2]));
+    val_p_tensor[4][3]= 0.5*(*val_enthalpy*rhooc+*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2]));
+    val_p_tensor[4][4]= 0.5*(*val_enthalpy*rhooc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2]));
   }
 
 }
@@ -642,7 +642,7 @@ void CNumerics::GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
     val_invp_tensor[1][0]=-k1orho*val_velocity[0]+k0orho*val_velocity[1];
     val_invp_tensor[1][1]=k1orho;
     val_invp_tensor[1][2]=-k0orho;
-    val_invp_tensor[1][3]=0.0;
+    val_invp_tensor[1][3]= 0.0;
 
     val_invp_tensor[2][0]=-k0orho*val_velocity[0]-k1orho*val_velocity[1]+0.5*gm1_o_rhoxc*sqvel;
     val_invp_tensor[2][1]=k0orho-gm1_o_rhoxc*val_velocity[0];
@@ -716,7 +716,7 @@ void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, su2double *val_densi
     val_invp_tensor[1][0]=-k1orho*val_velocity[0]+k0orho*val_velocity[1];
     val_invp_tensor[1][1]=k1orho;
     val_invp_tensor[1][2]=-k0orho;
-    val_invp_tensor[1][3]=0.0;
+    val_invp_tensor[1][3]= 0.0;
 
     val_invp_tensor[2][0]=-k0orho*val_velocity[0]-k1orho*val_velocity[1] + dp_drho/rhoxc;
     val_invp_tensor[2][1]=k0orho - k_o_rhoxc*val_velocity[0];
@@ -996,7 +996,7 @@ void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 }
 
-void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv){
+void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv) {
   su2double rhoc, cc;
   su2double dhdrho_P, dhdP_rho, dsdrho_P,dsdP_rho;
 
@@ -1010,7 +1010,7 @@ void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double press
   dsdrho_P  = FluidModel->Getdsdrho_P();
   dsdP_rho  = FluidModel->GetdsdP_rho();
 
-  if (nDim == 2){
+  if (nDim == 2) {
 
     R_c[0][0] = -1/cc*dsdrho_P;                   //a11
     R_c[0][1] = 0.0;                                //a12
@@ -1026,7 +1026,7 @@ void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double press
 
     InvMatrix3D(R_c, R_c_inv);
   }
-  else{
+  else {
     R_c[0][0] = -1/cc*dsdrho_P;                     //a11
     R_c[0][1] = 0.0;                                //a12
     R_c[0][2] = 0.0;                                //a13
@@ -1051,7 +1051,7 @@ void CNumerics::ComputeResJacobianGiles(CFluidModel *FluidModel, su2double press
   }
 }
 
-void CNumerics::InvMatrix3D(su2double **matrix, su2double **invMatrix){
+void CNumerics::InvMatrix3D(su2double **matrix, su2double **invMatrix) {
 
   su2double invDet;
 
@@ -1073,7 +1073,7 @@ void CNumerics::InvMatrix3D(su2double **matrix, su2double **invMatrix){
 
 }
 
-void CNumerics::InvMatrix4D(su2double **matrix, su2double **invMatrix){
+void CNumerics::InvMatrix4D(su2double **matrix, su2double **invMatrix) {
   su2double invDet;
 
   invDet = 1 /
@@ -1086,30 +1086,30 @@ void CNumerics::InvMatrix4D(su2double **matrix, su2double **invMatrix){
           matrix[0][2]*matrix[1][1]*matrix[2][0]*matrix[3][3] + matrix[0][1]*matrix[1][2]*matrix[2][0]*matrix[3][3] + matrix[0][2]*matrix[1][0]*matrix[2][1]*matrix[3][3] -
           matrix[0][0]*matrix[1][2]*matrix[2][1]*matrix[3][3] - matrix[0][1]*matrix[1][0]*matrix[2][2]*matrix[3][3] + matrix[0][0]*matrix[1][1]*matrix[2][2]*matrix[3][3]);
 
-  invMatrix[0][0] = invDet*(- matrix[1][3]*matrix[2][2]*matrix[3][1] + matrix[1][2]*matrix[2][3]*matrix[3][1] + matrix[1][3]*matrix[2][1]*matrix[3][2] - matrix[1][1]*matrix[2][3]*matrix[3][2] - matrix[1][2]*matrix[2][1]*matrix[3][3] + matrix[1][1]*matrix[2][2]*matrix[3][3]) ;
-  invMatrix[0][1] = invDet*(  matrix[0][3]*matrix[2][2]*matrix[3][1] - matrix[0][2]*matrix[2][3]*matrix[3][1] - matrix[0][3]*matrix[2][1]*matrix[3][2] + matrix[0][1]*matrix[2][3]*matrix[3][2] + matrix[0][2]*matrix[2][1]*matrix[3][3] - matrix[0][1]*matrix[2][2]*matrix[3][3]) ;
-  invMatrix[0][2] = invDet*(- matrix[0][3]*matrix[1][2]*matrix[3][1] + matrix[0][2]*matrix[1][3]*matrix[3][1] + matrix[0][3]*matrix[1][1]*matrix[3][2] - matrix[0][1]*matrix[1][3]*matrix[3][2] - matrix[0][2]*matrix[1][1]*matrix[3][3] + matrix[0][1]*matrix[1][2]*matrix[3][3]) ;
-  invMatrix[0][3] = invDet*(  matrix[0][3]*matrix[1][2]*matrix[2][1] - matrix[0][2]*matrix[1][3]*matrix[2][1] - matrix[0][3]*matrix[1][1]*matrix[2][2] + matrix[0][1]*matrix[1][3]*matrix[2][2] + matrix[0][2]*matrix[1][1]*matrix[2][3] - matrix[0][1]*matrix[1][2]*matrix[2][3]) ;
+  invMatrix[0][0] = invDet*(- matrix[1][3]*matrix[2][2]*matrix[3][1] + matrix[1][2]*matrix[2][3]*matrix[3][1] + matrix[1][3]*matrix[2][1]*matrix[3][2] - matrix[1][1]*matrix[2][3]*matrix[3][2] - matrix[1][2]*matrix[2][1]*matrix[3][3] + matrix[1][1]*matrix[2][2]*matrix[3][3]);
+  invMatrix[0][1] = invDet*(  matrix[0][3]*matrix[2][2]*matrix[3][1] - matrix[0][2]*matrix[2][3]*matrix[3][1] - matrix[0][3]*matrix[2][1]*matrix[3][2] + matrix[0][1]*matrix[2][3]*matrix[3][2] + matrix[0][2]*matrix[2][1]*matrix[3][3] - matrix[0][1]*matrix[2][2]*matrix[3][3]);
+  invMatrix[0][2] = invDet*(- matrix[0][3]*matrix[1][2]*matrix[3][1] + matrix[0][2]*matrix[1][3]*matrix[3][1] + matrix[0][3]*matrix[1][1]*matrix[3][2] - matrix[0][1]*matrix[1][3]*matrix[3][2] - matrix[0][2]*matrix[1][1]*matrix[3][3] + matrix[0][1]*matrix[1][2]*matrix[3][3]);
+  invMatrix[0][3] = invDet*(  matrix[0][3]*matrix[1][2]*matrix[2][1] - matrix[0][2]*matrix[1][3]*matrix[2][1] - matrix[0][3]*matrix[1][1]*matrix[2][2] + matrix[0][1]*matrix[1][3]*matrix[2][2] + matrix[0][2]*matrix[1][1]*matrix[2][3] - matrix[0][1]*matrix[1][2]*matrix[2][3]);
 
-  invMatrix[1][0] = invDet*(  matrix[1][3]*matrix[2][2]*matrix[3][0] - matrix[1][2]*matrix[2][3]*matrix[3][0] - matrix[1][3]*matrix[2][0]*matrix[3][2] + matrix[1][0]*matrix[2][3]*matrix[3][2] + matrix[1][2]*matrix[2][0]*matrix[3][3] - matrix[1][0]*matrix[2][2]*matrix[3][3]) ;
-  invMatrix[1][1] = invDet*(- matrix[0][3]*matrix[2][2]*matrix[3][0] + matrix[0][2]*matrix[2][3]*matrix[3][0] + matrix[0][3]*matrix[2][0]*matrix[3][2] - matrix[0][0]*matrix[2][3]*matrix[3][2] - matrix[0][2]*matrix[2][0]*matrix[3][3] + matrix[0][0]*matrix[2][2]*matrix[3][3]) ;
-  invMatrix[1][2] = invDet*(  matrix[0][3]*matrix[1][2]*matrix[3][0] - matrix[0][2]*matrix[1][3]*matrix[3][0] - matrix[0][3]*matrix[1][0]*matrix[3][2] + matrix[0][0]*matrix[1][3]*matrix[3][2] + matrix[0][2]*matrix[1][0]*matrix[3][3] - matrix[0][0]*matrix[1][2]*matrix[3][3]) ;
-  invMatrix[1][3] = invDet*(- matrix[0][3]*matrix[1][2]*matrix[2][0] + matrix[0][2]*matrix[1][3]*matrix[2][0] + matrix[0][3]*matrix[1][0]*matrix[2][2] - matrix[0][0]*matrix[1][3]*matrix[2][2] - matrix[0][2]*matrix[1][0]*matrix[2][3] + matrix[0][0]*matrix[1][2]*matrix[2][3]) ;
+  invMatrix[1][0] = invDet*(  matrix[1][3]*matrix[2][2]*matrix[3][0] - matrix[1][2]*matrix[2][3]*matrix[3][0] - matrix[1][3]*matrix[2][0]*matrix[3][2] + matrix[1][0]*matrix[2][3]*matrix[3][2] + matrix[1][2]*matrix[2][0]*matrix[3][3] - matrix[1][0]*matrix[2][2]*matrix[3][3]);
+  invMatrix[1][1] = invDet*(- matrix[0][3]*matrix[2][2]*matrix[3][0] + matrix[0][2]*matrix[2][3]*matrix[3][0] + matrix[0][3]*matrix[2][0]*matrix[3][2] - matrix[0][0]*matrix[2][3]*matrix[3][2] - matrix[0][2]*matrix[2][0]*matrix[3][3] + matrix[0][0]*matrix[2][2]*matrix[3][3]);
+  invMatrix[1][2] = invDet*(  matrix[0][3]*matrix[1][2]*matrix[3][0] - matrix[0][2]*matrix[1][3]*matrix[3][0] - matrix[0][3]*matrix[1][0]*matrix[3][2] + matrix[0][0]*matrix[1][3]*matrix[3][2] + matrix[0][2]*matrix[1][0]*matrix[3][3] - matrix[0][0]*matrix[1][2]*matrix[3][3]);
+  invMatrix[1][3] = invDet*(- matrix[0][3]*matrix[1][2]*matrix[2][0] + matrix[0][2]*matrix[1][3]*matrix[2][0] + matrix[0][3]*matrix[1][0]*matrix[2][2] - matrix[0][0]*matrix[1][3]*matrix[2][2] - matrix[0][2]*matrix[1][0]*matrix[2][3] + matrix[0][0]*matrix[1][2]*matrix[2][3]);
 
-  invMatrix[2][0] = invDet*(- matrix[1][3]*matrix[2][1]*matrix[3][0] + matrix[1][1]*matrix[2][3]*matrix[3][0] + matrix[1][3]*matrix[2][0]*matrix[3][1] - matrix[1][0]*matrix[2][3]*matrix[3][1] - matrix[1][1]*matrix[2][0]*matrix[3][3] + matrix[1][0]*matrix[2][1]*matrix[3][3]) ;
-  invMatrix[2][1] = invDet*(  matrix[0][3]*matrix[2][1]*matrix[3][0] - matrix[0][1]*matrix[2][3]*matrix[3][0] - matrix[0][3]*matrix[2][0]*matrix[3][1] + matrix[0][0]*matrix[2][3]*matrix[3][1] + matrix[0][1]*matrix[2][0]*matrix[3][3] - matrix[0][0]*matrix[2][1]*matrix[3][3]) ;
-  invMatrix[2][2] = invDet*(- matrix[0][3]*matrix[1][1]*matrix[3][0] + matrix[0][1]*matrix[1][3]*matrix[3][0] + matrix[0][3]*matrix[1][0]*matrix[3][1] - matrix[0][0]*matrix[1][3]*matrix[3][1] - matrix[0][1]*matrix[1][0]*matrix[3][3] + matrix[0][0]*matrix[1][1]*matrix[3][3]) ;
-  invMatrix[2][3] = invDet*(  matrix[0][3]*matrix[1][1]*matrix[2][0] - matrix[0][1]*matrix[1][3]*matrix[2][0] - matrix[0][3]*matrix[1][0]*matrix[2][1] + matrix[0][0]*matrix[1][3]*matrix[2][1] + matrix[0][1]*matrix[1][0]*matrix[2][3] - matrix[0][0]*matrix[1][1]*matrix[2][3]) ;
+  invMatrix[2][0] = invDet*(- matrix[1][3]*matrix[2][1]*matrix[3][0] + matrix[1][1]*matrix[2][3]*matrix[3][0] + matrix[1][3]*matrix[2][0]*matrix[3][1] - matrix[1][0]*matrix[2][3]*matrix[3][1] - matrix[1][1]*matrix[2][0]*matrix[3][3] + matrix[1][0]*matrix[2][1]*matrix[3][3]);
+  invMatrix[2][1] = invDet*(  matrix[0][3]*matrix[2][1]*matrix[3][0] - matrix[0][1]*matrix[2][3]*matrix[3][0] - matrix[0][3]*matrix[2][0]*matrix[3][1] + matrix[0][0]*matrix[2][3]*matrix[3][1] + matrix[0][1]*matrix[2][0]*matrix[3][3] - matrix[0][0]*matrix[2][1]*matrix[3][3]);
+  invMatrix[2][2] = invDet*(- matrix[0][3]*matrix[1][1]*matrix[3][0] + matrix[0][1]*matrix[1][3]*matrix[3][0] + matrix[0][3]*matrix[1][0]*matrix[3][1] - matrix[0][0]*matrix[1][3]*matrix[3][1] - matrix[0][1]*matrix[1][0]*matrix[3][3] + matrix[0][0]*matrix[1][1]*matrix[3][3]);
+  invMatrix[2][3] = invDet*(  matrix[0][3]*matrix[1][1]*matrix[2][0] - matrix[0][1]*matrix[1][3]*matrix[2][0] - matrix[0][3]*matrix[1][0]*matrix[2][1] + matrix[0][0]*matrix[1][3]*matrix[2][1] + matrix[0][1]*matrix[1][0]*matrix[2][3] - matrix[0][0]*matrix[1][1]*matrix[2][3]);
 
-  invMatrix[3][0] = invDet*(  matrix[1][2]*matrix[2][1]*matrix[3][0] - matrix[1][1]*matrix[2][2]*matrix[3][0] - matrix[1][2]*matrix[2][0]*matrix[3][1] + matrix[1][0]*matrix[2][2]*matrix[3][1] + matrix[1][1]*matrix[2][0]*matrix[3][2] - matrix[1][0]*matrix[2][1]*matrix[3][2]) ;
-  invMatrix[3][1] = invDet*(- matrix[0][2]*matrix[2][1]*matrix[3][0] + matrix[0][1]*matrix[2][2]*matrix[3][0] + matrix[0][2]*matrix[2][0]*matrix[3][1] - matrix[0][0]*matrix[2][2]*matrix[3][1] - matrix[0][1]*matrix[2][0]*matrix[3][2] + matrix[0][0]*matrix[2][1]*matrix[3][2]) ;
-  invMatrix[3][2] = invDet*(  matrix[0][2]*matrix[1][1]*matrix[3][0] - matrix[0][1]*matrix[1][2]*matrix[3][0] - matrix[0][2]*matrix[1][0]*matrix[3][1] + matrix[0][0]*matrix[1][2]*matrix[3][1] + matrix[0][1]*matrix[1][0]*matrix[3][2] - matrix[0][0]*matrix[1][1]*matrix[3][2]) ;
-  invMatrix[3][3] = invDet*(- matrix[0][2]*matrix[1][1]*matrix[2][0] + matrix[0][1]*matrix[1][2]*matrix[2][0] + matrix[0][2]*matrix[1][0]*matrix[2][1] - matrix[0][0]*matrix[1][2]*matrix[2][1] - matrix[0][1]*matrix[1][0]*matrix[2][2] + matrix[0][0]*matrix[1][1]*matrix[2][2]) ;
+  invMatrix[3][0] = invDet*(  matrix[1][2]*matrix[2][1]*matrix[3][0] - matrix[1][1]*matrix[2][2]*matrix[3][0] - matrix[1][2]*matrix[2][0]*matrix[3][1] + matrix[1][0]*matrix[2][2]*matrix[3][1] + matrix[1][1]*matrix[2][0]*matrix[3][2] - matrix[1][0]*matrix[2][1]*matrix[3][2]);
+  invMatrix[3][1] = invDet*(- matrix[0][2]*matrix[2][1]*matrix[3][0] + matrix[0][1]*matrix[2][2]*matrix[3][0] + matrix[0][2]*matrix[2][0]*matrix[3][1] - matrix[0][0]*matrix[2][2]*matrix[3][1] - matrix[0][1]*matrix[2][0]*matrix[3][2] + matrix[0][0]*matrix[2][1]*matrix[3][2]);
+  invMatrix[3][2] = invDet*(  matrix[0][2]*matrix[1][1]*matrix[3][0] - matrix[0][1]*matrix[1][2]*matrix[3][0] - matrix[0][2]*matrix[1][0]*matrix[3][1] + matrix[0][0]*matrix[1][2]*matrix[3][1] + matrix[0][1]*matrix[1][0]*matrix[3][2] - matrix[0][0]*matrix[1][1]*matrix[3][2]);
+  invMatrix[3][3] = invDet*(- matrix[0][2]*matrix[1][1]*matrix[2][0] + matrix[0][1]*matrix[1][2]*matrix[2][0] + matrix[0][2]*matrix[1][0]*matrix[2][1] - matrix[0][0]*matrix[1][2]*matrix[2][1] - matrix[0][1]*matrix[1][0]*matrix[2][2] + matrix[0][0]*matrix[1][1]*matrix[2][2]);
 
 
 }
 
-void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2double *delta_prim, su2double *delta_char){
+void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2double *delta_prim, su2double *delta_char) {
 
   su2double cc, rhoc;
   cc = val_soundspeed*val_soundspeed;
@@ -1248,7 +1248,7 @@ void CNumerics::GetPArtCompMatrix_inv(su2double *val_density, su2double *val_vel
   su2double a, a2, Projvel, area2, sx, sy, sz = 0.0, u, v, w = 0.0;
 
   sx = val_normal[0]; sy = val_normal[1]; u = val_velocity[0]; v = val_velocity[1];
-    if (nDim == 3) { sz = val_normal[2]; w = val_velocity[2];}
+    if (nDim == 3) { sz = val_normal[2]; w = val_velocity[2]; }
   Projvel = u*sx + v*sy; area2 = sx*sx + sy*sy;
     if (nDim == 3) { Projvel += w*sz; area2 += sz*sz; }
   a2 = Projvel*Projvel + ((*val_betainc2)/(*val_density))*area2; a = sqrt(a2);
@@ -2613,14 +2613,14 @@ void CNumerics::CreateBasis(su2double *val_Normal) {
   m[2] = val_Normal[0]*l[1] - val_Normal[1]*l[0];
   
   /*--- Normalize ---*/
-  modm =0 ; modl = 0;
-  for (iDim =0 ; iDim < nDim; iDim++) {
+  modm = 0 ; modl = 0;
+  for (iDim = 0 ; iDim < nDim; iDim++) {
     modm += m[iDim]*m[iDim];
     modl += l[iDim]*l[iDim];
   }
   modm = sqrt(modm);
   modl = sqrt(modl);
-  for (iDim =0 ; iDim < nDim; iDim++) {
+  for (iDim = 0 ; iDim < nDim; iDim++) {
     l[iDim] = l[iDim]/modl;
     m[iDim] = m[iDim]/modm;
   }

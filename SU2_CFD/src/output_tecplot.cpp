@@ -750,7 +750,7 @@ void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, unsigne
   if (surf_sol) strcpy(cstr, "surface_grid");
   else strcpy(cstr, "volumetric_grid");
   
-  if (config->GetnZone() > 1){
+  if (config->GetnZone() > 1) {
     char appstr[200];
     SPRINTF(appstr, "_%u", val_iZone);
     strcat(cstr, appstr);
@@ -1389,7 +1389,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   unsigned short dims = geometry->GetnDim();
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
-  enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
+  enum   ZoneType { ORDERED= 0, FELINESEG= 1, FETRIANGLE= 2, FEQUADRILATERAL= 3, FETETRAHEDRON= 4, FEBRICK= 5, FEPOLYGON= 6, FEPOLYHEDRON= 7 };
   
   /*--- Consistent data for Tecplot zones ---*/
   
@@ -1975,7 +1975,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   unsigned long iExtIter = config->GetExtIter();
   unsigned short NVar, dims = geometry->GetnDim();
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
-  enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
+  enum   ZoneType { ORDERED= 0, FELINESEG= 1, FETRIANGLE= 2, FEQUADRILATERAL= 3, FETETRAHEDRON= 4, FEBRICK= 5, FEPOLYGON= 6, FEPOLYHEDRON= 7 };
   
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint(); 
   unsigned short Kind_Solver = config->GetKind_Solver();
@@ -2613,7 +2613,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
   unsigned short iDim, dims = geometry->GetnDim();
   unsigned long iPoint, iElem, iNode;
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
-  enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
+  enum   ZoneType { ORDERED= 0, FELINESEG= 1, FETRIANGLE= 2, FEQUADRILATERAL= 3, FETETRAHEDRON= 4, FEBRICK= 5, FEPOLYGON= 6, FEPOLYHEDRON= 7 };
   
   /*--- Write Tecplot solution file ---*/
   if (!wrote_surf_file) {
@@ -2918,7 +2918,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   unsigned long iPoint, iElem, iNode, iSurf_Poin, iExtIter = config->GetExtIter();
   unsigned short iDim, NVar, dims = geometry->GetnDim();
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
-  enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
+  enum   ZoneType { ORDERED= 0, FELINESEG= 1, FETRIANGLE= 2, FEQUADRILATERAL= 3, FETETRAHEDRON= 4, FEBRICK= 5, FEPOLYGON= 6, FEPOLYHEDRON= 7 };
   
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   unsigned short Kind_Solver = config->GetKind_Solver();

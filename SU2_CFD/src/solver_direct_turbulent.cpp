@@ -649,10 +649,10 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
     BC_Inlet_Turbo(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     break;
   case MIXING_IN:
-    if (config->GetBoolTurbMixingPlane()){
+    if (config->GetBoolTurbMixingPlane()) {
       BC_Inlet_MixingPlane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     }
-    else{
+    else {
       BC_Inlet_Turbo(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     }
     break;
@@ -1358,17 +1358,17 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   SlidingState       = new su2double*** [nMarker];
   SlidingStateNodes  = new int*         [nMarker];
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
     SlidingState[iMarker]      = NULL;
     SlidingStateNodes[iMarker] = NULL;
     
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
       SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
       SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
 
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++) {
         SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
 
         SlidingStateNodes[iMarker][iPoint] = 0;
@@ -1390,7 +1390,7 @@ CTurbSASolver::~CTurbSASolver(void) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if ( SlidingState[iMarker] != NULL ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != NULL ){
+          if ( SlidingState[iMarker][iVertex] != NULL ) {
             for (iVar = 0; iVar < nPrimVar+1; iVar++)
               delete [] SlidingState[iMarker][iVertex][iVar];
             delete [] SlidingState[iMarker][iVertex];
@@ -1401,8 +1401,8 @@ CTurbSASolver::~CTurbSASolver(void) {
     delete [] SlidingState;
   }
   
-  if ( SlidingStateNodes != NULL ){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
+  if ( SlidingStateNodes != NULL ) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
         if (SlidingStateNodes[iMarker] != NULL)
             delete [] SlidingStateNodes[iMarker];  
     }
@@ -2244,7 +2244,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
 
   /*--- Loop over all the vertices on this boundary marker ---*/
-  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
+  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++) {
     extAverageNu = solver_container[FLOW_SOL]->GetExtAverageNu(val_marker, iSpan);
 
     /*--- Loop over all the vertices on this boundary marker ---*/
@@ -2356,7 +2356,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
 
   /*--- Loop over all the spans on this boundary marker ---*/
-  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
+  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++) {
     rho       = solver_container[FLOW_SOL]->GetAverageDensity(val_marker, iSpan);
     pressure  = solver_container[FLOW_SOL]->GetAveragePressure(val_marker, iSpan);
 
@@ -2619,7 +2619,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
 }
 
 void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-    CNumerics *visc_numerics, CConfig *config){
+    CNumerics *visc_numerics, CConfig *config) {
 
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, iMarker;
@@ -2654,7 +2654,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
 
           /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
-          for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+          for (jVertex = 0; jVertex < nDonorVertex; jVertex++) {
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
             for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
@@ -3076,17 +3076,17 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   SlidingState       = new su2double*** [nMarker];
   SlidingStateNodes  = new int*         [nMarker];
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
     SlidingState[iMarker]      = NULL;
     SlidingStateNodes[iMarker] = NULL;
     
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
       SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
       SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
 
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++) {
         SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
 
         SlidingStateNodes[iMarker][iPoint] = 0;
@@ -3110,7 +3110,7 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if ( SlidingState[iMarker] != NULL ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != NULL ){
+          if ( SlidingState[iMarker][iVertex] != NULL ) {
             for (iVar = 0; iVar < nPrimVar+1; iVar++)
               delete [] SlidingState[iMarker][iVertex][iVar];
             delete [] SlidingState[iMarker][iVertex];
@@ -3121,8 +3121,8 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
     delete [] SlidingState;
   }
   
-  if ( SlidingStateNodes != NULL ){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
+  if ( SlidingStateNodes != NULL ) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
         if (SlidingStateNodes[iMarker] != NULL)
             delete [] SlidingStateNodes[iMarker];  
     }
@@ -3647,7 +3647,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
-  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
+  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++) {
     extAverageKine = solver_container[FLOW_SOL]->GetExtAverageKine(val_marker, iSpan);
     extAverageOmega = solver_container[FLOW_SOL]->GetExtAverageOmega(val_marker, iSpan);
 
@@ -3759,7 +3759,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
 
-  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
+  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++) {
 
     /*--- Compute the inflow kine and omega using the span wise averge quntities---*/
     for (iDim = 0; iDim < nDim; iDim++)
@@ -3865,7 +3865,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
 
 void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-    CNumerics *visc_numerics, CConfig *config){
+    CNumerics *visc_numerics, CConfig *config) {
 
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, iMarker;
@@ -3900,7 +3900,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
           /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
           
-          for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+          for (jVertex = 0; jVertex < nDonorVertex; jVertex++) {
             
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
             for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];

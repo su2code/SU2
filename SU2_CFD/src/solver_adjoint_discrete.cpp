@@ -147,7 +147,7 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
 
 }
 
-void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
+void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config) {
 
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -218,7 +218,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register farfield values as input ---*/
 
-  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
 
     su2double Velocity_Ref = config->GetVelocity_Ref();
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
@@ -258,12 +258,12 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
-  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()) {
 
     BPressure = config->GetPressureOut_BC();
     Temperature = config->GetTotalTemperatureIn_BC();
 
-    if (!reset){
+    if (!reset) {
       AD::RegisterInput(BPressure);
       AD::RegisterInput(Temperature);
     }
@@ -293,7 +293,7 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   }
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
+void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) {
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -390,7 +390,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 #endif
   }
 
-  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()) {
     su2double Local_Sens_BPress, Local_Sens_Temperature;
 
     Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
@@ -480,7 +480,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
     Sens_Geo[iMarker] = 0.0;
     /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
 
-    if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL
        || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
        || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
 
@@ -511,7 +511,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
         Sens += Sens_Vertex*Sens_Vertex;
       }
 
-      if (config->GetMarker_All_Monitoring(iMarker) == YES){
+      if (config->GetMarker_All_Monitoring(iMarker) == YES) {
 
         /*--- Compute sensitivity for each surface point ---*/
 
@@ -555,7 +555,7 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
           solution_n = node[iPoint]->GetSolution_time_n();
           solution_n1 = node[iPoint]->GetSolution_time_n1();
-          for (iVar=0; iVar < nVar; iVar++) {
+          for (iVar= 0; iVar < nVar; iVar++) {
               node[iPoint]->SetDual_Time_Derivative(iVar, solution_n[iVar]+node[iPoint]->GetDual_Time_Derivative_n(iVar));
               node[iPoint]->SetDual_Time_Derivative_n(iVar, solution_n1[iVar]);
             }

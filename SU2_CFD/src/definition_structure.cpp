@@ -44,8 +44,8 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, iNodes, MarkerS, MarkerR;
   unsigned long iElem, iPoint, nVertexS, nVertexR;
   unsigned long nNeighbors = 0, nSendTotal = 0, nRecvTotal = 0;
-  unsigned long nPointTotal=0, nPointGhost=0, nElemTotal=0;
-  unsigned long nElemHalo=0, nEdge=0, nElemBound=0;
+  unsigned long nPointTotal= 0, nPointGhost= 0, nElemTotal= 0;
+  unsigned long nElemHalo= 0, nEdge= 0, nElemBound= 0;
   int iRank;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;

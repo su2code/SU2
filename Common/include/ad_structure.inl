@@ -60,21 +60,21 @@ namespace AD{
 
   extern std::vector<su2double*> localOutputValues;
 
-  inline void RegisterInput(su2double &data) {AD::globalTape.registerInput(data);
-                                             inputValues.push_back(data.getGradientData());}
+  inline void RegisterInput(su2double &data) { AD::globalTape.registerInput(data);
+                                             inputValues.push_back(data.getGradientData()); }
 
-  inline void RegisterOutput(su2double& data) {AD::globalTape.registerOutput(data);}
+  inline void RegisterOutput(su2double& data) { AD::globalTape.registerOutput(data); }
 
-  inline void ResetInput(su2double &data) {data.getGradientData() = su2double::GradientData();}
+  inline void ResetInput(su2double &data) { data.getGradientData() = su2double::GradientData(); }
 
-  inline void StartRecording() {AD::globalTape.setActive();}
+  inline void StartRecording() { AD::globalTape.setActive(); }
 
-  inline void StopRecording() {AD::globalTape.setPassive();}
+  inline void StopRecording() { AD::globalTape.setPassive(); }
 
-  inline void ClearAdjoints() {AD::globalTape.clearAdjoints(); }
+  inline void ClearAdjoints() { AD::globalTape.clearAdjoints(); }
 
-  inline void ComputeAdjoint() {AD::globalTape.evaluate();
-                               adjointVectorPosition = 0;}
+  inline void ComputeAdjoint() { AD::globalTape.evaluate();
+                               adjointVectorPosition = 0; }
 
   inline void Reset() {
     if (inputValues.size() != 0) {
@@ -160,36 +160,36 @@ namespace AD{
 
   /*--- Default implementation if reverse mode is disabled ---*/
 
-  inline void RegisterInput(su2double &data) {}
+  inline void RegisterInput(su2double &data) { }
 
-  inline void RegisterOutput(su2double& data) {}
+  inline void RegisterOutput(su2double& data) { }
 
-  inline void StartRecording() {}
+  inline void StartRecording() { }
 
-  inline void StopRecording() {}
+  inline void StopRecording() { }
 
-  inline void ClearAdjoints() {}
+  inline void ClearAdjoints() { }
 
-  inline void ComputeAdjoint() {}
+  inline void ComputeAdjoint() { }
 
-  inline void Reset() {}
+  inline void Reset() { }
 
-  inline void ResetInput(su2double &data) {}
+  inline void ResetInput(su2double &data) { }
 
-  inline void SetPreaccIn(const su2double &data) {}
+  inline void SetPreaccIn(const su2double &data) { }
 
-  inline void SetPreaccIn(const su2double* data, const int size) {}
+  inline void SetPreaccIn(const su2double* data, const int size) { }
 
-  inline void SetPreaccIn(const su2double* const *data, const int size_x, const int size_y) {}
+  inline void SetPreaccIn(const su2double* const *data, const int size_x, const int size_y) { }
 
-  inline void SetPreaccOut(su2double &data) {}
+  inline void SetPreaccOut(su2double &data) { }
 
-  inline void SetPreaccOut(su2double* data, const int size) {}
+  inline void SetPreaccOut(su2double* data, const int size) { }
 
-  inline void SetPreaccOut(su2double** data, const int size_x, const int size_y) {}
+  inline void SetPreaccOut(su2double** data, const int size_x, const int size_y) { }
 
-  inline void StartPreacc() {}
+  inline void StartPreacc() { }
 
-  inline void EndPreacc() {}
+  inline void EndPreacc() { }
 #endif
 }

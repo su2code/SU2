@@ -348,7 +348,7 @@ void CPoissonSolver::Copy_Zone_Solution(CSolver ***solver1_solution,
   su2double *E_field = new su2double [nDim];
   
   for (iPoint = 0; iPoint < solver1_geometry[MESH_0]->GetnPointDomain(); iPoint++) {
-    for (iDim =0; iDim < nDim; iDim ++) {
+    for (iDim = 0; iDim < nDim; iDim ++) {
       neg_EFvalue = solver1_solution[MESH_0][POISSON_SOL]->node[iPoint]->GetGradient(0, iDim);
       E_field[iDim] = -1.0*neg_EFvalue;
     }

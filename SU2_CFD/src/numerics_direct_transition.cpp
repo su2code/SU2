@@ -447,38 +447,38 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(su2double *val_residual, 
     val_residual[0] = prod - des;
     
     /*-- REtheta eq: --*/
-    if (nDim==2) {
+    if (nDim== 2) {
       Velocity_Mag = sqrt(U_i[1]*U_i[1]+U_i[2]*U_i[2])/U_i[0];
-    } else if (nDim==3) {
+    } else if (nDim== 3) {
       Velocity_Mag = sqrt(U_i[1]*U_i[1]+U_i[2]*U_i[2]+U_i[3]*U_i[3])/U_i[0];
     }
     
     /*-- Gradient of velocity magnitude ---*/
     dU_dx = 0.5*Velocity_Mag*( 2*U_i[1]/U_i[0]*PrimVar_Grad_i[1][0]
                               +2*U_i[2]/U_i[0]*PrimVar_Grad_i[2][0]);
-    if (nDim==3)
+    if (nDim== 3)
       dU_dx += 0.5*Velocity_Mag*( 2*U_i[3]/U_i[0]*PrimVar_Grad_i[3][0]);
     
     dU_dy = 0.5*Velocity_Mag*( 2*U_i[1]/U_i[0]*PrimVar_Grad_i[1][1]
                               +2*U_i[2]/U_i[0]*PrimVar_Grad_i[2][1]);
-    if (nDim==3)
+    if (nDim== 3)
       dU_dy += 0.5*Velocity_Mag*( 2*U_i[3]/U_i[0]*PrimVar_Grad_i[3][1]);
     
-    if (nDim==3)
+    if (nDim== 3)
       dU_dz = 0.5*Velocity_Mag*( 2*U_i[1]/U_i[0]*PrimVar_Grad_i[1][2]
                                 +2*U_i[2]/U_i[0]*PrimVar_Grad_i[2][2]
                                 +2*U_i[3]/U_i[0]*PrimVar_Grad_i[3][2]);
     
     du_ds = U_i[1]/(U_i[0]*Velocity_Mag) * dU_dx +  // Streamwise velocity derivative
     U_i[2]/(U_i[0]*Velocity_Mag) * dU_dy;
-    if (nDim==3)
+    if (nDim== 3)
       du_ds += U_i[3]/(U_i[0]*Velocity_Mag) * dU_dz;
     
     re_theta_lim = 20.;
     
     /*-- Fixed-point iterations to solve REth correlation --*/
     f_lambda = 1.;
-    for (int iter=0; iter<10; iter++) {
+    for (int iter= 0; iter<10; iter++) {
       if (tu <= 1.3) {
         re_theta = f_lambda * (1173.51-589.428*tu+0.2196/(tu*tu));
       } else {
@@ -491,7 +491,7 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(su2double *val_residual, 
       lambda = U_i[0]*theta*theta*du_ds / Laminar_Viscosity_i;
       lambda = min(max(-0.1, lambda),0.1);
       
-      if (lambda<=0.0) {
+      if (lambda<= 0.0) {
         f_lambda = 1. - (-12.986*lambda - 123.66*lambda*lambda -
                          405.689*lambda*lambda*lambda)*exp(-pow(2./3*tu,1.5));
       } else {

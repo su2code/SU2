@@ -33,7 +33,7 @@
 
 #include "../include/variable_structure.hpp"
 
-CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
+CTransLMVariable::CTransLMVariable(void) : CTurbVariable() { }
 
 CTransLMVariable::CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth,  unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CTurbVariable(val_nDim, val_nvar, config) {

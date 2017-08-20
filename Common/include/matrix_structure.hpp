@@ -253,14 +253,14 @@ public:
    * \param[in] n - Size of the quare matrix.
    * \param[out] b - cofactor matrix
    */
-  void MatrixCoFactor(su2double **a, unsigned long n, su2double **b) ;
+  void MatrixCoFactor(su2double **a, unsigned long n, su2double **b);
 
   /*!
    * \brief Transpose of a square matrix, do it in place. Written by Paul Bourke
    * \param[in] a - Matrix to compute the determinant.
    * \param[in] n - Size of the quare matrix.
    */
-  void MatrixTranspose(su2double **a, unsigned long n) ;
+  void MatrixTranspose(su2double **a, unsigned long n);
   
 	/*!
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
@@ -540,7 +540,7 @@ public:
 	/*!
 	 * \brief destructor of the class
 	 */
-	~CSysMatrixVectorProduct() {}
+	~CSysMatrixVectorProduct() { }
   
 	/*!
 	 * \brief operator that defines the CSysMatrix-CSysVector product
@@ -573,7 +573,7 @@ public:
   /*!
    * \brief destructor of the class
    */
-  ~CSysMatrixVectorProductTransposed() {}
+  ~CSysMatrixVectorProductTransposed() { }
 
   /*!
    * \brief operator that defines the CSysMatrix-CSysVector product
@@ -606,7 +606,7 @@ public:
 	/*!
 	 * \brief destructor of the class
 	 */
-	~CJacobiPreconditioner() {}
+	~CJacobiPreconditioner() { }
   
 	/*!
 	 * \brief operator that defines the preconditioner operation
@@ -639,7 +639,7 @@ public:
   /*!
    * \brief destructor of the class
    */
-  ~CJacobiTransposedPreconditioner() {}
+  ~CJacobiTransposedPreconditioner() { }
 
   /*!
    * \brief operator that defines the preconditioner operation
@@ -672,7 +672,7 @@ public:
 	/*!
 	 * \brief destructor of the class
 	 */
-	~CILUPreconditioner() {}
+	~CILUPreconditioner() { }
   
 	/*!
 	 * \brief operator that defines the preconditioner operation
@@ -705,7 +705,7 @@ public:
 	/*!
 	 * \brief destructor of the class
 	 */
-	~CLU_SGSPreconditioner() {}
+	~CLU_SGSPreconditioner() { }
 	
 	/*!
 	 * \brief operator that defines the preconditioner operation
@@ -738,7 +738,7 @@ public:
 	/*!
 	 * \brief destructor of the class
 	 */
-	~CLineletPreconditioner() {}
+	~CLineletPreconditioner() { }
 	
 	/*!
 	 * \brief operator that defines the preconditioner operation

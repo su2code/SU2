@@ -35,9 +35,9 @@
 
 unsigned short CDualGrid::nDim = 0;
 
-CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim;}
+CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim; }
 
-CDualGrid::~CDualGrid() {}
+CDualGrid::~CDualGrid() { }
 
 CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *config) : CDualGrid(val_nDim) {
   
@@ -150,7 +150,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
-  else{ 
+  else { 
     Volume = new su2double[3]; 
     Volume[0] = 0.0; 
     Volume[1] = 0.0; 
@@ -243,7 +243,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
-  else{ 
+  else { 
     Volume = new su2double[3]; 
     Volume[0] = 0.0; 
     Volume[1] = 0.0;
@@ -629,23 +629,23 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
 void CVertex::AddNormal(su2double *val_face_normal) {
 
   unsigned short i;
-  for( i = 0; i < nDim; i++ )
+  for ( i = 0; i < nDim; i++ )
     Normal[i] += val_face_normal[i]; 
 
 }
 
-void CVertex::Allocate_DonorInfo(void){
+void CVertex::Allocate_DonorInfo(void) {
   
-  if( Donor_Points != NULL )  delete [] Donor_Points;
-  if( Donor_Proc   != NULL )  delete [] Donor_Proc;
-  if( Donor_Coeff  != NULL )  delete [] Donor_Coeff;  
+  if ( Donor_Points != NULL )  delete [] Donor_Points;
+  if ( Donor_Proc   != NULL )  delete [] Donor_Proc;
+  if ( Donor_Coeff  != NULL )  delete [] Donor_Coeff;  
   
   Donor_Points = new unsigned long[nDonor_Points];
   Donor_Proc   = new unsigned long[nDonor_Points];
   Donor_Coeff  = new su2double[nDonor_Points];
 }
 
-CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim){
+CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim) {
 	unsigned short iDim;
  /*--- Pointers initialization ---*/
 	TurboNormal = NULL;

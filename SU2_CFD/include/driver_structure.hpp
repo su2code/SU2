@@ -198,28 +198,28 @@ public:
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.
    */
-  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) { };
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.
    */
-  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) { };
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) { };
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone from which the tractions will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) { };
 
   /*!
    * \brief A virtual member.
@@ -227,7 +227,7 @@ public:
    * \param[in] targetZone - destination of the information.
    * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter) {};
+  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter) { };
 
   /*!
    * \brief A virtual member.
@@ -235,12 +235,12 @@ public:
    * \param[in] targetZone - destination of the information.
    * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter) {};
+  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter) { };
 
   /*!
    * \brief A virtual member.
    */
-  virtual void Update() {};
+  virtual void Update() { };
 
   /*!
    * \brief Launch the computation for all zones and all physics.

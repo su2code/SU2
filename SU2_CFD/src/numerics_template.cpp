@@ -223,13 +223,13 @@ void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **
 }
 
 CSource_Template::CSource_Template(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) {}
+                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
 CSource_Template::~CSource_Template(void) {
   
 }
 
-void CSource_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {}
+void CSource_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
 CViscous_Template::CViscous_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
