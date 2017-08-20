@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - economon@stanford.edu
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - fix_bugs
+        - develop
 
 env:
     global:
