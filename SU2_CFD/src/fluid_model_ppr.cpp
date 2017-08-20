@@ -35,7 +35,7 @@
 
 CPengRobinson::CPengRobinson() : CIdealGas() {
   a= 0.0;
-  b =0.0;
+  b = 0.0;
   k = 0.0;
   TstarCrit = 0.0;
 }
@@ -45,7 +45,7 @@ CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2d
   a = 0.45724*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
   b = 0.0778*Gas_Constant*Tstar/Pstar;
   TstarCrit = Tstar;
-  Zed=1.0;
+  Zed= 1.0;
 
   if (w <= 0.49)
         k = 0.37464 + 1.54226 * w - 0.26992 * w*w;
@@ -161,10 +161,10 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
 
 void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
   su2double toll= 1e-6;
-  su2double A, B, Z, DZ=1.0, F, F1, atanh;
+  su2double A, B, Z, DZ= 1.0, F, F1, atanh;
   su2double rho, fv, e;
   su2double sqrt2=sqrt(2.0);
-  unsigned short nmax = 20, count=0;
+  unsigned short nmax = 20, count= 0;
 
   AD::StartPreacc();
   AD::SetPreaccIn(P); AD::SetPreaccIn(T);
@@ -173,7 +173,7 @@ void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
   B= b*P/(T*Gas_Constant);
 
   if (Zed > 0.1) Z = min(Zed, 0.99);
-    else Z=0.99;
+    else Z= 0.99;
   
   do {
     F = Z*Z*Z + Z*Z*(B - 1.0) + Z*(A - 2*B - 3*B*B)  + (B*B*B + B*B - A*B);
@@ -218,9 +218,9 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
   su2double T, fv, sqrt2=sqrt(2.0), A;
   su2double f, v, atanh;
   su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
-  su2double toll = 1e-9, FACTOR=0.2;
+  su2double toll = 1e-9, FACTOR= 0.2;
   su2double cons_s, cons_h;
-  unsigned short countrtb=0, NTRY=100, ITMAX=100;
+  unsigned short countrtb= 0, NTRY= 100, ITMAX= 100;
 
   A = Gas_Constant / Gamma_Minus_One;
   T = h*Gamma_Minus_One/Gas_Constant/Gamma;
@@ -247,7 +247,7 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 
   // zbrac algorithm NR
 
-  for (int j=1; j<=NTRY; j++) {
+  for (int j= 1; j<=NTRY; j++) {
     if (fx1*fx2 > 0.0) {
       if (fabs(fx1) < fabs(fx2)) {
         x1 += FACTOR*(x1-x2);
@@ -351,8 +351,8 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
 
 	su2double T, rho, v, cons_P, cons_s, fv, A, atanh;
 	su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
-	su2double toll = 1e-5, FACTOR=0.2;
-	unsigned short count=0, NTRY=100, ITMAX=100;
+	su2double toll = 1e-5, FACTOR= 0.2;
+	unsigned short count= 0, NTRY= 100, ITMAX= 100;
 
   A = Gas_Constant / Gamma_Minus_One;
   T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
@@ -381,7 +381,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
 
   // zbrac algorithm NR
 
-  for (int j=1; j<=NTRY; j++) {
+  for (int j= 1; j<=NTRY; j++) {
     if (fx1*fx2 > 0.0) {
       if (fabs(fx1) < fabs(fx2)) {
         x1 += FACTOR*(x1-x2);

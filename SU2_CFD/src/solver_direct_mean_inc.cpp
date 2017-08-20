@@ -2746,7 +2746,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     if (grid_movement) {
       GridVel_i = geometry->node[iPoint]->GetGridVel();
       GridVel_j = geometry->node[jPoint]->GetGridVel();
-      ProjVel_i = 0.0; ProjVel_j =0.0;
+      ProjVel_i = 0.0; ProjVel_j = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
         ProjVel_j += GridVel_j[iDim]*Normal[iDim];
@@ -3397,7 +3397,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
-          Vel_Infty2 =0.0; MassFlow = 0.0;
+          Vel_Infty2 = 0.0; MassFlow = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             Velocity[iDim]   = node[iPoint]->GetVelocity(iDim);
             MomentDist[iDim] = Coord[iDim] - Origin[iDim];
@@ -5441,7 +5441,7 @@ void CIncEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolum
         for (iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
           for (iDim = 0; iDim < nDim; iDim++)
-            VarCoord[iDim]=0.0;
+            VarCoord[iDim]= 0.0;
 
           nDonor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints();
 
@@ -5554,7 +5554,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         if (turb_model == SA || turb_model == SA_NEG) {
           index++;
         } else if (turb_model == SST) {
-          index+=2;
+          index+= 2;
         }
 
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
@@ -6390,7 +6390,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     if (grid_movement) {
       su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
       su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
-      ProjVel_i = 0.0; ProjVel_j =0.0;
+      ProjVel_i = 0.0; ProjVel_j = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
         ProjVel_j += GridVel_j[iDim]*Normal[iDim];

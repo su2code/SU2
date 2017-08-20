@@ -3344,8 +3344,8 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
     /*--- Get the values of pressure and viscosity ---*/
     Pn = solver_container[ZONE_0][MESH_0][FLOW_SOL]->node[iPoint]->GetPressure();
     if (viscous_flow) {
-      for (iDim=0; iDim<nDim; iDim++) {
-        for (jDim=0; jDim<nDim; jDim++) {
+      for (iDim= 0; iDim<nDim; iDim++) {
+        for (jDim= 0; jDim<nDim; jDim++) {
           Grad_Vel[iDim][jDim] = solver_container[ZONE_0][FinestMesh][FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
         }
       }

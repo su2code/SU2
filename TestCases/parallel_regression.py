@@ -208,7 +208,7 @@ def main():
     turb_oneram6.tol       = 0.00001
     test_list.append(turb_oneram6)
 
-    # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
+    # NACA0012 (SA, FUN3D finest grid results: CL= 1.0983, CD= 0.01242)
     turb_naca0012_sa           = TestCase('turb_naca0012_sa')
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
@@ -219,7 +219,7 @@ def main():
     turb_naca0012_sa.tol       = 0.00001
     test_list.append(turb_naca0012_sa)
 
-    # NACA0012 (SA, FUN3D results for finest grid: CL=1.0983, CD=0.01242) with binary restart
+    # NACA0012 (SA, FUN3D results for finest grid: CL= 1.0983, CD= 0.01242) with binary restart
     turb_naca0012_sa_bin           = TestCase('turb_naca0012_sa_bin')
     turb_naca0012_sa_bin.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa_bin.cfg_file  = "turb_NACA0012_sa_binary.cfg"
@@ -230,7 +230,7 @@ def main():
     turb_naca0012_sa_bin.tol       = 0.00001
     test_list.append(turb_naca0012_sa_bin)
     
-    # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
+    # NACA0012 (SST, FUN3D finest grid results: CL= 1.0840, CD= 0.01253)
     turb_naca0012_sst           = TestCase('turb_naca0012_sst')
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
@@ -770,7 +770,7 @@ def main():
     pywrapper_naca0012.tol       = 0.00001
     test_list.append(pywrapper_naca0012)
 
-    # NACA0012 (SST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
+    # NACA0012 (SST, FUN3D results for finest grid: CL= 1.0840, CD= 0.01253)
     pywrapper_turb_naca0012_sst           = TestCase('pywrapper_turb_naca0012_sst')
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"

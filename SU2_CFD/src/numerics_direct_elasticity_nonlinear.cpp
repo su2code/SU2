@@ -252,7 +252,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
         Ba_Mat[2][0] = GradNi_Curr_Mat[iNode][1];
         Ba_Mat[2][1] = GradNi_Curr_Mat[iNode][0];
       }
-      else if (nDim ==3) {
+      else if (nDim == 3) {
         Ba_Mat[0][0] = GradNi_Curr_Mat[iNode][0];
         Ba_Mat[1][1] = GradNi_Curr_Mat[iNode][1];
         Ba_Mat[2][2] = GradNi_Curr_Mat[iNode][2];
@@ -292,7 +292,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
           Bb_Mat[2][0] = GradNi_Curr_Mat[jNode][1];
           Bb_Mat[2][1] = GradNi_Curr_Mat[jNode][0];
         }
-        else if (nDim ==3) {
+        else if (nDim == 3) {
           Bb_Mat[0][0] = GradNi_Curr_Mat[jNode][0];
           Bb_Mat[1][1] = GradNi_Curr_Mat[jNode][1];
           Bb_Mat[2][2] = GradNi_Curr_Mat[jNode][2];

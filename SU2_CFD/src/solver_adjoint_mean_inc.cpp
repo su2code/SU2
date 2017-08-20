@@ -230,8 +230,8 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
     su2double SoundSpeed,*vel_inf,R,vel2,vel;
     R = config->GetGas_ConstantND();
     vel_inf = config->GetVelocity_FreeStreamND();
-    vel2=0;
-    for (iDim=0; iDim<nDim; iDim++)
+    vel2= 0;
+    for (iDim= 0; iDim<nDim; iDim++)
       vel2 +=vel_inf[iDim]*vel_inf[iDim];
     vel = pow(vel2,0.5);
     SoundSpeed= pow(Gamma*config->GetTemperature_FreeStreamND()*R, 0.5);
@@ -240,7 +240,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
     // Assumes +x flow direction
     // Assume v.n = |v|, n = -v/|v|
 
-    for (iDim=0; iDim<nDim; iDim++) {
+    for (iDim= 0; iDim<nDim; iDim++) {
       Phi_Inf[iDim] +=PsiE_Inf*(SoundSpeed*SoundSpeed/Gamma_Minus_One/vel2-1)*vel_inf[iDim];
       // Assumes n in direction of v
       Phi_Inf[iDim]+=vel_inf[iDim]/vel*(0.5);
@@ -260,7 +260,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
   if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE || config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE) {
-    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All();  iMarker++) {
       if (config->GetMarker_All_Monitoring(iMarker) == YES) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -3756,7 +3756,7 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double Area=0.0, *Normal = NULL, myArea_Monitored;
+  su2double Area= 0.0, *Normal = NULL, myArea_Monitored;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -3880,7 +3880,7 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Sensitivity definition and coefficient on all markers ---*/
   CSensitivity = new su2double* [nMarker];
-  for (iMarker=0; iMarker<nMarker; iMarker++) {
+  for (iMarker= 0; iMarker<nMarker; iMarker++) {
     CSensitivity[iMarker] = new su2double [geometry->nVertex[iMarker]];
   }
   Sens_Geo   = new su2double[nMarker];
@@ -3922,7 +3922,7 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
   if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE) {
-    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All();  iMarker++) {
       if (config->GetMarker_All_Monitoring(iMarker) == YES) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -4667,7 +4667,7 @@ void CAdjIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_c
   su2double *d, q, l1psi, phi[3] = {0.0,0.0,0.0};
   su2double *GridVel;
   su2double Laminar_Viscosity;
-  su2double kGTdotn=0.0, Area=0.0, Xi=0.0;
+  su2double kGTdotn= 0.0, Area= 0.0, Xi= 0.0;
   
   su2double *Psi = new su2double[nVar];
   su2double **Tau = new su2double* [nDim];

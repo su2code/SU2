@@ -94,7 +94,7 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
   nPointIDs[0] = 0; nPointIDs[1] = nPoints;
   curLeaf[0] = 0;
 
-  for (unsigned long i=0; i<nPoints; ++i) pointIDs[i] = i;
+  for (unsigned long i= 0; i<nPoints; ++i) pointIDs[i] = i;
 
   unsigned long nLeavesToDivide = 1, nLeavesTot = 1;
 
@@ -110,7 +110,7 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
     nPointIDsNew[0] = 0;
 
     /*--- Loop over the current number of leaves to be divided. ---*/
-    for (unsigned long i=0; i<nLeavesToDivide; ++i) {
+    for (unsigned long i= 0; i<nLeavesToDivide; ++i) {
 
       /* Store the number of points present in the leaf in nn and the
          current leaf number in mm. */
@@ -124,12 +124,12 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
       leaves[mm].xMax = coorMaxLeaves.data() + nDim*mm;
 
       unsigned long ll = nDim*pointIDs[nPointIDs[i]];
-      for (unsigned short l=0; l<nDim; ++l)
+      for (unsigned short l= 0; l<nDim; ++l)
         leaves[mm].xMin[l] = leaves[mm].xMax[l] = coor[ll+l];
 
       for (unsigned long j=(nPointIDs[i]+1); j<nPointIDs[i+1]; ++j) {
         ll = nDim*pointIDs[j];
-        for (unsigned short l=0; l<nDim; ++l) {
+        for (unsigned short l= 0; l<nDim; ++l) {
           leaves[mm].xMin[l] = min(leaves[mm].xMin[l], coor[ll+l]);
           leaves[mm].xMax[l] = max(leaves[mm].xMax[l], coor[ll+l]);
         }
@@ -141,7 +141,7 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
             of the leaf. ---*/
       unsigned short splitDir= 0;
       su2double distMax = -1.0;
-      for (unsigned short l=0; l<nDim; ++l) {
+      for (unsigned short l= 0; l<nDim; ++l) {
         const su2double dist = leaves[mm].xMax[l] - leaves[mm].xMin[l];
         if (dist > distMax) { distMax = dist; splitDir = l; }
       }
@@ -232,9 +232,9 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
     /* Set the data for the next round. */
     nLeavesToDivide = nLeavesToDivideNew;
 
-    for (unsigned long i=0; i<=nLeavesToDivide; ++i)           nPointIDs[i] = nPointIDsNew[i];
-    for (unsigned long i=0; i< nLeavesToDivide; ++i)           curLeaf[i]   = curLeafNew[i];
-    for (unsigned long i=0; i<nPointIDs[nLeavesToDivide]; ++i) pointIDs[i]  = pointIDsNew[i];
+    for (unsigned long i= 0; i<=nLeavesToDivide; ++i)           nPointIDs[i] = nPointIDsNew[i];
+    for (unsigned long i= 0; i< nLeavesToDivide; ++i)           curLeaf[i]   = curLeafNew[i];
+    for (unsigned long i= 0; i<nPointIDs[nLeavesToDivide]; ++i) pointIDs[i]  = pointIDsNew[i];
   }
 }
 
@@ -371,7 +371,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
   rankID   = ranksOfPoints[kk];
   minIndex = kk;
   dist = 0.0;
-  for (unsigned short l=0; l<nDimADT; ++l) {
+  for (unsigned short l= 0; l<nDimADT; ++l) {
     const su2double ds = coor[l] - coorTarget[l];
     dist += ds*ds;
   }
@@ -396,11 +396,11 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
     frontLeavesNew.clear();
 
     /* Loop over the leaves of the current front. */
-    for (unsigned long i=0; i<frontLeaves.size(); ++i) {
+    for (unsigned long i= 0; i<frontLeaves.size(); ++i) {
 
       /* Store the current leaf a bit easier in ll and loop over its children. */
       const unsigned long ll = frontLeaves[i];
-      for (unsigned short mm=0; mm<2; ++mm) {
+      for (unsigned short mm= 0; mm<2; ++mm) {
 
         /* Determine whether this child contains a node or a leaf
            of the next level of the ADT. */
@@ -412,7 +412,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
                 stored value. ---*/
           coorTarget = coorPoints.data() + nDimADT*kk;
           su2double distTarget = 0;
-          for (unsigned short l=0; l<nDimADT; ++l) {
+          for (unsigned short l= 0; l<nDimADT; ++l) {
             const su2double ds = coor[l] - coorTarget[l];
             distTarget += ds*ds;
           }
@@ -429,7 +429,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
           /*--- Child contains a leaf. Determine the possible minimum distance
                 squared to that leaf. ---*/
           su2double posDist = 0.0;
-          for (unsigned short l=0; l<nDimADT; ++l) {
+          for (unsigned short l= 0; l<nDimADT; ++l) {
             su2double ds = 0.0;
             if (     coor[l] < leaves[kk].xMin[l]) ds = coor[l] - leaves[kk].xMin[l];
             else if (coor[l] > leaves[kk].xMax[l]) ds = coor[l] - leaves[kk].xMax[l];
@@ -448,7 +448,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
 
             coorTarget = coorPoints.data() + nDimADT*jj;
             su2double distTarget = 0;
-            for (unsigned short l=0; l<nDimADT; ++l) {
+            for (unsigned short l= 0; l<nDimADT; ++l) {
               const su2double ds = coor[l] - coorTarget[l];
               distTarget += ds*ds;
             }
@@ -477,7 +477,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
   /* Recompute the distance to get the correct dependency if we use AD */
   coorTarget = coorPoints.data() + nDimADT*minIndex;
   dist = 0.0;
-  for (unsigned short l=0; l<nDimADT; ++l) {
+  for (unsigned short l= 0; l<nDimADT; ++l) {
     const su2double ds = coor[l] - coorTarget[l];
     dist += ds*ds;
   }

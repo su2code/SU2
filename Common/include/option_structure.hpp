@@ -831,7 +831,7 @@ enum RIEMANN_TYPE {
   TOTAL_CONDITIONS_PT_1D = 11,
   STATIC_PRESSURE_1D = 12,
   MIXING_IN_1D = 13,
-  MIXING_OUT_1D =14
+  MIXING_OUT_1D = 14
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>

@@ -1590,8 +1590,8 @@ void CSourceAxisymmetric_AdjFlow::ComputeResidual(su2double *val_residual, su2do
   Jacobian_Axisymmetric[3][2] = Gamma*U_i[3]/U_i[0] - 1/2*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
   Jacobian_Axisymmetric[3][3] = Gamma*U_i[2]/U_i[0];
   
-  for (int iVar=0; iVar<4; iVar++)
-    for (int jVar=0; jVar<4; jVar++)
+  for (int iVar= 0; iVar<4; iVar++)
+    for (int jVar= 0; jVar<4; jVar++)
       Jacobian_Axisymmetric[iVar][jVar] *= yinv*Volume;
   
   /* -- Residual = transpose(Jacobian) * psi --*/

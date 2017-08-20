@@ -682,7 +682,7 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
   
   if (fsi) {
     
-    su2double WAitk=0.0;
+    su2double WAitk= 0.0;
     
     WAitk = solver->GetWAitken_Dyn();
     solver->SetWAitken_Dyn_tn1(WAitk);
@@ -725,7 +725,7 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
   
   if (fsi) {
     
-    su2double WAitk=0.0;
+    su2double WAitk= 0.0;
     
     WAitk = solver_container[FEA_SOL]->GetWAitken_Dyn();
     solver_container[FEA_SOL]->SetWAitken_Dyn_tn1(WAitk);
@@ -859,7 +859,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     nPointDomain = fea_geometry->GetnPointDomain();
     nDim = fea_geometry->GetnDim();
     
-    for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint= 0; iPoint < nPointDomain; iPoint++) {
       
       deltaURad = 0.0;
       

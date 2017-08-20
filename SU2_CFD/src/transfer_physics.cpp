@@ -91,7 +91,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
   su2double SigAux = 0.0;
 
   if (CurrentTime <= Static_Time)
-    ModAmpl=0.0;
+    ModAmpl= 0.0;
   else if ((CurrentTime > Static_Time) &&
   (CurrentTime <= (Static_Time + Ramp_Time)) && (Ramp_Load)) {
     ModAmpl = (CurrentTime-Static_Time) / Ramp_Time;

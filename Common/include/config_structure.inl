@@ -993,9 +993,9 @@ inline unsigned short CConfig::GetKind_TurboMachinery(unsigned short val_iZone) 
 
 inline unsigned short CConfig::GetKind_SpanWise(void) { return Kind_SpanWise; }
 
-inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingPlaneInterface !=0); }
+inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingPlaneInterface != 0); }
 
-inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0); }
+inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery != 0); }
 
 inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane; }
 
@@ -1005,9 +1005,9 @@ inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[
 
 inline void CConfig::SetnBlades(unsigned short val_iZone, su2double nblades) { nBlades[val_iZone] = nblades; }
 
-inline bool CConfig::GetBoolGiles(void) { return (nMarker_Giles!=0); }
+inline bool CConfig::GetBoolGiles(void) { return (nMarker_Giles!= 0); }
 
-inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0); }
+inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!= 0); }
 
 inline unsigned short CConfig::GetnMarker_MixingPlaneInterface(void) { return nMarker_MixingPlaneInterface; }
 

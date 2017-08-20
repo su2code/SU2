@@ -312,7 +312,7 @@ COutput::~COutput(void) {
   unsigned short iMarker, iSpan;
   if (turbo) {
     for (iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++) {
-      for (iSpan=0; iSpan<nSpanWiseSections+1; iSpan++) {
+      for (iSpan= 0; iSpan<nSpanWiseSections+1; iSpan++) {
         delete [] MachIn          [iMarker][iSpan];
         delete [] MachOut         [iMarker][iSpan];
         delete [] TurboVelocityIn [iMarker][iSpan];
@@ -4829,7 +4829,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         if (turbo) {
           /*--- Loop over the nMarker of turboperformance and get the desired values ---*/
           for (iMarker_Monitoring = 0; iMarker_Monitoring < nTurboPerf; iMarker_Monitoring++) {
-            for (iSpan=0; iSpan<nSpanWiseSections+1; iSpan++) {
+            for (iSpan= 0; iSpan<nSpanWiseSections+1; iSpan++) {
               if ((iMarker_Monitoring == 0) && (direct_diff != NO_DERIVATIVE)) {
                 D_TotalPressure_Loss = SU2_TYPE::GetDerivative(TotalPressureLoss[iMarker_Monitoring][iSpan]);
                 D_FlowAngle_Out      = 180.0/PI_NUMBER*SU2_TYPE::GetDerivative(FlowAngleOut[iMarker_Monitoring][iSpan]);
@@ -5733,8 +5733,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               //          else  cout.width(14),
               //                 cout << log10(residual_flow[0]),
               //                 cout.width(14);
-              //          if ( nDim==2 ) cout << log10(residual_flow[3]);
-              //          if ( nDim==3 ) cout << log10(residual_flow[4]);
+              //          if ( nDim== 2 ) cout << log10(residual_flow[3]);
+              //          if ( nDim== 3 ) cout << log10(residual_flow[4]);
 
               switch(nVar_Turb) {
               case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
@@ -6475,9 +6475,9 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     }
 
     if (Ref_NonDim == DIMENSIONAL) { Breakdown_file << "Dimensional simulation." << "\n"; }
-    else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
-    else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { Breakdown_file << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
-    else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
+    else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (P= 1.0, Rho= 1.0, T= 1.0 at the farfield)." << "\n"; }
+    else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { Breakdown_file << "Non-Dimensional simulation (V=Mach, Rho= 1.0, T= 1.0 at the farfield)." << "\n"; }
+    else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (V= 1.0, Rho= 1.0, T= 1.0 at the farfield)." << "\n"; }
 
     if (config[val_iZone]->GetSystemMeasurements() == SI) {
     Breakdown_file << "The reference area is " << config[val_iZone]->GetRefArea() << " m^2." << "\n";
@@ -7961,7 +7961,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
 void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iMarker_monitor, iMarker;
   unsigned long iVertex, iPoint;
-  su2double Vector[3], Total_Mdot=0.0;
+  su2double Vector[3], Total_Mdot= 0.0;
   unsigned short nDim = geometry->GetnDim();
   
   for (iMarker = 0; iMarker< config->GetnMarker_All(); iMarker++) {
@@ -7997,7 +7997,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, Vn, Density,// local values at each node (Velocity2 = V^2). U = normal velocity
   AveragePt = 0.0, AverageMach = 0.0, AverageTemperature = 0.0,  // Area Averaged values
   Velocity1D = 0.0, Enthalpy1D = 0.0, Density1D = 0.0, Pressure1D = 0.0; // Averaging depends on choices.
-  su2double MassFlowRate = 0.0, TotalArea=0.0; // Reference values
+  su2double MassFlowRate = 0.0, TotalArea= 0.0; // Reference values
   
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   su2double Gamma = config->GetGamma();
@@ -8852,7 +8852,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           Xcoord[nVertex_NearField] = geometry->node[iPoint]->GetCoord(0);
           Ycoord[nVertex_NearField] = geometry->node[iPoint]->GetCoord(1);
           
-          if (nDim ==2) {
+          if (nDim == 2) {
             AzimuthalAngle[nVertex_NearField] = 0;
           }
           
@@ -10264,7 +10264,7 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
       
       /*--- Add extra info ---*/
       
-      SurfFlow_file << "TEXT X=14, Y=86, F=HELV-BOLD, C=BLUE, H=2.0, ";
+      SurfFlow_file << "TEXT X= 14, Y=86, F=HELV-BOLD, C=BLUE, H= 2.0, ";
       unsigned short RackProbes = SU2_TYPE::Int(config->GetDistortionRack()[0]);
       unsigned short RackAngle = SU2_TYPE::Int(config->GetDistortionRack()[1]);
       SurfFlow_file << "T=\"Rack Size: " << RackProbes << " probes at "<< RackAngle << "deg." << "\\" << "\\n";
@@ -13074,7 +13074,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
   int *nElem_Flag = new int[size];
   
-  for (int ii=0; ii < size; ii++) {
+  for (int ii= 0; ii < size; ii++) {
     nElem_Send[ii] = 0;
     nElem_Recv[ii] = 0;
     nElem_Flag[ii]= -1;
@@ -13139,7 +13139,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
    communications simpler. ---*/
   
   int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
@@ -13167,10 +13167,10 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
    position as we load up the send buffer. ---*/
   
   unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+  for (int ii= 0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
   
   unsigned long *haloIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
+  for (int ii= 0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
   
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
@@ -13265,7 +13265,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
   unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
       int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
       int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
@@ -13281,7 +13281,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   /*--- Launch the non-blocking sends of the connectivity. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
       int ll = NODES_PER_ELEMENT*nElem_Send[ii];
       int kk = nElem_Send[ii+1] - nElem_Send[ii];
@@ -13297,7 +13297,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   /*--- Repeat the process to communicate the halo flags. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
       int ll     = nElem_Recv[ii];
       int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
@@ -13313,7 +13313,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   /*--- Launch the non-blocking sends of the halo flags. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
       int ll = nElem_Send[ii];
       int kk = nElem_Send[ii+1] - nElem_Send[ii];
@@ -13663,7 +13663,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
   int *nElem_Flag = new int[size];
   
-  for (int ii=0; ii < size; ii++) {
+  for (int ii= 0; ii < size; ii++) {
     nElem_Send[ii] = 0;
     nElem_Recv[ii] = 0;
     nElem_Flag[ii]= -1;
@@ -13734,7 +13734,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
    communications simpler. ---*/
   
   int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
@@ -13762,10 +13762,10 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
    position as we load up the send buffer. ---*/
   
   unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+  for (int ii= 0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
   
   unsigned long *haloIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
+  for (int ii= 0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
   
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
@@ -13866,7 +13866,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
   unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
       int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
       int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
@@ -13882,7 +13882,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   /*--- Launch the non-blocking sends of the connectivity. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
       int ll = NODES_PER_ELEMENT*nElem_Send[ii];
       int kk = nElem_Send[ii+1] - nElem_Send[ii];
@@ -13898,7 +13898,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   /*--- Repeat the process to communicate the halo flags. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
       int ll     = nElem_Recv[ii];
       int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
@@ -13914,7 +13914,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   /*--- Launch the non-blocking sends of the halo flags. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
       int ll = nElem_Send[ii];
       int kk = nElem_Send[ii+1] - nElem_Send[ii];
@@ -14119,7 +14119,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   int *nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
   int *nPoint_Flag = new int[size];
   
-  for (int ii=0; ii < size; ii++) {
+  for (int ii= 0; ii < size; ii++) {
     nPoint_Send[ii] = 0;
     nPoint_Recv[ii] = 0;
     nPoint_Flag[ii]= -1;
@@ -14174,7 +14174,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
    communications simpler. ---*/
   
   int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nPoint_Flag[ii] = -1;
+  for (int ii= 0; ii < size; ii++) nPoint_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
     if ((ii != rank) && (nPoint_Send[ii+1] > 0)) nSends++;
@@ -14202,10 +14202,10 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
    positions as we load up the send buffer. ---*/
   
   unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = VARS_PER_POINT*nPoint_Send[ii];
+  for (int ii= 0; ii < size; ii++) index[ii] = VARS_PER_POINT*nPoint_Send[ii];
   
   unsigned long *idIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) idIndex[ii] = nPoint_Send[ii];
+  for (int ii= 0; ii < size; ii++) idIndex[ii] = nPoint_Send[ii];
   
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
@@ -14285,7 +14285,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   recv_req = new MPI_Request[2*nRecvs];
   
   unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
       int ll     = VARS_PER_POINT*nPoint_Recv[ii];
       int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
@@ -14301,7 +14301,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking sends of the connectivity. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
       int ll = VARS_PER_POINT*nPoint_Send[ii];
       int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
@@ -14317,7 +14317,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   /*--- Repeat the process to communicate the global IDs. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
       int ll     = nPoint_Recv[ii];
       int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
@@ -14333,7 +14333,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking sends of the global IDs. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
       int ll = nPoint_Send[ii];
       int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
@@ -14542,7 +14542,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
   int *nElem_Flag = new int[size];
   
-  for (int ii=0; ii < size; ii++) {
+  for (int ii= 0; ii < size; ii++) {
     nElem_Send[ii] = 0;
     nElem_Recv[ii] = 0;
     nElem_Flag[ii]= -1;
@@ -14584,7 +14584,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Reset out flags and then loop through our local triangle surface
    elements performing the same check for where each grid node resides. ---*/
   
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii]= -1;
   
   for (int ii = 0; ii < (int)nParallel_BoundTria; ii++) {
     for ( int jj = 0; jj < N_POINTS_TRIANGLE; jj++ ) {
@@ -14618,7 +14618,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Reset out flags and then loop through our local quad surface
    elements performing the same check for where each grid node resides. ---*/
   
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii]= -1;
   
   for (int ii = 0; ii < (int)nParallel_BoundQuad; ii++) {
     for ( int jj = 0; jj < N_POINTS_QUADRILATERAL; jj++ ) {
@@ -14666,7 +14666,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    communications simpler. ---*/
   
   int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
@@ -14685,7 +14685,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    positions as we load up the send buffer. ---*/
   
   unsigned long *idIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
+  for (int ii= 0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
   
   /*--- Now loop back through the local connectivities for the surface
    elements and load up the global IDs for sending to their home proc. ---*/
@@ -14728,7 +14728,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
     }
   }
   
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii]= -1;
   
   for (int ii = 0; ii < (int)nParallel_BoundTria; ii++) {
     for ( int jj = 0; jj < N_POINTS_TRIANGLE; jj++ ) {
@@ -14768,7 +14768,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
     }
   }
   
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii]= -1;
   
   for (int ii = 0; ii < (int)nParallel_BoundQuad; ii++) {
     for ( int jj = 0; jj < N_POINTS_QUADRILATERAL; jj++ ) {
@@ -14828,7 +14828,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking recv's for the global IDs. ---*/
   
   unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
       int ll     = nElem_Recv[ii];
       int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
@@ -14844,7 +14844,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking sends of the global IDs. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
       int ll = nElem_Send[ii];
       int kk = nElem_Send[ii+1] - nElem_Send[ii];
@@ -14917,7 +14917,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   int *nPoint_Send = new int[size+1]; nPoint_Send[0] = 0;
   int *nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
   
-  for (int ii=1; ii < size+1; ii++) nPoint_Send[ii]= (int)nSurf_Poin_Par;
+  for (int ii= 1; ii < size+1; ii++) nPoint_Send[ii]= (int)nSurf_Poin_Par;
   
 #ifdef HAVE_MPI
   MPI_Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
@@ -15169,7 +15169,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
   /*--- Reset our flags and counters ---*/
   
-  for (int ii=0; ii < size; ii++) {
+  for (int ii= 0; ii < size; ii++) {
     nElem_Send[ii] = 0;
     nElem_Recv[ii] = 0;
     nElem_Flag[ii]= -1;
@@ -15220,7 +15220,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    communications simpler. ---*/
   
   nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
@@ -15250,7 +15250,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    position as we load up the send buffer. ---*/
   
   unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = nElem_Send[ii];
+  for (int ii= 0; ii < size; ii++) index[ii] = nElem_Send[ii];
   
   /*--- Loop back through and load up the buffers for the global IDs
    and their new renumbering values. ---*/
@@ -15314,7 +15314,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking recv's for the global ID. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
       int ll     = nElem_Recv[ii];
       int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
@@ -15330,7 +15330,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking sends of the global ID. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
       int ll = nElem_Send[ii];
       int kk = nElem_Send[ii+1] - nElem_Send[ii];
@@ -15346,7 +15346,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking recv's for the renumbered ID. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
       int ll     = nElem_Recv[ii];
       int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
@@ -15362,7 +15362,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking sends of the renumbered ID. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
       int ll = nElem_Send[ii];
       int kk = nElem_Send[ii+1] - nElem_Send[ii];
@@ -15451,7 +15451,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
     }
   }
   
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii]= -1;
   
   for (int ii = 0; ii < (int)nParallel_BoundTria; ii++) {
     for ( int jj = 0; jj < N_POINTS_TRIANGLE; jj++ ) {
@@ -15478,7 +15478,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
     }
   }
   
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii]= -1;
   
   for (int ii = 0; ii < (int)nParallel_BoundQuad; ii++) {
     for ( int jj = 0; jj < N_POINTS_QUADRILATERAL; jj++ ) {
@@ -15516,7 +15516,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    hold the new numbering for our outlier points. We need to ask for the
    new numbering from these procs. ---*/
   
-  for (int ii=0; ii < size; ii++) {
+  for (int ii= 0; ii < size; ii++) {
     nElem_Send[ii] = 0;
     nElem_Recv[ii] = 0;
     nElem_Flag[ii]= -1;
@@ -15564,7 +15564,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    communications simpler. ---*/
   
   nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  for (int ii= 0; ii < size; ii++) nElem_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
@@ -15581,7 +15581,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
   /*--- Reset our index variable for reuse. ---*/
   
-  for (int ii=0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
+  for (int ii= 0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
   
   /*--- Loop over the outliers again and load up the global IDs. ---*/
   
@@ -15638,7 +15638,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
       int ll     = nElem_Recv[ii];
       int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
@@ -15654,7 +15654,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking sends of the connectivity. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
       int ll = nElem_Send[ii];
       int kk = nElem_Send[ii+1] - nElem_Send[ii];
@@ -15715,7 +15715,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking sends of the connectivity. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
       int ll = nElem_Send[ii];
       int kk = nElem_Send[ii+1] - nElem_Send[ii];
@@ -15731,7 +15731,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
   iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
+  for (int ii= 0; ii<size; ii++) {
     if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
       int ll     = nElem_Recv[ii];
       int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];

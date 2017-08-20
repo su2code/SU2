@@ -317,7 +317,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
    in FIELDVIEW. ---*/
   
   
-  if (nDim ==2) {
+  if (nDim == 2) {
     
     nbfaces = nGlobal_Tria + nGlobal_Quad;
     
@@ -340,7 +340,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     
   }
   
-  if (nDim ==3) {
+  if (nDim == 3) {
     
     nbfaces = nGlobal_BoundTria + nGlobal_BoundQuad;
     

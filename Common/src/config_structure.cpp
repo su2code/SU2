@@ -917,8 +917,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_distortion[0] =  5.0; default_distortion[1] =  15.0;
   addDoubleArrayOption("DISTORTION_RACK", 2, DistortionRack, default_distortion);
   /* DESCRIPTION: Values of the box to impose a subsonic nacellle (mach, Pressure, Temperature) */
-  default_eng_val[0]=0.0; default_eng_val[1]=0.0; default_eng_val[2]=0.0;
-  default_eng_val[3]=0.0;  default_eng_val[4]=0.0;
+  default_eng_val[0]= 0.0; default_eng_val[1]= 0.0; default_eng_val[2]= 0.0;
+  default_eng_val[3]= 0.0;  default_eng_val[4]= 0.0;
   addDoubleArrayOption("SUBSONIC_ENGINE_VALUES", 5, SubsonicEngine_Values, default_eng_val);
   /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle cylinder (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax, Radius) */
   default_eng_cyl[0] = 0.0; default_eng_cyl[1] = 0.0; default_eng_cyl[2] = 0.0;
@@ -1214,8 +1214,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCD_DCMY_VALUE", dCD_dCMy, 0.0);
 
-  default_obj_coeff[0]=0.0; default_obj_coeff[1]=0.0; default_obj_coeff[2]=0.0;
-  default_obj_coeff[3]=0.0;  default_obj_coeff[4]=0.0;
+  default_obj_coeff[0]= 0.0; default_obj_coeff[1]= 0.0; default_obj_coeff[2]= 0.0;
+  default_obj_coeff[3]= 0.0;  default_obj_coeff[4]= 0.0;
   /*!\brief OBJ_CHAIN_RULE_COEFF
   * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
   * with area-averaged outlet primitive variables. This is used with the genereralized outflow
@@ -1764,14 +1764,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Fix K plane */
   addShortListOption("FFD_FIX_K", nFFD_Fix_KDir, FFD_Fix_KDir);
   
-  /* DESCRIPTION: FFD symmetry plane (j=0) */
+  /* DESCRIPTION: FFD symmetry plane (j= 0) */
   addBoolOption("FFD_SYMMETRY_PLANE", FFD_Symmetry_Plane, false);
 
   /* DESCRIPTION: Define different coordinates systems for the FFD */
   addEnumOption("FFD_COORD_SYSTEM", FFD_CoordSystem, CoordSystem_Map, CARTESIAN);
 
   /* DESCRIPTION: Axis information for the spherical and cylindrical coord system */
-  default_ffd_axis[0] = 0.0; default_ffd_axis[1] = 0.0; default_ffd_axis[2] =0.0;
+  default_ffd_axis[0] = 0.0; default_ffd_axis[1] = 0.0; default_ffd_axis[2] = 0.0;
   addDoubleArrayOption("FFD_AXIS", 3, FFD_Axis, default_ffd_axis);
 
   /* DESCRIPTION: Number of total iterations in the FFD point inversion */
@@ -2134,8 +2134,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_ObjFunc[0] = DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
     Weight_ObjFunc[0] = 1.0;
-    nObj=1;
-    nObjW=1;
+    nObj= 1;
+    nObjW= 1;
   }
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
   
@@ -2146,7 +2146,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       exit(EXIT_FAILURE);
     }
     Weight_ObjFunc = new su2double[nObj];
-    for (unsigned short iObj=0; iObj<nObj; iObj++)
+    for (unsigned short iObj= 0; iObj<nObj; iObj++)
       Weight_ObjFunc[iObj] = 1.0;
   }
   /*--- Ignore weights if only one objective provided ---*/
@@ -2158,13 +2158,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (nObj>0) {
     if (nMarker_Monitoring!=nObj and Marker_Monitoring!= NULL) {
-      if (nMarker_Monitoring==1) {
+      if (nMarker_Monitoring== 1) {
         /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
         nMarker_Monitoring = nObj;
         string marker = Marker_Monitoring[0];
         delete[] Marker_Monitoring;
         Marker_Monitoring = new string[nMarker_Monitoring];
-        for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
+        for (iMarker= 0; iMarker<nMarker_Monitoring; iMarker++)
           Marker_Monitoring[iMarker] = marker;
       }
       else if (nObj>1) {
@@ -2328,8 +2328,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- Force number of span-wise section to 1 if 2D case ---*/
-  if (val_nDim ==2) {
-    nSpanWiseSections_User=1;
+  if (val_nDim == 2) {
+    nSpanWiseSections_User= 1;
     Kind_SpanWise= EQUISPACED;
   }
 
@@ -2342,7 +2342,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   } else {
     nMarker_TurboPerformance = 0;
-    nSpanWiseSections =1;
+    nSpanWiseSections = 1;
   }
 
   /*--- Set number of TurboPerformance markers ---*/
@@ -2353,7 +2353,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Set number of TurboPerformance markers ---*/
   if (RampRotatingFrame && !DiscreteAdjoint) {
     FinalRotation_Rate_Z = new su2double[nZone];
-    for (iZone=0; iZone <nZone; iZone ++) {
+    for (iZone= 0; iZone <nZone; iZone ++) {
       FinalRotation_Rate_Z[iZone] = Rotation_Rate_Z[iZone];
       if (abs(FinalRotation_Rate_Z[iZone]) > 0.0) {
         Rotation_Rate_Z[iZone] = RampRotatingFrame_Coeff[0];
@@ -2921,11 +2921,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Aeroelastic_np1[iMarker].resize(2);
       Aeroelastic_n[iMarker].resize(2);
       Aeroelastic_n1[iMarker].resize(2);
-      for (int i =0; i<2; i++) {
+      for (int i = 0; i<2; i++) {
         Aeroelastic_np1[iMarker][i].resize(2);
         Aeroelastic_n[iMarker][i].resize(2);
         Aeroelastic_n1[iMarker][i].resize(2);
-        for (int j=0; j<2; j++) {
+        for (int j= 0; j<2; j++) {
           Aeroelastic_np1[iMarker][i][j] = 0.0;
           Aeroelastic_n[iMarker][i][j] = 0.0;
           Aeroelastic_n1[iMarker][i][j] = 0.0;
@@ -3848,7 +3848,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 /*--- Identification of Turbomachinery markers and flag them---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    unsigned short indexMarker=0;
+    unsigned short indexMarker= 0;
     Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = NO;
     Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = NO;
     for (iMarker_Turbomachinery = 0; iMarker_Turbomachinery < nMarker_Turbomachinery; iMarker_Turbomachinery++) {
@@ -3868,7 +3868,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Identification of MixingPlane interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-  	unsigned short indexMarker=0;
+  	unsigned short indexMarker= 0;
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = NO;
     for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface])
@@ -4074,9 +4074,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     
     if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
-    else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+    else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P= 1.0, Rho= 1.0, T= 1.0 at the farfield)." << endl; }
+    else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho= 1.0, T= 1.0 at the farfield)." << endl; }
+    else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V= 1.0, Rho= 1.0, T= 1.0 at the farfield)." << endl; }
     
     if (RefArea == 0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
     else { cout << "The reference area is " << RefArea;
@@ -4368,7 +4368,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
-		if (nObj==1) {
+		if (nObj== 1) {
       switch (Kind_ObjFunc[0]) {
         case DRAG_COEFFICIENT:           cout << "CD objective function";
           if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCD/dCL = " << dCD_dCL << "." << endl; }
@@ -4696,7 +4696,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
-    if (nMGLevels !=0) {
+    if (nMGLevels != 0) {
       
       if (nStartUpIter != 0) cout << "A total of " << nStartUpIter << " start up iterations on the fine grid."<< endl;
       if (MGCycle == V_CYCLE) cout << "V Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
@@ -4713,7 +4713,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
         <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
-      if (nMGLevels !=0) {
+      if (nMGLevels != 0) {
         cout << "Multigrid Level:                  ";
         for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
           cout.width(6); cout << iLevel;
@@ -4729,7 +4729,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			}
 			
 
-      if (nMGLevels !=0) {
+      if (nMGLevels != 0) {
         cout.precision(3);
         cout << "MG PreSmooth coefficients:        ";
         for (unsigned short iMG_PreSmooth = 0; iMG_PreSmooth < nMGLevels+1; iMG_PreSmooth++) {
@@ -4738,7 +4738,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-      if (nMGLevels !=0) {
+      if (nMGLevels != 0) {
         cout.precision(3);
         cout << "MG PostSmooth coefficients:       ";
         for (unsigned short iMG_PostSmooth = 0; iMG_PostSmooth < nMGLevels+1; iMG_PostSmooth++) {
@@ -4747,7 +4747,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-      if (nMGLevels !=0) {
+      if (nMGLevels != 0) {
         cout.precision(3);
         cout << "MG CorrecSmooth coefficients:     ";
         for (unsigned short iMG_CorrecSmooth = 0; iMG_CorrecSmooth < nMGLevels+1; iMG_CorrecSmooth++) {
@@ -5968,7 +5968,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");
     Filename = Filename.substr(0, lastindex);
-    if (nObj==1) {
+    if (nObj== 1) {
       switch (Kind_ObjFunc[0]) {
       case DRAG_COEFFICIENT:        AdjExt = "_cd";       break;
       case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
@@ -6997,13 +6997,13 @@ void CConfig::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned lon
   u = new su2double [n];
 
   if (yp1 > 0.99e30)			// The lower boundary condition is set either to be "nat
-    y2[0]=u[0]=0.0;			  // -ural"
+    y2[0]=u[0]= 0.0;			  // -ural"
   else {									// or else to have a specified first derivative.
     y2[0] = -0.5;
     u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
   }
 
-  for (i=2; i<=n-1; i++) {									//  This is the decomposition loop of the tridiagonal al-
+  for (i= 2; i<=n-1; i++) {									//  This is the decomposition loop of the tridiagonal al-
     sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);		//	gorithm. y2 and u are used for tem-
     p=sig*y2[i-2]+2.0;										//	porary storage of the decomposed
     y2[i-1]=(sig-1.0)/p;										//	factors.
@@ -7012,13 +7012,13 @@ void CConfig::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned lon
   }
 
   if (ypn > 0.99e30)						// The upper boundary condition is set either to be
-    qn=un=0.0;									// "natural"
+    qn=un= 0.0;									// "natural"
   else {												// or else to have a specified first derivative.
-    qn=0.5;
+    qn= 0.5;
     un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
   }
   y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-1; k>=1; k--)					// This is the backsubstitution loop of the tridiagonal
+  for (k=n-1; k>= 1; k--)					// This is the backsubstitution loop of the tridiagonal
     y2[k-1]=y2[k-1]*y2[k]+u[k-1];	  // algorithm.
 
   delete[] u;
@@ -7029,7 +7029,7 @@ su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<
   unsigned long klo, khi, k;
   su2double h, b, a, y;
 
-  klo=1;										// We will find the right place in the table by means of
+  klo= 1;										// We will find the right place in the table by means of
   khi=n;										// bisection. This is optimal if sequential calls to this
   while (khi-klo > 1) {			// routine are at random values of x. If sequential calls
     k=(khi+klo) >> 1;				// are in order, and closely spaced, one would do better

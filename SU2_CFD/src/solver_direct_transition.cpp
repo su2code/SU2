@@ -444,7 +444,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Set both interior and exterior point to current value ---*/
-      for (iVar=0; iVar < nVar; iVar++) {
+      for (iVar= 0; iVar < nVar; iVar++) {
         U_domain[iVar] = node[iPoint]->GetSolution(iVar);
         U_wall[iVar]   = node[iPoint]->GetSolution(iVar);   
       }

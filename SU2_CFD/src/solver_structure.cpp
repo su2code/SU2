@@ -390,7 +390,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
       }
     }
   
-  for (iPoint=0; iPoint<geometry->GetnPoint(); iPoint++)
+  for (iPoint= 0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {
       Gradient = node[iPoint]->GetAuxVarGradient();
       DualArea = geometry->node[iPoint]->GetVolume();
@@ -1461,20 +1461,20 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vect
   vector<vector<su2double> > Aux(2,vector<su2double>(2,0.0));
   vector<vector<su2double> > D(2,vector<su2double>(2,0.0));
   // Aux = M*Phi
-  for (int i=0; i<2; i++) {
-    for (int j=0; j<2; j++) {
+  for (int i= 0; i<2; i++) {
+    for (int j= 0; j<2; j++) {
       Aux[i][j] = 0;
-      for (int k=0; k<2; k++) {
+      for (int k= 0; k<2; k++) {
         Aux[i][j] += M[i][k]*Phi[k][j];
       }
     }
   }
   
   // D = Phi'*Aux
-  for (int i=0; i<2; i++) {
-    for (int j=0; j<2; j++) {
+  for (int i= 0; i<2; i++) {
+    for (int j= 0; j<2; j++) {
       D[i][j] = 0;
-      for (int k=0; k<2; k++) {
+      for (int k= 0; k<2; k++) {
         D[i][j] += Phi[k][i]*Aux[k][j]; //PHI transpose
       }
     }
@@ -1543,15 +1543,15 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
   f[1] = cons*(2*-Cm);
   
   //f_tilde = Phi'*f
-  for (int i=0; i<2; i++) {
+  for (int i= 0; i<2; i++) {
     f_tilde[i] = 0;
-    for (int k=0; k<2; k++) {
+    for (int k= 0; k<2; k++) {
       f_tilde[i] += Phi[k][i]*f[k]; //PHI transpose
     }
   }
   
   /*--- solve each decoupled equation (The inverse of the 2x2 matrix is provided) ---*/
-  for (int i=0; i<2; i++) {
+  for (int i= 0; i<2; i++) {
     /* Matrix Inverse */
     detA = 9.0/(4.0*dt*dt) + 3*w[i]*xi[i]/(dt) + w[i]*w[i];
     A_inv[0][0] = 1/detA * (3/(2.0*dt) + 2*xi[i]*w[i]);
@@ -1578,10 +1578,10 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
   /*--- Transform back from the generalized coordinates to get the actual displacements in plunge and pitch  q = Phi*eta ---*/
   vector<su2double> q(2,0.0);
   vector<su2double> q_dot(2,0.0);
-  for (int i=0; i<2; i++) {
+  for (int i= 0; i<2; i++) {
     q[i] = 0;
     q_dot[i] = 0;
-    for (int k=0; k<2; k++) {
+    for (int k= 0; k<2; k++) {
       q[i] += Phi[i][k]*eta[k];
       q_dot[i] += Phi[i][k]*eta_dot[k];
     }
@@ -3342,7 +3342,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         if (turb_model == SA || turb_model == SA_NEG) {
           index++;
         } else if (turb_model == SST) {
-          index+=2;
+          index+= 2;
         }
         
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/

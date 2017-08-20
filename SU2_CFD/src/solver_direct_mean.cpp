@@ -5314,7 +5314,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     if (grid_movement) {
       GridVel_i = geometry->node[iPoint]->GetGridVel();
       GridVel_j = geometry->node[jPoint]->GetGridVel();
-      ProjVel_i = 0.0; ProjVel_j =0.0;
+      ProjVel_i = 0.0; ProjVel_j = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
         ProjVel_j += GridVel_j[iDim]*Normal[iDim];
@@ -8290,7 +8290,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         
         IDC_Mach = 0.0;
         for (iStation = 0; iStation < nStation-1; iStation++) {
-          if (Mach_Mean!=0)
+          if (Mach_Mean!= 0)
             IDC_Mach = max (IDC_Mach, 0.5*((Mach_Station[iStation] - Mach_Station_Min[iStation])/Mach_Mean
                                            + (Mach_Station[iStation+1] - Mach_Station_Min[iStation+1])/Mach_Mean)   );
           
@@ -8472,7 +8472,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             Density                         = V_inlet[nDim+2];
             SoundSpeed  = sqrt(Gamma*Pressure/Density);
             
-            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 =0.0;
+            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
               Area += Vector[iDim]*Vector[iDim];
               Velocity[iDim] = V_inlet[iDim+1];
@@ -9179,7 +9179,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
               cout << endl;
             }
             
-            if (nDim ==3) {
+            if (nDim == 3) {
               if (config->GetSystemMeasurements() == SI)
                 cout <<"CG (m): (" << Inlet_XCG_Total[iMarker_Inlet] <<", " << Inlet_YCG_Total[iMarker_Inlet] <<", " << Inlet_ZCG_Total[iMarker_Inlet] << "). Area (m^2): " << Inlet_Area_Total[iMarker_Inlet] << ". Radius (m): " << sqrt(Inlet_Area_Total[iMarker_Inlet]/PI_NUMBER) << "." << endl;
               else if (config->GetSystemMeasurements() == US)
@@ -10697,7 +10697,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Compute the internal state u_i ---*/
       Velocity2_i = 0;
-      for (iDim=0; iDim < nDim; iDim++)
+      for (iDim= 0; iDim < nDim; iDim++)
       {
         Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
         Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
@@ -10969,11 +10969,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         }
         
         /*--- Compute DubDu -= RNL---*/
-        for (iVar=0; iVar<nVar; iVar++)
+        for (iVar= 0; iVar<nVar; iVar++)
         {
-          for (jVar=0; jVar<nVar; jVar++)
+          for (jVar= 0; jVar<nVar; jVar++)
           {
-            for (kVar=0; kVar<nVar; kVar++)
+            for (kVar= 0; kVar<nVar; kVar++)
             {
               if (Lambda_i[kVar]<0)
                 DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
@@ -10999,14 +10999,14 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         }
         
         /*--- initiate Jacobian_i to zero matrix ---*/
-        for (iVar=0; iVar<nVar; iVar++)
-          for (jVar=0; jVar<nVar; jVar++)
+        for (iVar= 0; iVar<nVar; iVar++)
+          for (jVar= 0; jVar<nVar; jVar++)
             Jacobian_i[iVar][jVar] = 0.0;
         
         /*--- Compute numerical flux Jacobian at node i ---*/
-        for (iVar=0; iVar<nVar; iVar++) {
-          for (jVar=0; jVar<nVar; jVar++) {
-            for (kVar=0; kVar<nVar; kVar++) {
+        for (iVar= 0; iVar<nVar; iVar++) {
+          for (jVar= 0; jVar<nVar; jVar++) {
+            for (kVar= 0; kVar<nVar; kVar++) {
               Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
             }
           }
@@ -11200,7 +11200,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         /* --- Compute the internal state u_i --- */
         Velocity2_i = 0;
-        for (iDim=0; iDim < nDim; iDim++)
+        for (iDim= 0; iDim < nDim; iDim++)
         {
           Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
           Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
@@ -11466,11 +11466,11 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           }
 
           /*--- Compute DubDu -= RNL---*/
-          for (iVar=0; iVar<nVar; iVar++)
+          for (iVar= 0; iVar<nVar; iVar++)
           {
-            for (jVar=0; jVar<nVar; jVar++)
+            for (jVar= 0; jVar<nVar; jVar++)
             {
-              for (kVar=0; kVar<nVar; kVar++)
+              for (kVar= 0; kVar<nVar; kVar++)
               {
                 if (Lambda_i[kVar]<0)
                   DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
@@ -11496,14 +11496,14 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           }
 
           /*--- initiate Jacobian_i to zero matrix ---*/
-          for (iVar=0; iVar<nVar; iVar++)
-            for (jVar=0; jVar<nVar; jVar++)
+          for (iVar= 0; iVar<nVar; iVar++)
+            for (jVar= 0; jVar<nVar; jVar++)
               Jacobian_i[iVar][jVar] = 0.0;
 
           /*--- Compute numerical flux Jacobian at node i ---*/
-          for (iVar=0; iVar<nVar; iVar++) {
-            for (jVar=0; jVar<nVar; jVar++) {
-              for (kVar=0; kVar<nVar; kVar++) {
+          for (iVar= 0; iVar<nVar; iVar++) {
+            for (jVar= 0; jVar<nVar; jVar++) {
+              for (kVar= 0; kVar<nVar; kVar++) {
                 Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
               }
             }
@@ -11645,13 +11645,13 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
 
   kend_max = geometry->GetnFreqSpanMax(marker_flag);
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++) {
-    for (k=0; k < 2*kend_max+1; k++) {
+    for (k= 0; k < 2*kend_max+1; k++) {
       freq = k - kend_max;
       cktemp_inf = complex<su2double>(0.0,0.0);
       cktemp_out1 = complex<su2double>(0.0,0.0);
       cktemp_out2 = complex<su2double>(0.0,0.0);
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+        for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
           if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
             if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
               for (iVertex = 0; iVertex < geometry->nVertexSpan[iMarker][iSpan]; iVertex++) {
@@ -11670,7 +11670,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
                 }
                 ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
-                if (nDim ==2) {
+                if (nDim == 2) {
                   deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
                   deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
                   deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
@@ -11690,7 +11690,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
                 conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[iMarker][iSpan], deltaprim, cj);
 
                 /*-----this is only valid 2D ----*/
-                if (nDim ==2) {
+                if (nDim == 2) {
                   cj_out1 = cj[1];
                   cj_out2 = cj[2];
                   cj_inf  = cj[3];
@@ -11752,7 +11752,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
 #endif
 
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+        for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
           if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
             if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
               /*-----this is only valid 2D ----*/
@@ -11815,7 +11815,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
   S_boundary       = new su2double[8];
 
   su2double  AvgMach , *cj, GilesBeta, *delta_c, **R_Matrix, *deltaprim, **R_c_inv,**R_c, alphaIn_BC, gammaIn_BC = 0,
-      P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, c3js_Re, cOutjs_Re, avgVel2 =0.0;
+      P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, c3js_Re, cOutjs_Re, avgVel2 = 0.0;
 
   long freq;
 
@@ -12171,7 +12171,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
             Beta_inf= I*complex<su2double>(sqrt(1.0 - AvgMach));
             c2js = complex<su2double>(0.0,0.0);
             c3js = complex<su2double>(0.0,0.0);
-            for (k=0; k < 2*kend_max+1; k++) {
+            for (k= 0; k < 2*kend_max+1; k++) {
               freq = k - kend_max;
               if (freq >= (long)(-kend) && freq <= (long)(kend) && AverageTurboMach[0] > config->GetAverageMachLimit()) {
                 TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
@@ -12284,7 +12284,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
             /* --- subsonic Giles implementation ---*/
             Beta_inf= I*complex<su2double>(sqrt(1.0  - AvgMach));
             cOutjs 	= complex<su2double>(0.0,0.0);
-            for (k=0; k < 2*kend_max+1; k++) {
+            for (k= 0; k < 2*kend_max+1; k++) {
               freq = k - kend_max;
               if (freq >= (long)(-kend) && freq <= (long)(kend) && AverageTurboMach[0] > config->GetAverageMachLimit()) {
                 TwoPiThetaFreq_Pitch = 2*PI_NUMBER*freq*theta/pitch;
@@ -12349,7 +12349,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
       /*--- Compute primitive jump from characteristic variables  ---*/
       for (iVar = 0; iVar < nVar; iVar++)
       {
-        deltaprim[iVar]=0.0;
+        deltaprim[iVar]= 0.0;
         for (jVar = 0; jVar < nVar; jVar++)
         {
           deltaprim[iVar] +=  R_Matrix[iVar][jVar]*delta_c[jVar];
@@ -15039,7 +15039,7 @@ void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetr
         for (iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
           for (iDim = 0; iDim < nDim; iDim++)
-            VarCoord[iDim]=0.0;
+            VarCoord[iDim]= 0.0;
 
           nDonor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints();
 
@@ -15153,7 +15153,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         if (turb_model == SA || turb_model == SA_NEG) {
           index++;
         } else if (turb_model == SST) {
-          index+=2;
+          index+= 2;
         }
 
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
@@ -15369,7 +15369,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++) {
 
 
-    for (iDim=0; iDim<nDim; iDim++) {
+    for (iDim= 0; iDim<nDim; iDim++) {
       TotalAreaVelocity[iDim] = 0.0;
     }
 
@@ -15377,7 +15377,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
     TotalAreaDensity  = 0.0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+      for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
 
@@ -15449,7 +15449,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+      for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
 
@@ -15480,7 +15480,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
   /*--- initialize 1D average quantities ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+    for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
 
@@ -15573,9 +15573,9 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   for (iSpan= 0; iSpan < nSpanWiseSections + 1; iSpan++) {
 
     /*--- Forces initialization for contenitors ---*/
-    for (iVar=0; iVar<nVar; iVar++)
+    for (iVar= 0; iVar<nVar; iVar++)
       TotalFluxes[iVar]= 0.0;
-    for (iDim=0; iDim<nDim; iDim++) {
+    for (iDim= 0; iDim<nDim; iDim++) {
       TotalVelocity[iDim]     = 0.0;
       TotalAreaVelocity[iDim] = 0.0;
       TotalMassVelocity[iDim] = 0.0;
@@ -15603,7 +15603,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+      for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
 
@@ -15855,7 +15855,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+      for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
 
@@ -16110,7 +16110,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   /*--- Compute Outlet Static Pressure if Radial equilibrium is imposed ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
+    for (iMarkerTP= 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++) {
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
           Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
@@ -16261,9 +16261,9 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     TurbPerfIn  = new su2double[n1];
     TurbPerfOut = new su2double[n2];
 
-    for (i=0; i<n1; i++)
+    for (i= 0; i<n1; i++)
       TurbPerfIn[i]    = -1.0;
-    for (i=0; i<n2; i++)
+    for (i= 0; i<n2; i++)
       TurbPerfOut[i]   = -1.0;
 #endif
 
@@ -16297,7 +16297,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             pressureIn          = PressureIn[iMarkerTP -1][iSpan];
             normalVelocityIn    = TurboVelocityIn[iMarkerTP -1][iSpan][0];
             tangVelocityIn      = TurboVelocityIn[iMarkerTP -1][iSpan][1];
-            if (nDim ==3) {
+            if (nDim == 3) {
               radialVelocityIn  = TurboVelocityIn[iMarkerTP -1][iSpan][2];
             }
             kineIn              = KineIn[iMarkerTP -1][iSpan];
@@ -16323,7 +16323,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             pressureOut          = PressureOut[iMarkerTP -1][iSpan];
             normalVelocityOut    = TurboVelocityOut[iMarkerTP -1][iSpan][0];
             tangVelocityOut      = TurboVelocityOut[iMarkerTP -1][iSpan][1];
-            if (nDim ==3) {
+            if (nDim == 3) {
               radialVelocityOut  = TurboVelocityOut[iMarkerTP -1][iSpan][2];
             }
             kineOut              = KineOut[iMarkerTP -1][iSpan];
@@ -16351,12 +16351,12 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     if (rank == MASTER_NODE) {
       TotTurbPerfIn       = new su2double[n1t];
       TotTurbPerfOut      = new su2double[n2t];
-      for (i=0; i<n1t; i++)
+      for (i= 0; i<n1t; i++)
         TotTurbPerfIn[i]  = -1.0;
-      for (i=0; i<n2t; i++)
+      for (i= 0; i<n2t; i++)
         TotTurbPerfOut[i] = -1.0;
       TotMarkerTP = new int[size];
-      for (i=0; i<size; i++) {
+      for (i= 0; i<size; i++) {
         TotMarkerTP[i]    = -1;
       }
     }
@@ -16368,7 +16368,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     }
 
     if (rank == MASTER_NODE) {
-      for (i=0; i<size; i++) {
+      for (i= 0; i<size; i++) {
         if (TotTurbPerfIn[n1*i] > 0.0) {
           densityIn        = 0.0;
           densityIn        = TotTurbPerfIn[n1*i];
@@ -17424,7 +17424,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     if (grid_movement) {
       su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
       su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
-      ProjVel_i = 0.0; ProjVel_j =0.0;
+      ProjVel_i = 0.0; ProjVel_j = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
         ProjVel_j += GridVel_j[iDim]*Normal[iDim];

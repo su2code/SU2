@@ -116,7 +116,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       if (iDim == jDim) delta[iDim][jDim] = 1.0;
-      else delta[iDim][jDim]=0.0;
+      else delta[iDim][jDim]= 0.0;
     }
   }
 
@@ -453,24 +453,24 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
     
     val_p_tensor[0][0] = 1.0;
-    val_p_tensor[0][1]=0.0;
-    val_p_tensor[0][2]=0.5*rhooc;
-    val_p_tensor[0][3]=0.5*rhooc;
+    val_p_tensor[0][1]= 0.0;
+    val_p_tensor[0][2]= 0.5*rhooc;
+    val_p_tensor[0][3]= 0.5*rhooc;
     
     val_p_tensor[1][0]=val_velocity[0];
     val_p_tensor[1][1]=*val_density*val_normal[1];
-    val_p_tensor[1][2]=0.5*(val_velocity[0]*rhooc+val_normal[0]**val_density);
-    val_p_tensor[1][3]=0.5*(val_velocity[0]*rhooc-val_normal[0]**val_density);
+    val_p_tensor[1][2]= 0.5*(val_velocity[0]*rhooc+val_normal[0]**val_density);
+    val_p_tensor[1][3]= 0.5*(val_velocity[0]*rhooc-val_normal[0]**val_density);
     
     val_p_tensor[2][0]=val_velocity[1];
     val_p_tensor[2][1]=-*val_density*val_normal[0];
-    val_p_tensor[2][2]=0.5*(val_velocity[1]*rhooc+val_normal[1]**val_density);
-    val_p_tensor[2][3]=0.5*(val_velocity[1]*rhooc-val_normal[1]**val_density);
+    val_p_tensor[2][2]= 0.5*(val_velocity[1]*rhooc+val_normal[1]**val_density);
+    val_p_tensor[2][3]= 0.5*(val_velocity[1]*rhooc-val_normal[1]**val_density);
     
-    val_p_tensor[3][0]=0.5*sqvel;
+    val_p_tensor[3][0]= 0.5*sqvel;
     val_p_tensor[3][1]=*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
-    val_p_tensor[3][2]=0.5*(0.5*sqvel*rhooc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
-    val_p_tensor[3][3]=0.5*(0.5*sqvel*rhooc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
+    val_p_tensor[3][2]= 0.5*(0.5*sqvel*rhooc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
+    val_p_tensor[3][3]= 0.5*(0.5*sqvel*rhooc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
     
   }
   else {
@@ -480,32 +480,32 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     val_p_tensor[0][0]=val_normal[0];
     val_p_tensor[0][1]=val_normal[1];
     val_p_tensor[0][2]=val_normal[2];
-    val_p_tensor[0][3]=0.5*rhooc;
-    val_p_tensor[0][4]=0.5*rhooc;
+    val_p_tensor[0][3]= 0.5*rhooc;
+    val_p_tensor[0][4]= 0.5*rhooc;
     
     val_p_tensor[1][0]=val_velocity[0]*val_normal[0];
     val_p_tensor[1][1]=val_velocity[0]*val_normal[1]-*val_density*val_normal[2];
     val_p_tensor[1][2]=val_velocity[0]*val_normal[2]+*val_density*val_normal[1];
-    val_p_tensor[1][3]=0.5*(val_velocity[0]*rhooc+*val_density*val_normal[0]);
-    val_p_tensor[1][4]=0.5*(val_velocity[0]*rhooc-*val_density*val_normal[0]);
+    val_p_tensor[1][3]= 0.5*(val_velocity[0]*rhooc+*val_density*val_normal[0]);
+    val_p_tensor[1][4]= 0.5*(val_velocity[0]*rhooc-*val_density*val_normal[0]);
     
     val_p_tensor[2][0]=val_velocity[1]*val_normal[0]+*val_density*val_normal[2];
     val_p_tensor[2][1]=val_velocity[1]*val_normal[1];
     val_p_tensor[2][2]=val_velocity[1]*val_normal[2]-*val_density*val_normal[0];
-    val_p_tensor[2][3]=0.5*(val_velocity[1]*rhooc+*val_density*val_normal[1]);
-    val_p_tensor[2][4]=0.5*(val_velocity[1]*rhooc-*val_density*val_normal[1]);
+    val_p_tensor[2][3]= 0.5*(val_velocity[1]*rhooc+*val_density*val_normal[1]);
+    val_p_tensor[2][4]= 0.5*(val_velocity[1]*rhooc-*val_density*val_normal[1]);
     
     val_p_tensor[3][0]=val_velocity[2]*val_normal[0]-*val_density*val_normal[1];
     val_p_tensor[3][1]=val_velocity[2]*val_normal[1]+*val_density*val_normal[0];
     val_p_tensor[3][2]=val_velocity[2]*val_normal[2];
-    val_p_tensor[3][3]=0.5*(val_velocity[2]*rhooc+*val_density*val_normal[2]);
-    val_p_tensor[3][4]=0.5*(val_velocity[2]*rhooc-*val_density*val_normal[2]);
+    val_p_tensor[3][3]= 0.5*(val_velocity[2]*rhooc+*val_density*val_normal[2]);
+    val_p_tensor[3][4]= 0.5*(val_velocity[2]*rhooc-*val_density*val_normal[2]);
     
-    val_p_tensor[4][0]=0.5*sqvel*val_normal[0]+*val_density*val_velocity[1]*val_normal[2]-*val_density*val_velocity[2]*val_normal[1];
-    val_p_tensor[4][1]=0.5*sqvel*val_normal[1]-*val_density*val_velocity[0]*val_normal[2]+*val_density*val_velocity[2]*val_normal[0];
-    val_p_tensor[4][2]=0.5*sqvel*val_normal[2]+*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
-    val_p_tensor[4][3]=0.5*(0.5*sqvel*rhooc+*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
-    val_p_tensor[4][4]=0.5*(0.5*sqvel*rhooc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
+    val_p_tensor[4][0]= 0.5*sqvel*val_normal[0]+*val_density*val_velocity[1]*val_normal[2]-*val_density*val_velocity[2]*val_normal[1];
+    val_p_tensor[4][1]= 0.5*sqvel*val_normal[1]-*val_density*val_velocity[0]*val_normal[2]+*val_density*val_velocity[2]*val_normal[0];
+    val_p_tensor[4][2]= 0.5*sqvel*val_normal[2]+*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
+    val_p_tensor[4][3]= 0.5*(0.5*sqvel*rhooc+*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
+    val_p_tensor[4][4]= 0.5*(0.5*sqvel*rhooc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
     
   }
   
@@ -526,24 +526,24 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     zeta = sqvel - (*val_kappa*0.5*sqvel + *val_chi)/(*val_kappa);
 
     val_p_tensor[0][0] = 1.0;
-    val_p_tensor[0][1]=0.0;
-    val_p_tensor[0][2]=0.5*rhooc;
-    val_p_tensor[0][3]=0.5*rhooc;
+    val_p_tensor[0][1]= 0.0;
+    val_p_tensor[0][2]= 0.5*rhooc;
+    val_p_tensor[0][3]= 0.5*rhooc;
 
     val_p_tensor[1][0]=val_velocity[0];
     val_p_tensor[1][1]=*val_density*val_normal[1];
-    val_p_tensor[1][2]=0.5*(val_velocity[0]*rhooc+val_normal[0]**val_density);
-    val_p_tensor[1][3]=0.5*(val_velocity[0]*rhooc-val_normal[0]**val_density);
+    val_p_tensor[1][2]= 0.5*(val_velocity[0]*rhooc+val_normal[0]**val_density);
+    val_p_tensor[1][3]= 0.5*(val_velocity[0]*rhooc-val_normal[0]**val_density);
 
     val_p_tensor[2][0]=val_velocity[1];
     val_p_tensor[2][1]=-*val_density*val_normal[0];
-    val_p_tensor[2][2]=0.5*(val_velocity[1]*rhooc+val_normal[1]**val_density);
-    val_p_tensor[2][3]=0.5*(val_velocity[1]*rhooc-val_normal[1]**val_density);
+    val_p_tensor[2][2]= 0.5*(val_velocity[1]*rhooc+val_normal[1]**val_density);
+    val_p_tensor[2][3]= 0.5*(val_velocity[1]*rhooc-val_normal[1]**val_density);
 
     val_p_tensor[3][0]= zeta;
     val_p_tensor[3][1]=*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
-    val_p_tensor[3][2]=0.5*(*val_enthalpy*rhooc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]);
-    val_p_tensor[3][3]=0.5*(*val_enthalpy*rhooc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]);
+    val_p_tensor[3][2]= 0.5*(*val_enthalpy*rhooc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]);
+    val_p_tensor[3][3]= 0.5*(*val_enthalpy*rhooc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]);
   }
   else {
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1]+val_velocity[2]*val_velocity[2];
@@ -552,32 +552,32 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     val_p_tensor[0][0]=val_normal[0];
     val_p_tensor[0][1]=val_normal[1];
     val_p_tensor[0][2]=val_normal[2];
-    val_p_tensor[0][3]=0.5*rhooc;
-    val_p_tensor[0][4]=0.5*rhooc;
+    val_p_tensor[0][3]= 0.5*rhooc;
+    val_p_tensor[0][4]= 0.5*rhooc;
 
     val_p_tensor[1][0]=val_velocity[0]*val_normal[0];
     val_p_tensor[1][1]=val_velocity[0]*val_normal[1]-*val_density*val_normal[2];
     val_p_tensor[1][2]=val_velocity[0]*val_normal[2]+*val_density*val_normal[1];
-    val_p_tensor[1][3]=0.5*(val_velocity[0]*rhooc+*val_density*val_normal[0]);
-    val_p_tensor[1][4]=0.5*(val_velocity[0]*rhooc-*val_density*val_normal[0]);
+    val_p_tensor[1][3]= 0.5*(val_velocity[0]*rhooc+*val_density*val_normal[0]);
+    val_p_tensor[1][4]= 0.5*(val_velocity[0]*rhooc-*val_density*val_normal[0]);
 
     val_p_tensor[2][0]=val_velocity[1]*val_normal[0]+*val_density*val_normal[2];
     val_p_tensor[2][1]=val_velocity[1]*val_normal[1];
     val_p_tensor[2][2]=val_velocity[1]*val_normal[2]-*val_density*val_normal[0];
-    val_p_tensor[2][3]=0.5*(val_velocity[1]*rhooc+*val_density*val_normal[1]);
-    val_p_tensor[2][4]=0.5*(val_velocity[1]*rhooc-*val_density*val_normal[1]);
+    val_p_tensor[2][3]= 0.5*(val_velocity[1]*rhooc+*val_density*val_normal[1]);
+    val_p_tensor[2][4]= 0.5*(val_velocity[1]*rhooc-*val_density*val_normal[1]);
 
     val_p_tensor[3][0]=val_velocity[2]*val_normal[0]-*val_density*val_normal[1];
     val_p_tensor[3][1]=val_velocity[2]*val_normal[1]+*val_density*val_normal[0];
     val_p_tensor[3][2]=val_velocity[2]*val_normal[2];
-    val_p_tensor[3][3]=0.5*(val_velocity[2]*rhooc+*val_density*val_normal[2]);
-    val_p_tensor[3][4]=0.5*(val_velocity[2]*rhooc-*val_density*val_normal[2]);
+    val_p_tensor[3][3]= 0.5*(val_velocity[2]*rhooc+*val_density*val_normal[2]);
+    val_p_tensor[3][4]= 0.5*(val_velocity[2]*rhooc-*val_density*val_normal[2]);
 
     val_p_tensor[4][0]=zeta*val_normal[0]+*val_density*val_velocity[1]*val_normal[2]-*val_density*val_velocity[2]*val_normal[1];
     val_p_tensor[4][1]=zeta*val_normal[1]-*val_density*val_velocity[0]*val_normal[2]+*val_density*val_velocity[2]*val_normal[0];
     val_p_tensor[4][2]=zeta*val_normal[2]+*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
-    val_p_tensor[4][3]=0.5*(*val_enthalpy*rhooc+*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2]));
-    val_p_tensor[4][4]=0.5*(*val_enthalpy*rhooc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2]));
+    val_p_tensor[4][3]= 0.5*(*val_enthalpy*rhooc+*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2]));
+    val_p_tensor[4][4]= 0.5*(*val_enthalpy*rhooc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2]));
   }
 
 }
@@ -642,7 +642,7 @@ void CNumerics::GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
     val_invp_tensor[1][0]=-k1orho*val_velocity[0]+k0orho*val_velocity[1];
     val_invp_tensor[1][1]=k1orho;
     val_invp_tensor[1][2]=-k0orho;
-    val_invp_tensor[1][3]=0.0;
+    val_invp_tensor[1][3]= 0.0;
 
     val_invp_tensor[2][0]=-k0orho*val_velocity[0]-k1orho*val_velocity[1]+0.5*gm1_o_rhoxc*sqvel;
     val_invp_tensor[2][1]=k0orho-gm1_o_rhoxc*val_velocity[0];
@@ -716,7 +716,7 @@ void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, su2double *val_densi
     val_invp_tensor[1][0]=-k1orho*val_velocity[0]+k0orho*val_velocity[1];
     val_invp_tensor[1][1]=k1orho;
     val_invp_tensor[1][2]=-k0orho;
-    val_invp_tensor[1][3]=0.0;
+    val_invp_tensor[1][3]= 0.0;
 
     val_invp_tensor[2][0]=-k0orho*val_velocity[0]-k1orho*val_velocity[1] + dp_drho/rhoxc;
     val_invp_tensor[2][1]=k0orho - k_o_rhoxc*val_velocity[0];
@@ -2613,14 +2613,14 @@ void CNumerics::CreateBasis(su2double *val_Normal) {
   m[2] = val_Normal[0]*l[1] - val_Normal[1]*l[0];
   
   /*--- Normalize ---*/
-  modm =0 ; modl = 0;
-  for (iDim =0 ; iDim < nDim; iDim++) {
+  modm = 0 ; modl = 0;
+  for (iDim = 0 ; iDim < nDim; iDim++) {
     modm += m[iDim]*m[iDim];
     modl += l[iDim]*l[iDim];
   }
   modm = sqrt(modm);
   modl = sqrt(modl);
-  for (iDim =0 ; iDim < nDim; iDim++) {
+  for (iDim = 0 ; iDim < nDim; iDim++) {
     l[iDim] = l[iDim]/modl;
     m[iDim] = m[iDim]/modm;
   }

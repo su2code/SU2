@@ -1903,7 +1903,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	        MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
 	    }
 	    for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
-	    if (nDim==3) {
+	    if (nDim== 3) {
 	      if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
 	      if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
 	      if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
@@ -2233,7 +2233,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   /*--- Set the moment computation center to the new location after
    incrementing the position with the rotation. ---*/
   
-  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (unsigned short jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     
     Center_Moment[0] = config->GetRefOriginMoment_X(jMarker);
     Center_Moment[1] = config->GetRefOriginMoment_Y(jMarker);
@@ -2566,7 +2566,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   /*--- Set the moment computation center to the new location after
    incrementing the position with the plunging. ---*/
   
-  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (unsigned short jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
     Center[2] = config->GetRefOriginMoment_Z(jMarker) + deltaX[2];
@@ -2685,7 +2685,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   /*--- Set the moment computation center to the new location after
    incrementing the position with the translation. ---*/
   
-  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (unsigned short jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
     Center[2] = config->GetRefOriginMoment_Z(jMarker) + deltaX[2];
@@ -3793,7 +3793,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   
   if (config->GetFFD_Continuity() != USER_INPUT) {
     
-    /*--- Check intersection with plane i=0 ---*/
+    /*--- Check intersection with plane i= 0 ---*/
     
     su2double *IPlane_Coord_0_A = FFDBox->GetCoordControlPoints(0, 0, 0);
     su2double *IPlane_Coord_1_A = FFDBox->GetCoordControlPoints(0, 0, nDegree);
@@ -3813,7 +3813,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
     su2double *IPlane_Coord_1_B_ = FFDBox->GetCoordControlPoints(lDegree, mDegree, 0);
     su2double *IPlane_Coord_2_B_ = FFDBox->GetCoordControlPoints(lDegree, 0, nDegree);
     
-    /*--- Check intersection with plane j=0 ---*/
+    /*--- Check intersection with plane j= 0 ---*/
     
     su2double *JPlane_Coord_0_A = FFDBox->GetCoordControlPoints(0,      0, 0);
     su2double *JPlane_Coord_1_A = FFDBox->GetCoordControlPoints(0,      0, nDegree);
@@ -3833,7 +3833,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
     su2double *JPlane_Coord_1_B_ = FFDBox->GetCoordControlPoints(lDegree, mDegree, 0);
     su2double *JPlane_Coord_2_B_ = FFDBox->GetCoordControlPoints(0,      mDegree, nDegree);
     
-    /*--- Check intersection with plane k=0 ---*/
+    /*--- Check intersection with plane k= 0 ---*/
     
     su2double *KPlane_Coord_0_A = FFDBox->GetCoordControlPoints(0,      0,      0);
     su2double *KPlane_Coord_1_A = FFDBox->GetCoordControlPoints(0,      mDegree, 0);
@@ -4026,33 +4026,33 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
         cout << "The FFD planes ";
         
         if (cartesian) {
-          if (IPlane_Intersect_A) cout << "i=0, ";
+          if (IPlane_Intersect_A) cout << "i= 0, ";
           if (IPlane_Intersect_B) cout << "i="<< lDegree << ", ";
-          if (JPlane_Intersect_A) cout << "j=0, ";
+          if (JPlane_Intersect_A) cout << "j= 0, ";
           if (JPlane_Intersect_B) cout << "j="<< mDegree << ", ";
-          if (KPlane_Intersect_A) cout << "k=0, ";
+          if (KPlane_Intersect_A) cout << "k= 0, ";
           if (KPlane_Intersect_B) cout << "k="<< nDegree << ", ";
         }
         else if (cylindrical) {
-          if (IPlane_Intersect_A) cout << "r=0, ";
+          if (IPlane_Intersect_A) cout << "r= 0, ";
           if (IPlane_Intersect_B) cout << "r="<< lDegree << ", ";
-          if (JPlane_Intersect_A) cout << "theta=0, ";
+          if (JPlane_Intersect_A) cout << "theta= 0, ";
           if (JPlane_Intersect_B) cout << "theta="<< mDegree << ", ";
-          if (KPlane_Intersect_A) cout << "z=0, ";
+          if (KPlane_Intersect_A) cout << "z= 0, ";
           if (KPlane_Intersect_B) cout << "z="<< nDegree << ", ";
         }
         else if (spherical) {
-          if (IPlane_Intersect_A) cout << "r=0, ";
+          if (IPlane_Intersect_A) cout << "r= 0, ";
           if (IPlane_Intersect_B) cout << "r="<< lDegree << ", ";
-          if (JPlane_Intersect_A) cout << "theta=0, ";
+          if (JPlane_Intersect_A) cout << "theta= 0, ";
           if (JPlane_Intersect_B) cout << "theta="<< mDegree << ", ";
-          if (KPlane_Intersect_A) cout << "phi=0, ";
+          if (KPlane_Intersect_A) cout << "phi= 0, ";
           if (KPlane_Intersect_B) cout << "phi="<< nDegree << ", ";
         }
         else if (polar) {
-          if (IPlane_Intersect_A) cout << "r=0, ";
+          if (IPlane_Intersect_A) cout << "r= 0, ";
           if (IPlane_Intersect_B) cout << "r="<< lDegree << ", ";
-          if (KPlane_Intersect_A) cout << "theta=0, ";
+          if (KPlane_Intersect_A) cout << "theta= 0, ";
           if (KPlane_Intersect_B) cout << "theta="<< nDegree << ", ";
         }
         
@@ -6075,7 +6075,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
    incrementing the position with the translation. This new
    location will be used for subsequent mesh motion for the given marker.---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
     
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
@@ -6092,7 +6092,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
   /*--- Set the moment computation center to the new location after
    incrementing the position with the translation. ---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + VarCoord[1];
     Center[2] = config->GetRefOriginMoment_Z(jMarker) + VarCoord[2];
@@ -6197,7 +6197,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
    incrementing the position with the translation. This new
    location will be used for subsequent mesh motion for the given marker.---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
     
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
@@ -6214,7 +6214,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
   /*--- Set the moment computation center to the new location after
    incrementing the position with the plunging. ---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + VarCoord[1];
     Center[2] = config->GetRefOriginMoment_Z(jMarker) + VarCoord[2];
@@ -6527,7 +6527,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
    incrementing the position with the rotation. This new
    location will be used for subsequent mesh motion for the given marker.---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
     
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
@@ -6570,7 +6570,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
   /*--- Set the moment computation center to the new location after
    incrementing the position with the rotation. ---*/
   
-  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+  for (jMarker= 0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
       
     Center_Aux[0] = config->GetRefOriginMoment_X(jMarker);
     Center_Aux[1] = config->GetRefOriginMoment_Y(jMarker);

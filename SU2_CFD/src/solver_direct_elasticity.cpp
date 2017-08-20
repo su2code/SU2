@@ -2144,7 +2144,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
             b_curr[iDim] = nodeCoord_curr[2][iDim]-nodeCoord_curr[0][iDim];
           }
           
-          su2double Ni=0, Nj=0, Nk=0;
+          su2double Ni= 0, Nj= 0, Nk= 0;
           
           /*--- Reference configuration ---*/
           Ni = a_ref[1]*b_ref[2] - a_ref[2]*b_ref[1];
@@ -2215,7 +2215,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
             BD_curr[iDim] = nodeCoord_curr[3][iDim]-nodeCoord_curr[1][iDim];
           }
           
-          su2double Ni=0, Nj=0, Nk=0;
+          su2double Ni= 0, Nj= 0, Nk= 0;
           
           /*--- Reference configuration ---*/
           Ni=AC_ref[1]*BD_ref[2]-AC_ref[2]*BD_ref[1];
@@ -2291,7 +2291,7 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
                                         unsigned short val_marker) {
   
   su2double a[3], b[3], AC[3], BD[3];
-  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
+  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3= 0;
   su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
   su2double Length_Elem = 0.0, Area_Elem = 0.0;
   unsigned short iDim;
@@ -2331,8 +2331,8 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
   
   /*--- Compute the norm of the vector that was passed in the config file ---*/
   su2double Norm = 1.0;
-  if (nDim==2) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]);
-  if (nDim==3) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]+Load_Dir_Local[2]*Load_Dir_Local[2]);
+  if (nDim== 2) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]);
+  if (nDim== 3) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]+Load_Dir_Local[2]*Load_Dir_Local[2]);
   
   for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
     
@@ -2368,7 +2368,7 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
           b[iDim] = Coord_2[iDim]-Coord_0[iDim];
         }
         
-        su2double Ni=0 , Nj=0, Nk=0;
+        su2double Ni= 0 , Nj= 0, Nk= 0;
         
         Ni=a[1]*b[2]-a[2]*b[1];
         Nj=-a[0]*b[2]+a[2]*b[0];
@@ -2385,7 +2385,7 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
           BD[iDim] = Coord_3[iDim]-Coord_1[iDim];
         }
         
-        su2double Ni=0 , Nj=0, Nk=0;
+        su2double Ni= 0 , Nj= 0, Nk= 0;
         
         Ni=AC[1]*BD[2]-AC[2]*BD[1];
         Nj=-AC[0]*BD[2]+AC[2]*BD[0];
@@ -2702,7 +2702,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSol
   
   /*--- Update solution and set it to be the solution after applying relaxation---*/
   
-  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint= 0; iPoint < nPointDomain; iPoint++) {
     
     valSolutionPred = node[iPoint]->GetSolution_Pred();
     
@@ -3133,7 +3133,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   bool Ramp_Load = fea_config->GetRamp_Load();
   su2double Ramp_Time = fea_config->GetRamp_Time();
   
-  if (CurrentTime <= Static_Time) { ModAmpl=0.0; }
+  if (CurrentTime <= Static_Time) { ModAmpl= 0.0; }
   else if ((CurrentTime > Static_Time) &&
           (CurrentTime <= (Static_Time + Ramp_Time)) &&
           (Ramp_Load)) {
@@ -3708,27 +3708,27 @@ void CFEM_ElasticitySolver::PredictStruct_Displacement(CGeometry **fea_geometry,
   su2double *solDisp, *solVel, *solVel_tn, *valPred;
   
   //To nPointDomain: we need to communicate the predicted solution after setting it
-  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
-    if (predOrder==0) fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
-    else if (predOrder==1) {
+  for (iPoint= 0; iPoint < nPointDomain; iPoint++) {
+    if (predOrder== 0) fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
+    else if (predOrder== 1) {
       
       solDisp = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
       solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
       valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
       
-      for (iDim=0; iDim < nDim; iDim++) {
+      for (iDim= 0; iDim < nDim; iDim++) {
         valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
       }
       
     }
-    else if (predOrder==2) {
+    else if (predOrder== 2) {
       
       solDisp = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
       solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
       solVel_tn = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel_time_n();
       valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
       
-      for (iDim=0; iDim < nDim; iDim++) {
+      for (iDim= 0; iDim < nDim; iDim++) {
         valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
       }
       
@@ -3918,7 +3918,7 @@ void CFEM_ElasticitySolver::SetAitken_Relaxation(CGeometry **fea_geometry,
     }
     
     // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine
-    for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint= 0; iPoint < nPointDomain; iPoint++) {
       
       /*--- Retrieve pointers to the predicted and calculated solutions ---*/
       dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
@@ -3931,7 +3931,7 @@ void CFEM_ElasticitySolver::SetAitken_Relaxation(CGeometry **fea_geometry,
       fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Old(dispCalc);
       
       /*--- Apply the Aitken relaxation ---*/
-      for (iDim=0; iDim < nDim; iDim++) {
+      for (iDim= 0; iDim < nDim; iDim++) {
         dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
       }
       
@@ -3947,7 +3947,7 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
   unsigned long iPoint;
   su2double *valSolutionPred;
   
-  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint= 0; iPoint < nPointDomain; iPoint++) {
     
     valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
     

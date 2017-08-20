@@ -560,10 +560,10 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
   tu   = config->GetTurbulenceIntensity_FreeStream();
   rey  = config->GetReynolds();
 
-  if (nDim==2) {
+  if (nDim== 2) {
     vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]);
   }
-  else if (nDim==3) {
+  else if (nDim== 3) {
     vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]+V_i[3]*V_i[3]);
   }
   

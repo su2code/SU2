@@ -418,7 +418,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
       Buffer_Recv_TargetIndices[iVariable] = Buffer_Send_TargetIndices[iVariable];
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check =0;
+    long indexPoint_iVertex, Point_Target_Check = 0;
     
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -736,7 +736,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check=0;
+    long indexPoint_iVertex, Point_Target_Check= 0;
 
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -1063,7 +1063,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-    long indexPoint_iVertex, Point_Target_Check=0;
+    long indexPoint_iVertex, Point_Target_Check= 0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
 
@@ -1493,7 +1493,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 #ifdef HAVE_MPI
   BuffMarkerDonor          = new int[size];
   BuffDonorFlag            = new int[size];
-  for (iSize=0; iSize<size; iSize++) {
+  for (iSize= 0; iSize<size; iSize++) {
     BuffMarkerDonor[iSize]            = -1;
     BuffDonorFlag[iSize]              = -1;
   }
@@ -1506,7 +1506,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
   Donor_Flag= -1;
 
 
-  for (iSize=0; iSize<size; iSize++) {
+  for (iSize= 0; iSize<size; iSize++) {
     if (BuffMarkerDonor[iSize] > 0.0) {
       Marker_Donor = BuffMarkerDonor[iSize];
       Donor_Flag   = BuffDonorFlag[iSize];
@@ -1709,7 +1709,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   BuffAvgOmegaDonor                   = new su2double[nSpanSize];
   BuffMarkerDonor                     = new int[size];
 
-  for (iSpan=0; iSpan<nSpanSize; iSpan++) {
+  for (iSpan= 0; iSpan<nSpanSize; iSpan++) {
     BuffAvgDensityDonor[iSpan]        = -1.0;
     BuffAvgPressureDonor[iSpan]       = -1.0;
     BuffAvgNormalVelDonor[iSpan]      = -1.0;
@@ -1720,7 +1720,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     BuffAvgOmegaDonor[iSpan]          = -1.0;
   }
 
-  for (iSize=0; iSize<size; iSize++) {
+  for (iSize= 0; iSize<size; iSize++) {
     BuffMarkerDonor[iSize]            = -1;
   }
 
@@ -1747,7 +1747,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
   Marker_Donor= -1;
 
-  for (iSize=0; iSize<size; iSize++) {
+  for (iSize= 0; iSize<size; iSize++) {
     if (BuffAvgDensityDonor[nSpanDonor*iSize] > 0.0) {
       for (iSpan = 0; iSpan < nSpanDonor; iSpan++) {
         avgDensityDonor[iSpan]        = BuffAvgDensityDonor[nSpanDonor*iSize + iSpan];
