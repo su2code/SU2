@@ -2071,7 +2071,7 @@ public:
 };
 
 /*!
- * \class CUpwSca_Abstract
+ * \class CUpwSca_Scalar
  * \brief Template class for scalar upwind fluxes between nodes i and j.
  * \details This class serves as a template for the scalar upwinding residual
  *   classes.  The general structure of a scalar upwinding calculation is the
@@ -2085,7 +2085,7 @@ public:
  * \author C. Pederson, A. Bueno., and A. Campos.
  * \version 5.0.0 "Raven"
  */
-class CUpwSca_Abstract : public CNumerics {
+class CUpwSca_Scalar : public CNumerics {
 private:
 
   /*!
@@ -2122,12 +2122,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_Abstract(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwSca_Scalar(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwSca_Abstract(void);
+  ~CUpwSca_Scalar(void);
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -2146,7 +2146,7 @@ public:
  * \author A. Bueno.
  * \version 5.0.0 "Raven"
  */
-class CUpwSca_TurbSA : public CUpwSca_Abstract {
+class CUpwSca_TurbSA : public CUpwSca_Scalar {
 private:
 
   /*!
@@ -2187,7 +2187,7 @@ public:
  * \author A. Campos.
  * \version 5.0.0 "Raven"
  */
-class CUpwSca_TurbSST : public CUpwSca_Abstract {
+class CUpwSca_TurbSST : public CUpwSca_Scalar {
 private:
 
   /*!
@@ -2897,7 +2897,7 @@ public:
 };
 
 /*!
- * \class CAvgGrad_Abstract
+ * \class CAvgGrad_Scalar
  * \brief Template class for computing viscous residual of scalar values
  * \details This class serves as a template for the scalar viscous residual
  *   classes.  The general structure of a viscous residual calculation is the
@@ -2911,7 +2911,7 @@ public:
  * \author C. Pederson, A. Bueno, and F. Palacios
  * \version 5.0.0 "Raven"
  */
-class CAvgGrad_Abstract : public CNumerics {
+class CAvgGrad_Scalar : public CNumerics {
  private:
 
   /*!
@@ -2950,13 +2950,13 @@ class CAvgGrad_Abstract : public CNumerics {
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Abstract(unsigned short val_nDim, unsigned short val_nVar,
+  CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
                     bool correct_gradient, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_Abstract(void);
+  ~CAvgGrad_Scalar(void);
 
   /*!
    * \brief Compute the viscous residual using an average of gradients without correction.
@@ -2976,7 +2976,7 @@ class CAvgGrad_Abstract : public CNumerics {
  * \author A. Bueno.
  * \version 5.0.0 "Raven"
  */
-class CAvgGrad_TurbSA : public CAvgGrad_Abstract {
+class CAvgGrad_TurbSA : public CAvgGrad_Scalar {
 private:
 
   const su2double sigma;
@@ -3021,7 +3021,7 @@ public:
  * \author F. Palacios
  * \version 5.0.0 "Raven"
  */
-class CAvgGrad_TurbSA_Neg : public CAvgGrad_Abstract {
+class CAvgGrad_TurbSA_Neg : public CAvgGrad_Scalar {
 private:
 
   const su2double sigma;
@@ -3370,7 +3370,7 @@ public:
  * \author A. Bueno.
  * \version 5.0.0 "Raven"
  */
-class CAvgGrad_TurbSST : public CAvgGrad_Abstract {
+class CAvgGrad_TurbSST : public CAvgGrad_Scalar {
 private:
   su2double sigma_k1, /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
   sigma_k2,
