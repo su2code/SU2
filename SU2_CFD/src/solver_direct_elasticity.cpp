@@ -1106,12 +1106,12 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) { nNodes = 4; EL_KIND = EL_QUAD; }
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1174,12 +1174,12 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) { nNodes = 4; EL_KIND = EL_QUAD; }
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1256,13 +1256,13 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    { nNodes = 4; EL_KIND = EL_QUAD; }
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1316,12 +1316,12 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) { nNodes = 4; EL_KIND = EL_QUAD; }
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1401,12 +1401,12 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) { nNodes = 4; EL_KIND = EL_QUAD; }
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1673,12 +1673,12 @@ void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solv
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     { nNodes = 3; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) { nNodes = 4; EL_KIND = EL_QUAD; }
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  { nNodes = 4; EL_KIND = EL_TETRA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      { nNodes = 5; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        { nNodes = 6; EL_KIND = EL_TRIA; }
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   { nNodes = 8; EL_KIND = EL_HEXA; }
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1747,7 +1747,7 @@ void CFEM_ElasticitySolver::Compute_IntegrationConstants(CConfig *config) {
       //      //  su2double gamma =  config->Get_Int_Coeffs(1);
       //      su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
       //
-      //      a_dt[0]= (1 / (beta*pow(Delta_t,2.0))) * ((1 - alpha_m) / (1 - alpha_f)) ;
+      //      a_dt[0]= (1 / (beta*pow(Delta_t,2.0))) * ((1 - alpha_m) / (1 - alpha_f));
       //      a_dt[1]= 0.0 ;
       //      a_dt[2]= (1 - alpha_m) / (beta*Delta_t);
       //      a_dt[3]= ((1 - 2*beta)*(1-alpha_m) / (2*beta)) - alpha_m;
@@ -3799,7 +3799,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
         if (iFSIIter == 0) historyFile_FSI << " " << endl ;
         historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
         historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
-        if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() ;
+        if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax();
         else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() << "," ;
       }
       
@@ -3884,7 +3884,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
     
   }
   
-  if (writeHistFSI && (rank == MASTER_NODE)) {historyFile_FSI.close();}
+  if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI.close(); }
   
 }
 

@@ -113,7 +113,7 @@ inline unsigned short CLine::GetMaxNodesFace(void) { return maxNodesFace; }
 
 inline unsigned short CLine::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
 
-inline void CLine::SetDomainElement(unsigned long val_domainelement) {DomainElement = val_domainelement; }
+inline void CLine::SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
 
 inline unsigned long CLine::GetDomainElement(void) { return DomainElement; }
 

@@ -518,11 +518,11 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
   SU2_MPI::Bcast(     Buffer_Receive_LinkedNodes, nGlobalLinkedNodes, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
 #endif
   
-  if ( Buffer_Send_Coord              != NULL) {delete [] Buffer_Send_Coord;            Buffer_Send_Coord            = NULL;} 
-  if ( Buffer_Send_GlobalPoint        != NULL) {delete [] Buffer_Send_GlobalPoint;      Buffer_Send_GlobalPoint      = NULL;}
-  if ( Buffer_Send_LinkedNodes        != NULL) {delete [] Buffer_Send_LinkedNodes;      Buffer_Send_LinkedNodes      = NULL;}
-  if ( Buffer_Send_nLinkedNodes       != NULL) {delete [] Buffer_Send_nLinkedNodes;     Buffer_Send_nLinkedNodes     = NULL;}
-  if ( Buffer_Send_StartLinkedNodes   != NULL) {delete [] Buffer_Send_StartLinkedNodes; Buffer_Send_StartLinkedNodes = NULL;}
+  if ( Buffer_Send_Coord              != NULL) { delete [] Buffer_Send_Coord;            Buffer_Send_Coord            = NULL; } 
+  if ( Buffer_Send_GlobalPoint        != NULL) { delete [] Buffer_Send_GlobalPoint;      Buffer_Send_GlobalPoint      = NULL; }
+  if ( Buffer_Send_LinkedNodes        != NULL) { delete [] Buffer_Send_LinkedNodes;      Buffer_Send_LinkedNodes      = NULL; }
+  if ( Buffer_Send_nLinkedNodes       != NULL) { delete [] Buffer_Send_nLinkedNodes;     Buffer_Send_nLinkedNodes     = NULL; }
+  if ( Buffer_Send_StartLinkedNodes   != NULL) { delete [] Buffer_Send_StartLinkedNodes; Buffer_Send_StartLinkedNodes = NULL; }
 }
 
 bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget) {
@@ -606,7 +606,7 @@ CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **co
   Set_TransferCoeff(config);
 }
 
-CNearestNeighbor::~CNearestNeighbor() {}
+CNearestNeighbor::~CNearestNeighbor() { }
 
 void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
@@ -744,7 +744,7 @@ CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config
  // InitializeData(Zones,nDim);
 }
 
-CIsoparametric::~CIsoparametric() {}
+CIsoparametric::~CIsoparametric() { }
 
 void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   unsigned long iVertex, jVertex;
@@ -1014,10 +1014,10 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
         tmp = 1/tmp;
         tmp2 = tmp2*sqrt(tmp);
         for (iDim=0; iDim<nDim; iDim++) {
-          // projection of \vec{q} onto plane defined by \vec{n} and \vec{p}:
-          // \vec{q} - \vec{n} ( (\vec{q}-\vec{p} ) \cdot \vec{n})
-          // tmp2 = ( (\vec{q}-\vec{p} ) \cdot \vec{N})
-          // \vec{n} = \vec{N}/(|N|), tmp = 1/|N|^2
+          // projection of \vec{ q } onto plane defined by \vec{ n } and \vec{ p }:
+          // \vec{ q } - \vec{ n } ( (\vec{ q }-\vec{ p } ) \cdot \vec{ n })
+          // tmp2 = ( (\vec{ q }-\vec{ p } ) \cdot \vec{ N })
+          // \vec{ n } = \vec{ N }/(|N|), tmp = 1/|N|^2
           projected_point[iDim]=Coord_i[iDim] + Normal[iDim]*tmp2*tmp;
         }
 
@@ -1117,7 +1117,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
 
   if (nDonor>2) {
     /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
-    /*--- Right hand side is [1, \vec{x}']'---*/
+    /*--- Right hand side is [1, \vec{ x }']'---*/
     for (iDonor=0; iDonor<nDonor; iDonor++) {
       isoparams[iDonor]=0;
       A[iDonor] = 1.0;
@@ -1138,7 +1138,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
       test[iDim]=true; // Assume that it is not degenerate
       for (k=0; k<iDim; k++) {
         tmp=0; tmp2=0;
-        for (iDonor=0;iDonor<nDonor;iDonor++) {
+        for (iDonor=0; iDonor<nDonor; iDonor++) {
           tmp+= A[iDim*nDonor+iDonor]*A[iDim*nDonor+iDonor];
           tmp2+=A[k*nDonor+iDonor]*A[k*nDonor+iDonor];
         }
@@ -1162,7 +1162,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
     /*--- Copy only the rows that are non-degenerate ---*/
     for (k=0; k<nDim+1; k++) {
       if (test[k]) {
-        for (iDonor=0;iDonor<nDonor;iDonor++ ) {
+        for (iDonor=0; iDonor<nDonor; iDonor++ ) {
           A2[nDonor*iDim+iDonor]=A[nDonor*k+iDonor];
         }
         x2[iDim]=x[k];
@@ -1296,7 +1296,7 @@ CMirror::CMirror(CGeometry ***geometry_container, CConfig **config,  unsigned in
 
 }
 
-CMirror::~CMirror() {}
+CMirror::~CMirror() { }
 
 void CMirror::Set_TransferCoeff(CConfig **config) {
   unsigned long iVertex, jVertex;
@@ -1534,7 +1534,7 @@ CSlidingMesh::CSlidingMesh(CGeometry ***geometry_container, CConfig **config, un
  // InitializeData(Zones,nDim);
 }
 
-CSlidingMesh::~CSlidingMesh() {}
+CSlidingMesh::~CSlidingMesh() { }
 
 void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
     
@@ -2150,9 +2150,9 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
                   tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
                   tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-                  if (Donor_Vect != NULL) {delete [] Donor_Vect; }
-                  if (Coeff_Vect != NULL) {delete [] Coeff_Vect; }
-                  if (storeProc  != NULL) {delete [] storeProc;  }
+                  if (Donor_Vect != NULL) { delete [] Donor_Vect; }
+                  if (Coeff_Vect != NULL) { delete [] Coeff_Vect; }
+                  if (storeProc  != NULL) { delete [] storeProc;  }
 
                   Donor_Vect = tmp_Donor_Vect;
                   Coeff_Vect = tmp_Coeff_Vect;
@@ -2209,9 +2209,9 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
             delete [] target_element[ii];
           delete [] target_element;
           
-          if (Donor_Vect != NULL) {delete [] Donor_Vect; Donor_Vect = NULL;}
-          if (Coeff_Vect != NULL) {delete [] Coeff_Vect; Coeff_Vect = NULL;}
-          if (storeProc  != NULL) {delete [] storeProc;  storeProc  = NULL;}
+          if (Donor_Vect != NULL) { delete [] Donor_Vect; Donor_Vect = NULL; }
+          if (Coeff_Vect != NULL) { delete [] Coeff_Vect; Coeff_Vect = NULL; }
+          if (storeProc  != NULL) { delete [] storeProc;  storeProc  = NULL; }
         }
       }
     }

@@ -103,6 +103,20 @@ inline void CConfig::SetSurface_DC60(unsigned short val_imarker, su2double val_s
 
 inline void CConfig::SetSurface_MassFlow(unsigned short val_imarker, su2double val_surface_massflow) { Surface_MassFlow[val_imarker] = val_surface_massflow; }
 
+inline void CConfig::SetSurface_Mach(unsigned short val_imarker, su2double val_surface_mach) { Surface_Mach[val_imarker] = val_surface_mach; }
+
+inline void CConfig::SetSurface_Temperature(unsigned short val_imarker, su2double val_surface_temperature) { Surface_Temperature[val_imarker] = val_surface_temperature; }
+
+inline void CConfig::SetSurface_Pressure(unsigned short val_imarker, su2double val_surface_pressure) { Surface_Pressure[val_imarker] = val_surface_pressure; }
+
+inline void CConfig::SetSurface_Density(unsigned short val_imarker, su2double val_surface_density) { Surface_Density[val_imarker] = val_surface_density; }
+
+inline void CConfig::SetSurface_NormalVelocity(unsigned short val_imarker, su2double val_surface_normalvelocity) { Surface_NormalVelocity[val_imarker] = val_surface_normalvelocity; }
+
+inline void CConfig::SetSurface_TotalTemperature(unsigned short val_imarker, su2double val_surface_totaltemperature) { Surface_TotalTemperature[val_imarker] = val_surface_totaltemperature; }
+
+inline void CConfig::SetSurface_TotalPressure(unsigned short val_imarker, su2double val_surface_totalpressure) { Surface_TotalPressure[val_imarker] = val_surface_totalpressure; }
+
 inline void CConfig::SetSurface_IDC(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDC[val_imarker] = val_surface_distortion; }
 
 inline void CConfig::SetSurface_IDC_Mach(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDC_Mach[val_imarker] = val_surface_distortion; }
@@ -152,6 +166,20 @@ inline su2double CConfig::GetActDisk_Mach(unsigned short val_imarker) { return A
 inline su2double CConfig::GetActDisk_Force(unsigned short val_imarker) { return ActDisk_Force[val_imarker]; }
 
 inline su2double CConfig::GetSurface_MassFlow(unsigned short val_imarker) { return Surface_MassFlow[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Mach(unsigned short val_imarker) { return Surface_Mach[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Temperature(unsigned short val_imarker) { return Surface_Temperature[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Pressure(unsigned short val_imarker) { return Surface_Pressure[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Density(unsigned short val_imarker) { return Surface_Density[val_imarker]; }
+
+inline su2double CConfig::GetSurface_NormalVelocity(unsigned short val_imarker) { return Surface_NormalVelocity[val_imarker]; }
+
+inline su2double CConfig::GetSurface_TotalTemperature(unsigned short val_imarker) { return Surface_TotalTemperature[val_imarker]; }
+
+inline su2double CConfig::GetSurface_TotalPressure(unsigned short val_imarker) { return Surface_TotalPressure[val_imarker]; }
 
 inline su2double CConfig::GetSurface_DC60(unsigned short val_imarker) { return Surface_DC60[val_imarker]; }
 
@@ -431,7 +459,7 @@ inline su2double CConfig::GetIntermittency_FreeStream(void) { return Intermitten
 
 inline su2double CConfig::GetTurbulenceIntensity_FreeStream(void) { return TurbulenceIntensity_FreeStream; }
 
-inline su2double CConfig::GetTurb2LamViscRatio_FreeStream(void) { return Turb2LamViscRatio_FreeStream;}
+inline su2double CConfig::GetTurb2LamViscRatio_FreeStream(void) { return Turb2LamViscRatio_FreeStream; }
 
 inline su2double* CConfig::GetMassFrac_FreeStream(void) { return MassFrac_FreeStream; }
 
@@ -689,9 +717,9 @@ inline void CConfig::SetMu_ConstantND(su2double mu_const) { Mu_ConstantND = mu_c
 
 inline void CConfig::SetMu_RefND(su2double mu_ref) { Mu_RefND = mu_ref; }
 
-inline void CConfig::SetMu_Temperature_RefND(su2double mu_Tref) {Mu_Temperature_RefND = mu_Tref; }
+inline void CConfig::SetMu_Temperature_RefND(su2double mu_Tref) { Mu_Temperature_RefND = mu_Tref; }
 
-inline void CConfig::SetMu_SND(su2double mu_s) {Mu_SND = mu_s; }
+inline void CConfig::SetMu_SND(su2double mu_s) { Mu_SND = mu_s; }
 
 inline void CConfig::SetKt_ConstantND(su2double kt_const) { Kt_ConstantND = kt_const; }
 
@@ -929,87 +957,87 @@ inline unsigned short CConfig::GetKind_Engine_Inflow(void) { return Kind_Engine_
 
 inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
 
-inline su2double* CConfig::GetFreeStreamTurboNormal(void) {return FreeStreamTurboNormal;}
+inline su2double* CConfig::GetFreeStreamTurboNormal(void) { return FreeStreamTurboNormal; }
 
 inline unsigned short CConfig::GetKind_AverageProcess(void) { return Kind_AverageProcess; }
 
 inline unsigned short CConfig::GetKind_PerformanceAverageProcess(void) { return Kind_PerformanceAverageProcess; }
 
-inline void CConfig::SetKind_AverageProcess(unsigned short new_AverageProcess) {Kind_AverageProcess = new_AverageProcess; }
+inline void CConfig::SetKind_AverageProcess(unsigned short new_AverageProcess) { Kind_AverageProcess = new_AverageProcess; }
 
-inline void CConfig::SetKind_PerformanceAverageProcess(unsigned short new_AverageProcess) {Kind_PerformanceAverageProcess = new_AverageProcess; }
+inline void CConfig::SetKind_PerformanceAverageProcess(unsigned short new_AverageProcess) { Kind_PerformanceAverageProcess = new_AverageProcess; }
 
-inline su2double CConfig::GetRampRotatingFrame_Coeff(unsigned short iCoeff) { return RampRotatingFrame_Coeff[iCoeff];}
+inline su2double CConfig::GetRampRotatingFrame_Coeff(unsigned short iCoeff) { return RampRotatingFrame_Coeff[iCoeff]; }
 
-inline bool CConfig::GetRampRotatingFrame(void) { return RampRotatingFrame;}
+inline bool CConfig::GetRampRotatingFrame(void) { return RampRotatingFrame; }
 
-inline su2double CConfig::GetRampOutletPressure_Coeff(unsigned short iCoeff) { return RampOutletPressure_Coeff[iCoeff];}
+inline su2double CConfig::GetRampOutletPressure_Coeff(unsigned short iCoeff) { return RampOutletPressure_Coeff[iCoeff]; }
 
 inline su2double CConfig::GetFinalOutletPressure(void) { return  FinalOutletPressure; }
 
 inline su2double CConfig::GetMonitorOutletPressure(void) { return MonitorOutletPressure; }
 
-inline void CConfig::SetMonitotOutletPressure(su2double newMonPres) {MonitorOutletPressure = newMonPres;}
+inline void CConfig::SetMonitotOutletPressure(su2double newMonPres) { MonitorOutletPressure = newMonPres; }
 
-inline bool CConfig::GetRampOutletPressure(void) { return RampOutletPressure;}
+inline bool CConfig::GetRampOutletPressure(void) { return RampOutletPressure; }
 
-inline su2double CConfig::GetMixedout_Coeff(unsigned short iCoeff) { return Mixedout_Coeff[iCoeff];}
+inline su2double CConfig::GetMixedout_Coeff(unsigned short iCoeff) { return Mixedout_Coeff[iCoeff]; }
 
-inline su2double CConfig::GetExtraRelFacGiles(unsigned short iCoeff) { return ExtraRelFacGiles[iCoeff];}
+inline su2double CConfig::GetExtraRelFacGiles(unsigned short iCoeff) { return ExtraRelFacGiles[iCoeff]; }
 
-inline su2double CConfig::GetAverageMachLimit(void) { return AverageMachLimit;}
+inline su2double CConfig::GetAverageMachLimit(void) { return AverageMachLimit; }
 
-inline unsigned short CConfig::GetKind_MixingPlaneInterface(void) { return Kind_MixingPlaneInterface;}
+inline unsigned short CConfig::GetKind_MixingPlaneInterface(void) { return Kind_MixingPlaneInterface; }
 
 inline unsigned short CConfig::GetKind_TurboMachinery(unsigned short val_iZone) { return Kind_TurboMachinery[val_iZone]; }
 
 inline unsigned short CConfig::GetKind_SpanWise(void) { return Kind_SpanWise; }
 
-inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingPlaneInterface !=0);}
+inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingPlaneInterface !=0); }
 
-inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0);}
+inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0); }
 
-inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane;}
+inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane; }
 
-inline bool CConfig::GetSpatialFourier(void) {return SpatialFourier;}
+inline bool CConfig::GetSpatialFourier(void) { return SpatialFourier; }
 
-inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[val_iZone];}
+inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[val_iZone]; }
 
-inline void CConfig::SetnBlades(unsigned short val_iZone, su2double nblades) { nBlades[val_iZone] = nblades;}
+inline void CConfig::SetnBlades(unsigned short val_iZone, su2double nblades) { nBlades[val_iZone] = nblades; }
 
-inline bool CConfig::GetBoolGiles(void) { return (nMarker_Giles!=0);}
+inline bool CConfig::GetBoolGiles(void) { return (nMarker_Giles!=0); }
 
-inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0);}
+inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0); }
 
-inline unsigned short CConfig::GetnMarker_MixingPlaneInterface(void) { return nMarker_MixingPlaneInterface;}
+inline unsigned short CConfig::GetnMarker_MixingPlaneInterface(void) { return nMarker_MixingPlaneInterface; }
 
-inline unsigned short CConfig::GetnMarker_Turbomachinery(void) { return nMarker_Turbomachinery;}
+inline unsigned short CConfig::GetnMarker_Turbomachinery(void) { return nMarker_Turbomachinery; }
 
-inline unsigned short CConfig::GetnMarker_Shroud(void) { return nMarker_Shroud;}
+inline unsigned short CConfig::GetnMarker_Shroud(void) { return nMarker_Shroud; }
 
-inline string CConfig::GetMarker_Shroud(unsigned short val_marker) {return Marker_Shroud[val_marker];}
+inline string CConfig::GetMarker_Shroud(unsigned short val_marker) { return Marker_Shroud[val_marker]; }
 
-inline unsigned short CConfig::GetnMarker_TurboPerformance(void) { return nMarker_TurboPerformance;}
+inline unsigned short CConfig::GetnMarker_TurboPerformance(void) { return nMarker_TurboPerformance; }
 
-inline unsigned short CConfig::Get_nSpanWiseSections_User(void) { return nSpanWiseSections_User;}
+inline unsigned short CConfig::Get_nSpanWiseSections_User(void) { return nSpanWiseSections_User; }
 
-inline unsigned short CConfig::GetnSpanWiseSections(void) { return nSpanWiseSections;}
+inline unsigned short CConfig::GetnSpanWiseSections(void) { return nSpanWiseSections; }
 
-inline void CConfig::SetnSpanWiseSections(unsigned short nSpan) {nSpanWiseSections = nSpan;}
+inline void CConfig::SetnSpanWiseSections(unsigned short nSpan) { nSpanWiseSections = nSpan; }
 
-inline void CConfig::SetnSpanMaxAllZones(unsigned short val_nSpna_max) { nSpanMaxAllZones = val_nSpna_max;}
+inline void CConfig::SetnSpanMaxAllZones(unsigned short val_nSpna_max) { nSpanMaxAllZones = val_nSpna_max; }
 
-inline unsigned short CConfig::GetnSpanMaxAllZones(void) { return nSpanMaxAllZones;}
+inline unsigned short CConfig::GetnSpanMaxAllZones(void) { return nSpanMaxAllZones; }
 
-inline void CConfig::SetnSpan_iZones(unsigned short nSpan, unsigned short iZone) {nSpan_iZones[iZone] = nSpan;}
+inline void CConfig::SetnSpan_iZones(unsigned short nSpan, unsigned short iZone) { nSpan_iZones[iZone] = nSpan; }
 
-inline unsigned short CConfig::GetnSpan_iZones(unsigned short iZone) { return nSpan_iZones[iZone];}
+inline unsigned short CConfig::GetnSpan_iZones(unsigned short iZone) { return nSpan_iZones[iZone]; }
 
-inline string CConfig::GetMarker_TurboPerf_BoundIn(unsigned short index) { return Marker_TurboBoundIn[index];}
+inline string CConfig::GetMarker_TurboPerf_BoundIn(unsigned short index) { return Marker_TurboBoundIn[index]; }
 
-inline string CConfig::GetMarker_TurboPerf_BoundOut(unsigned short index) { return Marker_TurboBoundOut[index];}
+inline string CConfig::GetMarker_TurboPerf_BoundOut(unsigned short index) { return Marker_TurboBoundOut[index]; }
 
-inline string CConfig::GetMarker_PerBound(unsigned short val_marker) {return Marker_PerBound[val_marker];}
+inline string CConfig::GetMarker_PerBound(unsigned short val_marker) { return Marker_PerBound[val_marker]; }
 
 inline unsigned short CConfig::GetnLocationStations(void) { return nLocationStations; }
 
@@ -1025,7 +1053,7 @@ inline unsigned short CConfig::GetKind_ObjFunc(unsigned short val_obj) { return 
 
 inline su2double CConfig::GetWeight_ObjFunc(unsigned short val_obj) { return Weight_ObjFunc[val_obj]; }
 
-inline void CConfig::SetWeight_ObjFunc(unsigned short val_obj, su2double val) {Weight_ObjFunc[val_obj] = val; }
+inline void CConfig::SetWeight_ObjFunc(unsigned short val_obj, su2double val) { Weight_ObjFunc[val_obj] = val; }
 
 inline su2double CConfig::GetCoeff_ObjChainRule(unsigned short iVar) { return Obj_ChainRuleCoeff[iVar]; }
 
@@ -1162,7 +1190,7 @@ inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_Ac
 
 inline unsigned short CConfig::GetnMarker_ActDiskOutlet(void) { return nMarker_ActDiskOutlet; }
 
-inline unsigned short CConfig::GetnObj(void) { return nObj;}
+inline unsigned short CConfig::GetnObj(void) { return nObj; }
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
@@ -1408,15 +1436,15 @@ inline vector<vector<su2double> > CConfig::GetAeroelastic_n(unsigned short iMark
 
 inline vector<vector<su2double> > CConfig::GetAeroelastic_n1(unsigned short iMarker) { return Aeroelastic_n1[iMarker]; }
 
-inline void CConfig::SetAeroelastic_np1(unsigned short iMarker, vector<vector<su2double> > solution) {Aeroelastic_np1[iMarker] = solution;}
+inline void CConfig::SetAeroelastic_np1(unsigned short iMarker, vector<vector<su2double> > solution) { Aeroelastic_np1[iMarker] = solution; }
 
 inline su2double CConfig::GetAeroelastic_plunge(unsigned short val_marker) { return Aeroelastic_plunge[val_marker]; }
 
 inline su2double CConfig::GetAeroelastic_pitch(unsigned short val_marker) { return Aeroelastic_pitch[val_marker]; }
 
-inline void CConfig::SetAeroelastic_plunge(unsigned short val_marker, su2double val) {Aeroelastic_plunge[val_marker] = val; }
+inline void CConfig::SetAeroelastic_plunge(unsigned short val_marker, su2double val) { Aeroelastic_plunge[val_marker] = val; }
 
-inline void CConfig::SetAeroelastic_pitch(unsigned short val_marker, su2double val) {Aeroelastic_pitch[val_marker] = val; }
+inline void CConfig::SetAeroelastic_pitch(unsigned short val_marker, su2double val) { Aeroelastic_pitch[val_marker] = val; }
 
 inline void CConfig::SetAeroelastic_n1(void) {
         Aeroelastic_n1 = Aeroelastic_n;
@@ -1462,9 +1490,9 @@ inline unsigned short CConfig::GetnFFD_Iter(void) { return nFFD_Iter; }
 
 inline su2double CConfig::GetFFD_Tol(void) { return FFD_Tol; }
 
-inline su2double CConfig::GetOpt_LineSearch_Bound(void) {return Opt_LineSearch_Bound; }
+inline su2double CConfig::GetOpt_LineSearch_Bound(void) { return Opt_LineSearch_Bound; }
 
-inline su2double CConfig::GetOpt_RelaxFactor(void) {return Opt_RelaxFactor; }
+inline su2double CConfig::GetOpt_RelaxFactor(void) { return Opt_RelaxFactor; }
 
 inline void CConfig::SetOpt_RelaxFactor(su2double val_scale) {Opt_RelaxFactor = val_scale; }
 
@@ -1482,15 +1510,15 @@ inline su2double CConfig::GetTarget_CL(void) { return Target_CL; }
 
 inline su2double CConfig::GetdCL_dAlpha(void) { return dCL_dAlpha; }
 
-inline su2double CConfig::GetdCM_diH(void) {return dCM_diH; }
+inline su2double CConfig::GetdCM_diH(void) { return dCM_diH; }
 
-inline unsigned long CConfig::GetIter_Fixed_NetThrust(void) {return Iter_Fixed_NetThrust; }
+inline unsigned long CConfig::GetIter_Fixed_NetThrust(void) { return Iter_Fixed_NetThrust; }
 
 inline unsigned long CConfig::GetIter_Fixed_CL(void) { return Iter_Fixed_CL; }
 
-inline unsigned long CConfig::GetUpdate_Alpha(void) {return Update_Alpha; }
+inline unsigned long CConfig::GetUpdate_Alpha(void) { return Update_Alpha; }
 
-inline unsigned long CConfig::GetIter_dCL_dAlpha(void) {return Iter_dCL_dAlpha; }
+inline unsigned long CConfig::GetIter_dCL_dAlpha(void) { return Iter_dCL_dAlpha; }
 
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
 
@@ -1498,11 +1526,11 @@ inline bool CConfig::GetUpdate_BCThrust_Bool(void) { return Update_BCThrust_Bool
 
 inline void CConfig::SetUpdate_AoA(bool val_update) { Update_AoA = val_update; }
 
-inline unsigned long CConfig::GetUpdate_BCThrust(void) {return Update_BCThrust; }
+inline unsigned long CConfig::GetUpdate_BCThrust(void) { return Update_BCThrust; }
 
 inline void CConfig::SetUpdate_BCThrust_Bool(bool val_update) { Update_BCThrust_Bool = val_update; }
 
-inline su2double CConfig::GetdNetThrust_dBCThrust(void) {return dNetThrust_dBCThrust; }
+inline su2double CConfig::GetdNetThrust_dBCThrust(void) { return dNetThrust_dBCThrust; }
 
 inline void CConfig::SetNonphysical_Points(unsigned long val_nonphys_points) { Nonphys_Points = val_nonphys_points; }
 
@@ -1584,12 +1612,12 @@ inline su2double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
 
 inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
 
-inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
+inline unsigned short CConfig::GetDirectDiff() { return DirectDiff; }
 
-inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
+inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint; }
 
-inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
+inline bool CConfig::GetAD_Mode(void) { return AD_Mode; }
 
-inline unsigned short CConfig::GetFFD_Blending(void) {return FFD_Blending;}
+inline unsigned short CConfig::GetFFD_Blending(void) { return FFD_Blending; }
 
-inline su2double* CConfig::GetFFD_BSplineOrder() {return FFD_BSpline_Order;}
+inline su2double* CConfig::GetFFD_BSplineOrder() { return FFD_BSpline_Order; }

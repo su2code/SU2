@@ -41,7 +41,7 @@ su2_adtComparePointClass::su2_adtComparePointClass(const su2double      *coor,
                                                    const unsigned short nDimADT)
   : pointCoor(coor),
     splitDirection(splitDir),
-    nDim(nDimADT) {}
+    nDim(nDimADT) { }
 
 void su2_adtNodeClass::Copy(const su2_adtNodeClass &other) {
 
@@ -68,7 +68,7 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
   isEmpty = false;
   nLeaves = nPoints -1;
   if (nPoints <= 1) ++nLeaves;
-  if (nLeaves == 0) {isEmpty = true; return;}
+  if (nLeaves == 0) { isEmpty = true; return; }
 
   /*--- Allocate the memory for the leaves of the ADT and the minimum and
         maximum coordinates of the leaves. Note that these coordinates are
@@ -143,7 +143,7 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
       su2double distMax = -1.0;
       for (unsigned short l=0; l<nDim; ++l) {
         const su2double dist = leaves[mm].xMax[l] - leaves[mm].xMin[l];
-        if (dist > distMax) {distMax = dist; splitDir = l;}
+        if (dist > distMax) { distMax = dist; splitDir = l; }
       }
 
       /* Sort the points of the current leaf in increasing order. The sorting

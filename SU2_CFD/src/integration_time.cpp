@@ -33,7 +33,7 @@
 
 #include "../include/integration_structure.hpp"
 
-CMultiGridIntegration::CMultiGridIntegration(CConfig *config) : CIntegration(config) {}
+CMultiGridIntegration::CMultiGridIntegration(CConfig *config) : CIntegration(config) { }
 
 CMultiGridIntegration::~CMultiGridIntegration(void) { }
 

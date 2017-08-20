@@ -381,7 +381,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
 
   // zbrac algorithm NR
 
-  for (int j=1;j<=NTRY;j++) {
+  for (int j=1; j<=NTRY; j++) {
     if (fx1*fx2 > 0.0) {
       if (fabs(fx1) < fabs(fx2)) {
         x1 += FACTOR*(x1-x2);

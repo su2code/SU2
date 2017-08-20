@@ -1087,13 +1087,13 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; ForceProj_Vector[2] = 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
             break;
           case THRUST_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
@@ -1103,7 +1103,7 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLength; ForceProj_Vector[1] = -(x - x_origin)/RefLength; ForceProj_Vector[2] = 0; }
             break;
           case FIGURE_OF_MERIT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) {
@@ -2572,7 +2572,7 @@ void CAdjIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_con
 
         /*--- Adjoint velocities ---*/
         for (iDim = 0; iDim < nDim; iDim++) {
-          Jacobian_ii[iDim+1][0] = -Normal[iDim] * (BetaInc2 / DensityInc) ;
+          Jacobian_ii[iDim+1][0] = -Normal[iDim] * (BetaInc2 / DensityInc);
           for (jDim = 0; jDim < nDim; jDim++)
             Jacobian_ii[iDim+1][jDim+1] = - Normal[iDim] * Velocity[jDim];
         }
@@ -4340,7 +4340,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
 
           temp_sens = 0.0;
           
-          /*--- Term: sigma_partial = \Sigma_{ji} n_i \partial_n v_j ---*/
+          /*--- Term: sigma_partial = \Sigma_{ ji } n_i \partial_n v_j ---*/
           
           for (iDim = 0; iDim < nDim; iDim++) {
             for (jDim = 0; jDim < nDim; jDim++)
@@ -4426,14 +4426,14 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
             for (iDim = 0; iDim < nDim; iDim++)
               vartheta_partial += vartheta * normal_grad_v_ux[iDim] * UnitNormal[iDim];
             
-            /*--- Form sigma_partial = n_i ( \Sigma_Phi_{ij} + \Sigma_Psi5v_{ij} ) \partial_n (v - u_x)_j ---*/
+            /*--- Form sigma_partial = n_i ( \Sigma_Phi_{ ij } + \Sigma_Psi5v_{ ij } ) \partial_n (v - u_x)_j ---*/
             
             sigma_partial = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               for (jDim = 0; jDim < nDim; jDim++)
                 sigma_partial += UnitNormal[iDim]*(Sigma[iDim][jDim]+Sigma_Psi5v[iDim][jDim])*normal_grad_v_ux[jDim];
             
-            /*--- Form psi5_tau_partial = \Psi_5 * \partial_n (v - u_x)_i * tau_{ij} * n_j ---*/
+            /*--- Form psi5_tau_partial = \Psi_5 * \partial_n (v - u_x)_i * tau_{ ij } * n_j ---*/
             
             psi5_tau_partial = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
@@ -4444,7 +4444,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
             
             psi5_p_div_vel = -Psi[nDim+1]*Pressure*div_vel;
             
-            /*--- Form psi5_tau_grad_vel = \Psi_5 * tau_{ij} : \nabla( v ) ---*/
+            /*--- Form psi5_tau_grad_vel = \Psi_5 * tau_{ ij } : \nabla( v ) ---*/
             
             psi5_tau_grad_vel = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)

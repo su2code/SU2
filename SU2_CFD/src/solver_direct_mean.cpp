@@ -7314,7 +7314,7 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
     Surface_Mach[iMarker]             = 0.0;
     Surface_Temperature[iMarker]      = 0.0;
     Surface_Density[iMarker]          = 0.0;
-    Surface_Enthalpy[iMarker]          = 0.0;
+    Surface_Enthalpy[iMarker]         = 0.0;
     Surface_NormalVelocity[iMarker]   = 0.0;
     Surface_Pressure[iMarker]         = 0.0;
     Surface_TotalTemperature[iMarker] = 0.0;
@@ -7525,31 +7525,39 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
       else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (lbs/s): " << MassFlow;
       config->SetSurface_MassFlow(iMarker_Analyze, MassFlow);
 
+      su2double Mach = Surface_Mach_Total[iMarker_Analyze];
       cout << ", Mach: " << Surface_Mach_Total[iMarker_Analyze];
+      config->SetSurface_Mach(iMarker_Analyze, Mach);
 
       su2double Temperature = Surface_Temperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ", T (K): " << Temperature;
       else if (config->GetSystemMeasurements() == US) cout << ", T (R): " << Temperature;
-      
+      config->SetSurface_Temperature(iMarker_Analyze, Temperature);
+
       su2double Pressure = Surface_Pressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ", P (Pa): " << Pressure;
       else if (config->GetSystemMeasurements() == US) cout << ", P (psf): " << Pressure;
-      
+      config->SetSurface_Pressure(iMarker_Analyze, Pressure);
+
       su2double Density = Surface_Density_Total[iMarker_Analyze] * config->GetDensity_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ", Rho (kg/m^3): " << Density;
       else if (config->GetSystemMeasurements() == US) cout << ", Rho (lb/ft^3): " << Density;
-      
+      config->SetSurface_Density(iMarker_Analyze, Density);
+
       su2double NormalVelocity = Surface_NormalVelocity_Total[iMarker_Analyze] * config->GetVelocity_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ", Vn (m/s): " << NormalVelocity;
       else if (config->GetSystemMeasurements() == US) cout << ", Vn (ft/s): " << NormalVelocity;
-      
+      config->SetSurface_NormalVelocity(iMarker_Analyze, NormalVelocity);
+
       su2double TotalTemperature = Surface_TotalTemperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ", TT (K): " << TotalTemperature;
       else if (config->GetSystemMeasurements() == US) cout << ", TT (R): " << TotalTemperature;
+      config->SetSurface_TotalTemperature(iMarker_Analyze, TotalTemperature);
 
       su2double TotalPressure = Surface_TotalPressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ", PT (Pa): " << TotalPressure;
       else if (config->GetSystemMeasurements() == US) cout << ", PT (psf): " << TotalPressure;
+      config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
 
       if (config->GetSystemMeasurements() == SI) cout << ", Area (m^2): " << Surface_Area_Total[iMarker_Analyze] <<"."<< endl;
       else if (config->GetSystemMeasurements() == US) cout << ", Area (ft^2): " << Surface_Area_Total[iMarker_Analyze] <<"."<< endl;
@@ -8548,7 +8556,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             Mach                                = sqrt(Velocity2)/SoundSpeed;
             TotalPressure           = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
             TotalTemperature    = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-            VelocityJet         = sqrt(Velocity2) ;
+            VelocityJet         = sqrt(Velocity2);
 
             GrossThrust     = MassFlow * VelocityJet;
 
@@ -10130,8 +10138,7 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
         break;
         
         /*--- The following are not per-surface, and as a result will be
-         * double-counted iff multiple surfaces are specified as well as multi-objective
-         * TODO: print a warning to the user about that possibility. ---*/
+         * double-counted iff multiple surfaces are specified as well as multi-objective ---*/
         
       case EQUIVALENT_AREA:
         Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
@@ -15461,7 +15468,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
             OldAverageDensity[iMarker][iSpan]               = AverageDensity[iMarker][iSpan];
             OldAveragePressure[iMarker][iSpan]              = AveragePressure[iMarker][iSpan];
-            for (iDim = 0; iDim < nDim;iDim++)
+            for (iDim = 0; iDim < nDim; iDim++)
               OldAverageTurboVelocity[iMarker][iSpan][iDim] = AverageTurboVelocity[iMarker][iSpan][iDim];
 
           }
@@ -15491,7 +15498,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
           OldAverageDensity[iMarker][nSpanWiseSections]               = AverageDensity[iMarker][nSpanWiseSections];
           OldAveragePressure[iMarker][nSpanWiseSections]              = AveragePressure[iMarker][nSpanWiseSections];
-          for (iDim = 0; iDim < nDim;iDim++)
+          for (iDim = 0; iDim < nDim; iDim++)
             OldAverageTurboVelocity[iMarker][nSpanWiseSections][iDim] = AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
 
         }
@@ -15566,7 +15573,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   for (iSpan= 0; iSpan < nSpanWiseSections + 1; iSpan++) {
 
     /*--- Forces initialization for contenitors ---*/
-    for (iVar=0;iVar<nVar;iVar++)
+    for (iVar=0; iVar<nVar; iVar++)
       TotalFluxes[iVar]= 0.0;
     for (iDim=0; iDim<nDim; iDim++) {
       TotalVelocity[iDim]     = 0.0;
@@ -15916,14 +15923,14 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             }else {
               MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgMixPressure, avgMixDensity);
               avgMixTurboVelocity[0]         = ( AverageFlux[iMarker][iSpan][1] - avgMixPressure) / AverageFlux[iMarker][iSpan][0];
-              for (iDim = 2; iDim < nDim +1;iDim++)
+              for (iDim = 2; iDim < nDim +1; iDim++)
                 avgMixTurboVelocity[iDim-1]  = AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
 
               if (avgMixDensity!= avgMixDensity || avgMixPressure!= avgMixPressure || avgMixPressure < 0.0 || avgMixDensity < 0.0 ) {
                 val_init_pressure = avgAreaPressure;
                 MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgMixPressure, avgMixDensity);
                 avgMixTurboVelocity[0]          = ( AverageFlux[iMarker][iSpan][1] - avgMixPressure) / AverageFlux[iMarker][iSpan][0];
-                for (iDim = 2; iDim < nDim +1;iDim++)
+                for (iDim = 2; iDim < nDim +1; iDim++)
                   avgMixTurboVelocity[iDim-1]   = AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
               }
               avgMixKine       = avgMassKine;
@@ -15980,7 +15987,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               cout<<"nan in mixing process routine for iSpan: " << iSpan<< " in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
               AverageDensity[iMarker][iSpan]               = OldAverageDensity[iMarker][iSpan];
               AveragePressure[iMarker][iSpan]              = OldAveragePressure[iMarker][iSpan];
-              for (iDim = 0; iDim < nDim;iDim++)
+              for (iDim = 0; iDim < nDim; iDim++)
                 AverageTurboVelocity[iMarker][iSpan][iDim] = OldAverageTurboVelocity[iMarker][iSpan][iDim];
             }
 
@@ -15989,14 +15996,14 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               cout << " negative density or pressure in mixing process routine for iSpan: " << iSpan<< " in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
               AverageDensity[iMarker][iSpan]               = OldAverageDensity[iMarker][iSpan];
               AveragePressure[iMarker][iSpan]              = OldAveragePressure[iMarker][iSpan];
-              for (iDim = 0; iDim < nDim;iDim++)
+              for (iDim = 0; iDim < nDim; iDim++)
                 AverageTurboVelocity[iMarker][iSpan][iDim] = OldAverageTurboVelocity[iMarker][iSpan][iDim];
             }
 
             /* --- update old average solution ---*/
             OldAverageDensity[iMarker][iSpan]               = AverageDensity[iMarker][iSpan];
             OldAveragePressure[iMarker][iSpan]              = AveragePressure[iMarker][iSpan];
-            for (iDim = 0; iDim < nDim;iDim++)
+            for (iDim = 0; iDim < nDim; iDim++)
               OldAverageTurboVelocity[iMarker][iSpan][iDim] = AverageTurboVelocity[iMarker][iSpan][iDim];
 
             /*--- to avoid back flow ---*/
@@ -16254,9 +16261,9 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     TurbPerfIn  = new su2double[n1];
     TurbPerfOut = new su2double[n2];
 
-    for (i=0;i<n1;i++)
+    for (i=0; i<n1; i++)
       TurbPerfIn[i]    = -1.0;
-    for (i=0;i<n2;i++)
+    for (i=0; i<n2; i++)
       TurbPerfOut[i]   = -1.0;
 #endif
 
@@ -16344,9 +16351,9 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     if (rank == MASTER_NODE) {
       TotTurbPerfIn       = new su2double[n1t];
       TotTurbPerfOut      = new su2double[n2t];
-      for (i=0;i<n1t;i++)
+      for (i=0; i<n1t; i++)
         TotTurbPerfIn[i]  = -1.0;
-      for (i=0;i<n2t;i++)
+      for (i=0; i<n2t; i++)
         TotTurbPerfOut[i] = -1.0;
       TotMarkerTP = new int[size];
       for (i=0; i<size; i++) {
@@ -16357,11 +16364,11 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     SU2_MPI::Gather(TurbPerfOut, n2, MPI_DOUBLE,TotTurbPerfOut, n2, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(&markerTP, 1, MPI_INT,TotMarkerTP, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
     if (rank == MASTER_NODE) {
-      delete [] TurbPerfIn, delete [] TurbPerfOut;
+      delete [] TurbPerfIn; delete [] TurbPerfOut;
     }
 
     if (rank == MASTER_NODE) {
-      for (i=0;i<size;i++) {
+      for (i=0; i<size; i++) {
         if (TotTurbPerfIn[n1*i] > 0.0) {
           densityIn        = 0.0;
           densityIn        = TotTurbPerfIn[n1*i];
@@ -16404,7 +16411,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
         }
       }
 
-      delete [] TotTurbPerfIn, delete [] TotTurbPerfOut; delete [] TotMarkerTP;
+      delete [] TotTurbPerfIn; delete [] TotTurbPerfOut; delete [] TotMarkerTP;
     }
 
 #endif
@@ -17422,7 +17429,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
         ProjVel_j += GridVel_j[iDim]*Normal[iDim];
       }
-      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j) ;
+      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
     }
     
     /*--- Inviscid contribution ---*/

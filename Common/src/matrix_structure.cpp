@@ -508,14 +508,14 @@ su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
   else {
     det = 0.0;
 
-    for (j1=0;j1<n;j1++) {
+    for (j1=0; j1<n; j1++) {
       m = new su2double*[n-1];
-      for (i=0;i<n-1;i++)
+      for (i=0; i<n-1; i++)
         m[i] = new su2double[n-1];
       
-      for (i=1;i<n;i++) {
+      for (i=1; i<n; i++) {
         j2 = 0;
-        for (j=0;j<n;j++) {
+        for (j=0; j<n; j++) {
           if (j == j1)
           continue;
           m[i-1][j2] = a[i][j];
@@ -524,7 +524,7 @@ su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
       }
       
       det += pow(-1.0,j1+2.0) * a[0][j1] * MatrixDeterminant(m,n-1);
-      for (i=0;i<n-1;i++)
+      for (i=0; i<n-1; i++)
       delete [] m[i];
       delete [] m;
     }
@@ -542,19 +542,19 @@ void CSysMatrix::MatrixCoFactor(su2double **a, unsigned long n, su2double **b) {
   su2double **c;
   
   c = new su2double*[n-1];
-  for (i=0;i<n-1;i++)
+  for (i=0; i<n-1; i++)
     c[i] = new su2double[n-1];
   
-  for (j=0;j<n;j++) {
-    for (i=0;i<n;i++) {
+  for (j=0; j<n; j++) {
+    for (i=0; i<n; i++) {
       
       /*--- Form the adjoint a_ij ---*/
       i1 = 0;
-      for (ii=0;ii<n;ii++) {
+      for (ii=0; ii<n; ii++) {
         if (ii == i)
         continue;
         j1 = 0;
-        for (jj=0;jj<n;jj++) {
+        for (jj=0; jj<n; jj++) {
           if (jj == j)
           continue;
           c[i1][j1] = a[ii][jj];
@@ -570,7 +570,7 @@ void CSysMatrix::MatrixCoFactor(su2double **a, unsigned long n, su2double **b) {
       b[i][j] = pow(-1.0,i+j+2.0) * det;
     }
   }
-  for (i=0;i<n-1;i++)
+  for (i=0; i<n-1; i++)
     delete [] c[i];
   delete [] c;
   
@@ -581,8 +581,8 @@ void CSysMatrix::MatrixTranspose(su2double **a, unsigned long n) {
   unsigned long i, j;
   su2double tmp;
   
-  for (i=1;i<n;i++) {
-    for (j=0;j<i;j++) {
+  for (i=1; i<n; i++) {
+    for (j=0; j<i; j++) {
       tmp = a[i][j];
       a[i][j] = a[j][i];
       a[j][i] = tmp;
@@ -1147,7 +1147,7 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
   //
   //  Matrix = new su2double*[nVar];
   //  CoFactor = new su2double*[nVar];
-  //  for (iVar=0;iVar<nVar;iVar++) {
+  //  for (iVar=0; iVar<nVar; iVar++) {
   //    Matrix[iVar] = new su2double[nVar];
   //    CoFactor[iVar] = new su2double[nVar];
   //  }
@@ -1198,7 +1198,7 @@ void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double
   //
   //  Matrix = new su2double*[nVar];
   //  CoFactor = new su2double*[nVar];
-  //  for (iVar=0;iVar<nVar;iVar++) {
+  //  for (iVar=0; iVar<nVar; iVar++) {
   //    Matrix[iVar] = new su2double[nVar];
   //    CoFactor[iVar] = new su2double[nVar];
   //  }

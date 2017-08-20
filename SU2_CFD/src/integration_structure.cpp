@@ -889,7 +889,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     deltaURes_recv         = deltaURes;
 #endif
     
-    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << deltaURes_recv << "," ;}
+    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << deltaURes_recv << "," ; }
     
     if (iFSIIter == 1) {
       fea_solver->SetFSI_ConvValue(0,deltaURes_recv);
@@ -897,7 +897,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       
       if (logResidualFSI_initial < logResidualFSI_criteria) Convergence_FSI = true;
       
-      if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI_initial;}
+      if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI_initial; }
       
     }
     else {
@@ -916,11 +916,11 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI < magResidualFSI_criteria)) Convergence_FSI = true;
     }
     
-    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << endl;}
+    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << endl; }
     
   }
   
-  if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI.close();}
+  if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI.close(); }
   
   /*--- Apply the same convergence criteria to all the processors ---*/
   

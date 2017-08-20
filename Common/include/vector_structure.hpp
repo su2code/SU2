@@ -366,7 +366,7 @@ public:
   virtual void operator()(const CSysVector & u, CSysVector & v)
   const = 0; ///< matrix-vector product operation
 };
-inline CMatrixVectorProduct::~CMatrixVectorProduct() {}
+inline CMatrixVectorProduct::~CMatrixVectorProduct() { }
 
 /*!
  * \class CPreconditioner
@@ -383,6 +383,6 @@ public:
   virtual void operator()(const CSysVector & u, CSysVector & v)
   const = 0; ///< preconditioning operation
 };
-inline CPreconditioner::~CPreconditioner() {}
+inline CPreconditioner::~CPreconditioner() { }
 
 #include "vector_structure.inl"

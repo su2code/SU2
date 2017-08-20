@@ -2449,7 +2449,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         else if (geometry->GetnDim() == 3) nVar_Total += 3;
       }
       iVar_FEA_Stress  = nVar_Total; nVar_Total += 3;
-      if (geometry->GetnDim() == 3) {iVar_FEA_Stress_3D = nVar_Total; nVar_Total += 3;}
+      if (geometry->GetnDim() == 3) { iVar_FEA_Stress_3D = nVar_Total; nVar_Total += 3; }
       iVar_FEA_Extra = nVar_Total; nVar_Total += 1;
     }
     
@@ -10616,7 +10616,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config) {
     cout << "     Outlet Mach"<< "              Outlet Normal Mach" << "           Outlet Tang. Mach" << endl;
     cout.width(25); cout << sqrt(MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0]*MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0] +MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]*MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]);
     cout.width(25); cout << MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][0];
-    cout.width(25); cout << MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1];cout << endl;
+    cout.width(25); cout << MachOut[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)][1]; cout << endl;
     cout << endl;
     cout << "     Inlet Flow Angle" << "         Outlet flow Angle  " << endl;
     cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring][config->GetnSpan_iZones(iMarker_Monitoring)];
@@ -16090,7 +16090,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    one int for ExtIter and 8 su2doubles. ---*/
 
   int var_buf_size = 5;
-  int var_buf[5] = {535532, nVar_Par, (int)nTotalPoint, 1, 8};
+  int var_buf[5] = {535532, nVar_Par, (int)nTotalPoint, 1, 8 };
 
   /*--- Prepare the 1D data buffer on this rank. ---*/
 

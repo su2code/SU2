@@ -1519,9 +1519,9 @@ static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYN
 class COptionBase {
 private:
 public:
-  COptionBase() {};
+  COptionBase() { };
   virtual  ~COptionBase() = 0;
-  //  virtual string SetValue(string) {SU2MPI::PrintAndFinalize("shouldn't be here"); return "";};
+  //  virtual string SetValue(string) { SU2MPI::PrintAndFinalize("shouldn't be here"); return ""; };
   virtual string SetValue(vector<string>) = 0;
   virtual void SetDefault() = 0;
 
@@ -1545,7 +1545,7 @@ public:
   }
 };
 
-inline COptionBase::~COptionBase() {}
+inline COptionBase::~COptionBase() { }
 
 
 template <class Tenum>
@@ -1563,7 +1563,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionEnum() {};
+  ~COptionEnum() { };
   string SetValue(vector<string> option_value) {
     // Check if there is more than one string
     string out = optionCheckMultipleValues(option_value, "enum", this->name);
@@ -1602,7 +1602,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionDouble() {};
+  ~COptionDouble() { };
   string SetValue(vector<string> option_value) {
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "su2double", this->name);
@@ -1633,7 +1633,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionString() {};
+  ~COptionString() { };
   string SetValue(vector<string> option_value) {
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "su2double", this->name);
@@ -1659,7 +1659,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionInt() {};
+  ~COptionInt() { };
   string SetValue(vector<string> option_value) {
     string out = optionCheckMultipleValues(option_value, "int", this->name);
     if (out.compare("") != 0) {
@@ -1689,7 +1689,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionULong() {};
+  ~COptionULong() { };
   string SetValue(vector<string> option_value) {
     string out = optionCheckMultipleValues(option_value, "unsigned long", this->name);
     if (out.compare("") != 0) {
@@ -1719,7 +1719,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionUShort() {};
+  ~COptionUShort() { };
   string SetValue(vector<string> option_value) {
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
@@ -1749,7 +1749,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionLong() {};
+  ~COptionLong() { };
   string SetValue(vector<string> option_value) {
     string out = optionCheckMultipleValues(option_value, "long", this->name);
     if (out.compare("") != 0) {
@@ -1780,7 +1780,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionBool() {};
+  ~COptionBool() { };
   string SetValue(vector<string> option_value) {
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "bool", this->name);
@@ -1816,7 +1816,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionEnumList() {};
+  ~COptionEnumList() { };
   string SetValue(vector<string> option_value) {
     if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
@@ -1917,7 +1917,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionDoubleList() {};
+  ~COptionDoubleList() { };
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
@@ -1959,7 +1959,7 @@ public:
     this->name = option_field_name;
   }
   
-  ~COptionShortList() {};
+  ~COptionShortList() { };
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
@@ -2000,7 +2000,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionUShortList() {};
+  ~COptionUShortList() { };
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
@@ -2041,7 +2041,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionStringList() {};
+  ~COptionStringList() { };
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
@@ -2076,7 +2076,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionConvect() {};
+  ~COptionConvect() { };
   string SetValue(vector<string> option_value) {
 
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
@@ -2128,7 +2128,7 @@ public:
     this->restart_def = restart_default;
   }
 
-  ~COptionMathProblem() {};
+  ~COptionMathProblem() { };
   string SetValue(vector<string> option_value) {
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
@@ -2181,7 +2181,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionDVParam() {};
+  ~COptionDVParam() { };
   
   string SetValue(vector<string> option_value) {
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -2335,7 +2335,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionDVValue() {};
+  ~COptionDVValue() { };
 
   string SetValue(vector<string> option_value) {
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -2433,7 +2433,7 @@ public:
     this->name = option_field_name;
   }
   
-  ~COptionFFDDef() {};
+  ~COptionFFDDef() { };
   
   string SetValue(vector<string> option_value) {
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -2527,7 +2527,7 @@ public:
     this->name = option_field_name;
   }
   
-  ~COptionFFDDegree() {};
+  ~COptionFFDDegree() { };
   
   string SetValue(vector<string> option_value) {
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -2617,7 +2617,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionStringDoubleList() {};
+  ~COptionStringDoubleList() { };
   string SetValue(vector<string> option_value) {
     // There must be an even number of entries (same number of strings and doubles
     unsigned short totalVals = option_value.size();
@@ -2668,7 +2668,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionInlet() {};
+  ~COptionInlet() { };
   string SetValue(vector<string> option_value) {
 
     unsigned short totalVals = option_value.size();
@@ -2758,7 +2758,7 @@ public:
     this->name = option_field_name;
     this->m = m;
   }
-  ~COptionRiemann() {};
+  ~COptionRiemann() { };
 
   string SetValue(vector<string> option_value) {
 
@@ -2866,7 +2866,7 @@ public:
     this->name = option_field_name;
     this->m = m;
   }
-  ~COptionGiles() {};
+  ~COptionGiles() { };
 
   string SetValue(vector<string> option_value) {
 
@@ -2988,7 +2988,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionExhaust() {};
+  ~COptionExhaust() { };
   
   string SetValue(vector<string> option_value) {
 
@@ -3056,7 +3056,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionPeriodic() {};
+  ~COptionPeriodic() { };
   string SetValue(vector<string> option_value) {
 
     const int mod_num = 11;
@@ -3221,7 +3221,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionTurboPerformance() {};
+  ~COptionTurboPerformance() { };
   string SetValue(vector<string> option_value) {
 
     const int mod_num = 2;
@@ -3271,7 +3271,7 @@ public:
   COptionPython(const string name) {
     this->name = name;
   }
-  ~COptionPython() {};
+  ~COptionPython() { };
   // No checking happens with python options
   string SetValue(vector<string>) {
     return "";
@@ -3303,7 +3303,7 @@ public:
     this->name = name;
   }
   
-  ~COptionActDisk() {};
+  ~COptionActDisk() { };
   string SetValue(vector<string> option_value) {
     const int mod_num = 8;
     unsigned short totalVals = option_value.size();

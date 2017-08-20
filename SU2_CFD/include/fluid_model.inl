@@ -45,10 +45,10 @@ inline su2double CFluidModel::GetdPdrho_e () { return dPdrho_e; }
 inline su2double CFluidModel::GetdPde_rho () { return dPde_rho; }
 inline su2double CFluidModel::GetdTdrho_e () { return dTdrho_e; }
 inline su2double CFluidModel::GetdTde_rho () { return dTde_rho; }
-inline su2double CFluidModel::Getdhdrho_P () {return dhdrho_P;}
-inline su2double CFluidModel::GetdhdP_rho () {return dhdP_rho;}
-inline su2double CFluidModel::Getdsdrho_P () {return dsdrho_P;}
-inline su2double CFluidModel::GetdsdP_rho () {return dsdP_rho;}
+inline su2double CFluidModel::Getdhdrho_P () { return dhdrho_P; }
+inline su2double CFluidModel::GetdhdP_rho () { return dhdP_rho; }
+inline su2double CFluidModel::Getdsdrho_P () { return dsdrho_P; }
+inline su2double CFluidModel::GetdsdP_rho () { return dsdP_rho; }
 
 inline su2double CFluidModel::GetLaminarViscosity () {
         LaminarViscosity->SetViscosity(Temperature, Density);

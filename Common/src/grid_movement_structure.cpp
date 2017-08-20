@@ -2881,12 +2881,12 @@ CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 	FFDBoxDefinition = false;
 }
 
-CSurfaceMovement::~CSurfaceMovement(void) {}
+CSurfaceMovement::~CSurfaceMovement(void) { }
 
 void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
   
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
-  unsigned short Degree_Unitary [] = {1,1,1}, BSpline_Unitary [] = {2,2,2};
+  unsigned short Degree_Unitary [] = {1,1,1 }, BSpline_Unitary [] = {2,2,2 };
   su2double MaxDiff, Current_Scale, Ratio, New_Scale;
 	 int rank = MASTER_NODE;
 	 string FFDBoxTag;
@@ -3482,9 +3482,9 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
         for (kOrder = 0; kOrder < 2; kOrder++) {
           
           lOrder = 0; mOrder = 0; nOrder = 0;
-          if (iOrder == 1) {lOrder = FFDBox->GetlOrder()-1;}
-          if (jOrder == 1) {mOrder = FFDBox->GetmOrder()-1;}
-          if (kOrder == 1) {nOrder = FFDBox->GetnOrder()-1;}
+          if (iOrder == 1) { lOrder = FFDBox->GetlOrder()-1; }
+          if (jOrder == 1) { mOrder = FFDBox->GetmOrder()-1; }
+          if (kOrder == 1) { nOrder = FFDBox->GetnOrder()-1; }
           
           Coord = FFDBox->GetCoordControlPoints(lOrder, mOrder, nOrder);
           
@@ -3965,16 +3965,16 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
                 } else {
                   
                   if (!IPlane_Intersect_A) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true;}
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true; }
                   }
                   if (!IPlane_Intersect_B) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true;}
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true; }
                   }
                   if (!JPlane_Intersect_A) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true;}
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true; }
                   }
                   if (!JPlane_Intersect_B) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true;}
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true; }
                   }
                 }
               }
@@ -5698,8 +5698,8 @@ void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned sho
 		std::cout << "Warning: Kulfan number should be less than provided maximum." << std::endl;
 	}
 
-	if (config->GetParamDV(iDV, 0) == NO) { upper = false;}
-	if (config->GetParamDV(iDV, 0) == YES) { upper = true;}
+	if (config->GetParamDV(iDV, 0) == NO) { upper = false; }
+	if (config->GetParamDV(iDV, 0) == YES) { upper = true; }
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -7198,8 +7198,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   if (Xcoord[0] == 1.0) AddBegin = false;
   if (Xcoord[Xcoord.size()-1] == 1.0) AddEnd = false;
   
-  if (AddBegin) { Xcoord.insert(Xcoord.begin(), 1.0);   Ycoord.insert(Ycoord.begin(), 0.0);}
-  if (AddEnd) { Xcoord.push_back(1.0);                Ycoord.push_back(0.0);}
+  if (AddBegin) { Xcoord.insert(Xcoord.begin(), 1.0);   Ycoord.insert(Ycoord.begin(), 0.0); }
+  if (AddEnd) { Xcoord.push_back(1.0);                Ycoord.push_back(0.0); }
   
   /*--- Change the orientation (depend on the input file, and the mesh file) ---*/
   
@@ -7745,7 +7745,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
   unsigned short nDim = geometry->GetnDim(), iDim;
-  unsigned short SplineOrder[3]={2,2,2};
+  unsigned short SplineOrder[3]={2,2,2 };
 
   for (iDim = 0; iDim < 3; iDim++) {
     SplineOrder[iDim] = SU2_TYPE::Short(config->GetFFD_BSplineOrder()[iDim]);
@@ -9175,11 +9175,11 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
 
   unsigned short Index[5][7] = {
-    {0, 1, 2, 5, 0, 1, 2},
-    {0, 2, 7, 5, 0, 2, 7},
-    {0, 2, 3, 7, 0, 2, 3},
-    {0, 5, 7, 4, 0, 5, 7},
-    {2, 7, 5, 6, 2, 7, 5}};
+    {0, 1, 2, 5, 0, 1, 2 },
+    {0, 2, 7, 5, 0, 2, 7 },
+    {0, 2, 3, 7, 0, 2, 3 },
+    {0, 5, 7, 4, 0, 5, 7 },
+    {2, 7, 5, 6, 2, 7, 5 }};
   unsigned short nDim = geometry->GetnDim();
   
   for (iDim = 0; iDim < nDim; iDim++)
@@ -9209,11 +9209,11 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
     
   }
   
-  /*--- 1st tetrahedron {V0, V1, V2, V5}
-   2nd tetrahedron {V0, V2, V7, V5}
-   3th tetrahedron {V0, V2, V3, V7}
-   4th tetrahedron {V0, V5, V7, V4}
-   5th tetrahedron {V2, V7, V5, V6} ---*/
+  /*--- 1st tetrahedron { V0, V1, V2, V5 }
+   2nd tetrahedron { V0, V2, V7, V5 }
+   3th tetrahedron { V0, V2, V3, V7 }
+   4th tetrahedron { V0, V5, V7, V4 }
+   5th tetrahedron { V2, V7, V5, V6 } ---*/
   
   for (iVar = 0; iVar < 5; iVar++) {
     Inside = true;
@@ -9243,11 +9243,11 @@ void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, u
 	bool Inside = false;
 	
 	unsigned short Index[5][7] = {
-		{0, 1, 2, 5, 0, 1, 2},
-		{0, 2, 7, 5, 0, 2, 7},
-		{0, 2, 3, 7, 0, 2, 3},
-		{0, 5, 7, 4, 0, 5, 7},
-		{2, 7, 5, 6, 2, 7, 5}};
+		{0, 1, 2, 5, 0, 1, 2 },
+		{0, 2, 7, 5, 0, 2, 7 },
+		{0, 2, 3, 7, 0, 2, 3 },
+		{0, 5, 7, 4, 0, 5, 7 },
+		{2, 7, 5, 6, 2, 7, 5 }};
 	
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		if (config->GetMarker_All_DV(iMarker) == YES)
@@ -9257,11 +9257,11 @@ void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, u
 				
 				Coord = geometry->node[iPoint]->GetCoord();
 				
-				/*--- 1st tetrahedron {V0, V1, V2, V5}
-				 2nd tetrahedron {V0, V2, V7, V5}
-				 3th tetrahedron {V0, V2, V3, V7}
-				 4th tetrahedron {V0, V5, V7, V4}
-				 5th tetrahedron {V2, V7, V5, V6} ---*/
+				/*--- 1st tetrahedron { V0, V1, V2, V5 }
+				 2nd tetrahedron { V0, V2, V7, V5 }
+				 3th tetrahedron { V0, V2, V3, V7 }
+				 4th tetrahedron { V0, V5, V7, V4 }
+				 5th tetrahedron { V2, V7, V5, V6 } ---*/
 				
 				for (iVar = 0; iVar < 5; iVar++) {
 					Inside = true;
@@ -9384,15 +9384,15 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
 	return value;
 }
 
-CFreeFormBlending::CFreeFormBlending() {}
+CFreeFormBlending::CFreeFormBlending() { }
 
-CFreeFormBlending::~CFreeFormBlending() {}
+CFreeFormBlending::~CFreeFormBlending() { }
 
 CBSplineBlending::CBSplineBlending(short val_order, short n_controlpoints): CFreeFormBlending() {
   SetOrder(val_order, n_controlpoints);
 }
 
-CBSplineBlending::~CBSplineBlending() {}
+CBSplineBlending::~CBSplineBlending() { }
 
 void CBSplineBlending::SetOrder(short val_order, short n_controlpoints) {
 
@@ -9430,11 +9430,11 @@ su2double CBSplineBlending::GetBasis(short val_i, su2double val_t) {
 
   /*--- Special cases ---*/
 
-  if ((val_i == 0 && val_t == U[0]) || (val_i == (short)U.size()-1 && val_t == U.back())) {return 1.0;}
+  if ((val_i == 0 && val_t == U[0]) || (val_i == (short)U.size()-1 && val_t == U.back())) { return 1.0; }
 
   /*--- Local property of BSplines ---*/
 
-  if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])) { return 0.0;}
+  if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])) { return 0.0; }
 
   unsigned short j,k;
   su2double saved, temp;
@@ -9462,7 +9462,7 @@ su2double CBSplineBlending::GetBasis(short val_i, su2double val_t) {
 
 su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short val_order_der) {
 
-  if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])) { return 0.0;}
+  if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])) { return 0.0; }
 
   /*--- Evaluate the i+p basis functions up to the order p (stored in the matrix N). ---*/
 
@@ -9470,7 +9470,7 @@ su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short va
 
   /*--- Use the recursive definition for the derivative (hardcoded for 1st and 2nd derivative). ---*/
 
-  if (val_order_der == 0) { return N[0][Order-1];}
+  if (val_order_der == 0) { return N[0][Order-1]; }
 
   if (val_order_der == 1) {
     return (Order-1.0)/(1e-10 + U[val_i+Order-1] - U[val_i]  )*N[0][Order-2]
@@ -9507,7 +9507,7 @@ CBezierBlending::CBezierBlending(short val_order, short n_controlpoints) {
   SetOrder(val_order, n_controlpoints);
 }
 
-CBezierBlending::~CBezierBlending() {}
+CBezierBlending::~CBezierBlending() { }
 
 void CBezierBlending::SetOrder(short val_order, short n_controlpoints) {
   Order  = val_order;

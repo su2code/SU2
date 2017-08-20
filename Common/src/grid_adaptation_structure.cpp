@@ -384,13 +384,13 @@ long CGridAdaptation::CheckRectCode(bool *AdaptCode) {
 	
 	// Combination 1:4
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) {Code = 1; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) { Code = 1; return Code; }
 	
 	// Combination 1:2
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) {Code = 2; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) { Code = 2; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) {Code = 3; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) { Code = 3; return Code; }
 				
 	return Code;
 	
@@ -400,37 +400,37 @@ long CGridAdaptation::CheckRectExtCode(bool *AdaptCode) {
 	
 	int Code = -1;
 	
-	if ((AdaptCode[0] == true) || (AdaptCode[1] == true) || (AdaptCode[2] == true) || (AdaptCode[3] == true)) {Code = 0;}
+	if ((AdaptCode[0] == true) || (AdaptCode[1] == true) || (AdaptCode[2] == true) || (AdaptCode[3] == true)) { Code = 0; }
 		
 	// Combination 1R -> 3T
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) {Code = 2; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) { Code = 2; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) {Code = 3; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) { Code = 3; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) {Code = 4; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) { Code = 4; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) {Code = 5; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) { Code = 5; return Code; }
 	
 	// Combination 1R -> 4T
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) {Code = 6; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) { Code = 6; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) {Code = 7; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) { Code = 7; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) {Code = 8; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) { Code = 8; return Code; }
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) {Code = 9; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) { Code = 9; return Code; }
 		
 	// Combination 1R -> 1R+3T
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) {Code = 12; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) { Code = 12; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) {Code = 13; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) { Code = 13; return Code; }
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) {Code = 14; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) { Code = 14; return Code; }
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) {Code = 15; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) { Code = 15; return Code; }
 		
 	return Code;
 	
@@ -440,27 +440,27 @@ long CGridAdaptation::CheckTriangleCode(bool *AdaptCode) {
 	
 	int Code = -1;
 	
-	if ((AdaptCode[0] == true) || (AdaptCode[1] == true) || (AdaptCode[2] == true)) {Code = 0;}
+	if ((AdaptCode[0] == true) || (AdaptCode[1] == true) || (AdaptCode[2] == true)) { Code = 0; }
 	
 	// Combination 1T -> 3T
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true)) {Code = 1; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true)) { Code = 1; return Code; }
 		
 	// Combination 1T -> 2T
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == false)) {Code = 2; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == false)) { Code = 2; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false)) {Code = 3; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false)) { Code = 3; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == true)) {Code = 4; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == true)) { Code = 4; return Code; }
 		
 	// Combination 1T -> 1R+1T (2D) or 3T (3D)
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false)) {Code = 5; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false)) { Code = 5; return Code; }
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true)) {Code = 6; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true)) { Code = 6; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true)) {Code = 7; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true)) { Code = 7; return Code; }
 		
 	return Code;
 	
@@ -479,21 +479,21 @@ long CGridAdaptation::CheckTetraCode(bool *AdaptCode) {
 	// Combination 1:8
 	
 	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true) && (AdaptCode[4] == true) &&
-			(AdaptCode[5] == true) ) {Code = 1; return Code;}
+			(AdaptCode[5] == true) ) { Code = 1; return Code; }
 	
 	// Combination 1:4
 	
 	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false) && (AdaptCode[4] == true) &&
-			(AdaptCode[5] == false) ) {Code = 2; return Code;}
+			(AdaptCode[5] == false) ) { Code = 2; return Code; }
 	
 	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == true) && (AdaptCode[4] == true) &&
-			(AdaptCode[5] == true) ) {Code = 3; return Code;}
+			(AdaptCode[5] == true) ) { Code = 3; return Code; }
 	
 	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == false) && (AdaptCode[4] == false) &&
-			(AdaptCode[5] == true) ) {Code = 4; return Code;}
+			(AdaptCode[5] == true) ) { Code = 4; return Code; }
 	
 	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true) && (AdaptCode[4] == false) &&
-			(AdaptCode[5] == false) ) {Code = 5; return Code;}
+			(AdaptCode[5] == false) ) { Code = 5; return Code; }
 	
 	// Combinations with 1, 2, and 3 (no regular) divided edges.
 	
@@ -501,7 +501,7 @@ long CGridAdaptation::CheckTetraCode(bool *AdaptCode) {
 	for (iVar = 0; iVar < 6; iVar ++)
 		if (AdaptCode[iVar] == true) nDivEdges++;
 	
-	if ((nDivEdges == 1) || (nDivEdges == 2) || (nDivEdges == 3)) {Code = 6; return Code;}
+	if ((nDivEdges == 1) || (nDivEdges == 2) || (nDivEdges == 3)) { Code = 6; return Code; }
 	
 	return Code;
 
@@ -521,35 +521,35 @@ long CGridAdaptation::CheckHexaCode(bool *AdaptCode) {
 	
 	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true) && (AdaptCode[4] == true) &&
 			(AdaptCode[5] == true) && (AdaptCode[6] == true) && (AdaptCode[7] == true) && (AdaptCode[8] == true) && (AdaptCode[9] == true) &&
-			(AdaptCode[10] == true) && (AdaptCode[11] == true)) {Code = 1; return Code;}
+			(AdaptCode[10] == true) && (AdaptCode[11] == true)) { Code = 1; return Code; }
 	
 	// Combination 1:4
 	
 	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false) && (AdaptCode[4] == true) &&
 			(AdaptCode[5] == false) && (AdaptCode[6] == true) && (AdaptCode[7] == false) && (AdaptCode[8] == true) && (AdaptCode[9] == true) &&
-			(AdaptCode[10] == true) && (AdaptCode[11] == true)) {Code = 2; return Code;}
+			(AdaptCode[10] == true) && (AdaptCode[11] == true)) { Code = 2; return Code; }
 	
 	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true) && (AdaptCode[4] == false) &&
 			(AdaptCode[5] == true) && (AdaptCode[6] == false) && (AdaptCode[7] == true) && (AdaptCode[8] == true) && (AdaptCode[9] == true) &&
-			(AdaptCode[10] == true) && (AdaptCode[11] == true)) {Code = 3; return Code;}
+			(AdaptCode[10] == true) && (AdaptCode[11] == true)) { Code = 3; return Code; }
 	
 	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true) && (AdaptCode[4] == true) &&
 			(AdaptCode[5] == true) && (AdaptCode[6] == true) && (AdaptCode[7] == true) && (AdaptCode[8] == false) && (AdaptCode[9] == false) &&
-			(AdaptCode[10] == false) && (AdaptCode[11] == false)) {Code = 4; return Code;}
+			(AdaptCode[10] == false) && (AdaptCode[11] == false)) { Code = 4; return Code; }
 	
 	// Combination 1:2
 	
 	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == false) && (AdaptCode[4] == false) &&
 			(AdaptCode[5] == false) && (AdaptCode[6] == false) && (AdaptCode[7] == false) && (AdaptCode[8] == true) && (AdaptCode[9] == true) &&
-			(AdaptCode[10] == true) && (AdaptCode[11] == true)) {Code = 5; return Code;}
+			(AdaptCode[10] == true) && (AdaptCode[11] == true)) { Code = 5; return Code; }
 	
 	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true) && (AdaptCode[4] == false) &&
 			(AdaptCode[5] == true) && (AdaptCode[6] == false) && (AdaptCode[7] == true) && (AdaptCode[8] == false) && (AdaptCode[9] == false) &&
-			(AdaptCode[10] == false) && (AdaptCode[11] == false)) {Code = 6; return Code;}
+			(AdaptCode[10] == false) && (AdaptCode[11] == false)) { Code = 6; return Code; }
 	
 	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false) && (AdaptCode[4] == true) &&
 			(AdaptCode[5] == false) && (AdaptCode[6] == true) && (AdaptCode[7] == false) && (AdaptCode[8] == false) && (AdaptCode[9] == false) &&
-			(AdaptCode[10] == false) && (AdaptCode[11] == false)) {Code = 7; return Code; }
+			(AdaptCode[10] == false) && (AdaptCode[11] == false)) { Code = 7; return Code; }
 			
 		return Code;
 
@@ -559,52 +559,52 @@ long CGridAdaptation::CheckPyramCode(bool *AdaptCode) {
 	
 	int Code = -1;
 	
-	if ((AdaptCode[0] == true) || (AdaptCode[1] == true) || (AdaptCode[2] == true) || (AdaptCode[3] == true)) {Code = 0;}
+	if ((AdaptCode[0] == true) || (AdaptCode[1] == true) || (AdaptCode[2] == true) || (AdaptCode[3] == true)) { Code = 0; }
 	
 	// Combination 1P -> 1P
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) {Code = 1; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) { Code = 1; return Code; }
 	
 	// Combination 1P -> 3T
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) {Code = 2; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) { Code = 2; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) {Code = 3; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) { Code = 3; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) {Code = 4; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) { Code = 4; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) {Code = 5; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) { Code = 5; return Code; }
 	
 	// Combination 1P -> 4T
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) {Code = 6; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == false)) { Code = 6; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) {Code = 7; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) { Code = 7; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) {Code = 8; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) { Code = 8; return Code; }
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) {Code = 9; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) { Code = 9; return Code; }
 	
 	// Combination 1P -> 2P
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) {Code = 10; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) { Code = 10; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) {Code = 11; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) { Code = 11; return Code; }
 	
 	// Combination 1P -> 1P+3T
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) {Code = 12; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == false)) { Code = 12; return Code; }
 	
-	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) {Code = 13; return Code;}
+	if ((AdaptCode[0] == false) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) { Code = 13; return Code; }
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) {Code = 14; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == false) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) { Code = 14; return Code; }
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) {Code = 15; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == false) && (AdaptCode[3] == true)) { Code = 15; return Code; }
 	
 	
 	// Combination 1P -> 4P
 	
-	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) {Code = 16; return Code;}
+	if ((AdaptCode[0] == true) && (AdaptCode[1] == true) && (AdaptCode[2] == true) && (AdaptCode[3] == true)) { Code = 16; return Code; }
 	
 	return Code;
 
@@ -1797,9 +1797,9 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						
 						/*--- Compute the coordinates of the new node ---*/
             
-						if (iIndex == 0) {no_0 = ip_0; no_1 = ip_1;}
-						if (iIndex == 1) {no_0 = ip_1; no_1 = ip_2;}
-						if (iIndex == 2) {no_0 = ip_2; no_1 = ip_0;}
+						if (iIndex == 0) { no_0 = ip_0; no_1 = ip_1; }
+						if (iIndex == 1) { no_0 = ip_1; no_1 = ip_2; }
+						if (iIndex == 2) { no_0 = ip_2; no_1 = ip_0; }
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++) 
 							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->node[no_0]->GetCoord(iDim)+geometry->node[no_1]->GetCoord(iDim));
 						
@@ -1833,10 +1833,10 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						
 						/*--- Compute the coordinates of the new node ---*/
             
-						if (iIndex == 0) {no_0 = ip_0; no_1 = ip_1;}
-						if (iIndex == 1) {no_0 = ip_1; no_1 = ip_2;}
-						if (iIndex == 2) {no_0 = ip_2; no_1 = ip_3;}
-						if (iIndex == 3) {no_0 = ip_3; no_1 = ip_0;}
+						if (iIndex == 0) { no_0 = ip_0; no_1 = ip_1; }
+						if (iIndex == 1) { no_0 = ip_1; no_1 = ip_2; }
+						if (iIndex == 2) { no_0 = ip_2; no_1 = ip_3; }
+						if (iIndex == 3) { no_0 = ip_3; no_1 = ip_0; }
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++) 
 							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->node[no_0]->GetCoord(iDim)+geometry->node[no_1]->GetCoord(iDim));
 						
@@ -1863,7 +1863,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						
 						/*--- Compute the coordinates of the new node ---*/
             
-						if (iIndex == 0) {no_0 = ip_0; no_1 = ip_1; no_2 = ip_2; no_3 = ip_3;}
+						if (iIndex == 0) { no_0 = ip_0; no_1 = ip_1; no_2 = ip_2; no_3 = ip_3; }
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++) 
 							NewNodeCoord[nPoint_new][iDim] = 0.25*(geometry->node[no_0]->GetCoord(iDim) +
 																										geometry->node[no_1]->GetCoord(iDim) +
@@ -2566,12 +2566,12 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 						TetraEdgeNode[iElem][iIndex] = nPoint_new;
 						
 						// Compute the coordinates of the new node					
-						if (iIndex == 0) {no_0 = ip_0; no_1 = ip_1;}
-						if (iIndex == 1) {no_0 = ip_0; no_1 = ip_2;}
-						if (iIndex == 2) {no_0 = ip_0; no_1 = ip_3;}
-						if (iIndex == 3) {no_0 = ip_1; no_1 = ip_2;}
-						if (iIndex == 4) {no_0 = ip_1; no_1 = ip_3;}			
-						if (iIndex == 5) {no_0 = ip_2; no_1 = ip_3;}
+						if (iIndex == 0) { no_0 = ip_0; no_1 = ip_1; }
+						if (iIndex == 1) { no_0 = ip_0; no_1 = ip_2; }
+						if (iIndex == 2) { no_0 = ip_0; no_1 = ip_3; }
+						if (iIndex == 3) { no_0 = ip_1; no_1 = ip_2; }
+						if (iIndex == 4) { no_0 = ip_1; no_1 = ip_3; }			
+						if (iIndex == 5) { no_0 = ip_2; no_1 = ip_3; }
 						
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++) 
 							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->node[no_0]->GetCoord(iDim)+geometry->node[no_1]->GetCoord(iDim));
@@ -2610,18 +2610,18 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 						HexaEdgeNode[iElem][iIndex] = nPoint_new;
 						
 						// Compute the coordinates of the new node					
-						if (iIndex == 0) {no_0 = ip_0; no_1 = ip_1;}
-						if (iIndex == 1) {no_0 = ip_1; no_1 = ip_2;}
-						if (iIndex == 2) {no_0 = ip_2; no_1 = ip_3;}
-						if (iIndex == 3) {no_0 = ip_3; no_1 = ip_0;}
-						if (iIndex == 4) {no_0 = ip_4; no_1 = ip_5;}
-						if (iIndex == 5) {no_0 = ip_5; no_1 = ip_6;}
-						if (iIndex == 6) {no_0 = ip_6; no_1 = ip_7;}
-						if (iIndex == 7) {no_0 = ip_7; no_1 = ip_4;}
-						if (iIndex == 8) {no_0 = ip_0; no_1 = ip_4;}
-						if (iIndex == 9) {no_0 = ip_1; no_1 = ip_5;}
-						if (iIndex == 10) {no_0 = ip_2; no_1 = ip_6;}
-						if (iIndex == 11) {no_0 = ip_3; no_1 = ip_7;}
+						if (iIndex == 0) { no_0 = ip_0; no_1 = ip_1; }
+						if (iIndex == 1) { no_0 = ip_1; no_1 = ip_2; }
+						if (iIndex == 2) { no_0 = ip_2; no_1 = ip_3; }
+						if (iIndex == 3) { no_0 = ip_3; no_1 = ip_0; }
+						if (iIndex == 4) { no_0 = ip_4; no_1 = ip_5; }
+						if (iIndex == 5) { no_0 = ip_5; no_1 = ip_6; }
+						if (iIndex == 6) { no_0 = ip_6; no_1 = ip_7; }
+						if (iIndex == 7) { no_0 = ip_7; no_1 = ip_4; }
+						if (iIndex == 8) { no_0 = ip_0; no_1 = ip_4; }
+						if (iIndex == 9) { no_0 = ip_1; no_1 = ip_5; }
+						if (iIndex == 10) { no_0 = ip_2; no_1 = ip_6; }
+						if (iIndex == 11) { no_0 = ip_3; no_1 = ip_7; }
 						
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++) 
 							NewNodeCoord[nPoint_new][iDim] = 0.5*(geometry->node[no_0]->GetCoord(iDim)+geometry->node[no_1]->GetCoord(iDim));
@@ -2646,12 +2646,12 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 						NodeAtFaces[HexaFaceIndex[iElem][iIndex]] = nPoint_new;
 						HexaFaceNode[iElem][iIndex] = nPoint_new;
 						// Compute the coordinates of the new node
-						if (iIndex == 0) {no_0 = ip_0; no_1 = ip_1; no_2 = ip_2; no_3 = ip_3;}
-						if (iIndex == 1) {no_0 = ip_4; no_1 = ip_5; no_2 = ip_6; no_3 = ip_7;}
-						if (iIndex == 2) {no_0 = ip_1; no_1 = ip_2; no_2 = ip_6; no_3 = ip_5;}
-						if (iIndex == 3) {no_0 = ip_3; no_1 = ip_2; no_2 = ip_6; no_3 = ip_7;}
-						if (iIndex == 4) {no_0 = ip_0; no_1 = ip_3; no_2 = ip_7; no_3 = ip_4;}
-						if (iIndex == 5) {no_0 = ip_0; no_1 = ip_1; no_2 = ip_5; no_3 = ip_4;}
+						if (iIndex == 0) { no_0 = ip_0; no_1 = ip_1; no_2 = ip_2; no_3 = ip_3; }
+						if (iIndex == 1) { no_0 = ip_4; no_1 = ip_5; no_2 = ip_6; no_3 = ip_7; }
+						if (iIndex == 2) { no_0 = ip_1; no_1 = ip_2; no_2 = ip_6; no_3 = ip_5; }
+						if (iIndex == 3) { no_0 = ip_3; no_1 = ip_2; no_2 = ip_6; no_3 = ip_7; }
+						if (iIndex == 4) { no_0 = ip_0; no_1 = ip_3; no_2 = ip_7; no_3 = ip_4; }
+						if (iIndex == 5) { no_0 = ip_0; no_1 = ip_1; no_2 = ip_5; no_3 = ip_4; }
 						
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++) 
 								NewNodeCoord[nPoint_new][iDim] = 0.25*(x_no[no_0][iDim]+x_no[no_1][iDim]+x_no[no_2][iDim]+x_no[no_3][iDim]);
@@ -2681,7 +2681,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 						HexaElemNode[iElem][iIndex] = nPoint_new;
 						
 						// Compute the coordinates of the new node
-						if (iIndex == 0) {no_0 = ip_0; no_1 = ip_1; no_2 = ip_2; no_3 = ip_3; no_4 = ip_4; no_5 = ip_5; no_6 = ip_6; no_7 = ip_7;}
+						if (iIndex == 0) { no_0 = ip_0; no_1 = ip_1; no_2 = ip_2; no_3 = ip_3; no_4 = ip_4; no_5 = ip_5; no_6 = ip_6; no_7 = ip_7; }
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++) 
 							NewNodeCoord[nPoint_new][iDim] = 0.125*(geometry->node[no_0]->GetCoord(iDim) +
 																											geometry->node[no_1]->GetCoord(iDim) +
@@ -3014,13 +3014,13 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				ip_2 = geometry->elem[iElem]->GetNode(2);
 				ip_3 = geometry->elem[iElem]->GetNode(3);
 				
-				long edges[6] = {-1, -1, -1, -1, -1 , -1};
-				if (DivEdge[geometry->FindEdge(ip_0, ip_1)]) {edges[0] = geometry->FindEdge(ip_0, ip_1);}
-				if (DivEdge[geometry->FindEdge(ip_0, ip_2)]) {edges[1] = geometry->FindEdge(ip_0, ip_2);}
-				if (DivEdge[geometry->FindEdge(ip_0, ip_3)]) {edges[2] = geometry->FindEdge(ip_0, ip_3);}
-				if (DivEdge[geometry->FindEdge(ip_1, ip_2)]) {edges[3] = geometry->FindEdge(ip_1, ip_2);}
-				if (DivEdge[geometry->FindEdge(ip_1, ip_3)]) {edges[4] = geometry->FindEdge(ip_1, ip_3);}
-				if (DivEdge[geometry->FindEdge(ip_2, ip_3)]) {edges[5] = geometry->FindEdge(ip_2, ip_3);}		
+				long edges[6] = {-1, -1, -1, -1, -1 , -1 };
+				if (DivEdge[geometry->FindEdge(ip_0, ip_1)]) { edges[0] = geometry->FindEdge(ip_0, ip_1); }
+				if (DivEdge[geometry->FindEdge(ip_0, ip_2)]) { edges[1] = geometry->FindEdge(ip_0, ip_2); }
+				if (DivEdge[geometry->FindEdge(ip_0, ip_3)]) { edges[2] = geometry->FindEdge(ip_0, ip_3); }
+				if (DivEdge[geometry->FindEdge(ip_1, ip_2)]) { edges[3] = geometry->FindEdge(ip_1, ip_2); }
+				if (DivEdge[geometry->FindEdge(ip_1, ip_3)]) { edges[4] = geometry->FindEdge(ip_1, ip_3); }
+				if (DivEdge[geometry->FindEdge(ip_2, ip_3)]) { edges[5] = geometry->FindEdge(ip_2, ip_3); }		
 
 				
 				TetraDivision(TetraAdaptCode[iElem], nodes, edges, Division, &nPart);
@@ -3176,10 +3176,10 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				nodes[4] = NodeAtEdges[geometry->FindEdge(ip_1, ip_2)]; if (nodes[4] != -1) geo_adapt->node[nodes[4]]->SetBoundary(geometry->GetnMarker());
 				nodes[5] = NodeAtEdges[geometry->FindEdge(ip_0, ip_2)]; if (nodes[5] != -1) geo_adapt->node[nodes[5]]->SetBoundary(geometry->GetnMarker());
 				
-				long edges[3] = {-1, -1, -1};
-				if (DivEdge[geometry->FindEdge(ip_0, ip_1)]) { edges[0] = geometry->FindEdge(ip_0, ip_1); TriangleEdgeCode[0] = true;}
-				if (DivEdge[geometry->FindEdge(ip_1, ip_2)]) { edges[1] = geometry->FindEdge(ip_1, ip_2); TriangleEdgeCode[1] = true;}
-				if (DivEdge[geometry->FindEdge(ip_2, ip_0)]) { edges[2] = geometry->FindEdge(ip_2, ip_0); TriangleEdgeCode[2] = true;}
+				long edges[3] = {-1, -1, -1 };
+				if (DivEdge[geometry->FindEdge(ip_0, ip_1)]) { edges[0] = geometry->FindEdge(ip_0, ip_1); TriangleEdgeCode[0] = true; }
+				if (DivEdge[geometry->FindEdge(ip_1, ip_2)]) { edges[1] = geometry->FindEdge(ip_1, ip_2); TriangleEdgeCode[1] = true; }
+				if (DivEdge[geometry->FindEdge(ip_2, ip_0)]) { edges[2] = geometry->FindEdge(ip_2, ip_0); TriangleEdgeCode[2] = true; }
 				
 				TriangleAdaptCode = CheckTriangleCode(TriangleEdgeCode);
 				TriangleDivision(TriangleAdaptCode, nodes, edges, Division, &nPart);

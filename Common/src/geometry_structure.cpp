@@ -315,7 +315,7 @@ void CGeometry::TestGeometry(void) {
       para_file << "      Point index: " << vertex[iMarker][iVertex]->GetNode() << endl;
       para_file << "      Point coordinates : ";
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        para_file << node[vertex[iMarker][iVertex]->GetNode()]->GetCoord(iDim) << "\t";}
+        para_file << node[vertex[iMarker][iVertex]->GetNode()]->GetCoord(iDim) << "\t"; }
       para_file << endl;
       vertex[iMarker][iVertex]->GetNormal(Normal);
       para_file << "         Face normal : ";
@@ -5622,7 +5622,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         for (iPoint = 0; iPoint < nPoint; iPoint++) {
           getline (mesh_file, text_line);
           istringstream point_line(text_line);
-          if (nDim == 2) {point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; }
+          if (nDim == 2) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; }
           else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; }
           
           /*--- Compute the CG of the actuator disk surface ---*/
@@ -5767,7 +5767,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         for (iPoint = 0; iPoint < nPoint; iPoint++) {
           getline (mesh_file, text_line);
           istringstream point_line(text_line);
-          if (nDim == 2) {point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; }
+          if (nDim == 2) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; }
           else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; }
           
           if (MapVolumePointBool[iPoint]) {
@@ -7961,7 +7961,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         
         if (rank == MASTER_NODE) {
           for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ )
-            if (isMixed[ii]) {currentElem = "Mixed"; break;}
+            if (isMixed[ii]) { currentElem = "Mixed"; break; }
           cout << "Loading section " << sectionNames[j-1][s-1];
           cout << " of element type " << currentElem << "." << endl;
         }
@@ -9315,7 +9315,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
           find = false;
           for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
             Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
-            if (Point_Surface == Point_Domain) {find = true; break;}
+            if (Point_Surface == Point_Domain) { find = true; break; }
           }
           if (!find) break;
         }
@@ -10881,7 +10881,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 
 #ifdef HAVE_MPI
-    My_nVert = nVert;nVert = 0;
+    My_nVert = nVert; nVert = 0;
     SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
@@ -11363,7 +11363,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
     SU2_MPI::Allreduce(MyTotalNormal, TotalNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(MyTotalGridVel, TotalGridVel, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    delete [] MyTotalTurboNormal;delete [] MyTotalNormal; delete [] MyTotalGridVel;
+    delete [] MyTotalTurboNormal; delete [] MyTotalNormal; delete [] MyTotalGridVel;
 
 #endif
 
@@ -11533,9 +11533,9 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
     TurbGeoIn  = new su2double[n1];
     TurbGeoOut = new su2double[n2];
 
-    for (i=0;i<n1;i++)
+    for (i=0; i<n1; i++)
       TurbGeoIn[i]    = -1.0;
-    for (i=0;i<n2;i++)
+    for (i=0; i<n2; i++)
       TurbGeoOut[i]   = -1.0;
 #endif
     pitchIn           =  0.0;
@@ -11597,9 +11597,9 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 #ifdef HAVE_MPI
     TotTurbGeoIn       = new su2double[n1t];
     TotTurbGeoOut      = new su2double[n2t];
-    for (i=0;i<n1t;i++)
+    for (i=0; i<n1t; i++)
       TotTurbGeoIn[i]  = -1.0;
-    for (i=0;i<n2t;i++)
+    for (i=0; i<n2t; i++)
       TotTurbGeoOut[i] = -1.0;
     TotMarkerTP = new int[size];
     for (i=0; i<size; i++) {
@@ -11610,10 +11610,10 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
     SU2_MPI::Allgather(TurbGeoOut, n2, MPI_DOUBLE,TotTurbGeoOut, n2, MPI_DOUBLE, MPI_COMM_WORLD);
     SU2_MPI::Allgather(&markerTP, 1, MPI_INT,TotMarkerTP, 1, MPI_INT, MPI_COMM_WORLD);
 
-    delete [] TurbGeoIn, delete [] TurbGeoOut;
+    delete [] TurbGeoIn; delete [] TurbGeoOut;
 
 
-    for (i=0;i<size;i++) {
+    for (i=0; i<size; i++) {
       if (TotTurbGeoIn[n1*i] > 0.0) {
         areaIn              = 0.0;
         areaIn              = TotTurbGeoIn[n1*i];
@@ -11642,7 +11642,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
       }
     }
 
-    delete [] TotTurbGeoIn, delete [] TotTurbGeoOut; delete [] TotMarkerTP;
+    delete [] TotTurbGeoIn; delete [] TotTurbGeoOut; delete [] TotMarkerTP;
 
 
 #endif
@@ -12481,8 +12481,8 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
           Coord_j = geometry_donor->node[jPoint]->GetCoord();
           if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
           if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
-//          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = node[jPoint]->GetGlobalIndex();}
-          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = geometry_donor->node[jPoint]->GetGlobalIndex();}
+//          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = node[jPoint]->GetGlobalIndex(); }
+          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = geometry_donor->node[jPoint]->GetGlobalIndex(); }
         }
       
       maxdist = max(maxdist, mindist);
@@ -12925,7 +12925,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   output_file.precision(15);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim) ;
+      output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim);
 #ifndef HAVE_MPI
     output_file << "\t" << iPoint << endl;
 #else
@@ -14673,7 +14673,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
           for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++) {
             if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
               for (iVertex = 0; iVertex < nVertex[jMarker]; iVertex++) {
-                if (pPoint == vertex[jMarker][iVertex]->GetNode()) {kMarker = jMarker; jVertex = iVertex;}
+                if (pPoint == vertex[jMarker][iVertex]->GetNode()) { kMarker = jMarker; jVertex = iVertex; }
               }
             }
           }
@@ -15025,9 +15025,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   if (incompressible)      { skipVar += skipMult*(nDim+1); }
   if (compressible)        { skipVar += skipMult*(nDim+2); }
-  if (sst && !frozen_visc) { skipVar += skipMult*2;}
-  if (sa && !frozen_visc)  { skipVar += skipMult*1;}
-  if (grid_movement)       { skipVar += nDim;}
+  if (sst && !frozen_visc) { skipVar += skipMult*2; }
+  if (sa && !frozen_visc)  { skipVar += skipMult*1; }
+  if (grid_movement)       { skipVar += nDim; }
 
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
@@ -15459,7 +15459,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     if (iPoint_Local > -1) {
 
       point_line >> index;
-      for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
+      for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val; }
       for (iDim = 0; iDim < nDim; iDim++) {
         point_line >> Sens;
         Sensitivity[iPoint_Local*nDim+iDim] = Sens;
@@ -18657,7 +18657,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   output_file << "NPOIN= " << nPoint << "\t" << nPoint - GhostPoints << endl;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << node[NewSort[iPoint]]->GetCoord(iDim) ;
+      output_file << scientific << "\t" << node[NewSort[iPoint]]->GetCoord(iDim);
     output_file << "\t" << iPoint << endl;
   }
   
@@ -18890,7 +18890,7 @@ void CMultiGridQueue::RemoveCV(unsigned long val_remove_point) {
   unsigned short Size_QueueCV = 0;
   check = false;
   for (iPoint = 0; iPoint < QueueCV.size(); iPoint ++)
-    if (QueueCV[iPoint].size() != 0) { Size_QueueCV = iPoint; check = true;}
+    if (QueueCV[iPoint].size() != 0) { Size_QueueCV = iPoint; check = true; }
   
   /*--- Resize the queue, if check = false, the queue is empty, at least
    we need one element in the queue ---*/
@@ -18997,7 +18997,7 @@ bool CMultiGridQueue::EmptyQueue(void) {
   }
   else {
     for (iPoint = 1; iPoint < QueueCV.size(); iPoint ++)
-      if (QueueCV[iPoint].size() != 0) { check = false; break;}
+      if (QueueCV[iPoint].size() != 0) { check = false; break; }
   }
   
   return check;

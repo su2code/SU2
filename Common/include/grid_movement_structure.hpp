@@ -844,7 +844,7 @@ public:
 	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)^2+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z)^2
 	 *        Input: (u, v, w), dim , xyz=(x, y, z), l, m, n E.G.: dim=2 => we use the third coordinate of the control points, 
-	 *        and the z-coordinate of xyz  (0<=dim<=2) Output: 2* ( (Sum_{i, j, k}^l, m, n P_{ijk}[dim] B_i^l[u] B_j^m[v] B_k^n[w]) - 
+	 *        and the z-coordinate of xyz  (0<=dim<=2) Output: 2* ( (Sum_{ i, j, k }^l, m, n P_{ ijk }[dim] B_i^l[u] B_j^m[v] B_k^n[w]) - 
 	 *        xyz[dim]).
 	 * \param[in] uvw - __________.
 	 * \param[in] dim - __________.
@@ -861,8 +861,8 @@ public:
 	 * \param[in] dim - Value of the coordinate to be differentiate.
 	 * \param[in] diff_this - Diferentiation with respect this coordinate.
 	 * \param[in] lmn - Degree of the FFD box.
-	 * \return Sum_{i, j, k}^{l, m, n} [one of them with -1, 
-	 *        depending on diff_this=0,1 or 2] P_{ijk}[dim] * (B_i^l[u] B_j^m[v] B_k^n[w])--one of them diffrentiated; 
+	 * \return Sum_{ i, j, k }^{ l, m, n } [one of them with -1, 
+	 *        depending on diff_this=0,1 or 2] P_{ ijk }[dim] * (B_i^l[u] B_j^m[v] B_k^n[w])--one of them diffrentiated; 
 	 *        which? diff_thiss will tell us ; E.G.: dim=2, diff_this=1 => we use the third coordinate of the control 
 	 *        points, and derivate de v-Bersntein polynomial (use m-1 when summing!!).
 	 */		
@@ -891,8 +891,8 @@ public:
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z) 
 	 *        Input: (u, v, w), dim , diff_this, diff_this_also, xyz=(x, y, z), l, m, n
 	 *        Output:
-	 *        Sum_{i, j, k}^{l, m, n} [two of them with -1, depending on diff_this, diff_this_also=0,1 or 2] 
-	 *        P_{ijk}[dim] * (B_i^l[u] B_j^m[v] B_k^n[w])--one of them diffrentiated; which? diff_thiss will tell us ;
+	 *        Sum_{ i, j, k }^{ l, m, n } [two of them with -1, depending on diff_this, diff_this_also=0,1 or 2] 
+	 *        P_{ ijk }[dim] * (B_i^l[u] B_j^m[v] B_k^n[w])--one of them diffrentiated; which? diff_thiss will tell us ;
 	 *        E.G.: dim=2, diff_this=1 => we use the third coordinate of the control points, and derivate de v-Bersntein 
 	 *        polynomial (use m-1 when summing!!).
 	 * \param[in] uvw - __________.

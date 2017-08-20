@@ -1791,8 +1791,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
           if (spalart_allmaras) {
             numerics_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjTurb(nDim, nVar_Adj_Turb, config);
           }
-          else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
-          else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+          else if (neg_spalart_allmaras) { cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE); }
+          else if (menter_sst) { cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE); }
         break;
       default :
         cout << "Convective scheme not implemented (adj_turb)." << endl; exit(EXIT_FAILURE);
@@ -1804,8 +1804,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       if (spalart_allmaras) {
         numerics_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
       }
-      else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
-      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+      else if (neg_spalart_allmaras) { cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE); }
+      else if (menter_sst) { cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE); }
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1814,15 +1814,15 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
         numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
       }
-      else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
-      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+      else if (neg_spalart_allmaras) { cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE); }
+      else if (menter_sst) { cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE); }
     }
     
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) numerics_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
-      else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
-      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+      else if (neg_spalart_allmaras) { cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE); }
+      else if (menter_sst) { cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE); }
     }
     
   }
@@ -3025,7 +3025,7 @@ void CDriver::Output(unsigned long ExtIter) {
 }
 
 
-CDriver::~CDriver(void) {}
+CDriver::~CDriver(void) { }
 
 su2double CDriver::Get_Drag() {
 

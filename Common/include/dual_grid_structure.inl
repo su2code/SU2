@@ -379,7 +379,7 @@ inline unsigned long CVertex::GetNormal_Neighbor(void) { return Normal_Neighbor;
 
 inline void CVertex::SetNormal_Neighbor(unsigned long val_Normal_Neighbor) { Normal_Neighbor = val_Normal_Neighbor; }
 
-inline void CVertex::IncrementnDonor(void) {nDonor_Points++;}
+inline void CVertex::IncrementnDonor(void) { nDonor_Points++; }
 
 inline void CVertex::SetInterpDonorPoint(unsigned short val_donorindex, long val_donorpoint) { Donor_Points[val_donorindex] = val_donorpoint; }
 
@@ -391,13 +391,13 @@ inline long CVertex::GetInterpDonorProcessor(unsigned short val_donorindex) { re
 
 inline void CVertex::SetDonorCoeff(unsigned short iDonor, su2double val) { Donor_Coeff[iDonor] = val; }
 
-inline su2double CVertex::GetDonorCoeff(unsigned short iDonor) { return Donor_Coeff[iDonor];}
+inline su2double CVertex::GetDonorCoeff(unsigned short iDonor) { return Donor_Coeff[iDonor]; }
 
-inline unsigned short CVertex::GetnDonorPoints(void) { return nDonor_Points;}
+inline unsigned short CVertex::GetnDonorPoints(void) { return nDonor_Points; }
 
-inline void CVertex::SetnDonorPoints(unsigned short nDonor) {nDonor_Points = nDonor;}
+inline void CVertex::SetnDonorPoints(unsigned short nDonor) { nDonor_Points = nDonor; }
 
-inline su2double *CVertex::GetVarRot(void) { return VarRot;}
+inline su2double *CVertex::GetVarRot(void) { return VarRot; }
 
 inline void CVertex::SetVarRot(su2double* val) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -415,33 +415,33 @@ inline void CTurboVertex::GetTurboNormal(su2double *val_normal) {
 		val_normal[iDim] = TurboNormal[iDim];
 }
 
-inline void CTurboVertex::SetGlobalVertexIndex(int globalindex) { GlobalIndex = globalindex;}
+inline void CTurboVertex::SetGlobalVertexIndex(int globalindex) { GlobalIndex = globalindex; }
 
-inline int CTurboVertex::GetGlobalVertexIndex(void) {return GlobalIndex;}
+inline int CTurboVertex::GetGlobalVertexIndex(void) { return GlobalIndex; }
 
 inline su2double *CTurboVertex::GetTurboNormal(void) { return TurboNormal; }
 
-inline void CTurboVertex::SetArea(su2double val_area) {Area = val_area;}
+inline void CTurboVertex::SetArea(su2double val_area) { Area = val_area; }
 
 inline su2double CTurboVertex::GetArea(void) { return Area; }
 
-inline void CTurboVertex::SetOldVertex(unsigned long val_vertex) {OldVertex = val_vertex;}
+inline void CTurboVertex::SetOldVertex(unsigned long val_vertex) {OldVertex = val_vertex; }
 
 inline unsigned long CTurboVertex::GetOldVertex(void) { return OldVertex; }
 
-//inline void CTurboVertex::SetPitchCoord(su2double pitchCoord) {PitchCoord = pitchCoord;}
+//inline void CTurboVertex::SetPitchCoord(su2double pitchCoord) { PitchCoord = pitchCoord; }
 //
 //inline su2double CTurboVertex::GetPitchCoord(void) { return PitchCoord; }
 
-inline void CTurboVertex::SetAngularCoord(su2double angCoord) {AngularCoord = angCoord;}
+inline void CTurboVertex::SetAngularCoord(su2double angCoord) { AngularCoord = angCoord; }
 
 inline su2double CTurboVertex::GetAngularCoord(void) { return AngularCoord; }
 
-inline void CTurboVertex::SetDeltaAngularCoord(su2double deltaAngCoord) {DeltaAngularCoord = deltaAngCoord;}
+inline void CTurboVertex::SetDeltaAngularCoord(su2double deltaAngCoord) { DeltaAngularCoord = deltaAngCoord; }
 
 inline su2double CTurboVertex::GetDeltaAngularCoord(void) { return DeltaAngularCoord; }
 
-inline void CTurboVertex::SetRelAngularCoord(su2double minAngCoord) {RelAngularCoord = AngularCoord - minAngCoord;}
+inline void CTurboVertex::SetRelAngularCoord(su2double minAngCoord) { RelAngularCoord = AngularCoord - minAngCoord; }
 
-inline su2double CTurboVertex::GetRelAngularCoord(void) {return RelAngularCoord;}
+inline su2double CTurboVertex::GetRelAngularCoord(void) { return RelAngularCoord; }
 

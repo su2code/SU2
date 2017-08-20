@@ -49,8 +49,8 @@ CUpwLin_AdjTurb::~CUpwLin_AdjTurb(void) {
 void CUpwLin_AdjTurb::ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
-  /*--- Non-conservative term  -->  -\nabla \psi_\mu  B^{cv}
-   B^{cv} = -v ---*/
+  /*--- Non-conservative term  -->  -\nabla \psi_\mu  B^{ cv }
+   B^{ cv } = -v ---*/
   
   unsigned short iDim;
   su2double proj_conv_flux = 0;
@@ -92,8 +92,8 @@ void CUpwSca_AdjTurb::ComputeResidual (su2double *val_residual_i, su2double *val
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
-  /*--- Non-conservative term  -->  -\nabla \psi_\mu  B^{cv}
-   B^{cv} = -\nabla \hat{nu}/\sigma + v ---*/
+  /*--- Non-conservative term  -->  -\nabla \psi_\mu  B^{ cv }
+   B^{ cv } = -\nabla \hat{ nu }/\sigma + v ---*/
   
   unsigned short iDim;
   su2double proj_conv_flux_i = 0, proj_conv_flux_j = 0, proj_conv_flux_ij = 0;
@@ -474,7 +474,7 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2doubl
     if (implicit)
       val_Jacobian_i[0][0] = -Bs*Volume;
     
-    /*---SECOND PART: \partial_nu_hat mu^k F^{vk} cdot \grad Psi ---*/
+    /*---SECOND PART: \partial_nu_hat mu^k F^{ vk } cdot \grad Psi ---*/
     su2double dEddyVisc_nuhat;
     if (!config->GetFrozen_Visc_Cont())
       dEddyVisc_nuhat = U_i[0]*fv1*(1.0 + 3.0*cv1_3/(Ji_3+cv1_3));
@@ -515,8 +515,8 @@ CSourceConservative_AdjTurb::~CSourceConservative_AdjTurb(void) {
 
 void CSourceConservative_AdjTurb::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
-  /*--- SOURCE term  -->  \nabla ( \psi_\mu \B7 E^{s} )
-   E^{s} = 2 c_{b2}/\sigma \nabla \hat{nu} ---*/
+  /*--- SOURCE term  -->  \nabla ( \psi_\mu \B7 E^{ s } )
+   E^{ s } = 2 c_{b2 }/\sigma \nabla \hat{ nu } ---*/
   
   unsigned short iDim;
   bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);

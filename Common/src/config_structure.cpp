@@ -384,6 +384,9 @@ void CConfig::SetPointersNull(void) {
   ActDisk_StaticTempRatio = NULL;    ActDisk_NetThrust      = NULL;    ActDisk_GrossThrust      = NULL;
   ActDisk_Power           = NULL;    ActDisk_MassFlow       = NULL;    ActDisk_Area             = NULL;
   ActDisk_ReverseMassFlow = NULL;    Surface_MassFlow       = NULL;    Surface_DC60             = NULL;    Surface_IDC = NULL;
+  Surface_Mach            = NULL;    Surface_Temperature    = NULL;    Surface_Pressure         = NULL;
+  Surface_Density         = NULL;    Surface_NormalVelocity = NULL;    Surface_TotalTemperature = NULL;
+  Surface_TotalPressure   = NULL;
   Surface_IDC_Mach        = NULL;    Surface_IDR            = NULL;    ActDisk_Mach             = NULL;
   ActDisk_Force           = NULL;    ActDisk_BCThrust       = NULL;    ActDisk_BCThrust_Old     = NULL;
   
@@ -401,7 +404,7 @@ void CConfig::SetPointersNull(void) {
   PlaneTag            = NULL;
   Kappa_Flow          = NULL;    
   Kappa_AdjFlow       = NULL;
-  Stations_Bounds    = NULL;
+  Stations_Bounds     = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
   Design_Variable     = NULL;
@@ -2188,13 +2191,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    *--- This will allow us to define multiple physics structural problems */
 
   if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
-    if (val_izone == 0) {Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true;}
+    if (val_izone == 0) { Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true; }
 
-    else {Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
+    else { Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
     Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
     Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
     Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
+    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc; }
   }
   else { FSI_Problem = false; }
 
@@ -3459,18 +3462,33 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Allocate memory to store surface information (Analyze BC) ---*/
 
   Surface_MassFlow = new su2double[nMarker_Analyze];
+  Surface_Mach = new su2double[nMarker_Analyze];
+  Surface_Temperature = new su2double[nMarker_Analyze];
+  Surface_Pressure = new su2double[nMarker_Analyze];
+  Surface_Density = new su2double[nMarker_Analyze];
+  Surface_NormalVelocity = new su2double[nMarker_Analyze];
+  Surface_TotalTemperature = new su2double[nMarker_Analyze];
+  Surface_TotalPressure = new su2double[nMarker_Analyze];
+  
   Surface_DC60 = new su2double[nMarker_Analyze];
   Surface_IDC = new su2double[nMarker_Analyze];
   Surface_IDC_Mach = new su2double[nMarker_Analyze];
   Surface_IDR = new su2double[nMarker_Analyze];
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-     Surface_MassFlow[iMarker_Analyze] = 0.0;
-     Surface_DC60[iMarker_Analyze] = 0.0;
-     Surface_IDC[iMarker_Analyze] = 0.0;
-     Surface_IDC_Mach[iMarker_Analyze] = 0.0;
-     Surface_IDR[iMarker_Analyze] = 0.0;
-   }
-
+    Surface_MassFlow[iMarker_Analyze] = 0.0;
+    Surface_Mach[iMarker_Analyze] = 0.0;
+    Surface_Temperature[iMarker_Analyze] = 0.0;
+    Surface_Pressure[iMarker_Analyze] = 0.0;
+    Surface_Density[iMarker_Analyze] = 0.0;
+    Surface_NormalVelocity[iMarker_Analyze] = 0.0;
+    Surface_TotalTemperature[iMarker_Analyze] = 0.0;
+    Surface_TotalPressure[iMarker_Analyze] = 0.0;
+    Surface_DC60[iMarker_Analyze] = 0.0;
+    Surface_IDC[iMarker_Analyze] = 0.0;
+    Surface_IDC_Mach[iMarker_Analyze] = 0.0;
+    Surface_IDR[iMarker_Analyze] = 0.0;
+  }
+  
   /*--- Populate the marker information in the config file (all domains) ---*/
 
   iMarker_CfgFile = 0;
@@ -4656,8 +4674,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case CLASSICAL_RK4_EXPLICIT:
           cout << "Classical RK4 explicit method for the flow equations." << endl;
           cout << "Number of steps: " << 4 << endl;
-          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
-          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
+          cout << "Time coefficients: {0.5, 0.5, 1, 1 }" << endl;
+          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6 }" << endl;
           break;
       }
     }
@@ -5209,7 +5227,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 bool CConfig::TokenizeString(string & str, string & option_name,
                              vector<string> & option_value) {
-  const string delimiters(" ()[]{}:,\t\n\v\f\r");
+  const string delimiters(" ()[]{ }:,\t\n\v\f\r");
   // check for comments or empty string
   string::size_type pos, last_pos;
   pos = str.find_first_of("%");
@@ -5715,6 +5733,13 @@ CConfig::~CConfig(void) {
   if (ActDisk_ReverseMassFlow != NULL)    delete[]  ActDisk_ReverseMassFlow;
   
   if (Surface_MassFlow != NULL)    delete[]  Surface_MassFlow;
+  if (Surface_Mach != NULL)    delete[]  Surface_Mach;
+  if (Surface_Temperature != NULL)    delete[]  Surface_Temperature;
+  if (Surface_Pressure != NULL)    delete[]  Surface_Pressure;
+  if (Surface_Density != NULL)    delete[]  Surface_Density;
+  if (Surface_NormalVelocity != NULL)    delete[]  Surface_NormalVelocity;
+  if (Surface_TotalTemperature != NULL)    delete[]  Surface_TotalTemperature;
+  if (Surface_TotalPressure != NULL)    delete[]  Surface_TotalPressure;  
   if (Surface_DC60 != NULL)    delete[]  Surface_DC60;
   if (Surface_IDC != NULL)    delete[]  Surface_IDC;
   if (Surface_IDC_Mach != NULL)    delete[]  Surface_IDC_Mach;

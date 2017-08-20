@@ -116,7 +116,7 @@ inline void CNumerics::GetEq_Rxn_Coefficients(su2double **EqnRxnConstants, CConf
                             
 inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
-inline void CNumerics::ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) {}
+inline void CNumerics::ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) { }
 
 inline void CNumerics::ComputeResidual_Axisymmetric(su2double *val_residual, CConfig *config) { }
 
@@ -189,7 +189,7 @@ inline void CNumerics::SetStrainMag(su2double val_strainmag_i, su2double val_str
   StrainMag_j = val_strainmag_j;
 }
 
-inline void CNumerics::SetTimeStep(su2double val_timestep) {TimeStep = val_timestep;}
+inline void CNumerics::SetTimeStep(su2double val_timestep) { TimeStep = val_timestep; }
 
 inline void CNumerics::SetLaminarViscosity(su2double val_lam_viscosity_i, su2double val_lam_viscosity_j) {
   Laminar_Viscosity_i = val_lam_viscosity_i;

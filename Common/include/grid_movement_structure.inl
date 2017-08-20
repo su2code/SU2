@@ -141,7 +141,7 @@ inline void CFreeFormDefBox::SetlOrder(unsigned short val_lOrder) { lOrder = val
 
 inline void CFreeFormDefBox::SetmOrder(unsigned short val_mOrder) { mOrder = val_mOrder; mDegree = mOrder-1; }
 
-inline void CFreeFormDefBox::SetnOrder(unsigned short val_nOrder) { nOrder = val_nOrder; nDegree = nOrder-1;}
+inline void CFreeFormDefBox::SetnOrder(unsigned short val_nOrder) { nOrder = val_nOrder; nDegree = nOrder-1; }
 
 inline void  CFreeFormDefBox::SetCoordCornerPoints(su2double *val_coord, unsigned short val_icornerpoints) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
@@ -220,17 +220,17 @@ inline unsigned long CVolumetricMovement::Get_nIterMesh() { return nIterMesh; }
 
 inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV) {
   for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-    if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)) { return true;}
+    if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)) { return true; }
   }
   return false;
 }
 
-inline su2double CFreeFormBlending::GetBasis(short val_i, su2double val_t) {return 0.0;}
+inline su2double CFreeFormBlending::GetBasis(short val_i, su2double val_t) { return 0.0; }
 
-inline su2double CFreeFormBlending::GetDerivative(short val_i, su2double val_t, short val_order) {return 0.0;}
+inline su2double CFreeFormBlending::GetDerivative(short val_i, su2double val_t, short val_order) { return 0.0; }
 
-inline void CFreeFormBlending::SetOrder(short Order, short n_controlpoints) {}
+inline void CFreeFormBlending::SetOrder(short Order, short n_controlpoints) { }
 
-inline su2double CFreeFormBlending::GetOrder() {return Order;}
+inline su2double CFreeFormBlending::GetOrder() { return Order; }
 
-inline su2double CFreeFormBlending::GetDegree() {return Degree;}
+inline su2double CFreeFormBlending::GetDegree() { return Degree; }

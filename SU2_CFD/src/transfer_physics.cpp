@@ -373,7 +373,7 @@ void CTransfer_MixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CC
   SpanLevelDonor       = new unsigned short[target_config->GetnSpanWiseSections() + 1];
 
 
-  for (iSpan = 0; iSpan < target_config->GetnSpanWiseSections() + 1;iSpan++) {
+  for (iSpan = 0; iSpan < target_config->GetnSpanWiseSections() + 1; iSpan++) {
     SpanValueCoeffTarget[iSpan] = 0.0;
     SpanLevelDonor[iSpan]       = 1;
   }
@@ -505,7 +505,7 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
   nDonorVar = donor_solution->GetnPrimVar();
 
   /*---  the number of primitive variables is set to two by default for the turbulent solver ---*/
-  bool turbulent = (nDonorVar == 2) ;
+  bool turbulent = (nDonorVar == 2);
 
   if (turbulent) {
 

@@ -1493,7 +1493,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 #ifdef HAVE_MPI
   BuffMarkerDonor          = new int[size];
   BuffDonorFlag            = new int[size];
-  for (iSize=0; iSize<size;iSize++) {
+  for (iSize=0; iSize<size; iSize++) {
     BuffMarkerDonor[iSize]            = -1;
     BuffDonorFlag[iSize]              = -1;
   }
@@ -1506,7 +1506,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
   Donor_Flag= -1;
 
 
-  for (iSize=0; iSize<size;iSize++) {
+  for (iSize=0; iSize<size; iSize++) {
     if (BuffMarkerDonor[iSize] > 0.0) {
       Marker_Donor = BuffMarkerDonor[iSize];
       Donor_Flag   = BuffDonorFlag[iSize];
@@ -1547,7 +1547,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
     for (iSpan = 1; iSpan <nSpanTarget-1; iSpan++) {
       dist  = 10E+06;
       dist2 = 10E+06;
-      for (jSpan = 0; jSpan < nSpanDonor;jSpan++) {
+      for (jSpan = 0; jSpan < nSpanDonor; jSpan++) {
         test = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         test2 = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         if (test < dist && SpanValuesTarget[iSpan] > SpanValuesDonor[jSpan]) {
@@ -1709,7 +1709,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   BuffAvgOmegaDonor                   = new su2double[nSpanSize];
   BuffMarkerDonor                     = new int[size];
 
-  for (iSpan=0;iSpan<nSpanSize;iSpan++) {
+  for (iSpan=0; iSpan<nSpanSize; iSpan++) {
     BuffAvgDensityDonor[iSpan]        = -1.0;
     BuffAvgPressureDonor[iSpan]       = -1.0;
     BuffAvgNormalVelDonor[iSpan]      = -1.0;
@@ -1720,7 +1720,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     BuffAvgOmegaDonor[iSpan]          = -1.0;
   }
 
-  for (iSize=0; iSize<size;iSize++) {
+  for (iSize=0; iSize<size; iSize++) {
     BuffMarkerDonor[iSize]            = -1;
   }
 
@@ -1747,7 +1747,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
   Marker_Donor= -1;
 
-  for (iSize=0; iSize<size;iSize++) {
+  for (iSize=0; iSize<size; iSize++) {
     if (BuffAvgDensityDonor[nSpanDonor*iSize] > 0.0) {
       for (iSpan = 0; iSpan < nSpanDonor; iSpan++) {
         avgDensityDonor[iSpan]        = BuffAvgDensityDonor[nSpanDonor*iSize + iSpan];

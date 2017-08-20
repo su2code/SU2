@@ -278,7 +278,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
     EnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]          = FluidModel->GetStaticEnergy() + PressureOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)]/FluidModel->GetDensity();
     FluidModel->SetTDState_Prho(PressureOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)], DensityOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)]);
     absVel2 = 0.0;
-    for (iDim = 0; iDim<nDim;iDim++) absVel2 += TurboVelocityOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)][iDim]*TurboVelocityOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)][iDim];
+    for (iDim = 0; iDim<nDim; iDim++) absVel2 += TurboVelocityOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)][iDim]*TurboVelocityOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)][iDim];
     TotalEnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]     = EnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections] + 0.5*absVel2;
 
     TotalTotalEfficiency[nBladesRow + nStages][nSpanWiseSections]   = (TotalEnthalpyIn[0][config->GetnSpan_iZones(0)] - TotalEnthalpyOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)]);

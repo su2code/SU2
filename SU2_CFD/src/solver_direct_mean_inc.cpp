@@ -6395,7 +6395,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
         ProjVel_j += GridVel_j[iDim]*Normal[iDim];
       }
-      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j) ;
+      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
     }
     
     /*--- Inviscid contribution ---*/

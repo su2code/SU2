@@ -33,7 +33,7 @@
 
 #include "../include/solver_structure.hpp"
 
-CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
+CTransLMSolver::CTransLMSolver(void) : CTurbSolver() { }
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;

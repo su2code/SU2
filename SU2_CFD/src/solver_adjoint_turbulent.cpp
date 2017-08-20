@@ -33,7 +33,7 @@
 
 #include "../include/solver_structure.hpp"
 
-CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
+CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() { }
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   unsigned long iPoint;

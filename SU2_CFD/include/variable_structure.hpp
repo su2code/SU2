@@ -904,13 +904,13 @@ public:
   
   /*!
    * \brief A virtual member -- Get the mixture specific heat at constant volume (trans.-rot.).
-   * \return \f$\rho C^{t-r}_{v} \f$
+   * \return \f$\rho C^{ t-r }_{ v } \f$
    */
   virtual su2double GetRhoCv_tr(void);
   
   /*!
    * \brief A virtual member -- Get the mixture specific heat at constant volume (vib.-el.).
-   * \return \f$\rho C^{v-e}_{v} \f$
+   * \return \f$\rho C^{ v-e }_{ v } \f$
    */
   virtual su2double GetRhoCv_ve(void);
   
@@ -1215,7 +1215,7 @@ public:
   virtual bool SetPressure(su2double Gamma, su2double turb_ke);
   
   /*!
-   * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
+   * \brief Calculates vib.-el. energy per mass, \f$e^{ vib-el }_s\f$, for input species (not including KE)
    */
   virtual su2double CalcEve(su2double *V, CConfig *config, unsigned short val_Species);
   
@@ -1238,7 +1238,7 @@ public:
   virtual void CalcdPdU(su2double *V, CConfig *config, su2double *dPdU);
   
   /*!
-   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P }{\partial \rho_s }\f$
    * \param[in] V
    * \param[in] config - Configuration settings
    * \param[in] dTdU
@@ -1246,7 +1246,7 @@ public:
   virtual void CalcdTdU(su2double *V, CConfig *config, su2double *dTdU);
   
   /*!
-   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P }{\partial \rho_s }\f$
    * \param[in] V
    * \param[in] config - Configuration settings
    * \param[in] dTdU

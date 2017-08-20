@@ -2111,7 +2111,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         ForceProj_Vector2 = node[iPoint]->GetForceProj_Vector();
-        for (iDim=0; iDim<nDim;iDim++)
+        for (iDim=0; iDim<nDim; iDim++)
           ForceProj_Vector[iDim]=ForceProj_Vector2[iDim];
 
         switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
@@ -2232,13 +2232,13 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += Weight_ObjFunc*1.0; ForceProj_Vector[2] += 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += Weight_ObjFunc*1.0; }
             break;
           case THRUST_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += Weight_ObjFunc*1.0; }
@@ -2248,7 +2248,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLength; ForceProj_Vector[2] += 0; }
             break;
           case FIGURE_OF_MERIT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) {
@@ -6664,7 +6664,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           }
 
           
-          /*--- Term: sigma_partial = \Sigma_{ji} n_i \partial_n v_j ---*/
+          /*--- Term: sigma_partial = \Sigma_{ ji } n_i \partial_n v_j ---*/
           
           div_phi = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -6754,14 +6754,14 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             for (iDim = 0; iDim < nDim; iDim++)
               vartheta_partial += vartheta * normal_grad_v_ux[iDim] * UnitNormal[iDim];
             
-            /*--- Form sigma_partial = n_i ( \Sigma_Phi_{ij} + \Sigma_Psi5v_{ij} ) \partial_n (v - u_x)_j ---*/
+            /*--- Form sigma_partial = n_i ( \Sigma_Phi_{ ij } + \Sigma_Psi5v_{ ij } ) \partial_n (v - u_x)_j ---*/
             
             sigma_partial = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               for (jDim = 0; jDim < nDim; jDim++)
                 sigma_partial += UnitNormal[iDim]*(Sigma[iDim][jDim]+Sigma_Psi5v[iDim][jDim])*normal_grad_v_ux[jDim];
             
-            /*--- Form psi5_tau_partial = \Psi_5 * \partial_n (v - u_x)_i * tau_{ij} * n_j ---*/
+            /*--- Form psi5_tau_partial = \Psi_5 * \partial_n (v - u_x)_i * tau_{ ij } * n_j ---*/
             
             psi5_tau_partial = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
@@ -6772,7 +6772,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             
             psi5_p_div_vel = -Psi[nDim+1]*Pressure*div_vel;
             
-            /*--- Form psi5_tau_grad_vel = \Psi_5 * tau_{ij} : \nabla( v ) ---*/
+            /*--- Form psi5_tau_grad_vel = \Psi_5 * tau_{ ij } : \nabla( v ) ---*/
             
             psi5_tau_grad_vel = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
@@ -7670,7 +7670,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       for (iDim = 0; iDim < nDim; iDim++)
         Tau[iDim][iDim] -= TWO3*div_phi;
 
-      /*--- force_stress = n_i \Tau_{ij} d_j ---*/
+      /*--- force_stress = n_i \Tau_{ ij } d_j ---*/
       force_stress = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         for (jDim = 0; jDim < nDim; jDim++)
