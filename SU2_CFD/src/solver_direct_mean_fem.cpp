@@ -2969,7 +2969,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
        the original communication pattern. In the reverse pattern, data
        has to be sent. */
     int indComm = 0;
-    for(unsigned long i=0; i<ranksRecvMPI[timeLevel].size(); ++i) {
+    for(unsigned long i=0; i<ranksRecvMPI[timeLevel].size(); ++i, ++indComm) {
       unsigned long ii = 0;
 
       /* Loop over the elements copy the residual data into recvBuf. */
