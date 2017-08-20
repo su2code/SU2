@@ -34,7 +34,7 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CUpwSca_Abstract::CUpwSca_Abstract(unsigned short val_nDim,
+CUpwSca_Scalar::CUpwSca_Scalar(unsigned short val_nDim,
                                    unsigned short val_nVar,
                                    CConfig *config)
     : CNumerics(val_nDim, val_nVar, config) {
@@ -48,14 +48,14 @@ CUpwSca_Abstract::CUpwSca_Abstract(unsigned short val_nDim,
 
 }
 
-CUpwSca_Abstract::~CUpwSca_Abstract(void) {
+CUpwSca_Scalar::~CUpwSca_Scalar(void) {
 
   delete [] Velocity_i;
   delete [] Velocity_j;
 
 }
 
-void CUpwSca_Abstract::ComputeResidual(su2double *val_residual,
+void CUpwSca_Scalar::ComputeResidual(su2double *val_residual,
                                        su2double **val_Jacobian_i,
                                        su2double **val_Jacobian_j,
                                        CConfig *config) {
@@ -108,7 +108,7 @@ void CUpwSca_Abstract::ComputeResidual(su2double *val_residual,
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                                unsigned short val_nVar,
                                CConfig *config)
-    : CUpwSca_Abstract(val_nDim, val_nVar, config) {
+    : CUpwSca_Scalar(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
@@ -128,7 +128,7 @@ void CUpwSca_TurbSA::FinishResidualCalc(su2double *val_residual, su2double **val
   }
 }
 
-CAvgGrad_Abstract::CAvgGrad_Abstract(unsigned short val_nDim,
+CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
                                      unsigned short val_nVar,
                                      bool correct_grad,
                                      CConfig *config)
@@ -147,7 +147,7 @@ CAvgGrad_Abstract::CAvgGrad_Abstract(unsigned short val_nDim,
 
 }
 
-CAvgGrad_Abstract::~CAvgGrad_Abstract(void) {
+CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
 
   delete [] Edge_Vector;
   delete [] Proj_Mean_GradTurbVar_Normal;
@@ -159,7 +159,7 @@ CAvgGrad_Abstract::~CAvgGrad_Abstract(void) {
 
 }
 
-void CAvgGrad_Abstract::ComputeResidual(su2double *val_residual,
+void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
                                         su2double **Jacobian_i,
                                         su2double **Jacobian_j,
                                         CConfig *config) {
@@ -229,7 +229,7 @@ void CAvgGrad_Abstract::ComputeResidual(su2double *val_residual,
 CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim,
                                  unsigned short val_nVar, bool correct_grad,
                                  CConfig *config)
-   : CAvgGrad_Abstract(val_nDim, val_nVar, correct_grad, config), sigma(2./3.) {
+   : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config), sigma(2./3.) {
 }
 
 CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
@@ -261,7 +261,7 @@ CAvgGrad_TurbSA_Neg::CAvgGrad_TurbSA_Neg(unsigned short val_nDim,
                                          unsigned short val_nVar,
                                          bool correct_grad,
                                          CConfig *config)
-    : CAvgGrad_Abstract(val_nDim, val_nVar, correct_grad, config),
+    : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config),
       sigma(2./3.), cn1(16.0), fn(0.0) {
 }
 
@@ -650,7 +650,7 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                                  unsigned short val_nVar,
                                  CConfig *config)
-    : CUpwSca_Abstract(val_nDim, val_nVar, config) {
+    : CUpwSca_Scalar(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
@@ -688,7 +688,7 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
                                    unsigned short val_nVar,
                                    su2double *constants, bool correct_grad,
                                    CConfig *config)
- : CAvgGrad_Abstract(val_nDim, val_nVar, correct_grad, config) {
+ : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) {
   
   sigma_k1  = constants[0];
   sigma_om1 = constants[2];
