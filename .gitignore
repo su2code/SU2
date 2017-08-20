@@ -56,3 +56,5 @@ SU2_DIRECTDIFF/
 # ignore the bin/ directory
 bin/
 
+# ignore swap files
+*.swp
