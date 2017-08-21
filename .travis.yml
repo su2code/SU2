@@ -16,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - develop
+        - feature_reg 
 
 env:
     global:
