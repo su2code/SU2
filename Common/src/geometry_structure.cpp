@@ -11233,7 +11233,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
   Normal           = new su2double[nDim];
 
 #ifdef HAVE_MPI
-  su2double MyTotalArea, MyTotalRadius, *MyTotalTurboNormal= NULL, *MyTotalNormal= NULL, *MyTotalGridVel= NULL;
+  su2double MyTotalArea, MyTotalRadius, *MyTotalTurboNormal= NULL, *MyTotalNormal= NULL;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -11317,22 +11317,18 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 
     MyTotalTurboNormal     = new su2double[nDim];
     MyTotalNormal          = new su2double[nDim];
-    MyTotalGridVel         = new su2double[nDim];
 
     for (iDim = 0; iDim < nDim; iDim++) {
       MyTotalTurboNormal[iDim]	= TotalTurboNormal[iDim];
       TotalTurboNormal[iDim]    = 0.0;
       MyTotalNormal[iDim]       = TotalNormal[iDim];
       TotalNormal[iDim]         = 0.0;
-      MyTotalGridVel[iDim]      = TotalGridVel[iDim];
-      TotalGridVel[iDim]        = 0.0;
     }
 
     SU2_MPI::Allreduce(MyTotalTurboNormal, TotalTurboNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(MyTotalNormal, TotalNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(MyTotalGridVel, TotalGridVel, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    delete [] MyTotalTurboNormal;delete [] MyTotalNormal; delete [] MyTotalGridVel;
+    delete [] MyTotalTurboNormal;delete [] MyTotalNormal;
 
 #endif
 

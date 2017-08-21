@@ -1133,20 +1133,6 @@ public:
 	 * \param[in] val_marker - marker turbo-performance value.
 	 * \param[in] val_span - span value.
    */
-	virtual void SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - marker turbo-performance value.
-	 * \param[in] val_span - span value.
-   */
-	virtual void SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - marker turbo-performance value.
-	 * \param[in] val_span - span value.
-   */
 	virtual void SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span);
 
 	/*!
