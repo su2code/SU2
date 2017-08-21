@@ -2,18 +2,20 @@
  * \file output_fieldview.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.1.3 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,7 +40,6 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   unsigned long iPoint, iElem, iNode, nbfaces;
   
-  unsigned long iExtIter = config->GetExtIter();
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   bool grid_movement  = config->GetGrid_Movement();
@@ -62,6 +63,10 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   if (Kind_Solver == POISSON_EQUATION)
     filename = config->GetStructure_FileName().c_str();
+
+  if (config->GetKind_SU2() == SU2_DOT) {
+    filename = config->GetVolSens_FileName().c_str();
+  }
   
   strcpy (cstr, filename.c_str());
   
@@ -69,29 +74,29 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
-  
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    
-    if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
-    
-    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.uns", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.uns", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.uns", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.uns", SU2_TYPE::Int(val_iZone));
-    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.uns", SU2_TYPE::Int(val_iZone));
-    
-  }
-  else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.uns", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.uns", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.uns", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.uns", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.uns", SU2_TYPE::Int(iExtIter));
-  }
+//
+//  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+//
+//    if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
+//
+//    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.uns", SU2_TYPE::Int(val_iZone));
+//    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.uns", SU2_TYPE::Int(val_iZone));
+//    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.uns", SU2_TYPE::Int(val_iZone));
+//    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.uns", SU2_TYPE::Int(val_iZone));
+//    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.uns", SU2_TYPE::Int(val_iZone));
+//
+//  }
+//  else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+//    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.uns", SU2_TYPE::Int(iExtIter));
+//    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.uns", SU2_TYPE::Int(iExtIter));
+//    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.uns", SU2_TYPE::Int(iExtIter));
+//    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.uns", SU2_TYPE::Int(iExtIter));
+//    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.uns", SU2_TYPE::Int(iExtIter));
+//  }
   else { SPRINTF (buffer, ".uns"); }
   
   strcat(cstr, buffer);
@@ -150,7 +155,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
    be provided here, and its values must be written in the variables
    section below (typically padded with zeros.) ---*/
   
-  if (config->GetKind_SU2() == SU2_SOL) {
+  if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
     
     /*--- If SU2_SOL called this routine, we already have a set of output
      variables with the appropriate string tags stored in the config class. ---*/
@@ -256,7 +261,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     FieldView_File << "Nodes\t" << nGlobal_Poin << endl;
 
     for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (config->GetKind_SU2() != SU2_SOL) {
+      if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
         for (iDim = 0; iDim < nDim; iDim++)
           FieldView_File << scientific << Coords[iDim][iPoint] << "\t";
       }
@@ -274,7 +279,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     FieldView_File << "Nodes\t" << nGlobal_Poin*2 << endl;
 
     for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (config->GetKind_SU2() != SU2_SOL) {
+      if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
         for (iDim = 0; iDim < nDim; iDim++)
           FieldView_File << scientific << Coords[iDim][iPoint] << "\t";
       }
@@ -285,7 +290,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
       FieldView_File << scientific << "0.0" << endl;
     }
     for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (config->GetKind_SU2() != SU2_SOL) {
+      if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
         for (iDim = 0; iDim < nDim; iDim++)
           FieldView_File << scientific << Coords[iDim][iPoint] << "\t";
       }
@@ -430,7 +435,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   /*--- Loop over the vars/residuals and write the values to file ---*/
   
-  if (config->GetKind_SU2() != SU2_SOL) {
+  if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
     for (iVar = 0; iVar < nvars; iVar++) {
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
         FieldView_File << scientific << Data[iVar][iPoint] << endl;
@@ -511,12 +516,12 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
   
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     
     if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
     

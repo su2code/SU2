@@ -55,10 +55,10 @@ subdir = externals/tecio
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/codi.m4 \
-	$(top_srcdir)/m4/compiler.m4 $(top_srcdir)/m4/metis.m4 \
-	$(top_srcdir)/m4/parmetis.m4 $(top_srcdir)/m4/tecio.m4 \
-	$(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/cgns.m4 \
+	$(top_srcdir)/m4/codi.m4 $(top_srcdir)/m4/compiler.m4 \
+	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/parmetis.m4 \
+	$(top_srcdir)/m4/tecio.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -159,8 +159,8 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
-CGNS_CXX = @CGNS_CXX@
-CGNS_LD = @CGNS_LD@
+CGNS_INCLUDE = @CGNS_INCLUDE@
+CGNS_LIB = @CGNS_LIB@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
@@ -215,6 +215,7 @@ REVERSE_LIBS = @REVERSE_LIBS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+SU2_CGNS_CPPFLAGS = @SU2_CGNS_CPPFLAGS@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
 SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
 SZIP_CXX = @SZIP_CXX@
@@ -338,7 +339,7 @@ pkg_sources = \
 
 ######################################################################
 AUTOMAKE_OPTIONS = subdir-objects
-AM_CPPFLAGS = $(pkg_cppflags) # any defined package-specific include paths
+AM_CPPFLAGS = $(pkg_cppflags) -fPIC # any defined package-specific include paths
 AM_CFLAGS = 
 AM_CXXFLAGS = 
 AM_LDFLAGS = $(libmesh_LDFLAGS)

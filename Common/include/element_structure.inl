@@ -2,18 +2,20 @@
  * \file element_structure.inl
  * \brief In-Line subroutines of the <i>element_structure.hpp</i> file.
  * \author R. Sanchez
- * \version 4.1.3 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,25 +53,25 @@ inline su2double CElement::GetCurr_Coord(unsigned short iNode, unsigned short iD
 
 inline su2double CElement::GetWeight(unsigned short iGauss) { return GaussWeight[iGauss];}
 
-inline su2double CElement::GetJ_X(unsigned short iGauss) {return GaussPoint[iGauss]->GetJ_X();}
+inline su2double CElement::GetJ_X(unsigned short iGauss) { return GaussPoint[iGauss]->GetJ_X();}
 
-inline su2double CElement::GetJ_x(unsigned short iGauss) {return GaussPoint[iGauss]->GetJ_x();}
+inline su2double CElement::GetJ_x(unsigned short iGauss) { return GaussPoint[iGauss]->GetJ_x();}
 
-inline su2double CElement::GetJ_X_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_X();}
+inline su2double CElement::GetJ_X_P(unsigned short iGauss) { return GaussPointP[iGauss]->GetJ_X();}
 
-inline su2double CElement::GetJ_x_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_x();}
+inline su2double CElement::GetJ_x_P(unsigned short iGauss) { return GaussPointP[iGauss]->GetJ_x();}
 
-inline su2double CElement::GetElement_Pressure(void) {return el_Pressure;}
+inline su2double CElement::GetElement_Pressure(void) { return el_Pressure;}
 
 inline su2double CElement::Get_Mab(unsigned short nodeA, unsigned short nodeB) { return Mab[nodeA][nodeB]; }
 
-inline su2double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB){ return Kab[nodeA][nodeB];}
+inline su2double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB) { return Kab[nodeA][nodeB];}
 
-inline su2double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB){ return Kk_ab[nodeA][nodeB];}
+inline su2double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB) { return Kk_ab[nodeA][nodeB];}
 
-inline su2double *CElement::Get_Kt_a(unsigned short nodeA){ return Kt_a[nodeA];}
+inline su2double *CElement::Get_Kt_a(unsigned short nodeA) { return Kt_a[nodeA];}
 
-inline su2double *CElement::Get_FDL_a(unsigned short nodeA){ return FDL_a[nodeA];}
+inline su2double *CElement::Get_FDL_a(unsigned short nodeA) { return FDL_a[nodeA];}
 
 inline su2double CElement::Get_Ks_ab(unsigned short nodeA, unsigned short nodeB) { return Ks_ab[nodeA][nodeB]; }
 
@@ -95,9 +97,9 @@ inline su2double CElement::GetWeight_P(unsigned short iGaussP) { return GaussWei
 
 inline unsigned short CElement::GetnGaussPointsP(void) { return nGaussPointsP;}
 
-inline void CElement::ComputeGrad_Pressure(void){ }
+inline void CElement::ComputeGrad_Pressure(void) { }
 
-inline void CQUAD4::ComputeGrad_Pressure(void){ }
+inline void CQUAD4::ComputeGrad_Pressure(void) { }
 
-inline void CHEXA8::ComputeGrad_Pressure(void){ }
+inline void CHEXA8::ComputeGrad_Pressure(void) { }
 

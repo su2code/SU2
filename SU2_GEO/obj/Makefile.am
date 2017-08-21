@@ -3,18 +3,20 @@
 # \file Makefile.am
 # \brief Makefile for SU2_GEO
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.1.3 "Cardinal"
+# \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -46,11 +48,6 @@ ___bin_SU2_GEO_LDADD = ../../Common/lib/libSU2.a
 # always link to built dependencies from ./externals
 ___bin_SU2_GEO_CXXFLAGS += @su2_externals_INCLUDES@
 ___bin_SU2_GEO_LDADD += @su2_externals_LIBS@
-
-# if BUILD_CGNS
-___bin_SU2_GEO_CXXFLAGS += @CGNS_CXX@
-___bin_SU2_GEO_LDADD += @CGNS_LD@
-# endif
 
 # if BUILD_HDF5
 ___bin_SU2_GEO_CXXFLAGS += @HDF5_CXX@

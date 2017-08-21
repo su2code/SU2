@@ -19,18 +19,20 @@
 # \file Makefile.am
 # \brief Makefile for SU2_MSH
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.1.3 "Cardinal"
+# \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -89,10 +91,10 @@ subdir = SU2_MSH/obj
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/codi.m4 \
-	$(top_srcdir)/m4/compiler.m4 $(top_srcdir)/m4/metis.m4 \
-	$(top_srcdir)/m4/parmetis.m4 $(top_srcdir)/m4/tecio.m4 \
-	$(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/cgns.m4 \
+	$(top_srcdir)/m4/codi.m4 $(top_srcdir)/m4/compiler.m4 \
+	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/parmetis.m4 \
+	$(top_srcdir)/m4/tecio.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -171,8 +173,8 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
-CGNS_CXX = @CGNS_CXX@
-CGNS_LD = @CGNS_LD@
+CGNS_INCLUDE = @CGNS_INCLUDE@
+CGNS_LIB = @CGNS_LIB@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
@@ -227,6 +229,7 @@ REVERSE_LIBS = @REVERSE_LIBS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+SU2_CGNS_CPPFLAGS = @SU2_CGNS_CPPFLAGS@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
 SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
 SZIP_CXX = @SZIP_CXX@
@@ -302,9 +305,6 @@ ___bin_SU2_MSH_SOURCES = \
 
 # always link to built dependencies from ./externals
 
-# if BUILD_CGNS
-# endif
-
 # if BUILD_HDF5
 # endif
 
@@ -318,12 +318,12 @@ ___bin_SU2_MSH_SOURCES = \
 # endif
 
 # if BUILD_JSONCPP
-___bin_SU2_MSH_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ \
-	@HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ \
-	@JSONCPP_CXX@ $(am__empty)
+___bin_SU2_MSH_CXXFLAGS = @su2_externals_INCLUDES@ @HDF5_CXX@ \
+	@SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ \
+	$(am__empty)
 ___bin_SU2_MSH_LDADD = ../../Common/lib/libSU2.a @su2_externals_LIBS@ \
-	@CGNS_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ @MUTATIONPP_LD@ \
-	@JSONCPP_LD@ $(am__empty)
+	@HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ \
+	$(am__empty)
 all: all-am
 
 .SUFFIXES:

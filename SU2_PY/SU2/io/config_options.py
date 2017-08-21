@@ -1,18 +1,20 @@
 ## \file config_options.py
 #  \brief python package for config
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.3 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -67,18 +69,15 @@ class DEFINITION_DV(ordered_bunch):
     
         List of design variables (Design variables are separated by semicolons)
         - HICKS_HENNE ( 1, Scale | Mark. List | Lower(0)/Upper(1) side, x_Loc )
-        - COSINE_BUMP ( 2, Scale | Mark. List | Lower(0)/Upper(1) side, x_Loc, x_Size )
-        - SPHERICAL ( 3, Scale | Mark. List | ControlPoint_Index, Theta_Disp, R_Disp )
+        - SURFACE_BUMP ( 2, Scale | Mark. List | x_Start, x_End, x_Loc )
         - NACA_4DIGITS ( 4, Scale | Mark. List |  1st digit, 2nd digit, 3rd and 4th digit )
-        - DISPLACEMENT ( 5, Scale | Mark. List | x_Disp, y_Disp, z_Disp )
+        - TRANSLATION ( 5, Scale | Mark. List | x_Disp, y_Disp, z_Disp )
         - ROTATION ( 6, Scale | Mark. List | x_Axis, y_Axis, z_Axis, x_Turn, y_Turn, z_Turn )
         - FFD_CONTROL_POINT ( 7, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind, k_Ind, x_Mov, y_Mov, z_Mov )
-        - FFD_DIHEDRAL_ANGLE ( 8, Scale | Mark. List | FFD_Box_ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
         - FFD_TWIST_ANGLE ( 9, Scale | Mark. List | FFD_Box_ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
         - FFD_ROTATION ( 10, Scale | Mark. List | FFD_Box_ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
         - FFD_CAMBER ( 11, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind )
         - FFD_THICKNESS ( 12, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind )
-        - FOURIER ( 14, Scale | Mark. List | Lower(0)/Upper(1) side, index, cos(0)/sin(1) )
         - FFD_CONTROL_POINT_2D ( 15, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind, x_Mov, y_Mov )
         - FFD_CAMBER_2D ( 16, Scale | Mark. List | FFD_Box_ID, i_Ind )
         - FFD_THICKNESS_2D ( 17, Scale | Mark. List | FFD_Box_ID, i_Ind )
@@ -116,18 +115,15 @@ class DV_KIND(ordered_bunch):
     
     List of design variables (Design variables are separated by semicolons)
     - HICKS_HENNE ( 1, Scale | Mark. List | Lower(0)/Upper(1) side, x_Loc )
-    - COSINE_BUMP ( 2, Scale | Mark. List | Lower(0)/Upper(1) side, x_Loc, x_Size )
-    - SPHERICAL ( 3, Scale | Mark. List | ControlPoint_Index, Theta_Disp, R_Disp )
+    - SURFACE_BUMP ( 2, Scale | Mark. List | x_Start, x_End, x_Loc )
     - NACA_4DIGITS ( 4, Scale | Mark. List |  1st digit, 2nd digit, 3rd and 4th digit )
-    - DISPLACEMENT ( 5, Scale | Mark. List | x_Disp, y_Disp, z_Disp )
+    - TRANSLATION ( 5, Scale | Mark. List | x_Disp, y_Disp, z_Disp )
     - ROTATION ( 6, Scale | Mark. List | x_Axis, y_Axis, z_Axis, x_Turn, y_Turn, z_Turn )
     - FFD_CONTROL_POINT ( 7, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind, k_Ind, x_Mov, y_Mov, z_Mov )
-    - FFD_DIHEDRAL_ANGLE ( 8, Scale | Mark. List | FFD_Box_ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
     - FFD_TWIST_ANGLE ( 9, Scale | Mark. List | FFD_Box_ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
     - FFD_ROTATION ( 10, Scale | Mark. List | FFD_Box_ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
     - FFD_CAMBER ( 11, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind )
     - FFD_THICKNESS ( 12, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind )
-    - FOURIER ( 14, Scale | Mark. List | Lower(0)/Upper(1) side, index, cos(0)/sin(1) )
     - FFD_CONTROL_POINT_2D ( 15, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind, x_Mov, y_Mov )
     - FFD_CAMBER_2D ( 16, Scale | Mark. List | FFD_Box_ID, i_Ind )
     - FFD_THICKNESS_2D ( 17, Scale | Mark. List | FFD_Box_ID, i_Ind )

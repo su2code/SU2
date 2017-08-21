@@ -3,18 +3,20 @@
 ## \file state.py
 #  \brief python package for state 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.3 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -34,7 +36,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy, time
-from ..io   import expand_part, expand_time, get_adjointSuffix, add_suffix, \
+from ..io   import expand_part, expand_zones, expand_time, get_adjointSuffix, add_suffix, \
                    get_specialCases, Config
 from ..util import bunch
 from ..util import ordered_bunch
@@ -181,10 +183,12 @@ class State(ordered_bunch):
                 link.extend(value)
             elif key == 'DIRECT':
                 # direct solution
+                value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
             elif 'ADJOINT_' in key:
                 # adjoint solution
+                value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
             #elif key == 'STABILITY':
@@ -228,17 +232,35 @@ class State(ordered_bunch):
         targetheatflux_name = 'TargetHeatFlux.dat'
 
         adj_map = get_adjointSuffix()
-        
         restart = config.RESTART_SOL == 'YES'
         special_cases = get_specialCases(config)
         
         def register_file(label,filename):
             if not files.has_key(label):
-                if os.path.exists(filename):
+                if label.split('_')[0] in ['DIRECT', 'ADJOINT']:
+                  names = expand_zones(filename, config)
+                  found = False
+                  for name in names:
+                    if os.path.exists(name):
+                      found = True
+                    else:
+                      found = False
+                      break
+
+                  if found:
                     files[label] = filename
                     print('Found: %s' % filename)
+
+                else:
+                  if os.path.exists(filename):
+                      files[label] = filename
+                      print('Found: %s' % filename)
             else:
-                assert os.path.exists(files[label]) , 'state expected file: %s' % filename
+                if label.split("_")[0] in ['DIRECT', 'ADJOINT']:
+                    for name in expand_zones(files[label], config):
+                        assert os.path.exists(name), 'state expected file: %s' % filename
+                else:
+                    assert os.path.exists(files[label]) , 'state expected file: %s' % filename
         #: register_file()                
 
         # mesh

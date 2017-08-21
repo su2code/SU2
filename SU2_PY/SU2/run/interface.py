@@ -3,18 +3,20 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.3 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -51,14 +53,14 @@ base_Command = os.path.join(SU2_RUN,'%s')
 # check for slurm
 slurm_job = 'SLURM_JOBID' in os.environ
 
-#check for tacc
-tacc_job = 'TACC_PUBLIC_MACHINE' in os.environ
+# Check for custom mpi command
+user_defined = 'SU2_MPI_COMMAND' in os.environ
 
 # set mpi command
-if slurm_job:
+if user_defined:
+    mpi_Command = os.environ['SU2_MPI_COMMAND']
+elif slurm_job:
     mpi_Command = 'srun -n %i %s'
-    if tacc_job:
-        mpi_Command = 'ibrun -o 0 -n %i %s'
 elif not which('mpirun') is None:
     mpi_Command = 'mpirun -n %i %s'
 elif not which('mpiexec') is None:

@@ -3,18 +3,20 @@
 ## \file discrete_adjoint.py
 #  \brief Python script for doing the discrete adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 4.1.3 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -52,17 +54,21 @@ def main():
                       help="DOT finite difference STEP", metavar="STEP")
     parser.add_option("-v", "--validate", dest="validate", default="False",
                       help="Validate the gradient using direct diff. mode", metavar="VALIDATION")
+    parser.add_option("-z", "--zones", dest="nzones", default="1",
+                      help="Number of Zones", metavar="ZONES")
     
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
     options.validate    = options.validate.upper() == 'TRUE'
+    options.nzones      = int( options.nzones )
     
     discrete_adjoint( options.filename    ,
-                        options.partitions  ,
-                        options.compute     ,
-                        options.step         )
+                      options.partitions  ,
+                      options.compute     ,
+                      options.step        ,
+                      options.nzones       )
         
 #: def main()
 
@@ -72,14 +78,16 @@ def main():
 # -------------------------------------------------------------------
 
 def discrete_adjoint( filename           ,
-                        partitions  = 0    , 
-                        compute     = True ,
-                        step        = 1e-4  ):
+                      partitions  = 0    , 
+                      compute     = True ,
+                      step        = 1e-4 ,
+                      nzones      = 1     ):
     
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    
+    config.NZONES      = int( nzones )
+
     # State
     state = SU2.io.State()
     
@@ -103,6 +111,8 @@ def discrete_adjoint( filename           ,
         SU2.io.restart2solution(config,state)
     
     # Adjoint Solution
+
+    # Run all-at-once 
     if compute:
         info = SU2.run.adjoint(config)
         state.update(info)
@@ -165,16 +175,16 @@ def discrete_design( filename           ,
 #        Definition_DV = config['DEFINITION_DV']
 #        n_dv = len(Definition_DV['KIND'])
 #        grads_dd  = grad_directdiff[ADJ_NAME]
-#        print "Validation Summary"
-#        print "--------------------------"
-#        print "VARIABLE   " + "DISCRETE ADJOINT"  + "  DIRECT DIFFERENTIATION" + "  ERROR (%)"
+#        print("Validation Summary")
+#        print("--------------------------")
+#        print("VARIABLE   " + "DISCRETE ADJOINT"  + "  DIRECT DIFFERENTIATION" + "  ERROR (%)")
 #        for idv in range(n_dv):
 #            if abs(grads[idv]) > abs(grads_dd[idv]):
 #                this_err = abs(grads[idv]/grads_dd[idv])
 #            else:
 #                this_err = abs(grads_dd[idv]/grads[idv])
 
-#            print str(idv) + "         " + str(grads[idv]) + "         " + str(grads_dd[idv]) + "        " + str((this_err-1)*100)  + ' %'
+#            print(str(idv) + "         " + str(grads[idv]) + "         " + str(grads_dd[idv]) + "        " + str((this_err-1)*100)  + ' %')
 
     
     return state

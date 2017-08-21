@@ -22,6 +22,11 @@ autom4te.cache
 # Python files
 *.pyc
 
+# SWIG compilation
+SU2_PY/pySU2/*.cxx
+SU2_PY/pySU2/*.h
+SU2_PY/pySU2/*.py
+
 # Mac files
 *.DS_Store
 *.xcuserdatad
@@ -49,3 +54,8 @@ SU2_DIRECTDIFF/
 # ignore the bin/ directory
 bin/
 
+# ignore swap files
+*.swp
+
+TestData
+*.stl

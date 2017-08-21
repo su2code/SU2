@@ -3,7 +3,7 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.1.3 "Cardinal"
+#  \version 5.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -29,12 +29,15 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
-from __future__ import print_function
-
-
+from __future__ import print_function, division, absolute_import
 import time, os, subprocess, datetime, sys
 import difflib
+
+
+def print_vals(vals, name="Values"):
+    """Print an array of floats."""
+    print(name + ': ' + ', '.join('{:f}'.format(v) for v in vals))
+
 
 class TestCase:
 
@@ -76,7 +79,7 @@ class TestCase:
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s" % (self.su2_exec, self.cfg_file,logfilename)
+        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -116,7 +119,7 @@ class TestCase:
                         iter_number = int(raw_data[0])
                         if self.unsteady:
                             iter_number = int(raw_data[1])
-                        data        = raw_data[len(raw_data)-4:]    # Take the last 4 columns for comparison
+                        data = raw_data[len(raw_data) - len(self.test_vals):]
                     except ValueError:
                         continue
                     except IndexError:
@@ -169,22 +172,13 @@ class TestCase:
         if iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
-        print('test_iter=%d \n'%self.test_iter, end=" ")
+        print('test_iter=%d' % self.test_iter)
 
-        print('test_vals (stored): ', end=" ")
-        for j in self.test_vals:
-            print('%f,'%j)
-        print()
+        print_vals(self.test_vals, name="test_vals (stored)")
 
-        print('sim_vals (computed): ', end=" ")
-        for j in sim_vals:
-            print('%f,'%j, end=" ")
-        print('\n', end=" ")
+        print_vals(sim_vals, name="sim_vals (computed)")
 
-        print('delta_vals: ', end=" ")
-        for j in delta_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print_vals(delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -202,7 +196,7 @@ class TestCase:
 
         # Assemble the shell command to run
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s -f %s > %s" % (self.su2_exec, self.cfg_file, logfilename)
+        command = "%s -f %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -269,7 +263,7 @@ class TestCase:
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s" % (self.su2_exec, self.cfg_file,logfilename)
+        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -307,7 +301,7 @@ class TestCase:
                     raw_data = line.split()
                     try:
                         iter_number = int(raw_data[0])
-                        data        = raw_data[len(raw_data)-4:]    # Take the last 4 columns for comparison
+                        data = raw_data[len(raw_data) - len(self.test_vals):]
                     except ValueError:
                         continue
                     except IndexError:
@@ -360,22 +354,13 @@ class TestCase:
         if iter_missing:
             print('ERROR: The optimizer iteration number %d could not be found.'%self.test_iter)
 
-        print('test_iter=%d \n'%self.test_iter, end=" ")
+        print('test_iter=%d' % self.test_iter)
 
-        print('test_vals (stored): ', end=" ")
-        for j in self.test_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print_vals(self.test_vals, name="test_vals (stored)")
 
-        print('sim_vals (computed): ', end=" ")
-        for j in sim_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print_vals(sim_vals, name="sim_vals (computed)")
 
-        print('delta_vals: ', end=" ")
-        for j in delta_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print_vals(delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -399,7 +384,7 @@ class TestCase:
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s" % (self.su2_exec, self.cfg_file,logfilename)
+        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -504,20 +489,11 @@ class TestCase:
         if iter_missing:
             print('ERROR: The SU2_GEO values could not be found.')
 
-        print('test_vals (stored): ', end=" ")
-        for j in self.test_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print_vals(self.test_vals, name="test_vals (stored)")
 
-        print('sim_vals (computed): ', end=" ")
-        for j in sim_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print_vals(sim_vals, name="sim_vals (computed)")
 
-        print('delta_vals: ', end=" ")
-        for j in delta_vals:
-            print('%f,'%j, end=" ")
-        print()
+        print_vals(delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -536,7 +512,7 @@ class TestCase:
     
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s" % (self.su2_exec, self.cfg_file,logfilename)
+        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
     
         # Run SU2
         workdir = os.getcwd()
@@ -627,23 +603,14 @@ class TestCase:
         if iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
     
-        print('test_iter=%d \n'%self.test_iter, end=" ")
-    
-        print('test_vals (stored): ', end=" ")
-        for j in self.test_vals:
-            print('%e'%j, end=" ")
-        print()
-    
-        print('sim_vals (computed): ', end=" ")
-        for j in sim_vals:
-            print('%e'%j, end=" ")
-        print()
-    
-        print('delta_vals: ', end=" ")
-        for j in delta_vals:
-            print('%e'%j, end=" ")
-        print()
-    
+        print('test_iter=%d' % self.test_iter)
+
+        print_vals(self.test_vals, name="test_vals (stored)")
+
+        print_vals(sim_vals, name="sim_vals (computed)")
+
+        print_vals(delta_vals, name="delta_vals")
+ 
         print('test duration: %.2f min'%(running_time/60.0))
         #print('==================== End Test: %s ====================\n'%self.tag)
     

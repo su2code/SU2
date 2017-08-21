@@ -3,18 +3,20 @@
 # \file Makefile.am
 # \brief Makefile for SU2_DOT
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.1.3 "Cardinal"
+# \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -47,17 +49,38 @@ endif
 su2_dot_sources = ../include/SU2_DOT.hpp \
 		../src/SU2_DOT.cpp
 
-su2_dot_cxx_flags = 
 su2_dot_ldadd =
+su2_dot_cxx_flags =
+
+if BUILD_NORMAL
+su2_dot_ldadd += \
+  ../../SU2_CFD/src/libSU2Core_a-solver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_cgns.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_su2.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-variable_structure.$(OBJEXT) \
+  ../../Common/lib/libSU2.a
+endif
+
+if BUILD_REVERSE
+su2_dot_ldadd += \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
+   ../../Common/lib/libSU2_AD.a
+endif
 
 # always link to built dependencies from ./externals
 su2_dot_cxx_flags += @su2_externals_INCLUDES@
 su2_dot_ldadd += @su2_externals_LIBS@
-
-# if BUILD_CGNS
-su2_dot_cxx_flags += @CGNS_CXX@
-su2_dot_ldadd += @CGNS_LD@
-# endif
 
 # if BUILD_MUTATIONPP
 su2_dot_cxx_flags += @MUTATIONPP_CXX@
@@ -87,11 +110,11 @@ su2_dot_ldadd += @ZLIB_LD@
 if BUILD_NORMAL
 ___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
 ___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}
-___bin_SU2_DOT_LDADD = ../../Common/lib/libSU2.a ${su2_dot_ldadd}
+___bin_SU2_DOT_LDADD =  ${su2_dot_ldadd}
 endif
 
 if BUILD_REVERSE
 ___bin_SU2_DOT_AD_SOURCES = ${su2_dot_sources}
 ___bin_SU2_DOT_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_dot_cxx_flags} 
-___bin_SU2_DOT_AD_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_dot_ldadd}
+___bin_SU2_DOT_AD_LDADD = @REVERSE_LIBS@ ${su2_dot_ldadd}
 endif

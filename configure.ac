@@ -3,18 +3,20 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 4.1.3 "Cardinal"
+# \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -35,9 +37,11 @@
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
+# CGNS integration added by Thomas D. Economon, 8/17/2016
+#
 ##########################
 
-AC_INIT([SU2], [4.1.2], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [5.0.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -66,12 +70,6 @@ AC_CHECK_SIZEOF(double)
 AC_CHECK_SIZEOF(void *)
 
 # optional bindings
-AC_ARG_WITH(CGNS-lib,
-    	AS_HELP_STRING([--with-CGNS-lib[=ARG]], [CGNS library directory, ARG = path to libcgns.a]),
-	[with_CGNS_lib=$withval], [with_CGNS_lib="no"])
-AC_ARG_WITH(CGNS-include,
-    	AS_HELP_STRING([--with-CGNS-include[=ARG]], [CGNS include directory, ARG = path to cgnslib.h]),
-	[with_CGNS_include=$withval], [with_CGNS_include="no"])
 
 AC_ARG_WITH(HDF5-lib,
 AS_HELP_STRING([--with-HDF5-lib[=ARG]], [HDF5 library directory, ARG = path to libhdf5.a]),
@@ -130,6 +128,9 @@ AC_ARG_ENABLE(SOL,
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
+AC_ARG_ENABLE(PY_WRAPPER,
+   	AS_HELP_STRING([--enable-PY_WRAPPER], [wrap the SU2 code with Python (default = no)]),
+	[build_PY_WRAPPER="yes"], [build_PY_WRAPPER="no"])
 AC_ARG_ENABLE(complex,
     AS_HELP_STRING([--enable-complex], [build executables with complex datatype (default = no)]),
     [build_COMPLEX="yes"], [build_COMPLEX="no"])
@@ -185,53 +186,20 @@ fi
 AM_CONDITIONAL(BUILD_PARMETIS, test x$enableparmetis = xyes)
 AC_CONFIG_FILES([externals/parmetis/Makefile])
 
+# CGNS
+CONFIGURE_CGNS
+if (test $enablecgns = yes); then
+  su2_externals_INCLUDES="-DHAVE_CGNS $CGNS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$CGNS_LIB $su2_externals_LIBS"
+else
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_CGNS, test x$enablecgns = xyes)
+AC_CONFIG_FILES([externals/cgns/Makefile])
 
 AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
 
-##########################
-
-# check for lib
-CGNSlib=libcgns.a
-CGNSheader=cgnslib.h
-have_CGNS="no"
-
-if test "$with_CGNS_lib" != "no"
-then
-  	AC_CHECK_FILE([$with_CGNS_lib/$CGNSlib],[have_CGNS="yes"],[have_CGNS="no"])
-	if test "$have_CGNS" == "no"
-	then
-		AC_MSG_ERROR([CGNS requested but library file not found.])
-	fi
-fi
-
-# check for header
-if test "$have_CGNS" != "no"
-then
-	if test "$with_CGNS_include" != "no"
-	then
-		AC_CHECK_FILE([$with_CGNS_include/$CGNSheader],[have_CGNS='yes'],[have_CGNS='no'])
-		if test "$have_CGNS" == "no"
-		then
-			AC_MSG_ERROR([CGNS requested but header file not found.])
-		fi
-	else
-		have_CGNS="no"
-	fi
-fi
-
-if test "$have_CGNS" != "no"
-then
-  	AM_CONDITIONAL(BUILD_CGNS,true)
-	CGNS_CXX="-DHAVE_CGNS -I"$with_CGNS_include""
-	CGNS_LD="$with_CGNS_lib"/$CGNSlib
-else
-	AM_CONDITIONAL(BUILD_CGNS,false)
-	CGNS_CXX=
-	CGNS_LD=
-fi
-AC_SUBST([CGNS_CXX])
-AC_SUBST([CGNS_LD])
 
 ##########################
 
@@ -500,6 +468,8 @@ AC_SUBST([LAPACK_LD])
 ###########################
 # Determine what versions of the code to build
 
+build_PY=yes
+
 # Complex type
 COMPLEX_CXX="-std=gnu++11 -DCOMPLEX_TYPE"
 
@@ -537,6 +507,7 @@ then
   build_DEF=no
   build_SOL=no
   build_GEO=no
+  build_PY=no
 fi
 
 if test $build_REVERSE == "yes"
@@ -551,6 +522,8 @@ AM_CONDITIONAL([BUILD_MSH],[test $build_MSH != "no"])
 AM_CONDITIONAL([BUILD_DEF],[test $build_DEF != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GEO],[test $build_GEO != "no"])
+AM_CONDITIONAL([BUILD_PY],[test $build_PY != "no"])
+AM_CONDITIONAL([BUILD_PY_WRAPPER], [test $build_PY_WRAPPER != "no"])
 
 ###########################
 
@@ -563,7 +536,8 @@ AC_OUTPUT(Makefile \
 	SU2_DEF/obj/Makefile \
 	SU2_SOL/obj/Makefile \
 	SU2_GEO/obj/Makefile \
-	SU2_PY/Makefile)
+	SU2_PY/Makefile \
+	SU2_PY/pySU2/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
 abs_prefix=$prefix #`(cd $prefix && pwd)`
@@ -573,13 +547,13 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 4.1.3 'Cardinal'                          |
+|   / __| | | |_  )   Release 5.0.0 'Raven'                             |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|
-|                Dr. Thomas D. Economon, economon@stanford.edu          |
+| SU2 Original Developers: Dr. Francisco D. Palacios.                   |
+|                          Dr. Thomas D. Economon.                      |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
 | - Prof. Juan J. Alonso's group at Stanford University.                |
@@ -587,8 +561,10 @@ AC_MSG_RESULT([
 | - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |
 | - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |
 | - Prof. Rafael Palacios' group at Imperial College London.            |
+| - Prof. Edwin van der Weide's group at the University of Twente.      |
+| - Prof. Vincent Terrapon's group at the University of Liege.          |
 -------------------------------------------------------------------------
-| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |
+| Copyright (C) 2012-2017 SU2, the open-source CFD code.                |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |
 | modify it under the terms of the GNU Lesser General Public            |
@@ -618,7 +594,7 @@ Build Configuration Summary:
     Metis support:        $enablemetis
     Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
-    CGNS support:         $have_CGNS
+    CGNS support:         $enablecgns
     HDF5 support:         $have_HDF5
     SZIP support:         $have_SZIP
     ZLIB support:         $have_ZLIB
@@ -640,6 +616,7 @@ Build Configuration Summary:
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
     Build SU2_GEO:        $build_GEO
+    Build Py Wrapper:     $build_PY_WRAPPER
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables,
 and update your [\$]PATH (and [\$]PYTHONPATH if applicable) with [\$]SU2_RUN.

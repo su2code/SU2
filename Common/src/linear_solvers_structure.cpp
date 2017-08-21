@@ -2,18 +2,20 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -144,7 +146,9 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<
 #ifndef HAVE_MPI
 		exit(EXIT_DIVERGENCE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
 #endif
   }
   
@@ -174,24 +178,11 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<
   
   nrm = w[i+1].norm();
   Hsbg[i+1][i] = nrm;
-  
-//  if (nrm <= 0.0) {
-//    
-//    /*--- w[i+1] is a linear combination of the w[0:i] ---*/
-//    
-//    cerr << "The FGMRES linear solver has diverged" << endl;
-//#ifndef HAVE_MPI
-//    exit(EXIT_DIVERGENCE);
-//#else
-//    MPI_Abort(MPI_COMM_WORLD,1);
-//    MPI_Finalize();
-//#endif
-//    
-//  }
-  
+
   /*--- Scale the resulting vector ---*/
   
   w[i+1] /= nrm;
+
 }
 
 void CSysSolve::WriteHeader(const string & solver, const su2double & restol, const su2double & resinit) {
@@ -223,7 +214,8 @@ int rank = 0;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
-	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
   }
@@ -330,7 +322,8 @@ int rank = 0;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
-	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
   }
@@ -484,7 +477,8 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
-	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
   }
@@ -613,7 +607,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
   bool TapeActive = NO;
 
-  if (config->GetDiscrete_Adjoint()){
+  if (config->GetDiscrete_Adjoint()) {
 #ifdef CODI_REVERSE_TYPE
 
    /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
@@ -714,7 +708,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   }
 
 
-  if(TapeActive){
+  if(TapeActive) {
     /*--- Start recording if it was stopped for the linear solver ---*/
 
     AD::StartRecording();
@@ -729,7 +723,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   
 }
 
-void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config){
+void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
 
 #ifdef CODI_REVERSE_TYPE
   
@@ -744,11 +738,11 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
   su2double::GradientData *LinSysRes_Indices = new su2double::GradientData[size];
   su2double::GradientData *LinSysSol_Indices = new su2double::GradientData[size];
 
-  for (i = 0; i < size; i++){
+  for (i = 0; i < size; i++) {
 
     /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
 
-    if (!LinSysSol[i].isActive()){
+    if (!LinSysSol[i].isActive()) {
       AD::globalTape.registerInput(LinSysSol[i]);
     }
 
@@ -774,7 +768,7 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
 
   /*--- Build preconditioner for the transposed Jacobian ---*/
 
-  switch(config->GetKind_DiscAdj_Linear_Prec()){
+  switch(config->GetKind_DiscAdj_Linear_Prec()) {
     case ILU:
       Jacobian.BuildILUPreconditioner(true);
       break;

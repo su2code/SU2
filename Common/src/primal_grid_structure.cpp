@@ -2,18 +2,20 @@
  * \file primal_grid_structure.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 4.1.3 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,6 +42,7 @@ CPrimalGrid::CPrimalGrid(void) {
 	Neighbor_Elements = NULL;
 	Coord_CG = NULL;
 	Coord_FaceElems_CG = NULL;
+  GlobalIndex = 0;
   
 }
 
@@ -123,7 +126,7 @@ CVertexMPI::~CVertexMPI() {
 
 }
 
-void CVertexMPI::Change_Orientation(void) { cout << "Not defined orientation change" << endl; }
+void CVertexMPI::Change_Orientation(void) { }
 
 unsigned short CLine::Faces[1][2]={{0,1}};
 
@@ -178,12 +181,13 @@ CLine::~CLine() {
 }
 
 void CLine::Change_Orientation(void) {
-	unsigned long iPoint, jPoint;
+	unsigned long Point_0, Point_1;
   
-	iPoint = Nodes[0];
-	jPoint = Nodes[1];
-	Nodes[0] = jPoint;
-	Nodes[1] = iPoint;
+	Point_0 = Nodes[0];
+	Point_1 = Nodes[1];
+	Nodes[0] = Point_1;
+	Nodes[1] = Point_0;
+
 }
 
 unsigned short CTriangle::Faces[3][2] = {{0,1},{1,2},{2,0}};
@@ -244,11 +248,12 @@ CTriangle::~CTriangle() {
 }
 
 void CTriangle::Change_Orientation(void) {
-	unsigned long iPoint, Point_2;
-	iPoint = Nodes[0];
+	unsigned long Point_0, Point_2;
+
+	Point_0 = Nodes[0];
 	Point_2 = Nodes[2];
 	Nodes[0] = Point_2;
-	Nodes[2] = iPoint;
+	Nodes[2] = Point_0;
   
 }
 
@@ -313,11 +318,12 @@ CQuadrilateral::~CQuadrilateral() {
 }
 
 void CQuadrilateral::Change_Orientation(void) {
-	unsigned long jPoint, Point_3;
-	jPoint = Nodes[1];
+	unsigned long Point_1, Point_3;
+
+	Point_1 = Nodes[1];
 	Point_3 = Nodes[3];
 	Nodes[1] = Point_3;
-	Nodes[3] = jPoint;
+	Nodes[3] = Point_1;
   
 }
 
@@ -381,11 +387,12 @@ CTetrahedron::~CTetrahedron() {
 }
 
 void CTetrahedron::Change_Orientation(void) {
-	unsigned long iPoint, jPoint;
-	iPoint = Nodes[0];
-	jPoint = Nodes[1];
-	Nodes[0] = jPoint;
-	Nodes[1] = iPoint;
+	unsigned long Point_0, Point_1;
+
+	Point_0 = Nodes[0];
+	Point_1 = Nodes[1];
+	Nodes[0] = Point_1;
+	Nodes[1] = Point_0;
   
 }
 
@@ -451,24 +458,16 @@ CHexahedron::~CHexahedron() {
 }
 
 void CHexahedron::Change_Orientation(void) {
-	unsigned long Point_0, Point_1, Point_2, Point_3, Point_4, Point_5, Point_6, Point_7;
-	Point_0 = Nodes[0];
+	unsigned long Point_1, Point_3, Point_5, Point_7;
+
 	Point_1 = Nodes[1];
-	Point_2 = Nodes[2];
 	Point_3 = Nodes[3];
-	Point_4 = Nodes[4];
 	Point_5 = Nodes[5];
-	Point_6 = Nodes[6];
 	Point_7 = Nodes[7];
-	
-	Nodes[0] = Point_7;
-	Nodes[1] = Point_4;
-	Nodes[2] = Point_5;
-	Nodes[3] = Point_6;
-	Nodes[4] = Point_3;
-	Nodes[5] = Point_0;
-	Nodes[6] = Point_1;
-	Nodes[7] = Point_2;
+	Nodes[1] = Point_3;
+	Nodes[3] = Point_1;
+	Nodes[5] = Point_7;
+	Nodes[7] = Point_5;
   
 }
 
@@ -536,11 +535,11 @@ CPrism::~CPrism() {
 
 void CPrism::Change_Orientation(void) {
 	unsigned long Point_0, Point_1, Point_3, Point_4;
+
 	Point_0 = Nodes[0];
 	Point_1 = Nodes[1];
 	Point_3 = Nodes[3];
 	Point_4 = Nodes[4];
-	
 	Nodes[0] = Point_1;
 	Nodes[1] = Point_0;
 	Nodes[3] = Point_4;
@@ -609,4 +608,12 @@ CPyramid::~CPyramid() {
   
 }
 
-void CPyramid::Change_Orientation(void) { cout << "Not defined orientation change" << endl; }
+void CPyramid::Change_Orientation(void) {
+	unsigned long Point_1, Point_3;
+
+	Point_1 = Nodes[1];
+	Point_3 = Nodes[3];
+	Nodes[1] = Point_3;
+	Nodes[3] = Point_1;
+
+}
