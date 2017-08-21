@@ -12,7 +12,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - fpalacios@gmail.com 
   
 branches:
     only:

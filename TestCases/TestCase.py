@@ -152,8 +152,8 @@ class TestCase:
                 passed = False
 
         # Write the test results 
-        #for j in output:
-        #  print j
+        for j in output:
+          print j
 
         if passed:
             print "%s: PASSED"%self.tag
@@ -343,8 +343,8 @@ class TestCase:
                 passed = False
 
         # Write the test results 
-        #for j in output:
-        #  print j
+        for j in output:
+          print j
 
         if passed:
             print "%s: PASSED"%self.tag
@@ -479,8 +479,8 @@ class TestCase:
                 passed = False
 
         # Write the test results 
-        #for j in output:
-        #  print j
+        for j in output:
+          print j
 
         if passed:
             print "%s: PASSED"%self.tag
@@ -602,8 +602,8 @@ class TestCase:
                 passed = False
     
         # Write the test results 
-        #for j in output:
-        #  print j
+        for j in output:
+          print j
     
         if passed:
             print "%s: PASSED"%self.tag
