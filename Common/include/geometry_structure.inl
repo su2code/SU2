@@ -195,19 +195,11 @@ inline void CGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){
 
 inline su2double* CGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span){ return NULL;}
 
-inline su2double* CGeometry::GetAverageGridVel(unsigned short val_marker, unsigned short val_span){ return NULL;}
-
-inline su2double CGeometry::GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span){return 0.0;}
-
 inline su2double* CGeometry::GetAverageNormal(unsigned short val_marker, unsigned short val_span){return NULL;}
 
 inline su2double CGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span){return 0.0;}
 
 inline su2double CGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return 0.0;}
-
-inline su2double CGeometry::GetTangGridVelIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
-
-inline su2double CGeometry::GetTangGridVelOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
 
 inline su2double CGeometry::GetSpanAreaIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
 
@@ -216,10 +208,6 @@ inline su2double CGeometry::GetSpanAreaOut(unsigned short val_marker, unsigned s
 inline su2double CGeometry::GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
 
 inline su2double CGeometry::GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
-
-inline void CGeometry::SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
-
-inline void CGeometry::SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span){ }
 
 inline void CGeometry::SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
 
@@ -423,19 +411,11 @@ inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned sho
 
 inline su2double* CPhysicalGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span){return AverageTurboNormal[val_marker][val_span];}
 
-inline su2double* CPhysicalGeometry::GetAverageGridVel(unsigned short val_marker, unsigned short val_span){return AverageGridVel[val_marker][val_span]; }
-
-inline su2double CPhysicalGeometry::GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span){return AverageTangGridVel[val_marker][val_span]; }
-
 inline su2double* CPhysicalGeometry::GetAverageNormal(unsigned short val_marker, unsigned short val_span){return AverageNormal[val_marker][val_span];}
 
 inline su2double CPhysicalGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span){return SpanArea[val_marker][val_span];}
 
 inline su2double CPhysicalGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return TurboRadius[val_marker][val_span];}
-
-inline su2double CPhysicalGeometry::GetTangGridVelIn(unsigned short val_marker, unsigned short val_span){return TangGridVelIn[val_marker][val_span];}
-
-inline su2double CPhysicalGeometry::GetTangGridVelOut(unsigned short val_marker, unsigned short val_span){return TangGridVelOut[val_marker][val_span];}
 
 inline su2double CPhysicalGeometry::GetSpanAreaIn(unsigned short val_marker, unsigned short val_span){return SpanAreaIn[val_marker][val_span];}
 
@@ -444,10 +424,6 @@ inline su2double CPhysicalGeometry::GetSpanAreaOut(unsigned short val_marker, un
 inline su2double CPhysicalGeometry::GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span){return TurboRadiusIn[val_marker][val_span];}
 
 inline su2double CPhysicalGeometry::GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span){return TurboRadiusOut[val_marker][val_span];}
-
-inline void CPhysicalGeometry::SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span){TangGridVelIn[val_marker][val_span] = value;}
-
-inline void CPhysicalGeometry::SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span){TangGridVelOut[val_marker][val_span] = value;}
 
 inline void CPhysicalGeometry::SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span){SpanAreaIn[val_marker][val_span] = value;}
 

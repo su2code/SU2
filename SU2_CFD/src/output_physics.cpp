@@ -108,13 +108,13 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       TotalTemperatureIn[iMarkerTP][iSpan] = FluidModel->GetTemperature();
 
       /*--- Retrieve Inflow relative quantities ---*/
-      tangVel = geometry->GetTangGridVelIn(iMarkerTP, iSpan);
-      tangVel2 = tangVel*tangVel;
-
       for (iDim = 0; iDim < nDim; iDim++){
         relVel[iDim] = TurboVelocityIn[iMarkerTP][iSpan][iDim];
       }
-      relVel[1] -= tangVel;
+
+      relVel[1] = solver_container->GetRelTangVelocityIn(iMarkerTP, iSpan);
+      tangVel = TurboVelocityIn[iMarkerTP][iSpan][1] - relVel[1];
+      tangVel2 = tangVel*tangVel;
 
       relVel2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++){
@@ -189,13 +189,13 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       TotalTemperatureOut[iMarkerTP][iSpan] = FluidModel->GetTemperature();
 
       /*--- Retrieve relative Outflow  quantities ---*/
-      tangVel  = geometry->GetTangGridVelOut(iMarkerTP, iSpan);
-      tangVel2 = tangVel*tangVel;
-
       for (iDim = 0; iDim < nDim; iDim++){
         relVel[iDim] = TurboVelocityOut[iMarkerTP][iSpan][iDim];
       }
-      relVel[1] -= tangVel;
+      relVel[1] = solver_container->GetRelTangVelocityOut(iMarkerTP, iSpan);
+
+      tangVel  = TurboVelocityOut[iMarkerTP][iSpan][1] - relVel[1];
+      tangVel2 = tangVel*tangVel;
 
       relVel2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++){

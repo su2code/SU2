@@ -3580,6 +3580,20 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
+  virtual su2double GetRelTangVelocityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetRelTangVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
   virtual su2double GetKineIn(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
@@ -3659,6 +3673,20 @@ public:
    */
   virtual void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetRelTangVelocityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+
+  virtual void SetRelTangVelocityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
   /*!
    * \brief A virtual member.
    * \param[in] value      - turboperformance value to set.
@@ -6180,6 +6208,20 @@ public:
   su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
+   * \brief Provide the inlet relative tangential velocity.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet relative tangential velocity.
+   */
+  su2double GetRelTangVelocityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the the outlet relative tangential velocity.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the the outlet relative tangential velocity.
+   */
+  su2double GetRelTangVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
    * \brief Provide the inlet turbulent kei to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
@@ -6262,6 +6304,21 @@ public:
    * \param[in] inMarkerTP - turboperformance marker.
    */
   void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set inlet relative tangential velocity.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+
+  void SetRelTangVelocityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set outlet relative tangential velocity.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetRelTangVelocityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief Set inlet turbulent kei.
