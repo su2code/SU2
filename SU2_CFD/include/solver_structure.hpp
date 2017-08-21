@@ -4047,14 +4047,17 @@ protected:
              **AverageOmega,
              **ExtAverageNu,
              **ExtAverageKine,
-             **ExtAverageOmega;
+             **ExtAverageOmega,
+             **AverageRelTangVelocity;
 
   su2double  **DensityIn,
              **PressureIn,
              ***TurboVelocityIn,
+             **RelTangVelocityIn,
              **DensityOut,
              **PressureOut,
              ***TurboVelocityOut,
+             **RelTangVelocityOut,
              **KineIn,
              **OmegaIn,
              **NuIn,
