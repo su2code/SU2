@@ -1925,6 +1925,12 @@ inline void CIncEulerSolver::SetTotal_HeatFluxDiff(su2double heat) { Total_HeatF
 
 inline void CIncEulerSolver::SetTotal_CD(su2double val_Total_CD) { Total_CD = val_Total_CD; }
 
+inline su2double CIncEulerSolver::GetTotal_Custom_ObjFunc() { return Total_Custom_ObjFunc; }
+
+inline void CIncEulerSolver::SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { Total_Custom_ObjFunc = val_total_custom_objfunc*val_weight; }
+
+inline void CIncEulerSolver::AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { Total_Custom_ObjFunc += val_total_custom_objfunc*val_weight; }
+
 inline su2double CIncEulerSolver::GetAllBound_CL_Inv() { return AllBound_CL_Inv; }
 
 inline su2double CIncEulerSolver::GetAllBound_CD_Inv() { return AllBound_CD_Inv; }
