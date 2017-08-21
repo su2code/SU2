@@ -689,7 +689,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_CFx     = 0.0;    Total_CFy          = 0.0;    Total_CFz          = 0.0;
   Total_CT      = 0.0;    Total_CQ           = 0.0;    Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
-  Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;
+  Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;    Total_Custom_ObjFunc=0.0;
   Total_NetCThrust = 0.0; Total_NetCThrust_Prev = 0.0; Total_BCThrust_Prev = 0.0;
   Total_Power = 0.0;      AoA_Prev           = 0.0;
   Total_CL_Prev = 0.0;    Total_CD_Prev      = 0.0;
