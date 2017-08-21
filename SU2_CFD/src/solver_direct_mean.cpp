@@ -15948,7 +15948,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               AverageFlux[iMarker][iSpan][iVar]   = TotalFluxes[iVar]/TotalArea;
               SpanTotalFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar];
             }
-            val_init_pressure = OldAveragePressure[iMarker][iSpan];
+            val_init_pressure = avgAreaPressure;
 
             if (abs(MachTest)< config->GetAverageMachLimit()) {
               avgMixDensity    = avgAreaDensity;
