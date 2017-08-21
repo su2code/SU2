@@ -31,6 +31,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
+
 import sys
 from TestCase import TestCase    
 
@@ -1001,13 +1004,14 @@ def main():
 
 
     # Tests summary
-    print '=================================================================='
-    print 'Summary of the parallel tests'
+    print('==================================================================')
+    print('Summary of the parallel tests')
+    print('python version:', sys.version)
     for i, test in enumerate(test_list):
         if (pass_list[i]):
-            print '  passed - %s'%test.tag
+            print('  passed - %s'%test.tag)
         else:
-            print '* FAILED - %s'%test.tag
+            print('* FAILED - %s'%test.tag)
 
     if all(pass_list):
         sys.exit(0)

@@ -26,7 +26,7 @@
     https://pypi.python.org/pypi/bunch
 """
 
-from ordered_dict import OrderedDict
+from ..util.ordered_dict import OrderedDict
 
 ## Compatability Issues...
 #try:
@@ -59,7 +59,7 @@ class OrderedBunch(OrderedDict):
         Including update()...
         
         >>> b.update({ 'ponies': 'are pretty!' }, hello=42)
-        >>> print repr(b)
+        >>> print(repr(b))
         OrderedBunch(foo=OrderedBunch(lol=True), hello=42, ponies='are pretty!')
         
         As well as iteration...
@@ -208,7 +208,7 @@ class OrderedBunch(OrderedDict):
         """ Invertible* string-form of a OrderedBunch.
             
             >>> b = OrderedBunch(foo=OrderedBunch(lol=True), hello=42, ponies='are pretty!')
-            >>> print repr(b)
+            >>> print(repr(b))
             OrderedBunch(foo=OrderedBunch(lol=True), hello=42, ponies='are pretty!')
             >>> eval(repr(b))
             OrderedBunch(foo=OrderedBunch(lol=True), hello=42, ponies='are pretty!')

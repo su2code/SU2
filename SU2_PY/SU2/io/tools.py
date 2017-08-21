@@ -35,7 +35,7 @@
 #  Imports
 # -------------------------------------------------------------------
 
-import os, time, sys, pickle, errno, copy
+import os
 import shutil, glob
 from SU2.util import ordered_bunch
 
@@ -128,7 +128,7 @@ def read_plot( filename ):
 
     # check for number of zones
     if len(zones) > 1:
-        raise IOError , 'multiple zones not supported'
+        raise IOError('multiple zones not supported')
     
     # done
     plot_file.close()              
@@ -160,7 +160,7 @@ def read_history( History_filename, nZones = 1):
     
     # map header names
     for key in plot_data.keys():
-        if map_dict.has_key(key):
+        if key in map_dict:
             var = map_dict[key]
         else:
             var = key
@@ -247,7 +247,7 @@ def get_headerMap(nZones = 1):
                  "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
                  "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
  
-    return history_header_map   	 
+    return history_header_map        
 
 def getTurboPerfIndex(nZones = 1):
 
@@ -361,16 +361,16 @@ optnames_geo = [ "AIRFOIL_AREA"                   ,
                  
 PerStation = []
 for i in range(20):
-	PerStation.append("STATION" + str(i) + "_AREA")
-	PerStation.append("STATION" + str(i) + "_LENGTH")
-    	PerStation.append("STATION" + str(i) + "_WIDTH")
-    	PerStation.append("STATION" + str(i) + "_WATERLINE_WIDTH")
-    	PerStation.append("STATION" + str(i) + "_HEIGHT")
-    	PerStation.append("STATION" + str(i) + "_THICKNESS")
-    	PerStation.append("STATION" + str(i) + "_CHORD")
-    	PerStation.append("STATION" + str(i) + "_LE_RADIUS")
-    	PerStation.append("STATION" + str(i) + "_TOC")
-    	PerStation.append("STATION" + str(i) + "_TWIST")
+    PerStation.append("STATION" + str(i) + "_AREA")
+    PerStation.append("STATION" + str(i) + "_LENGTH")
+    PerStation.append("STATION" + str(i) + "_WIDTH")
+    PerStation.append("STATION" + str(i) + "_WATERLINE_WIDTH")
+    PerStation.append("STATION" + str(i) + "_HEIGHT")
+    PerStation.append("STATION" + str(i) + "_THICKNESS")
+    PerStation.append("STATION" + str(i) + "_CHORD")
+    PerStation.append("STATION" + str(i) + "_LE_RADIUS")
+    PerStation.append("STATION" + str(i) + "_TOC")
+    PerStation.append("STATION" + str(i) + "_TWIST")
 
 optnames_geo.extend(PerStation)
                  
@@ -689,7 +689,7 @@ def get_dvKind( kindID ):
 def get_dvID( kindName ):
     """ get design variable kind id number from name """
     dv_map = get_dvMap()
-    id_map = dict((v,k) for (k,v) in dv_map.iteritems())
+    id_map = dict((v,k) for (k,v) in dv_map.items())
     try: 
         return id_map[ kindName ]
     except KeyError: 
@@ -1133,5 +1133,5 @@ def restart2solution(config,state={}):
         if state: state.FILES[ADJ_NAME] = solution
         
     else:
-        raise Exception, 'unknown math problem'
+        raise Exception('unknown math problem')
 

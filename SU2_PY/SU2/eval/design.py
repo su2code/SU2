@@ -35,7 +35,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy, glob, re
+import os, copy
 from .. import io   as su2io
 from .  import func as su2func
 from .  import grad as su2grad
@@ -91,8 +91,6 @@ class Design(object):
         ## ???: Move to Project, no next folder here
         
         if '*' in folder: folder = su2io.next_folder(folder)
-        
-#        print "New Design: %s" % folder
         
         config = copy.deepcopy(config)
         state  = copy.deepcopy(state)

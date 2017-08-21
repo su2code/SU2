@@ -41,7 +41,7 @@ from .. import io   as su2io
 from .. import util as su2util
 from .functions import function, update_mesh
 from ..io import redirect_folder, redirect_output
-import functions
+from SU2.eval import functions
 
 # ----------------------------------------------------------------------
 #  Main Gradient Interface
@@ -79,7 +79,7 @@ def gradient( func_name, method, config, state=None ):
     grads = {}
     state = su2io.State(state)
     if func_name == 'ALL':
-        raise Exception , "func_name = 'ALL' not yet supported"
+        raise Exception("func_name = 'ALL' not yet supported")
     func_output = func_name
     if (type(func_name)==list):
         if (config.OPT_COMBINE_OBJECTIVE=="YES"):
@@ -89,6 +89,7 @@ def gradient( func_name, method, config, state=None ):
     else:
         config.OPT_COMBINE_OBJECTIVE="NO"
         config.OBJECTIVE_WEIGHT = "1.0"
+
     # redundancy check
     if not state['GRADIENTS'].has_key(func_output):
 
@@ -115,7 +116,7 @@ def gradient( func_name, method, config, state=None ):
                 grads = geometry( func_name, config, state )
 
             else:
-                raise Exception, 'unknown function name: %s' % func_output
+                raise Exception('unknown function name: %s' % func_name)
 
         # Finite Difference Gradients
         elif method == 'FINDIFF':
@@ -125,7 +126,7 @@ def gradient( func_name, method, config, state=None ):
             grad = directdiff (config , state )
 
         else:
-            raise Exception , 'unrecognized gradient method'
+            raise Exception('unrecognized gradient method')
         
         # store
         state['GRADIENTS'].update(grads)
@@ -317,7 +318,8 @@ def stability( func_name, config, state=None, step=1e-2 ):
 
     # find base func name
     matches = [ k for k in su2io.optnames_aero if k in func_name ]
-    if not len(matches) == 1: raise Exception, 'could not find stability function name'
+    if not len(matches) == 1:
+        raise Exception('could not find stability function name')
     base_name = matches[0]    
 
     ADJ_NAME = 'ADJOINT_'+base_name
@@ -445,7 +447,8 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     
     # find base func name
     matches = [ k for k in su2io.optnames_aero if k in func_name ]
-    if not len(matches) == 1: raise Exception, 'could not find multipoint function name'
+    if not len(matches) == 1:
+        raise Exception('could not find multipoint function name')
     base_name = matches[0]
     
     ADJ_NAME = 'ADJOINT_' + base_name

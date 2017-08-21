@@ -29,6 +29,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
+
 # imports
 import numpy as np
 from optparse import OptionParser
@@ -69,16 +72,16 @@ def main():
    nc=np.size(ctrl)
    fc.close()
 
-   print str(nc)+" lines read from control file: "+options.ctrlFile
+   print(str(nc)+" lines read from control file: "+options.ctrlFile)
 
    PA,polarSweepType,velDirOption,nAlpha,nBeta,nPhi,nMach,alpha,beta,phi,MachList,polarVar=setPolaraType(ctrl,nc,options.verbose)
 
    if options.verbose:
       velDirOptionLegend=['V(alpha,phi)','V(alpha,beta)']
-      print '>>>  Control file details: Pitch axis is '+PA+'. Polar sweep type is '+str(polarSweepType)+\
-         '; polarVar = '+polarVar
-      print '>>>  Velocity definiton: '+velDirOptionLegend[velDirOption-1]
-      print '>>>  nAalpha = '+str(nAlpha)+'; nBeta = '+str(nBeta)+'; nPhi = '+str(nPhi)+'; nMach = '+str(nMach)
+      print('>>>  Control file details: Pitch axis is '+PA+'. Polar sweep type is '+str(polarSweepType)+\
+         '; polarVar = '+polarVar)
+      print('>>>  Velocity definiton: '+velDirOptionLegend[velDirOption-1])
+      print('>>>  nAalpha = '+str(nAlpha)+'; nBeta = '+str(nBeta)+'; nPhi = '+str(nPhi)+'; nMach = '+str(nMach))
    if polarSweepType < 4 :
       nPolara = max(nAlpha,nPhi)
    else:
@@ -94,14 +97,14 @@ def main():
    inputbaseFile=sBIF.strip(' ')
    inputbaseFile=inputbaseFile.strip('\n')
 
-   print ' '
-   print '--------------------------------------------------------------------------------------------------------------------'
-   print ' '
-   print 'Configuration file: '+inputbaseFile
-   print 'PolarSweepType = '+str(polarSweepType)+' Polar sweep in '+polarVar+' using '+str(nPolara)+' angles/Mach No '
-   print ' '
-   print '--------------------------------------------------------------------------------------------------------------------'
-   print ' '
+   print(' ')
+   print('--------------------------------------------------------------------------------------------------------------------')
+   print(' ')
+   print('Configuration file: ' + inputbaseFile)
+   print('PolarSweepType = '+str(polarSweepType)+' Polar sweep in '+polarVar+' using '+str(nPolara)+' angles/Mach No ')
+   print(' ')
+   print('--------------------------------------------------------------------------------------------------------------------')
+   print(' ')
       
    if polarSweepType == 4:
       nPolara=1 # prevent angles inner loop
@@ -113,11 +116,11 @@ def main():
    else:
       outSystem='Body'
 
-   print " "
-   print "==============================================================================="
-   print "   Polar sweep in "+str(options.geomDim)+"D ; output in "+outSystem+" system"
-   print "==============================================================================="
-   print " "
+   print(" ")
+   print("===============================================================================")
+   print("   Polar sweep in "+str(options.geomDim)+"D ; output in "+outSystem+" system")
+   print("===============================================================================")
+   print(" ")
    
 
    # load config, start state
@@ -177,10 +180,10 @@ def main():
             nBeta=1
 
    if options.verbose:
-      print '>>> alpha: '+str(alpha)
-      print '>>> beta:  '+str(beta)
-      print '>>> phi:   '+str(phi)
-      print '>>> Mach   '+str(MachList)
+      print('>>> alpha: '+str(alpha))
+      print('>>> beta:  '+str(beta))
+      print('>>> phi:   '+str(phi))
+      print('>>> Mach   '+str(MachList))
 
       
    results.AOA = alpha
@@ -209,7 +212,7 @@ def main():
       outFile='Polar_M' + str(MachList[0]) + '.dat'
    f = open(outFile, 'w')
    if options.verbose:
-      print 'Opening polar sweep file: '+outFile
+      print('Opening polar sweep file: ' + outFile)
    if options.Wind:
       f.write('%  AOA, Mach, CL, CD,  ')
       if options.geomDim == 3:
@@ -240,8 +243,8 @@ def main():
              SIDESLIP_ANGLE = beta[0]
 
          if options.verbose:
-            print 'Sweep step '+str(j)+': Mach = '+str(MachNumber)+', aoa = ',str(AngleAttack)+', beta = '\
-               +str(SIDESLIP_ANGLE)
+            print('Sweep step '+str(j)+': Mach = '+str(MachNumber)+', aoa = ',str(AngleAttack)+', beta = '\
+               +str(SIDESLIP_ANGLE))
              
          # local config and state
          konfig = copy.deepcopy(config)
@@ -273,9 +276,9 @@ def main():
          konfig.AOA = AngleAttack
          konfig.SIDESLIP_ANGLE = SIDESLIP_ANGLE
          konfig.MACH_NUMBER = MachNumber
-         caseName='DIRECT_M_'+str(MachNumber)+'_AOA_'+str(AngleAttack)
-         print 'Mach = ' , konfig.MACH_NUMBER , 'AOA = ' , konfig.AOA
-         print 'case :'+caseName
+         caseName = 'DIRECT_M_' + str(MachNumber) + '_AOA_' + str(AngleAttack)
+         print('Mach = ', konfig.MACH_NUMBER, 'AOA = ', konfig.AOA)
+         print('case :' + caseName)
     
          # run su2
          if options.Wind:
@@ -331,7 +334,7 @@ def main():
             os.system('rm -R '+caseName)
          command='mv DIRECT '+caseName
          if options.verbose:
-            print command
+            print(command)
          os.system(command)
 
    f.close()
