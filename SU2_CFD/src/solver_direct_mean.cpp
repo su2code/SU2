@@ -16773,13 +16773,13 @@ void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geomet
 
     myfile << "TITLE = \"Spanwise Imposed Inflow Values. \"" << endl;
     myfile << "VARIABLES =" << endl;
-    myfile.width(30); myfile << "\"Spanwise Value[m]\"";
+    myfile.width(30); myfile << "\"Spanwise value [m]\"";
     myfile.width(21); myfile << "\"iSpan [-]\"";
-    myfile.width(28); myfile << "\"Spanwise extension[-]\"";
-    myfile.width(26); myfile << "\"TotalPressure[Pa]\"";
-    myfile.width(32); myfile << "\"TotalTemperature[K]\"";
-    myfile.width(30); myfile << "\"Absolute Flow Angle1[°]\"";
-    myfile.width(30); myfile << "\"Absolute Flow Angle2[°]\"";
+    myfile.width(28); myfile << "\"Spanwise fraction [-]\"";
+    myfile.width(26); myfile << "\"Total Pressure [Pa]\"";
+    myfile.width(32); myfile << "\"Total Temperature [K]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle1 [deg]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle2 [deg]\"";
     myfile << endl;
     for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
       myfile.width(30); myfile << SpanWiseValues[iSpan];
@@ -16898,10 +16898,10 @@ void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geome
 
     myfile << "TITLE = \"Spanwise Imposed Outflow Values.\"" << endl;
     myfile << "VARIABLES =" << endl;
-    myfile.width(30); myfile << "\"Spanwise Value[m]\"";
+    myfile.width(30); myfile << "\"Spanwise value [m]\"";
     myfile.width(21); myfile << "\"iSpan [-]\"";
-    myfile.width(28); myfile << "\"Spanwise extension[-]\"";
-    myfile.width(21); myfile << "\"Pressure[Pa]\"";
+    myfile.width(28); myfile << "\"Spanwise fraction [-]\"";
+    myfile.width(21); myfile << "\"Pressure [Pa]\"";
     myfile << endl;
 
     for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){

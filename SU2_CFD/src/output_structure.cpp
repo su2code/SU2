@@ -10791,15 +10791,15 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile << "TITLE = \"Inflow Spanwise Thermodynamic Values. iExtIter = " << iExtIter << " \"" << endl;
     myfile << "VARIABLES =" << endl;
 
-    myfile.width(30); myfile << "\"SpanWise Value [m]\"";
+    myfile.width(30); myfile << "\"Spanwise value [m]\"";
     myfile.width(15); myfile << "\"iSpan [-]\"";
-    myfile.width(30); myfile << "\"Spanwise extension [-]\"";
+    myfile.width(30); myfile << "\"Spanwise fraction [-]\"";
     myfile.width(30); myfile << "\"Pressure [Pa]\"";
-    myfile.width(30); myfile << "\"TotalPressure [Pa]\"";
+    myfile.width(30); myfile << "\"Total Pressure [Pa]\"";
     myfile.width(30); myfile << "\"Temperature [K]\"";
-    myfile.width(30); myfile << "\"TotalTemperature [K]\"";
+    myfile.width(30); myfile << "\"Total Temperature [K]\"";
     myfile.width(30); myfile << "\"Enthalpy [J]\"";
-    myfile.width(30); myfile << "\"TotalEnthalpy [J]\"";
+    myfile.width(30); myfile << "\"Total Enthalpy [J]\"";
     myfile.width(30); myfile << "\"Density [kg/m3]\"";
     myfile.width(30); myfile << "\"Entropy [J/K]\"";
     myfile.width(30); myfile << "\"TurbIntensity [-]\"";
@@ -10848,15 +10848,15 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile << "TITLE = \"Outflow Span-wise Thermodynamic Values. iExtIter = " << iExtIter << " \"" << endl;
     myfile << "VARIABLES =" << endl;
 
-    myfile.width(30); myfile << "\"SpanWise Value [m]\"";
+    myfile.width(30); myfile << "\"Spanwise value [m]\"";
     myfile.width(15); myfile << "\"iSpan [-]\"";
-    myfile.width(30); myfile << "\"Spanwise extension [-]\"";
+    myfile.width(30); myfile << "\"Spanwise fraction [-]\"";
     myfile.width(30); myfile << "\"Pressure [Pa]\"";
-    myfile.width(30); myfile << "\"TotalPressure [Pa]\"";
+    myfile.width(30); myfile << "\"Total Pressure [Pa]\"";
     myfile.width(30); myfile << "\"Temperature [K]\"";
-    myfile.width(30); myfile << "\"TotalTemperature [K]\"";
+    myfile.width(30); myfile << "\"Total Temperature [K]\"";
     myfile.width(30); myfile << "\"Enthalpy [J]\"";
-    myfile.width(30); myfile << "\"TotalEnthalpy [J]\"";
+    myfile.width(30); myfile << "\"Total Enthalpy [J]\"";
     myfile.width(30); myfile << "\"Density [kg/m3]\"";
     myfile.width(30); myfile << "\"Entropy [J/K]\"";
     myfile.width(30); myfile << "\"TurbIntensity [-]\"";
@@ -10906,9 +10906,9 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile << "TITLE = \"Inflow Span-wise Kinematic Values. iExtIter = " << iExtIter << " \"" << endl;
     myfile << "VARIABLES =" << endl;
 
-    myfile.width(30); myfile << "\"SpanWise Value [m]\"";
-    myfile.width(15); myfile << "\"iSpan\"";
-    myfile.width(30); myfile << "\"Spanwise extension [-]\"";
+    myfile.width(30); myfile << "\"Spaneise value [m]\"";
+    myfile.width(15); myfile << "\"iSpan [-]\"";
+    myfile.width(30); myfile << "\"Spanwise fraction [-]\"";
     myfile.width(30); myfile << "\"Normal Mach [-]\"";
     myfile.width(30); myfile << "\"Tangential Mach [-]\"";
     myfile.width(30); myfile << "\"3rd Component Mach [-]\"";
@@ -10917,9 +10917,9 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile.width(30); myfile << "\"Tangential Velocity [m/s]\"";
     myfile.width(30); myfile << "\"3rd Component Velocity [m/s]\"";
     myfile.width(30); myfile << "\"Velocity Module [m/s]\"";
-    myfile.width(30); myfile << "\"Absolute Flow Angle1 [°]\"";
-    myfile.width(30); myfile << "\"Absolute Flow Angle2 [°]\"";
-    myfile.width(30); myfile << "\"Relative Flow Angle1 [°]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle1 [deg]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle2 [deg]\"";
+    myfile.width(30); myfile << "\"Relative Flow Angle1 [deg]\"";
     myfile << endl;
 
 
@@ -10974,9 +10974,9 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile << "TITLE = \"Outflow Span-wise Kinematic Values. iExtIter = " << iExtIter << " \"" << endl;
     myfile << "VARIABLES =" << endl;
 
-    myfile.width(30); myfile << "\"SpanWise Value [m]\"";
-    myfile.width(15); myfile << "\"iSpan\"";
-    myfile.width(30); myfile << "\"Spanwise extension [-]\"";
+    myfile.width(30); myfile << "\"Spanwise Value [m]\"";
+    myfile.width(15); myfile << "\"iSpan [-]\ "";
+    myfile.width(30); myfile << "\"Spanwise fraction [-]\"";
     myfile.width(30); myfile << "\"Normal Mach [-]\"";
     myfile.width(30); myfile << "\"Tangential Mach [-]\"";
     myfile.width(30); myfile << "\"3rd Component Mach [-]\"";
@@ -10985,9 +10985,9 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile.width(30); myfile << "\"Tangential Velocity [m/s]\"";
     myfile.width(30); myfile << "\"3rd Component Velocity [m/s]\"";
     myfile.width(30); myfile << "\"Velocity Module [m/s]\"";
-    myfile.width(30); myfile << "\"Absolute Flow Angle1 [°]\"";
-    myfile.width(30); myfile << "\"Absolute Flow Angle2 [°]\"";
-    myfile.width(30); myfile << "\"Relative Flow Angle1 [°]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle1 [deg]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle2 [deg]\"";
+    myfile.width(30); myfile << "\"Relative Flow Angle1 [deg]\"";
     myfile << endl;
 
 
