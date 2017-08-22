@@ -3595,8 +3595,8 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config,
   constants[6]  = 1.4;    //C_1
   constants[7]  = 0.3;   //C_2p
   constants[8]  = 6.0;    //C_T
-  constants[9]  = 0.115; //0.23;   //C_L
-  constants[10] = 140.0; //70.0;   //C_eta
+  constants[9]  = 0.23;   //C_L
+  constants[10] = 70.0;   //C_eta
 
   /*--- Initialize lower and upper limits---*/
   lowerlimit = new su2double[nVar];
