@@ -1777,9 +1777,12 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   // NB: 1e-8 is arbitrary
   const su2double tke_lim = max(tke, 1e-8);
+  //const su2double tke_lim = max(tke, 1e-14);
 
   // 36*nu ensures T3 <= 1 (which is arbitrary)
-  const su2double tdr_lim = max(tdr, 36.0*Laminar_Viscosity_i/Density_i);
+  //const su2double tdr_lim = max(tdr, 36.0*Laminar_Viscosity_i/Density_i);
+  //const su2double tdr_lim = max(tdr, Laminar_Viscosity_i/Density_i);
+  const su2double tdr_lim = max(tdr, 1e-4*Laminar_Viscosity_i/Density_i);
 
   // if (tke < 0.0) {
   //   std::cout << "tke = " << tke
@@ -1806,9 +1809,10 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   // }
 
   // make sure v2 is well-behaved
-  const su2double scale = 1.0e-8;
+  const su2double scale = 1.0e-14;
   su2double zeta = max(v20/tke_lim, scale);
-  zeta = min(zeta,2.0/3.0);
+  //zeta = min(zeta,2.0/3.0); // necessary?
+  zeta = min(zeta,10.0); // necessary?
   const su2double v2 = max(v20, zeta*tke);
 
   // Grab other quantities for convenience/readability
@@ -1839,7 +1843,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   const su2double T1_re  = - T1/(rho*tdr);
   const su2double T1_rv2 = 0.0;
 
-  const su2double T2     = 1.0E14; //0.6/(sqrt(6.0)*C_mu*S*zeta);
+  const su2double T2     = 0.6/(sqrt(3.0)*C_mu*S*zeta);
   const su2double T2_rk  = 0.0;
   const su2double T2_re  = 0.0;
   const su2double T2_rv2 = 0.0;
@@ -1877,6 +1881,10 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
     T_rk = T3_rk; T_re = T3_re; T_rv2 = T3_rv2;
   }
 
+  // Time scale w/out stagnation point anomaly fix
+  su2double Tf = T1;
+  if (T3>Tf) Tf = T3;
+
   const su2double Tsq = T*T;
 
 
@@ -1886,7 +1894,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   const su2double L1_re  = 1.5*L1/(rho*tdr);
   const su2double L1_rv2 = 0.0;
 
-  const su2double L2     = 1.0E14; //sqrt(tke)/(sqrt(6.0)*C_mu*S*zeta);
+  const su2double L2     = sqrt(tke_lim)/(sqrt(3.0)*C_mu*S*zeta);
   const su2double L2_rk  = 0.0;
   const su2double L2_re  = 0.0;
   const su2double L2_rv2 = 0.0;
@@ -1962,8 +1970,8 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   const su2double C_e1 = C_e1o*(1.0+0.045*sqrt(1.0/zeta));
 
   // ... production
-  //Pe = C_e1*Pk/T;
-  Pe = C_e1*C_mu*rho*v2*S*S;  // TODO: include divergence part
+  Pe = C_e1*Pk/T;
+  //Pe = C_e1*C_mu*rho*v2*S*S;  // TODO: include divergence part
 
   Pe_rk  = 0.0;
   Pe_re  = 0.0;
@@ -1982,7 +1990,10 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   su2double Dv2, Dv2_rk, Dv2_re, Dv2_rv2, Dv2_f;
 
   // ... production
-  Pv2 = rho*tke*f;
+  //Pv2 = rho*tke*f;
+
+  // Limit production of v2 based on max zeta = 2/3
+  Pv2 = rho * min( tke*f, 2.0*Pk/3.0 + 5.0*v2/T1 );
 
   Pv2_rk  = 0.0;
   Pv2_re  = 0.0;
@@ -2012,11 +2023,18 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   //... production
   const su2double C1m6 = C_1 - 6.0;
+  const su2double C1m1 = C_1 - 1.0;
   const su2double ttC1m1 = (2.0/3.0)*(C_1 - 1.0);
-  const su2double C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(zeta-0.55)));
+  //const su2double C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(zeta-0.55)));
+  const su2double C_2f = C_2p;
 
   //Pf = (C_2f*Pk/tke - (C1m6*v2/tke - ttC1m1)*rho/T) / Lsq;
-  Pf = (C_2f*C_mu*zeta*T*S*S - (C1m6*zeta - ttC1m1)/T) / Lsq;
+  Pf = (C_2f*Pk/tke_lim - (C1m6*zeta - ttC1m1)/T) / Lsq;
+  //Pf = (C_2f*Pk/tke_lim + 5.0*zeta/T1 - (C1m1*zeta - ttC1m1)/T) / Lsq;
+  //Pf = (C_2f*Pk/tke_lim + 5.0*zeta/Tf - (C1m1*zeta - ttC1m1)/T) / Lsq;
+  //Pf = (C_2f*Pk/tke_lim + 5.0*zeta/T - (C1m1*zeta - ttC1m1)/T) / Lsq;
+  //Pf = (C_2f*C_mu*zeta*T*S*S - (C1m6*zeta - ttC1m1)/T) / Lsq;
+  //Pf = (C_2f*C_mu*zeta*Tf*S*S - (C1m6*zeta - ttC1m1)/Tf) / Lsq;
 
   // not keeping any derivatives of Pf
 
