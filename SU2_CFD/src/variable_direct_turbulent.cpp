@@ -262,10 +262,8 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist,
   //--- v2-f ---//
   C_mu = 0.22;
   C_T = 6.0;
-  //        C_L = 0.23;
-  //        C_eta = 70.0;
-  C_L = 0.115; // jee mods
-  C_eta = 140.0;
+  C_L = 0.23;
+  C_eta = 70.0;
 
   scalar_min = tol/(VelInf*VelInf);
   su2double zeta = max(val_zeta/val_kine, scalar_min);
@@ -280,7 +278,7 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist,
   Tm = min(temp,0.6*tke/(sqrt(3.0)*C_mu*S*v2)); // yes, sqrt(3) b/c of S def
 
   //--- Model length scale ---//
-  temp = min(pow(tke,1.5)/tdr, pow(tke,1.5)/(sqrt(6.0)*C_mu*S*v2));
+  temp = min(pow(tke,1.5)/tdr, pow(tke,1.5)/(sqrt(3.0)*C_mu*S*v2));
   Lm = C_L * max(temp,C_eta*pow(pow(nu,3.0)/tdr,0.25));
 
 }
