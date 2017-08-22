@@ -131,6 +131,11 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   ExtAverageNu               = NULL;
   ExtAverageKine             = NULL;
   ExtAverageOmega            = NULL;
+  TotalPressure_BC           = NULL;
+  TotalTemperature_BC        = NULL;
+  FlowAngle1_BC              = NULL;
+  FlowAngle2_BC              = NULL;
+  Pressure_BC                = NULL;
 
 
   /*--- Initialize primitive quantities for turboperformace ---*/
@@ -308,6 +313,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ExtAverageNu                      = NULL;
   ExtAverageKine                    = NULL;
   ExtAverageOmega                   = NULL;
+  TotalPressure_BC                  = NULL;
+  TotalTemperature_BC               = NULL;
+  FlowAngle1_BC                     = NULL;
+  FlowAngle2_BC                     = NULL;
+  Pressure_BC                       = NULL;
 
 
   /*--- Initialize primitive quantities for turboperformace ---*/
@@ -1185,6 +1195,36 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] ExtAverageNu;
   }
 
+  if(TotalPressure_BC !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] TotalPressure_BC[iMarker];
+    delete [] TotalPressure_BC;
+  }
+
+  if(TotalTemperature_BC !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] TotalTemperature_BC[iMarker];
+    delete [] TotalTemperature_BC;
+  }
+
+  if(FlowAngle1_BC !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] FlowAngle1_BC[iMarker];
+    delete [] FlowAngle1_BC;
+  }
+
+  if(FlowAngle2_BC !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] FlowAngle2_BC[iMarker];
+    delete [] FlowAngle2_BC;
+  }
+
+  if(Pressure_BC !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] Pressure_BC[iMarker];
+    delete [] Pressure_BC;
+  }
+
   if(TurboVelocityIn !=NULL){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
       for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
@@ -1335,6 +1375,11 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   ExtAverageNu                          = new su2double* [nMarker];
   ExtAverageKine                        = new su2double* [nMarker];
   ExtAverageOmega                       = new su2double* [nMarker];
+  TotalPressure_BC                      = new su2double* [nMarker];
+  TotalTemperature_BC                   = new su2double* [nMarker];
+  FlowAngle1_BC                         = new su2double* [nMarker];
+  FlowAngle2_BC                         = new su2double* [nMarker];
+  Pressure_BC                           = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     AverageVelocity[iMarker]                = new su2double* [nSpanWiseSections + 1];
@@ -1357,6 +1402,11 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     ExtAverageNu[iMarker]                   = new su2double [nSpanWiseSections + 1];
     ExtAverageKine[iMarker]                 = new su2double [nSpanWiseSections + 1];
     ExtAverageOmega[iMarker]                = new su2double [nSpanWiseSections + 1];
+    TotalPressure_BC[iMarker]               = new su2double [nSpanWiseSections + 1];
+    TotalTemperature_BC[iMarker]            = new su2double [nSpanWiseSections + 1];
+    FlowAngle1_BC[iMarker]                  = new su2double [nSpanWiseSections + 1];
+    FlowAngle2_BC[iMarker]                  = new su2double [nSpanWiseSections + 1];
+    Pressure_BC[iMarker]                    = new su2double [nSpanWiseSections + 1];
 
     for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
       AverageVelocity[iMarker][iSpan]           = new su2double [nDim];
@@ -1379,6 +1429,11 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       ExtAverageNu[iMarker][iSpan]              = 0.0;
       ExtAverageKine[iMarker][iSpan]            = 0.0;
       ExtAverageOmega[iMarker][iSpan]           = 0.0;
+      TotalPressure_BC[iMarker][iSpan]          = 0.0;
+      TotalTemperature_BC[iMarker][iSpan]       = 0.0;
+      FlowAngle1_BC[iMarker][iSpan]             = 0.0;
+      FlowAngle2_BC[iMarker][iSpan]             = 0.0;
+      Pressure_BC[iMarker][iSpan]               = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++) {
         AverageVelocity[iMarker][iSpan][iDim]            = 0.0;
@@ -12104,6 +12159,51 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
       }
       break;
 
+    case SPANWISE_TOTAL_CONDITIONS_PT:
+
+      /*--- Retrieve the specified total conditions for this inlet. ---*/
+      P_Total    = TotalPressure_BC[val_marker][iSpan];
+      T_Total    = TotalTemperature_BC[val_marker][iSpan];
+      alphaIn_BC = FlowAngle1_BC[val_marker][iSpan];
+      gammaIn_BC = FlowAngle2_BC[val_marker][iSpan];
+
+      /* --- Computes the total state --- */
+      FluidModel->SetTDState_PT(P_Total, T_Total);
+      Enthalpy_BC = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+      Entropy_BC = FluidModel->GetEntropy();
+
+
+      /* --- Computes the inverse matrix R_c --- */
+      conv_numerics->ComputeResJacobianGiles(FluidModel, AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageTurboVelocity[val_marker][iSpan], alphaIn_BC, gammaIn_BC, R_c, R_c_inv);
+
+      FluidModel->SetTDState_Prho(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan]);
+      AverageEnthalpy = FluidModel->GetStaticEnergy() + AveragePressure[val_marker][iSpan]/AverageDensity[val_marker][iSpan];
+      AverageEntropy  = FluidModel->GetEntropy();
+
+      avgVel2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AverageTurboVelocity[val_marker][iSpan][iDim]*AverageTurboVelocity[val_marker][iSpan][iDim];
+      if (nDim == 2){
+        R[0] = -(AverageEntropy - Entropy_BC);
+        R[1] = -(AverageTurboVelocity[val_marker][iSpan][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][iSpan][0]);
+        R[2] = -(AverageEnthalpy + 0.5*avgVel2 - Enthalpy_BC);
+      }
+
+      else{
+        R[0] = -(AverageEntropy - Entropy_BC);
+        R[1] = -(AverageTurboVelocity[val_marker][iSpan][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][iSpan][0]);
+        R[2] = -(AverageTurboVelocity[val_marker][iSpan][2] - tan(gammaIn_BC)*AverageTurboVelocity[val_marker][iSpan][0]);
+        R[3] = -(AverageEnthalpy + 0.5*avgVel2 - Enthalpy_BC);
+
+      }
+      /* --- Compute the avg component  c_avg = R_c^-1 * R --- */
+      for (iVar = 0; iVar < nVar-1; iVar++){
+        c_avg[iVar] = 0.0;
+        for (jVar = 0; jVar < nVar-1; jVar++){
+          c_avg[iVar] += R_c_inv[iVar][jVar]*R[jVar];
+        }
+      }
+      break;
+
     case MIXING_IN: case MIXING_OUT:
 
       /* --- Compute average jump of primitive at the mixing-plane interface--- */
@@ -12173,6 +12273,19 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
       else
       {
         c_avg[4] = -2.0*(AveragePressure[val_marker][nSpanWiseSections]-Pressure_e);
+      }
+      break;
+
+    case SPANWISE_STATIC_PRESSURE:
+      Pressure_e = Pressure_BC[val_marker][iSpan];
+
+      /* --- Compute avg characteristic jump  --- */
+      if (nDim == 2){
+        c_avg[3] = -2.0*(AveragePressure[val_marker][iSpan]-Pressure_e);
+      }
+      else
+      {
+        c_avg[4] = -2.0*(AveragePressure[val_marker][iSpan]-Pressure_e);
       }
       break;
 
@@ -12264,7 +12377,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
       //Done, generilize for 3D case
       //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
 
-      case TOTAL_CONDITIONS_PT: case MIXING_IN:case TOTAL_CONDITIONS_PT_1D: case MIXING_IN_1D:
+      case TOTAL_CONDITIONS_PT: case MIXING_IN:case TOTAL_CONDITIONS_PT_1D: case MIXING_IN_1D:case SPANWISE_TOTAL_CONDITIONS_PT:
         if(config->GetSpatialFourier()){
           if (AvgMach <= 1.0){
             Beta_inf= I*complex<su2double>(sqrt(1.0 - AvgMach));
@@ -12354,7 +12467,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
         break;
 
 
-      case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D:
+      case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case SPANWISE_STATIC_PRESSURE:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D:
 
         /* --- implementation of Giles BC---*/
         if(config->GetSpatialFourier()){
@@ -16567,6 +16680,258 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       RelTangVelocityOut[markerTP -1][iSpan]     = relTangVelocityOut;
     }
   }
+}
+
+void CEulerSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geometry){
+  su2double *PTotal, *TTotal, *FlowAngle1, *FlowAngle2, *PTotalImposed, *TTotalImposed, *FlowAngle1Imposed,
+            *FlowAngle2Imposed, *SpanPercent, *SpanWiseValues, iSpanPercent;
+  string filename = config->GetSpanWise_BCInlet_FileName();
+  ifstream bc_file;
+  string text_line;
+  int rank = MASTER_NODE;
+  int countLine = 0, i;
+  unsigned short iMarker, iMarkerTP, iSpan;
+
+  ofstream myfile;
+  string spanwise_performance_filename;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  bc_file.open(filename.data(), ios::in);
+  if (bc_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There isn't any BC Spanwise inflow file!! "  << filename.data() << "."<< endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- Count the number of spanwise values specified from the user to initialize the containers.
+   * Skipping the first line because is the header---*/
+  getline(bc_file, text_line);
+
+  while (getline (bc_file, text_line)) {
+    countLine++;
+  }
+
+  bc_file.close();
+
+
+  PTotal             = new su2double[countLine];
+  TTotal             = new su2double[countLine];
+  FlowAngle1         = new su2double[countLine];
+  FlowAngle2         = new su2double[countLine];
+  SpanPercent        = new su2double[countLine];
+  PTotalImposed      = new su2double[nSpanWiseSections];
+  TTotalImposed      = new su2double[nSpanWiseSections];
+  FlowAngle1Imposed  = new su2double[nSpanWiseSections];
+  FlowAngle2Imposed  = new su2double[nSpanWiseSections];
+
+  bc_file.open(filename.data(), ios::in);
+
+  /*--- Retrieve the quantities to imposed from the file---*/
+  getline(bc_file, text_line);
+  countLine = 0;
+  while (getline (bc_file, text_line)) {
+    istringstream point_line(text_line);
+    point_line >> SpanPercent[countLine] >> PTotal[countLine] >> TTotal[countLine] >> FlowAngle1[countLine]>> FlowAngle2[countLine];
+    countLine++;
+  }
+
+  bc_file.close();
+
+  SpanWiseValues  = geometry->GetSpanWiseValue(INFLOW);
+
+  /*--- Compute the values to impose at each spanwise boundary section interpolating from file values---*/
+  for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+    iSpanPercent = (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);
+    for(i=0; i<countLine-1; i++){
+      if(iSpanPercent>=SpanPercent[i] && iSpanPercent<SpanPercent[i+1]){
+        PTotalImposed[iSpan]     = PTotal[i] + (PTotal[i+1] - PTotal[i])/(SpanPercent[i+1] - SpanPercent[i])*(iSpanPercent - SpanPercent[i]);
+        PTotalImposed[iSpan]    /= config->GetPressure_Ref();
+        TTotalImposed[iSpan]     = TTotal[i] + (TTotal[i+1] - TTotal[i])/(SpanPercent[i+1] - SpanPercent[i])*(iSpanPercent - SpanPercent[i]);
+        TTotalImposed[iSpan]    /= config->GetTemperature_Ref();
+        FlowAngle1Imposed[iSpan] = PI_NUMBER/180.0*(FlowAngle1[i] + (FlowAngle1[i+1] - FlowAngle1[i])/(SpanPercent[i+1] - SpanPercent[i])*(iSpanPercent - SpanPercent[i]));
+        FlowAngle2Imposed[iSpan] = PI_NUMBER/180.0*(FlowAngle2[i] + (FlowAngle2[i+1] - FlowAngle2[i])/(SpanPercent[i+1] - SpanPercent[i])*(iSpanPercent - SpanPercent[i]));
+      }
+    }
+    if(iSpan == nSpanWiseSections -1){
+      PTotalImposed[iSpan]     = PTotal[countLine-1];
+      PTotalImposed[iSpan]    /= config->GetPressure_Ref();
+      TTotalImposed[iSpan]     = TTotal[countLine-1];
+      TTotalImposed[iSpan]    /= config->GetTemperature_Ref();
+      FlowAngle1Imposed[iSpan] = PI_NUMBER/180.0*(FlowAngle1[countLine-1]);
+      FlowAngle2Imposed[iSpan] = PI_NUMBER/180.0*(FlowAngle2[countLine-1]);
+    }
+  }
+  /*--- print a file to check the imposed values ---*/
+  if(rank == MASTER_NODE){
+    spanwise_performance_filename = "TURBOMACHINERY/imposed_bc_inlet.dat";
+    myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+    myfile.setf(ios::scientific);
+    myfile.precision(12);
+
+    myfile << "TITLE = \"Spanwise Imposed Inflow Values. \"" << endl;
+    myfile << "VARIABLES =" << endl;
+    myfile.width(30); myfile << "\"Spanwise value [m]\"";
+    myfile.width(21); myfile << "\"iSpan [-]\"";
+    myfile.width(28); myfile << "\"Spanwise fraction [-]\"";
+    myfile.width(26); myfile << "\"Total Pressure [Pa]\"";
+    myfile.width(32); myfile << "\"Total Temperature [K]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle1 [deg]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle2 [deg]\"";
+    myfile << endl;
+    for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+      myfile.width(30); myfile << SpanWiseValues[iSpan];
+      myfile.width(15); myfile << iSpan;
+      myfile.width(30); myfile << (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);
+      myfile.width(30); myfile << PTotalImposed[iSpan]*config->GetPressure_Ref();
+      myfile.width(30); myfile << TTotalImposed[iSpan]*config->GetTemperature_Ref();
+      myfile.width(30); myfile << FlowAngle1Imposed[iSpan]*180/PI_NUMBER;
+      myfile.width(30); myfile << FlowAngle2Imposed[iSpan]*180/PI_NUMBER;
+      myfile << endl;
+    }
+    myfile.close();
+  }
+
+  /*--- Store the quantities to impose in the correct boundary containers---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
+          for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+            TotalPressure_BC[iMarker][iSpan]    = PTotalImposed[iSpan];
+            TotalTemperature_BC[iMarker][iSpan] = TTotalImposed[iSpan];
+            FlowAngle1_BC[iMarker][iSpan]       = FlowAngle1Imposed[iSpan];
+            FlowAngle2_BC[iMarker][iSpan]       = FlowAngle2Imposed[iSpan];
+          }
+        }
+      }
+    }
+  }
+
+  delete [] PTotal;
+  delete [] TTotal;
+  delete [] FlowAngle1;
+  delete [] FlowAngle2;
+  delete [] SpanPercent;
+  delete [] PTotalImposed;
+  delete [] TTotalImposed;
+  delete [] FlowAngle1Imposed;
+  delete [] FlowAngle2Imposed;
+
+}
+
+void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geometry){
+  su2double *PStatic, *SpanPercent, *SpanWiseValues, iSpanPercent, *PStaticImposed;
+  string filename = config->GetSpanWise_BCOutlet_FileName();
+  ifstream bc_file;
+  string text_line;
+  int rank = MASTER_NODE;
+  int countLine = 0, i;
+  unsigned short iMarker, iMarkerTP, iSpan;
+  ofstream myfile;
+  string spanwise_performance_filename;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  bc_file.open(filename.data(), ios::in);
+  if (bc_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There isn't any BC Spanwise outflow file!! !! " << filename.data() << "."<< endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- Count the number of spanwise values specified from the user to initialize the containers.
+   * Skipping the first line because is the header---*/
+  getline(bc_file, text_line);
+
+  while (getline (bc_file, text_line)) {
+    countLine++;
+  }
+
+  bc_file.close();
+
+
+  PStatic        = new su2double[countLine];
+  SpanPercent    = new su2double[countLine];
+  PStaticImposed = new su2double[nSpanWiseSections];
+
+  bc_file.open(filename.data(), ios::in);
+
+  /*--- Retrieve the quantities to imposed from the file---*/
+  getline(bc_file, text_line);
+  countLine = 0;
+  while (getline (bc_file, text_line)) {
+    istringstream point_line(text_line);
+    point_line >> SpanPercent[countLine] >> PStatic[countLine];
+    countLine++;
+  }
+
+  bc_file.close();
+
+  SpanWiseValues  = geometry->GetSpanWiseValue(OUTFLOW);
+
+  /*--- Compute the values to impose at each spanwise boundary section interpolating from file values---*/
+  for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+    iSpanPercent = (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);
+    for(i=0; i<countLine-1; i++){
+      if(iSpanPercent>=SpanPercent[i] && iSpanPercent<SpanPercent[i+1]){
+        PStaticImposed[iSpan]    = PStatic[i] + (PStatic[i+1] - PStatic[i])/(SpanPercent[i+1] - SpanPercent[i])*(iSpanPercent - SpanPercent[i]);
+        PStaticImposed[iSpan]   /= config->GetPressure_Ref();
+      }
+    }
+    if(iSpan == nSpanWiseSections -1){
+      PStaticImposed[iSpan]    = PStatic[countLine-1];
+      PStaticImposed[iSpan]   /= config->GetPressure_Ref();
+    }
+  }
+
+  /*--- print a file to check the imposed values ---*/
+  if(rank == MASTER_NODE){
+    spanwise_performance_filename = "TURBOMACHINERY/imposed_bc_outlet.dat";
+    myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+    myfile.setf(ios::scientific);
+    myfile.precision(12);
+
+    myfile << "TITLE = \"Spanwise Imposed Outflow Values.\"" << endl;
+    myfile << "VARIABLES =" << endl;
+    myfile.width(30); myfile << "\"Spanwise value [m]\"";
+    myfile.width(21); myfile << "\"iSpan [-]\"";
+    myfile.width(28); myfile << "\"Spanwise fraction [-]\"";
+    myfile.width(21); myfile << "\"Pressure [Pa]\"";
+    myfile << endl;
+
+    for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+      myfile.width(30); myfile << SpanWiseValues[iSpan];
+      myfile.width(15); myfile << iSpan;
+      myfile.width(30); myfile << (SpanWiseValues[iSpan] - SpanWiseValues[0])/(SpanWiseValues[nSpanWiseSections-1] -SpanWiseValues[0]);
+      myfile.width(30); myfile << PStaticImposed[iSpan]*config->GetPressure_Ref();
+      myfile << endl;
+    }
+    myfile.close();
+  }
+
+  /*--- Store the quantities to impose in the correct boundary containers---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
+          for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+            Pressure_BC[iMarker][iSpan] =  PStaticImposed[iSpan];
+          }
+        }
+      }
+    }
+  }
+
+
+  delete [] PStatic;
+  delete [] SpanPercent;
+  delete [] PStaticImposed;
+
 }
 
 CNSSolver::CNSSolver(void) : CEulerSolver() {

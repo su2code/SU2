@@ -645,7 +645,7 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
 
   switch(config->GetKind_Data_Giles(Marker_Tag))
   {
-  case TOTAL_CONDITIONS_PT:case TOTAL_CONDITIONS_PT_1D: case DENSITY_VELOCITY:
+  case TOTAL_CONDITIONS_PT:case TOTAL_CONDITIONS_PT_1D: case DENSITY_VELOCITY:case SPANWISE_TOTAL_CONDITIONS_PT:
     BC_Inlet_Turbo(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     break;
   case MIXING_IN:
@@ -657,7 +657,7 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
     }
     break;
 
-  case STATIC_PRESSURE: case MIXING_OUT: case STATIC_PRESSURE_1D: case RADIAL_EQUILIBRIUM:
+  case STATIC_PRESSURE:case SPANWISE_STATIC_PRESSURE: case MIXING_OUT: case STATIC_PRESSURE_1D: case RADIAL_EQUILIBRIUM:
     BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     break;
   }

@@ -881,6 +881,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0 .
    * \n Format: (shroud1, shroud2, ...)*/
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);
+  /*!\brief SPANWISE_BC_INLET_FILENAME \n DESCRIPTION: File containing the inlet spanwise condtions \n DEFAULT: spanwise_BCInlet.dat \ingroup Config */
+  addStringOption("SPANWISE_BC_INLET_FILENAME", SpanWise_BCInlet_FileName, string("spanwise_BCInlet.dat"));
+  /*!\brief SPANWISE_BC_OUTLET_FILENAME \n DESCRIPTION: File containing the outlet spanwise condtions \n DEFAULT: spanwise_BCOutlet.dat \ingroup Config */
+  addStringOption("SPANWISE_BC_OUTLET_FILENAME", SpanWise_BCOutlet_FileName, string("spanwise_BCOutlet.dat"));
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s)
    * \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet, Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
@@ -6531,7 +6535,8 @@ su2double CConfig::GetPressureOut_BC() {
   unsigned short iMarker_BC;
   su2double pres_out = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
-    if (Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker_BC] == RADIAL_EQUILIBRIUM ){
+    if (Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Giles[iMarker_BC] == STATIC_PRESSURE_1D
+        || Kind_Data_Giles[iMarker_BC] == RADIAL_EQUILIBRIUM || Kind_Data_Giles[iMarker_BC] == SPANWISE_STATIC_PRESSURE){
       pres_out = Giles_Var1[iMarker_BC];
     }
   }
@@ -6562,7 +6567,8 @@ su2double CConfig::GetTotalPressureIn_BC() {
   unsigned short iMarker_BC;
   su2double tot_pres_in = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
-    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D
+        || Kind_Data_Giles[iMarker_BC] == SPANWISE_TOTAL_CONDITIONS_PT){
       tot_pres_in = Giles_Var1[iMarker_BC];
     }
   }
@@ -6581,7 +6587,8 @@ su2double CConfig::GetTotalTemperatureIn_BC() {
   unsigned short iMarker_BC;
   su2double tot_temp_in = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
-    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D
+        || Kind_Data_Giles[iMarker_BC] == SPANWISE_TOTAL_CONDITIONS_PT){
       tot_temp_in = Giles_Var2[iMarker_BC];
     }
   }
@@ -6615,11 +6622,33 @@ void CConfig::SetTotalTemperatureIn_BC(su2double val_temp) {
   }
 }
 
+bool CConfig::GetBoolSpanwiseBC_Inlet() {
+  unsigned short iMarker_BC;
+  bool test = false;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
+    if (Kind_Data_Giles[iMarker_BC] == SPANWISE_TOTAL_CONDITIONS_PT){
+      test = true;
+    }
+  }
+  return test;
+}
+
+bool CConfig::GetBoolSpanwiseBC_Outlet() {
+  unsigned short iMarker_BC;
+  bool test = false;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
+    if (Kind_Data_Giles[iMarker_BC] == SPANWISE_STATIC_PRESSURE){
+      test = true;
+    }
+  }
+  return test;
+}
 su2double CConfig::GetFlowAngleIn_BC() {
   unsigned short iMarker_BC;
   su2double alpha_in = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
-    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D){
+    if (Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT || Kind_Data_Giles[iMarker_BC] == TOTAL_CONDITIONS_PT_1D || Kind_Data_Giles[iMarker_BC] == SPANWISE_TOTAL_CONDITIONS_PT
+        || Kind_Data_Giles[iMarker_BC] == SPANWISE_TOTAL_CONDITIONS_PT){
       alpha_in = atan(Giles_FlowDir[iMarker_BC][1]/Giles_FlowDir[iMarker_BC][0]);
     }
   }
