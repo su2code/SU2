@@ -50,10 +50,7 @@ def main():
     cylinder_ffd_def.su2_exec  = "SU2_DEF"
     cylinder_ffd_def.timeout   = 1600
     cylinder_ffd_def.tol       = 1e-16
-    
-    pass_list.append(cylinder_ffd_def.run_def())
     test_list.append(cylinder_ffd_def)
-    
     
     
     #########################
