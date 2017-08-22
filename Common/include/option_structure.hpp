@@ -625,14 +625,14 @@ enum ENUM_LIMITER {
   VENKATAKRISHNAN = 0,	/*!< \brief Slope limiter using Venkatakrisnan method. */
   BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
   SHARP_EDGES = 2,       /*!< \brief Slope limiter using sharp edges. */
-  SOLID_WALL_DISTANCE = 3,       /*!< \brief Slope limiter using wall distance. */
+  WALL_DISTANCE = 3,       /*!< \brief Slope limiter using wall distance. */
   VAN_ALBADA = 4         /*!< \brief Slope limiter using Van Albada Method. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
 ("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("SHARP_EDGES", SHARP_EDGES)
-("WALL_DISTANCE", SOLID_WALL_DISTANCE)
+("WALL_DISTANCE", WALL_DISTANCE)
 ("VAN_ALBADA", VAN_ALBADA);
 
 /*!
@@ -990,9 +990,9 @@ enum ACTDISK_TYPE {
   VARIABLES_JUMP = 1,		/*!< \brief User specifies the variables jump. */
   BC_THRUST = 2,     /*!< \brief User specifies the BC thrust. */
   NET_THRUST = 3,     /*!< \brief User specifies the Net thrust. */
-  DRAG_MINUS_THRUST = 4,     /*!< \brief ACDC computes the right thrust. */
-  MASSFLOW = 5,     /*!< \brief ACDC computes the right thrust. */
-  POWER = 6     /*!< \brief User specifies the Net thrust. */
+  DRAG_MINUS_THRUST = 4,     /*!< \brief User specifies the D-T. */
+  MASSFLOW = 5,     /*!< \brief User specifies the massflow. */
+  POWER = 6     /*!< \brief User specifies the power. */
 };
 static const map<string, ACTDISK_TYPE> ActDisk_Map = CCreateMap<string, ACTDISK_TYPE>
 ("VARIABLES_JUMP", VARIABLES_JUMP)
@@ -1039,32 +1039,22 @@ enum ENUM_OBJECTIVE {
   THRUST_COEFFICIENT = 17,		  /*!< \brief Thrust objective function definition. */
   TORQUE_COEFFICIENT = 18,		  /*!< \brief Torque objective function definition. */
   FIGURE_OF_MERIT = 19,		      /*!< \brief Rotor Figure of Merit objective function definition. */
-  MAX_THICKNESS = 21,           /*!< \brief Maximum thickness. */
-  MIN_THICKNESS = 22,           /*!< \brief Minimum thickness. */
-  MAX_THICK_SEC1 = 23,          /*!< \brief Maximum thickness in section 1. */
-  MAX_THICK_SEC2 = 24,          /*!< \brief Maximum thickness in section 2. */
-  MAX_THICK_SEC3 = 25,          /*!< \brief Maximum thickness in section 3. */
-  MAX_THICK_SEC4 = 26,          /*!< \brief Maximum thickness in section 4. */
-  MAX_THICK_SEC5 = 27,           /*!< \brief Maximum thickness in section 5. */
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
-  RADIAL_DISTORTION = 36, 	      /*!< \brief Radial Distortion objective function definition. */
-  CIRCUMFERENTIAL_DISTORTION = 37,  /*!< \brief Circumferential Distortion objective function definition. */
-  CUSTOM_OBJFUNC = 38, 	           /*!< \brief Custom objective function definition. */
-  TOTAL_PRESSURE_LOSS=39,
-  KINETIC_ENERGY_LOSS=40,
-  TOTAL_EFFICIENCY=41,
-  TOTAL_STATIC_EFFICIENCY=42,
-  EULERIAN_WORK=43,
-  TOTAL_ENTHALPY_IN=44,
-  FLOW_ANGLE_IN=45,
-  FLOW_ANGLE_OUT=46,
-  MASS_FLOW_IN=47,
-  MASS_FLOW_OUT=48,
-  PRESSURE_RATIO=49,
-  ENTROPY_GENERATION=50
+  CUSTOM_OBJFUNC = 31, 	           /*!< \brief Custom objective function definition. */
+  TOTAL_PRESSURE_LOSS = 39,
+  KINETIC_ENERGY_LOSS = 40,
+  TOTAL_EFFICIENCY = 41,
+  TOTAL_STATIC_EFFICIENCY = 42,
+  EULERIAN_WORK = 43,
+  TOTAL_ENTHALPY_IN = 44,
+  FLOW_ANGLE_IN = 45,
+  FLOW_ANGLE_OUT = 46,
+  MASS_FLOW_IN = 47,
+  MASS_FLOW_OUT = 48,
+  PRESSURE_RATIO = 49,
+  ENTROPY_GENERATION = 50
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1087,19 +1077,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
 ("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
-("MAX_THICKNESS", MAX_THICKNESS)
-("MIN_THICKNESS", MIN_THICKNESS)
-("MAX_THICK_SEC1", MAX_THICK_SEC1)
-("MAX_THICK_SEC2", MAX_THICK_SEC2)
-("MAX_THICK_SEC3", MAX_THICK_SEC3)
-("MAX_THICK_SEC4", MAX_THICK_SEC4)
-("MAX_THICK_SEC5", MAX_THICK_SEC5)
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE)
-("AERO_DRAG", AERO_DRAG_COEFFICIENT)
-("RADIAL_DISTORTION", RADIAL_DISTORTION)
-("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION)
 ("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
 ("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
 ("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
@@ -1381,12 +1361,14 @@ static const map<string, ENUM_FFD_CONTINUITY> Continuity_Map = CCreateMap<string
 enum ENUM_FFD_COORD_SYSTEM {
   CARTESIAN = 0,
   CYLINDRICAL = 1,
-  SPHERICAL = 2
+  SPHERICAL = 2,
+  POLAR = 3
 };
 static const map<string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = CCreateMap<string, ENUM_FFD_COORD_SYSTEM>
 ("CARTESIAN", CARTESIAN)
 ("CYLINDRICAL", CYLINDRICAL)
-("SPHERICAL", SPHERICAL);
+("SPHERICAL", SPHERICAL)
+("POLAR", POLAR);
 
 /*!
  * \brief types of sensitivity smoothing
@@ -1436,15 +1418,15 @@ static const map<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = CCreateMap<string
 /*!
  * \brief types of axis orientation
  */
-enum ENUM_AXIS_ORIENTATION {
-  X_AXIS = 0,   /*!< \brief X axis orientation. */
-  Y_AXIS = 1, 	/*!< \brief Y axis orientation. */
-  Z_AXIS = 2    /*!< \brief Z axis orientation. */
+enum ENUM_GEO_DESCRIPTION {
+	TWOD_AIRFOIL = 0,   /*!< \brief Airfoil analysis. */
+  WING = 1, 	/*!< \brief Wing analysis. */
+  FUSELAGE = 2    /*!< \brief Fuselage analysis. */
 };
-static const map<string, ENUM_AXIS_ORIENTATION> Axis_Stations_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
-("X_AXIS", X_AXIS)
-("Y_AXIS", Y_AXIS)
-("Z_AXIS", Z_AXIS);
+static const map<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = CCreateMap<string, ENUM_GEO_DESCRIPTION>
+("AIRFOIL", TWOD_AIRFOIL)
+("WING", WING)
+("FUSELAGE", FUSELAGE);
 
 /*!
  * \brief types of schemes for unsteady computations
@@ -1483,12 +1465,14 @@ static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<stri
 enum ENUM_DEFORM_STIFFNESS {
   CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
   INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
-  WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the deforming surface. */
+  DEF_WALL_DISTANCE = 2,			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the deforming surface. */
+  BOUNDARY_DISTANCE = 3			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
 };
 static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
 ("INVERSE_VOLUME", INVERSE_VOLUME)
-("WALL_DISTANCE", WALL_DISTANCE);
+("DEF_WALL_DISTANCE", DEF_WALL_DISTANCE)
+("WALL_DISTANCE", BOUNDARY_DISTANCE);
 
 /*!
  * \brief The direct differentation variables.

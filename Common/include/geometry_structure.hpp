@@ -128,14 +128,11 @@ public:
   unsigned long nVertexSpanMax[3]; /*! <\brief max number of vertexes for each span section for each marker flag.  */
   su2double ***AverageTurboNormal; /*! <\brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
   su2double ***AverageNormal; /*! <\brief Average boundary normal at each span wise section for each marker.*/
-  su2double ***AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
-  su2double **AverageTangGridVel; /*! <\brief Average tangential rotational speed at each span wise section for each marker.*/
   su2double **SpanArea; /*! <\brief Area at each span wise section for each marker.*/
   su2double **MaxAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
   su2double **MinAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
   su2double **MinRelAngularCoord; /*! <\brief Min relative angular coord at each span wise section for each marker.*/
   su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
-  su2double **TangGridVelIn, **TangGridVelOut; /*! <\brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
   su2double **SpanAreaIn, **SpanAreaOut; /*! <\brief Area at each span wise section for each turbomachinery marker.*/
   su2double **TurboRadiusIn, **TurboRadiusOut; /*! <\brief Radius at each span wise section for each turbomachinery marker*/
 
@@ -540,15 +537,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-
-  /*!
-	 * \brief A virtual member.
-   * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
-   * \param[in] new_file - Boolean to decide if aopen a new file or add to a old one
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-
   
 	/*! 
 	 * \brief A virtual member.
@@ -742,32 +730,63 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
  
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual su2double Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual su2double Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, su2double &ZLoc);
 	
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+	virtual su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
   
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
   /*!
    * \brief A virtual member.
    */
-  virtual void Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double>
+  virtual void Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double>
+	                                       &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double>
 	                                       &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
@@ -787,9 +806,21 @@ public:
    * \brief A virtual member.
    */
   virtual void Compute_Wing(CConfig *config, bool original_surface,
-                            su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC,
-                            su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
+                            su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                            su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                            su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                            su2double &Wing_MaxDihedral);
   
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Fuselage(CConfig *config, bool original_surface,
+  		su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+  		su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+  		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+  		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+  		su2double &Fuselage_MaxCurvature);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -1065,29 +1096,6 @@ public:
 	 */
 	virtual su2double GetTurboRadius(unsigned short val_marker, unsigned short val_span);
 
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - marker value.
-	 * \param[in] val_span - span value.
-	 */
-	virtual su2double GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - marker turbo-performance value.
-	 * \param[in] val_span - span value.
-   * \return The span-wise inflow tangential velocity.
-	 */
-	virtual su2double GetTangGridVelIn(unsigned short val_marker, unsigned short val_span);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - marker turbo-performance value.
-	 * \param[in] val_span - span value.
-   * \return The span-wise outflow tangential velocity.
-	 */
-	virtual su2double GetTangGridVelOut(unsigned short val_marker, unsigned short val_span);
-
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - marker turbo-performance value.
@@ -1119,20 +1127,6 @@ public:
    * \return The span-wise outflow radius.
 	 */
 	virtual su2double GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - marker turbo-performance value.
-	 * \param[in] val_span - span value.
-   */
-	virtual void SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - marker turbo-performance value.
-	 * \param[in] val_span - span value.
-   */
-	virtual void SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span);
 
 	/*!
 	 * \brief A virtual member.
@@ -1189,12 +1183,6 @@ public:
    * \param[in] val_span - span value.
    */
   virtual su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span);
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - marker value.
-   * \param[in] val_span - span value.
-   */
-  virtual su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span);
 
   /*!
    * \brief A virtual member.
@@ -1470,15 +1458,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
 
 	/*! 
-	 * \brief Set the output file for boundaries in STL CAD format
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the STL 
-	 *            information is going to be stored.
-   * \param[in] new_file - Create a new file.
-	 */
-	void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) ;
-
-	/*! 
 	 * \brief Check the volume element orientation.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
@@ -1732,36 +1711,72 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \brief Compute the maximum thickness of an airfoil.
    * \returns Maximum thickness at a particular seccion.
    */
-  su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
   
   /*!
    * \brief Compute the twist of an airfoil.
    * \returns Twist at a particular seccion.
    */
-  su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the leading/trailing edge location of an airfoil.
    */
-  void Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil,
+  void Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil,
                                vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+    * \brief Compute the leading/trailing edge location of a fuselage.
+    */
+   void Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil,
+                                vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the chord of an airfoil.
    * \returns Chord of an airfoil.
    */
-  su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the thickness of an airfoil.
    */
-  su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, su2double &ZLoc);
 
   /*!
    * \brief Compute the area of an airfoil.
    * \returns Area of an airfoil.
    */
-  su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the length of an airfoil.
+   * \returns Area of an airfoil.
+   */
+  su2double Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the dihedral of a wing.
@@ -1781,8 +1796,20 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \brief Evaluate geometrical parameters of a wing.
    */
   void Compute_Wing(CConfig *config, bool original_surface,
-                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC,
-                    su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
+                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                    su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                    su2double &Wing_MaxDihedral);
+
+  /*!
+   * \brief Evaluate geometrical parameters of a wing.
+   */
+  void Compute_Fuselage(CConfig *config, bool original_surface,
+  		su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+  		su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+  		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+  		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+  		su2double &Fuselage_MaxCurvature);
 
   /*!
    * \brief Read the sensitivity from adjoint solution file and store it.
@@ -1845,30 +1872,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	su2double GetTurboRadius(unsigned short val_marker, unsigned short val_span);
 
 	/*!
-	 * \brief Get the value of the average tangential rotational velocity for each span.
-	 * \param[in] val_marker - marker value.
-	 * \param[in] val_span - span value.
-   * \return The span-wise averaged tangential velocity.
-	 */
-	su2double GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span);
-
-	/*!
-	 * \brief Get the value of the inflow tangential velocity at each span.
-	 * \param[in] val_marker - marker turbo-performance value.
-	 * \param[in] val_span - span value.
-   * \return The span-wise inflow tangential velocity.
-	 */
-	su2double GetTangGridVelIn(unsigned short val_marker, unsigned short val_span);
-
-	/*!
-	 * \brief Get the value of the outflow tangential velocity at each span.
-	 * \param[in] val_marker - marker turbo-performance value.
-	 * \param[in] val_span - span value.
-   * \return The span-wise outflow tangential velocity.
-	 */
-	su2double GetTangGridVelOut(unsigned short val_marker, unsigned short val_span);
-
-	/*!
 	 * \brief Get the value of the inflow area at each span.
 	 * \param[in] val_marker - marker turbo-performance value.
 	 * \param[in] val_span - span value.
@@ -1899,20 +1902,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \return The span-wise outflow radius.
 	 */
 	su2double GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span);
-
-	/*!
-	 * \brief Set the value of the inflow tangential velocity at each span.
-	 * \param[in] val_marker - marker turbo-performance value.
-	 * \param[in] val_span - span value.
-   */
-	void SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span);
-
-	/*!
-	 * \brief Set the value of the outflow tangential velocity at each span.
-	 * \param[in] val_marker - marker turbo-performance value.
-	 * \param[in] val_span - span value.
-   */
-	void SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span);
 
 	/*!
 	 * \brief Get the value of the inflow area at each span.
@@ -1969,13 +1958,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
  * \param[in] val_span - span value.
  */
   su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span);
-
-  /*!
-	 * \brief Get the average grid velocity at a specific span for a given marker.
-	 * \param[in] val_marker - marker value.
-	 * \param[in] val_span - span value.
-	 */
-  su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span);
 
 };
 

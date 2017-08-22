@@ -350,7 +350,7 @@ CDriver::CDriver(char* confFile,
   if(initStaticMovement){
     if (rank == MASTER_NODE)cout << endl <<"--------------------- Initialize Static Mesh Movement --------------------" << endl;
 
-      InitStaticMeshMovement();
+      InitStaticMeshMovement(true);
   }
 
  if (config_container[ZONE_0]->GetBoolTurbomachinery()){
@@ -893,7 +893,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjIncNSSolver(geometry[iMGlevel], config, iMGlevel);
       }
     }
-    if (adj_turb) {
+    if (adj_turb && !disc_adj) {
       solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
     }
     
@@ -1330,15 +1330,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
             default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           
-          if (!config->GetLowFidelitySim()) {
-            for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-              numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
-          }
-          else {
-            numerics_container[MESH_1][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim, nVar_Flow, config);
-            for (iMGlevel = 2; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-              numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
-          }
+          for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
           
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -2583,7 +2576,7 @@ void CDriver::Interface_Preprocessing() {
 
 }
 
-void CDriver::InitStaticMeshMovement(){
+void CDriver::InitStaticMeshMovement(bool print){
 
   unsigned short iMGlevel;
   unsigned short Kind_Grid_Movement;
@@ -2602,11 +2595,11 @@ void CDriver::InitStaticMeshMovement(){
 
       /*--- Fixed wall velocities: set the grid velocities only one time
          before the first iteration flow solver. ---*/
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE && print)
         cout << endl << " Setting the moving wall velocities." << endl;
 
       surface_movement[iZone]->Moving_Walls(geometry_container[iZone][MESH_0],
-          config_container[iZone], iZone, 0);
+          config_container[iZone], iZone, 0, print);
 
       /*--- Update the grid velocities on the coarser multigrid levels after
            setting the moving wall velocities for the finest mesh. ---*/
@@ -2620,7 +2613,7 @@ void CDriver::InitStaticMeshMovement(){
       /*--- Steadily rotating frame: set the grid velocities just once
          before the first iteration flow solver. ---*/
 
-      if (rank == MASTER_NODE) {
+      if (rank == MASTER_NODE && print) {
         cout << endl << " Setting rotating frame grid velocities";
         cout << " for zone " << iZone << "." << endl;
       }
@@ -2629,7 +2622,7 @@ void CDriver::InitStaticMeshMovement(){
            rotating reference frame. ---*/
 
       for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, true);
+        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, print);
         geometry_container[iZone][iMGlevel]->SetShroudVelocity(config_container[iZone]);
       }
 
@@ -2641,7 +2634,7 @@ void CDriver::InitStaticMeshMovement(){
          the calculation (similar to rotating frame, but there is no extra
          source term for translation). ---*/
 
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE && print)
         cout << endl << " Setting translational grid velocities." << endl;
 
       /*--- Set the translational velocity on all grid levels. ---*/
@@ -3004,18 +2997,7 @@ void CDriver::Output(unsigned long ExtIter) {
       
       (((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
-    
-    /*--- Low-fidelity simulations (using a coarser multigrid level
-     approximation to the solution) require an interpolation back to the
-     finest grid. ---*/
-    
-    if (config_container[ZONE_0]->GetLowFidelitySim()) {
-      integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
-      integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
-      solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-      solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, true);
-    }
-    
+
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
     
     /*--- For specific applications, evaluate and plot the surface. ---*/
@@ -4044,34 +4026,36 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
     finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(2));
     rot_z_ini = config_container[ZONE_0]->GetRampRotatingFrame_Coeff(0);
-    print = false;
-    if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
+    print = (ExtIter+1)%(config_container[ZONE_0]->GetWrt_Con_Freq()*40) ==0 && ExtIter <= 2*finalRamp_Iter;
+
+    if((ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter) || ExtIter == finalRamp_Iter){
 
       for (iZone = 0; iZone < nZone; iZone++) {
         rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
         if(abs(rot_z_final) > 0.0){
-          rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
-          config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
-          if(rank == MASTER_NODE && print && ExtIter > 0) {
-            cout << endl << " Updated rotating frame grid velocities";
-            cout << " for zone " << iZone << "." << endl;
+          if(ExtIter == finalRamp_Iter){
+            rot_z = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
           }
-          geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, print);
+          else{
+            rot_z = rot_z_ini + su2double(ExtIter)*( rot_z_final - rot_z_ini)/su2double(finalRamp_Iter);
+          }
+          config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
+          geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, false);
           geometry_container[iZone][MESH_0]->SetShroudVelocity(config_container[iZone]);
         }
       }
+    }
 
+    if(print){
       for (iZone = 0; iZone < nZone; iZone++) {
-        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
-        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);
-        geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
-
+        rot_z= config_container[iZone]->GetRotation_Rate_Z(iZone);
+        if(abs(rot_z) > 0.0){
+          if(rank == MASTER_NODE && print) {
+            cout << endl << "---------------------- Check on Rotating Frame Ramp ----------------------" << endl;
+            cout << "Current Angular velocity about z axes: "<< rot_z << " rad/s." <<  endl;
+          }
+        }
       }
-
-      for (iZone = 1; iZone < nZone; iZone++) {
-        transfer_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
-      }
-
     }
   }
 
@@ -4527,6 +4511,9 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
 #endif
 
 
+  /*--- Recording the setting of the steady grid movement needed to compute the correct sensitivity ---*/
+  InitStaticMeshMovement(false);
+
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
@@ -4574,13 +4561,19 @@ void CDiscAdjTurbomachineryDriver::SetObjFunction(){
 
   switch (config_container[ZONE_0]->GetKind_ObjFunc()){
   case ENTROPY_GENERATION:
-    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
     break;
   case FLOW_ANGLE_OUT:
-      solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
-      break;
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
   case MASS_FLOW_IN:
-    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
+  case TOTAL_PRESSURE_LOSS:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetTotalPressureLoss(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
+  case KINETIC_ENERGY_LOSS:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetKineticEnergyLoss(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
     break;
   default:
     break;

@@ -94,7 +94,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-6.707530,-1.319851,0.300017,0.019390] #last 4 columns
+    fixedCL_naca0012.test_vals = [-5.856803,-0.469459,0.299943,0.019385] #last 4 columns
     fixedCL_naca0012.su2_exec  = "SU2_CFD"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -356,7 +356,7 @@ def main():
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixedCL_naca0012.test_iter = 500
-    contadj_fixedCL_naca0012.test_vals = [-2.896959, -8.484896, 0.250600, 0.000004] #last 4 columns
+    contadj_fixedCL_naca0012.test_vals = [-2.184754,-7.071557,2.4988e-01,-1.5528e-05] #last 4 columns
     contadj_fixedCL_naca0012.su2_exec  = "SU2_CFD"
     contadj_fixedCL_naca0012.timeout   = 1600
     contadj_fixedCL_naca0012.tol       = 0.00001
@@ -594,7 +594,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 29
-    Jones_tc.test_vals = [-5.571666, -0.207646, 9.203919e+01, 7.085071e-01] #last 4 columns
+    Jones_tc.test_vals = [-5.571666, -0.207646, 9.203919e+01, 3.584822] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
@@ -605,7 +605,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 30
-    Jones_tc_rst.test_vals = [-3.947103, -0.763670, 8.277936e+01, 2.714948e+00] #last 4 columns
+    Jones_tc_rst.test_vals = [-3.947103, -0.763670, 8.277936e+01, 13.736780] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
@@ -616,7 +616,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 100
-    axial_stage2D.test_vals = [-1.537311, 6.552745, 75.589800, 0.793084] #last 4 columns
+    axial_stage2D.test_vals = [-1.537311, 6.552745, 75.589800, 10.987640] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.timeout   = 1600
     axial_stage2D.tol       = 0.00001
@@ -627,7 +627,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 100
-    transonic_stator.test_vals = [-0.076402, 4.590077, 8.305280e+00, 7.038669e-03] #last 4 columns
+    transonic_stator.test_vals = [-0.076402, 4.590077, 8.305280e+00, 4.479991] #last 4 columns
     transonic_stator.su2_exec  = "SU2_CFD"
     transonic_stator.timeout   = 1600
     transonic_stator.tol       = 0.00001
@@ -638,7 +638,7 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 300
-    transonic_stator_rst.test_vals = [-0.685109, 4.592324, 6.245881e+00, 3.775056e-03] #last 4 columns
+    transonic_stator_rst.test_vals = [-0.685109, 4.592324, 6.245881e+00, 2.402758] #last 4 columns
     transonic_stator_rst.su2_exec  = "SU2_CFD"
     transonic_stator_rst.timeout   = 1600
     transonic_stator_rst.tol       = 0.00001
@@ -785,7 +785,7 @@ def main():
     naca0012_geo           = TestCase('naca0012_geo')
     naca0012_geo.cfg_dir   = "optimization_euler/steady_naca0012"
     naca0012_geo.cfg_file  = "inv_NACA0012_adv.cfg"
-    naca0012_geo.test_vals = [0.120011, 0.0816925, 0.0, 1.0] #max thickness, area, twist, chord
+    naca0012_geo.test_vals = [0.99975, 62.0455, 0.120041, 0.00208202] #chord, LE radius, ToC, Alpha
     naca0012_geo.su2_exec  = "SU2_GEO"
     naca0012_geo.timeout   = 1600
     naca0012_geo.tol       = 0.00001

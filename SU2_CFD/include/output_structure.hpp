@@ -126,6 +126,11 @@ class COutput {
   unsigned short wrote_base_file;
   su2double RhoRes_New, RhoRes_Old;
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
+  su2double Ave_Total_IDR, Ave_Total_IDC; // Average distortion values
+  unsigned short iCounter, iCounter_Total_IDR, iCounter_Total_IDC; // Index used in the local serie counter.
+  unsigned short nCounter_Total_IDR, nCounter_Total_IDC; // Total number of elements in the serie.
+  su2double Serie_Total_IDR[100], Serie_Total_IDC[100]; // Serie that stores the elements.
+  
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
   bool turbo;
   unsigned short   nSpanWiseSections,
@@ -461,7 +466,30 @@ public:
   void SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+   * \brief Write the nodal coordinates and connectivity to a Tecplot ASCII mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a stl ASCII mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetSTL_MeshASCII(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SetCSV_MeshASCII(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
@@ -670,25 +698,39 @@ public:
   void WriteSpanWiseValuesFiles(CGeometry ***geometry, CConfig **config, unsigned short val_iZone);
 
   /*!
-   * \brief Give the Entropy Generation performance parameters for turbomachinery.
+   * \brief Give the entropy generation performance parameters for turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
    * \param[in] iSpan - span section.
    */
   su2double GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
-   * \brief Give the Entropy Generation performance parameters for turbomachinery.
+   * \brief Give the flow outlet angle  performance parameters for turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
    * \param[in] iSpan - span section.
    */
   su2double GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
-   * \brief Give the Entropy Generation performance parameters for turbomachinery.
+   * \brief Give the inlet mass-flow rate performance parameters for turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
    * \param[in] iSpan - span section.
    */
   su2double GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan);
+
+  /*!
+   * \brief Give the total pressure loss performance parameters for turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   * \param[in] iSpan - span section.
+   */
+  su2double GetTotalPressureLoss(unsigned short iMarkerTP, unsigned short iSpan);
+
+  /*!
+   * \brief Give the kinetic energy loss performance parameters for turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   * \param[in] iSpan - span section.
+   */
+  su2double GetKineticEnergyLoss(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
    * \brief Write the output file for harmonic balance for each time-instance.
@@ -807,3 +849,5 @@ public:
   void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
   
 };
+
+#include "output_structure.inl"

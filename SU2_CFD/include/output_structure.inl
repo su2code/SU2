@@ -1,8 +1,7 @@
 /*!
- * \file SU2_DEF.hpp
- * \brief Headers of the main subroutines of the code SU2_DEF.
- *        The subroutines and functions are in the <i>SU2_DEF.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file output_structure.inl
+ * \brief In-Line subroutines of the <i>output_structure.hpp</i> file.
+ * \author J. Smith
  * \version 5.0.0 "Raven"
  *
  * SU2 Original Developers: Dr. Francisco D. Palacios.
@@ -34,17 +33,12 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+inline su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
 
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
+inline su2double COutput::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan) { return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER; }
 
-#include "../../SU2_CFD/include/solver_structure.hpp"
-#include "../../SU2_CFD/include/output_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
+inline su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan) { return MassFlowIn[iMarkerTP][iSpan]; }
 
-using namespace std;
+inline su2double COutput::GetTotalPressureLoss(unsigned short iMarkerTP, unsigned short iSpan) { return TotalPressureLoss[iMarkerTP][iSpan]; }
+
+inline su2double COutput::GetKineticEnergyLoss(unsigned short iMarkerTP, unsigned short iSpan) { return KineticEnergyLoss[iMarkerTP][iSpan]; }

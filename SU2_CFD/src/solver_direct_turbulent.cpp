@@ -1487,6 +1487,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool transition    = (config->GetKind_Trans_Model() == LM);
+  bool transition_BC = (config->GetKind_Trans_Model() == BC);
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -1526,6 +1527,12 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Compute the source term ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
+
+    /*--- Store the intermittency ---*/
+
+    if (transition_BC) {
+      node[iPoint]->SetGammaBC(numerics->GetGammaBC());
+    }
     
     /*--- Subtract residual and the Jacobian ---*/
     
