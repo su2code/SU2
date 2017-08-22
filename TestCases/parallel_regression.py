@@ -286,6 +286,21 @@ def main():
     inc_euler_naca0012.tol       = 0.00001
     test_list.append(inc_euler_naca0012)
 
+    #############################
+    ### Incompressible N-S    ###
+    #############################
+
+    # Laminar cylinder
+    inc_lam_cylinder          = TestCase('inc_lam_cylinder')
+    inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
+    inc_lam_cylinder.test_iter = 10
+    inc_lam_cylinder.test_vals = [-3.583742, -2.838702, -0.003114, 17.162325] #last 4 columns
+    inc_lam_cylinder.su2_exec  = "parallel_computation.py -f"
+    inc_lam_cylinder.timeout   = 1600
+    inc_lam_cylinder.tol       = 0.00001
+    test_list.append(inc_lam_cylinder)
+
     ############################
     ### Incompressible RANS  ###
     ############################
