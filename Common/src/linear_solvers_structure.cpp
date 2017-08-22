@@ -186,11 +186,13 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<
 }
 
 void CSysSolve::WriteHeader(const string & solver, const su2double & restol, const su2double & resinit) {
-  
-  cout << "\n# " << solver << " residual history" << endl;
-  cout << "# Residual tolerance target = " << restol << endl;
-  cout << "# Initial residual norm     = " << resinit << endl;
-  
+    
+    cout.precision(40);
+    
+    cout << "\n# " << solver << " residual history" << endl;
+    cout << "# Residual tolerance target = " << scientific << restol << endl;
+    cout << "# Initial residual norm     = " << scientific << resinit << endl;
+    
 }
 
 void CSysSolve::WriteHistory(const int & iter, const su2double & res, const su2double & resinit) {
