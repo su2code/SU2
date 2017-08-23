@@ -2708,22 +2708,31 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   upperlimit[1] = 1.0e15;
   
   /*--- Flow infinity initialization stuff ---*/
-  su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
+  su2double rhoInf, *VelInf, muLamInf, Intensity, muT_Inf;
   
   rhoInf    = config->GetDensity_FreeStreamND();
   VelInf    = config->GetVelocity_FreeStreamND();
   muLamInf  = config->GetViscosity_FreeStreamND();
   Intensity = config->GetTurbulenceIntensity_FreeStream();
-  viscRatio = config->GetTurb2LamViscRatio_FreeStream();
-  
+
   su2double VelMag = 0;
   for (iDim = 0; iDim < nDim; iDim++)
   VelMag += VelInf[iDim]*VelInf[iDim];
   VelMag = sqrt(VelMag);
   
   kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
-  omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
   
+  switch(config->GetKind_FreeStreamTurbOption()) {
+   case EDDY_VISC_RATIO:
+    su2double viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+    omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+    break;
+   case TURB_LENGTHSCALE:
+    su2double turb_L = config->GetTurbLength_FreeStream();
+    omega_Inf = sqrt(kine_Inf)/turb_L;
+    break;
+  }
+
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;
   
