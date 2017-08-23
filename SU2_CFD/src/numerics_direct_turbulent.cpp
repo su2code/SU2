@@ -34,7 +34,7 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CUpwSca_Scalar::CUpwSca_Scalar(unsigned short val_nDim,
+CUpwScalar::CUpwScalar(unsigned short val_nDim,
                                    unsigned short val_nVar,
                                    CConfig *config)
     : CNumerics(val_nDim, val_nVar, config) {
@@ -48,14 +48,14 @@ CUpwSca_Scalar::CUpwSca_Scalar(unsigned short val_nDim,
 
 }
 
-CUpwSca_Scalar::~CUpwSca_Scalar(void) {
+CUpwScalar::~CUpwScalar(void) {
 
   delete [] Velocity_i;
   delete [] Velocity_j;
 
 }
 
-void CUpwSca_Scalar::ComputeResidual(su2double *val_residual,
+void CUpwScalar::ComputeResidual(su2double *val_residual,
                                        su2double **val_Jacobian_i,
                                        su2double **val_Jacobian_j,
                                        CConfig *config) {
@@ -108,7 +108,7 @@ void CUpwSca_Scalar::ComputeResidual(su2double *val_residual,
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                                unsigned short val_nVar,
                                CConfig *config)
-    : CUpwSca_Scalar(val_nDim, val_nVar, config) {
+    : CUpwScalar(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
@@ -650,7 +650,7 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                                  unsigned short val_nVar,
                                  CConfig *config)
-    : CUpwSca_Scalar(val_nDim, val_nVar, config) {
+    : CUpwScalar(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
