@@ -264,7 +264,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
   }
 
   su2double k = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-  const su2double MIN_VEL_DIFF = fmax(EPS, 1e-7*sqrt(k));
+  const su2double MIN_VEL_DIFF = fmax(EPS, 1e-7*k);
   if (total_vel_differences > MIN_VEL_DIFF) {
     /*--- Only calculate r_k, w_rans if there are resolved velocity differences
      * at resolution scale.  Otherwise, eigenvector calculation is arbitrary */
@@ -286,10 +286,11 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
 
     /*--- Find the smallest product of unresolved fluctuations at the cutoff ---*/
     // TODO: Make this more generalized
-    su2double C_mu = 0.22;
-    su2double TurbT = solver_container[TURB_SOL]->node[iPoint]->GetTurbTimescale();
-    su2double omega = solver_container[TURB_SOL]->node[iPoint]->GetSolution(1);
-    su2double min_unresolved = TurbT*k*omega/C_mu;
+//    su2double C_mu = 0.22;
+//    su2double TurbT = solver_container[TURB_SOL]->node[iPoint]->GetTurbTimescale();
+//    su2double omega = solver_container[TURB_SOL]->node[iPoint]->GetSolution(1);
+//    su2double min_unresolved = TurbT*k*omega/C_mu;
+    su2double min_unresolved = TWO3*k;
 
     /*--- Calculate the resolution adequacy parameter ---*/
     r_k = fmax(max_resolved, TKE_MIN) / fmax(min_unresolved, TKE_MIN);
@@ -305,33 +306,38 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     /*--- Calculate the RANS weight ---*/
     w_rans = fmax(tanh(r_eps - 1), 0.0);
 
-    /*---- DEBUGGING ---*/
-//    su2double u_1 = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(1);
-//    if (abs(u_1 - (22.4+19.14)) < 0.1) {
-//      cout << "-------- Freestream solution ----------" << endl;
-//      cout << "M:            " << endl;
-//      cout << "  [[" << ResolutionTensor[0][0] << ", " << ResolutionTensor[0][1] << ", " << ResolutionTensor[0][2] << "]" << endl;
-//      cout << "   [" << ResolutionTensor[1][0] << ", " << ResolutionTensor[1][1] << ", " << ResolutionTensor[1][2] << "]" << endl;
-//      cout << "   [" << ResolutionTensor[2][0] << ", " << ResolutionTensor[2][1] << ", " << ResolutionTensor[2][2] << "]]" << endl;
-//      cout << "M eigvals:    " << "[" << ResolutionValues[0] << ", " << ResolutionValues[1] << ", " << ResolutionValues[2] << "]" << endl;
-//      cout << "Qapprox:            " << endl;
-//      cout << "  [[" << Qapprox[0][0] << ", " << Qapprox[0][1] << ", " << Qapprox[0][2] << "]" << endl;
-//      cout << "   [" << Qapprox[1][0] << ", " << Qapprox[1][1] << ", " << Qapprox[1][2] << "]" << endl;
-//      cout << "   [" << Qapprox[2][0] << ", " << Qapprox[2][1] << ", " << Qapprox[2][2] << "]]" << endl;
-//      cout << "Q:            " << endl;
-//      cout << "  [[" << Q[0][0] << ", " << Q[0][1] << ", " << Q[0][2] << "]" << endl;
-//      cout << "   [" << Q[1][0] << ", " << Q[1][1] << ", " << Q[1][2] << "]" << endl;
-//      cout << "   [" << Q[2][0] << ", " << Q[2][1] << ", " << Q[2][2] << "]]" << endl;
-//      cout << "Eigvals of Q: " << "[" << eigvalues_zQz[0] << ", " << eigvalues_zQz[1] << ", " << eigvalues_zQz[2] << "]" << endl;
-//      cout << "Max eigval:   " << eigvalues_zQz[max_index] << endl;
-//      cout << "Max resolved: " << max_resolved << endl;
-//      cout << "Min resolved: " << min_unresolved << endl;
-//      cout << "r_k:          " << r_k << endl;
-//      cout << "Turb length:  " << TurbL << endl;
-//      cout << "d_max:        " << d_max << endl;
-//      cout << "r_eps:        " << r_eps << endl;
-//      cout << "RANS Weight:  " << w_rans << endl;
-//    }
+/*    ---- DEBUGGING ---
+    su2double* x = geometry->node[iPoint]->GetCoord();
+    if (x[0] > -0.4 && x[0] < -0.3  && x[2] > 0.05 && x[2] < 0.1) {
+      cout << "-------- Freestream solution ----------" << endl;
+      cout << "x: " << x[0] << "\ty: " << x[1] << "\tz: " << x[2] << endl;
+      cout << "PrimVar_Grad:" << endl;
+      cout << "  [[" << PrimVar_Grad[1][0] << ", " << PrimVar_Grad[1][1] << ", " << PrimVar_Grad[1][2] << "]" << endl;
+      cout << "   [" << PrimVar_Grad[2][0] << ", " << PrimVar_Grad[2][1] << ", " << PrimVar_Grad[2][2] << "]" << endl;
+      cout << "   [" << PrimVar_Grad[3][0] << ", " << PrimVar_Grad[3][1] << ", " << PrimVar_Grad[3][2] << "]]" << endl;
+      cout << "M:            " << endl;
+      cout << "  [[" << ResolutionTensor[0][0] << ", " << ResolutionTensor[0][1] << ", " << ResolutionTensor[0][2] << "]" << endl;
+      cout << "   [" << ResolutionTensor[1][0] << ", " << ResolutionTensor[1][1] << ", " << ResolutionTensor[1][2] << "]" << endl;
+      cout << "   [" << ResolutionTensor[2][0] << ", " << ResolutionTensor[2][1] << ", " << ResolutionTensor[2][2] << "]]" << endl;
+      cout << "M eigvals: " << "[" << ResolutionValues[0] << ", " << ResolutionValues[1] << ", " << ResolutionValues[2] << "]" << endl;
+      cout << "Qapprox:" << endl;
+      cout << "  [[" << Qapprox[0][0] << ", " << Qapprox[0][1] << ", " << Qapprox[0][2] << "]" << endl;
+      cout << "   [" << Qapprox[1][0] << ", " << Qapprox[1][1] << ", " << Qapprox[1][2] << "]" << endl;
+      cout << "   [" << Qapprox[2][0] << ", " << Qapprox[2][1] << ", " << Qapprox[2][2] << "]]" << endl;
+      cout << "Q:" << endl;
+      cout << "  [[" << Q[0][0] << ", " << Q[0][1] << ", " << Q[0][2] << "]" << endl;
+      cout << "   [" << Q[1][0] << ", " << Q[1][1] << ", " << Q[1][2] << "]" << endl;
+      cout << "   [" << Q[2][0] << ", " << Q[2][1] << ", " << Q[2][2] << "]]" << endl;
+      cout << "Eigvals of Q:   " << "[" << eigvalues_zQz[0] << ", " << eigvalues_zQz[1] << ", " << eigvalues_zQz[2] << "]" << endl;
+      cout << "Max eigval:     " << eigvalues_zQz[max_index] << endl;
+      cout << "Max resolved:   " << max_resolved << endl;
+      cout << "Min unresolved: " << min_unresolved << endl;
+      cout << "r_k:            " << r_k << endl;
+      cout << "Turb length:    " << TurbL << endl;
+      cout << "d_max:          " << d_max << endl;
+      cout << "r_eps:          " << r_eps << endl;
+      cout << "RANS Weight:    " << w_rans << endl;
+    }*/
   } else {
     r_k = 0.0;
     w_rans = 0.0;

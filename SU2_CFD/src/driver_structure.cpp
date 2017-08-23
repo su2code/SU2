@@ -803,9 +803,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       }
     }
     if (turbulent) {
-       /*--- The hybrid solver has to be set up before the resolved flow solver
-       * can do its preprocessing, which is required to compute the eddy
-       * viscosity. ---*/
       if (hybrid) {
         switch (config->GetKind_Hybrid_Blending()) {
           case RANS_ONLY: // Only the source numerics object is different.

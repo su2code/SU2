@@ -163,9 +163,9 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
   /*--- Jacobian of \alpha with respect to \alpha ---*/
   val_Jacobian_i[0][0] = 0.0;
   if (D_r != 0)
-    val_Jacobian_i[0][0] += RANS_Weight/T_alpha * Volume;
+    val_Jacobian_i[0][0] += -RANS_Weight/T_alpha * Volume;
   if (F_r != 0)
-    val_Jacobian_i[0][0] += 1.0/T_alpha * Volume;
+    val_Jacobian_i[0][0] += -1.0/T_alpha * Volume;
 }
 
 CAvgGrad_HybridConv::CAvgGrad_HybridConv(unsigned short val_nDim,
