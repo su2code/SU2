@@ -576,7 +576,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 50 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 1 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
     
   }
 	  
