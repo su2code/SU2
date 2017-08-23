@@ -875,6 +875,17 @@ static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("INPUT_FILE", INPUT_FILE);
 
 /*!
+ * \brief types freestream boundary condition specification
+ */
+enum FREESTREAM_TURB_OPTION {
+  EDDY_VISC_RATIO = 1,   /*!< \brief User specifies eddy viscosity ratio and turbulence intensity */
+  TURB_LENGTHSCALE = 2   /*!< \brief User specifies turbulent lengthscale and turbulence intensity */
+};
+static const map<string, FREESTREAM_TURB_OPTION> FreeStreamTurbOption_Map = CCreateMap<string, FREESTREAM_TURB_OPTION>
+("EDDY_VISC_RATIO", EDDY_VISC_RATIO)
+("TURB_LENGTHSCALE", TURB_LENGTHSCALE);
+
+/*!
  * \brief types engine inflow boundary treatments
  */
 enum ENGINE_INFLOW_TYPE {

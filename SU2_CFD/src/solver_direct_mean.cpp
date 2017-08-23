@@ -3863,10 +3863,22 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
   
-  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
+  switch (config->GetKind_FreeStreamTurbOption()) {
+    case EDDY_VISC_RATIO:
+      su2double viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+      Omega_FreeStream = Density_FreeStream*Tke_FreeStream /
+                         (Viscosity_FreeStream*viscRatio);
+      Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND /
+                           (Viscosity_FreeStreamND*viscRatio);
+      break;
+    case TURB_LENGTHSCALE:
+      su2double turb_L = config->GetTurbLength_FreeStream();
+      Omega_FreeStream = sqrt(Tke_FreeStream)/turb_L;
+      Omega_FreeStreamND = sqrt(Tke_FreeStreamND)/(turb_L/Length_Ref);
+      break;
+  }
+
   config->SetOmega_FreeStream(Omega_FreeStream);
-  
-  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
   
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
