@@ -2891,13 +2891,17 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
   switch(config->GetKind_FreeStreamTurbOption()) {
    case EDDY_VISC_RATIO:
-    su2double viscRatio = config->GetTurb2LamViscRatio_FreeStream();
-    omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
-    break;
+     {
+       su2double viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+       omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+       break;
+     }
    case TURB_LENGTHSCALE:
-    su2double turb_L = config->GetTurbLength_FreeStream();
-    omega_Inf = sqrt(kine_Inf)/turb_L;
-    break;
+     {
+       su2double turb_L = config->GetTurbLength_FreeStream();
+       omega_Inf = sqrt(kine_Inf)/turb_L;
+       break;
+     }
   }
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
