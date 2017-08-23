@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,47 +43,47 @@ inline su2double CNumerics::Determinant_3x3(su2double A00,
                                             su2double A21,
                                             su2double A22) {
   
-	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
+  return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
   
 }
 
-inline void CNumerics::Compute_Mass_Matrix(CElement *element_container, CConfig *config){ }
+inline void CNumerics::Compute_Mass_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CNumerics::Compute_Dead_Load(CElement *element_container, CConfig *config){ }
+inline void CNumerics::Compute_Dead_Load(CElement *element_container, CConfig *config) { }
 
-inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container, CConfig *config){ }
+inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Tangent_Matrix(CElement *element_container, CConfig *config){ }
+inline void CFEM_Elasticity::Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CNumerics::Compute_MeanDilatation_Term(CElement *element_container, CConfig *config){ }
+inline void CNumerics::Compute_MeanDilatation_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_MeanDilatation_Term(CElement *element_container, CConfig *config){ }
+inline void CFEM_Elasticity::Compute_MeanDilatation_Term(CElement *element_container, CConfig *config) { }
 
-inline void CNumerics::Compute_NodalStress_Term(CElement *element_container, CConfig *config){ }
+inline void CNumerics::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_NodalStress_Term(CElement *element_container, CConfig *config){ }
+inline void CFEM_Elasticity::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
 
-inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config){ }
+inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config){ }
+inline void CFEM_Elasticity::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config){ }
+inline void CFEM_Elasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
 inline void CFEM_NonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
-inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config){ }
+inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config){ }
+inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_NonlinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config){ }
+inline void CFEM_NonlinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CNumerics::Compute_Stress_Tensor(CElement *element_container, CConfig *config){ }
+inline void CNumerics::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config){ }
+inline void CFEM_Elasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_NonlinearElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config){ }
+inline void CFEM_NonlinearElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }
 
@@ -100,20 +100,20 @@ inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_
                                    su2double **val_JacobianMeanFlow_i, su2double **val_JacobianMeanFlow_j, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, 
-								   su2double **val_Jacobian_j, CConfig *config) { }
+                   su2double **val_Jacobian_j, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, 
-								   su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, 
-								   su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) { }
-							
+                   su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, 
+                   su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) { }
+              
 inline void CNumerics::ComputeResidual(su2double *val_resconv_i, su2double *val_resvisc_i, su2double *val_resconv_j, 
-								   su2double *val_resvisc_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, 
-								   su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) { }
-							
+                   su2double *val_resvisc_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, 
+                   su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) { }
+              
 inline void CNumerics::ComputeResidual(su2double **val_stiffmatrix_elem, CConfig *config) { }
 
 inline void CNumerics::GetEq_Rxn_Coefficients(su2double **EqnRxnConstants, CConfig *config) { };
-														
+                            
 inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) {}
@@ -133,50 +133,50 @@ inline void CNumerics::GetKeqConstants(su2double *A, unsigned short val_reaction
 inline su2double CNumerics::GetPrecond_Beta() { return 0; }
 
 inline void CNumerics::SetUndivided_Laplacian(su2double *val_und_lapl_i, su2double *val_und_lapl_j) {
-	Und_Lapl_i = val_und_lapl_i; 
-	Und_Lapl_j = val_und_lapl_j; 
+  Und_Lapl_i = val_und_lapl_i; 
+  Und_Lapl_j = val_und_lapl_j; 
 }
 
 inline void CNumerics::SetSensor( su2double val_sensor_i, su2double val_sensor_j) {
-	Sensor_i = val_sensor_i;
-	Sensor_j = val_sensor_j;
+  Sensor_i = val_sensor_i;
+  Sensor_j = val_sensor_j;
 }
 
 inline void CNumerics::SetConservative(su2double *val_u_i, su2double *val_u_j) {
-	U_i = val_u_i;
-	U_j = val_u_j;
+  U_i = val_u_i;
+  U_j = val_u_j;
 }
 
 inline void CNumerics::SetConservative_ZeroOrder(su2double *val_u_i, su2double *val_u_j) {
-	UZeroOrder_i = val_u_i;
-	UZeroOrder_j = val_u_j;
+  UZeroOrder_i = val_u_i;
+  UZeroOrder_j = val_u_j;
 }
 
 inline void CNumerics::SetPrimitive(su2double *val_v_i, su2double *val_v_j) {
-	V_i = val_v_i;
-	V_j = val_v_j;
+  V_i = val_v_i;
+  V_j = val_v_j;
 }
 
 inline void CNumerics::SetSecondary(su2double *val_s_i, su2double *val_s_j) {
-  	S_i = val_s_i;
-  	S_j = val_s_j;
+    S_i = val_s_i;
+    S_j = val_s_j;
 }
 
 inline void CNumerics::SetConservative(su2double *val_u_0, su2double *val_u_1, su2double *val_u_2) {
-	U_0 = val_u_0;
-	U_1 = val_u_1;
-	U_2 = val_u_2;
+  U_0 = val_u_0;
+  U_1 = val_u_1;
+  U_2 = val_u_2;
 }
 
 inline void CNumerics::SetConservative(su2double *val_u_0, su2double *val_u_1, su2double *val_u_2, su2double *val_u_3) {
-	U_0 = val_u_0;
-	U_1 = val_u_1;
-	U_2 = val_u_2;
-	U_3 = val_u_3;
+  U_0 = val_u_0;
+  U_1 = val_u_1;
+  U_2 = val_u_2;
+  U_3 = val_u_3;
 }
 
 inline void CNumerics::SetVelocity2_Inf(su2double velocity2) {
-	vel2_inf = velocity2;
+  vel2_inf = velocity2;
 }
 
 inline void CNumerics::SetVorticity(su2double *val_vorticity_i, su2double *val_vorticity_j) {
@@ -192,28 +192,28 @@ inline void CNumerics::SetStrainMag(su2double val_strainmag_i, su2double val_str
 inline void CNumerics::SetTimeStep(su2double val_timestep) {TimeStep = val_timestep;}
 
 inline void CNumerics::SetLaminarViscosity(su2double val_lam_viscosity_i, su2double val_lam_viscosity_j) {
-	Laminar_Viscosity_i = val_lam_viscosity_i;
-	Laminar_Viscosity_j = val_lam_viscosity_j;
+  Laminar_Viscosity_i = val_lam_viscosity_i;
+  Laminar_Viscosity_j = val_lam_viscosity_j;
 }
 
 inline void CNumerics::SetThermalConductivity(su2double val_therm_conductivity_i, su2double val_therm_conductivity_j) {
-	Thermal_Conductivity_i = val_therm_conductivity_i;
-	Thermal_Conductivity_j = val_therm_conductivity_j;
+  Thermal_Conductivity_i = val_therm_conductivity_i;
+  Thermal_Conductivity_j = val_therm_conductivity_j;
 }
 
 inline void CNumerics::SetThermalConductivity_ve(su2double val_therm_conductivity_ve_i, su2double val_therm_conductivity_ve_j) {
-	Thermal_Conductivity_ve_i = val_therm_conductivity_ve_i;
-	Thermal_Conductivity_ve_j = val_therm_conductivity_ve_j;
+  Thermal_Conductivity_ve_i = val_therm_conductivity_ve_i;
+  Thermal_Conductivity_ve_j = val_therm_conductivity_ve_j;
 }
 
 inline void CNumerics::SetDiffusionCoeff(su2double* val_diffusioncoeff_i, su2double* val_diffusioncoeff_j) {
-	Diffusion_Coeff_i = val_diffusioncoeff_i;
-	Diffusion_Coeff_j = val_diffusioncoeff_j;
+  Diffusion_Coeff_i = val_diffusioncoeff_i;
+  Diffusion_Coeff_j = val_diffusioncoeff_j;
 }
 
 inline void CNumerics::SetEddyViscosity(su2double val_eddy_viscosity_i, su2double val_eddy_viscosity_j) {
-	Eddy_Viscosity_i = val_eddy_viscosity_i;
-	Eddy_Viscosity_j = val_eddy_viscosity_j;
+  Eddy_Viscosity_i = val_eddy_viscosity_i;
+  Eddy_Viscosity_j = val_eddy_viscosity_j;
 }
 
 inline void CNumerics::SetIntermittency(su2double intermittency_in) { }
@@ -231,63 +231,53 @@ inline su2double CNumerics::GetDestruction(void) { return 0; }
 inline su2double CNumerics::GetCrossProduction(void) { return 0; }
 
 inline void CNumerics::SetTurbKineticEnergy(su2double val_turb_ke_i, su2double val_turb_ke_j) {
-	turb_ke_i = val_turb_ke_i;
-	turb_ke_j = val_turb_ke_j;
+  turb_ke_i = val_turb_ke_i;
+  turb_ke_j = val_turb_ke_j;
 }
 
 inline void CNumerics::SetDistance(su2double val_dist_i, su2double val_dist_j) {
-	dist_i = val_dist_i;
-	dist_j = val_dist_j;
+  dist_i = val_dist_i;
+  dist_j = val_dist_j;
 }
 
 inline void CNumerics::SetAdjointVar(su2double *val_psi_i, su2double *val_psi_j) {
-	Psi_i = val_psi_i;
-	Psi_j = val_psi_j;
+  Psi_i = val_psi_i;
+  Psi_j = val_psi_j;
 }
 
 inline void CNumerics::SetAdjointVarGradient(su2double **val_psivar_grad_i, su2double **val_psivar_grad_j) {
-	PsiVar_Grad_i = val_psivar_grad_i;
-	PsiVar_Grad_j = val_psivar_grad_j;
+  PsiVar_Grad_i = val_psivar_grad_i;
+  PsiVar_Grad_j = val_psivar_grad_j;
 }
 
 inline void CNumerics::SetAdjointVarLimiter(su2double *val_psivar_lim_i, su2double *val_psivar_lim_j) {
-	PsiVar_Lim_i = val_psivar_lim_i;
-	PsiVar_Lim_j = val_psivar_lim_j;
+  PsiVar_Lim_i = val_psivar_lim_i;
+  PsiVar_Lim_j = val_psivar_lim_j;
 }
 
 inline void CNumerics::SetTurbVar(su2double *val_turbvar_i, su2double *val_turbvar_j) {
-	TurbVar_i = val_turbvar_i;
-	TurbVar_j = val_turbvar_j;
+  TurbVar_i = val_turbvar_i;
+  TurbVar_j = val_turbvar_j;
 }
 
 inline void CNumerics::SetTransVar(su2double *val_transvar_i, su2double *val_transvar_j) {
-	TransVar_i = val_transvar_i;
-	TransVar_j = val_transvar_j;
+  TransVar_i = val_transvar_i;
+  TransVar_j = val_transvar_j;
 }
 
 inline void CNumerics::SetTurbVarGradient(su2double **val_turbvar_grad_i, su2double **val_turbvar_grad_j) {
-	TurbVar_Grad_i = val_turbvar_grad_i;
-	TurbVar_Grad_j = val_turbvar_grad_j;
+  TurbVar_Grad_i = val_turbvar_grad_i;
+  TurbVar_Grad_j = val_turbvar_grad_j;
 }
 
 inline void CNumerics::SetTransVarGradient(su2double **val_transvar_grad_i, su2double **val_transvar_grad_j) {
-	TransVar_Grad_i = val_transvar_grad_i;
-	TransVar_Grad_j = val_transvar_grad_j;
-}
-
-inline void CNumerics::SetLevelSetVar(su2double *val_levelsetvar_i, su2double *val_levelsetvar_j) {
-	LevelSetVar_i = val_levelsetvar_i;
-	LevelSetVar_j = val_levelsetvar_j;
-}
-
-inline void CNumerics::SetLevelSetVarGradient(su2double **val_levelsetvar_grad_i, su2double **val_levelsetvar_grad_j) {
-	LevelSetVar_Grad_i = val_levelsetvar_grad_i;
-	LevelSetVar_Grad_j = val_levelsetvar_grad_j;
+  TransVar_Grad_i = val_transvar_grad_i;
+  TransVar_Grad_j = val_transvar_grad_j;
 }
 
 inline void CNumerics::SetPrimVarGradient(su2double **val_primvar_grad_i, su2double **val_primvar_grad_j) {
-	PrimVar_Grad_i = val_primvar_grad_i;
-	PrimVar_Grad_j = val_primvar_grad_j;
+  PrimVar_Grad_i = val_primvar_grad_i;
+  PrimVar_Grad_j = val_primvar_grad_j;
 }
 
 inline void CNumerics::SetPrimVarLimiter(su2double *val_primvar_lim_i, su2double *val_primvar_lim_j) {
@@ -296,115 +286,115 @@ inline void CNumerics::SetPrimVarLimiter(su2double *val_primvar_lim_i, su2double
 }
 
 inline void CNumerics::SetConsVarGradient(su2double **val_consvar_grad_i, su2double **val_consvar_grad_j) {
-	ConsVar_Grad_i = val_consvar_grad_i;
-	ConsVar_Grad_j = val_consvar_grad_j;
+  ConsVar_Grad_i = val_consvar_grad_i;
+  ConsVar_Grad_j = val_consvar_grad_j;
 }
 
 inline void CNumerics::SetConsVarGradient(su2double **val_consvar_grad_0, su2double **val_consvar_grad_1, su2double **val_consvar_grad_2) {
-	ConsVar_Grad_0 = val_consvar_grad_0;
-	ConsVar_Grad_1 = val_consvar_grad_1;
-	ConsVar_Grad_2 = val_consvar_grad_2;
+  ConsVar_Grad_0 = val_consvar_grad_0;
+  ConsVar_Grad_1 = val_consvar_grad_1;
+  ConsVar_Grad_2 = val_consvar_grad_2;
 }
 
 inline void CNumerics::SetConsVarGradient(su2double **val_consvar_grad_0, su2double **val_consvar_grad_1, su2double **val_consvar_grad_2, su2double **val_consvar_grad_3) {
-	ConsVar_Grad_0 = val_consvar_grad_0;
-	ConsVar_Grad_1 = val_consvar_grad_1;
-	ConsVar_Grad_2 = val_consvar_grad_2;
-	ConsVar_Grad_3 = val_consvar_grad_3;
+  ConsVar_Grad_0 = val_consvar_grad_0;
+  ConsVar_Grad_1 = val_consvar_grad_1;
+  ConsVar_Grad_2 = val_consvar_grad_2;
+  ConsVar_Grad_3 = val_consvar_grad_3;
 }
 
 inline void CNumerics::SetConsVarGradient(su2double **val_consvar_grad) {
-	ConsVar_Grad = val_consvar_grad;
+  ConsVar_Grad = val_consvar_grad;
 }
 
 inline void CNumerics::SetCoord(su2double *val_coord_i, su2double *val_coord_j) {
-	Coord_i = val_coord_i;
-	Coord_j = val_coord_j;
+  Coord_i = val_coord_i;
+  Coord_j = val_coord_j;
 }
 
 inline void CNumerics::SetCoord(su2double *val_coord_0, su2double *val_coord_1, 
-									 su2double *val_coord_2) {
-	Coord_0 = val_coord_0;
-	Coord_1 = val_coord_1;
-	Coord_2 = val_coord_2;
+                   su2double *val_coord_2) {
+  Coord_0 = val_coord_0;
+  Coord_1 = val_coord_1;
+  Coord_2 = val_coord_2;
 }
 
 inline void CNumerics::SetCoord(su2double *val_coord_0, su2double *val_coord_1, 
-									 su2double *val_coord_2, su2double *val_coord_3) {
-	Coord_0 = val_coord_0;
-	Coord_1 = val_coord_1;
-	Coord_2 = val_coord_2;
-	Coord_3 = val_coord_3;	
+                   su2double *val_coord_2, su2double *val_coord_3) {
+  Coord_0 = val_coord_0;
+  Coord_1 = val_coord_1;
+  Coord_2 = val_coord_2;
+  Coord_3 = val_coord_3;  
 }
 
 inline void CNumerics::SetGridVel(su2double *val_gridvel_i, su2double *val_gridvel_j) {
-	GridVel_i = val_gridvel_i;
-	GridVel_j = val_gridvel_j;
+  GridVel_i = val_gridvel_i;
+  GridVel_j = val_gridvel_j;
 }
 
 inline void CNumerics::SetWindGust(su2double *val_windgust_i, su2double *val_windgust_j) {
-	WindGust_i = val_windgust_i;
-	WindGust_j = val_windgust_j;
+  WindGust_i = val_windgust_i;
+  WindGust_j = val_windgust_j;
 }
 
 inline void CNumerics::SetWindGustDer(su2double *val_windgustder_i, su2double *val_windgustder_j) {
-	WindGustDer_i = val_windgustder_i;
-	WindGustDer_j = val_windgustder_j;
+  WindGustDer_i = val_windgustder_i;
+  WindGustDer_j = val_windgustder_j;
 }
 
 inline void CNumerics::SetPressure(su2double val_pressure_i, su2double val_pressure_j) {
-	Pressure_i = val_pressure_i;
-	Pressure_j = val_pressure_j;
+  Pressure_i = val_pressure_i;
+  Pressure_j = val_pressure_j;
 }
 
-inline void CNumerics::SetDensityInc(su2double val_densityinc_i, su2double val_densityinc_j) {
-	DensityInc_i = val_densityinc_i;
-	DensityInc_j = val_densityinc_j;
+inline void CNumerics::SetDensity(su2double val_densityinc_i, su2double val_densityinc_j) {
+  DensityInc_i = val_densityinc_i;
+  DensityInc_j = val_densityinc_j;
 }
 
 inline void CNumerics::SetBetaInc2(su2double val_betainc2_i, su2double val_betainc2_j) {
-	BetaInc2_i = val_betainc2_i;
-	BetaInc2_j = val_betainc2_j;
+  BetaInc2_i = val_betainc2_i;
+  BetaInc2_j = val_betainc2_j;
 }
 
 inline void CNumerics::SetSoundSpeed(su2double val_soundspeed_i, su2double val_soundspeed_j) {
-	SoundSpeed_i = val_soundspeed_i;
-	SoundSpeed_j = val_soundspeed_j;
+  SoundSpeed_i = val_soundspeed_i;
+  SoundSpeed_j = val_soundspeed_j;
 }
 
 inline void CNumerics::SetEnthalpy(su2double val_enthalpy_i, su2double val_enthalpy_j) {
-	Enthalpy_i = val_enthalpy_i;
-	Enthalpy_j = val_enthalpy_j;
+  Enthalpy_i = val_enthalpy_i;
+  Enthalpy_j = val_enthalpy_j;
 }
 
 inline void CNumerics::SetLambda(su2double val_lambda_i, su2double val_lambda_j) {
-	Lambda_i = val_lambda_i;
-	Lambda_j = val_lambda_j;
+  Lambda_i = val_lambda_i;
+  Lambda_j = val_lambda_j;
 }
 
 inline void CNumerics::SetNeighbor(unsigned short val_neighbor_i, unsigned short val_neighbor_j) {
-	Neighbor_i = val_neighbor_i;
-	Neighbor_j = val_neighbor_j;
+  Neighbor_i = val_neighbor_i;
+  Neighbor_j = val_neighbor_j;
 }
 
 inline void CNumerics::SetTurbAdjointVar(su2double *val_turbpsivar_i, su2double *val_turbpsivar_j) {
-	TurbPsi_i = val_turbpsivar_i;
-	TurbPsi_j = val_turbpsivar_j;
+  TurbPsi_i = val_turbpsivar_i;
+  TurbPsi_j = val_turbpsivar_j;
 }
 
 inline void CNumerics::SetTurbAdjointGradient(su2double **val_turbpsivar_grad_i, su2double **val_turbpsivar_grad_j) {
-	TurbPsi_Grad_i = val_turbpsivar_grad_i;
-	TurbPsi_Grad_j = val_turbpsivar_grad_j;
+  TurbPsi_Grad_i = val_turbpsivar_grad_i;
+  TurbPsi_Grad_j = val_turbpsivar_grad_j;
 }
 
 inline void CNumerics::SetTemperature(su2double val_temp_i, su2double val_temp_j) {
-	Temp_i = val_temp_i;
-	Temp_j = val_temp_j;
+  Temp_i = val_temp_i;
+  Temp_j = val_temp_j;
 }
 
 inline void CNumerics::SetAuxVarGrad(su2double *val_auxvargrad_i, su2double *val_auxvargrad_j) {
-	AuxVar_Grad_i = val_auxvargrad_i;
-	AuxVar_Grad_j = val_auxvargrad_j;
+  AuxVar_Grad_i = val_auxvargrad_i;
+  AuxVar_Grad_j = val_auxvargrad_j;
 }
 
 inline void CNumerics::SetNormal(su2double *val_normal) { Normal = val_normal; }
@@ -412,28 +402,28 @@ inline void CNumerics::SetNormal(su2double *val_normal) { Normal = val_normal; }
 inline void CNumerics::SetVolume(su2double val_volume) { Volume = val_volume; }
 
 inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) { 
-	F1_i = val_F1_i; 
-	F1_j = val_F1_j;
+  F1_i = val_F1_i; 
+  F1_j = val_F1_j;
 }
 
 inline void CSourcePieceWise_TurbSST::SetF2blending(su2double val_F2_i, su2double val_F2_j) { 
-	F2_i = val_F2_i; 
-	F2_j = val_F2_j;
+  F2_i = val_F2_i; 
+  F2_j = val_F2_j;
 }
 
 inline void CSourcePieceWise_TurbSST::SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {
-	CDkw_i = val_CDkw_i;
-        CDkw_j = val_CDkw_j;
+  CDkw_i = val_CDkw_i;
+  CDkw_j = val_CDkw_j;
 }
 
 inline void CSourcePieceWise_TurbKE::SetTm(su2double val_Tm_i, su2double val_Tm_j) { 
-	Tm_i = val_Tm_i; 
-	Tm_j = val_Tm_j;
+  Tm_i = val_Tm_i; 
+  Tm_j = val_Tm_j;
 }
 
 inline void CSourcePieceWise_TurbKE::SetLm(su2double val_Lm_i, su2double val_Lm_j) { 
-	Lm_i = val_Lm_i; 
-	Lm_j = val_Lm_j;
+  Lm_i = val_Lm_i; 
+  Lm_j = val_Lm_j;
 }
 
 inline void CSourcePieceWise_TurbSA::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
@@ -469,4 +459,4 @@ inline su2double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, 
-									su2double **val_Jacobian_j, su2double *val_Jacobian_muj, su2double ***val_Jacobian_gradj, CConfig *config) { }
+                  su2double **val_Jacobian_j, su2double *val_Jacobian_muj, su2double ***val_Jacobian_gradj, CConfig *config) { }

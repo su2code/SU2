@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -614,7 +614,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   bool adjoint = config->GetContinuous_Adjoint();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
 
   /*--- Set maximum residual to zero ---*/  
@@ -709,9 +708,9 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density_old = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
             density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
-          if (incompressible || freesurface) {
-            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-            density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+          if (incompressible) {
+            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+            density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
           
           for (iVar = 0; iVar < nVar; iVar++) {
@@ -729,9 +728,10 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density_old = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
             density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
-          if (incompressible || freesurface) {
-            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-            density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+          //if (incompressible || freesurface) {
+          if (incompressible) {
+            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+            density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
           
           for (iVar = 0; iVar < nVar; iVar++) {
@@ -965,9 +965,10 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
     }
     
-    /*--- Loop over the boundary edges ---*/
+    /*---  Loop over the boundary edges ---*/
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
         /*--- Get the index for node i plus the boundary face normal ---*/
@@ -1149,12 +1150,12 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
 
   /*--- Restart the solution from file information ---*/
+  
   unsigned short iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
   su2double dull_val, Area_Children, Area_Parent, *Solution_Fine;
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
@@ -1167,10 +1168,12 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 #endif
 
   /*--- Modify file name for an unsteady restart ---*/
+  
   if (dual_time|| time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
   /*--- Open the restart file, throw an error if this fails. ---*/
+  
   restart_file.open(restart_filename.data(), ios::in);
   if (restart_file.fail()) {
     if (rank == MASTER_NODE)
@@ -1180,22 +1183,22 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
-  long *Global2Local = NULL;
-  Global2Local = new long[geometry[MESH_0]->GetGlobal_nPointDomain()];
-  /*--- First, set all indices to a negative value by default ---*/
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint++) {
-    Global2Local[iPoint] = -1;
-  }
+  
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
 
   /*--- Now fill array with the transform values only for local points ---*/
+  
   for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
     Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
 
   /*--- Read all lines in the restart file ---*/
+  
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
 
   /*--- Skip flow variables ---*/
+  
   unsigned short skipVars = 0;
 
   if (compressible) {
@@ -1206,43 +1209,45 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     if (nDim == 2) skipVars += 5;
     if (nDim == 3) skipVars += 7;
   }
-  if (freesurface) {
-    if (nDim == 2) skipVars += 6;
-    if (nDim == 3) skipVars += 8;
-  }
 
   /*--- The first line is the header ---*/
+  
   getline (restart_file, text_line);
 
-  while (getline (restart_file, text_line)) {
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    
+    getline (restart_file, text_line);
+    
     istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1, as
-     initialized above. Otherwise, the local index for this node on the
-     current processor will be returned and used to instantiate the vars. ---*/
-    iPoint_Local = Global2Local[iPoint_Global];
-    if (iPoint_Local >= 0) {
+     on the current processor, we will load and instantiate the vars. ---*/
+    
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
+      
       point_line >> index;
-      for (iVar = 0; iVar < skipVars; iVar++){ point_line >> dull_val;}
-      for (iVar = 0; iVar < nVar; iVar++){ point_line >> Solution[iVar];}
+      for (iVar = 0; iVar < skipVars; iVar++) { point_line >> dull_val;}
+      for (iVar = 0; iVar < nVar; iVar++) { point_line >> Solution[iVar];}
       node[iPoint_Local]->SetSolution(Solution);
 
     }
-    iPoint_Global++;
+
   }
 
   /*--- Close the restart file ---*/
+  
   restart_file.close();
 
-  /*--- Free memory needed for the transformation ---*/
-  delete [] Global2Local;
-
   /*--- MPI solution and compute the eddy viscosity ---*/
+  
   solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+  
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
@@ -1268,7 +1273,7 @@ CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
-  su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, dull_val;
+  su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk, dull_val;
   
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
@@ -1276,7 +1281,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
@@ -1379,9 +1383,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       
       /*--- c vector := transpose(WA)*(Wb) ---*/
       
-      cvector = new su2double* [nVar];
+      Cvector = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++)
-        cvector[iVar] = new su2double [nDim];
+        Cvector[iVar] = new su2double [nDim];
     }
     
   }
@@ -1401,13 +1405,23 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   Viscosity_Inf = config->GetViscosity_FreeStreamND();
   
   /*--- Factor_nu_Inf in [3.0, 5.0] ---*/
-  
+
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
   nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
+  if (config->GetKind_Trans_Model() == BC) {
+    nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
+  }
 
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
+  if (config->GetKind_Trans_Model() == BC) {
+    nu_tilde_Engine  = 0.005*Factor_nu_Engine*Viscosity_Inf/Density_Inf;
+  }
+
+  /*--- Factor_nu_ActDisk ---*/
+  Factor_nu_ActDisk = config->GetNuFactor_Engine();
+  nu_tilde_ActDisk  = Factor_nu_ActDisk*Viscosity_Inf/Density_Inf;
 
   /*--- Eddy viscosity at infinity ---*/
   su2double Ji, Ji_3, fv1, cv1_3 = 7.1*7.1*7.1;
@@ -1465,56 +1479,47 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
-    long *Global2Local;
-    Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    /*--- First, set all indices to a negative value by default ---*/
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-      Global2Local[iPoint] = -1;
-    }
+
+    map<unsigned long,unsigned long> Global2Local;
+    map<unsigned long,unsigned long>::const_iterator MI;
+    
     /*--- Now fill array with the transform values only for local points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
     /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
+    
+    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line; unsigned long iPoint_Global_Local = 0;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
     
     /*--- The first line is the header ---*/
+    
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      iPoint_Local = Global2Local[iPoint_Global];
-      if (iPoint_Local >= 0) {
+       on the current processor, we will load and instantiate the vars. ---*/
+      
+      MI = Global2Local.find(iPoint_Global);
+      if (MI != Global2Local.end()) {
+        
+        iPoint_Local = Global2Local[iPoint_Global];
+        
         if (compressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> Solution[0];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> U[4] >> Solution[0];
           
           Density = U[0];
           if (nDim == 2)
-        	  StaticEnergy = U[3]/U[0] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]*U[0]);
-//            Pressure = Gamma_Minus_One*(U[3] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]));
+            StaticEnergy = U[3]/U[0] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]*U[0]);
           else
-        	  StaticEnergy = U[4]/U[0] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3] )/(2.0*U[0]*U[0]);
-//        	  Pressure = Gamma_Minus_One*(U[4] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3])/(2.0*U[0]));
-
-//          Temperature = Pressure/(Gas_Constant*Density);
-//
-//
-//          Temperature_Dim = Temperature*Temperature_Ref;
-//
-//          if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
-//          if (config->GetSystemMeasurements() == US) { T_ref = 518.7; S = 198.72; Mu_ref = 3.62E-7; }
-//
-//          /*--- Calculate viscosity from a non-dim. Sutherland's Law ---*/
-//
-//          Laminar_Viscosity = Mu_ref*(pow(Temperature_Dim/T_ref, 1.5) * (T_ref+S)/(Temperature_Dim+S));
-//          Laminar_Viscosity = Laminar_Viscosity/Viscosity_Ref;
+            StaticEnergy = U[4]/U[0] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3] )/(2.0*U[0]*U[0]);
 
           FluidModel->SetTDState_rhoe(Density, StaticEnergy);
           Laminar_Viscosity = FluidModel->GetLaminarViscosity();
@@ -1533,16 +1538,34 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
           muT = muT_Inf;
         }
         
-        if (freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-          muT = muT_Inf;
-        }
-        
         /*--- Instantiate the solution at this node, note that the eddy viscosity should be recomputed ---*/
         node[iPoint_Local] = new CTurbSAVariable(Solution[0], muT, nDim, nVar, config);
+        iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
+    }
+    
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
     }
     
     /*--- Instantiate the variable class with an arbitrary solution
@@ -1554,9 +1577,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
     /*--- Close the restart file ---*/
     restart_file.close();
-    
-    /*--- Free memory needed for the transformation ---*/
-    delete [] Global2Local;
+
   }
   
   /*--- MPI solution ---*/
@@ -1606,7 +1627,6 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
   
   
@@ -1618,9 +1638,9 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
       rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
       mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     }
-    if (incompressible || freesurface) {
-      rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-      mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
+    if (incompressible) {
+      rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+      mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     }
     
     nu  = mu/rho;
@@ -1643,13 +1663,9 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                     CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
-  su2double LevelSet;
-  unsigned short iVar;
   
-  bool freesurface   = (config->GetKind_Regime() == FREESURFACE);
-  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool transition    = (config->GetKind_Trans_Model() == LM);
-  su2double epsilon     = config->GetFreeSurface_Thickness();
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -1690,13 +1706,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
     
-    /*--- Don't add source term in the interface or air ---*/
-    
-    if (freesurface) {
-      LevelSet = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim+1);
-      if (LevelSet > -epsilon) for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-    }
-    
     /*--- Subtract residual and the Jacobian ---*/
     
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -1705,7 +1714,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
   }
   
-  if (time_spectral) {
+  if (harmonic_balance) {
     
     su2double Volume, Source;
     unsigned short nVar_Turb = solver_container[TURB_SOL]->GetnVar();
@@ -1718,10 +1727,10 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       Volume = geometry->node[iPoint]->GetVolume();
       
-      /*--- Access stored time spectral source term ---*/
+      /*--- Access stored harmonic balance source term ---*/
       
       for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
-        Source = node[iPoint]->GetTimeSpectral_Source(iVar);
+        Source = node[iPoint]->GetHarmonicBalance_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
       
@@ -1799,7 +1808,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
   unsigned short iVar, iDim;
   su2double *Normal, *V_infty, *V_domain;
   
-  bool grid_movement	= config->GetGrid_Movement();
+  bool grid_movement  = config->GetGrid_Movement();
   
   Normal = new su2double[nDim];
   
@@ -2224,97 +2233,178 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
   
 }
 
-void CTurbSASolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSASolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
+  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics,
+             config,  val_marker, true);
+  
+}
+
+void CTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
+  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics,
+             config,  val_marker, false);
+  
+}
+
+void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                               CConfig *config, unsigned short val_marker, bool inlet_surface) {
+  
+  unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex, iPoint_Normal;
+  su2double *V_outlet, *V_inlet, *V_domain, *Normal, *UnitNormal, Area, Vn;
+  bool ReverseFlow;
   unsigned short iDim;
-  unsigned long iVertex, iPoint;
-  su2double *V_bleed, *V_domain, *Normal;
+  
+  bool grid_movement = config->GetGrid_Movement();
   
   Normal = new su2double[nDim];
-  
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  UnitNormal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    iPoint_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    GlobalIndex_donor = solver_container[FLOW_SOL]->GetDonorGlobalIndex(val_marker, iVertex);
+    GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
     
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
-    if (geometry->node[iPoint]->GetDomain()) {
+    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex != GlobalIndex_donor)) {
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
       
-      /*--- Allocate the value at the infinity ---*/
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
       
-      V_bleed = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
-      /*--- Set various quantities in the solver class ---*/
+      /*--- Check the flow direction. Project the flow into the normal to the inlet face ---*/
       
-      conv_numerics->SetPrimitive(V_domain, V_bleed);
+      Vn = 0.0; ReverseFlow = false;
+      for (iDim = 0; iDim < nDim; iDim++) {  Vn += V_domain[iDim+1]*UnitNormal[iDim]; }
       
-      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
+      if ((inlet_surface) && (Vn < 0.0)) { ReverseFlow = true; }
+      if ((!inlet_surface) && (Vn > 0.0)) { ReverseFlow = true; }
       
-      Solution_i[0] = node[iPoint]->GetSolution(0);
-      Solution_j[0] = nu_tilde_Engine;
+      /*--- Do not anything if there is a
+       reverse flow, Euler b.c. for the direct problem ---*/
       
-      conv_numerics->SetTurbVar(Solution_i, Solution_j);
-      
-      /*--- Set various other quantities in the conv_numerics class ---*/
-      
-      conv_numerics->SetNormal(Normal);
-      
-      /*--- Compute the residual using an upwind scheme ---*/
-      
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
-      
-      /*--- Jacobian contribution for implicit integration ---*/
-      
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
-      /*--- Viscous contribution ---*/
-      
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      
-      visc_numerics->SetPrimitive(V_domain, V_bleed);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      
+      if (!ReverseFlow) {
+        
+        /*--- Allocate the value at the infinity ---*/
+        
+        if (inlet_surface) {
+          V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+          V_outlet = solver_container[FLOW_SOL]->GetDonorPrimVar(val_marker, iVertex);
+          conv_numerics->SetPrimitive(V_domain, V_inlet);
+        }
+        else {
+          V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+          V_inlet = solver_container[FLOW_SOL]->GetDonorPrimVar(val_marker, iVertex);
+          conv_numerics->SetPrimitive(V_domain, V_outlet);
+        }
+        
+        /*--- Set the turb. variable solution
+         set  the turbulent variables. Here we use a Neumann BC such
+         that the turbulent variable is copied from the interior of the
+         domain to the outlet before computing the residual.
+         or set the turbulent variable states (prescribed for an inflow)  ----*/
+        
+        Solution_i[0] = node[iPoint]->GetSolution(0);
+        
+        //      if (inlet_surface) Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_outlet [nDim+9]);
+        //      else Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_inlet [nDim+9]);
+        
+        //      /*--- Inflow analysis (interior extrapolation) ---*/
+        //      if (((inlet_surface) && (!ReverseFlow)) || ((!inlet_surface) && (ReverseFlow))) {
+        //        Solution_j[0] = 2.0*node[iPoint]->GetSolution(0) - node[iPoint_Normal]->GetSolution(0);
+        //      }
+        
+        //      /*--- Outflow analysis ---*/
+        //      else {
+        //        if (inlet_surface) Solution_j[0] = Factor_nu_ActDisk*V_outlet [nDim+9];
+        //        else { Solution_j[0] = Factor_nu_ActDisk*V_inlet [nDim+9]; }
+        //      }
+        
+        /*--- Inflow analysis (interior extrapolation) ---*/
+        if (((inlet_surface) && (!ReverseFlow)) || ((!inlet_surface) && (ReverseFlow))) {
+          Solution_j[0] = node[iPoint]->GetSolution(0);
+        }
+        
+        /*--- Outflow analysis ---*/
+        else {
+          Solution_j[0] = nu_tilde_ActDisk;
+        }
+        
+        conv_numerics->SetTurbVar(Solution_i, Solution_j);
+        
+        /*--- Grid Movement ---*/
+        
+        if (grid_movement)
+          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        
+        /*--- Compute the residual using an upwind scheme ---*/
+        
+        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        LinSysRes.AddBlock(iPoint, Residual);
+        
+        /*--- Jacobian contribution for implicit integration ---*/
+        
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        
+        /*--- Viscous contribution ---*/
+        
+        visc_numerics->SetNormal(Normal);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
+        
+        /*--- Conservative variables w/o reconstruction ---*/
+        
+        if (inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
+        else visc_numerics->SetPrimitive(V_domain, V_outlet);
+        
+        /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+        
+        visc_numerics->SetTurbVar(Solution_i, Solution_j);
+        
+        visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+        
+        /*--- Compute residual, and Jacobians ---*/
+        
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        
+        /*--- Subtract residual, and update Jacobians ---*/
+        
+        //        LinSysRes.SubtractBlock(iPoint, Residual);
+        //        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        
+      }
     }
   }
   
   /*--- Free locally allocated memory ---*/
   
   delete[] Normal;
+  delete[] UnitNormal;
   
 }
 
 void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config) {
+                                          CConfig *config, unsigned short val_marker) {
+  
   //  unsigned long iVertex, iPoint, jPoint;
   //  unsigned short iVar, iDim;
   //
@@ -2476,7 +2566,8 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
 }
 
 void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config) {
+                                          CConfig *config, unsigned short val_marker) {
+  
   //  unsigned long iVertex, iPoint, jPoint;
   //  unsigned short iVar, iDim;
   //
@@ -2657,10 +2748,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-	bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -2756,9 +2846,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     for (iDim = 0; iDim < nDim; iDim++)
     Smatrix[iDim] = new su2double [nDim];
     /*--- c vector := transpose(WA)*(Wb) ---*/
-    cvector = new su2double* [nVar];
+    Cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-    cvector[iVar] = new su2double [nDim];
+    Cvector[iVar] = new su2double [nDim];
   }
   
   /*--- Initialize value for model constants ---*/
@@ -2842,33 +2932,36 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
-    long *Global2Local;
-    Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    /*--- First, set all indices to a negative value by default ---*/
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-      Global2Local[iPoint] = -1;
-    }
+
+    map<unsigned long,unsigned long> Global2Local;
+    map<unsigned long,unsigned long>::const_iterator MI;
+    
     /*--- Now fill array with the transform values only for local points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
     /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-    
+    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line; unsigned long iPoint_Global_Local = 0;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
     
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      iPoint_Local = Global2Local[iPoint_Global];
-      if (iPoint_Local >= 0) {
+       on the current processor, we will load and instantiate the vars. ---*/
+      
+      MI = Global2Local.find(iPoint_Global);
+      if (MI != Global2Local.end()) {
+        
+        iPoint_Local = Global2Local[iPoint_Global];
         
         if (compressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
@@ -2878,17 +2971,37 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
         }
-        if (freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
-        }
         
         /*--- Instantiate the solution at this node, note that the muT_Inf should recomputed ---*/
         node[iPoint_Local] = new CTurbSSTVariable(Solution[0], Solution[1], muT_Inf, nDim, nVar, constants, config);
+        iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
@@ -2899,8 +3012,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     /*--- Close the restart file ---*/
     restart_file.close();
     
-    /*--- Free memory needed for the transformation ---*/
-    delete [] Global2Local;
   }
   
   /*--- MPI solution ---*/
@@ -2951,7 +3062,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Compute mean flow and turbulence gradients ---*/
   
@@ -2971,9 +3081,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
       mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     }
-    if (incompressible || freesurface) {
-      rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-      mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
+    if (incompressible) {
+      rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+      mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     }
     
     dist = geometry->node[iPoint]->GetWall_Distance();    
@@ -3063,7 +3173,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -3085,9 +3194,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
         laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       }
-      if (incompressible || freesurface) {
-        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
-        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
+      if (incompressible) {
+        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       }
       
       beta_1 = constants[4];
@@ -3120,7 +3229,6 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -3142,9 +3250,9 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
         density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
         laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       }
-      if (incompressible || freesurface) {
-        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
-        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
+      if (incompressible) {
+        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       }
       
       beta_1 = constants[4];
@@ -3440,7 +3548,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config,
   bool adjoint = config->GetContinuous_Adjoint();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  //bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
@@ -3544,9 +3652,9 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config,
     Smatrix[iDim] = new su2double [nDim];
 
     /*--- c vector := transpose(WA)*(Wb) ---*/
-    cvector = new su2double* [nVar];
+    Cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-    cvector[iVar] = new su2double [nDim];
+    Cvector[iVar] = new su2double [nDim];
   }
 
   /*--- Initialize value for model constants ---*/
@@ -3799,27 +3907,27 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config,
           }
         }
 
-        if (freesurface) {
-          cout << "WARNING: Have not tested v2-f with freesurface!!   " << endl;
-          cout << "         Proceed at your own risk!!                " << endl;
+        // if (freesurface) {
+        //   cout << "WARNING: Have not tested v2-f with freesurface!!   " << endl;
+        //   cout << "         Proceed at your own risk!!                " << endl;
 
-          if (nDim == 2) {
-            point_line >> index
-                       >> dull_val >> dull_val >> dull_val >> dull_val
-                       >> dull_val >> dull_val >> dull_val >> dull_val
-                       >> Solution[0] >> Solution[1]
-                       >> Solution[2] >> Solution[3];
-          }
+        //   if (nDim == 2) {
+        //     point_line >> index
+        //                >> dull_val >> dull_val >> dull_val >> dull_val
+        //                >> dull_val >> dull_val >> dull_val >> dull_val
+        //                >> Solution[0] >> Solution[1]
+        //                >> Solution[2] >> Solution[3];
+        //   }
 
-          if (nDim == 3) {
-            point_line >> index
-                       >> dull_val >> dull_val >> dull_val >> dull_val
-                       >> dull_val >> dull_val >> dull_val >> dull_val
-                       >> dull_val >> dull_val
-                       >> Solution[0] >> Solution[1]
-                       >> Solution[2] >> Solution[3];
-          }
-        }
+        //   if (nDim == 3) {
+        //     point_line >> index
+        //                >> dull_val >> dull_val >> dull_val >> dull_val
+        //                >> dull_val >> dull_val >> dull_val >> dull_val
+        //                >> dull_val >> dull_val
+        //                >> Solution[0] >> Solution[1]
+        //                >> Solution[2] >> Solution[3];
+        //   }
+        // }
 
         /*--- Instantiate the solution at this node, note that the muT_Inf should recomputed ---*/
         node[iPoint_Local] = new CTurbKEVariable(Solution[0], Solution[1],
@@ -3908,7 +4016,7 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry,
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  //bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 
   /*--- Compute mean flow and turbulence gradients ---*/
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -3926,9 +4034,10 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry,
       rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
       mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     }
-    if (incompressible || freesurface) {
-      rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-      mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
+    //if (incompressible || freesurface) {
+    if (incompressible ) {
+      rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+      mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     }
 
     /*--- Scalars ---*/
@@ -4040,7 +4149,7 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry,
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  //bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -4063,9 +4172,10 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry,
         density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
         laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       }
-      if (incompressible || freesurface) {
-        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
-        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
+      //if (incompressible || freesurface) {
+      if (incompressible) {
+        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       }
 
 
@@ -4190,7 +4300,7 @@ void CTurbKESolver::BC_Isothermal_Wall(CGeometry *geometry,
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  //bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -4213,9 +4323,10 @@ void CTurbKESolver::BC_Isothermal_Wall(CGeometry *geometry,
         density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
         laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       }
-      if (incompressible || freesurface) {
-        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
-        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
+      //if (incompressible || freesurface) {
+      if (incompressible) {
+        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       }
 
       wall_k = node[jPoint]->GetSolution(0);

@@ -3,7 +3,7 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 4.3.0 "Cardinal"
+# \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -41,7 +41,7 @@
 #
 ##########################
 
-AC_INIT([SU2], [4.3.0], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [5.0.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -551,7 +551,7 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 4.3.0 'Cardinal'                          |
+|   / __| | | |_  )   Release 5.0.0 'Raven'                             |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
@@ -568,7 +568,7 @@ AC_MSG_RESULT([
 | - Prof. Edwin van der Weide's group at the University of Twente.      |
 | - Prof. Vincent Terrapon's group at the University of Liege.          |
 -------------------------------------------------------------------------
-| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |
+| Copyright (C) 2012-2017 SU2, the open-source CFD code.                |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |
 | modify it under the terms of the GNU Lesser General Public            |

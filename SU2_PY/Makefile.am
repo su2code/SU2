@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python framework
 # \author M. Colonno, T. Economon, F. Palacios, T. Lukaczyk
-# \version 4.3.0 "Cardinal"
+# \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -48,7 +48,7 @@ bin_SCRIPTS = \
     discrete_adjoint.py \
     direct_differentiation.py \
     fsi_computation.py \
-    pyWrap_SU2_CFD.py
+    SU2_CFD.py
 
 
 mypkgdir = $(prefix)/bin
@@ -90,6 +90,7 @@ nobase_dist_mypkg_DATA= \
     SU2/util/ordered_bunch.py \
     SU2/util/ordered_dict.py \
     SU2/util/plot.py \
+    SU2/util/polarSweepLib.py \
     SU2/util/pyCppTap.py \
     SU2/util/switch.py \
     SU2/util/which.py \

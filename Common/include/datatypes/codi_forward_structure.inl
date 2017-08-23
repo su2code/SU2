@@ -2,7 +2,7 @@
  * \file codi_forward_structure.inl
  * \brief Inline subroutines for <i>codi_forward_structure.hpp<i>.
  * \author T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,15 +33,15 @@
 #pragma once
 
 namespace SU2_TYPE{
-  inline void SetValue(su2double& data, const double &val){data.setValue(val);}
+  inline void SetValue(su2double& data, const double &val) {data.setValue(val);}
 
-  inline double GetValue(const su2double& data){return data.getValue();}
+  inline double GetValue(const su2double& data) { return data.getValue();}
 
-  inline void SetSecondary(su2double& data, const double &val){data.setGradient(val);}
+  inline void SetSecondary(su2double& data, const double &val) {data.setGradient(val);}
 
-  inline double GetSecondary(const su2double& data){return data.getGradient();}
+  inline double GetSecondary(const su2double& data) { return data.getGradient();}
 
-  inline double GetDerivative(const su2double& data){return data.getGradient();}
+  inline double GetDerivative(const su2double& data) { return data.getGradient();}
 
-  inline void SetDerivative(su2double& data, const double &val){data.setGradient(val);}
+  inline void SetDerivative(su2double& data, const double &val) {data.setGradient(val);}
 }

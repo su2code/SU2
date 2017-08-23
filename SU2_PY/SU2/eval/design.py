@@ -3,7 +3,7 @@
 ## \file design.py
 #  \brief python package for designs
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -293,8 +293,8 @@ def obj_df(dvs,config,state=None):
 
         vals_out.append(grad)
     else:
+        marker_monitored = config['MARKER_MONITORING']
         for i_obj,this_obj in enumerate(objectives):
-            marker_monitored = config['MARKER_MONITORING']
             scale = def_objs[this_obj]['SCALE']
             sign  = su2io.get_objectiveSign(this_obj)
             # Correct marker monitoring for case where multiple objectives are evaluated separately

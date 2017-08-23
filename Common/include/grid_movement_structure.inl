@@ -2,7 +2,7 @@
  * \file grid_movement_structure.inl
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -218,9 +218,19 @@ inline void CVolumetricMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nI
 
 inline unsigned long CVolumetricMovement::Get_nIterMesh() { return nIterMesh; }
 
-inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV){
-  for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++){
-    if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)){ return true;}
+inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV) {
+  for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+    if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)) { return true;}
   }
   return false;
 }
+
+inline su2double CFreeFormBlending::GetBasis(short val_i, su2double val_t){return 0.0;}
+
+inline su2double CFreeFormBlending::GetDerivative(short val_i, su2double val_t, short val_order){return 0.0;}
+
+inline void CFreeFormBlending::SetOrder(short Order, short n_controlpoints){}
+
+inline su2double CFreeFormBlending::GetOrder(){return Order;}
+
+inline su2double CFreeFormBlending::GetDegree(){return Degree;}

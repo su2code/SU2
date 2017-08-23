@@ -1,8 +1,12 @@
 -----------------------------------------------------------
-  SU2 (ver. 4.3.0 "Cardinal"): The Open-Source CFD Code
+  SU2 (ver. 5.0.0 "Raven"): The Open-Source CFD Code
 -----------------------------------------------------------
 
 Computational analysis tools have revolutionized the way we design aerospace systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making computational analysis and design freely available as open-source software and involving everyone in its creation and development. 
+
+For an overview of the technical details in SU2, please see the following AIAA Journal article:
+
+"SU2: An open-source suite for multiphysics simulation and design," AIAA Journal, 54(3):828-846, 2016. http://arc.aiaa.org/doi/10.2514/1.J053813
 
 [![Build Status](https://travis-ci.org/su2code/SU2.svg?branch=develop)](https://travis-ci.org/su2code/SU2)
 

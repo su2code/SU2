@@ -2,7 +2,7 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -237,19 +237,24 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   /*--- Set specific preconditioner matrices (ILU) ---*/
   
   if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
+  		((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
+  		((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
+  		(config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
       (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
     
     /*--- Reserve memory for the ILU matrix. ---*/
     
     ILU_matrix = new su2double [nnz*nVar*nEqn];
     for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
+
   }
   
   /*--- Set specific preconditioner matrices (Jacobi and Linelet) ---*/
   
   if ((config->GetKind_Linear_Solver_Prec() == JACOBI) ||
       (config->GetKind_Linear_Solver_Prec() == LINELET) ||
+   		((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI)) ||
+    	((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI)) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_JACOBI) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_LINELET) ||
       (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Solver() == JACOBI))   {
@@ -258,6 +263,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
     
     invM = new su2double [nPoint*nVar*nEqn];
     for (iVar = 0; iVar < nPoint*nVar*nEqn; iVar++) invM[iVar] = 0.0;
+
   }
 
 }
@@ -508,6 +514,102 @@ void CSysMatrix::DeleteValsRowi(unsigned long i) {
   
 }
 
+
+su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
+  
+  unsigned long i, j, j1, j2;
+  su2double det = 0;
+  su2double **m = NULL;
+  
+  if (n < 1) { }
+  else if (n == 1) { det = a[0][0]; }
+  else if (n == 2) { det = a[0][0] * a[1][1] - a[1][0] * a[0][1]; }
+  else {
+    det = 0.0;
+
+    for (j1=0;j1<n;j1++) {
+      m = new su2double*[n-1];
+      for (i=0;i<n-1;i++)
+        m[i] = new su2double[n-1];
+      
+      for (i=1;i<n;i++) {
+        j2 = 0;
+        for (j=0;j<n;j++) {
+          if (j == j1)
+          continue;
+          m[i-1][j2] = a[i][j];
+          j2++;
+        }
+      }
+      
+      det += pow(-1.0,j1+2.0) * a[0][j1] * MatrixDeterminant(m,n-1);
+      for (i=0;i<n-1;i++)
+      delete [] m[i];
+      delete [] m;
+    }
+    
+  }
+  
+  return(det);
+  
+}
+
+void CSysMatrix::MatrixCoFactor(su2double **a, unsigned long n, su2double **b) {
+  
+  unsigned long i,j,ii,jj,i1,j1;
+  su2double det;
+  su2double **c;
+  
+  c = new su2double*[n-1];
+  for (i=0;i<n-1;i++)
+    c[i] = new su2double[n-1];
+  
+  for (j=0;j<n;j++) {
+    for (i=0;i<n;i++) {
+      
+      /*--- Form the adjoint a_ij ---*/
+      i1 = 0;
+      for (ii=0;ii<n;ii++) {
+        if (ii == i)
+        continue;
+        j1 = 0;
+        for (jj=0;jj<n;jj++) {
+          if (jj == j)
+          continue;
+          c[i1][j1] = a[ii][jj];
+          j1++;
+        }
+        i1++;
+      }
+      
+      /*--- Calculate the determinate ---*/
+      det = MatrixDeterminant(c,n-1);
+      
+      /*--- Fill in the elements of the cofactor ---*/
+      b[i][j] = pow(-1.0,i+j+2.0) * det;
+    }
+  }
+  for (i=0;i<n-1;i++)
+    delete [] c[i];
+  delete [] c;
+  
+}
+
+void CSysMatrix::MatrixTranspose(su2double **a, unsigned long n) {
+  
+  unsigned long i, j;
+  su2double tmp;
+  
+  for (i=1;i<n;i++) {
+    for (j=0;j<i;j++) {
+      tmp = a[i][j];
+      a[i][j] = a[j][i];
+      a[j][i] = tmp;
+    }
+  }
+  
+}
+
 void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs, bool transposed) {
   
   short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
@@ -518,7 +620,7 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs, bool t
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
   
-  if (!transposed){
+  if (!transposed) {
     for (iVar = 0; iVar < (short)nVar; iVar++)
       for (jVar = 0; jVar < (short)nVar; jVar++)
         block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
@@ -1059,13 +1161,45 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
   
+  //  su2double Det, **Matrix, **CoFactor;
+  //  su2double *Block = GetBlock(block_i, block_i);
+  //
+  //  Matrix = new su2double*[nVar];
+  //  CoFactor = new su2double*[nVar];
+  //  for (iVar=0;iVar<nVar;iVar++) {
+  //    Matrix[iVar] = new su2double[nVar];
+  //    CoFactor[iVar] = new su2double[nVar];
+  //  }
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    for (jVar = 0; jVar < nVar; jVar++)
+  //    Matrix[iVar][jVar] = Block[jVar*nVar+iVar];
+  //  }
+  //
+  //  Det =  MatrixDeterminant(Matrix, nVar);
+  //  MatrixCoFactor(Matrix, nVar, CoFactor);
+  //  MatrixTranspose(CoFactor, nVar);
+  //
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    for (jVar = 0; jVar < nVar; jVar++)
+  //    invBlock[jVar*nVar+iVar] = CoFactor[iVar][jVar]/Det;
+  //  }
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    delete [] Matrix[iVar];
+  //    delete [] CoFactor[iVar];
+  //  }
+  //  delete [] Matrix;
+  //  delete [] CoFactor;
+  
 }
 
 
 void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double *invBlock) {
   
   unsigned long iVar, jVar;
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++)
       aux_vector[jVar] = 0.0;
@@ -1077,6 +1211,38 @@ void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double
     for (jVar = 0; jVar < nVar; jVar++)
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
+  
+  //  su2double Det, **Matrix, **CoFactor;
+  //  su2double *Block = GetBlock_ILUMatrix(block_i, block_i);
+  //
+  //  Matrix = new su2double*[nVar];
+  //  CoFactor = new su2double*[nVar];
+  //  for (iVar=0;iVar<nVar;iVar++) {
+  //    Matrix[iVar] = new su2double[nVar];
+  //    CoFactor[iVar] = new su2double[nVar];
+  //  }
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    for (jVar = 0; jVar < nVar; jVar++)
+  //    Matrix[iVar][jVar] = Block[jVar*nVar+iVar];
+  //  }
+  //
+  //  Det =  MatrixDeterminant(Matrix, nVar);
+  //  MatrixCoFactor(Matrix, nVar, CoFactor);
+  //  MatrixTranspose(CoFactor, nVar);
+  //
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    for (jVar = 0; jVar < nVar; jVar++)
+  //    invBlock[jVar*nVar+iVar] = CoFactor[iVar][jVar]/Det;
+  //  }
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    delete [] Matrix[iVar];
+  //    delete [] CoFactor[iVar];
+  //  }
+  //  delete [] Matrix;
+  //  delete [] CoFactor;
   
 }
 
@@ -1134,6 +1300,7 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -1230,7 +1397,7 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
   for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++) {
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
-      if (transposed){
+      if (transposed) {
         Block_ij = GetBlock(jPoint, iPoint);
         SetBlockTransposed_ILUMatrix(iPoint, jPoint, Block_ij);
       } else {
@@ -1385,6 +1552,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -1576,6 +1744,7 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -1988,6 +2157,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif

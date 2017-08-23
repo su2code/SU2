@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,6 +42,8 @@ inline unsigned long CGeometry::GetGlobal_nPoint(void) { return 0; }
 inline unsigned long CGeometry::GetGlobal_nPointDomain(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElem(void) { return 0; }
+
+inline unsigned long CGeometry::GetGlobal_nElemDomain(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElemLine(void) { return 0; }
 
@@ -155,7 +157,7 @@ inline unsigned long CGeometry::GetnVertex(unsigned short val_marker) { return n
 
 inline unsigned long CGeometry::GetnEdge(void) { return nEdge; }
 
-inline bool CGeometry::FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem, unsigned short &face_second_elem) {return 0;}
+inline bool CGeometry::FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem, unsigned short &face_second_elem) { return 0;}
 
 inline void CGeometry::SetBoundVolume(void) { }
 
@@ -195,17 +197,30 @@ inline void CGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool
 
 inline void CGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) { }
 
-inline su2double CGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
-inline su2double CGeometry::Compute_AoA(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
   
-inline su2double CGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
-inline su2double CGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
-inline su2double CGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
-inline su2double CGeometry::Compute_Volume(CConfig *config, bool original_surface) { return 0; }
+inline void CGeometry::Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
+                                               unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
+                                               vector<su2double> &Zcoord_Airfoil) { }
+
+inline su2double CGeometry::Compute_Dihedral(su2double *LeadingEdge_im1, su2double *TrailingEdge_im1,
+                                            su2double *LeadingEdge_i, su2double *TrailingEdge_i) { return 0; }
+
+inline su2double CGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2double *TrailingEdge_im1,
+                                              su2double *LeadingEdge_i, su2double *TrailingEdge_i,
+                                              su2double *LeadingEdge_ip1, su2double *TrailingEdge_ip1) { return 0; }
+
+inline void CGeometry::Compute_Wing(CConfig *config, bool original_surface,
+                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC,
+                                    su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral) { }
 
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
@@ -231,6 +246,8 @@ inline unsigned long CPhysicalGeometry::GetGlobal_nPoint(void) { return Global_n
 inline unsigned long CPhysicalGeometry::GetGlobal_nPointDomain(void) { return Global_nPointDomain; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElem(void) { return Global_nElem; }
+
+inline unsigned long CPhysicalGeometry::GetGlobal_nElemDomain(void) { return Global_nElemDomain; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemLine(void) { return Global_nelem_edge; }
 
@@ -293,14 +310,14 @@ inline vector<vector<unsigned long> > CPhysicalGeometry::GetPlanarPoints() { ret
 
 inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { return Plane_points; }
 
-inline void CGeometry::SetSensitivity(CConfig* config){}
+inline void CGeometry::SetSensitivity(CConfig* config) {}
 
-inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim){return 0.0;}
+inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return 0.0;}
 
-inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim){return Sensitivity[iPoint*nDim+iDim];}
+inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return Sensitivity[iPoint*nDim+iDim];}
 
-inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){}
+inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {}
 
-inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){Sensitivity[iPoint*nDim+iDim] = val;}
+inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {Sensitivity[iPoint*nDim+iDim] = val;}
 
-inline void CGeometry::Check_Periodicity(CConfig* config){}
+inline void CGeometry::Check_Periodicity(CConfig* config) {}

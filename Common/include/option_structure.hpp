@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -19,7 +19,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -144,14 +144,14 @@ const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
 
-const int N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
-const int N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
-const int N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
-const int N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
-const int N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
-const int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
-const int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
-const int N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
+const unsigned short N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
+const unsigned short N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
+const unsigned short N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
+const unsigned short N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
+const unsigned short N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
+const unsigned short N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
+const unsigned short N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
+const unsigned short N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
 /*!
  * \brief Boolean answers
@@ -300,13 +300,10 @@ static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string
 enum ENUM_REGIME {
   COMPRESSIBLE = 0,			/*!< \brief Definition of compressible solver. */
   INCOMPRESSIBLE = 1,				/*!< \brief Definition of incompressible solver. */
-  FREESURFACE = 2			/*!< \brief Definition of freesurface solver (incompressible). */
 };
 static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
 ("COMPRESSIBLE", COMPRESSIBLE)
-("INCOMPRESSIBLE", INCOMPRESSIBLE)
-("FREESURFACE", FREESURFACE);
-
+("INCOMPRESSIBLE", INCOMPRESSIBLE);
 /*!
  * \brief different non-dimensional modes
  */
@@ -495,7 +492,8 @@ enum ENUM_GRIDMOVEMENT {
   ELASTICITY = 9,    /*!< \brief Linear Elasticity. */
   AEROELASTIC_RIGID_MOTION = 10, /*!< \brief Simulation with rotation and aeroelastic motion. */
   STEADY_TRANSLATION = 11,    /*!< \brief Simulation in a steadily translating frame. */
-  GUST = 12 /*!< \brief Simulation on a static mesh with a gust. */
+  GUST = 12, /*!< \brief Simulation on a static mesh with a gust. */
+  MOVING_HTP = 13    /*!< \brief Simulation with moving HTP (rotation). */
 
 };
 
@@ -510,6 +508,7 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("ROTATING_FRAME", ROTATING_FRAME)
 ("ELASTICITY", ELASTICITY)
 ("MOVING_WALL", MOVING_WALL)
+("MOVING_HTP", MOVING_HTP)
 ("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
 ("STEADY_TRANSLATION", STEADY_TRANSLATION)
 ("GUST", GUST);
@@ -641,11 +640,13 @@ static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, EN
  */
 enum ENUM_TRANS_MODEL {
   NO_TRANS_MODEL = 0,            /*!< \brief No transition model. */
-  LM = 1												/*!< \brief Kind of transition model (LM for Spalart-Allmaras). */
+  LM = 1,	/*!< \brief Kind of transition model (LM for Spalart-Allmaras). */
+  BC = 2	/*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
 static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, ENUM_TRANS_MODEL>
 ("NONE", NO_TRANS_MODEL)
-("LM", LM);
+("LM", LM)
+("BC", BC); //BAS-CAKMAKCIOGLU
 
 /*!
  * \brief type of time integration schemes
@@ -753,7 +754,6 @@ enum BC_TYPE {
   SUPERSONIC_OUTLET = 20,		/*!< \brief Boundary supersonic inlet definition. */
   ENGINE_INFLOW = 21,		/*!< \brief Boundary nacelle inflow. */
   ENGINE_EXHAUST = 22,		/*!< \brief Boundary nacelle exhaust. */
-  ENGINE_BLEED = 23,		/*!< \brief Boundary engine bleed. */
   RIEMANN_BOUNDARY= 24,   /*!< \brief Riemann Boundary definition. */
   ISOTHERMAL = 25,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 26,      /*!< \brief No slip constant heat flux wall boundary condition. */
@@ -764,6 +764,8 @@ enum BC_TYPE {
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
   NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
+  INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
+  FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -864,12 +866,45 @@ static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateM
  */
 enum INLET_TYPE {
   TOTAL_CONDITIONS = 1,		/*!< \brief User specifies total pressure, total temperature, and flow direction. */
-  MASS_FLOW = 2           /*!< \brief User specifies density and velocity (mass flow). */
+  MASS_FLOW = 2,           /*!< \brief User specifies density and velocity (mass flow). */
+  INPUT_FILE = 3           /*!< \brief User specifies an input file. */
 };
 static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
-("MASS_FLOW", MASS_FLOW);
+("MASS_FLOW", MASS_FLOW)
+("INPUT_FILE", INPUT_FILE);
 
+/*!
+ * \brief types engine inflow boundary treatments
+ */
+enum ENGINE_INFLOW_TYPE {
+  FAN_FACE_MACH = 1,	         /*!< \brief User specifies fan face mach number. */
+  FAN_FACE_MDOT = 2,           /*!< \brief User specifies Static pressure. */
+  FAN_FACE_PRESSURE = 3        /*!< \brief User specifies Static pressure. */
+};
+static const map<string, ENGINE_INFLOW_TYPE> Engine_Inflow_Map = CCreateMap<string, ENGINE_INFLOW_TYPE>
+("FAN_FACE_MACH", FAN_FACE_MACH)
+("FAN_FACE_MDOT", FAN_FACE_MDOT)
+("FAN_FACE_PRESSURE", FAN_FACE_PRESSURE);
+
+/*!
+ * \brief types actuator disk boundary treatments
+ */
+enum ACTDISK_TYPE {
+  VARIABLES_JUMP = 1,		/*!< \brief User specifies the variables jump. */
+  BC_THRUST = 2,     /*!< \brief User specifies the BC thrust. */
+  NET_THRUST = 3,     /*!< \brief User specifies the Net thrust. */
+  DRAG_MINUS_THRUST = 4,     /*!< \brief ACDC computes the right thrust. */
+  MASSFLOW = 5,     /*!< \brief ACDC computes the right thrust. */
+  POWER = 6     /*!< \brief User specifies the Net thrust. */
+};
+static const map<string, ACTDISK_TYPE> ActDisk_Map = CCreateMap<string, ACTDISK_TYPE>
+("VARIABLES_JUMP", VARIABLES_JUMP)
+("BC_THRUST", BC_THRUST)
+("NET_THRUST", NET_THRUST)
+("DRAG_MINUS_THRUST", DRAG_MINUS_THRUST)
+("MASSFLOW", MASSFLOW)
+("POWER", POWER);
 
 /*!
  * \brief types of geometric entities based on VTK nomenclature
@@ -908,7 +943,6 @@ enum ENUM_OBJECTIVE {
   THRUST_COEFFICIENT = 17,		  /*!< \brief Thrust objective function definition. */
   TORQUE_COEFFICIENT = 18,		  /*!< \brief Torque objective function definition. */
   FIGURE_OF_MERIT = 19,		      /*!< \brief Rotor Figure of Merit objective function definition. */
-  FREE_SURFACE = 20,				    /*!< \brief Free Surface objective function definition. */
   MAX_THICKNESS = 21,           /*!< \brief Maximum thickness. */
   MIN_THICKNESS = 22,           /*!< \brief Minimum thickness. */
   MAX_THICK_SEC1 = 23,          /*!< \brief Maximum thickness in section 1. */
@@ -919,7 +953,10 @@ enum ENUM_OBJECTIVE {
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  OUTFLOW_GENERALIZED=31          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  OUTFLOW_GENERALIZED = 31,       /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
+  RADIAL_DISTORTION = 36, 	      /*!< \brief Radial Distortion objective function definition. */
+  CIRCUMFERENTIAL_DISTORTION = 37  /*!< \brief Circumferential Distortion objective function definition. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -942,7 +979,6 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
 ("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
-("FREE_SURFACE", FREE_SURFACE)
 ("MAX_THICKNESS", MAX_THICKNESS)
 ("MIN_THICKNESS", MIN_THICKNESS)
 ("MAX_THICK_SEC1", MAX_THICK_SEC1)
@@ -953,7 +989,10 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE)
-("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED);
+("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED)
+("AERO_DRAG", AERO_DRAG_COEFFICIENT)
+("RADIAL_DISTORTION", RADIAL_DISTORTION)
+("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION);
 
 /*!
  * \brief types of residual criteria equations
@@ -1051,6 +1090,17 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("PARAVIEW", PARAVIEW);
 
 /*!
+ * \brief type of jump definition
+ */
+enum JUMP_DEFINITION {
+  DIFFERENCE = 1,     /*!< \brief Jump given by a difference in values. */
+  RATIO = 2           /*!< \brief Jump given by a ratio. */
+};
+static const map<string, JUMP_DEFINITION> Jump_Map = CCreateMap<string, JUMP_DEFINITION>
+("DIFFERENCE", DIFFERENCE)
+("RATIO", RATIO);
+
+/*!
  * \brief type of multigrid cycle
  */
 enum MG_CYCLE {
@@ -1097,43 +1147,71 @@ enum ENUM_PARAM {
   SCALE = 2,			           /*!< \brief Surface rotation as design variable. */
   FFD_SETTING = 3,		       /*!< \brief No surface deformation. */
   FFD_CONTROL_POINT = 4,	   /*!< \brief Free form deformation for 3D design (change a control point). */
-  FFD_CAMBER = 5,		       /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS = 6,		     /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_DIHEDRAL_ANGLE = 7,	   /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
-  FFD_TWIST_ANGLE = 8,		   /*!< \brief Free form deformation for 3D design (change the twist angle). */
-  FFD_ROTATION = 9,		       /*!< \brief Free form deformation for 3D design (rotation around a line). */
-  FFD_CONTROL_POINT_2D = 10, /*!< \brief Free form deformation for 2D design (change a control point). */
-  FFD_CAMBER_2D = 11,		     /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS_2D = 12,		 /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_CONTROL_SURFACE = 13,	 /*!< \brief Free form deformation for 3D design (control surface). */
-  HICKS_HENNE = 14,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
-  PARABOLIC = 15,		         /*!< \brief Parabolic airfoil definition as design variables. */
-  NACA_4DIGITS = 16,	         /*!< \brief The four digits NACA airfoil family as design variables. */
-  AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
-  SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
-  CUSTOM = 19                /*!< 'CUSTOM' for use in external python analysis. */
+  FFD_NACELLE = 5,	         /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_GULL = 6,	             /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_CAMBER = 7,		         /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_TWIST = 8,		         /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
+  FFD_THICKNESS = 9,		     /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_DIHEDRAL_ANGLE = 10,	 /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
+  FFD_ROTATION = 11,		     /*!< \brief Free form deformation for 3D design (rotation around a line). */
+  FFD_CONTROL_POINT_2D = 12, /*!< \brief Free form deformation for 2D design (change a control point). */
+  FFD_CAMBER_2D = 13,		     /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_THICKNESS_2D = 14,		 /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_TWIST_2D = 15,		     /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_CONTROL_SURFACE = 16,	 /*!< \brief Free form deformation for 3D design (control surface). */
+  HICKS_HENNE = 17,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
+  PARABOLIC = 18,		         /*!< \brief Parabolic airfoil definition as design variables. */
+  NACA_4DIGITS = 19,	       /*!< \brief The four digits NACA airfoil family as design variables. */
+  AIRFOIL = 20,		           /*!< \brief Airfoil definition as design variables. */
+  CST = 21,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
+  SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
+  SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
+  CUSTOM = 24,               /*!< 'CUSTOM' for use in external python analysis. */
+  NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
+  ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
+  FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
 ("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
+("FFD_TWIST_2D", FFD_TWIST_2D)
+("FFD_ANGLE_OF_ATTACK", FFD_ANGLE_OF_ATTACK)
 ("FFD_CAMBER_2D", FFD_CAMBER_2D)
 ("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
 ("HICKS_HENNE", HICKS_HENNE)
+("SURFACE_BUMP", SURFACE_BUMP)
+("ANGLE_OF_ATTACK", ANGLE_OF_ATTACK)
 ("NACA_4DIGITS", NACA_4DIGITS)
 ("TRANSLATION", TRANSLATION)
 ("ROTATION", ROTATION)
 ("SCALE", SCALE)
 ("FFD_CONTROL_POINT", FFD_CONTROL_POINT)
 ("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
-("FFD_TWIST_ANGLE", FFD_TWIST_ANGLE)
 ("FFD_ROTATION", FFD_ROTATION)
 ("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
+("FFD_NACELLE", FFD_NACELLE)
+("FFD_GULL", FFD_GULL)
+("FFD_TWIST", FFD_TWIST)
 ("FFD_CAMBER", FFD_CAMBER)
 ("FFD_THICKNESS", FFD_THICKNESS)
 ("PARABOLIC", PARABOLIC)
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
-("CUSTOM",CUSTOM);
+("CUSTOM", CUSTOM)
+("NO_DEFORMATION", NO_DEFORMATION)
+("CST", CST);
+
+
+/*!
+ * \brief types of FFD Blending function
+ */
+enum ENUM_FFD_BLENDING{
+  BSPLINE_UNIFORM = 0,
+  BEZIER = 1,
+};
+static const map<string, ENUM_FFD_BLENDING> Blending_Map = CCreateMap<string, ENUM_FFD_BLENDING>
+("BSPLINE_UNIFORM", BSPLINE_UNIFORM)
+("BEZIER", BEZIER);
 
 /*!
  * \brief types of solvers for solving linear systems
@@ -1168,12 +1246,29 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
  * \brief types surface continuity at the intersection with the FFD
  */
 enum ENUM_FFD_CONTINUITY {
+  DERIVATIVE_NONE = 0,		/*!< \brief No derivative continuity. */
   DERIVATIVE_1ST = 1,		/*!< \brief First derivative continuity. */
-  DERIVATIVE_2ND = 2			/*!< \brief Second derivative continuity. */
+  DERIVATIVE_2ND = 2,	/*!< \brief Second derivative continuity. */
+  USER_INPUT = 3			      /*!< \brief User input. */
 };
 static const map<string, ENUM_FFD_CONTINUITY> Continuity_Map = CCreateMap<string, ENUM_FFD_CONTINUITY>
+("NO_DERIVATIVE", DERIVATIVE_NONE)
 ("1ST_DERIVATIVE", DERIVATIVE_1ST)
-("2ND_DERIVATIVE", DERIVATIVE_2ND);
+("2ND_DERIVATIVE", DERIVATIVE_2ND)
+("USER_INPUT", USER_INPUT);
+
+/*!
+ * \brief types of coordinates systems for the FFD
+ */
+enum ENUM_FFD_COORD_SYSTEM {
+  CARTESIAN = 0,
+  CYLINDRICAL = 1,
+  SPHERICAL = 2
+};
+static const map<string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = CCreateMap<string, ENUM_FFD_COORD_SYSTEM>
+("CARTESIAN", CARTESIAN)
+("CYLINDRICAL", CYLINDRICAL)
+("SPHERICAL", SPHERICAL);
 
 /*!
  * \brief types of sensitivity smoothing
@@ -1228,7 +1323,7 @@ enum ENUM_AXIS_ORIENTATION {
   Y_AXIS = 1, 	/*!< \brief Y axis orientation. */
   Z_AXIS = 2    /*!< \brief Z axis orientation. */
 };
-static const map<string, ENUM_AXIS_ORIENTATION> Axis_Orientation_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
+static const map<string, ENUM_AXIS_ORIENTATION> Axis_Stations_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
 ("X_AXIS", X_AXIS)
 ("Y_AXIS", Y_AXIS)
 ("Z_AXIS", Z_AXIS);
@@ -1237,12 +1332,12 @@ static const map<string, ENUM_AXIS_ORIENTATION> Axis_Orientation_Map = CCreateMa
  * \brief types of schemes for unsteady computations
  */
 enum ENUM_UNSTEADY {
-  STEADY = 0,             /*!< \brief A steady computation. */
-  TIME_STEPPING = 1,		/*!< \brief Use a time stepping strategy for unsteady computations. */
-  DT_STEPPING_1ST = 2,	/*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
-  DT_STEPPING_2ND = 3,	/*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
-  ROTATIONAL_FRAME = 4,   /*!< \brief Use a rotational source term. */
-  TIME_SPECTRAL = 5       	/*!< \brief Use a time spectral source term. */
+  STEADY = 0,            /*!< \brief A steady computation. */
+  TIME_STEPPING = 1,		 /*!< \brief Use a time stepping strategy for unsteady computations. */
+  DT_STEPPING_1ST = 2,	 /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
+  DT_STEPPING_2ND = 3,	 /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
+  ROTATIONAL_FRAME = 4,  /*!< \brief Use a rotational source term. */
+  HARMONIC_BALANCE = 5    /*!< \brief Use a harmonic balance source term. */
 
 };
 static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_UNSTEADY>
@@ -1250,7 +1345,7 @@ static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_U
 ("TIME_STEPPING", TIME_STEPPING)
 ("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)
 ("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
-("TIME_SPECTRAL", TIME_SPECTRAL)
+("HARMONIC_BALANCE", HARMONIC_BALANCE)
 ("ROTATIONAL_FRAME", ROTATIONAL_FRAME);
 
 /*!
@@ -1319,7 +1414,7 @@ static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYN
 
 /* END_CONFIG_ENUMS */
 
-class COptionBase{
+class COptionBase {
 private:
 public:
   COptionBase() {};
@@ -1352,7 +1447,7 @@ inline COptionBase::~COptionBase() {}
 
 
 template <class Tenum>
-class COptionEnum : public COptionBase{
+class COptionEnum : public COptionBase {
 
   map<string, Tenum> m;
   unsigned short & field; // Reference to the feildname
@@ -1394,7 +1489,7 @@ public:
   }
 };
 
-class COptionDouble : public COptionBase{
+class COptionDouble : public COptionBase {
   su2double & field; // Reference to the fieldname
   su2double def; // Default value
   string name; // identifier for the option
@@ -1425,7 +1520,7 @@ public:
   }
 };
 
-class COptionString : public COptionBase{
+class COptionString : public COptionBase {
   string & field; // Reference to the fieldname
   string def; // Default value
   string name; // identifier for the option
@@ -1451,7 +1546,7 @@ public:
   }
 };
 
-class COptionInt : public COptionBase{
+class COptionInt : public COptionBase {
   int & field; // Reference to the feildname
   int def; // Default value
   string name; // identifier for the option
@@ -1481,7 +1576,7 @@ public:
   }
 };
 
-class COptionULong : public COptionBase{
+class COptionULong : public COptionBase {
   unsigned long & field; // Reference to the feildname
   unsigned long def; // Default value
   string name; // identifier for the option
@@ -1511,7 +1606,7 @@ public:
   }
 };
 
-class COptionUShort : public COptionBase{
+class COptionUShort : public COptionBase {
   unsigned short & field; // Reference to the feildname
   unsigned short def; // Default value
   string name; // identifier for the option
@@ -1541,7 +1636,7 @@ public:
   }
 };
 
-class COptionLong : public COptionBase{
+class COptionLong : public COptionBase {
   long & field; // Reference to the feildname
   long def; // Default value
   string name; // identifier for the option
@@ -1572,7 +1667,7 @@ public:
 };
 
 
-class COptionBool : public COptionBase{
+class COptionBool : public COptionBase {
   bool & field; // Reference to the feildname
   bool def; // Default value
   string name; // identifier for the option
@@ -1606,7 +1701,7 @@ public:
 };
 
 template <class Tenum>
-class COptionEnumList : public COptionBase{
+class COptionEnumList : public COptionBase {
 
   map<string, Tenum> m;
   unsigned short * & field; // Reference to the feildname
@@ -1651,7 +1746,7 @@ public:
   }
 };
 
-class COptionDoubleArray : public COptionBase{
+class COptionDoubleArray : public COptionBase {
   su2double * & field; // Reference to the feildname
   string name; // identifier for the option
   const int size;
@@ -1710,7 +1805,7 @@ public:
   }
 };
 
-class COptionDoubleList : public COptionBase{
+class COptionDoubleList : public COptionBase {
   su2double * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
@@ -1752,7 +1847,48 @@ public:
   }
 };
 
-class COptionUShortList : public COptionBase{
+class COptionShortList : public COptionBase {
+  short * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionShortList(string option_field_name, unsigned short & list_size,  short * & option_field) : field(option_field), size(list_size) {
+    this->name = option_field_name;
+  }
+  
+  ~COptionShortList() {};
+  string SetValue(vector<string> option_value) {
+    // The size is the length of option_value
+    unsigned short option_size = option_value.size();
+    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
+      // No options
+      this->size = 0;
+      return "";
+    }
+    this->size = option_size;
+    
+    // Parse all of the options
+    short * vals = new  short[option_size];
+    for (unsigned long i  = 0; i < option_size; i++) {
+      istringstream is(option_value[i]);
+      unsigned short val;
+      if (!(is >> val)) {
+        delete [] vals;
+        return badValue(option_value, "short", this->name);
+      }
+      vals[i] = val;
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault() {
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionUShortList : public COptionBase {
   unsigned short * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
@@ -1793,7 +1929,7 @@ public:
   }
 };
 
-class COptionStringList : public COptionBase{
+class COptionStringList : public COptionBase {
   string * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
@@ -1827,7 +1963,7 @@ public:
   }
 };
 
-class COptionConvect : public COptionBase{
+class COptionConvect : public COptionBase {
   string name; // identifier for the option
   unsigned short & space;
   unsigned short & centered;
@@ -1873,7 +2009,7 @@ public:
   }
 };
 
-class COptionMathProblem : public COptionBase{
+class COptionMathProblem : public COptionBase {
   string name; // identifier for the option
   bool & cont_adjoint;
   bool cont_adjoint_def;
@@ -1883,7 +2019,7 @@ class COptionMathProblem : public COptionBase{
   bool restart_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field){
+  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
     this->name = option_field_name;
     this->cont_adjoint_def = cont_adjoint_default;
     this->disc_adjoint_def = disc_adjoint_default;
@@ -1914,7 +2050,7 @@ public:
       this->restart= true;
       return "";
     }
-    if (option_value[0] == "DISCRETE_ADJOINT"){
+    if (option_value[0] == "DISCRETE_ADJOINT") {
       this->disc_adjoint = true;
       this->cont_adjoint= false;
       this->restart = true;
@@ -1931,7 +2067,7 @@ public:
   
 };
 
-class COptionDVParam : public COptionBase{
+class COptionDVParam : public COptionBase {
   string name; // identifier for the option
   unsigned short & nDV;
   su2double ** & paramDV;
@@ -1999,26 +2135,33 @@ public:
     unsigned int i = 0;
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
       switch (this->design_variable[iDV]) {
-        case FFD_SETTING: nParamDV = 0; break;
+        case NO_DEFORMATION:       nParamDV = 0; break;
+        case FFD_SETTING:          nParamDV = 0; break;
         case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
-        case FFD_CAMBER_2D: nParamDV = 2; break;
-        case FFD_THICKNESS_2D: nParamDV = 2; break;
-        case HICKS_HENNE: nParamDV = 2; break;
-        case SCALE: nParamDV = 0; break;
-        case TRANSLATION: nParamDV = 3; break;
-        case ROTATION: nParamDV = 6; break;
-        case NACA_4DIGITS: nParamDV = 3; break;
-        case PARABOLIC: nParamDV = 2; break;
-        case AIRFOIL: nParamDV = 2; break;
-        case FFD_CONTROL_POINT: nParamDV = 7; break;
-        case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
-        case FFD_TWIST_ANGLE: nParamDV = 7; break;
-        case FFD_ROTATION: nParamDV = 7; break;
-        case FFD_CONTROL_SURFACE: nParamDV = 7; break;
-        case FFD_CAMBER: nParamDV = 3; break;
-        case FFD_THICKNESS: nParamDV = 3; break;
-        case SURFACE_FILE: nParamDV = 0; break;
-        case CUSTOM: nParamDV = 1; break;
+        case FFD_CAMBER_2D:        nParamDV = 2; break;
+        case FFD_THICKNESS_2D:     nParamDV = 2; break;
+        case FFD_TWIST_2D:         nParamDV = 3; break;
+        case HICKS_HENNE:          nParamDV = 2; break;
+        case SURFACE_BUMP:         nParamDV = 3; break;
+        case CST:                  nParamDV = 3; break;
+        case ANGLE_OF_ATTACK:      nParamDV = 1; break;
+        case SCALE:                nParamDV = 0; break;
+        case TRANSLATION:          nParamDV = 3; break;
+        case ROTATION:             nParamDV = 6; break;
+        case NACA_4DIGITS:         nParamDV = 3; break;
+        case PARABOLIC:            nParamDV = 2; break;
+        case AIRFOIL:              nParamDV = 2; break;
+        case FFD_CONTROL_POINT:    nParamDV = 7; break;
+        case FFD_NACELLE:          nParamDV = 6; break;
+        case FFD_GULL:             nParamDV = 2; break;
+        case FFD_TWIST:            nParamDV = 8; break;
+        case FFD_ROTATION:         nParamDV = 7; break;
+        case FFD_CONTROL_SURFACE:  nParamDV = 7; break;
+        case FFD_CAMBER:           nParamDV = 3; break;
+        case FFD_THICKNESS:        nParamDV = 3; break;
+        case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
+        case SURFACE_FILE:         nParamDV = 0; break;
+        case CUSTOM:               nParamDV = 1; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2032,13 +2175,17 @@ public:
         ss << option_value[i] << " ";
 
         if ((iParamDV == 0) &&
-            ((this->design_variable[iDV] == FFD_SETTING) ||
+            ((this->design_variable[iDV] == NO_DEFORMATION) ||
+             (this->design_variable[iDV] == FFD_SETTING) ||
+             (this->design_variable[iDV] == FFD_ANGLE_OF_ATTACK)||
              (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
              (this->design_variable[iDV] == FFD_CAMBER_2D) ||
+             (this->design_variable[iDV] == FFD_TWIST_2D) ||
              (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
              (this->design_variable[iDV] == FFD_CONTROL_POINT) ||
-             (this->design_variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
-             (this->design_variable[iDV] == FFD_TWIST_ANGLE) ||
+             (this->design_variable[iDV] == FFD_NACELLE) ||
+             (this->design_variable[iDV] == FFD_GULL) ||
+             (this->design_variable[iDV] == FFD_TWIST) ||
              (this->design_variable[iDV] == FFD_ROTATION) ||
              (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
              (this->design_variable[iDV] == FFD_CAMBER) ||
@@ -2074,7 +2221,7 @@ public:
   }
 };
 
-class COptionDVValue : public COptionBase{
+class COptionDVValue : public COptionBase {
   string name; // identifier for the option
   unsigned short* & nDV_Value;
   su2double ** & valueDV;
@@ -2156,7 +2303,7 @@ public:
       }
     }
 
-    if (i != totalnValueDV){
+    if (i != totalnValueDV) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": a design variable in the configuration file has the wrong number of values");
@@ -2174,7 +2321,7 @@ public:
   }
 };
 
-class COptionFFDDef : public COptionBase{
+class COptionFFDDef : public COptionBase {
   string name;
   unsigned short & nFFD;
   su2double ** & CoordFFD;
@@ -2269,7 +2416,7 @@ public:
   
 };
 
-class COptionFFDDegree : public COptionBase{
+class COptionFFDDegree : public COptionBase {
   string name;
   unsigned short & nFFD;
   unsigned short ** & DegreeFFD;
@@ -2357,7 +2504,7 @@ public:
 };
 
 // Class where the option is represented by (String, su2double, string, su2double, ...)
-class COptionStringDoubleList : public COptionBase{
+class COptionStringDoubleList : public COptionBase {
   string name; // identifier for the option
   unsigned short & size; // how many strings are there (same as number of su2doubles)
 
@@ -2407,7 +2554,7 @@ public:
   }
 };
 
-class COptionInlet : public COptionBase{
+class COptionInlet : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
@@ -2492,7 +2639,7 @@ public:
 };
 
 template <class Tenum>
-class COptionRiemann : public COptionBase{
+class COptionRiemann : public COptionBase {
 
 protected:
   map<string, Tenum> m;
@@ -2604,12 +2751,12 @@ class COptionNRBC : public COptionRiemann<Tenum> {
 public:
 	  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field,
 			  	  const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir): COptionRiemann<Tenum>(option_field_name, nMarker_NRBC,  Marker_NRBC, option_field,
-			  	   m, var1, var2,FlowDir){}
+			  	   m, var1, var2,FlowDir) {}
 	  ~COptionNRBC() {};
 
 };
 //template <class Tenum>
-//class COptionNRBC : public COptionBase{
+//class COptionNRBC : public COptionBase {
 //
 //  map<string, Tenum> m;
 //  unsigned short* & field; // Reference to the fieldname
@@ -2720,7 +2867,7 @@ public:
 
 
 //Inlet condition where the input direction is assumed
-class COptionExhaust : public COptionBase{
+class COptionExhaust : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
@@ -2784,72 +2931,7 @@ public:
   
 };
 
-//Inlet condition where the input direction is assumed
-class COptionBleed : public COptionBase{
-  string name; // identifier for the option
-  unsigned short & size;
-  string * & marker;
-  su2double * & massflow_target;
-  su2double * & temp_target;
-  
-public:
-  COptionBleed(string option_field_name, unsigned short & nMarker_Bleed, string* & Marker_Bleed, su2double* & MassFlow_Target, su2double* & Temp_Target) : size(nMarker_Bleed), marker(Marker_Bleed), massflow_target(MassFlow_Target), temp_target(Temp_Target) {
-    this->name = option_field_name;
-  }
-  
-  ~COptionBleed() {};
-  
-  string SetValue(vector<string> option_value) {
-    
-    unsigned short totalVals = option_value.size();
-    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->size = 0;
-      this->marker = NULL;
-      this->massflow_target = NULL;
-      this->temp_target = NULL;
-      return "";
-    }
-    
-    if (totalVals % 3 != 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 3");
-      this->size = 0;
-      this->marker = NULL;
-      this->massflow_target = NULL;
-      this->temp_target = NULL;
-      return newstring;
-    }
-    
-    unsigned short nVals = totalVals / 3;
-    this->size = nVals;
-    this->marker = new string[nVals];
-    this->massflow_target = new su2double[nVals];
-    this->temp_target = new su2double[nVals];
-    
-    for (unsigned long i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[3*i]);
-      istringstream ss_1st(option_value[3*i + 1]);
-      if (!(ss_1st >> this->massflow_target[i]))
-        return badValue(option_value, "bleed fixed", this->name);
-      istringstream ss_2nd(option_value[3*i + 2]);
-      if (!(ss_2nd >> this->temp_target[i]))
-        return badValue(option_value, "bleed fixed", this->name);
-    }
-    
-    return "";
-  }
-  
-  void SetDefault() {
-    this->marker = NULL;
-    this->massflow_target = NULL;
-    this->temp_target = NULL;
-    this->size = 0; // There is no default value for list
-  }
-  
-};
-
-class COptionPeriodic : public COptionBase{
+class COptionPeriodic : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker_bound;
@@ -3019,7 +3101,7 @@ public:
 };
 
 
-class COptionMixingPlane : public COptionBase{
+class COptionMixingPlane : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker_bound;
@@ -3083,7 +3165,7 @@ public:
 };
 
 template <class Tenum>
-class COptionTurboPerformance : public COptionBase{
+class COptionTurboPerformance : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker_turboIn;
@@ -3157,7 +3239,7 @@ public:
 };
 
 
-class COptionPython : public COptionBase{
+class COptionPython : public COptionBase {
   string name;
 public:
   COptionPython(const string name) {
@@ -3176,98 +3258,84 @@ public:
 
 
 
-class COptionActuatorDisk : public COptionBase{
+class COptionActDisk : public COptionBase {
   string name; // identifier for the option
   unsigned short & inlet_size;
   unsigned short & outlet_size;
   string * & marker_inlet;
   string * & marker_outlet;
-  su2double ** & origin;
-  su2double * & root_radius;
-  su2double * & tip_radius;
-  su2double * & press_jump;
-  su2double * & temp_jump;
-  su2double * & omega;
-  unsigned short * & distribution;
-
+  su2double ** & press_jump;
+  su2double ** & temp_jump;
+  su2double ** & omega;
+  
 public:
-  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, su2double ** & ActDisk_Origin, su2double * & ActDisk_RootRadius, su2double * & ActDisk_TipRadius, su2double * & ActDisk_PressJump, su2double * & ActDisk_TempJump, su2double * & ActDisk_Omega, unsigned short * & ActDisk_Distribution) : inlet_size(nMarker_ActDisk_Inlet), outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega), distribution(ActDisk_Distribution) {
+  COptionActDisk(const string name,
+                 unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string * & Marker_ActDiskInlet, string * & Marker_ActDiskOutlet,
+                 su2double ** & ActDisk_PressJump, su2double ** & ActDisk_TempJump, su2double ** & ActDisk_Omega) :
+  inlet_size(nMarker_ActDiskInlet), outlet_size(nMarker_ActDiskOutlet), marker_inlet(Marker_ActDiskInlet), marker_outlet(Marker_ActDiskOutlet),
+  press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
     this->name = name;
   }
-
-  ~COptionActuatorDisk() {};
+  
+  ~COptionActDisk() {};
   string SetValue(vector<string> option_value) {
-    const int mod_num = 11;
+    const int mod_num = 8;
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->SetDefault();
       return "";
     }
-
+    
     if (totalVals % mod_num != 0) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 10");
+      newstring.append(": must have a number of entries divisible by 8");
       this->SetDefault();
       return newstring;
     }
-
+    
     unsigned short nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
     this->marker_inlet = new string[this->inlet_size];
     this->marker_outlet = new string[this->outlet_size];
-    this->root_radius = new su2double[this->inlet_size];
-    this->tip_radius = new su2double[this->inlet_size];
-    this->press_jump = new su2double[this->outlet_size];
-    this->temp_jump = new su2double[this->outlet_size];
-    this->omega = new su2double[this->inlet_size];
-    this->distribution = new unsigned short[this->inlet_size];
-
-    this->origin = new su2double*[this->inlet_size];
+    
+    this->press_jump = new su2double*[this->inlet_size];
+    this->temp_jump = new su2double*[this->inlet_size];
+    this->omega = new su2double*[this->inlet_size];
     for (int i = 0; i < this->inlet_size; i++) {
-      this->origin[i] = new su2double[3];
+      this->press_jump[i] = new su2double[2];
+      this->temp_jump[i] = new su2double[2];
+      this->omega[i] = new su2double[2];
     }
-
+    
     string tname = "actuator disk";
-
+    
     for (int i = 0; i < this->inlet_size; i++) {
       this->marker_inlet[i].assign(option_value[mod_num*i]);
       this->marker_outlet[i].assign(option_value[mod_num*i+1]);
       istringstream ss_1st(option_value[mod_num*i + 2]);
-      if (!(ss_1st >> this->origin[i][0])) {
+      if (!(ss_1st >> this->press_jump[i][0])) {
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_2nd(option_value[mod_num*i + 3]);
-      if (!(ss_2nd >> this->origin[i][1])) {
+      if (!(ss_2nd >> this->temp_jump[i][0])) {
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_3rd(option_value[mod_num*i + 4]);
-      if (!(ss_3rd >> this->origin[i][2])) {
+      if (!(ss_3rd >> this->omega[i][0])) {
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_4th(option_value[mod_num*i + 5]);
-      if (!(ss_4th >> this->root_radius[i])) {
+      if (!(ss_4th >> this->press_jump[i][1])) {
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_5th(option_value[mod_num*i + 6]);
-      if (!(ss_5th >> this->tip_radius[i])) {
+      if (!(ss_5th >> this->temp_jump[i][1])) {
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_6th(option_value[mod_num*i + 7]);
-      if (!(ss_6th >> this->press_jump[i])) {
-        return badValue(option_value, tname, this->name);
-      }
-      istringstream ss_7th(option_value[mod_num*i + 8]);
-      if (!(ss_7th >> this->temp_jump[i])) {
-        return badValue(option_value, tname, this->name);
-      }
-      istringstream ss_8th(option_value[mod_num*i + 9]);
-      if (!(ss_8th >> this->omega[i])) {
-        return badValue(option_value, tname, this->name);
-      }
-      istringstream ss_9th(option_value[mod_num*i + 10]);
-      if (!(ss_9th >> this->distribution[i])) {
+      if (!(ss_6th >> this->omega[i][1])) {
         return badValue(option_value, tname, this->name);
       }
     }
@@ -3278,12 +3346,8 @@ public:
     this->outlet_size = 0;
     this->marker_inlet = NULL;
     this->marker_outlet = NULL;
-    this->origin = NULL;
-    this->root_radius = NULL;
-    this->tip_radius = NULL;
     this->press_jump = NULL;
     this->temp_jump = NULL;
     this->omega = NULL;
-    this->distribution = NULL;
   }
 };

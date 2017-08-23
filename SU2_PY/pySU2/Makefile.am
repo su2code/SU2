@@ -1,9 +1,9 @@
 ################################################################################
 #
 # \file Makefile.am
-# \brief Makefile for the SU2 Python-wrapper
+# \brief Makefile for the SU2 Python wrapper.
 # \author D. Thomas
-# \version 4.3.0 "Cardinal"
+# \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -40,33 +40,33 @@ SO_EXT=so
 
 SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
 SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
-SWIG_SO_REAL = _SU2Solver.${SO_EXT}
+SWIG_SO_REAL = _pysu2.${SO_EXT}
 
 PYTHON_INCLUDE = -I/usr/include/python2.7
-NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
-#MPI4PY_INCLUDE = /usr/lib/python2.7/dist-packages/mpi4py/include
+#NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
+MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
+                 -I/usr/local/lib/python2.7/site-packages/mpi4py/include \
+                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
+                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
+                 -I/Library/Python/2.7/site-packages/mpi4py/include
 
 SWIG = swig
 
 pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
-	-I${abs_top_srcdir}/SU2_CFD/include \
-	-I${abs_top_srcdir}/SU2_DEF/include \
-	-I${abs_top_srcdir}/SU2_DOT/include \
-	-I${abs_top_srcdir}/SU2_DOT/include \
-	-I${abs_top_srcdir}/SU2_GEO/include \
-	-I${abs_top_srcdir}/SU2_MSH/include \
-	-I${abs_top_srcdir}/SU2_SOL/include
+	-I${abs_top_srcdir}/SU2_CFD/include
 
+PY_INCLUDE = ${PYTHON_INCLUDE} -I${MPI4PY_INCLUDE}
 
-#PY_INCLUDE = ${PYTHON_INCLUDE} -I${NUMPY_INCLUDE} -I${MPI4PY_INCLUDE}
-PY_INCLUDE = ${PYTHON_INCLUDE} -I${NUMPY_INCLUDE}
-SWIG_INCLUDE = -I${abs_top_srcdir}/SU2_CFD/include \
-		-I${abs_top_srcdir}/Common/include
+PY_LIB = -lpython2.7 \
+         -L/usr/lib \
+         -L/usr/lib/x86_64-linux-gnu
+         
+
+SWIG_INCLUDE = ${PY_INCLUDE}
 
 SUBDIR_EXEC = ${bindir}
 
 all:	
-	@echo "******** Wrapping SU2 ********"; \
 	${MAKE} real; 
 	
 # List the dependencies
@@ -80,23 +80,26 @@ PARMETIS_INCLUDE = -I${abs_top_srcdir}/externals/parmetis/include
 TECIO_INCLUDE = -I${abs_top_srcdir}/externals/tecio/include
 
 #External libraries (METIS_LIB and PARMETIS_LIB are already defined)
-TECIO_LIB = ${abs_top_builddir}/externals/tecio/libtecio.a
+TECIO_LIB =
+if BUILD_TECIO
+  TECIO_LIB += ${abs_top_builddir}/externals/tecio/libtecio.a
+endif
 
 #SU2Core lib
 SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
 		${abs_top_builddir}/Common/lib/libSU2.a
 
 # Set the linking flags to use
-pySU2_LD_FLAGS = ${SU2SOLVER_LIB} ${TECIO_LIB} ${PARMETIS_LIB} ${METIS_LIB} ${CGNS_LIB}
+pySU2_LD_FLAGS = ${SU2SOLVER_LIB} ${TECIO_LIB} ${PARMETIS_LIB} ${METIS_LIB} ${CGNS_LIB} ${PY_LIB}
 
 # Set the command line flags to use for compilation
-pySU2_CC_FLAGS = ${EXTRA_CC_FLAGS} ${METIS_INCLUDE} ${PARMETIS_INCLUDE} ${TECIO_INCLUDE} ${CGNS_INCLUDE} ${pySU2_INCLUDE}
+pySU2_CC_FLAGS = ${CPPFLAGS} ${EXTRA_CC_FLAGS} ${METIS_INCLUDE} ${PARMETIS_INCLUDE} ${TECIO_INCLUDE} ${CGNS_INCLUDE} ${pySU2_INCLUDE}
 
 SO_LINK_FLAGS= -fPIC -shared 
 
 # Default rule for creating the _wrap.cxx file from the .i file
 ${SWIG_WRAP_REAL}.cxx: ${SU2SOLVER_LIB} ${SWIG_SRC}
-	${SWIG} ${TACS_DEF} -Wall ${SWIG_INCLUDE} -outdir ./ -o ${SWIG_WRAP_REAL}.cxx -c++ -python ${SWIG_SRC} 
+	${SWIG} ${CPPFLAGS} -Wall ${SWIG_INCLUDE} -outdir ./ -o ${SWIG_WRAP_REAL}.cxx -c++ -python ${SWIG_SRC} 
 
 #Default rule for compiling the .o files
 ${SWIG_WRAP_REAL}.o: ${SWIG_WRAP_REAL}.cxx
@@ -117,7 +120,7 @@ clean:
 	rm -f ${CURRENT_DIR}/*.h
 	rm -f ${CURRENT_DIR}/*.py
 
-install:
-	/usr/bin/install -c  SU2Solver.py ${bindir}
-	/usr/bin/install -c _SU2Solver.so ${bindir}
+install: all
+	${INSTALL} pysu2.py ${bindir}
+	${INSTALL} _pysu2.so ${bindir}
 

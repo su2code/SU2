@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time dependent numerical methods
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -369,6 +369,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
       /*--- Copy boundary values ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+        if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Residual_Old = solver->node[iPoint]->GetResidual_Old();
@@ -435,6 +436,7 @@ void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSo
       /*--- Copy boundary values ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+        if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Solution_Old = solver->node[iPoint]->GetResidual_Old();
@@ -697,24 +699,25 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       
       /*--- Calculate the inviscid and viscous forces ---*/
       
-      solver_container[FinestMesh][FLOW_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
-      solver_container[FinestMesh][FLOW_SOL]->Viscous_Forces(geometry[FinestMesh], config);
+      solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
+      solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
+      solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
       
       /*--- Evaluate convergence monitor ---*/
       
       if (config->GetConvCriteria() == CAUCHY) {
-        if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CDrag();
-        if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CLift();
+        if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CD();
+        if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CL();
         if (config->GetCauchy_Func_Flow() == NEARFIELD_PRESSURE) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
         if (config->GetCauchy_Func_Flow() == MASS_FLOW_RATE) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetOneD_MassFlowRate();
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-    	  if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
-    	  else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-    		  if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(3));
-    		  else (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(4));
-    	  }
+        if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
+        else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
+          if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(3));
+          else (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(4));
+        }
       }
       
       break;
@@ -738,15 +741,15 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-    	  if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
-    	  else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-    		  if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(3));
-    		  else (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(4));
-    	  }
+        if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
+        else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
+          if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(3));
+          else (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(4));
+        }
       }
       
       break;
-            
+          
   }
   
 }
@@ -807,7 +810,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
     for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
-      if ((config[iZone]->GetMGCycle() == FULLMG_CYCLE) || config[iZone]->GetLowFidelitySim()){
+      if ((config[iZone]->GetMGCycle() == FULLMG_CYCLE) || config[iZone]->GetLowFidelitySim()) {
         SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
       }
       SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
@@ -904,14 +907,13 @@ CStructuralIntegration::~CStructuralIntegration(void) { }
 
 void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container,
                                                   CNumerics *****numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-//  su2double monitor = 0.0;
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
   /*--- Preprocessing ---*/
 
   solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
-		  config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
+      config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
 
   /*--- Space integration ---*/
 
@@ -921,18 +923,15 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver
   /*--- Time integration ---*/
 
   Time_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
-		  	  	    config[iZone], RunTime_EqSystem, Iteration);
+                config[iZone], RunTime_EqSystem, Iteration);
 
   /*--- Postprocessing ---*/
 
   solver_container[iZone][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
-		  config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position],  MESH_0);
-
-//  /*--- Compute adimensional parameters and the convergence monitor ---*/
-//
-//  monitor = log10(solver_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0));
+      config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position],  MESH_0);
 
   /*--- Convergence strategy ---*/
+
   Convergence_Monitoring_FEM(geometry[iZone][MESH_0], config[iZone], solver_container[iZone][MESH_0][SolContainer_Position], Iteration);
 
 }

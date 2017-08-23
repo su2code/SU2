@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,12 +48,13 @@ using namespace std;
 /*!
  * \class CPrimalGrid
  * \brief Class to define the numerical primal grid.
- * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \author F. Palacios, T. Economon
+ * \version 5.0.0 "Raven"
  */
 class CPrimalGrid {
 protected:
 	unsigned long *Nodes;         /*!< \brief Vector to store the global nodes of an element. */
+  unsigned long GlobalIndex;    /*!< \brief The global index of an element. */
 	long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
 	su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
 	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
@@ -166,7 +167,19 @@ public:
 	 * \return <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
 	 */
 	bool GetDivide(void);
-
+  
+  /*!
+   * \brief Get the element global index in a parallel computation.
+   * \return Global index of the element in a parallel computation.
+   */
+  unsigned long GetGlobalIndex(void);
+  
+  /*!
+   * \brief Set the global index for an element in a parallel computation.
+   * \return Global index of an element in a parallel computation.
+   */
+  void SetGlobalIndex(unsigned long val_globalindex);
+	
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_domainelement Index of the domain element which has a face shared by this boundary element.
@@ -247,7 +260,6 @@ public:
 	 */
 	virtual unsigned long GetNode(unsigned short val_node) = 0;
   
-  
   /*!
 	 * \brief A pure virtual member.
 	 * \param[in] val_node - Local index of a node.
@@ -288,7 +300,7 @@ public:
  * \brief Class for vertex element definition. This kind
  *        of element is used in the parallelization stuff.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CVertexMPI : public CPrimalGrid {
 private:
@@ -417,7 +429,7 @@ public:
  * \class CLine
  * \brief Class for line element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CLine : public CPrimalGrid {
 private:
@@ -555,7 +567,7 @@ public:
  * \class CTriangle
  * \brief Class for triangle element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CTriangle : public CPrimalGrid {
 private:
@@ -695,7 +707,7 @@ public:
  * \class CQuadrilateral
  * \brief Class for quadrilateral element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CQuadrilateral : public CPrimalGrid {
 private:
@@ -834,7 +846,7 @@ public:
  * \class CTetrahedron
  * \brief Class for tetrahedron element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CTetrahedron : public CPrimalGrid {
 private:
@@ -961,7 +973,7 @@ public:
  * \class CHexahedron
  * \brief Class for hexahedron element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CHexahedron : public CPrimalGrid {
 private:
@@ -1096,7 +1108,7 @@ public:
  * \class CPrism
  * \brief Class for prism element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CPrism : public CPrimalGrid {
 private:
@@ -1226,7 +1238,7 @@ public:
  * \class CPyramid
  * \brief Class for pyramid element definition.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CPyramid : public CPrimalGrid {
 private:
