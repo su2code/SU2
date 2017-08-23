@@ -103,6 +103,20 @@ inline void CConfig::SetSurface_DC60(unsigned short val_imarker, su2double val_s
 
 inline void CConfig::SetSurface_MassFlow(unsigned short val_imarker, su2double val_surface_massflow) { Surface_MassFlow[val_imarker] = val_surface_massflow; }
 
+inline void CConfig::SetSurface_Mach(unsigned short val_imarker, su2double val_surface_mach) { Surface_Mach[val_imarker] = val_surface_mach; }
+
+inline void CConfig::SetSurface_Temperature(unsigned short val_imarker, su2double val_surface_temperature) { Surface_Temperature[val_imarker] = val_surface_temperature; }
+
+inline void CConfig::SetSurface_Pressure(unsigned short val_imarker, su2double val_surface_pressure) { Surface_Pressure[val_imarker] = val_surface_pressure; }
+
+inline void CConfig::SetSurface_Density(unsigned short val_imarker, su2double val_surface_density) { Surface_Density[val_imarker] = val_surface_density; }
+
+inline void CConfig::SetSurface_NormalVelocity(unsigned short val_imarker, su2double val_surface_normalvelocity) { Surface_NormalVelocity[val_imarker] = val_surface_normalvelocity; }
+
+inline void CConfig::SetSurface_TotalTemperature(unsigned short val_imarker, su2double val_surface_totaltemperature) { Surface_TotalTemperature[val_imarker] = val_surface_totaltemperature; }
+
+inline void CConfig::SetSurface_TotalPressure(unsigned short val_imarker, su2double val_surface_totalpressure) { Surface_TotalPressure[val_imarker] = val_surface_totalpressure; }
+
 inline void CConfig::SetSurface_IDC(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDC[val_imarker] = val_surface_distortion; }
 
 inline void CConfig::SetSurface_IDC_Mach(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDC_Mach[val_imarker] = val_surface_distortion; }
@@ -152,6 +166,20 @@ inline su2double CConfig::GetActDisk_Mach(unsigned short val_imarker) { return A
 inline su2double CConfig::GetActDisk_Force(unsigned short val_imarker) { return ActDisk_Force[val_imarker]; }
 
 inline su2double CConfig::GetSurface_MassFlow(unsigned short val_imarker) { return Surface_MassFlow[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Mach(unsigned short val_imarker) { return Surface_Mach[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Temperature(unsigned short val_imarker) { return Surface_Temperature[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Pressure(unsigned short val_imarker) { return Surface_Pressure[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Density(unsigned short val_imarker) { return Surface_Density[val_imarker]; }
+
+inline su2double CConfig::GetSurface_NormalVelocity(unsigned short val_imarker) { return Surface_NormalVelocity[val_imarker]; }
+
+inline su2double CConfig::GetSurface_TotalTemperature(unsigned short val_imarker) { return Surface_TotalTemperature[val_imarker]; }
+
+inline su2double CConfig::GetSurface_TotalPressure(unsigned short val_imarker) { return Surface_TotalPressure[val_imarker]; }
 
 inline su2double CConfig::GetSurface_DC60(unsigned short val_imarker) { return Surface_DC60[val_imarker]; }
 
@@ -283,7 +311,7 @@ inline su2double *CConfig::GetDistortionRack(void) { return DistortionRack; }
 
 inline unsigned short CConfig::GetAnalytical_Surface(void) { return Analytical_Surface; }
 
-inline unsigned short CConfig::GetAxis_Stations(void) { return Axis_Stations; }
+inline unsigned short CConfig::GetGeo_Description(void) { return Geo_Description; }
 
 inline su2double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
@@ -333,7 +361,7 @@ inline su2double CConfig::GetMach(void) { return Mach; }
 
 inline su2double CConfig::GetGamma(void) { return Gamma; }
 
-inline su2double CConfig::GetSection_WingBounds(unsigned short val_var) { return Section_WingBounds[val_var]; }
+inline su2double CConfig::GetStations_Bounds(unsigned short val_var) { return Stations_Bounds[val_var]; }
 
 inline su2double CConfig::GetFFD_Axis(unsigned short val_var) { return FFD_Axis[val_var]; }
 
@@ -648,8 +676,6 @@ inline unsigned long CConfig::GetWrt_Con_Freq(void) { return Wrt_Con_Freq; }
 inline unsigned long CConfig::GetWrt_Con_Freq_DualTime(void) { return Wrt_Con_Freq_DualTime; }
 
 inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
-
-inline bool CConfig::GetLowFidelitySim(void) { return LowFidelitySim; }
 
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
@@ -1017,6 +1043,8 @@ inline unsigned short CConfig::GetnLocationStations(void) { return nLocationStat
 
 inline unsigned short CConfig::GetnWingStations(void) { return nWingStations; }
 
+inline su2double CConfig::GetGeo_Waterline_Location(void) { return Geo_Waterline_Location; }
+
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 
 inline unsigned short CConfig::GetKind_ObjFunc(void) { return Kind_ObjFunc[0]; }
@@ -1280,15 +1308,27 @@ inline su2double CConfig::GetWeightCd(void) { return WeightCd; }
 
 inline su2double CConfig::GetdCD_dCL(void) { return dCD_dCL; }
 
+inline su2double CConfig::GetdCMx_dCL(void) { return dCMx_dCL; }
+
+inline su2double CConfig::GetdCMy_dCL(void) { return dCMy_dCL; }
+
+inline su2double CConfig::GetdCMz_dCL(void) { return dCMz_dCL; }
+
 inline void CConfig::SetdCD_dCL(su2double val_dcd_dcl) { dCD_dCL = val_dcd_dcl; }
+
+inline void CConfig::SetdCMx_dCL(su2double val_dcmx_dcl) { dCMx_dCL = val_dcmx_dcl; }
+
+inline void CConfig::SetdCMy_dCL(su2double val_dcmy_dcl) { dCMy_dCL = val_dcmy_dcl; }
+
+inline void CConfig::SetdCMz_dCL(su2double val_dcmz_dcl) { dCMz_dCL = val_dcmz_dcl; }
 
 inline void CConfig::SetdCL_dAlpha(su2double val_dcl_dalpha) { dCL_dAlpha = val_dcl_dalpha; }
 
 inline void CConfig::SetdCM_diH(su2double val_dcm_dhi) { dCM_diH = val_dcm_dhi; }
 
-inline su2double CConfig::GetdCD_dCM(void) { return dCD_dCM; }
+inline su2double CConfig::GetdCD_dCMy(void) { return dCD_dCMy; }
 
-inline void CConfig::SetdCD_dCM(su2double val_dcd_dcm) { dCD_dCM = val_dcd_dcm; }
+inline void CConfig::SetdCD_dCMy(su2double val_dcd_dcmy) { dCD_dCMy = val_dcd_dcmy; }
 
 inline su2double CConfig::GetCL_Target(void) { return CL_Target; }
 
@@ -1380,6 +1420,8 @@ inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
 inline bool CConfig::GetWrt_Limiters(void) { return Wrt_Limiters; }
 
+inline bool CConfig::GetWrt_Surface(void) { return Wrt_Surface; }
+
 inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
@@ -1448,7 +1490,11 @@ inline unsigned short CConfig::GetnFFD_Iter(void) { return nFFD_Iter; }
 
 inline su2double CConfig::GetFFD_Tol(void) { return FFD_Tol; }
 
-inline su2double CConfig::GetFFD_Scale(void) {return FFD_Scale; }
+inline su2double CConfig::GetOpt_LineSearch_Bound(void) {return Opt_LineSearch_Bound; }
+
+inline su2double CConfig::GetOpt_RelaxFactor(void) {return Opt_RelaxFactor; }
+
+inline void CConfig::SetOpt_RelaxFactor(su2double val_scale) {Opt_RelaxFactor = val_scale; }
 
 inline long CConfig::GetVisualize_CV(void) { return Visualize_CV; }
 
@@ -1456,7 +1502,7 @@ inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
 
 inline bool CConfig::GetFixed_CM_Mode(void) { return Fixed_CM_Mode; }
 
-inline bool CConfig::GetEval_dCD_dCX(void) { return Eval_dCD_dCX; }
+inline bool CConfig::GetEval_dOF_dCX(void) { return Eval_dOF_dCX; }
 
 inline bool CConfig::GetDiscard_InFiles(void) { return Discard_InFiles; }
 
@@ -1471,6 +1517,8 @@ inline unsigned long CConfig::GetIter_Fixed_NetThrust(void) {return Iter_Fixed_N
 inline unsigned long CConfig::GetIter_Fixed_CL(void) { return Iter_Fixed_CL; }
 
 inline unsigned long CConfig::GetUpdate_Alpha(void) {return Update_Alpha; }
+
+inline unsigned long CConfig::GetIter_dCL_dAlpha(void) {return Iter_dCL_dAlpha; }
 
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
 

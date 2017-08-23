@@ -94,7 +94,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-6.707530,-1.319851,0.300017,0.019390] #last 4 columns
+    fixedCL_naca0012.test_vals = [-5.856803,-0.469459,0.299943,0.019385] #last 4 columns
     fixedCL_naca0012.su2_exec  = "SU2_CFD"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -284,6 +284,21 @@ def main():
     inc_euler_naca0012.tol       = 0.00001
     test_list.append(inc_euler_naca0012)
 
+    #############################
+    ### Incompressible N-S    ###
+    #############################
+
+    # Laminar cylinder
+    inc_lam_cylinder          = TestCase('inc_lam_cylinder')
+    inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
+    inc_lam_cylinder.test_iter = 10
+    inc_lam_cylinder.test_vals = [-3.588066,-2.859933,-0.007759,16.983075] #last 4 columns
+    inc_lam_cylinder.su2_exec  = "SU2_CFD"
+    inc_lam_cylinder.timeout   = 1600
+    inc_lam_cylinder.tol       = 0.00001
+    test_list.append(inc_lam_cylinder)
+
     ############################
     ### Incompressible RANS  ###
     ############################
@@ -356,7 +371,7 @@ def main():
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixedCL_naca0012.test_iter = 500
-    contadj_fixedCL_naca0012.test_vals = [-2.896959, -8.484896, 0.250600, 0.000004] #last 4 columns
+    contadj_fixedCL_naca0012.test_vals = [-2.184754,-7.071557,2.4988e-01,-1.5528e-05] #last 4 columns
     contadj_fixedCL_naca0012.su2_exec  = "SU2_CFD"
     contadj_fixedCL_naca0012.timeout   = 1600
     contadj_fixedCL_naca0012.tol       = 0.00001
@@ -785,7 +800,7 @@ def main():
     naca0012_geo           = TestCase('naca0012_geo')
     naca0012_geo.cfg_dir   = "optimization_euler/steady_naca0012"
     naca0012_geo.cfg_file  = "inv_NACA0012_adv.cfg"
-    naca0012_geo.test_vals = [0.120011, 0.0816925, 0.0, 1.0] #max thickness, area, twist, chord
+    naca0012_geo.test_vals = [0.99975, 62.0455, 0.120041, 0.00208202] #chord, LE radius, ToC, Alpha
     naca0012_geo.su2_exec  = "SU2_GEO"
     naca0012_geo.timeout   = 1600
     naca0012_geo.tol       = 0.00001

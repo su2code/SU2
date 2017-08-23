@@ -138,7 +138,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
     
   }
 
@@ -430,13 +430,14 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Total_CFx     = 0.0;  Total_CFy          = 0.0;  Total_CFz          = 0.0;
   Total_CT      = 0.0;  Total_CQ           = 0.0;  Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat         = 0.0;  Total_ComboObj     = 0.0;
-  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;
+  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;  Total_Custom_ObjFunc=0.0;
   
   /*--- Coefficients for fixed lift mode. ---*/
   
   AoA_Prev = 0.0;
   Total_CL_Prev = 0.0; Total_CD_Prev = 0.0;
-  
+  Total_CMx_Prev = 0.0; Total_CMy_Prev = 0.0; Total_CMz_Prev = 0.0;
+
   /*--- Read farfield conditions ---*/
 
   Density_Inf     = config->GetDensity_FreeStreamND();
@@ -2097,12 +2098,11 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   unsigned long ExtIter = config->GetExtIter();
   bool adjoint          = config->GetContinuous_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) ||
                            (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) ||
                            (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
   bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) &&
-                           (!low_fidelity) && (ExtIter <= config->GetLimiterIter()));
+                           (ExtIter <= config->GetLimiterIter()));
   bool center           = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
                            (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
@@ -2118,7 +2118,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Upwind second order reconstruction ---*/
   
-  if ((second_order && !center) && ((iMesh == MESH_0) || low_fidelity) && !Output) {
+  if ((second_order && !center) && (iMesh == MESH_0) && !Output) {
     
     /*--- Gradient computation ---*/
     
@@ -2141,7 +2141,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && ((iMesh == MESH_0) || low_fidelity)) {
+    if ((center_jst) && (iMesh == MESH_0)) {
       SetDissipation_Switch(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
@@ -2401,7 +2401,6 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool second_order  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
-  bool low_fidelity  = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool grid_movement = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -2422,7 +2421,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     
     /*--- Set undivided laplacian and pressure-based sensor ---*/
     
-    if ((second_order || low_fidelity)) {
+    if (second_order) {
       numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
       numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
     }
@@ -2464,11 +2463,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned short iDim, iVar;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool low_fidelity  = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order  = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) ||
                             (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) &&
-                           ((iMesh == MESH_0) || low_fidelity));
-  bool limiter       = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && !low_fidelity);
+                           (iMesh == MESH_0));
+  bool limiter       = (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
 
   /*--- Loop over all the edges ---*/
@@ -4217,7 +4215,7 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
   su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3] = {0.0,0.0,0.0},
-  AoA_inc = 0.0, Vel_Infty_Mag, Delta_AoA, Old_AoA, dCL_dAlpha_, dCD_dCL_;
+  AoA_inc = 0.0, Vel_Infty_Mag, Delta_AoA, Old_AoA;
   
   unsigned short iDim;
   
@@ -4249,12 +4247,8 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     
     if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
       AoA_Counter++;
-      if ((AoA_Counter != 0) &&
-          (AoA_Counter != 1) &&
-          (AoA_Counter != Update_Alpha) &&
-          (AoA_Counter != Update_Alpha + 2) &&
-          (AoA_Counter != Update_Alpha + 4) ) Update_AoA = true;
-      else Update_AoA = false;
+      if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
+      Update_AoA = true;
     }
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
@@ -4341,25 +4335,94 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
       cout.precision(4);
       cout << "Previous AoA: " << Old_AoA << " deg";
       cout << ", new AoA: " << config->GetAoA() << " deg." << endl;
-      
-      cout.precision(7);
-      if ((fabs(Delta_AoA) > EPS) && (AoA_Counter != 2))  {
-        
-        dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/Delta_AoA;
-        dCD_dCL_ = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
-        
-        cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
-        cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
-        
-      }
-      
-      Total_CD_Prev = Total_CD;
-      Total_CL_Prev = Total_CL;
-      AoA_Prev =config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
-      
+
       cout << "-------------------------------------------------------------------------" << endl << endl;
     }
     
+  }
+  
+}
+
+void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
+
+  unsigned short iMarker_Monitoring;
+  su2double Weight_ObjFunc;
+
+  /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+
+    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+
+    switch(config->GetKind_ObjFunc(iMarker_Monitoring)) {
+      case DRAG_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
+        if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(Surface_CMy[iMarker_Monitoring]);
+        break;
+      case LIFT_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case SIDEFORCE_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CSF[iMarker_Monitoring]);
+        break;
+      case EFFICIENCY:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CEff[iMarker_Monitoring]);
+        break;
+      case MOMENT_X_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMx[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case MOMENT_Y_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMy[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case MOMENT_Z_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMz[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case FORCE_X_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFx[iMarker_Monitoring];
+        break;
+      case FORCE_Y_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFy[iMarker_Monitoring];
+        break;
+      case FORCE_Z_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFz[iMarker_Monitoring];
+        break;
+
+        /*--- The following are not per-surface, and as a result will be
+         * double-counted iff multiple surfaces are specified as well as multi-objective
+         * TODO: print a warning to the user about that possibility. ---*/
+
+      case INVERSE_DESIGN_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
+        break;
+      case INVERSE_DESIGN_HEATFLUX:
+        Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
+        break;
+      case THRUST_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Total_CT;
+        break;
+      case TORQUE_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Total_CQ;
+        break;
+      case FIGURE_OF_MERIT:
+        Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
+        break;
+      case AVG_TOTAL_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*OneD_TotalPress;
+        break;
+      case MASS_FLOW_RATE:
+        Total_ComboObj+=Weight_ObjFunc*OneD_MassFlowRate;
+        break;
+      case CUSTOM_OBJFUNC:
+        Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
+        break;
+      default:
+        break;
+
+    }
   }
   
 }
@@ -5782,7 +5845,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
     
   }
 
@@ -6110,7 +6173,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   AoA_Prev = 0.0;
   Total_CL_Prev = 0.0; Total_CD_Prev = 0.0;
-  
+  Total_CMx_Prev = 0.0; Total_CMy_Prev = 0.0; Total_CMz_Prev = 0.0;
+
   /*--- Read farfield conditions from config ---*/
   
   Density_Inf   = config->GetDensity_FreeStreamND();

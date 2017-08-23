@@ -94,7 +94,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-5.930145,-0.546310,0.300089,0.019393] #last 4 columns
+    fixedCL_naca0012.test_vals = [-5.767126,-0.377182,0.299930,0.019384] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -283,6 +283,21 @@ def main():
     inc_euler_naca0012.tol       = 0.00001
     test_list.append(inc_euler_naca0012)
 
+    #############################
+    ### Incompressible N-S    ###
+    #############################
+
+    # Laminar cylinder
+    inc_lam_cylinder          = TestCase('inc_lam_cylinder')
+    inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
+    inc_lam_cylinder.test_iter = 10
+    inc_lam_cylinder.test_vals = [-3.583742, -2.838702, -0.003114, 17.162325] #last 4 columns
+    inc_lam_cylinder.su2_exec  = "parallel_computation.py -f"
+    inc_lam_cylinder.timeout   = 1600
+    inc_lam_cylinder.tol       = 0.00001
+    test_list.append(inc_lam_cylinder)
+
     ############################
     ### Incompressible RANS  ###
     ############################
@@ -355,7 +370,7 @@ def main():
     contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixed_CL_naca0012.test_iter = 500
-    contadj_fixed_CL_naca0012.test_vals = [-2.921695, -8.474107, 0.250530, 0.000003] #last 4 columns
+    contadj_fixed_CL_naca0012.test_vals = [-2.093175,-6.967350,2.4987e-01,-1.9392e-05] #last 4 columns
     contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_fixed_CL_naca0012.timeout   = 1600
     contadj_fixed_CL_naca0012.tol       = 0.00001
@@ -625,7 +640,7 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 300
-    transonic_stator_rst.test_vals = [-0.682535, 4.593685, 6.248181e+00, 3.774933e-03] #last 4 columns
+    transonic_stator_rst.test_vals = [-0.682536, 4.593684, 6.248191e+00, 3.774933e-03] #last 4 columns
     transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
     transonic_stator_rst.timeout   = 1600
     transonic_stator_rst.tol       = 0.00001

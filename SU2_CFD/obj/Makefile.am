@@ -67,6 +67,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
+  ../include/output_structure.inl \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
