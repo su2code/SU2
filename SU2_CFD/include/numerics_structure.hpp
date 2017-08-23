@@ -2071,7 +2071,7 @@ public:
 };
 
 /*!
- * \class CUpwSca_Scalar
+ * \class CUpwScalar
  * \brief Template class for scalar upwind fluxes between nodes i and j.
  * \details This class serves as a template for the scalar upwinding residual
  *   classes.  The general structure of a scalar upwinding calculation is the
@@ -2085,7 +2085,7 @@ public:
  * \author C. Pederson, A. Bueno., and A. Campos.
  * \version 5.0.0 "Raven"
  */
-class CUpwSca_Scalar : public CNumerics {
+class CUpwScalar : public CNumerics {
 private:
 
   /*!
@@ -2122,12 +2122,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_Scalar(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwSca_Scalar(void);
+  ~CUpwScalar(void);
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -2146,7 +2146,7 @@ public:
  * \author A. Bueno.
  * \version 5.0.0 "Raven"
  */
-class CUpwSca_TurbSA : public CUpwSca_Scalar {
+class CUpwSca_TurbSA : public CUpwScalar {
 private:
 
   /*!
@@ -2187,7 +2187,7 @@ public:
  * \author A. Campos.
  * \version 5.0.0 "Raven"
  */
-class CUpwSca_TurbSST : public CUpwSca_Scalar {
+class CUpwSca_TurbSST : public CUpwScalar {
 private:
 
   /*!
