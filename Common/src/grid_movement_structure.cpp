@@ -817,6 +817,23 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
     if (nDim == 2) SetFEA_StiffMatrix2D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, ElemVolume, ElemDistance);
     if (nDim == 3) SetFEA_StiffMatrix3D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, ElemVolume, ElemDistance);
     
+        
+        
+        
+        cout.precision(60);
+        if (iElem == 100) {
+            for (unsigned short iDim = 0; iDim < nVar; iDim++) {
+                for (unsigned short jDim = 0; jDim < nVar; jDim++) {
+                    cout << scientific << StiffMatrix_Elem[iDim][jDim] <<" ";
+                }
+                cout <<" "<< endl;
+            }
+        }
+        
+        
+        
+        
+        
     AddFEA_StiffMatrix(geometry, StiffMatrix_Elem, PointCorners, nNodes);
     
 	}
@@ -1808,6 +1825,8 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
         }
       }
     }
+      
+      
     
   }
   
