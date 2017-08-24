@@ -1775,8 +1775,8 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     }
     
     Nu = config->GetDeform_Coeff();
-    Mu = E / (2.0*(1.0 + Nu));
-    Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+      Mu = 0.0;//E / (2.0*(1.0 + Nu));
+      Lambda = 1.0;//Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
     
     /*--- Compute the D Matrix (for plane strain and 3-D)---*/
     
@@ -1804,7 +1804,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     for (iVar = 0; iVar < nNodes*nVar; iVar++) {
       for (jVar = 0; jVar < nNodes*nVar; jVar++) {
         for (kVar = 0; kVar < 6; kVar++) {
-          StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar] * fabs(Det);
+          StiffMatrix_Elem[iVar][jVar] += Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
         }
       }
     }
