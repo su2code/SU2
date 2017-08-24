@@ -10975,7 +10975,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile << "VARIABLES =" << endl;
 
     myfile.width(30); myfile << "\"Spanwise Value [m]\"";
-    myfile.width(15); myfile << "\"iSpan [-]\ "";
+    myfile.width(15); myfile << "\"iSpan [-]\"";
     myfile.width(30); myfile << "\"Spanwise fraction [-]\"";
     myfile.width(30); myfile << "\"Normal Mach [-]\"";
     myfile.width(30); myfile << "\"Tangential Mach [-]\"";
