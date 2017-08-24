@@ -2,7 +2,7 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 5.0.000000000000000000000000000 "Raven"
  *
  * SU2 Original Developers: Dr. Francisco D. Palacios.
  *                          Dr. Thomas D. Economon.
@@ -224,15 +224,15 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   
   /*--- Memory initialization ---*/
   
-  for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) matrix[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_weight[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_inverse[iVar] = 0.0;
+  for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) matrix[iVar] = 0.000000000000000000000000000;
+  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block[iVar] = 0.000000000000000000000000000;
+  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_weight[iVar] = 0.000000000000000000000000000;
+  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_inverse[iVar] = 0.000000000000000000000000000;
 
-  for (iVar = 0; iVar < nEqn; iVar++)          prod_block_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)          prod_row_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)          aux_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)          sum_vector[iVar] = 0.0;
+  for (iVar = 0; iVar < nEqn; iVar++)          prod_block_vector[iVar] = 0.000000000000000000000000000;
+  for (iVar = 0; iVar < nVar; iVar++)          prod_row_vector[iVar] = 0.000000000000000000000000000;
+  for (iVar = 0; iVar < nVar; iVar++)          aux_vector[iVar] = 0.000000000000000000000000000;
+  for (iVar = 0; iVar < nVar; iVar++)          sum_vector[iVar] = 0.000000000000000000000000000;
   
   /*--- Set specific preconditioner matrices (ILU) ---*/
   
@@ -245,7 +245,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
     /*--- Reserve memory for the ILU matrix. ---*/
     
     ILU_matrix = new su2double [nnz*nVar*nEqn];
-    for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
+    for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.000000000000000000000000000;
 
   }
   
@@ -262,7 +262,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
     /*--- Reserve memory for the values of the inverse of the preconditioner. ---*/
     
     invM = new su2double [nPoint*nVar*nEqn];
-    for (iVar = 0; iVar < nPoint*nVar*nEqn; iVar++) invM[iVar] = 0.0;
+    for (iVar = 0; iVar < nPoint*nVar*nEqn; iVar++) invM[iVar] = 0.000000000000000000000000000;
 
   }
 
@@ -421,7 +421,7 @@ void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2do
   unsigned short iVar, jVar;
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    product[iVar] = 0.0;
+    product[iVar] = 0.000000000000000000000000000;
     for (jVar = 0; jVar < nVar; jVar++) {
       product[iVar] += matrix[iVar*nVar+jVar] * vector[jVar];
     }
@@ -435,7 +435,7 @@ void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, s
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
-      product[iVar*nVar+jVar] = 0.0;
+      product[iVar*nVar+jVar] = 0.000000000000000000000000000;
       for (kVar = 0; kVar < nVar; kVar++) {
         product[iVar*nVar+jVar] += matrix_a[iVar*nVar+kVar]*matrix_b[kVar*nVar+jVar];
       }
@@ -469,7 +469,7 @@ void CSysMatrix::SetVal2Diag(unsigned long block_i, su2double val_matrix) {
       
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nVar; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] = 0.0;
+          matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] = 0.000000000000000000000000000;
       
       for (iVar = 0; iVar < nVar; iVar++)
         matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = SU2_TYPE::GetValue(val_matrix);
@@ -488,9 +488,9 @@ void CSysMatrix::DeleteValsRowi(unsigned long i) {
   
   for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
     for (iVar = 0; iVar < nVar; iVar++)
-      matrix[index*nVar*nVar+row*nVar+iVar] = 0.0; // Delete row values in the block
+      matrix[index*nVar*nVar+row*nVar+iVar] = 0.000000000000000000000000000; // Delete row values in the block
     if (col_ind[index] == block_i)
-      matrix[index*nVar*nVar+row*nVar+row] = 1.0; // Set 1 to the diagonal element
+      matrix[index*nVar*nVar+row*nVar+row] = 1.000000000000000000000000000; // Set 1 to the diagonal element
   }
   
 }
@@ -506,7 +506,7 @@ su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
   else if (n == 1) { det = a[0][0]; }
   else if (n == 2) { det = a[0][0] * a[1][1] - a[1][0] * a[0][1]; }
   else {
-    det = 0.0;
+    det = 0.000000000000000000000000000;
 
     for (j1=0;j1<n;j1++) {
       m = new su2double*[n-1];
@@ -523,7 +523,7 @@ su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
         }
       }
       
-      det += pow(-1.0,j1+2.0) * a[0][j1] * MatrixDeterminant(m,n-1);
+      det += pow(-1.000000000000000000000000000,j1+2.0) * a[0][j1] * MatrixDeterminant(m,n-1);
       for (i=0;i<n-1;i++)
       delete [] m[i];
       delete [] m;
@@ -567,7 +567,7 @@ void CSysMatrix::MatrixCoFactor(su2double **a, unsigned long n, su2double **b) {
       det = MatrixDeterminant(c,n-1);
       
       /*--- Fill in the elements of the cofactor ---*/
-      b[i][j] = pow(-1.0,i+j+2.0) * det;
+      b[i][j] = pow(-1.000000000000000000000000000,i+j+2.0) * det;
     }
   }
   for (i=0;i<n-1;i++)
@@ -632,7 +632,7 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs, bool t
     
     rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
     for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
-      aux = 0.0;
+      aux = 0.000000000000000000000000000;
       for (jVar = iVar+1; jVar < (short)nVar; jVar++)
         aux += block[iVar*nVar+jVar]*rhs[jVar];
       rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
@@ -675,7 +675,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
     /*--- Backwards substitution ---*/
     rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
     for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
-      aux = 0.0;
+      aux = 0.000000000000000000000000000;
       for (jVar = iVar+1; jVar < (short)nVar; jVar++)
         aux += block[iVar*nVar+jVar]*rhs[jVar];
       rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
@@ -715,7 +715,7 @@ void CSysMatrix::Gauss_Elimination(su2double* Block, su2double* rhs) {
     /*--- Backwards substitution ---*/
     rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
     for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
-      aux = 0.0;
+      aux = 0.000000000000000000000000000;
       for (jVar = iVar+1; jVar < (short)nVar; jVar++)
         aux += block[iVar*nVar+jVar]*rhs[jVar];
       rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
@@ -1010,7 +1010,7 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
     throw(-1);
   }
   
-  prod = su2double(0.0); // set all entries of prod to zero
+  prod = su2double(0.000000000000000000000000000); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
     prod_begin = row_i*nVar; // offset to beginning of block row_i
     for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
@@ -1045,7 +1045,7 @@ void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVecto
     throw(-1);
   }
 
-  prod = su2double(0.0); // set all entries of prod to zero
+  prod = su2double(0.000000000000000000000000000); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
     vec_begin = row_i*nVar; // offset to beginning of block col_ind[index]
     for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
@@ -1070,7 +1070,7 @@ void CSysMatrix::GetMultBlockBlock(su2double *c, su2double *a, su2double *b) {
   
   for (iVar = 0; iVar < nVar; iVar++)
     for (jVar = 0; jVar < nVar; jVar++) {
-      c[iVar*nVar+jVar] = 0.0;
+      c[iVar*nVar+jVar] = 0.000000000000000000000000000;
       for (kVar = 0; kVar < nVar; kVar++)
         c[iVar*nVar+jVar] += a[iVar*nVar+kVar] * b[kVar*nVar+jVar];
     }
@@ -1082,7 +1082,7 @@ void CSysMatrix::GetMultBlockVector(su2double *c, su2double *a, su2double *b) {
   unsigned long iVar, jVar;
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    c[iVar] =  0.0;
+    c[iVar] =  0.000000000000000000000000000;
     for (jVar = 0; jVar < nVar; jVar++)
       c[iVar] += a[iVar*nVar+jVar] * b[jVar];
   }
@@ -1114,8 +1114,8 @@ void CSysMatrix::InverseBlock(su2double *Block, su2double *invBlock) {
   
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++)
-      aux_vector[jVar] = 0.0;
-    aux_vector[iVar] = 1.0;
+      aux_vector[jVar] = 0.000000000000000000000000000;
+    aux_vector[iVar] = 1.000000000000000000000000000;
     
     /*--- Compute the i-th column of the inverse matrix ---*/
     Gauss_Elimination(Block, aux_vector);
@@ -1132,8 +1132,8 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
   
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++)
-      aux_vector[jVar] = 0.0;
-    aux_vector[iVar] = 1.0;
+      aux_vector[jVar] = 0.000000000000000000000000000;
+    aux_vector[iVar] = 1.000000000000000000000000000;
     
     /*--- Compute the i-th column of the inverse matrix ---*/
     
@@ -1183,8 +1183,8 @@ void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++)
-      aux_vector[jVar] = 0.0;
-    aux_vector[iVar] = 1.0;
+      aux_vector[jVar] = 0.000000000000000000000000000;
+    aux_vector[iVar] = 1.000000000000000000000000000;
     
     /*--- Compute the i-th column of the inverse matrix ---*/
     
@@ -1252,7 +1252,7 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      prod[(unsigned long)(iPoint*nVar+iVar)] = 0.0;
+      prod[(unsigned long)(iPoint*nVar+iVar)] = 0.000000000000000000000000000;
       for (jVar = 0; jVar < nVar; jVar++)
         prod[(unsigned long)(iPoint*nVar+iVar)] +=
         invM[(unsigned long)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(unsigned long)(iPoint*nVar+jVar)];
@@ -1490,7 +1490,7 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
     prod[ (nPointDomain-1)*nVar + iVar] = aux_vector[iVar];
   
   for (iPoint = nPointDomain-2; iPoint >= 0; iPoint--) {
-    for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
+    for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.000000000000000000000000000;
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
       if (jPoint < (long)nPointDomain) {
@@ -1517,7 +1517,7 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
 unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long index;
-  su2double *Block_ij, omega = 1.0;
+  su2double *Block_ij, omega = 1.000000000000000000000000000;
   long iPoint, jPoint;
   unsigned short iVar;
   int rank = MASTER_NODE;
@@ -1617,7 +1617,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
       r[(nPointDomain-1)*nVar + iVar] = aux_vector[iVar];
     
     for (iPoint = nPointDomain-2; iPoint >= 0; iPoint--) {
-      for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
+      for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.000000000000000000000000000;
       for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
         jPoint = col_ind[index];
         if (jPoint < (long)nPointDomain) {
@@ -1637,7 +1637,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
     
     /*--- Update solution (x^k+1 = x^k + w*M^-1*r^k) using the residual vector,
      which holds the update after applying the ILU0 smoother, i.e., M^-1*r^k.
-     Omega is a relaxation factor that we have currently set to 1.0. ---*/
+     Omega is a relaxation factor that we have currently set to 1.000000000000000000000000000. ---*/
     
     x.Plus_AX(omega, r);
     
@@ -1711,7 +1711,7 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
 unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint, iVar;
-  su2double omega = 1.0;
+  su2double omega = 1.000000000000000000000000000;
   int rank = MASTER_NODE;
   
 #ifdef HAVE_MPI
@@ -1800,7 +1800,7 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
     
     /*--- Update solution (x^k+1 = x^k + w*M^-1*r^k) using the xStar vector,
      which holds the update after applying the LU_SGS smoother, i.e., M^-1*r^k.
-     Omega is a relaxation factor that we have currently set to 1.0. ---*/
+     Omega is a relaxation factor that we have currently set to 1.000000000000000000000000000. ---*/
     
     x.Plus_AX(omega, xStar);
     
@@ -1900,7 +1900,7 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
         /*--- Compute the value of the max weight ---*/
         
         iPoint = LineletPoint[iLinelet][index_Point];
-        max_weight = 0.0;
+        max_weight = 0.000000000000000000000000000;
         for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
           jPoint = geometry->node[iPoint]->GetPoint(iNode);
           if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
@@ -1910,7 +1910,7 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
             else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
             volume_iPoint = geometry->node[iPoint]->GetVolume();
             volume_jPoint = geometry->node[jPoint]->GetVolume();
-            weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
+            weight = 0.5*area*((1.000000000000000000000000000/volume_iPoint)+(1.000000000000000000000000000/volume_jPoint));
             max_weight = max(max_weight, weight);
           }
         }
@@ -1928,7 +1928,7 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
           else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
           volume_iPoint = geometry->node[iPoint]->GetVolume();
           volume_jPoint = geometry->node[jPoint]->GetVolume();
-          weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
+          weight = 0.5*area*((1.000000000000000000000000000/volume_iPoint)+(1.000000000000000000000000000/volume_jPoint));
           if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
               ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
             add_point = true;
@@ -2048,7 +2048,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (!LineletBool[iPoint]) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          prod[(unsigned long)(iPoint*nVar+iVar)] = 0.0;
+          prod[(unsigned long)(iPoint*nVar+iVar)] = 0.000000000000000000000000000;
           for (jVar = 0; jVar < nVar; jVar++)
             prod[(unsigned long)(iPoint*nVar+iVar)] +=
             invM[(unsigned long)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(unsigned long)(iPoint*nVar+jVar)];
