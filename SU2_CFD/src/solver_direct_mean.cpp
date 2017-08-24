@@ -329,7 +329,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   DensityOut                    = NULL;
   PressureOut                   = NULL;
   TurboVelocityOut              = NULL;
-  RelTangVelocityIn             = NULL;
+  RelTangVelocityOut            = NULL;
   KineIn                        = NULL;
   OmegaIn                       = NULL;
   NuIn                          = NULL;
