@@ -43,7 +43,6 @@ SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
 SWIG_SO_REAL = _pysu2.${SO_EXT}
 
 # Macro to get Python paths
-AM_PATH_PYTHON()
 PYTHON_INCLUDE = -I${PYTHON_EXEC_PREFIX}/include/python${PYTHON_VERSION}
 #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
 MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
@@ -68,6 +67,9 @@ SWIG_INCLUDE = ${PY_INCLUDE}
 SUBDIR_EXEC = ${bindir}
 
 all:	
+	echo "PYTHON_EXEC_PREFIX: ${PYTHON_EXEC_PREFIX}"
+	echo ${pythondir}
+	echo ${PYTHON_VERSION}
 	${MAKE} real; 
 	
 # List the dependencies

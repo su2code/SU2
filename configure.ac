@@ -56,6 +56,9 @@ AC_PROG_RANLIB
 AC_PROG_MKDIR_P
 AC_PROG_CXX
 
+# Python configuration
+AM_PATH_PYTHON()
+
 #PKG_PROG_PKG_CONFIG
 
 # --------------------------------------------------------------
