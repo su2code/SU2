@@ -103,6 +103,20 @@ inline void CConfig::SetSurface_DC60(unsigned short val_imarker, su2double val_s
 
 inline void CConfig::SetSurface_MassFlow(unsigned short val_imarker, su2double val_surface_massflow) { Surface_MassFlow[val_imarker] = val_surface_massflow; }
 
+inline void CConfig::SetSurface_Mach(unsigned short val_imarker, su2double val_surface_mach) { Surface_Mach[val_imarker] = val_surface_mach; }
+
+inline void CConfig::SetSurface_Temperature(unsigned short val_imarker, su2double val_surface_temperature) { Surface_Temperature[val_imarker] = val_surface_temperature; }
+
+inline void CConfig::SetSurface_Pressure(unsigned short val_imarker, su2double val_surface_pressure) { Surface_Pressure[val_imarker] = val_surface_pressure; }
+
+inline void CConfig::SetSurface_Density(unsigned short val_imarker, su2double val_surface_density) { Surface_Density[val_imarker] = val_surface_density; }
+
+inline void CConfig::SetSurface_NormalVelocity(unsigned short val_imarker, su2double val_surface_normalvelocity) { Surface_NormalVelocity[val_imarker] = val_surface_normalvelocity; }
+
+inline void CConfig::SetSurface_TotalTemperature(unsigned short val_imarker, su2double val_surface_totaltemperature) { Surface_TotalTemperature[val_imarker] = val_surface_totaltemperature; }
+
+inline void CConfig::SetSurface_TotalPressure(unsigned short val_imarker, su2double val_surface_totalpressure) { Surface_TotalPressure[val_imarker] = val_surface_totalpressure; }
+
 inline void CConfig::SetSurface_IDC(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDC[val_imarker] = val_surface_distortion; }
 
 inline void CConfig::SetSurface_IDC_Mach(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDC_Mach[val_imarker] = val_surface_distortion; }
@@ -152,6 +166,20 @@ inline su2double CConfig::GetActDisk_Mach(unsigned short val_imarker) { return A
 inline su2double CConfig::GetActDisk_Force(unsigned short val_imarker) { return ActDisk_Force[val_imarker]; }
 
 inline su2double CConfig::GetSurface_MassFlow(unsigned short val_imarker) { return Surface_MassFlow[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Mach(unsigned short val_imarker) { return Surface_Mach[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Temperature(unsigned short val_imarker) { return Surface_Temperature[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Pressure(unsigned short val_imarker) { return Surface_Pressure[val_imarker]; }
+
+inline su2double CConfig::GetSurface_Density(unsigned short val_imarker) { return Surface_Density[val_imarker]; }
+
+inline su2double CConfig::GetSurface_NormalVelocity(unsigned short val_imarker) { return Surface_NormalVelocity[val_imarker]; }
+
+inline su2double CConfig::GetSurface_TotalTemperature(unsigned short val_imarker) { return Surface_TotalTemperature[val_imarker]; }
+
+inline su2double CConfig::GetSurface_TotalPressure(unsigned short val_imarker) { return Surface_TotalPressure[val_imarker]; }
 
 inline su2double CConfig::GetSurface_DC60(unsigned short val_imarker) { return Surface_DC60[val_imarker]; }
 
