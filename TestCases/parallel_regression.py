@@ -581,7 +581,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 29
-    Jones_tc.test_vals = [-5.563796, -0.197664, 92.039250, 3.584860] #last 4 columns
+    Jones_tc.test_vals = [-5.557504, -0.193736, 92.042610, 3.583569] #last 4 columns
     Jones_tc.su2_exec  = "parallel_computation.py -f"
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
@@ -592,7 +592,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 30
-    Jones_tc_rst.test_vals = [-3.936718, -0.754654, 8.277812e+01, 13.737510] #last 4 columns
+    Jones_tc_rst.test_vals = [-3.936861, -0.754837, 82.778060, 13.739490] #last 4 columns
     Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
@@ -614,7 +614,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 100
-    transonic_stator.test_vals = [-0.053921, 4.588521, 8.511798e+00, 4.617568] #last 4 columns
+    transonic_stator.test_vals = [-0.053921, 4.588521, 8.511799, 4.617899] #last 4 columns
     transonic_stator.su2_exec  = "parallel_computation.py -f"
     transonic_stator.timeout   = 1600
     transonic_stator.tol       = 0.00001

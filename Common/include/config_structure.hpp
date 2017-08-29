@@ -639,6 +639,8 @@ private:
   nRefOriginMoment_Z;           /*!< \brief Number of Z-coordinate moment computation origins. */
   string Mesh_FileName,			/*!< \brief Mesh input file. */
   Mesh_Out_FileName,				/*!< \brief Mesh output file. */
+  SpanWise_BCInlet_FileName,            /*!< \brief SpanWise BC inlet file. */
+  SpanWise_BCOutlet_FileName,           /*!< \brief SpanWise BC outlet file. */
   Solution_FlowFileName,			/*!< \brief Flow solution input file. */
   Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
   Solution_AdjFileName,			/*!< \brief Adjoint solution input file for drag functional. */
@@ -3945,6 +3947,18 @@ public:
   bool GetBoolTurbMixingPlane(void);
 
   /*!
+   * \brief Verify if there is a spanwise bc inlet BC specified from config file.
+   * \return boolean.
+   */
+  bool GetBoolSpanwiseBC_Inlet(void);
+
+
+  /*!
+   * \brief Verify if there is a spanwise bc outlet BC specified from config file.
+   * \return boolean.
+   */
+  bool GetBoolSpanwiseBC_Outlet(void);
+  /*!
    * \brief Verify if there is mixing plane interface specified from config file.
    * \return boolean.
    */
@@ -3985,6 +3999,18 @@ public:
    * \return boolean.
    */
   bool GetBoolRiemann(void);
+
+  /*!
+   * \brief Get the name of the file with the spanwise BC inlet conditions.
+   * \return Name of the file with the spanwise BC inlet conditions.
+   */
+  string GetSpanWise_BCInlet_FileName(void);
+
+  /*!
+   * \brief Get the name of the file with the spanwise BC outlet conditions.
+   * \return Name of the file with the spanwise BC outlet conditions.
+   */
+  string GetSpanWise_BCOutlet_FileName(void);
 
   /*!
    * \brief number Turbomachinery performance option specified from config file.

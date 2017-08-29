@@ -10755,7 +10755,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
   unsigned short iDim, iSpan;
 
   unsigned long iExtIter = config[val_iZone]->GetExtIter();
-  su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
+  su2double* SpanWiseValuesIn, *SpanWiseValuesOut, absFlowAngle2;
   int rank;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -10791,25 +10791,27 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile << "TITLE = \"Inflow Spanwise Thermodynamic Values. iExtIter = " << iExtIter << " \"" << endl;
     myfile << "VARIABLES =" << endl;
 
-    myfile.width(30); myfile << "\"SpanWise Value[m]\"";
-    myfile.width(15); myfile << "\"iSpan\"";
-    myfile.width(30); myfile << "\"Pressure[Pa]\"";
-    myfile.width(30); myfile << "\"TotalPressure[Pa]\"";
-    myfile.width(30); myfile << "\"Temperature[K]\"";
-    myfile.width(30); myfile << "\"TotalTemperature[K]\"";
-    myfile.width(30); myfile << "\"Enthalpy[J]\"";
-    myfile.width(30); myfile << "\"TotalEnthalpy[J]\"";
-    myfile.width(30); myfile << "\"Density[kg/m3]\"";
-    myfile.width(30); myfile << "\"Entropy[J/K]\"";
-    myfile.width(30); myfile << "\"TurbIntensity[-]\"";
-    myfile.width(30); myfile << "\"Turb2LamViscRatio[-]\"";
-    myfile.width(30); myfile << "\"NuFactor[-]\"";
+    myfile.width(30); myfile << "\"Spanwise value [m]\"";
+    myfile.width(15); myfile << "\"iSpan [-]\"";
+    myfile.width(30); myfile << "\"Spanwise fraction [-]\"";
+    myfile.width(30); myfile << "\"Pressure [Pa]\"";
+    myfile.width(30); myfile << "\"Total Pressure [Pa]\"";
+    myfile.width(30); myfile << "\"Temperature [K]\"";
+    myfile.width(30); myfile << "\"Total Temperature [K]\"";
+    myfile.width(30); myfile << "\"Enthalpy [J]\"";
+    myfile.width(30); myfile << "\"Total Enthalpy [J]\"";
+    myfile.width(30); myfile << "\"Density [kg/m3]\"";
+    myfile.width(30); myfile << "\"Entropy [J/K]\"";
+    myfile.width(30); myfile << "\"TurbIntensity [-]\"";
+    myfile.width(30); myfile << "\"Turb2LamViscRatio [-]\"";
+    myfile.width(30); myfile << "\"NuFactor [-]\"";
     myfile << endl;
 
     for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
 
       myfile.width(30); myfile << SpanWiseValuesIn[iSpan];
       myfile.width(15); myfile << iSpan;
+      myfile.width(30); myfile << (SpanWiseValuesIn[iSpan] - SpanWiseValuesIn[0])/(SpanWiseValuesIn[config[ZONE_0]->GetnSpan_iZones(val_iZone)-1] -SpanWiseValuesIn[0]);
       myfile.width(30); myfile << PressureIn           [val_iZone][iSpan]*config[ZONE_0]->GetPressure_Ref();
       myfile.width(30); myfile << TotalPressureIn      [val_iZone][iSpan]*config[ZONE_0]->GetPressure_Ref();
       myfile.width(30); myfile << TemperatureIn        [val_iZone][iSpan]*config[ZONE_0]->GetTemperature_Ref();
@@ -10846,19 +10848,20 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
     myfile << "TITLE = \"Outflow Span-wise Thermodynamic Values. iExtIter = " << iExtIter << " \"" << endl;
     myfile << "VARIABLES =" << endl;
 
-    myfile.width(30); myfile << "\"SpanWise Value[m]\"";
-    myfile.width(15); myfile << "\"iSpan\"";
-    myfile.width(30); myfile << "\"Pressure[Pa]\"";
-    myfile.width(30); myfile << "\"TotalPressure[Pa]\"";
-    myfile.width(30); myfile << "\"Temperature[K]\"";
-    myfile.width(30); myfile << "\"TotalTemperature[K]\"";
-    myfile.width(30); myfile << "\"Enthalpy[J]\"";
-    myfile.width(30); myfile << "\"TotalEnthalpy[J]\"";
-    myfile.width(30); myfile << "\"Density[kg/m3]\"";
-    myfile.width(30); myfile << "\"Entropy[J/K]\"";
-    myfile.width(30); myfile << "\"TurbIntensity[-]\"";
-    myfile.width(30); myfile << "\"Turb2LamViscRatio[-]\"";
-    myfile.width(30); myfile << "\"NuFactor[-]\"";
+    myfile.width(30); myfile << "\"Spanwise value [m]\"";
+    myfile.width(15); myfile << "\"iSpan [-]\"";
+    myfile.width(30); myfile << "\"Spanwise fraction [-]\"";
+    myfile.width(30); myfile << "\"Pressure [Pa]\"";
+    myfile.width(30); myfile << "\"Total Pressure [Pa]\"";
+    myfile.width(30); myfile << "\"Temperature [K]\"";
+    myfile.width(30); myfile << "\"Total Temperature [K]\"";
+    myfile.width(30); myfile << "\"Enthalpy [J]\"";
+    myfile.width(30); myfile << "\"Total Enthalpy [J]\"";
+    myfile.width(30); myfile << "\"Density [kg/m3]\"";
+    myfile.width(30); myfile << "\"Entropy [J/K]\"";
+    myfile.width(30); myfile << "\"TurbIntensity [-]\"";
+    myfile.width(30); myfile << "\"Turb2LamViscRatio [-]\"";
+    myfile.width(30); myfile << "\"NuFactor [-]\"";
     myfile << endl;
 
 
@@ -10866,6 +10869,7 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
 
       myfile.width(30); myfile << SpanWiseValuesOut[iSpan];
       myfile.width(15); myfile << iSpan;
+      myfile.width(30); myfile << (SpanWiseValuesOut[iSpan] - SpanWiseValuesOut[0])/(SpanWiseValuesOut[config[ZONE_0]->GetnSpan_iZones(val_iZone)-1] -SpanWiseValuesOut[0]);
       myfile.width(30); myfile << PressureOut           [val_iZone][iSpan]*config[ZONE_0]->GetPressure_Ref();
       myfile.width(30); myfile << TotalPressureOut      [val_iZone][iSpan]*config[ZONE_0]->GetPressure_Ref();
       myfile.width(30); myfile << TemperatureOut        [val_iZone][iSpan]*config[ZONE_0]->GetTemperature_Ref();
@@ -10888,176 +10892,140 @@ void COutput::WriteSpanWiseValuesFiles(CGeometry ***geometry,
 
     /*--- Writing Span wise inflow kinematic quantities. ---*/
     spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_kinematic_values.dat";
-        if (nZone > 1){
-          unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
-          spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
-          SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-          spanwise_performance_filename.append(string(buffer));
-        }
+    if (nZone > 1){
+      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+      spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
+      SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+      spanwise_performance_filename.append(string(buffer));
+    }
 
-        myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
-        myfile.setf(ios::scientific);
-        myfile.precision(12);
+    myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+    myfile.setf(ios::scientific);
+    myfile.precision(12);
 
-        myfile << "TITLE = \"Inflow Span-wise Kinematic Values. iExtIter = " << iExtIter << " \"" << endl;
-        myfile << "VARIABLES =" << endl;
+    myfile << "TITLE = \"Inflow Span-wise Kinematic Values. iExtIter = " << iExtIter << " \"" << endl;
+    myfile << "VARIABLES =" << endl;
 
-        myfile.width(30); myfile << "\"SpanWise Value[m]\"";
-        myfile.width(15); myfile << "\"iSpan\"";
-        myfile.width(30); myfile << "\"Normal Mach[-]\"";
-        myfile.width(30); myfile << "\"Tangential Mach[-]\"";
-        myfile.width(30); myfile << "\"3rd Component Mach[-]\"";
-        myfile.width(30); myfile << "\"Mach Module[-]\"";
-        myfile.width(30); myfile << "\"Normal Velocity[m/s]\"";
-        myfile.width(30); myfile << "\"Tangential Velocity[m/s]\"";
-        myfile.width(30); myfile << "\"3rd Component Velocity[m/s]\"";
-        myfile.width(30); myfile << "\"Velocity Module[m/s]\"";
-        myfile.width(30); myfile << "\"Absolute Flow Angle[deg]\"";
-        myfile.width(30); myfile << "\"Relative Flow Angle[deg]\"";
-        myfile << endl;
-
-
-        for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
-
-          myfile.width(30); myfile << SpanWiseValuesIn[iSpan];
-          myfile.width(15); myfile << iSpan;
-          for (iDim = 0; iDim < 4; iDim++){
-          	myfile.width(30); myfile << MachIn              [val_iZone][iSpan][iDim];
-          }
-          for (iDim = 0; iDim < 4; iDim++){
-          	myfile.width(30); myfile << TurboVelocityIn     [val_iZone][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();
-          }
-          if(AbsFlowAngleIn[val_iZone][iSpan] != AbsFlowAngleIn[val_iZone][iSpan]){
-          	myfile.width(30); myfile << "0.0000";
-          }
-          else{
-          	myfile.width(30); myfile << AbsFlowAngleIn     [val_iZone][iSpan]*180.0/PI_NUMBER;
-          }
-          if(FlowAngleIn[val_iZone][iSpan] != FlowAngleIn[val_iZone][iSpan]){
-          	myfile.width(30); myfile << "0.0000";
-          }
-          else{
-          	myfile.width(30); myfile << FlowAngleIn      [val_iZone][iSpan]*180.0/PI_NUMBER;
-          }
-          myfile << endl;
-        }
-
-        myfile.close();
-
-        /*--- Writing Span wise outflow thermodynamic quantities. ---*/
-        spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_kinematic_values.dat";
-        if (nZone > 1){
-        	unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
-        	spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
-        	SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-        	spanwise_performance_filename.append(string(buffer));
-        }
-
-        myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
-        myfile.setf(ios::scientific);
-        myfile.precision(12);
-
-        myfile << "TITLE = \"Outflow Span-wise Kinematic Values. iExtIter = " << iExtIter << " \"" << endl;
-        myfile << "VARIABLES =" << endl;
-
-        myfile.width(30); myfile << "\"SpanWise Value[m]\"";
-        myfile.width(15); myfile << "\"iSpan\"";
-        myfile.width(30); myfile << "\"Normal Mach[-]\"";
-        myfile.width(30); myfile << "\"Tangential Mach[-]\"";
-        myfile.width(30); myfile << "\"3rd Component Mach[-]\"";
-        myfile.width(30); myfile << "\"Mach Module[-]\"";
-        myfile.width(30); myfile << "\"Normal Velocity[m/s]\"";
-        myfile.width(30); myfile << "\"Tangential Velocity[m/s]\"";
-        myfile.width(30); myfile << "\"3rd Component Velocity[m/s]\"";
-        myfile.width(30); myfile << "\"Velocity Module[m/s]\"";
-        myfile.width(30); myfile << "\"Absolute Flow Angle[deg]\"";
-        myfile.width(30); myfile << "\"Relative Flow Angle[deg]\"";
-        myfile << endl;
+    myfile.width(30); myfile << "\"Spaneise value [m]\"";
+    myfile.width(15); myfile << "\"iSpan [-]\"";
+    myfile.width(30); myfile << "\"Spanwise fraction [-]\"";
+    myfile.width(30); myfile << "\"Normal Mach [-]\"";
+    myfile.width(30); myfile << "\"Tangential Mach [-]\"";
+    myfile.width(30); myfile << "\"3rd Component Mach [-]\"";
+    myfile.width(30); myfile << "\"Mach Module [-]\"";
+    myfile.width(30); myfile << "\"Normal Velocity [m/s]\"";
+    myfile.width(30); myfile << "\"Tangential Velocity [m/s]\"";
+    myfile.width(30); myfile << "\"3rd Component Velocity [m/s]\"";
+    myfile.width(30); myfile << "\"Velocity Module [m/s]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle1 [deg]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle2 [deg]\"";
+    myfile.width(30); myfile << "\"Relative Flow Angle1 [deg]\"";
+    myfile << endl;
 
 
-        for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
+    for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
 
-        	myfile.width(30); myfile << SpanWiseValuesOut[iSpan];
-        	myfile.width(15); myfile << iSpan;
-        	for (iDim = 0; iDim < 4; iDim++){
-        		myfile.width(30); myfile << MachOut              [val_iZone][iSpan][iDim];
-        	}
-        	for (iDim = 0; iDim < 4; iDim++){
-        		myfile.width(30); myfile << TurboVelocityOut     [val_iZone][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();
-        	}
-        	if(AbsFlowAngleOut[val_iZone][iSpan] != AbsFlowAngleOut[val_iZone][iSpan]){
-        		myfile.width(30); myfile << "0.0000";
-        	}
-        	else{
-        		myfile.width(30); myfile << AbsFlowAngleOut      [val_iZone][iSpan]*180.0/PI_NUMBER;
-        	}
-        	if(FlowAngleOut[val_iZone][iSpan] != FlowAngleOut[val_iZone][iSpan]){
-        		myfile.width(30); myfile << "0.0000";
-        	}
-        	else{
-        		myfile.width(30); myfile << FlowAngleOut      [val_iZone][iSpan]*180.0/PI_NUMBER;
-        	}
-        	myfile << endl;
-        }
+      myfile.width(30); myfile << SpanWiseValuesIn[iSpan];
+      myfile.width(15); myfile << iSpan;
+      myfile.width(30); myfile << (SpanWiseValuesIn[iSpan] - SpanWiseValuesIn[0])/(SpanWiseValuesIn[config[ZONE_0]->GetnSpan_iZones(val_iZone)-1] -SpanWiseValuesIn[0]);
+      for (iDim = 0; iDim < 4; iDim++){
+        myfile.width(30); myfile << MachIn[val_iZone][iSpan][iDim];
+      }
+      for (iDim = 0; iDim < 4; iDim++){
+        myfile.width(30); myfile << TurboVelocityIn[val_iZone][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();
+      }
+      if(AbsFlowAngleIn[val_iZone][iSpan] != AbsFlowAngleIn[val_iZone][iSpan]){
+        myfile.width(30); myfile << "0.0000";
+      }
+      else{
+        myfile.width(30); myfile << AbsFlowAngleIn[val_iZone][iSpan]*180.0/PI_NUMBER;
+      }
+      absFlowAngle2 = atan(TurboVelocityIn[val_iZone][iSpan][2]/TurboVelocityIn[val_iZone][iSpan][0]);
+      if(absFlowAngle2 != absFlowAngle2){
+        myfile.width(30); myfile << "0.0000";
+      }
+      else{
+        myfile.width(30); myfile << absFlowAngle2*180.0/PI_NUMBER;
+      }
+      if(FlowAngleIn[val_iZone][iSpan] != FlowAngleIn[val_iZone][iSpan]){
+        myfile.width(30); myfile << "0.0000";
+      }
+      else{
+        myfile.width(30); myfile << FlowAngleIn[val_iZone][iSpan]*180.0/PI_NUMBER;
+      }
+      myfile << endl;
+    }
 
-        myfile.close();
+    myfile.close();
 
-    //myfile.width(30); myfile << "\"TotalPressureLoss[%]\"";
-    //myfile.width(30); myfile << "\"KineticEnergyLoss[%]\"";
-    //myfile.width(30); myfile << "\"TotalStaticEfficiency[%]\"";
-    //myfile.width(30); myfile << "\"TotalTotalEfficiency[%]\"";
-    //myfile.width(30); myfile << "\"EulerianWork[J]\"";
+    /*--- Writing Span wise outflow thermodynamic quantities. ---*/
+    spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_kinematic_values.dat";
+    if (nZone > 1){
+      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+      spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
+      SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+      spanwise_performance_filename.append(string(buffer));
+    }
 
-//    myfile.width(30); myfile << "\"EntropyGen[J]\"";
-//    myfile.width(30); myfile << "\"TotalEnthalpyOutIs[J]\"";
-//    myfile.width(30); myfile << "\"RothalpyIn[J]\"";
-//    myfile.width(30); myfile << "\"RothalpyOut[J]\"";
-//    myfile.width(30); myfile << "\"MassFlowIn[kg/s]\"";
-//    myfile.width(30); myfile << "\"MassFlowOut[kg/s]\"";
-//    myfile.width(30); myfile << "\"VelocityOutIs[m/s]\"";
-//    myfile.width(30); myfile << "\"EntropyIn_BC[J]\"";
-//    myfile.width(30); myfile << "\"TotalEnthalpyIn_BC[J]\"";
-//    myfile.width(30); myfile << "\"PressureOut_BC[Pa]\"";
+    myfile.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+    myfile.setf(ios::scientific);
+    myfile.precision(12);
 
-//    myfile.width(30); myfile << "\"MachInNormal[-]\"";
-//    myfile.width(30); myfile << "\"MachOutNormal[-]\"";
-//    myfile.width(30); myfile << "\"MachInTang[-]\"";
-//    myfile.width(30); myfile << "\"MachOutTang[-]\"";
-//    myfile.width(30); myfile << "\"MachInRadial[-]\"";
-//    myfile.width(30); myfile << "\"MachOutRadial[-]\"";
-//    myfile.width(30); myfile << "\"MachIn[-]\"";
-//    myfile.width(30); myfile << "\"MachOut[-]\"";
-//    myfile.width(30); myfile << "\"TurboVelocityInNormal[m/s]\"";
-//    myfile.width(30); myfile << "\"TurboVelocityOutNormal[m/s]\"";
-//    myfile.width(30); myfile << "\"TurboVelocityInTang[m/s]\"";
-//    myfile.width(30); myfile << "\"TurboVelocityOutTang[m/s]\"";
-//    myfile.width(30); myfile << "\"TurboVelocityInRadial[m/s]\"";
-//    myfile.width(30); myfile << "\"TurboVelocityOutRadial[m/s]\"";
-//    myfile.width(30); myfile << "\"TurboVelocityIn[m/s]\"";
-//    myfile.width(30); myfile << "\"TurboVelocityOut[m/s]\"";
+    myfile << "TITLE = \"Outflow Span-wise Kinematic Values. iExtIter = " << iExtIter << " \"" << endl;
+    myfile << "VARIABLES =" << endl;
+
+    myfile.width(30); myfile << "\"Spanwise Value [m]\"";
+    myfile.width(15); myfile << "\"iSpan [-]\"";
+    myfile.width(30); myfile << "\"Spanwise fraction [-]\"";
+    myfile.width(30); myfile << "\"Normal Mach [-]\"";
+    myfile.width(30); myfile << "\"Tangential Mach [-]\"";
+    myfile.width(30); myfile << "\"3rd Component Mach [-]\"";
+    myfile.width(30); myfile << "\"Mach Module [-]\"";
+    myfile.width(30); myfile << "\"Normal Velocity [m/s]\"";
+    myfile.width(30); myfile << "\"Tangential Velocity [m/s]\"";
+    myfile.width(30); myfile << "\"3rd Component Velocity [m/s]\"";
+    myfile.width(30); myfile << "\"Velocity Module [m/s]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle1 [deg]\"";
+    myfile.width(30); myfile << "\"Absolute Flow Angle2 [deg]\"";
+    myfile.width(30); myfile << "\"Relative Flow Angle1 [deg]\"";
+    myfile << endl;
 
 
-    //          myfile.width(30); myfile << RothalpyIn      [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
-    //          myfile.width(30); myfile << RothalpyOut     [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
-    //          myfile.width(30); myfile << MassFlowIn           [iMarker_Monitoring-1][iSpan]*1;
-    //          myfile.width(30); myfile << MassFlowOut          [iMarker_Monitoring-1][iSpan]*1;
-    //          myfile.width(30); myfile << VelocityOutIs        [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
-    //          myfile.width(30); myfile << EntropyIn_BC         [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
-    //          myfile.width(30); myfile << TotalEnthalpyIn_BC   [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
-    //          myfile.width(30); myfile << PressureOut_BC       [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetPressure_Ref();
-    //          myfile.width(30); myfile << AbsFlowAngleIn       [iMarker_Monitoring-1][iSpan]*180.0/PI_NUMBER;
-    //          myfile.width(30); myfile << AbsFlowAngleOut      [iMarker_Monitoring-1][iSpan]*180.0/PI_NUMBER;
-    //          myfile.width(30); myfile << FlowAngleIn          [iMarker_Monitoring-1][iSpan]*180.0/PI_NUMBER;
-    //          myfile.width(30); myfile << FlowAngleOut         [iMarker_Monitoring-1][iSpan]*180.0/PI_NUMBER;
-    //
-    //          for (iDim = 0; iDim < 4; iDim++){
-    //            myfile.width(30); myfile << MachIn              [iMarker_Monitoring-1][iSpan][iDim];
-    //            myfile.width(30); myfile << MachOut             [iMarker_Monitoring-1][iSpan][iDim];
-    //          }
-    //          for (iDim = 0; iDim < 4; iDim++){
-    //            myfile.width(30); myfile << TurboVelocityIn     [iMarker_Monitoring-1][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();;
-    //            myfile.width(30); myfile << TurboVelocityOut    [iMarker_Monitoring-1][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();;
-    //          }
+    for(iSpan = 0; iSpan < config[ZONE_0]->GetnSpan_iZones(val_iZone); iSpan++){
+
+      myfile.width(30); myfile << SpanWiseValuesOut[iSpan];
+      myfile.width(15); myfile << iSpan;
+      myfile.width(30); myfile << (SpanWiseValuesOut[iSpan] - SpanWiseValuesOut[0])/(SpanWiseValuesOut[config[ZONE_0]->GetnSpan_iZones(val_iZone)-1] -SpanWiseValuesOut[0]);
+      for (iDim = 0; iDim < 4; iDim++){
+        myfile.width(30); myfile << MachOut[val_iZone][iSpan][iDim];
+      }
+      for (iDim = 0; iDim < 4; iDim++){
+        myfile.width(30); myfile << TurboVelocityOut[val_iZone][iSpan][iDim]*config[ZONE_0]->GetVelocity_Ref();
+      }
+      if(AbsFlowAngleOut[val_iZone][iSpan] != AbsFlowAngleOut[val_iZone][iSpan]){
+        myfile.width(30); myfile << "0.0000";
+      }
+      else{
+        myfile.width(30); myfile << AbsFlowAngleOut[val_iZone][iSpan]*180.0/PI_NUMBER;
+      }
+      absFlowAngle2 = atan(TurboVelocityOut[val_iZone][iSpan][2]/TurboVelocityOut[val_iZone][iSpan][0]);
+      if(absFlowAngle2 != absFlowAngle2){
+        myfile.width(30); myfile << "0.0000";
+      }
+      else{
+        myfile.width(30); myfile << absFlowAngle2*180.0/PI_NUMBER;
+      }
+      if(FlowAngleOut[val_iZone][iSpan] != FlowAngleOut[val_iZone][iSpan]){
+        myfile.width(30); myfile << "0.0000";
+      }
+      else{
+        myfile.width(30); myfile << FlowAngleOut[val_iZone][iSpan]*180.0/PI_NUMBER;
+      }
+      myfile << endl;
+    }
+
+    myfile.close();
+
   }
 }
 

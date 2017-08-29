@@ -2779,7 +2779,11 @@ void CDriver::TurbomachineryPreprocessing(){
 
     }
   }
+  if (config_container[ZONE_0]->GetBoolSpanwiseBC_Inlet())
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->PreprocessSpanWiceBC_Inlet(config_container[ZONE_0],geometry_container[ZONE_0][MESH_0]);
 
+  if (config_container[ZONE_0]->GetBoolSpanwiseBC_Outlet())
+    solver_container[nZone -1][MESH_0][FLOW_SOL]->PreprocessSpanWiceBC_Outlet(config_container[nZone -1],geometry_container[nZone -1][MESH_0]);
 }
 
 void CDriver::StartSolver() {
@@ -4040,18 +4044,6 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
           geometry_container[iZone][MESH_0]->SetShroudVelocity(config_container[iZone]);
         }
       }
-
-      for (iZone = 0; iZone < nZone; iZone++) {
-        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
-        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);
-        geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
-
-      }
-
-      for (iZone = 1; iZone < nZone; iZone++) {
-        transfer_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
-      }
-
     }
 
     if(print){

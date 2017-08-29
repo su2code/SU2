@@ -3425,7 +3425,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-   virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
+  virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief A virtual member.
@@ -3580,6 +3594,20 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
+  virtual su2double GetRelTangVelocityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetRelTangVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
   virtual su2double GetKineIn(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
@@ -3659,6 +3687,20 @@ public:
    */
   virtual void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetRelTangVelocityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+
+  virtual void SetRelTangVelocityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
   /*!
    * \brief A virtual member.
    * \param[in] value      - turboperformance value to set.
@@ -4047,14 +4089,22 @@ protected:
              **AverageOmega,
              **ExtAverageNu,
              **ExtAverageKine,
-             **ExtAverageOmega;
+             **ExtAverageOmega,
+             **TotalPressure_BC,
+             **TotalTemperature_BC,
+             **FlowAngle1_BC,
+             **FlowAngle2_BC,
+             **Pressure_BC,
+             **AverageRelTangVelocity;
 
   su2double  **DensityIn,
              **PressureIn,
              ***TurboVelocityIn,
+             **RelTangVelocityIn,
              **DensityOut,
              **PressureOut,
              ***TurboVelocityOut,
+             **RelTangVelocityOut,
              **KineIn,
              **OmegaIn,
              **NuIn,
@@ -6025,6 +6075,20 @@ public:
   void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
 
   /*!
+   * \brief It reads the spanwise inlet conditions from the input file and, if necessary, it interpolates these values on the Inlet spanwsie grid division.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief It reads the spanwise outlet conditions from the input file and, if necessary, it interpolates these values on the outlet spanwsie grid division.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geometry);
+
+  /*!
    * \brief Provide the average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Density on the surface <i>val_marker</i>.
@@ -6177,6 +6241,20 @@ public:
   su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
+   * \brief Provide the inlet relative tangential velocity.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet relative tangential velocity.
+   */
+  su2double GetRelTangVelocityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the the outlet relative tangential velocity.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the the outlet relative tangential velocity.
+   */
+  su2double GetRelTangVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
    * \brief Provide the inlet turbulent kei to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
@@ -6259,6 +6337,21 @@ public:
    * \param[in] inMarkerTP - turboperformance marker.
    */
   void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set inlet relative tangential velocity.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+
+  void SetRelTangVelocityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set outlet relative tangential velocity.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetRelTangVelocityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief Set inlet turbulent kei.

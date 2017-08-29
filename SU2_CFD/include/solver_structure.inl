@@ -928,6 +928,10 @@ inline void CSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, 
 
 inline void CSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry){ }
 
+inline void CSolver::PreprocessSpanWiceBC_Inlet(CConfig *config, CGeometry *geometry){ }
+
+inline void CSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geometry){ }
+
 inline su2double CSolver::GetAverageDensity(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
 inline su2double CSolver::GetAveragePressure(unsigned short valMarker, unsigned short valSpan){return 0.0;}
@@ -982,6 +986,10 @@ inline su2double CSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned short 
 
 inline su2double CSolver::GetNuOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
+inline su2double CSolver::GetRelTangVelocityIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
+inline su2double CSolver::GetRelTangVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
 inline void CSolver::SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline void CSolver::SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
@@ -1005,6 +1013,10 @@ inline void CSolver::SetKineOut(su2double value, unsigned short inMarkerTP, unsi
 inline void CSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline void CSolver::SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+
+inline void CSolver::SetRelTangVelocityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
+
+inline void CSolver::SetRelTangVelocityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline void CSolver::SetFreeStream_TurboSolution(CConfig *config){ }
 
@@ -1401,6 +1413,10 @@ inline su2double  CEulerSolver::GetPressureOut(unsigned short inMarkerTP, unsign
 
 inline su2double* CEulerSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityOut[inMarkerTP][valSpan];}
 
+inline su2double CEulerSolver::GetRelTangVelocityIn(unsigned short inMarkerTP, unsigned short valSpan){return RelTangVelocityIn[inMarkerTP][valSpan];}
+
+inline su2double CEulerSolver::GetRelTangVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return RelTangVelocityOut[inMarkerTP][valSpan];}
+
 inline su2double CEulerSolver::GetKineIn(unsigned short inMarkerTP, unsigned short valSpan){return KineIn[inMarkerTP][valSpan];}
 
 inline su2double CEulerSolver::GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan){return OmegaIn[inMarkerTP][valSpan];}
@@ -1434,6 +1450,10 @@ inline void CEulerSolver::SetTurboVelocityOut(su2double *value, unsigned short i
   for(iDim = 0; iDim < nDim; iDim++)
     TurboVelocityOut[inMarkerTP][valSpan][iDim] = value[iDim];
 }
+
+inline void CEulerSolver::SetRelTangVelocityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){RelTangVelocityIn[inMarkerTP][valSpan] = value;}
+
+inline void CEulerSolver::SetRelTangVelocityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){RelTangVelocityOut[inMarkerTP][valSpan] = value;}
 
 inline void CEulerSolver::SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KineIn[inMarkerTP][valSpan] = value;}
 
