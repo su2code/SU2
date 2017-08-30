@@ -1886,6 +1886,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Multipoint design freestream pressure */
   addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
+
+  /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
+  addBoolOption("USING_UQ", using_uq, false);
+
+  /* DESCRIPTION: Parameter to perturb eigenvalues */
+  addDoubleOption("BETA_DELTA", beta_delta, 0.0);
+
+  /* DESCRIPTION: Parameter to determine kind of perturbation */
+  addUnsignedShortOption("COMPONENTIALITY", eig_val_comp, 0);
   
   /* END_CONFIG_OPTIONS */
 
@@ -3328,6 +3337,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   		OrderMagResidual = 24;
   		MinLogResidual = -24;
   	}
+  }
+
+  /* --- Remove UQ if not using SST Turbulence model */
+
+  if (Kind_Solver == RANS && Kind_Turb_Model != SST && using_uq){
+      using_uq = false;
+      beta_delta = 0.0;
+      eig_val_comp = 0;
   }
 
   /*--- If there are not design variables defined in the file ---*/

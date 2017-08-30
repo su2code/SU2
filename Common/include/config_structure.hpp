@@ -879,6 +879,10 @@ private:
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
 
+  bool using_uq;              /*!< \brief Using uncertainty quantification with SST model */
+  su2double beta_delta;       /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
+  unsigned short eig_val_comp;             /*!< \brief Parameter used to determine type of eigenvalue perturbation */
+
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -7347,6 +7351,24 @@ public:
    * \brief Get the interpolation method used for matching between zones.
    */
   inline unsigned short GetKindInterpolation(void);
+
+  /*!
+   * \brief Get information about using UQ methodology
+   * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
+   */
+  bool GetUsing_UQ(void);
+
+  /*!
+   * \brief Get the amount of eigenvalue perturbation to be done
+   * \return Value of the beta_delta parameter
+   */
+  su2double GetBeta_Delta(void);
+
+  /*!
+   * \brief Get the kind of eigenspace perturbation to be done
+   * \return Value of the eig_val_comp
+   */
+  unsigned short GetEig_Val_Comp(void);
   
   /*!
    * \brief Get the AD support.
