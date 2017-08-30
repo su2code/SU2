@@ -5443,9 +5443,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             //            if (!fluid_structure) {
 
             if (incompressible && !heat) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
-            else if (heat){
-              cout << "   Res[Press]" << "     Res[Heat]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
-            }
+            else if (heat) cout << "   Res[Press]" << "     Res[Heat]" << "   HFlux(Total)" << endl;
             else if (rotating_frame && nDim == 3 && !turbo) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
             else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
@@ -5524,7 +5522,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             }
             }
-            else if (heat) cout << "      HF(Total)" << endl;
+            else if (heat) cout << "   HFlux(Total)" << endl;
             else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
 
             break;
@@ -5676,7 +5674,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (compressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
             if (incompressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
             if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid;
-	    if (heat) ConvHist_file[0] << heat_resid;            
+            if (heat) ConvHist_file[0] << heat_resid;
 //            if (fluid_structure) ConvHist_file[0] << fea_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
@@ -5700,7 +5698,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   else { cout.width(14); cout << log10(residual_flow[4]); }
                 }
                 if (incompressible && !heat) { cout.width(14); cout << log10(residual_flow[1]); }
-                if (heat){cout.width(15); cout << log10(residual_heat[0]);}
+                if (heat){cout.width(14); cout << log10(residual_heat[0]);}
               }
               //          else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
 
@@ -5729,6 +5727,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 }
                 cout.unsetf(ios_base::floatfield);
               }
+              else if (heat) { cout.width(15); cout << std::scientific << Total_Heat; }
               else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
               if (aeroelastic) {
                 cout.setf(ios::scientific, ios::floatfield);
@@ -5746,7 +5745,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if (!DualTime_Iteration) {
             if (!turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
             if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
-	    if (heat) ConvHist_file[0] << heat_resid;
+            if (heat) ConvHist_file[0] << heat_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
