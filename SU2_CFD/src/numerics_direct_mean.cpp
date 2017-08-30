@@ -3665,9 +3665,16 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
   }
   
   /*--- Get projected flux tensor ---*/
-  
-  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  
+
+  if (config->GetUsing_UQ()){
+    SetReynoldsStressMatrix(Mean_turb_ke);
+    SetPerturbedRSM(Mean_turb_ke, config->GetEig_Val_Comp(),config->GetBeta_Delta());
+    GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, MeanReynoldsStress, MeanPerturbedRSM);
+  }
+
+  else {
+    GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  }
   /*--- Save residual value ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
@@ -3826,6 +3833,522 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
 //  }
 //
 //}
+
+void CAvgGradCorrected_Flow::GetMeanRateOfStrainMatrix(su2double **S_ij)
+{
+    if (nDim == 3){
+        S_ij[0][0] = Mean_GradPrimVar[1][0];
+        S_ij[1][1] = Mean_GradPrimVar[2][1];
+        S_ij[2][2] = Mean_GradPrimVar[3][2];
+        S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
+        S_ij[0][2] = 0.5 * (Mean_GradPrimVar[1][2] + Mean_GradPrimVar[3][0]);
+        S_ij[1][2] = 0.5 * (Mean_GradPrimVar[2][2] + Mean_GradPrimVar[3][1]);
+        S_ij[1][0] = S_ij[0][1];
+        S_ij[2][1] = S_ij[1][2];
+        S_ij[2][0] = S_ij[0][2];
+    }
+    else {
+        S_ij[0][0] = Mean_GradPrimVar[1][0];
+        S_ij[1][1] = Mean_GradPrimVar[2][1];
+        S_ij[2][2] = 0.0;
+        S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
+        S_ij[0][2] = 0.0;
+        S_ij[1][2] = 0.0;
+        S_ij[1][0] = S_ij[0][1];
+        S_ij[2][1] = S_ij[1][2];
+        S_ij[2][0] = S_ij[0][2];
+
+    }
+}
+
+void CAvgGradCorrected_Flow::SetReynoldsStressMatrix(su2double turb_ke){
+    unsigned short jDim;
+    su2double **S_ij = new su2double* [3];
+    su2double muT = Mean_Eddy_Viscosity;
+    su2double divVel = 0;
+    su2double density;
+    su2double TWO3 = 2.0/3.0;
+
+    density = Mean_PrimVar[nDim+2];
+
+    for (iDim = 0; iDim < 3; iDim++){
+        S_ij[iDim] = new su2double [3];
+    }
+
+
+    GetMeanRateOfStrainMatrix(S_ij);
+
+    for (iDim = 0; iDim < 3; iDim++){
+        divVel += S_ij[iDim][iDim];
+    }
+
+    for (iDim = 0; iDim < 3; iDim++){
+        for (jDim = 0; jDim < 3; jDim++){
+            MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta[iDim][jDim]
+                    - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta[iDim][jDim]);
+        }
+    }
+
+    for (iDim = 0; iDim < 3; iDim++)
+        delete [] S_ij[iDim];
+    delete [] S_ij;
+}
+
+void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, unsigned short Eig_Val_Comp, su2double beta_delta){
+
+    unsigned short iDim,jDim;
+    su2double **A_ij;
+    su2double **Eig_Vec;
+    su2double **newA_ij;
+    su2double **Corners;
+    su2double *Eig_Val;
+    su2double *Barycentric_Coord;
+    su2double *New_Coord;
+
+    A_ij = new su2double* [3];
+    newA_ij = new su2double* [3];
+    Eig_Vec = new su2double* [3];
+    Corners = new su2double* [3];
+    Eig_Val = new su2double [3];
+    Barycentric_Coord = new su2double [2];
+    New_Coord = new su2double [2];
+
+    for (iDim= 0; iDim< 3; iDim++){
+        A_ij[iDim] = new su2double [3];
+        newA_ij[iDim] = new su2double [3];
+        Eig_Vec[iDim] = new su2double [3];
+        Corners[iDim] = new su2double [2];
+        Eig_Val[iDim] = 0;
+    }
+
+    for (iDim = 0; iDim< 3; iDim++){
+        for (jDim = 0; jDim < 3; jDim++){
+            A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta[iDim][jDim] / 3.0;
+            Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
+        }
+    }
+
+    EigenDecomposition(A_ij, Eig_Vec, Eig_Val);
+
+    /* compute convex combination coefficients */
+    su2double c1c = Eig_Val[2] - Eig_Val[1];
+    su2double c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
+    su2double c3c = 3.0 * Eig_Val[0] + 1.0;
+
+    /* define barycentric traingle corner points */
+    Corners[0][0] = 1.0;
+    Corners[0][1] = 0.0;
+    Corners[1][0] = 0.0;
+    Corners[1][1] = 0.0;
+    Corners[2][0] = 0.5;
+    Corners[2][1] = 0.866025;
+
+    /* define barycentric coordinates */
+    Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
+    Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
+
+    if (Eig_Val_Comp == 1) {
+        /* 1C turbulence */
+        New_Coord[0] = Corners[0][0];
+        New_Coord[1] = Corners[0][1];
+    }
+    else if (Eig_Val_Comp == 2) {
+        /* 2C turbulence */
+        New_Coord[0] = Corners[1][0];
+        New_Coord[1] = Corners[1][1];
+    }
+    else if (Eig_Val_Comp == 3) {
+        /* 3C turbulence */
+        New_Coord[0] = Corners[2][0];
+        New_Coord[1] = Corners[2][1];
+    }
+    else {
+        /* 2C turbulence */
+        New_Coord[0] = Corners[1][0];
+        New_Coord[1] = Corners[1][1];
+    }
+
+    Barycentric_Coord[0] = Barycentric_Coord[0] + (beta_delta) * (New_Coord[0] - Barycentric_Coord[0]);
+    Barycentric_Coord[1] = Barycentric_Coord[1] + (beta_delta) * (New_Coord[1] - Barycentric_Coord[1]);
+
+    /* rebuild c1c,c2c,c3c based on new barycentric coordinates */
+    c3c = Barycentric_Coord[1] / Corners[2][1];
+    c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
+    c2c = 1 - c1c - c3c;
+
+    /* build new anisotropy eigenvalues */
+    Eig_Val[0] = (c3c - 1) / 3.0;
+    Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
+    Eig_Val[2] = c1c + Eig_Val[1];
+
+    EigenRecomposition(newA_ij, Eig_Vec, Eig_Val);
+
+    for (iDim = 0; iDim< 3; iDim++){
+        for (jDim = 0; jDim < 3; jDim++){
+            MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta[iDim][jDim]);
+        }
+    }
+
+//  Printing matrices for debugging
+//    cout<<"Reynolds stress: { ";
+//    for (iDim = 0; iDim< 3; iDim++){
+//        cout<<"{ ";
+//        for (jDim = 0; jDim < 3; jDim++){
+//            cout<<MeanReynoldsStress[iDim][jDim]<<", ";
+//        }
+//        cout<<"}, ";
+//    }
+//    cout<<"} "<<endl;
+
+//    cout<<"Perturbed RSM: { ";
+//    for (iDim = 0; iDim< 3; iDim++){
+//        cout<<"{ ";
+//        for (jDim = 0; jDim < 3; jDim++){
+//            cout<<MeanPerturbedRSM[iDim][jDim]<<", ";
+//        }
+//        cout<<"}, ";
+//    }
+//    cout<<"} "<<endl;
+
+    // delete variables
+
+    for (iDim= 0; iDim< 3; iDim++){
+        delete [] A_ij[iDim];
+        delete [] newA_ij[iDim];
+        delete [] Eig_Vec[iDim];
+        delete [] Corners[iDim];
+    }
+
+    delete [] A_ij;
+    delete [] Eig_Vec;
+    delete [] newA_ij;
+    delete [] Corners;
+    delete [] Eig_Val;
+    delete [] Barycentric_Coord;
+    delete [] New_Coord;
+
+}
+
+void CAvgGradCorrected_Flow::SetPerturbedStrainMag(su2double turb_ke){
+    unsigned short iDim, jDim;
+    PerturbedStrainMag = 0;
+    su2double muT = Mean_Eddy_Viscosity;
+    su2double density = Mean_PrimVar[nDim+2];
+    su2double **StrainRate = new su2double* [nDim];
+    for (iDim= 0; iDim< nDim; iDim++){
+        StrainRate[iDim] = new su2double [nDim];
+    }
+
+    for (iDim = 0; iDim < nDim; iDim++){
+        for (jDim =0; jDim < nDim; jDim++){
+            StrainRate[iDim][jDim] = MeanPerturbedRSM[iDim][jDim]
+                    - TWO3 * turb_ke * delta[iDim][jDim];
+            StrainRate[iDim][jDim] = - StrainRate[iDim][jDim] * density / (2 * muT);
+        }
+    }
+
+    /*--- Add diagonal part ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+      PerturbedStrainMag += pow(StrainRate[iDim][iDim], 2.0);
+    }
+
+    /*--- Add off diagonals ---*/
+
+    PerturbedStrainMag += 2.0*pow(StrainRate[1][0], 2.0);
+
+    if (nDim == 3) {
+      PerturbedStrainMag += 2.0*pow(StrainRate[0][2], 2.0);
+      PerturbedStrainMag += 2.0*pow(StrainRate[1][2], 2.0);
+    }
+
+    PerturbedStrainMag = sqrt(2.0*PerturbedStrainMag);
+
+    for (iDim= 0; iDim< nDim; iDim++){
+        delete [] StrainRate[iDim];
+    }
+
+    delete [] StrainRate;
+}
+
+void CAvgGradCorrected_Flow::EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val){
+    int iDim,jDim;
+    su2double *e = new su2double [3];
+    for (iDim= 0; iDim< 3; iDim++){
+        e[iDim] = 0;
+        for (jDim = 0; jDim < 3; jDim++){
+            Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
+        }
+    }
+    tred2(Eig_Vec, Eig_Val, e);
+    tql2(Eig_Vec, Eig_Val, e);
+
+    delete [] e;
+}
+
+void CAvgGradCorrected_Flow::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val){
+    unsigned short i,j,k;
+    su2double **tmp = new su2double* [3];
+    for (i= 0; i< 3; i++){
+        tmp[i] = new su2double [3];
+    }
+
+    for (i= 0; i< 3; i++){
+        for (j = 0; j < 3; j++){
+            tmp[i][j] = 0.0;
+            for (k = 0; k < 3; k++){
+                tmp[i][j] += Eig_Vec[i][k] * Eig_Val[k] * delta[k][j];
+            }
+        }
+    }
+
+    for (i= 0; i< 3; i++){
+        for (j = 0; j < 3; j++){
+            A_ij[i][j] = 0.0;
+            for (k = 0; k < 3; k++){
+                A_ij[i][j] += tmp[i][k] * Eig_Vec[j][k];
+            }
+        }
+    }
+
+    for (i = 0; i < 3; i++){
+        delete [] tmp[i];
+    }
+    delete [] tmp;
+}
+
+void CAvgGradCorrected_Flow::tred2(su2double **V, su2double *d, su2double *e) {
+
+    unsigned short i,j,k;
+    /*  This is derived from the Algol procedures tred2 by        */
+    /*  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for     */
+    /*  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding */
+    /*  Fortran subroutine in EISPACK.                            */
+
+    for (j = 0; j < 3; j++) {
+        d[j] = V[3-1][j];
+    }
+
+    /* Householder reduction to tridiagonal form. */
+
+    for (i = 3-1; i > 0; i--) {
+
+        /* Scale to avoid under/overflow. */
+
+        su2double scale = 0.0;
+        su2double h = 0.0;
+        for (k = 0; k < i; k++) {
+            scale = scale + fabs(d[k]);
+        }
+        if (scale == 0.0) {
+            e[i] = d[i-1];
+            for (j = 0; j < i; j++) {
+                d[j] = V[i-1][j];
+                V[i][j] = 0.0;
+                V[j][i] = 0.0;
+            }
+        }
+        else {
+
+            /* Generate Householder vector. */
+
+            for (k = 0; k < i; k++) {
+                d[k] /= scale;
+                h += d[k] * d[k];
+            }
+            su2double f = d[i-1];
+            su2double g = sqrt(h);
+            if (f > 0) {
+                g = -g;
+            }
+            e[i] = scale * g;
+            h = h - f * g;
+            d[i-1] = f - g;
+            for (j = 0; j < i; j++) {
+                e[j] = 0.0;
+            }
+
+            /* Apply similarity transformation to remaining columns. */
+
+            for (j = 0; j < i; j++) {
+                f = d[j];
+                V[j][i] = f;
+                g = e[j] + V[j][j] * f;
+                for (k = j+1; k <= i-1; k++) {
+                    g += V[k][j] * d[k];
+                    e[k] += V[k][j] * f;
+                }
+                e[j] = g;
+            }
+            f = 0.0;
+            for (j = 0; j < i; j++) {
+                e[j] /= h;
+                f += e[j] * d[j];
+            }
+            su2double hh = f / (h + h);
+            for (j = 0; j < i; j++) {
+                e[j] -= hh * d[j];
+            }
+            for (j = 0; j < i; j++) {
+                f = d[j];
+                g = e[j];
+                for (k = j; k <= i-1; k++) {
+                    V[k][j] -= (f * e[k] + g * d[k]);
+                }
+                d[j] = V[i-1][j];
+                V[i][j] = 0.0;
+            }
+        }
+        d[i] = h;
+    }
+
+    /* Accumulate transformations. */
+
+    for (i = 0; i < 3-1; i++) {
+        V[3-1][i] = V[i][i];
+        V[i][i] = 1.0;
+        su2double h = d[i+1];
+        if (h != 0.0) {
+            for (k = 0; k <= i; k++) {
+                d[k] = V[k][i+1] / h;
+            }
+            for (j = 0; j <= i; j++) {
+                su2double g = 0.0;
+                for (k = 0; k <= i; k++) {
+                    g += V[k][i+1] * V[k][j];
+                }
+                for (k = 0; k <= i; k++) {
+                    V[k][j] -= g * d[k];
+                }
+            }
+        }
+        for (k = 0; k <= i; k++) {
+            V[k][i+1] = 0.0;
+        }
+    }
+    for (j = 0; j < 3; j++) {
+        d[j] = V[3-1][j];
+        V[3-1][j] = 0.0;
+    }
+    V[3-1][3-1] = 1.0;
+    e[0] = 0.0;
+}
+
+/* Symmetric tridiagonal QL algorithm */
+void CAvgGradCorrected_Flow::tql2(su2double **V, su2double *d, su2double *e) {
+
+    int i,j,k,l;
+    for (i = 1; i < 3; i++) {
+        e[i-1] = e[i];
+    }
+    e[3-1] = 0.0;
+
+    su2double f = 0.0;
+    su2double tst1 = 0.0;
+    su2double eps = pow(2.0,-52.0);
+    for (l = 0; l < 3; l++) {
+
+        /* Find small subdiagonal element */
+
+        tst1 = max(tst1,(fabs(d[l]) + fabs(e[l])));
+        int m = l;
+        while (m < 3) {
+            if (fabs(e[m]) <= eps*tst1) {
+                break;
+            }
+            m++;
+        }
+
+        /* If m == l, d[l] is an eigenvalue, */
+        /* otherwise, iterate.               */
+
+        if (m > l) {
+            int iter = 0;
+            do {
+                iter = iter + 1;  /* (Could check iteration count here.) */
+
+                /* Compute implicit shift */
+
+                su2double g = d[l];
+                su2double p = (d[l+1] - g) / (2.0 * e[l]);
+                su2double r = sqrt(p*p+1.0);
+                if (p < 0) {
+                    r = -r;
+                }
+                d[l] = e[l] / (p + r);
+                d[l+1] = e[l] * (p + r);
+                su2double dl1 = d[l+1];
+                su2double h = g - d[l];
+                for (i = l+2; i < 3; i++) {
+                    d[i] -= h;
+                }
+                f = f + h;
+
+                /* Implicit QL transformation. */
+
+                p = d[m];
+                su2double c = 1.0;
+                su2double c2 = c;
+                su2double c3 = c;
+                su2double el1 = e[l+1];
+                su2double s = 0.0;
+                su2double s2 = 0.0;
+                for (i = m-1; i >= l; i--) {
+                    c3 = c2;
+                    c2 = c;
+                    s2 = s;
+                    g = c * e[i];
+                    h = c * p;
+                    r = sqrt(p*p+e[i]*e[i]);
+                    e[i+1] = s * r;
+                    s = e[i] / r;
+                    c = p / r;
+                    p = c * d[i] - s * g;
+                    d[i+1] = h + s * (c * g + s * d[i]);
+
+                    /* Accumulate transformation. */
+
+                    for (k = 0; k < 3; k++) {
+                        h = V[k][i+1];
+                        V[k][i+1] = s * V[k][i] + c * h;
+                        V[k][i] = c * V[k][i] - s * h;
+                    }
+                }
+                p = -s * s2 * c3 * el1 * e[l] / dl1;
+                e[l] = s * p;
+                d[l] = c * p;
+
+                /* Check for convergence. */
+
+            } while (fabs(e[l]) > eps*tst1);
+        }
+        d[l] = d[l] + f;
+        e[l] = 0.0;
+    }
+
+    /* Sort eigenvalues and corresponding vectors. */
+
+    for (i = 0; i < 3-1; i++) {
+        k = i;
+        su2double p = d[i];
+        for (j = i+1; j < 3; j++) {
+            if (d[j] < p) {
+                k = j;
+                p = d[j];
+            }
+        }
+        if (k != i) {
+            d[k] = d[i];
+            d[i] = p;
+            for (j = 0; j < 3; j++) {
+                p = V[j][i];
+                V[j][i] = V[j][k];
+                V[j][k] = p;
+            }
+        }
+    }
+}
+
 
 CGeneralAvgGradCorrected_Flow::CGeneralAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   

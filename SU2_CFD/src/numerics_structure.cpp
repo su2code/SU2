@@ -87,6 +87,9 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   l = NULL;
   m = NULL;
+
+  MeanReynoldsStress  = NULL; //Jayant
+  MeanPerturbedRSM    = NULL;
  
   nDim = val_nDim;
   nVar = val_nVar;
@@ -108,13 +111,13 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     tau[iDim] = new su2double [nDim];
   }
 
-  delta = new su2double* [nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    delta[iDim] = new su2double [nDim];
+  delta = new su2double* [3];
+  for (iDim = 0; iDim < 3; iDim++) {
+    delta[iDim] = new su2double [3];
   }
 
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0; jDim < nDim; jDim++) {
+  for (iDim = 0; iDim < 3; iDim++) {
+    for (jDim = 0; jDim < 3; jDim++) {
       if (iDim == jDim) delta[iDim][jDim] = 1.0;
       else delta[iDim][jDim]=0.0;
     }
@@ -133,6 +136,16 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   l = new su2double [nDim];
   m = new su2double [nDim];
+
+  if (config->GetUsing_UQ()){
+      MeanReynoldsStress = new su2double* [3];
+      MeanPerturbedRSM = new su2double* [3];
+      for (unsigned short iDim = 0; iDim < 3; iDim++){
+          MeanReynoldsStress[iDim] = new su2double [3];
+          MeanPerturbedRSM[iDim] = new su2double [3];
+
+      }
+  }
   
 }
 
@@ -163,7 +176,7 @@ CNumerics::~CNumerics(void) {
   }
 
   if (delta != NULL) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++) {
       delete [] delta[iDim];
     }
     delete [] delta;
@@ -178,6 +191,18 @@ CNumerics::~CNumerics(void) {
 
   if (l != NULL) delete [] l;
   if (m != NULL) delete [] m;
+
+  if (MeanReynoldsStress != NULL) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++)
+      if (MeanReynoldsStress[iDim] != NULL) delete [] MeanReynoldsStress[iDim];
+    delete [] MeanReynoldsStress;
+  }
+
+  if (MeanPerturbedRSM != NULL) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++)
+      if (MeanPerturbedRSM[iDim] != NULL) delete [] MeanPerturbedRSM[iDim];
+    delete [] MeanPerturbedRSM;
+  }
 
 }
 
@@ -1854,6 +1879,70 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
   }
 
+}
+
+//Jayant
+void CNumerics::GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
+                        su2double val_turb_ke, su2double *val_normal,
+                        su2double val_laminar_viscosity,
+                        su2double val_eddy_viscosity,
+                        su2double **val_reynolds_stress,
+                        su2double **val_perturbed_rsm) {
+
+
+  unsigned short iVar, iDim, jDim;
+  su2double total_viscosity, heat_flux_factor, div_vel, Cp, Density;
+
+  Density = val_primvar[nDim+2];
+  total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
+  Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb);
+
+  div_vel = 0.0;
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    div_vel += val_gradprimvar[iDim+1][iDim];
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    for (jDim = 0 ; jDim < nDim; jDim++)
+        tau[iDim][jDim] = val_laminar_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
+        - TWO3*val_laminar_viscosity*div_vel*delta[iDim][jDim] - Density * val_perturbed_rsm[iDim][jDim];
+
+  /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+  if (nDim == 2) {
+    Flux_Tensor[0][0] = 0.0;
+    Flux_Tensor[1][0] = tau[0][0];
+    Flux_Tensor[2][0] = tau[0][1];
+    Flux_Tensor[3][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
+        heat_flux_factor*val_gradprimvar[0][0];
+    Flux_Tensor[0][1] = 0.0;
+    Flux_Tensor[1][1] = tau[1][0];
+    Flux_Tensor[2][1] = tau[1][1];
+    Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
+        heat_flux_factor*val_gradprimvar[0][1];
+  } else {
+    Flux_Tensor[0][0] = 0.0;
+    Flux_Tensor[1][0] = tau[0][0];
+    Flux_Tensor[2][0] = tau[0][1];
+    Flux_Tensor[3][0] = tau[0][2];
+    Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
+        heat_flux_factor*val_gradprimvar[0][0];
+    Flux_Tensor[0][1] = 0.0;
+    Flux_Tensor[1][1] = tau[1][0];
+    Flux_Tensor[2][1] = tau[1][1];
+    Flux_Tensor[3][1] = tau[1][2];
+    Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
+        heat_flux_factor*val_gradprimvar[0][1];
+    Flux_Tensor[0][2] = 0.0;
+    Flux_Tensor[1][2] = tau[2][0];
+    Flux_Tensor[2][2] = tau[2][1];
+    Flux_Tensor[3][2] = tau[2][2];
+    Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
+        heat_flux_factor*val_gradprimvar[0][2];
+  }
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Flux_Tensor[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
+  }
 }
 
 void CNumerics::GetViscousArtCompProjFlux(su2double **val_gradprimvar, su2double *val_normal, su2double val_laminar_viscosity,
