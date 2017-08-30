@@ -1621,3 +1621,9 @@ inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
 inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 
 inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
+
+inline bool CConfig::GetUsing_UQ(void) { return using_uq; }
+
+inline su2double CConfig::GetBeta_Delta(void) { return beta_delta; }
+
+inline unsigned short CConfig::GetEig_Val_Comp(void) {return eig_val_comp; }
