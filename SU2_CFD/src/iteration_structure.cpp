@@ -478,7 +478,7 @@ void CFluidIteration::Iterate(COutput *output,
 
   if (config_container[val_iZone]->GetHeat_Inc()){
     config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
-    integration_container[val_iZone][HEAT_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+    integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                      config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
   }
   
@@ -960,7 +960,7 @@ void CHeatIteration::Iterate(COutput *output,
   
   /*--- Heat equation ---*/
   config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
-  integration_container[val_iZone][HEAT_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+  integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                    config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
   
   /*--- Dual time stepping strategy ---*/
@@ -970,7 +970,7 @@ void CHeatIteration::Iterate(COutput *output,
     for (IntIter = 1; IntIter < config_container[val_iZone]->GetUnst_nIntIter(); IntIter++) {
       output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
       config_container[val_iZone]->SetIntIter(IntIter);
-      integration_container[val_iZone][HEAT_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+      integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                        config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
       if (integration_container[val_iZone][HEAT_SOL]->GetConvergence()) break;
     }

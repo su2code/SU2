@@ -1122,7 +1122,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
   if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
-  if (heat) integration_container[HEAT_SOL] = new CMultiGridIntegration(config);
+  if (heat) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
   if (fem) integration_container[FEA_SOL] = new CStructuralIntegration(config);
 
   /*--- Allocate solution for adjoint problem ---*/
