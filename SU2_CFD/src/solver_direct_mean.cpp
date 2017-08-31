@@ -6467,6 +6467,14 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
 }
 
+
+void CEulerSolver::ImplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                        CConfig *config, unsigned short iRKStep) {
+  std::cout << "ERROR: CEulerSolver::ImplicitRK_Iteration is not implemented!" << std::endl;
+  exit(EXIT_FAILURE);
+}
+
+
 void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, jPoint, iEdge, iVertex;
   unsigned short iDim, iVar, iMarker;

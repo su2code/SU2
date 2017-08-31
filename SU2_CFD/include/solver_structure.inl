@@ -853,6 +853,13 @@ inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
+inline void CSolver::ImplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, 
+                                          CConfig *config, unsigned short iRKStep) { 
+  std::cout << "ERROR: ImplicitRK not implemented for this solver" << std::endl;
+  exit(EXIT_FAILURE);
+}
+
+
 inline void CSolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
