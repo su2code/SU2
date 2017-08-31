@@ -1806,6 +1806,27 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   RK_cVec[1] = 0.5;
   RK_cVec[2] = 0.5;
   RK_cVec[3] = 1.0;
+
+  // // or Huen's method (trapezoidal rule)
+  // nRKStep = 2;
+
+  // RK_aMat = new su2double* [nRKStep];
+  // for (unsigned int iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+  //   RK_aMat[iRKStep] = new su2double [nRKStep];
+  //   for (unsigned int jRKStep = 0; jRKStep < nRKStep; jRKStep++) {
+  //     RK_aMat[iRKStep][jRKStep] = 0.0;
+  //   }
+  // }
+
+  // RK_aMat[1][0] = 1.0;
+
+  // RK_bVec = new su2double [nRKStep];
+  // RK_bVec[0] = 0.5;
+  // RK_bVec[1] = 0.5;
+
+  // RK_cVec = new su2double [nRKStep];
+  // RK_cVec[0] = 0.0;
+  // RK_cVec[1] = 1.0;
 }
 
 void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
@@ -2976,7 +2997,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   // TODO: This sets default number of steps if we don't set
   // RK_ALPHA_COEFF in the config file...  make it default to 4.
   if (nRKStep == 0) {
-    nRKStep = 4;  // Defaults to RK4
+    nRKStep = 4;  // For RK4
+    //nRKStep = 2;  // For RK2
     RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
   }
   
