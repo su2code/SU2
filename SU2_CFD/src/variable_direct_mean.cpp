@@ -62,11 +62,12 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
 
 CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-    unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
+  unsigned short iVar, iDim, iMesh, nMGSmooth = 0, iRKStep;
   
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool rk_scheme = (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_EXPLICIT);
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   
@@ -106,7 +107,18 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   for (iVar = 0; iVar < nVar; iVar++) {
     Res_TruncError[iVar] = 0.0;
   }
-  
+
+  if (rk_scheme) {
+    nRKStep = config->GetnRKStep();
+    rk_stage_vectors = new su2double* [nRKStep];
+    for (iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+      rk_stage_vectors[iRKStep] = new su2double [nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        rk_stage_vectors[iRKStep][iVar] = 0.0;
+      }
+    }
+  }
+
   /*--- Only for residual smoothing (multigrid) ---*/
   
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
@@ -214,11 +226,12 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 }
 
 CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-    unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
+  unsigned short iVar, iDim, iMesh, nMGSmooth = 0, iRKStep;
   
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool rk_scheme = (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_EXPLICIT);
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   
@@ -258,6 +271,17 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
     Res_TruncError[iVar] = 0.0;
   }
   
+  if (rk_scheme) {
+    nRKStep = config->GetnRKStep();
+    rk_stage_vectors = new su2double* [nRKStep];
+    for (iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+      rk_stage_vectors[iRKStep] = new su2double [nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        rk_stage_vectors[iRKStep][iVar] = 0.0;
+      }
+    }
+  }
+
   /*--- Only for residual smoothing (multigrid) ---*/
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
     nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
@@ -350,7 +374,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
 }
 
 CEulerVariable::~CEulerVariable(void) {
-    unsigned short iVar;
+  unsigned short iVar, iRKStep;
 
   if (HB_Source         != NULL) delete [] HB_Source;
   if (Primitive         != NULL) delete [] Primitive;
@@ -369,6 +393,12 @@ CEulerVariable::~CEulerVariable(void) {
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
       if (Gradient_Secondary[iVar] != NULL) delete [] Gradient_Secondary[iVar];
     delete [] Gradient_Secondary;
+  }
+
+  if (rk_stage_vectors != NULL) {
+    for (iRKStep = 0; iRKStep < nRKStep; iRKStep++)
+      if (rk_stage_vectors[iRKStep] != NULL) delete [] rk_stage_vectors[iRKStep];
+    delete [] rk_stage_vectors;
   }
 
   if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;

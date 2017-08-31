@@ -77,7 +77,8 @@ protected:
   nSecondaryVar,                     /*!< \brief Number of primitive variables of the problem. */
   nSecondaryVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nVarGrad,                 /*!< \brief Number of variables for deallocating the LS Cvector. */
-  nDim;                          /*!< \brief Number of dimensions of the problem. */
+  nDim,                          /*!< \brief Number of dimensions of the problem. */
+  nRKStep;                       /*!< \brief Number of RK substeps */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;   /*!< \brief Number of points of the computational grid. */
   su2double Max_Delta_Time,  /*!< \brief Maximum value of the delta time for all the control volumes. */
@@ -289,6 +290,11 @@ public:
    * \brief Get the number of variables of the problem.
    */
   unsigned short GetnOutputVariables(void);
+
+  /*!
+   * \brief Get the number of RK substeps
+   */
+  unsigned short GetnRKStep(void);
   
   /*!
    * \brief A virtual member.

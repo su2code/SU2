@@ -1779,6 +1779,33 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* END_CONFIG_OPTIONS */
 
+  // FIXME: Temporary hack to get going... set Butcher tableau to
+  // classical RK4 values
+  nRKStep = 4;
+
+  RK_aMat = new su2double* [nRKStep];
+  for (unsigned int iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+    RK_aMat[iRKStep] = new su2double [nRKStep];
+    for (unsigned int jRKStep = 0; jRKStep < nRKStep; jRKStep++) {
+      RK_aMat[iRKStep][jRKStep] = 0.0;
+    }
+  }
+
+  RK_aMat[1][0] = 0.5;
+  RK_aMat[2][1] = 0.5;
+  RK_aMat[3][2] = 1.0;
+
+  RK_bVec = new su2double [nRKStep];
+  RK_bVec[0] = 1.0/6.0;
+  RK_bVec[1] = 1.0/3.0;
+  RK_bVec[2] = 1.0/3.0;
+  RK_bVec[3] = 1.0/6.0;
+
+  RK_cVec = new su2double [nRKStep];
+  RK_cVec[0] = 0.0;
+  RK_cVec[1] = 0.5;
+  RK_cVec[2] = 0.5;
+  RK_cVec[3] = 1.0;
 }
 
 void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
@@ -2945,9 +2972,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   for (iCFL = 1; iCFL < nCFL; iCFL++)
     CFL[iCFL] = CFL[iCFL-1];
-  
+
+  // TODO: This sets default number of steps if we don't set
+  // RK_ALPHA_COEFF in the config file...  make it default to 4.
   if (nRKStep == 0) {
-    nRKStep = 1;
+    nRKStep = 4;  // Defaults to RK4
     RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
   }
   

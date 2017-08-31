@@ -612,6 +612,19 @@ inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
 inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
 
+inline const su2double* CConfig::Get_RK_aMat_row(unsigned short val_step){
+  assert(RK_aMat!=NULL);
+  assert(val_step < nRKStep-1);
+  assert(RK_aMat[val_step+1]!=NULL);
+  return RK_aMat[val_step+1];
+}
+
+inline const su2double* CConfig::Get_RK_bVec(void){
+  assert(RK_bVec!=NULL);
+  return RK_bVec;
+}
+
+
 inline su2double CConfig::GetLocationStations(unsigned short val_section) { return LocationStations[val_section]; }
 
 inline unsigned short CConfig::GetnFFD_Fix_IDir(void) { return nFFD_Fix_IDir; }

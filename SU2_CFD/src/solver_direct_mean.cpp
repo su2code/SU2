@@ -451,6 +451,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = 2; nSecondaryVarGrad = 2;
 
+  nRKStep = config->GetnRKStep();
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -6250,36 +6251,64 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
 
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iRKStep) {
-  su2double *Residual, *Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar;
+  su2double *Residual, *Res_TruncError, Vol, Delta, Res, ktmp, du;
+  unsigned short iVar, iStep;
   unsigned long iPoint;
   
   su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+  const su2double *RK_coeff_vec;
+  su2double  RK_cVec_val;
   bool adjoint = config->GetContinuous_Adjoint();
-  
+
+  const bool final_step = (iRKStep+1 == nRKStep);
+
+  // FIXME: Not currently updating time!  Do it!
+  //RK_cVec_val = config->Get_RK_cVec_val(iRKStep);
+
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
-  
+
   /*--- Update the solution ---*/
-  
+  if (!final_step) {
+    // If not on the final substep, use (a row of) aMat coefficients
+    // to update state
+    RK_coeff_vec = config->Get_RK_aMat_row(iRKStep);
+  } else {
+    // On final substep, use bVec to update state
+    RK_coeff_vec = config->Get_RK_bVec();
+  }
+
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
     Delta = node[iPoint]->GetDelta_Time() / Vol;
-    
+
     Res_TruncError = node[iPoint]->GetResTruncError();
     Residual = LinSysRes.GetBlock(iPoint);
-    
+
     if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
+
+        // Store residual from this substep
         Res = Residual[iVar] + Res_TruncError[iVar];
-        node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
+        node[iPoint]->SetRKSubstepResidual(iRKStep, iVar, Res);
+
+        // Update solution, either in prep for next substep residual
+        // eval or to complete the time step
+        // NB: RK_coeff_vec is either row of aMat or the whole bVec
+        du = 0.0;
+        for (iStep = 0; iStep <= iRKStep; iStep++) {
+          ktmp = node[iPoint]->GetRKSubstepResidual(iStep,iVar);
+          du += RK_coeff_vec[iStep]*ktmp;
+        }
+        du *= Delta;
+
+        node[iPoint]->AddSolution(iVar, -du);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
     }
-    
   }
   
   /*--- MPI solution ---*/
@@ -14757,6 +14786,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = 8; nSecondaryVarGrad = 2;
 
+  nRKStep = config->GetnRKStep();
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -15940,6 +15970,18 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   }
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
+//   if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
+// #ifdef HAVE_MPI
+//     su2double rbuf_time, sbuf_time;
+//     sbuf_time = Global_Delta_Time;
+//     SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+//     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//     Global_Delta_Time = rbuf_time;
+// #endif
+//     for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+//       node[iPoint]->SetDelta_Time(Global_Delta_Time);
+//   }
+
   if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
@@ -15948,8 +15990,19 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      node[iPoint]->SetDelta_Time(Global_Delta_Time);
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+            
+            /*--- Sets the regular CFL equal to the unsteady CFL ---*/
+            config->SetCFL(iMesh,config->GetUnst_CFL());
+            
+            /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
+             it computes the time step based on the unsteady CFL ---*/
+            if (config->GetCFL(iMesh) == 0.0) {
+                node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
+            } else {
+                node[iPoint]->SetDelta_Time(Global_Delta_Time);
+            }
+        }
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy
