@@ -176,6 +176,17 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
 ("HIGH", VERB_HIGH);
 
 /*!
+ * \brief Average method for marker analyze
+ */
+enum AVERAGE_TYPE {
+  AVERAGE_AREA = 1, /*!< \brief Area-weighted average. */
+  AVERAGE_MASSFLUX = 2 /*!< \brief Mass-flux weighted average. */
+};
+static const map<string, AVERAGE_TYPE> Average_Map = CCreateMap<string, AVERAGE_TYPE>
+("AREA", AVERAGE_AREA)
+("MASSFLUX", AVERAGE_MASSFLUX);
+
+/*!
  * \brief different solver types for the CFD component
  */
 enum ENUM_SOLVER {

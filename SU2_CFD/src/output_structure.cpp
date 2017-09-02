@@ -4557,7 +4557,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
-    Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0, Total_Custom_ObjFunc = 0.0,
+    Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_CFEM = 0.0, Total_Custom_ObjFunc = 0.0,
     Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
     Total_AoA = 0.0;
     su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0;
@@ -16078,15 +16078,15 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
   su2double Mach, Pressure, Temperature, TotalPressure, TotalTemperature, Enthalpy,
-  Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn;
+  Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn, Weight = 1.0;
   
-  su2double Gas_Constant    = config->GetGas_ConstantND();
-  su2double Gamma           = config->GetGamma();
-  su2double Gamma_Minus_One = Gamma - 1.0;
-  unsigned short nMarker    = config->GetnMarker_All();
-  unsigned short nDim       = geometry->GetnDim();
-  unsigned short nVar       = solver->GetnVar();
-  
+  su2double Gas_Constant      = config->GetGas_ConstantND();
+  su2double Gamma             = config->GetGamma();
+  su2double Gamma_Minus_One   = Gamma - 1.0;
+  unsigned short nMarker      = config->GetnMarker_All();
+  unsigned short nDim         = geometry->GetnDim();
+  unsigned short nVar         = solver->GetnVar();
+  unsigned short Kind_Average = config->GetKind_Average();
   
   bool axisymmetric               = config->GetAxisymmetric();
   unsigned short nMarker_Analyze    = config->GetnMarker_Analyze();
@@ -16159,18 +16159,23 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
           
           /*--- Compute the mass Surface_MassFlow ---*/
-          
-          Surface_MassFlow[iMarker]         += MassFlow;
-          Surface_Mach[iMarker]             += Mach*MassFlow;
-          Surface_Temperature[iMarker]      += Temperature*MassFlow;
-          Surface_Density[iMarker]          += Density*MassFlow;
-          Surface_Enthalpy[iMarker]          += Enthalpy*MassFlow;
-          Surface_NormalVelocity[iMarker]   += Vn*MassFlow;
-          Surface_Pressure[iMarker]         += Pressure*MassFlow;
-          Surface_TotalTemperature[iMarker] += TotalTemperature*MassFlow;
-          Surface_TotalPressure[iMarker]    += TotalPressure*MassFlow;
+
           Surface_Area[iMarker]             += Area;
+          Surface_MassFlow[iMarker]         += MassFlow;
+
+          if (Kind_Average == AVERAGE_MASSFLUX) Weight = MassFlow;
+          else if (Kind_Average == AVERAGE_AREA) Weight = Area;
+          else Weight = 1.0;
           
+          Surface_Mach[iMarker]             += Mach*Weight;
+          Surface_Temperature[iMarker]      += Temperature*Weight;
+          Surface_Density[iMarker]          += Density*Weight;
+          Surface_Enthalpy[iMarker]         += Enthalpy*Weight;
+          Surface_NormalVelocity[iMarker]   += Vn*Weight;
+          Surface_Pressure[iMarker]         += Pressure*Weight;
+          Surface_TotalTemperature[iMarker] += TotalTemperature*Weight;
+          Surface_TotalPressure[iMarker]    += TotalPressure*Weight;
+
         }
       }
       
@@ -16289,14 +16294,19 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
    set the value in the config structure for future use ---*/
   
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    if (Surface_MassFlow_Total[iMarker_Analyze] != 0.0) {
-      Surface_Mach_Total[iMarker_Analyze]             /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_Temperature_Total[iMarker_Analyze]      /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_Density_Total[iMarker_Analyze]          /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_Enthalpy_Total[iMarker_Analyze]         /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_NormalVelocity_Total[iMarker_Analyze]   /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_TotalTemperature_Total[iMarker_Analyze] /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_TotalPressure_Total[iMarker_Analyze]    /= Surface_MassFlow_Total[iMarker_Analyze];
+    
+    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Total[iMarker_Analyze];
+    else if (Kind_Average == AVERAGE_AREA) Weight = Surface_Area_Total[iMarker_Analyze];
+    else Weight = 1.0;
+
+    if (Weight != 0.0) {
+      Surface_Mach_Total[iMarker_Analyze]             /= Weight;
+      Surface_Temperature_Total[iMarker_Analyze]      /= Weight;
+      Surface_Density_Total[iMarker_Analyze]          /= Weight;
+      Surface_Enthalpy_Total[iMarker_Analyze]         /= Weight;
+      Surface_NormalVelocity_Total[iMarker_Analyze]   /= Weight;
+      Surface_TotalTemperature_Total[iMarker_Analyze] /= Weight;
+      Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;
     }
     else {
       Surface_Mach_Total[iMarker_Analyze]             = 0.0;
@@ -16308,6 +16318,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
       Surface_TotalTemperature_Total[iMarker_Analyze] = 0.0;
       Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
     }
+    
   }
   
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
