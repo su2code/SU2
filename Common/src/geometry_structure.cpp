@@ -642,7 +642,7 @@ bool CGeometry::SegmentIntersectsSegment_Edge(su2double point0[2], su2double poi
     
     length2 = diff0_B*diff0_B + diff1_B*diff1_B;
 
-    if ( ((dist0 - length1) > 1e-12) || ((dist1 - length1) > 1e-12) || ((dist2 - length2) > 1e-12) || ((dist3 - length2) > 1e-12)) {
+    if ( ((dist0 - length1) > 1e-13) || ((dist1 - length1) > 1e-13) || ((dist2 - length2) > 1e-13) || ((dist3 - length2) > 1e-13)) {
         //cout << " In inside false criterion " << endl;
         return false;
     }

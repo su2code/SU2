@@ -4137,6 +4137,7 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
     }
     
     if (config->GetWrt_Binary_Restart()) {
+        cout << "Insde write binary restart" << endl;
         /*--- Prepare the first four ints containing the counts. The last two values
          are for metadata: one int for ExtIter and 5 su2doubles. ---*/
         unsigned long nPoint = geometry->GetGlobal_nPointDomain();
@@ -4208,9 +4209,10 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
         /*--- Write the metadata. ---*/
         
         fwrite(Restart_Metadata, 5, sizeof(passivedouble), fhw);
+        fclose(fhw);
         return;
     }
-    cout << " Done with restart for binary " << endl;
+
     /*--- Open the restart file and write the solution. ---*/
     
     restart_file.open(filename.c_str(), ios::out);
@@ -15768,7 +15770,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     
     for (int iRank=0; iRank < size;iRank++) {
         nPointIDs_proc_send[iRank] = Buffer_send_pointIDs[iRank].size();
-        cout << "After doing MPI_Send nPointIDs_proc_send[" << iRank << "]= " << nPointIDs_proc_send[iRank] << " in rank " << rank  << endl;
+        //cout << "After doing MPI_Send nPointIDs_proc_send[" << iRank << "]= " << nPointIDs_proc_send[iRank] << " in rank " << rank  << endl;
     }
     
     for (unsigned int iRank=0; iRank < size;iRank++) {
@@ -15787,12 +15789,12 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     vector<unsigned long> iProc_recv, iProc_send;
     for (int iRank = 0; iRank < size; iRank++) {
         if (nPointIDs_proc_recv[iRank] > 0) {
-            cout << "Rank " << rank << " receiving " << nPointIDs_proc_recv[iRank] << " number of pointIDs from iRank " << iRank << endl;
+            //cout << "Rank " << rank << " receiving " << nPointIDs_proc_recv[iRank] << " number of pointIDs from iRank " << iRank << endl;
             iProc_recv.push_back(iRank);
         }
         
         if (nPointIDs_proc_send[iRank] > 0) {
-            cout << "Rank " << rank << " sending " << nPointIDs_proc_send[iRank] << " number of pointIDs to iRank " << iRank << endl;
+            //cout << "Rank " << rank << " sending " << nPointIDs_proc_send[iRank] << " number of pointIDs to iRank " << iRank << endl;
             iProc_send.push_back(iRank);
         }
     }
@@ -15923,12 +15925,12 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     }
     
     
-    cout << "nProcs_recv = " << nProcs_recv << endl;
-    cout << "nProcs_send = " << nProcs_recv << endl;
+    //cout << "nProcs_recv = " << nProcs_recv << endl;
+    //cout << "nProcs_send = " << nProcs_recv << endl;
     
     for (int iProc=0; iProc < nProcs_send; iProc++) {
         SU2_MPI::Irecv(&(Buffer_recv_InterpSolution[iProc][0]), nPointIDs_proc_send[iProc_send[iProc]]*nVar, MPI_DOUBLE, iProc_send[iProc], iProc_send[iProc] +1 , MPI_COMM_WORLD,&(recv_req1[iProc]));
-        cout << " NUmber of variables being received = " << nPointIDs_proc_send[iProc_send[iProc]]*nVar << " by rank " << rank << " from rank " << iProc_send[iProc] << " with tag " << iProc_send[iProc] +1 << endl;
+        //cout << " NUmber of variables being received = " << nPointIDs_proc_send[iProc_send[iProc]]*nVar << " by rank " << rank << " from rank " << iProc_send[iProc] << " with tag " << iProc_send[iProc] +1 << endl;
     }
     
     for (int iProc=0; iProc < nProcs_recv; iProc++) {
@@ -15961,7 +15963,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             }
             
             /* local element number inside which the probe is located */
-            probe_elem = FindProbeLocElement_fromNearestNode(geometry, pointID, probe_loc);
+            probe_elem = FindProbeLocElement_fromNearestNodeElem(geometry, pointID, probe_loc);
             
             nNodes_elem = geometry->elem[probe_elem]->GetnNodes();
             
@@ -15973,8 +15975,23 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 }
             }
             
-            Isoparameters(nDim, nNodes_elem, X_donor, probe_loc, isoparams);
-                                                              
+            //if (probe_loc[0]>0.009 && probe_loc[0] < 0.1001)
+              //  cout << "1 -Nearest node found Xcoord = " << geometry->node[pointID]->GetCoord(0) << ", YCoord = " << geometry->node[pointID]->GetCoord(1) << endl;
+            Isoparameters_1(nDim, nNodes_elem, X_donor, probe_loc, isoparams);
+                
+                /*cout << "isoparams for probe_loc[0] = " << probe_loc[0] << ", porbe_loc[1] = " << probe_loc[1] << endl;
+                cout << "     Element number  = " << geometry->elem[probe_elem] << endl;
+                for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
+                    unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
+                    for (unsigned short iDim=0; iDim < nDim; iDim++) {
+                        cout << "     Node " << iNode << "Coord[" << iDim << "] = " <<    geometry->node[iPoint_loc]->GetCoord(iDim) << ",";
+                    }
+                    cout << endl;
+                }
+                
+                cout << "     isoparam[0] = " << isoparams[0] << ", isoparam[1] = " << isoparams[1] << ", isoparam[2] = " << isoparams[2] << ", isoparam[4] = " << isoparams[3] << endl;*/
+ 
+            
             for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
                 unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
                 for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
@@ -15982,14 +15999,12 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 }
             }
             
-            /*for (unsigned short iVar = 0; iVar < nVar; iVar++)  {
-                cout << "Buffer_send_InterpSolution[" << iProc << "][" << iNode_proc << "][" << iVar << "] = " << Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] << endl;
-            }*/
+
         }
 
         /* Loop over all point IDS for a proc ended above, hence send the full interp soln to the corresponding proc */
         SU2_MPI::Isend(&(Buffer_send_InterpSolution[iProc][0]), nPointIDs_proc_recv[iProc_recv[iProc]]*nVar, MPI_DOUBLE, iProc_recv[iProc], rank +1 , MPI_COMM_WORLD,&(send_req1[iProc]));
-        cout << " NUmber of variables being sent = " << nPointIDs_proc_recv[iProc_recv[iProc]]*nVar << " from rank " << rank << " to rank " << iProc_recv[iProc] << " with tag " << rank +1 << endl;
+        //cout << " NUmber of variables being sent = " << nPointIDs_proc_recv[iProc_recv[iProc]]*nVar << " from rank " << rank << " to rank " << iProc_recv[iProc] << " with tag " << rank +1 << endl;
     }
     
     number = nProcs_recv;
@@ -16178,11 +16193,13 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
     unsigned short iFace;
     
     vector<unsigned long> ElemIntersectProbeSeg;
-    
+    //if (probe_loc[0]>0.009 && probe_loc[0] < 0.1001)
+      //  cout << "Nearest node found Xcoord = " << geometry->node[pointID]->GetCoord(0) << ", YCoord = " << geometry->node[pointID]->GetCoord(1) << endl;
     for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
         jElem = geometry->node[pointID]->GetElem(iElem);
         /*--- Determine whether the probe point is inside the element ---*/
-        Inside = IsPointInsideElement(geometry, probe_loc,jElem);
+        //Inside = IsPointInsideElement(geometry, probe_loc,jElem);
+        Inside = IsPointInsideQuad(geometry, probe_loc,jElem);
         if (Inside) {
             probe_elem = jElem;
             return probe_elem;
@@ -16190,9 +16207,6 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
     }
     
     unsigned short count;
-    cout << "Probe loc Coord[0] = " << probe_loc[0] << ", probe coord[1] = " << probe_loc[1] << endl;
-
-    cout << "Nearest Node point Coord[0] = " << geometry->node[pointID]->GetCoord(0) << ", point coord[1] = " << geometry->node[pointID]->GetCoord(1) << endl;
     
     /* Find the elementID to begin moving towards the probe location from nearest edge */
     for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
@@ -16228,27 +16242,31 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
         }
         if (count ==3)
         {
-            cout << "First Elem to begin with " << geometry->elem[jElem]->GetGlobalIndex() << endl;
+            //if (probe_loc[0]==0.1 && probe_loc[1]==6.72e-05)
+             cout << "First Elem to begin with " << geometry->elem[jElem]->GetGlobalIndex() << endl;
             // Found element where the segment intersects twice
             break;
         }
     }
-    cout << "elemID Global = " << geometry->elem[elemID]->GetGlobalIndex() << endl;
 
     unsigned long iter =0, newElem=elemID, neighbor_elem;
-    while (iter < 100)
+
+    while (iter < 50)
     {
         /* Check if probe is inside the new element */
-        Inside = IsPointInsideElement(geometry, probe_loc,newElem);
+        //Inside = IsPointInsideElement(geometry, probe_loc,newElem);
+        Inside = IsPointInsideQuad(geometry, probe_loc,newElem);
         if (Inside)
         {
-            cout << "----------------Found inside elem " <<  newElem << endl;
+           // cout << "----------------Found inside elem " <<  newElem << endl;
             return newElem;
         }
 
         /* Find the next neighboring element through wchih the probe-NN connecting segment passes */
         count=0;
-        cout << "---------- Checking for elem " << geometry->elem[newElem]->GetGlobalIndex() << endl;
+        
+        //if (probe_loc[0]==0.1 && probe_loc[1]==6.72e-05)
+          cout << "---------- Checking for elem " << geometry->elem[newElem]->GetGlobalIndex() << endl;
 
         /* For each of the faces of element, find if it intersects the probe to NearestNode line segment */
         for (iFace =0; iFace < geometry->elem[newElem]->GetnFaces(); iFace++) {
@@ -16256,39 +16274,47 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
             su2double *face_point1, *face_point2;
             unsigned long face_point = geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 0));
 
-            cout << "First face point = " << geometry->node[face_point]->GetGlobalIndex() << endl;
+            //cout << "First face point = " << geometry->node[face_point]->GetGlobalIndex() << endl;
 
             face_point1 = geometry->node[face_point]->GetCoord();
             face_point = geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 1));
-            cout << "Second face point = " << geometry->node[face_point]->GetGlobalIndex() << endl;
+            //cout << "Second face point = " << geometry->node[face_point]->GetGlobalIndex() << endl;
 
             face_point2 = geometry->node[face_point]->GetCoord();
             FaceIntersect = geometry->SegmentIntersectsSegment_Edge(probe_loc, geometry->node[pointID]->GetCoord(), face_point1, face_point2);
-            //cout << "Facepoint 1 coord[0] = " << face_point1[0] << ", coord[1] = " << face_point1[1] << endl;
-            //cout << "Facepoint 2 coord[0] = " << face_point2[0] << ", coord[1] = " << face_point2[1] << endl;
+            cout << "Facepoint 1 coord[0] = " << face_point1[0] << ", coord[1] = " << face_point1[1] << endl;
+            cout << "Facepoint 2 coord[0] = " << face_point2[0] << ", coord[1] = " << face_point2[1] << endl;
 
             
             if(FaceIntersect)   {
-                cout << " -------- Face Intersect --------" << endl;
+                //cout << " -------- Face Intersect --------" << endl;
 
-                if (geometry->elem[newElem]->GetNeighbor_Elements(iFace) == -1 || face_point == pointID || geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 0)) == pointID)
-                    /* Boundary face - Ignore or nearest node */
+                if (face_point == pointID || geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 0)) == pointID)
+                /* Ignore or nearest node */
                     continue;
+                if (geometry->elem[newElem]->GetNeighbor_Elements(iFace) == -1)
+                    return newElem;
+                
                 neighbor_elem = geometry->elem[newElem]->GetNeighbor_Elements(iFace);
                 
                 if (neighbor_elem != ElemIntersectProbeSeg.back())  {
                     ElemIntersectProbeSeg.push_back(newElem);
                     newElem = neighbor_elem;
-                    cout << "NewElem --------- ====== " << newElem << endl;
+                      //cout << "NewElem --------- ====== " << newElem << endl;
                     count += 1;
                 }
             }
             if(count > 0)
                 break;
         }
-        if (iter > 3)
-            cout << "iter = " << iter << endl;
+
         iter += 1;
+        if (iter>48){
+            cout << " Checked long enough " << endl;
+            cout << "Located in " << newElem << endl;
+            Inside = true;
+            return newElem;
+        }
         
     }
     
@@ -16356,6 +16382,158 @@ bool COutput::IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,uns
     return Inside;
     
 }
+
+bool COutput::IsPointInsideQuad(CGeometry *geometry, su2double *probe_loc,unsigned long jElem){
+    
+    
+    bool Inside = true;
+    unsigned long iPoint;
+    unsigned short nDim = 2;
+    unsigned short nNodes_elem;
+    su2double X[8];
+    su2double xj[2];
+    xj[0] = probe_loc[0]; xj[1] = probe_loc[1];
+    nNodes_elem = geometry->elem[jElem]->GetnNodes();
+    if(nNodes_elem != 4){
+        cout << "****** NOTE: IsPointInsideQuad Works only for quad element search" << endl;
+        exit(EXIT_FAILURE);
+    }
+        
+    
+    for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
+        iPoint = geometry->elem[jElem]->GetNode(iNode);
+        for (unsigned short iDim=0; iDim < nDim; iDim++) {
+            X[iDim*nNodes_elem + iNode] = geometry->node[iPoint]->GetCoord(iDim);
+        }
+    }
+    
+    // Compute coefficients
+    vector< vector<su2double> > AI(4, vector<su2double>(4,0));
+    AI[0][0] = 1; AI[1][0] = -1; AI[1][1]=1; AI[2][0] = -1; AI[2][3] = 1;
+    AI[3][0] = 1; AI[3][1]=-1; AI[3][2] = 1; AI[3][3] = -1;
+    
+    su2double a[4], b[4];
+    /* a= AI*x; b = AI*y */
+    for (unsigned short i=0; i < 4; i++){
+        a[i] = 0; b[i] = 0;
+        for (unsigned short j=0; j < 4; j++){
+            a[i] += AI[i][j]*X[j];
+            b[i] += AI[i][j]*X[4 + j];
+        }
+    }
+    
+    /* Convert to logical coordinates l,m */
+    su2double aa = a[3]*b[2] - a[2]*b[3];
+    su2double bb = a[3]*b[0] - a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + xj[0]*b[3] - xj[1]*a[3];
+    su2double cc = a[1]*b[0] - a[0]*b[1] + xj[0]*b[1] - xj[1]*a[1];
+    su2double det = sqrt(bb*bb - 4*aa*cc);
+    su2double m = (-bb+det)/(2*aa);
+    su2double l = (xj[0]-a[0]-a[2]*m)/(a[1]+a[3]*m);
+    
+    su2double dx,dy;
+    if (aa == 0){
+        
+        /* Quad is Perfect rectangle */
+        if(abs(X[0]/X[1]-1) < 1e-6){
+            dx = abs(X[0] - X[2]);
+            dy = abs(X[4 + 0] - X[4 + 1]);
+        }
+        else{
+            dx = abs(X[0] - X[1]);
+            dy = abs(X[4 + 0] - X[4 + 2]);
+        }
+        l = max(max(abs(X[0] - xj[0])/dx,abs(X[1] - xj[0])/dx),abs(X[2] - xj[0])/dx);
+        m = max(max(abs(X[4+0] - xj[1])/dy,abs(X[4+1] - xj[1])/dy),abs(X[4+2] - xj[1])/dy);
+        if (l > 1 || m >1)
+            Inside = false;
+    }
+    
+    if (l < -0.02 || m < -0.02 || l>1.02 || m>1.02) {
+        Inside = false;
+        //exit(EXIT_FAILURE);
+    }
+    return Inside;
+    
+}
+
+
+void COutput::Isoparameters_1(unsigned short nDim, unsigned short nDonor,
+                            su2double *X, su2double *xj, su2double *isoparams) {
+    // For quadrilaterals only
+    
+    // Compute coefficients
+    vector< vector<su2double> > AI(4, vector<su2double>(4,0));
+    AI[0][0] = 1; AI[1][0] = -1; AI[1][1]=1; AI[2][0] = -1; AI[2][3] = 1;
+    AI[3][0] = 1; AI[3][1]=-1; AI[3][2] = 1; AI[3][3] = -1;
+    
+    su2double a[4], b[4];
+    /* a= AI*x; b = AI*y */
+    for (unsigned short i=0; i < 4; i++){
+        a[i] = 0; b[i] = 0;
+        for (unsigned short j=0; j < 4; j++){
+            a[i] += AI[i][j]*X[j];
+            b[i] += AI[i][j]*X[4 + j];
+        }
+    }
+    
+    /* Convert to logical coordinates l,m */
+    su2double aa = a[3]*b[2] - a[2]*b[3];
+    su2double bb = a[3]*b[0] - a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + xj[0]*b[3] - xj[1]*a[3];
+    su2double cc = a[1]*b[0] - a[0]*b[1] + xj[0]*b[1] - xj[1]*a[1];
+    su2double det = sqrt(bb*bb - 4*aa*cc);
+    su2double m = (-bb+det)/(2*aa);
+    su2double l = (xj[0]-a[0]-a[2]*m)/(a[1]+a[3]*m);
+    
+    if ((xj[0] - 3.306301e-01)*(xj[0] - 3.306301e-01) < 1e-8 ){
+        cout << "Probe_loc[0] = " << xj[0] << "Probe_loc[1] = " << xj[1] << endl;
+        for (unsigned short i=0;i<4;i++)
+            cout << "Coord[0] = " << X[i] << ", Coord[1] = " << X[4+i] << endl;
+        cout << "l = " << l << ", m = " << m << endl;
+    }
+        
+    if (l < -0.1 || m < -0.1 || l>1.1 || m>1.1) {
+        cout << "l = " << l << endl;
+        cout << "m = " << m << endl;
+        for (unsigned short i=0;i<4;i++)
+            cout << "Coord[0] = " << X[i] << ", Coord[1] = " << X[4+i] << endl;
+        cout << "Probe_loc[0] = " << xj[0] << "Probe_loc[1] = " << xj[1] << endl;
+        cout << "%%%%%%%%% Not inside the cell located %%%%%%%% " << endl;
+        //exit(EXIT_FAILURE);
+    }
+    
+    if (l>1 && l < 1.01) l=1;
+    if (m>1 && m < 1.01) m=1;
+    if (l<0 && l > -0.01) l=0;
+    if (m<0 && m > -0.01) m=0;
+    
+    isoparams[0] = (1-l)*(1-m);
+    isoparams[1] = l*(1-m);
+    isoparams[2] = l*m;
+    isoparams[3] = (1-l)*m;
+    
+    su2double dx,dy;
+    if (aa == 0){
+        
+        /* Quad is Perfect rectangle */
+        if(abs(X[0]/X[1]-1) < 1e-6){
+            dx = abs(X[0] - X[2]);
+            dy = abs(X[4 + 0] - X[4 + 1]);
+        }
+        else{
+            dx = abs(X[0] - X[1]);
+            dy = abs(X[4 + 0] - X[4 + 2]);
+        }
+        cout << "dx = " << dx << ", dy = " << dy << endl;
+        
+        isoparams[0] = abs(X[2] - xj[0])*abs(X[4+2]-xj[1])/(dx*dy);
+        isoparams[1] = abs(X[3] - xj[0])*abs(X[4+3]-xj[1])/(dx*dy);
+        isoparams[2] = abs(X[0] - xj[0])*abs(X[4+0]-xj[1])/(dx*dy);
+        isoparams[3] = abs(X[1] - xj[0])*abs(X[4+1]-xj[1])/(dx*dy);
+        cout << "isoparam[0] = " << isoparams[0] << ", isoparam[1] = " << isoparams[1] << ", isoparam[2] = " << isoparams[2] << ", isoparam[3] = " << isoparams[3] << endl;
+    }
+}
+
+
 
 void COutput::Isoparameters(unsigned short nDim, unsigned short nDonor,
                                    su2double *X, su2double *xj, su2double *isoparams) {
@@ -16501,21 +16679,30 @@ void COutput::Isoparameters(unsigned short nDim, unsigned short nDonor,
     }
 
     /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
-    /*if (nDonor==4) {
+    if (nDonor==4) {
         //-- Bilinear coordinates, bounded by [-1,1]
         su2double xi, eta;
         xi = (1.0-isoparams[0]/isoparams[1])/(1.0+isoparams[0]/isoparams[1]);
-        eta = 1- isoparams[2]*4/(1+xi);
-        if (xi>1.0) xi=1.0;
-        if (xi<-1.0) xi=-1.0;
-        if (eta>1.0) eta=1.0;
-        if (eta<-1.0) eta=-1.0;
+        eta =  isoparams[2]*4/(1+xi) - 1;
+        
+        if (xi>1.001) xi=1.0;
+        if (xi<-1.001) xi=-1.0;
+        if (eta>1.001) eta=1.0;
+        if (eta<-1.001) eta=-1.0;
+        cout << "xi = " << xi << ", eta = " << eta << endl;
+        cout << "OldIsoparam[0] = " << isoparams[0] << ", OldIsoparams[1] = " << isoparams[1] << ", OldIsoparams[2] = " << isoparams[2] <<  ", OldIsoparams[3] = " << isoparams[3] << endl;
+        
         isoparams[0]=0.25*(1-xi)*(1-eta);
         isoparams[1]=0.25*(1+xi)*(1-eta);
         isoparams[2]=0.25*(1+xi)*(1+eta);
         isoparams[3]=0.25*(1-xi)*(1+eta);
+        //cout << "To bound by [-1,1]" << endl;
+        //cout << "NewIsoparam[0] = " << isoparams[0] << ", NewIsoparams[1] = " << isoparams[1] << ", NewIsoparams[2] = " << isoparams[2] <<  ", NewIsoparams[3] = " << isoparams[3] << endl;
+        //isoparams[0]=0.25; isoparams[1]=0.25;
+        //isoparams[2]=0.25; isoparams[3]=0.25;
         
-    }*/
+    }
+  
     /*cout << "After bilinear " << endl;
     if (nDonor<4) {
         tmp = 0.0; // value for normalization

@@ -515,9 +515,9 @@ int main(int argc, char *argv[]) {
 #endif
       
       su2double  UsedTime_interp = StopTime_interp - StartTime_interp;
-        //if (rank == MASTER_NODE) {
+        if (rank == MASTER_NODE) {
             cout << " TIME TAKEN FOR SOLUTION INTERPOLATION = " << UsedTime_interp << " seconds by rank " << rank << "on " << size << " cores." << endl;
-        //}
+        }
       
       cout << "Writing volume solution for inteprolated mesh in rank.. " << rank << endl;
       output->SetBaselineResult_Files(solver_container_interp, geometry_container_interp, config_container_interp, 0, nZone);
