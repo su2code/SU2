@@ -16242,8 +16242,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
         }
         if (count ==3)
         {
-            //if (probe_loc[0]==0.1 && probe_loc[1]==6.72e-05)
-             cout << "First Elem to begin with " << geometry->elem[jElem]->GetGlobalIndex() << endl;
+             //cout << "First Elem to begin with " << geometry->elem[jElem]->GetGlobalIndex() << endl;
             // Found element where the segment intersects twice
             break;
         }
@@ -16266,7 +16265,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
         count=0;
         
         //if (probe_loc[0]==0.1 && probe_loc[1]==6.72e-05)
-          cout << "---------- Checking for elem " << geometry->elem[newElem]->GetGlobalIndex() << endl;
+          //cout << "---------- Checking for elem " << geometry->elem[newElem]->GetGlobalIndex() << endl;
 
         /* For each of the faces of element, find if it intersects the probe to NearestNode line segment */
         for (iFace =0; iFace < geometry->elem[newElem]->GetnFaces(); iFace++) {
@@ -16282,8 +16281,8 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
 
             face_point2 = geometry->node[face_point]->GetCoord();
             FaceIntersect = geometry->SegmentIntersectsSegment_Edge(probe_loc, geometry->node[pointID]->GetCoord(), face_point1, face_point2);
-            cout << "Facepoint 1 coord[0] = " << face_point1[0] << ", coord[1] = " << face_point1[1] << endl;
-            cout << "Facepoint 2 coord[0] = " << face_point2[0] << ", coord[1] = " << face_point2[1] << endl;
+            //cout << "Facepoint 1 coord[0] = " << face_point1[0] << ", coord[1] = " << face_point1[1] << endl;
+            //cout << "Facepoint 2 coord[0] = " << face_point2[0] << ", coord[1] = " << face_point2[1] << endl;
 
             
             if(FaceIntersect)   {
