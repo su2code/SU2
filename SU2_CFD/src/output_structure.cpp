@@ -16078,7 +16078,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
   su2double Mach, Pressure, Temperature, TotalPressure, TotalTemperature, Enthalpy,
-  Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn, *Vector = NULL;
+  Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn;
   
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Gamma           = config->GetGamma();
@@ -16096,6 +16096,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  su2double  *Vector                   = new su2double[nDim];
   su2double  *Surface_MassFlow         = new su2double[nMarker];
   su2double  *Surface_Mach             = new su2double[nMarker];
   su2double  *Surface_Temperature      = new su2double[nMarker];
@@ -16424,6 +16425,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   delete [] Surface_TotalTemperature;
   delete [] Surface_TotalPressure;
   delete [] Surface_Area;
+  delete [] Vector;
   
 }
 
