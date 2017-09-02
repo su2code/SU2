@@ -1538,7 +1538,7 @@ inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Rec
 
 inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Output_Verb; }
 
-inline unsigned short CConfig::GetKind_OneD(void) { return Kind_OneD; }
+inline unsigned short CConfig::GetKind_Average(void) { return Kind_Average; }
 
 inline unsigned short CConfig::GetnIterFSI(void) { return nIterFSI; }
 
