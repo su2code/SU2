@@ -43,7 +43,7 @@ SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
 SWIG_SO_REAL = _pysu2.${SO_EXT}
 
 PYTHON_EXEC_PREFIX=$(shell python -c "import sys; print(sys.exec_prefix)")
-PYTHON_SITE_PACKAGES=$(shell python -c "import site; print(site.getsitepackages())")
+PYTHON_SITE_PACKAGES=$(shell python -c "import site; print(site.getsitepackages()[0])")
 PYTHON_INCLUDE = -I${PYTHON_EXEC_PREFIX}/include/python${PYTHON_VERSION} \
                  -I${PYTHON_EXEC_PREFIX}/include/python${PYTHON_VERSION}m
 #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
