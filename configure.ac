@@ -57,7 +57,25 @@ AC_PROG_MKDIR_P
 AC_PROG_CXX
 
 # Python configuration
-AM_PATH_PYTHON()
+AM_PATH_PYTHON
+AC_ARG_VAR([PYTHON_INCLUDE], [Include flags for python, bypassing python-config])
+AC_ARG_VAR([PYTHON_CONFIG], [Path to python-config])
+AC_ARG_VAR([PYTHON_LIB], [Python lib flags])
+AC_ARG_VAR([PYTHON_EXEC_PREFIX], [Python exec-prefix])
+AS_IF([test -z "$PYTHON_INCLUDE"], [
+  AS_IF([test -z "$PYTHON_CONFIG"], [
+    AC_PATH_PROGS([PYTHON_CONFIG],
+                  [python$PYTHON_VERSION-config python-config],
+                  [no],
+                  [`dirname $PYTHON`])
+    AS_IF([test "$PYTHON_CONFIG" = no], [AC_MSG_ERROR([cannot find python-config for $PYTHON.])])
+  ])
+  AC_MSG_CHECKING([python include flags])
+  PYTHON_INCLUDE=`$PYTHON_CONFIG --includes`
+  PYTHON_LIB=`$PYTHON_CONFIG --libs`
+  PYTHON_EXEC_PREFIX=`$PYTHON_CONFIG --exec-prefix`
+  AC_MSG_RESULT([$PYTHON_INCLUDE])
+])
 
 #PKG_PROG_PKG_CONFIG
 
