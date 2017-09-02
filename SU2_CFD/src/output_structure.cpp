@@ -16310,8 +16310,6 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
 
         iter += 1;
         if (iter>48){
-            cout << " Checked long enough " << endl;
-            cout << "Located in " << newElem << endl;
             Inside = true;
             return newElem;
         }
@@ -16483,13 +16481,6 @@ void COutput::Isoparameters_1(unsigned short nDim, unsigned short nDonor,
     su2double det = sqrt(bb*bb - 4*aa*cc);
     su2double m = (-bb+det)/(2*aa);
     su2double l = (xj[0]-a[0]-a[2]*m)/(a[1]+a[3]*m);
-    
-    if ((xj[0] - 3.306301e-01)*(xj[0] - 3.306301e-01) < 1e-8 ){
-        cout << "Probe_loc[0] = " << xj[0] << "Probe_loc[1] = " << xj[1] << endl;
-        for (unsigned short i=0;i<4;i++)
-            cout << "Coord[0] = " << X[i] << ", Coord[1] = " << X[4+i] << endl;
-        cout << "l = " << l << ", m = " << m << endl;
-    }
         
     if (l < -0.1 || m < -0.1 || l>1.1 || m>1.1) {
         cout << "l = " << l << endl;
@@ -16523,13 +16514,12 @@ void COutput::Isoparameters_1(unsigned short nDim, unsigned short nDonor,
             dx = abs(X[0] - X[1]);
             dy = abs(X[4 + 0] - X[4 + 2]);
         }
-        cout << "dx = " << dx << ", dy = " << dy << endl;
         
         isoparams[0] = abs(X[2] - xj[0])*abs(X[4+2]-xj[1])/(dx*dy);
         isoparams[1] = abs(X[3] - xj[0])*abs(X[4+3]-xj[1])/(dx*dy);
         isoparams[2] = abs(X[0] - xj[0])*abs(X[4+0]-xj[1])/(dx*dy);
         isoparams[3] = abs(X[1] - xj[0])*abs(X[4+1]-xj[1])/(dx*dy);
-        cout << "isoparam[0] = " << isoparams[0] << ", isoparam[1] = " << isoparams[1] << ", isoparam[2] = " << isoparams[2] << ", isoparam[3] = " << isoparams[3] << endl;
+        
     }
 }
 
