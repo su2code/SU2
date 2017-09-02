@@ -181,7 +181,7 @@ PARMETIS_INCLUDE = -I${abs_top_srcdir}/externals/parmetis/include
 PARMETIS_LIB = @PARMETIS_LIB@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PYTHON = @PYTHON@
-PYTHON_EXEC_PREFIX = @PYTHON_EXEC_PREFIX@
+PYTHON_EXEC_PREFIX = $(shell python -c "import sys; print(sys.exec_prefix)")
 PYTHON_PLATFORM = @PYTHON_PLATFORM@
 PYTHON_PREFIX = @PYTHON_PREFIX@
 PYTHON_VERSION = @PYTHON_VERSION@
@@ -248,6 +248,7 @@ program_transform_name = @program_transform_name@
 psdir = @psdir@
 pyexecdir = @pyexecdir@
 pythondir = @pythondir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -267,12 +268,13 @@ SO_EXT = so
 SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
 SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
 SWIG_SO_REAL = _pysu2.${SO_EXT}
+PYTHON_SITE_PACKAGES = $(shell python -c "import site; print(site.getsitepackages())")
+PYTHON_INCLUDE = -I${PYTHON_EXEC_PREFIX}/include/python${PYTHON_VERSION} \
+                 -I${PYTHON_EXEC_PREFIX}/include/python${PYTHON_VERSION}m
 
-# Macro to get Python paths
-PYTHON_INCLUDE = -I${PYTHON_EXEC_PREFIX}/include/python${PYTHON_VERSION}
 #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
 MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
-                 -I${pythondir}/mpi4py/include \
+                 -I${PYTHON_SITE_PACKAGES}/mpi4py/include \
                  -I/Library/Python/2.7/site-packages/mpi4py/include
 
 SWIG = swig
@@ -281,6 +283,7 @@ pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
 
 PY_INCLUDE = ${PYTHON_INCLUDE} -I${MPI4PY_INCLUDE}
 PY_LIB = -lpython${PYTHON_VERSION} \
+         -lpython${PYTHON_VERSION}m \
          -L${PYTHON_EXEC_PREFIX}/lib \
          -L/usr/lib \
          -L/usr/lib/x86_64-linux-gnu
@@ -486,9 +489,6 @@ uninstall-am:
 
 
 all:	
-	echo "PYTHON_EXEC_PREFIX: ${PYTHON_EXEC_PREFIX}"
-	echo ${pythondir}
-	echo ${PYTHON_VERSION}
 	${MAKE} real; 
 
 # List the dependencies
