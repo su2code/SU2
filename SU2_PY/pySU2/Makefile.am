@@ -42,11 +42,13 @@ SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
 SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
 SWIG_SO_REAL = _pysu2.${SO_EXT}
 
-# Macro to get Python paths
-PYTHON_INCLUDE = -I${PYTHON_EXEC_PREFIX}/include/python${PYTHON_VERSION}
+PYTHON_EXEC_PREFIX=$(shell python -c "import sys; print(sys.exec_prefix)")
+PYTHON_SITE_PACKAGES=$(shell python -c "import site; print(site.getsitepackages())")
+PYTHON_INCLUDE = -I${PYTHON_EXEC_PREFIX}/include/python${PYTHON_VERSION} \
+                 -I${PYTHON_EXEC_PREFIX}/include/python${PYTHON_VERSION}m
 #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
 MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
-                 -I${pythondir}/mpi4py/include \
+                 -I${PYTHON_SITE_PACKAGES}/mpi4py/include \
                  -I/Library/Python/2.7/site-packages/mpi4py/include
 
 SWIG = swig
@@ -57,6 +59,7 @@ pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
 PY_INCLUDE = ${PYTHON_INCLUDE} -I${MPI4PY_INCLUDE}
 
 PY_LIB = -lpython${PYTHON_VERSION} \
+         -lpython${PYTHON_VERSION}m \
          -L${PYTHON_EXEC_PREFIX}/lib \
          -L/usr/lib \
          -L/usr/lib/x86_64-linux-gnu
@@ -67,9 +70,6 @@ SWIG_INCLUDE = ${PY_INCLUDE}
 SUBDIR_EXEC = ${bindir}
 
 all:	
-	echo "PYTHON_EXEC_PREFIX: ${PYTHON_EXEC_PREFIX}"
-	echo ${pythondir}
-	echo ${PYTHON_VERSION}
 	${MAKE} real; 
 	
 # List the dependencies
