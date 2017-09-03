@@ -5248,7 +5248,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-      config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
 	  config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
@@ -5268,7 +5267,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
-      config->SetMarker_All_Out_1D(iMarker, NO);
       config->SetMarker_All_Turbomachinery(iMarker, NO);
       config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
       config->SetMarker_All_MixingPlaneInterface(iMarker, NO);
@@ -7195,10 +7193,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
-            config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
             config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
             config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
-	        config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+            config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
             
             if (duplicate) {
               Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag_Duplicate)] = Marker_Tag_Duplicate;
@@ -7214,7 +7211,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               config->SetMarker_All_Moving(iMarker+1, config->GetMarker_CfgFile_Moving(Marker_Tag_Duplicate));
               config->SetMarker_All_PerBound(iMarker+1, config->GetMarker_CfgFile_PerBound(Marker_Tag_Duplicate));
               config->SetMarker_All_SendRecv(iMarker+1, NONE);
-              config->SetMarker_All_Out_1D(iMarker+1, config->GetMarker_CfgFile_Out_1D(Marker_Tag_Duplicate));
 
               boundary_marker_count++;
               iMarker++;
@@ -8934,7 +8930,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-            config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
             config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
             config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));

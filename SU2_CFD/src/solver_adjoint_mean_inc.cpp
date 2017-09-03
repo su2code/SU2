@@ -226,7 +226,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   if (nDim == 3) Phi_Inf[2] = 0.0;
   
   /*--- If outflow objective, nonzero initialization ---*/
-  if ((config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)){
+  if ((config->GetKind_ObjFunc() == SURFACE_TOTAL_PRESSURE)){
     su2double SoundSpeed,*vel_inf,R,vel2,vel;
     R = config->GetGas_ConstantND();
     vel_inf = config->GetVelocity_FreeStreamND();
@@ -259,7 +259,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE || config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+  if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE || config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -2222,9 +2222,9 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+      (ObjFunc == SURFACE_MASSFLOW) ) factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+ if ((ObjFunc == SURFACE_TOTAL_PRESSURE) || (ObjFunc == SURFACE_STATIC_PRESSURE))
    factor = 1.0/Area_Monitored;
   
   /*--- Initialize sensitivities to zero ---*/
@@ -3921,7 +3921,7 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+  if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -4296,9 +4296,9 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+      (ObjFunc == SURFACE_MASSFLOW) ) factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)) factor = 1.0/Area_Monitored;
+ if ((ObjFunc == SURFACE_TOTAL_PRESSURE) || (ObjFunc == SURFACE_STATIC_PRESSURE)) factor = 1.0/Area_Monitored;
 
 
   /*--- Compute gradient of the grid velocity, if applicable ---*/
