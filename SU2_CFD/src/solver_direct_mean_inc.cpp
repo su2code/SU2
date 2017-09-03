@@ -4410,11 +4410,17 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case FIGURE_OF_MERIT:
         Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
         break;
-      case AVG_TOTAL_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*OneD_TotalPress;
+      case SURFACE_TOTAL_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
         break;
-      case MASS_FLOW_RATE:
-        Total_ComboObj+=Weight_ObjFunc*OneD_MassFlowRate;
+      case SURFACE_STATIC_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
+        break;
+      case SURFACE_MASSFLOW:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
+        break;
+      case SURFACE_MACH:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
         break;
       case CUSTOM_OBJFUNC:
         Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
