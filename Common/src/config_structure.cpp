@@ -288,7 +288,6 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
 void CConfig::SetPointersNull(void) {
   
-  Marker_CfgFile_Out_1D       = NULL;   Marker_All_Out_1D        = NULL;
   Marker_CfgFile_GeoEval      = NULL;   Marker_All_GeoEval       = NULL;
   Marker_CfgFile_Monitoring   = NULL;   Marker_All_Monitoring    = NULL;
   Marker_CfgFile_Designing    = NULL;   Marker_All_Designing     = NULL;
@@ -310,7 +309,7 @@ void CConfig::SetPointersNull(void) {
   Marker_SymWall              = NULL;    Marker_Pressure         = NULL;    Marker_PerBound       = NULL;
   Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    Marker_InterfaceBound = NULL;
   Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
-  Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;    Marker_Out_1D         = NULL;
+  Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
   Marker_Supersonic_Outlet    = NULL;    Marker_Load             = NULL;
   Marker_EngineExhaust        = NULL;    Marker_Displacement     = NULL;    Marker_Load           = NULL;
@@ -383,7 +382,10 @@ void CConfig::SetPointersNull(void) {
   ActDisk_TotalPressRatio = NULL;    ActDisk_TotalTempRatio = NULL;    ActDisk_StaticPressRatio = NULL;
   ActDisk_StaticTempRatio = NULL;    ActDisk_NetThrust      = NULL;    ActDisk_GrossThrust      = NULL;
   ActDisk_Power           = NULL;    ActDisk_MassFlow       = NULL;    ActDisk_Area             = NULL;
-  ActDisk_ReverseMassFlow = NULL;    Surface_MassFlow       = NULL;    Surface_DC60             = NULL;    Surface_IDC = NULL;
+  ActDisk_ReverseMassFlow = NULL;    Surface_MassFlow        = NULL;   Surface_Mach             = NULL;
+  Surface_Temperature      = NULL;   Surface_Pressure         = NULL;  Surface_Density          = NULL;   Surface_Enthalpy          = NULL;
+  Surface_NormalVelocity   = NULL;   Surface_TotalTemperature = NULL;  Surface_TotalPressure    = NULL;
+  Surface_DC60             = NULL;    Surface_IDC = NULL;
   Surface_IDC_Mach        = NULL;    Surface_IDR            = NULL;    ActDisk_Mach             = NULL;
   ActDisk_Force           = NULL;    ActDisk_BCThrust       = NULL;    ActDisk_BCThrust_Old     = NULL;
   
@@ -765,9 +767,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_ANALYZE", nMarker_Analyze, Marker_Analyze);
   /*!\brief MARKER_DESIGNING\n DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated \ingroup Config*/
   addStringListOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
-  /*!\brief MARKER_OUT_1D \n DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
-   Format: ( outlet marker) \ingroup Config*/
-  addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
   /*!\brief GEO_MARKER\n DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions \ingroup Config*/
   addStringListOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
   /*!\brief MARKER_EULER\n DESCRIPTION: Euler wall boundary marker(s) \ingroup Config*/
@@ -1369,11 +1368,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
   /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
   addBoolOption("WRT_HALO", Wrt_Halo, false);
-  /*!\brief KIND_ONE_DIMENSIONALIZATION
-   *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker.
-   *  Options: AREA, MASSFLUX, NONE
-   *  \n Use with MARKER_OUT_1D. \ingroup Config*/
-  addEnumOption("KIND_ONE_DIMENSIONALIZATION", Kind_OneD, OneD_Map, ONED_NONE);
+  /*!\brief MARKER_ANALYZE_AVERAGE
+   *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
+   *  Options: AREA, MASSFLUX
+   *  \n Use with MARKER_ANALYZE. \ingroup Config*/
+  addEnumOption("MARKER_ANALYZE_AVERAGE", Kind_Average, Average_Map, AVERAGE_MASSFLUX);
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
@@ -2200,9 +2199,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
-  }
-  if ((rank == MASTER_NODE) && ContinuousAdjoint && (Kind_OneD == ONED_MFLUX) && (Kind_SU2 == SU2_CFD)) {
-    cout << "WARNING: The continuous adjoint solver assumes area-averaging." << endl;
   }
   
   /*--- Initialize non-physical points/reconstructions to zero ---*/
@@ -3351,7 +3347,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Load_Sine,
-  iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D,
+  iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
   iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
 
   int size = SINGLE_NODE;
@@ -3371,7 +3367,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
-  nMarker_ActDiskInlet + nMarker_ActDiskOutlet + nMarker_Out_1D;
+  nMarker_ActDiskInlet + nMarker_ActDiskOutlet;
   
   /*--- Add the possible send/receive domains ---*/
 
@@ -3395,7 +3391,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_DV                   = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving               = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
   Marker_All_PerBound             = new short[nMarker_All];				// Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Out_1D               = new unsigned short[nMarker_All];    // Store whether the boundary belongs to a 1-d output boundary.
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All];	// Store whether the boundary has a in the MixingPlane interface.
@@ -3414,7 +3409,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_DV[iMarker_All]                   = 0;
     Marker_All_Moving[iMarker_All]               = 0;
     Marker_All_PerBound[iMarker_All]             = 0;
-    Marker_All_Out_1D[iMarker_All]               = 0;
     Marker_All_Turbomachinery[iMarker_All]       = 0;
     Marker_All_TurbomachineryFlag[iMarker_All]   = 0;
     Marker_All_MixingPlaneInterface[iMarker_All] = 0;
@@ -3433,7 +3427,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Out_1D               = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile];
@@ -3450,7 +3443,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_DV[iMarker_CfgFile]                   = 0;
     Marker_CfgFile_Moving[iMarker_CfgFile]               = 0;
     Marker_CfgFile_PerBound[iMarker_CfgFile]             = 0;
-    Marker_CfgFile_Out_1D[iMarker_CfgFile]               = 0;
     Marker_CfgFile_Turbomachinery[iMarker_CfgFile]       = 0;
     Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]   = 0;
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = 0;
@@ -3459,17 +3451,33 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Allocate memory to store surface information (Analyze BC) ---*/
 
   Surface_MassFlow = new su2double[nMarker_Analyze];
+  Surface_Mach = new su2double[nMarker_Analyze];
+  Surface_Temperature = new su2double[nMarker_Analyze];
+  Surface_Pressure = new su2double[nMarker_Analyze];
+  Surface_Density = new su2double[nMarker_Analyze];
+  Surface_Enthalpy = new su2double[nMarker_Analyze];
+  Surface_NormalVelocity = new su2double[nMarker_Analyze];
+  Surface_TotalTemperature = new su2double[nMarker_Analyze];
+  Surface_TotalPressure = new su2double[nMarker_Analyze];
   Surface_DC60 = new su2double[nMarker_Analyze];
   Surface_IDC = new su2double[nMarker_Analyze];
   Surface_IDC_Mach = new su2double[nMarker_Analyze];
   Surface_IDR = new su2double[nMarker_Analyze];
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-     Surface_MassFlow[iMarker_Analyze] = 0.0;
-     Surface_DC60[iMarker_Analyze] = 0.0;
-     Surface_IDC[iMarker_Analyze] = 0.0;
-     Surface_IDC_Mach[iMarker_Analyze] = 0.0;
-     Surface_IDR[iMarker_Analyze] = 0.0;
-   }
+    Surface_MassFlow[iMarker_Analyze] = 0.0;
+    Surface_Mach[iMarker_Analyze] = 0.0;
+    Surface_Temperature[iMarker_Analyze] = 0.0;
+    Surface_Pressure[iMarker_Analyze] = 0.0;
+    Surface_Density[iMarker_Analyze] = 0.0;
+    Surface_Enthalpy[iMarker_Analyze] = 0.0;
+    Surface_NormalVelocity[iMarker_Analyze] = 0.0;
+    Surface_TotalTemperature[iMarker_Analyze] = 0.0;
+    Surface_TotalPressure[iMarker_Analyze] = 0.0;
+    Surface_DC60[iMarker_Analyze] = 0.0;
+    Surface_IDC[iMarker_Analyze] = 0.0;
+    Surface_IDC_Mach[iMarker_Analyze] = 0.0;
+    Surface_IDR[iMarker_Analyze] = 0.0;
+  }
 
   /*--- Populate the marker information in the config file (all domains) ---*/
 
@@ -3870,13 +3878,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Moving[iMarker_Moving])
         Marker_CfgFile_Moving[iMarker_CfgFile] = YES;
-  }
-
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    Marker_CfgFile_Out_1D[iMarker_CfgFile] = NO;
-    for (iMarker_Out_1D = 0; iMarker_Out_1D < nMarker_Out_1D; iMarker_Out_1D++)
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Out_1D[iMarker_Out_1D])
-        Marker_CfgFile_Out_1D[iMarker_CfgFile] = YES;
   }
 
 }
@@ -4384,9 +4385,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case TOTAL_HEATFLUX:             cout << "Total heat flux objective function." << endl; break;
         case MAXIMUM_HEATFLUX:           cout << "Maximum heat flux objective function." << endl; break;
         case FIGURE_OF_MERIT:            cout << "Rotor Figure of Merit objective function." << endl; break;
-        case AVG_TOTAL_PRESSURE:         cout << "Average total objective pressure." << endl; break;
-        case AVG_OUTLET_PRESSURE:        cout << "Average static objective pressure." << endl; break;
-        case MASS_FLOW_RATE:             cout << "Mass flow rate objective function." << endl; break;
+        case SURFACE_TOTAL_PRESSURE:         cout << "Average total pressure objective function." << endl; break;
+        case SURFACE_STATIC_PRESSURE:        cout << "Average static pressure objective function." << endl; break;
+        case SURFACE_MASSFLOW:             cout << "Mass flow rate objective function." << endl; break;
+        case SURFACE_MACH:             cout << "Mach number objective function." << endl; break;
         case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
       }
 		}
@@ -5448,13 +5450,6 @@ unsigned short CConfig::GetMarker_CfgFile_MixingPlaneInterface(string val_marker
   return Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Out_1D(string val_marker) {
-  unsigned short iMarker_CfgFile;
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
-    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
-  return Marker_CfgFile_Out_1D[iMarker_CfgFile];
-}
-
 unsigned short CConfig::GetMarker_CfgFile_DV(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -5576,9 +5571,6 @@ CConfig::~CConfig(void) {
   if (Omega_HB != NULL) delete [] Omega_HB;
     
   /*--- Marker pointers ---*/
-  
-  if (Marker_CfgFile_Out_1D != NULL) delete[] Marker_CfgFile_Out_1D;
-  if (Marker_All_Out_1D     != NULL) delete[] Marker_All_Out_1D;
   
   if (Marker_CfgFile_GeoEval != NULL) delete[] Marker_CfgFile_GeoEval;
   if (Marker_All_GeoEval     != NULL) delete[] Marker_All_GeoEval;
@@ -5715,6 +5707,14 @@ CConfig::~CConfig(void) {
   if (ActDisk_ReverseMassFlow != NULL)    delete[]  ActDisk_ReverseMassFlow;
   
   if (Surface_MassFlow != NULL)    delete[]  Surface_MassFlow;
+  if (Surface_Mach != NULL)    delete[]  Surface_Mach;
+  if (Surface_Temperature != NULL)    delete[]  Surface_Temperature;
+  if (Surface_Pressure != NULL)    delete[]  Surface_Pressure;
+  if (Surface_Density != NULL)    delete[]  Surface_Density;
+  if (Surface_Enthalpy != NULL)    delete[]  Surface_Enthalpy;
+  if (Surface_NormalVelocity != NULL)    delete[]  Surface_NormalVelocity;
+  if (Surface_TotalTemperature != NULL)    delete[]  Surface_TotalTemperature;
+  if (Surface_TotalPressure!= NULL)    delete[]  Surface_TotalPressure;
   if (Surface_DC60 != NULL)    delete[]  Surface_DC60;
   if (Surface_IDC != NULL)    delete[]  Surface_IDC;
   if (Surface_IDC_Mach != NULL)    delete[]  Surface_IDC_Mach;
@@ -5812,7 +5812,6 @@ CConfig::~CConfig(void) {
   if (Marker_Supersonic_Inlet != NULL )   delete[] Marker_Supersonic_Inlet;
   if (Marker_Supersonic_Outlet != NULL )   delete[] Marker_Supersonic_Outlet;
   if (Marker_Outlet != NULL )             delete[] Marker_Outlet;
-  if (Marker_Out_1D != NULL )             delete[] Marker_Out_1D;
   if (Marker_Isothermal != NULL )         delete[] Marker_Isothermal;
   if (Marker_EngineInflow != NULL )      delete[] Marker_EngineInflow;
   if (Marker_EngineExhaust != NULL )     delete[] Marker_EngineExhaust;
@@ -5964,9 +5963,10 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case TOTAL_HEATFLUX:          AdjExt = "_totheat";  break;
       case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat";  break;
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
-      case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
-      case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
-      case MASS_FLOW_RATE:          AdjExt = "_mfr";      break;
+      case SURFACE_TOTAL_PRESSURE:  AdjExt = "_pt";       break;
+      case SURFACE_STATIC_PRESSURE: AdjExt = "_pe";       break;
+      case SURFACE_MASSFLOW:        AdjExt = "_mfr";      break;
+      case SURFACE_MACH:            AdjExt = "_mach";     break;
       case CUSTOM_OBJFUNC:        		AdjExt = "_custom";   break;
       case KINETIC_ENERGY_LOSS:     AdjExt = "_ke";        break;
       case TOTAL_PRESSURE_LOSS:     AdjExt = "_pl";        break;
