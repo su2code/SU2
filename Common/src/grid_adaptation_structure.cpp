@@ -284,9 +284,10 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
     if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     SPRINTF (buffer, "_cfz.dat");
     if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
     if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
-    if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
-    if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)     SPRINTF (buffer, "_pe.dat");
-    if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_TOTAL_PRESSURE)  SPRINTF (buffer, "_pt.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_STATIC_PRESSURE) SPRINTF (buffer, "_pe.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_MASSFLOW)        SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_MACH)            SPRINTF (buffer, "_mach.dat");
     if (config->GetKind_ObjFunc() == CUSTOM_OBJFUNC)          SPRINTF (buffer, "_custom.dat");
 	}
 
@@ -3556,9 +3557,10 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
     if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     SPRINTF (buffer, "_cfz.dat");
     if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
     if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
-    if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
-    if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)     SPRINTF (buffer, "_pe.dat");
-    if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_TOTAL_PRESSURE)  SPRINTF (buffer, "_pt.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_STATIC_PRESSURE) SPRINTF (buffer, "_pe.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_MASSFLOW)        SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_MACH)            SPRINTF (buffer, "_mach.dat");
     if (config->GetKind_ObjFunc() == CUSTOM_OBJFUNC)          SPRINTF (buffer, "_custom.dat");
   }
   
