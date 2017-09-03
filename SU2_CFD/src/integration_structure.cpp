@@ -572,7 +572,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh, unsigned short SolContainer_Position) {
 
-  unsigned short iVar, iDim;
+  unsigned short iDim;
   unsigned long iPoint;
 
   bool calculate_average = config->GetCalculate_Average();

@@ -1689,7 +1689,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
        ---*/
       su2double *Coord_i, *Coord_j, *Vorticity_i, *Vorticity_j;
       su2double Omega, ratio_Omega[3]={0.0,0.0,0.0}, delta_i[3]={0.0,0.0,0.0}, ln[3]={0.0,0.0,0.0};
-      su2double **PrimVar_Grad_j, f_kh, f_kh_lim;
+      su2double **PrimVar_Grad_j, f_kh;
       su2double Strain_i[3][3], Strain_j[3][3],StrainDotVort[3]={0.0,0.0,0.0},numVecVort[3]={0.0,0.0,0.0};
       su2double numerator, denominator, trace0, trace1, VTM_i, ln_max, aux_ln, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
       su2double aux_delta_ddes, delta_ddes;
@@ -1855,8 +1855,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Shur et al. A hybrid RANS-LES approach with delayed-DES and wall-modelled LES capabilities, 2008 ---*/
       /*--- IDDES without turbulent inflow content (fe = 0.0), omitted here for simplification ---*/
       
-      su2double *Coord_i, *Coord_j, aux_delta, Delta_min, aux_min;
-      su2double alpha2, f_b, f_d_tilde, dist_zonal;
+      su2double *Coord_i, *Coord_j, aux_delta, Delta_min;
+      su2double alpha2, f_b, f_d_tilde;
       unsigned short nNeigh, iNeigh;
       unsigned long NumNeigh;
       
@@ -1956,8 +1956,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
     }
     else if (config->GetKind_HybridRANSLES()==SA_IZDES){
-      su2double *Coord_i, *Coord_j, aux_delta, Delta_min, aux_min;
-      su2double alpha2, f_b, f_d_tilde, dist_zonal;
+      su2double *Coord_i, *Coord_j, aux_delta, Delta_min;
+      su2double alpha2, f_b, f_d_tilde;
       su2double deltax=0.0, deltay=0.0, deltaz=0.0, *Vorticity_i;
       su2double Omega, ratio_Omegax, ratio_Omegay, ratio_Omegaz, Delta_w;
       unsigned short nNeigh, iNeigh;
@@ -1965,26 +1965,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       Coord_i = geometry->node[iPoint]->GetCoord();
       nNeigh = geometry->node[iPoint]->GetnPoint();
-/*      
-      Delta = 0.0;
-      Delta_min = 0.0;
-      for (iNeigh=0;iNeigh<nNeigh;++iNeigh){
-        NumNeigh = geometry->node[iPoint]->GetPoint(iNeigh);
-        Coord_j = geometry->node[NumNeigh]->GetCoord();
-        
-        aux_delta = 0.0;
-        aux_min = 0.0;
-        for (iDim=0;iDim<nDim;++iDim){
-          aux_delta = max(aux_delta,Coord_j[iDim]-Coord_i[iDim]);
-          aux_min = min(aux_min,Coord_j[iDim]-Coord_i[iDim]);
-        }
-        Delta_min = min(Delta_min, aux_min);
-        Delta = max(Delta,aux_delta);
-        
-        deltax = max(deltax, abs(Coord_j[0] - Coord_i[0]));
-        deltay = max(deltay, abs(Coord_j[1] - Coord_i[1]));
-        deltaz = max(deltaz, abs(Coord_j[2] - Coord_i[2]));
-      }*/
       
       Delta = 0.0;
       Delta_min = 0.0;

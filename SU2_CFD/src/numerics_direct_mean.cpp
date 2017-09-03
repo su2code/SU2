@@ -1058,16 +1058,24 @@ void CUpwSLAU_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   Vn_MagR= (1.0 - f_rho)*Vn_Mag + f_rho*fabs(ProjVelocity_j);  
   
   /*--- Mass flux function ---*/
-  //mF = 0.5 * ((Density_i*ProjVelocity_i) + (Density_j*ProjVelocity_j) - Vn_Mag*(Density_j-Density_i)) * f_rho - (Chi/(2.0*aF))*(Pressure_j-Pressure_i);
+
   mF = 0.5 * (Density_i * (ProjVelocity_i + Vn_MagL) + Density_j * (ProjVelocity_j - Vn_MagR) - (Chi/aF)*(Pressure_j-Pressure_i));
   
   /*--- Pressure function ---*/
-  if (fabs(mL) >= 1.0) BetaL = 1.0;
-  else  BetaL = 0.25*(2.0-mL)*pow((mL+1.0),2.0);
 
-  if (fabs(mR) >= 1.0) BetaR = 0.0;
-  else  BetaR = 0.25*(2.0+mR)*pow((mR-1.0),2.0);
-  
+  if (fabs(mL) < 1.0) BetaL = 0.25*(2.0-mL)*pow((mL+1.0),2.0);
+  else {
+      if (mL >= 0) BetaL = 1.0;
+      else BetaL = 0.0;
+  }
+    
+  if (fabs(mR) < 1.0) BetaR = 0.25*(2.0+mR)*pow((mR-1.0),2.0);
+  else {
+      if (mR >= 0 ) BetaR = 0.0;
+      else BetaR = 1.0;
+  }
+    
+    
   if (slau_low_diss != NO_ROELOWDISS){
     pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + dissipation*(1.0 - Chi) * (BetaL + BetaR - 1.0) *  0.5 * (Pressure_i + Pressure_j);
   }
@@ -1251,16 +1259,22 @@ void CUpwSLAU2_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   Vn_MagR= (1.0 - f_rho)*Vn_Mag + f_rho*fabs(ProjVelocity_j);  
   
   /*--- Mass flux function ---*/
-  //mF = 0.5 * ((Density_i*ProjVelocity_i) + (Density_j*ProjVelocity_j) - Vn_Mag*(Density_j-Density_i)) * f_rho - (Chi/(2.0*aF))*(Pressure_j-Pressure_i);
   mF = 0.5 * (Density_i * (ProjVelocity_i + Vn_MagL) + Density_j * (ProjVelocity_j - Vn_MagR) - (Chi/aF)*(Pressure_j-Pressure_i));
   
   /*--- Pressure function ---*/
-  if (fabs(mL) >= 1.0) BetaL = 1.0;
-  else  BetaL = 0.25*(2.0-mL)*pow((mL+1.0),2.0);
-
-  if (fabs(mR) >= 1.0) BetaR = 0.0;
-  else  BetaR = 0.25*(2.0+mR)*pow((mR-1.0),2.0);
+  if (fabs(mL) < 1.0) BetaL = 0.25*(2.0-mL)*pow((mL+1.0),2.0);
+  else {
+    if (mL >= 0) BetaL = 1.0;
+    else BetaL = 0.0;
+  }
+    
+  if (fabs(mR) < 1.0) BetaR = 0.25*(2.0+mR)*pow((mR-1.0),2.0);
+  else {
+    if (mR >= 0 ) BetaR = 0.0;
+    else BetaR = 1.0;
+  }
   
+  /*--- Pressure Flux ---*/
   if (slau_low_diss != NO_ROELOWDISS){
     pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + dissipation * sqrt(aux_slau/2.0) * (BetaL + BetaR - 1.0) * aF * 0.5 * (Density_i + Density_j);
   }
