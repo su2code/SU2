@@ -199,7 +199,6 @@ private:
   nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
   nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
   nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
-  nMarker_Out_1D,         /*!< \brief Number of outlet flow markers over which to calculate 1D outputs */
   nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
   nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
   nMarker_EngineExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
@@ -240,7 +239,6 @@ private:
   *Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
   *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
   *Marker_Outlet,					/*!< \brief Outlet flow markers. */
-  *Marker_Out_1D,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
   *Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
   *Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
   *Marker_EngineInflow,					/*!< \brief Engine Inflow flow markers. */
@@ -336,6 +334,7 @@ private:
   su2double *Surface_Temperature;    /*!< \brief Temperature at the boundaries. */
   su2double *Surface_Pressure;    /*!< \brief Pressure at the boundaries. */
   su2double *Surface_Density;    /*!< \brief Density at the boundaries. */
+  su2double *Surface_Enthalpy;    /*!< \brief Enthalpy at the boundaries. */
   su2double *Surface_NormalVelocity;    /*!< \brief Normal velocity at the boundaries. */
   su2double *Surface_TotalTemperature;   /*!< \brief Total temperature at the boundaries. */
   su2double *Surface_TotalPressure;    /*!< \brief Total pressure at the boundaries. */
@@ -605,7 +604,6 @@ private:
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
-  *Marker_All_Out_1D,      /*!< \brief Global index for moving using 1D integrated output. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
@@ -615,7 +613,6 @@ private:
   *Marker_CfgFile_Turbomachinery,     /*!< \brief Global index for Turbomachinery  using the config information. */
   *Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
-  *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
@@ -687,7 +684,7 @@ private:
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
-  Kind_OneD;        /*!< \brief Write one-dimensionalized output on specified markers. */
+  Kind_Average;        /*!< \brief Particular average for the marker analyze. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
   ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
@@ -2444,13 +2441,6 @@ public:
   unsigned short GetnMarker_ActDiskOutlet(void);
 
   /*!
-   * \brief Get the total number of 1D output markers.
-   * \return Total number of monitoring markers.
-   */
-  unsigned short GetnMarker_Out_1D(void);
-
-
-  /*!
    * \brief Get the total number of monitoring markers.
    * \return Total number of monitoring markers.
    */
@@ -2687,12 +2677,6 @@ public:
   bool GetPlot_Section_Forces(void);
 
   /*!
-   * \brief Get information about writing average stagnation pressure
-   * \return <code>TRUE</code> means that the average stagnation pressure will be output for specified markers.
-   */
-  bool GetWrt_1D_Output(void);
-
-  /*!
    * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
    * \param[in] val_step - Index of the step.
    * \return Alpha coefficient for the Runge-Kutta integration scheme.
@@ -2761,22 +2745,6 @@ public:
    * \return Kind of boundary for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_All_KindBC(unsigned short val_marker);
-
-  /*!
-   * \brief Get the kind of boundary for each marker.
-   * \param[in] val_marker - Index of the marker in which we are interested.
-   * \return Kind of boundary for the marker <i>val_marker</i>.
-   */
-  unsigned short GetMarker_All_Out_1D(unsigned short val_marker);
-
-  /*!
-   * \brief Set the value of the boundary <i>val_boundary</i> (read from the config file)
-   *        for the marker <i>val_marker</i>.
-   * \param[in] val_marker - Index of the marker in which we are interested.
-   * \param[in] val_boundary - Kind of boundary read from config file.
-   */
-  void SetMarker_All_Out_1D(unsigned short val_marker, unsigned short val_boundary);
-
 
   /*!
    * \brief Set the value of the boundary <i>val_boundary</i> (read from the config file)
@@ -5222,12 +5190,6 @@ public:
   unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker);
   
   /*!
-   * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
-   * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.
-   */
-  unsigned short GetMarker_CfgFile_Out_1D(string val_marker);
-
-  /*!
    * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
    * \return DV information of the boundary in the config information for the marker <i>val_marker</i>.
    */
@@ -6473,6 +6435,13 @@ public:
   void SetSurface_Density(unsigned short val_imarker, su2double val_surface_density);
 
   /*!
+   * \brief Set the enthalpy at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_density - Value of the density.
+   */
+  void SetSurface_Enthalpy(unsigned short val_imarker, su2double val_surface_enthalpy);
+
+  /*!
    * \brief Set the normal velocity at the surface.
    * \param[in] val_imarker - Index corresponding to the outlet boundary.
    * \param[in] val_surface_normalvelocity - Value of the normal velocity.
@@ -6695,6 +6664,13 @@ public:
    * \return The density.
    */
   su2double GetSurface_Density(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the enthalpy at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The density.
+   */
+  su2double GetSurface_Enthalpy(unsigned short val_imarker);
 
   /*!
    * \brief Get the normal velocity at an outlet boundary.
@@ -7304,11 +7280,10 @@ public:
   unsigned short GetConsole_Output_Verb(void);
 
   /*!
-   * \brief Get the kind of one-dimensionalization
-   * (area-averaged, mass flux averaged,etc).
-   * \return Kind of one-dimensionalization.
+   * \brief Get the kind of marker analyze marker (area-averaged, mass flux averaged, etc).
+   * \return Kind of average.
    */
-  unsigned short GetKind_OneD(void);
+  unsigned short GetKind_Average(void);
 
   /*!
    *

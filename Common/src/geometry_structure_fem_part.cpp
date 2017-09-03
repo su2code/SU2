@@ -874,7 +874,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
         config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
         config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
         config->SetMarker_All_SendRecv(iMarker, NONE);
-        config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
       }
 
       break;
@@ -2089,7 +2088,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
     config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
     config->SetMarker_All_SendRecv(iMarker, NONE);
-    config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
   }
 
   /* Close the CGNS file again. */
