@@ -142,53 +142,54 @@ CHybrid_Mediator::CHybrid_Mediator(int nDim, CConfig* config, string filename)
       cout << "         Default (hardcoded) values used." << endl;
     }
     constants.resize(3, vector<su2double>(15));
-    constants[0][0]  = -1.3441989500430;
-    constants[0][1]  = -1.2997962353961;
-    constants[0][2]  =  0.3624921526914;
-    constants[0][3]  = -0.0114257653000;
-    constants[0][4]  = -0.0002359408737;
-    constants[0][5]  =  0.2314555700009;
-    constants[0][6]  =  0.0016951253508;
-    constants[0][7]  = -0.0002866338640;
-    constants[0][8]  = -0.0009095648353;
-    constants[0][9]  =  0.0617742005401;
-    constants[0][10] = -0.0000918936400;
-    constants[0][11] =  0.0000544349543;
-    constants[0][12] =  0.0001553623566;
-    constants[0][13] =  0.0001159449506;
-    constants[0][14] =  0.0059904950363;
 
-    constants[1][0]  =  1.9527214390792;
-    constants[1][1]  =  0.0387097819862;
-    constants[1][2]  = -0.0035236439484;
-    constants[1][3]  = -0.0090288063753;
-    constants[1][4]  =  0.0074191857589;
-    constants[1][5]  =  0.0012129089188;
-    constants[1][6]  =  0.0010376720357;
-    constants[1][7]  = -0.0011418423755;
-    constants[1][8]  =  0.0008778876148;
-    constants[1][9]  =  0.0006097328257;
-    constants[1][10] = -0.0000471680743;
-    constants[1][11] =  0.0000668786855;
-    constants[1][12] = -0.0000477449682;
-    constants[1][13] =  0.0000549683602;
-    constants[1][14] =  0.0000759797725;
+    constants[0][0] =  2.4253168624203;
+    constants[0][1] =  0.3377273122202;
+    constants[0][2] =  0.2454150824949;
+    constants[0][3] = -0.4015732570841;
+    constants[0][4] = -0.3023468205458;
+    constants[0][5] = -0.1386196773678;
+    constants[0][6] =  0.0451966752099;
+    constants[0][7] =  0.0325650620151;
+    constants[0][8] =  0.0093904940685;
+    constants[0][9] = -0.0052447144608;
+    constants[0][10] = -0.0019607919411;
+    constants[0][11] = -0.0005522138218;
+    constants[0][12] =  0.0013947282467;
+    constants[0][13] =  0.0012723863199;
+    constants[0][14] = -0.0000420559137;
 
-    constants[2][0]  = -0.0149586909340;
-    constants[2][1]  =  0.0021107470732;
-    constants[2][2]  = -0.0057740374642;
-    constants[2][3]  =  0.0002190519772;
-    constants[2][4]  =  0.0006652247252;
-    constants[2][5]  = -0.0017709687027;
-    constants[2][6]  = -0.0000860428032;
-    constants[2][7]  =  0.0000032821371;
-    constants[2][8]  =  0.0001955198753;
-    constants[2][9]  = -0.0002762253983;
-    constants[2][10] =  0.0000061997774;
-    constants[2][11] = -0.0000041785763;
-    constants[2][12] = -0.0000092567404;
-    constants[2][13] =  0.0000125295721;
-    constants[2][14] = -0.0000180552959;
+    constants[1][0] =  0.6999425502058;
+    constants[1][1] =  0.3056790968854;
+    constants[1][2] = -0.1914576501370;
+    constants[1][3] =  0.0713376305722;
+    constants[1][4] =  0.2874057660774;
+    constants[1][5] =  0.1107104307784;
+    constants[1][6] = -0.0215754933753;
+    constants[1][7] = -0.0652953391552;
+    constants[1][8] = -0.0460413983614;
+    constants[1][9] = -0.0131511446213;
+    constants[1][10] =  0.0015258919631;
+    constants[1][11] =  0.0046851430319;
+    constants[1][12] =  0.0046149483796;
+    constants[1][13] =  0.0020781858721;
+    constants[1][14] =  0.0001722924891;
+
+    constants[2][0] = -0.1451211648913;
+    constants[2][1] = -0.0419089159238;
+    constants[2][2] = -0.0090912831194;
+    constants[2][3] =  0.0120968852318;
+    constants[2][4] = -0.0318033690621;
+    constants[2][5] = -0.0157539031345;
+    constants[2][6] = -0.0007323909092;
+    constants[2][7] =  0.0105452780759;
+    constants[2][8] =  0.0089366657596;
+    constants[2][9] =  0.0030581437094;
+    constants[2][10] = -0.0000170956796;
+    constants[2][11] = -0.0009297436006;
+    constants[2][12] = -0.0010752469431;
+    constants[2][13] = -0.0005650127892;
+    constants[2][14] = -0.0000591358738;
 
   } else {
     constants = LoadConstants(filename);
@@ -281,7 +282,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     /*---Find the largest product of resolved fluctuations at the cutoff---*/
     // TODO: Incorporate anisotropy ratio here (max-to-min)
     su2double aniso_ratio = 1.0;
-    su2double C_kQ = 8.0;
+    su2double C_kQ = 16.0;
     su2double max_resolved = aniso_ratio*C_kQ*C_sf*TWO3*eigvalues_zQz[max_index];
 
     /*--- Find the smallest product of unresolved fluctuations at the cutoff ---*/
@@ -297,14 +298,14 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
 
 
     /*--- Find the dissipation ratio ---*/
-    su2double C_eps = 0.03125;
+    su2double C_eps = 0.25;
     su2double TurbL = solver_container[TURB_SOL]->node[iPoint]->GetTurbLengthscale();
     su2double d_max = GetProjResolution(ResolutionTensor,
                                         eigvectors_zQz[max_index]);
     su2double r_eps = C_eps * pow(r_k, 1.5) * TurbL / d_max;
 
     /*--- Calculate the RANS weight ---*/
-    w_rans = fmax(tanh(r_eps - 1), 0.0);
+    w_rans = tanh(0.5*pow(fmax(r_eps - 1, 0), 0.25));
 
 /*    ---- DEBUGGING ---
     su2double* x = geometry->node[iPoint]->GetCoord();
