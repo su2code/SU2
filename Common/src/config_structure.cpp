@@ -628,16 +628,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*--- Options related to Constant Viscosity Model ---*/
 
   /* DESCRIPTION: default value for AIR */
-  addDoubleOption("MU_CONSTANT", Mu_ConstantND , 1.716E-5);
+  addDoubleOption("MU_CONSTANT", Mu_Constant , 1.716E-5);
 
   /*--- Options related to Sutherland Viscosity Model ---*/
 
   /* DESCRIPTION: Sutherland Viscosity Ref default value for AIR SI */
-  addDoubleOption("MU_REF", Mu_RefND, 1.716E-5);
+  addDoubleOption("MU_REF", Mu_Ref, 1.716E-5);
   /* DESCRIPTION: Sutherland Temperature Ref, default value for AIR SI */
-  addDoubleOption("MU_T_REF", Mu_Temperature_RefND, 273.15);
+  addDoubleOption("MU_T_REF", Mu_Temperature_Ref, 273.15);
   /* DESCRIPTION: Sutherland constant, default value for AIR SI */
-  addDoubleOption("SUTHERLAND_CONSTANT", Mu_SND, 110.4);
+  addDoubleOption("SUTHERLAND_CONSTANT", Mu_S, 110.4);
 
   /*--- Options related to Thermal Conductivity Model ---*/
 
@@ -646,7 +646,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
  /* DESCRIPTION: default value for AIR */
-  addDoubleOption("KT_CONSTANT", Kt_ConstantND , 0.0257);
+  addDoubleOption("KT_CONSTANT", Kt_Constant , 0.0257);
 
   /*!\brief REYNOLDS_NUMBER \n DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values). Needed for viscous solvers. For incompressible solvers the Reynolds length will always be 1.0 \n DEFAULT: 0.0 \ingroup Config */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
