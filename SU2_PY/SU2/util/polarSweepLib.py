@@ -145,7 +145,6 @@ def readParameter(dataFile,nLines,keyWord,iDoNot,verbose):
 def setContribution(dataFile,nLines,keyWord,iDoNot,verbose):
 
     from numpy import size
-    from polarSweepLib import parLocator 
     import string
 #
 # default values
@@ -205,7 +204,6 @@ def setContribution(dataFile,nLines,keyWord,iDoNot,verbose):
 def setPolaraType(ctrl,nc,verbose):
 
 # scan the control file and determine polara type and angles
-    from polarSweepLib import parLocator, readList
 # Determine pitch direction from control file
 # ---------------------------------------------------
 
@@ -406,7 +404,6 @@ def setVelDir(velDirOption,PA,alphar,phir,betar):
 
 # set the velocity direction
     from numpy import sin,cos,tan,size
-    from polarSweepLib import parLocator, readList
 
 #
 # Check for alpha and if we are dealing with values greater than 88deg (near 90)
@@ -525,7 +522,6 @@ def updatedControlFile(ctrl,nc,parAngle,ctrlFile,verbose):
 
 # generate a modified control file for case with addRun options
 
-    from polarSweepLib import parLocator, readList
     import os
 #
 #-- get a proper list of updated parameter-angle
@@ -658,7 +654,6 @@ def retrievePhysicalData(b,n,polarSweepType,verbose):
 # scan the control file and retrieve physical data parameters and their location
 # Included are Mach and reynolds number (non-dim group)
 #              Pref, rho_ref, Tref (ref group)
-    from polarSweepLib import parLocator, readList
 # ---------------------------------------------------   
 #
 # physical data, needed for Mach ramp
@@ -734,7 +729,6 @@ def retrievePhysicalData(b,n,polarSweepType,verbose):
 def fMachIsentropic(Mach,Gamma):
 
 # Isentropic relation of Mach
-    from polarSweepLib import parLocator, readList
 # ---------------------------------------------------   
 #
     fMach = 1.0 + (Gamma-1.0)/2.0*Mach*Mach;
@@ -745,7 +739,6 @@ def extractUy(filename,outFile,inDepVar,depVar,verbose):
 
     import os
     import sys 
-    from polarSweepLib import stringLocator
 
 
 #--------------- read the  file
@@ -907,7 +900,6 @@ def testComponentSum(cbdOutput,verbose):
 #
 # check cbd summation
 #
-    from polarSweepLib import stringLocator, loadArray
 
     coeffNames=['Cfx','Cfy','Cfz','Cmx','Cmy','Cmz']
     try:
@@ -955,7 +947,6 @@ def testComponentSum(cbdOutput,verbose):
 def retreiveNumPar(ctrl,nc,keyWord,parType,verbose):
     # get the parameter from the control file. Set it to unity if not found
     # parType: 1  -> integer   2 -> float
-    from polarSweepLib import parLocator
 #
     ipar = parLocator(keyWord,ctrl,nc,-1,verbose)
     if ipar == -1:
