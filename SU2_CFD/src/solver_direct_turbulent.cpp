@@ -2939,9 +2939,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     /*--- Calculate the relevant length and timescales ---*/
     /*--- We explicitly set the viscous (Kolmogorov) limit, even though the
      * SST model has its own wall-modeling ---*/
-    timescale = max(zeta, 6.0*sqrt((mu/rho)/(k*omega));
-    lengthscale = max(sqrt(max(kine, 0.0))*zeta,
-                      85.0*pow(pow((mu/rho),3)/(k*omega)),0.25);
+    su2double timescale = max(zeta, 6.0*sqrt((mu/rho)/(kine*omega)));
+    su2double lengthscale = max(sqrt(max(kine, 0.0))*zeta,
+                                85.0*pow(pow((mu/rho),3)/(kine*omega),0.25));
     node[iPoint]->SetTurbScales(timescale, lengthscale);
   }
   

@@ -857,6 +857,12 @@ public:
    */
   virtual su2double GetTurbLengthscale(void);
 
+  /*!
+   * \brief A virtual member.
+   * \return The Reynolds stress component anisotropy ratio (max-to-min)
+   */
+  virtual su2double GetAnisoRatio(void);
+
   /**
    * \brief Get the resolution adequacy parameter for a hybrid RANS/LES model
    * \return The resolution adequacy parameter

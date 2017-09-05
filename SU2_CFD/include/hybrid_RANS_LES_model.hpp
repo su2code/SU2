@@ -288,6 +288,7 @@ class CHybrid_Mediator : public CAbstract_Hybrid_Mediator {
   su2double **Q,        /*!> \brief An approximate 2nd order structure function tensor */
             **Qapprox;  /*!> \brief An approximate 2nd order structure function tensor (used for temporary calculations) */
   std::vector<std::vector<su2double> > constants;
+  CConfig* config;
 
   /*--- Data structures for LAPACK ---*/
 #ifdef HAVE_LAPACK

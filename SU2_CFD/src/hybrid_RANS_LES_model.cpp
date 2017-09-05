@@ -118,7 +118,7 @@ inline void CHybrid_Aniso_Q::SetScalars(vector<su2double> val_scalars) {
 
 
 CHybrid_Mediator::CHybrid_Mediator(int nDim, CConfig* config, string filename)
- : nDim(nDim), C_sf(config->Get_Hybrid_Model_Const()) {
+   : nDim(nDim), C_sf(config->Get_Hybrid_Model_Const()), config(config) {
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -281,17 +281,25 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
 
     /*---Find the largest product of resolved fluctuations at the cutoff---*/
     // TODO: Incorporate anisotropy ratio here (max-to-min)
-    su2double aniso_ratio = 1.0;
+    su2double aniso_ratio = solver_container[TURB_SOL]->node[iPoint]->GetAnisoRatio(); 
     su2double C_kQ = 16.0;
     su2double max_resolved = aniso_ratio*C_kQ*C_sf*TWO3*eigvalues_zQz[max_index];
 
     /*--- Find the smallest product of unresolved fluctuations at the cutoff ---*/
-    // TODO: Make this more generalized
-//    su2double C_mu = 0.22;
-//    su2double TurbT = solver_container[TURB_SOL]->node[iPoint]->GetTurbTimescale();
-//    su2double omega = solver_container[TURB_SOL]->node[iPoint]->GetSolution(1);
-//    su2double min_unresolved = TurbT*k*omega/C_mu;
-    su2double min_unresolved = TWO3*k;
+    su2double min_unresolved;
+    switch (config->GetKind_Turb_Model()) {
+      case SST: {
+        su2double C_mu = 0.22;
+        su2double TurbT = solver_container[TURB_SOL]->node[iPoint]->GetTurbTimescale();
+        su2double omega = solver_container[TURB_SOL]->node[iPoint]->GetSolution(1);
+        min_unresolved = TurbT*k*omega/C_mu;
+        break;
+      }
+      default: {
+        cout << "ERROR: The hybrid mediator is not set up for your turb. model!" << endl;
+        exit(EXIT_FAILURE);
+      }
+    }
 
     /*--- Calculate the resolution adequacy parameter ---*/
     r_k = fmax(max_resolved, TKE_MIN) / fmax(min_unresolved, TKE_MIN);
@@ -769,8 +777,7 @@ void CHybrid_Dummy_Mediator::SetupRANSNumerics(CGeometry* geometry,
                                          unsigned short iPoint,
                                          unsigned short jPoint) {
   // This next line is just here for testing purposes.
-  su2double* alpha =
-      solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
+  su2double* alpha = solver_container[HYBRID_SOL]->node[iPoint]->GetSolution();
   rans_numerics->SetHybridParameter(dummy_alpha, dummy_alpha);
 }
 

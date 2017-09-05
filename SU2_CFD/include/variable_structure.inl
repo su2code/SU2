@@ -255,6 +255,8 @@ inline su2double CVariable::GetTurbTimescale(void) { return 0; }
 
 inline su2double CVariable::GetTurbLengthscale(void) { return 0; }
 
+inline su2double CVariable::GetAnisoRatio(void) {return 1; }
+
 inline su2double CVariable::GetResolutionAdequacy(void) {return 1; }
 
 inline su2double CVariable::GetRANSWeight(void) {return 1; }
