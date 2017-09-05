@@ -3666,7 +3666,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0;
-  su2double Mu_RefND, Mu_Temperature_RefND, Mu_SND;
 
   unsigned short iDim;
   
@@ -3808,6 +3807,15 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   if (viscous) {
 
+    /*--- The dimensional viscosity is needed to determine the free-stream conditions.
+          To accomplish this, simply set the non-dimensional coefficients to the
+          dimensional ones. This will be overruled later.---*/
+    config->SetMu_RefND(config->GetMu_Ref());
+    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
+    config->SetMu_SND(config->GetMu_S());
+
+    config->SetMu_ConstantND(config->GetMu_Constant());
+
     /*--- Reynolds based initialization ---*/
 
     if (reynolds_init) {
@@ -3818,30 +3826,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       if (grid_movement) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
       else Velocity_Reynolds = ModVel_FreeStream;
 
-      /*--- Change of measurement system, hard coded value working only with STANDAR AIR model ---*/
-
-      if (standard_air) {
-        Mu_RefND = 1.716E-5;
-        Mu_Temperature_RefND = 273.15; // 273.0
-        Mu_SND = 110.4;                // 111.0
-        if (config->GetSystemMeasurements() == SI) {
-          config->SetMu_RefND(Mu_RefND);
-          config->SetMu_Temperature_RefND(Mu_Temperature_RefND);
-          config->SetMu_SND(Mu_SND);
-        }
-        if (config->GetSystemMeasurements() == US) {
-          Mu_RefND = Mu_RefND/47.88025898;
-          Mu_Temperature_RefND = (Mu_Temperature_RefND - 273.15) * 1.8 + 491.67;
-          Mu_SND = (Mu_SND - 273.15) * 1.8 + 491.67;
-          config->SetMu_RefND(Mu_RefND);
-          config->SetMu_Temperature_RefND(Mu_Temperature_RefND);
-          config->SetMu_SND(Mu_SND);
-        }
-      }
-
       /*--- For viscous flows, pressure will be computed from a density
-         that is found from the Reynolds number. The viscosity is computed
-         from the dimensional version of Sutherland's law ---*/
+            that is found from the Reynolds number. The viscosity is computed
+            from the dimensional version of Sutherland's law or the constant
+            viscosity, depending on the input option.---*/
 
       FluidModel->SetLaminarViscosityModel(config);
 
@@ -3992,16 +3980,16 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   if (viscous) {
     
     /*--- Constant viscosity model ---*/
-    config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
+    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
     
     /*--- Sutherland's model ---*/
     
-    config->SetMu_RefND(config->GetMu_RefND()/Viscosity_Ref);
-    config->SetMu_SND(config->GetMu_SND()/config->GetTemperature_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_RefND()/config->GetTemperature_Ref());
+    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
+    config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
+    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
     
     /* constant thermal conductivity model */
-    config->SetKt_ConstantND(config->GetKt_ConstantND()/Conductivity_Ref);
+    config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
     
     FluidModel->SetLaminarViscosityModel(config);
     FluidModel->SetThermalConductivityModel(config);
@@ -4081,7 +4069,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
         case CONSTANT_VISCOSITY:
           cout << "Viscosity Model: CONSTANT_VISCOSITY  "<< endl;
-          cout << "Laminar Viscosity: " << config->GetMu_ConstantND()*Viscosity_Ref;
+          cout << "Laminar Viscosity: " << config->GetMu_Constant();
           if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
           else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
           cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
@@ -4089,13 +4077,13 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
         case SUTHERLAND:
           cout << "Viscosity Model: SUTHERLAND "<< endl;
-          cout << "Ref. Laminar Viscosity: " << config->GetMu_RefND()*Viscosity_Ref;
+          cout << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
           if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
           else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-          cout << "Ref. Temperature: " << config->GetMu_Temperature_RefND()*config->GetTemperature_Ref();
+          cout << "Ref. Temperature: " << config->GetMu_Temperature_Ref();
           if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
           else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-          cout << "Sutherland Constant: "<< config->GetMu_SND()*config->GetTemperature_Ref();
+          cout << "Sutherland Constant: "<< config->GetMu_S();
           if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
           else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
           cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
@@ -4113,7 +4101,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
         case CONSTANT_CONDUCTIVITY:
           cout << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
-          cout << "Molecular Conductivity: " << config->GetKt_ConstantND()*Conductivity_Ref<< " W/m^2.K." << endl;
+          cout << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << endl;
           cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< endl;
           break;
 
