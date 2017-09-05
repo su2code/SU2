@@ -695,17 +695,22 @@ private:
   Pressure_Critical,   /*!< \brief Critical Pressure for real fluid model.  */
   Density_Critical,   /*!< \brief Critical Density for real fluid model.  */
   Acentric_Factor,   /*!< \brief Acentric Factor for real fluid model.  */
-  Mu_ConstantND,   /*!< \brief Constant Viscosity for ConstantViscosity model.  */
-  Kt_ConstantND,   /*!< \brief Constant Thermal Conductivity for ConstantConductivity model.  */
-  Mu_RefND,   /*!< \brief reference viscosity for Sutherland model.  */
-  Mu_Temperature_RefND,   /*!< \brief reference Temperature for Sutherland model.  */
-  Mu_SND,   /*!< \brief reference S for Sutherland model.  */
-  *Velocity_FreeStream,     /*!< \brief Total velocity of the fluid.  */
-  Energy_FreeStream,     /*!< \brief Total energy of the fluid.  */
-  ModVel_FreeStream,     /*!< \brief Total density of the fluid.  */
-  ModVel_FreeStreamND,     /*!< \brief Total density of the fluid.  */
-  Density_FreeStream,     /*!< \brief Total density of the fluid. */
-  Viscosity_FreeStream,     /*!< \brief Total density of the fluid.  */
+  Mu_Constant,     /*!< \brief Constant viscosity for ConstantViscosity model.  */
+  Mu_ConstantND,   /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
+  Kt_Constant,     /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
+  Kt_ConstantND,   /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
+  Mu_Ref,     /*!< \brief Reference viscosity for Sutherland model.  */
+  Mu_RefND,   /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
+  Mu_Temperature_Ref,     /*!< \brief Reference temperature for Sutherland model.  */
+  Mu_Temperature_RefND,   /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
+  Mu_S,     /*!< \brief Reference S for Sutherland model.  */
+  Mu_SND,   /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  *Velocity_FreeStream,     /*!< \brief Free-stream velocity vector of the fluid.  */
+  Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
+  ModVel_FreeStream,     /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
+  ModVel_FreeStreamND,     /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
+  Density_FreeStream,     /*!< \brief Free-stream density of the fluid. */
+  Viscosity_FreeStream,     /*!< \brief Free-stream viscosity of the fluid.  */
   Tke_FreeStream,     /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
@@ -3103,74 +3108,99 @@ public:
   su2double GetAcentric_Factor(void);
 
   /*!
-   * \brief Get the value of the critical temperature.
-   * \return Critical temperature.
+   * \brief Get the value of the viscosity model.
+   * \return Viscosity model.
    */
   unsigned short GetKind_ViscosityModel(void);
 
   /*!
-   * \brief Get the value of the thermal conductivity .
-   * \return Critical temperature.
+   * \brief Get the value of the thermal conductivity model.
+   * \return Connectivity model.
    */
   unsigned short GetKind_ConductivityModel(void);
 
   /*!
-   * \brief Get the value of the critical temperature.
-   * \return Critical temperature.
+   * \brief Get the value of the constant viscosity.
+   * \return Constant viscosity.
+   */
+  su2double GetMu_Constant(void);
+
+  /*!
+   * \brief Get the value of the non-dimensional constant viscosity.
+   * \return Non-dimensional constant viscosity.
    */
   su2double GetMu_ConstantND(void);
 
   /*!
+   * \brief Get the value of the thermal conductivity.
+   * \return Thermal conductivity.
+   */
+  su2double GetKt_Constant(void);
+  
+  /*!
    * \brief Get the value of the non-dimensional thermal conductivity.
-   * \return Critical temperature.
+   * \return Non-dimensional thermal conductivity.
    */
   su2double GetKt_ConstantND(void);
 
   /*!
-   * \brief Get the value of the critical temperature.
-   * \return Critical temperature.
+   * \brief Get the value of the reference viscosity for Sutherland model.
+   * \return The reference viscosity.
+   */
+  su2double GetMu_Ref(void);
+
+  /*!
+   * \brief Get the value of the non-dimensional reference viscosity for Sutherland model.
+   * \return The non-dimensional reference viscosity.
    */
   su2double GetMu_RefND(void);
 
   /*!
-   * \brief Get the value of the critical temperature.
-   * \return Critical temperature.
+   * \brief Get the value of the reference temperature for Sutherland model.
+   * \return The reference temperature.
+   */
+  su2double GetMu_Temperature_Ref(void);
+
+  /*!
+   * \brief Get the value of the non-dimensional reference temperature for Sutherland model.
+   * \return The non-dimensional reference temperature.
    */
   su2double GetMu_Temperature_RefND(void);
 
   /*!
-   * \brief Get the value of the critical temperature.
-   * \return Critical temperature.
+   * \brief Get the value of the reference S for Sutherland model.
+   * \return The reference S.
+   */
+  su2double GetMu_S(void);
+
+  /*!
+   * \brief Get the value of the non-dimensional reference S for Sutherland model.
+   * \return The non-dimensional reference S.
    */
   su2double GetMu_SND(void);
 
   /*!
-   * \brief Get the value of the critical temperature.
-   * \return Critical temperature.
+   * \brief Set the value of the non-dimensional constant viscosity.
    */
   void SetMu_ConstantND(su2double mu_const);
 
   /*!
-   * \brief Get the value of the critical temperature.
-   * \return Critical temperature.
+   * \brief Set the value of the non-dimensional thermal conductivity.
    */
   void SetKt_ConstantND(su2double kt_const);
 
   /*!
-   * \brief Get the value of the critical temperature.
-   * \return Critical temperature.
+   * \brief Set the value of the non-dimensional reference viscosity for Sutherland model.
    */
   void SetMu_RefND(su2double mu_ref);
 
   /*!
-   * \brief Get the value of the critical temperature.
-   * \return Critical temperature.
+   * \brief Set the value of the non-dimensional reference temperature for Sutherland model.
    */
   void SetMu_Temperature_RefND(su2double mu_Tref);
 
   /*!
-   * \brief Get the value of the critical temperature.
-   * \return Critical temperature.
+   * \brief Set the value of the non-dimensional S for Sutherland model.
    */
   void SetMu_SND(su2double mu_s);
 

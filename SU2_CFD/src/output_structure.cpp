@@ -7786,7 +7786,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
             
           case CONSTANT_VISCOSITY:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
-            Breakdown_file << "Laminar Viscosity: " << config[val_iZone]->GetMu_ConstantND()*config[val_iZone]->GetViscosity_Ref();
+            Breakdown_file << "Laminar Viscosity: " << config[val_iZone]->GetMu_Constant();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
             else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
             Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
@@ -7794,13 +7794,13 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
             
           case SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
-            Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_RefND()*config[val_iZone]->GetViscosity_Ref();
+            Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_Ref();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
             else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
-            Breakdown_file << "Ref. Temperature: " << config[val_iZone]->GetMu_Temperature_RefND()*config[val_iZone]->GetTemperature_Ref();
+            Breakdown_file << "Ref. Temperature: " << config[val_iZone]->GetMu_Temperature_Ref();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
             else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
-            Breakdown_file << "Sutherland Constant: "<< config[val_iZone]->GetMu_SND()*config[val_iZone]->GetTemperature_Ref();
+            Breakdown_file << "Sutherland Constant: "<< config[val_iZone]->GetMu_S();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
             else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
             Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
@@ -7818,7 +7818,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
             
           case CONSTANT_CONDUCTIVITY:
             Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
-            Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_ConstantND()*config[val_iZone]->GetConductivity_Ref()<< " W/m^2.K." << "\n";
+            Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_Constant()<< " W/m^2.K." << "\n";
             Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< "\n";
             break;
             
