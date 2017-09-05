@@ -721,13 +721,23 @@ inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_Viscos
 
 inline unsigned short CConfig::GetKind_ConductivityModel(void) { return Kind_ConductivityModel; }
 
+inline su2double CConfig::GetMu_Constant(void) { return Mu_Constant; }
+
 inline su2double CConfig::GetMu_ConstantND(void) { return Mu_ConstantND; }
+
+inline su2double CConfig::GetKt_Constant(void) { return Kt_Constant; }
 
 inline su2double CConfig::GetKt_ConstantND(void) { return Kt_ConstantND; }
 
+inline su2double CConfig::GetMu_Ref(void) { return Mu_Ref; }
+
 inline su2double CConfig::GetMu_RefND(void) { return Mu_RefND; }
 
+inline su2double CConfig::GetMu_Temperature_Ref(void) { return Mu_Temperature_Ref; }
+
 inline su2double CConfig::GetMu_Temperature_RefND(void) { return Mu_Temperature_RefND; }
+
+inline su2double CConfig::GetMu_S(void) { return Mu_S; }
 
 inline su2double CConfig::GetMu_SND(void) { return Mu_SND; }
 
