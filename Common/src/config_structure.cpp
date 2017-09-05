@@ -2256,6 +2256,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Gas_Constant = 287.058;
     }
   }
+
+  /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
+
+  if (SystemMeasurements == US) {
+
+    /* Correct the viscosities, if they contain the default SI values. */
+    if(fabs(Mu_Constant-1.716E-5) < 1.0E-15) Mu_Constant /= 47.88025898;
+    if(fabs(Mu_Ref-1.716E-5)      < 1.0E-15) Mu_Ref      /= 47.88025898;
+
+    /* Correct the values with temperature dimension, if they contain the default SI values. */
+    if(fabs(Mu_Temperature_Ref-273.15) < 1.0E-8) Mu_Temperature_Ref *= 1.8;
+    if(fabs(Mu_S-110.4)                < 1.0E-8) Mu_S               *= 1.8;
+
+    /* Correct the thermal conductivity, if it contains the default SI value. */
+    if(fabs(Kt_Constant-0.0257) < 1.0E-10) Kt_Constant *= 0.577789317;
+  }
+
   /*--- Check for Measurement System ---*/
   
   if (SystemMeasurements == US && !standard_air) {
