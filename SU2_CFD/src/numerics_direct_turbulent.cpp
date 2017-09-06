@@ -1427,7 +1427,6 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual,
   su2double diff_i_kine, diff_j_kine;
   su2double diff_i_epsi, diff_j_epsi;
   su2double diff_i_zeta, diff_j_zeta;
-  su2double diff_i_f, diff_j_f;
 
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
@@ -1599,7 +1598,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual,
   su2double sigma_kine_i, sigma_kine_j, sigma_epsi_i, sigma_epsi_j;
   su2double sigma_zeta_i, sigma_zeta_j;
   su2double diff_i_kine, diff_i_epsi, diff_j_kine, diff_j_epsi;
-  su2double diff_i_zeta, diff_j_zeta, diff_i_f, diff_j_f;
+  su2double diff_i_zeta, diff_j_zeta;
 
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
@@ -1753,21 +1752,6 @@ CSourcePieceWise_TurbKE::CSourcePieceWise_TurbKE(unsigned short val_nDim,
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
   /*--- Closure constants ---*/
-  /*sigma_k = constants[0];
-  sigma_e = constants[1];
-  C_mu    = constants[2];
-  C_e1    = constants[3];
-  C_e2    = constants[4];*/
-
-  /* RNG
-  C_mu    = constants[0];
-  sigma_k = constants[1];
-  sigma_e = constants[2];
-  C_e1    = constants[4];
-  C_e2    = constants[5];
-  eta_o   = constants[6];
-  beta    = constants[7];
-  */
 
   /* zeta f */
   C_mu    = constants[0];
@@ -1866,7 +1850,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   const su2double muT = Eddy_Viscosity_i;
 
   const su2double nu  = mu/rho;
-  const su2double nuT = muT/rho;
 
   const su2double S   = StrainMag_i; //*sqrt(2.0) already included
   const su2double Vol = Volume;
@@ -1928,8 +1911,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   // Time scale w/out stagnation point anomaly fix
   su2double Tf = T1;
   if (T3>Tf) Tf = T3;
-
-  const su2double Tsq = T*T;
 
 
   //--- Model length scale ---//
@@ -2067,7 +2048,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   //... production
   const su2double C1m6 = C_1 - 6.0;
-  const su2double C1m1 = C_1 - 1.0;
   const su2double ttC1m1 = (2.0/3.0)*(C_1 - 1.0);
   //const su2double C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(zeta-0.55)));
   const su2double C_2f = C_2p;
@@ -2087,11 +2067,8 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   Df_f = 1.0/Lsq;
 
-
-  // FIXME: Do we always want to do this?  Is there a debug mode this
-  // could go into?
-
   // check for nans
+#ifndef NDEBUG
   bool found_nan = (std::isnan(Pk)  || std::isnan(Dk)  ||
                     std::isnan(Pe)  || std::isnan(De)  ||
                     std::isnan(Pv2) || std::isnan(Dv2) ||
@@ -2112,6 +2089,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
     std::cout << "TDR eqn    = " << Pe << " - " << De << std::endl;
     std::cout << "v2  eqn    = " << Pv2 << " - " << Dv2 << std::endl;
   }
+#endif
 
 
   // form source term and Jacobian...

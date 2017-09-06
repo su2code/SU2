@@ -239,9 +239,6 @@ CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi,
 }
 
 CTurbKEVariable::~CTurbKEVariable(void) {
-  // necessary?  I guess so, but why isn't this in the base class dtor?
-  //if (TS_Source != NULL) delete [] TS_Source;
-
 }
 
 void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist,
@@ -250,7 +247,6 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist,
                                 su2double StrainMag, su2double VelInf,
                                 su2double L_Inf, su2double tol) {
 
-  unsigned short iDim;
   su2double C_mu, C_T, C_L, C_eta;
   su2double nu, temp, scalar_min;
 

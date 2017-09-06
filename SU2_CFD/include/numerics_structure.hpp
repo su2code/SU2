@@ -3563,17 +3563,6 @@ public:
   ~CAvgGrad_TurbKE(void);
 
   /*!
-   * \brief Sets value of tubulence time and lengthscale.
-   */
-  void SetLm(su2double val_Lm_i, su2double val_Lm_j) {
-    Lm_i = val_Lm_i; Lm_j = val_Lm_j;
-  }
-
-  void SetTm(su2double val_Tm_i, su2double val_Tm_j) {
-    Tm_i = val_Tm_i; Tm_j = val_Tm_j;
-  }
-
-  /*!
    * \brief Compute the viscous turbulent residual using an average of gradients
    * \param[out] val_residual - Pointer to the total residual.
    * \param[out] Jacobian_i - Jacobian wrt node i soln (for implicit).
@@ -3701,17 +3690,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CAvgGradCorrected_TurbKE(void);
-
-  /*!
-   * \brief Sets value of turbulence length and timescale.
-   */
-  void SetLm(su2double val_Lm_i, su2double val_Lm_j) {
-    Lm_i = val_Lm_i; Lm_j = val_Lm_j;
-  }
-
-  void SetTm(su2double val_Tm_i, su2double val_Tm_j) {
-    Tm_i = val_Tm_i; Tm_j = val_Tm_j;
-  }
 
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients wtih correction.
