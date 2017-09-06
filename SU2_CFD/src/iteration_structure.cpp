@@ -456,7 +456,6 @@ void CFluidIteration::Iterate(COutput *output,
   integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
   
-  
   if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
       ((config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) && !frozen_visc)) {
     
@@ -492,11 +491,14 @@ void CFluidIteration::Iterate(COutput *output,
   }
   
   
-  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() )
-    
   /*--- Write the convergence history (only screen output) ---*/
+
+  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) {
     
     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+    
+  }
+  
 }
 
 void CFluidIteration::Update(COutput *output,
@@ -1829,8 +1831,8 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
 
     /*--- Set the convergence criteria (only residual possible) ---*/
 
-    integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0],config_container[val_iZone],
-                                                                          IntIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+    integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0], config_container[val_iZone],
+                                                                          IntIter, log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
     }
   if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
