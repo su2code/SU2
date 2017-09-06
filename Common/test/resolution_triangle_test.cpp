@@ -199,11 +199,7 @@ int main() {
 
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
-<<<<<<< HEAD
     su2double** Mij = geometry->node[iPoint]->GetResolutionTensor();
-=======
-    vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
->>>>>>> origin/pecos-v2-f
 
     // ---------------------------------------------------------------------------
     // Check that the values of Mij are correct

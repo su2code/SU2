@@ -44,9 +44,6 @@ libSU2Core_cxx_flags += @LAPACK_CXX@
 libSU2Core_libadd += @LAPACK_LD@
 # endif
 
-libSU2Core_a_CXXFLAGS = $(libSU2Core_cxx_flags)
-libSU2Core_a_LIBADD = $(libSU2Core_libadd)
-
 check_PROGRAMS  =
 check_PROGRAMS += aniso_viscous_flux_inc
 check_PROGRAMS += aniso_viscous_flux
