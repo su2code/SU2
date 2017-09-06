@@ -471,7 +471,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 #endif
   
   /*--- Check the subspace size ---*/
-  
+  //cout<< "IN BCGSTAB LinSolver" << endl;
   if (m < 1) {
     if (rank == MASTER_NODE) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
@@ -655,6 +655,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     switch (config->GetKind_Linear_Solver()) {
       case BCGSTAB:
         IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
+        //IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, true);
         break;
       case FGMRES:
         IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);

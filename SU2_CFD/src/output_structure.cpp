@@ -3006,12 +3006,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     if (hybrid && (config->GetKind_Hybrid_Blending() == CONVECTIVE)) {
 
       /*--- Loop over this partition to collect the current variable ---*/
-
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
+        
         /*--- Check for halos & write only if requested ---*/
-
+        
         if (!Local_Halo[iPoint] || Wrt_Halo) {
 
           /*--- Load buffers with the extra hybrid variables. ---*/
@@ -3022,9 +3022,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           jPoint++;
         }
       }
-
+      
       /*--- Gather the data on the master node. ---*/
-
+      
 #ifdef HAVE_MPI
       SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -3034,16 +3034,16 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++)
         Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
 #endif
-
+      
       /*--- The master node unpacks and sorts this variable by global index ---*/
-
+      
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_Extra_Hybrid_Vars;
         for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-
+            
             /*--- Get global index, then loop over each variable and store ---*/
-
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar + 0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
             Data[iVar + 1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
@@ -4314,6 +4314,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     case SA:     SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
     case SA_NEG: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
     case SST:     SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
+    case KE:   	 SPRINTF (turb_resid, ",\" Res_Turb[0]\",\" Res_Turb[1]\",\" Res_Turb[2]\",\" Res_Turb[3]\""); break;
   }
   char hybrid_resid[] = ",\"Res_Hybrid[0]\"";
   char adj_turb_resid[]= ",\"Res_AdjTurb[0]\"";
@@ -4530,9 +4531,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     su2double *TotalStaticEfficiency = NULL,
     *TotalTotalEfficiency = NULL,
-    *KineticEnergyLoss     = NULL,
-    *TotalPressureLoss     = NULL,
-    *MassFlowIn           = NULL,
+    *KineticEnergyLoss 	  = NULL,
+    *TotalPressureLoss 	  = NULL,
+    *MassFlowIn 	  = NULL,
     *MassFlowOut          = NULL,
     *FlowAngleIn          = NULL,
     *FlowAngleOut         = NULL,
@@ -4594,6 +4595,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SA:     nVar_Turb = 1; break;
         case SA_NEG: nVar_Turb = 1; break;
         case SST:    nVar_Turb = 2; break;
+        case KE:     nVar_Turb = 4; break;
       }
     }
     if (hybrid) nVar_Hybrid = 1;
@@ -4613,9 +4615,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SA:     nVar_AdjTurb = 1; break;
         case SA_NEG: nVar_AdjTurb = 1; break;
         case SST:    nVar_AdjTurb = 2; break;
+        case KE:     nVar_AdjTurb = 4; break;
       }
     }
-
+    
     /*--- Allocate memory for the residual ---*/
     residual_flow       = new su2double[nVar_Flow];
     residual_turbulent  = new su2double[nVar_Turb];
@@ -4645,9 +4648,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Allocate memory for the turboperformace ---*/
     TotalStaticEfficiency = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     TotalTotalEfficiency  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    KineticEnergyLoss     = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalPressureLoss     = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MassFlowIn           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    KineticEnergyLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    TotalPressureLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    MassFlowIn 		  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     MassFlowOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     FlowAngleIn           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     FlowAngleOut          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
@@ -4821,15 +4824,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         for (iVar = 0; iVar < nVar_Flow; iVar++)
           residual_flow[iVar] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
         
-        /*--- Turbulent residual ---*/
-        
+        /*--- Turbulent residual ---*/        
         if (turbulent) {
           for (iVar = 0; iVar < nVar_Turb; iVar++)
             residual_turbulent[iVar] = solver_container[val_iZone][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
         }
         
         /*--- Transition residual ---*/
-        
         if (transition) {
           for (iVar = 0; iVar < nVar_Trans; iVar++)
             residual_transition[iVar] = solver_container[val_iZone][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
@@ -5102,6 +5103,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               switch(nVar_Turb) {
                 case 1: SPRINTF (turb_resid, ", %12.10f", log10 (residual_turbulent[0])); break;
                 case 2: SPRINTF (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
+	        case 4: SPRINTF (turb_resid, ", %12.10f, %12.10f, %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1]), log10(residual_turbulent[2]), log10(residual_turbulent[3])); break;
               }
             }
 
@@ -5117,6 +5119,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (output_massflow && !output_1d) {
               SPRINTF(massflow_outputs,", %12.10f", Total_Mdot);
             }
+            
             
             /*--- Transition residual ---*/
             if (transition) {
@@ -5485,6 +5488,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               case SA:     cout << "       Res[nu]"; break;
               case SA_NEG: cout << "       Res[nu]"; break;
               case SST:     cout << "     Res[kine]" << "     Res[omega]"; break;
+              case KE:	   cout << "      Res[kine]" << "      Res[epsi]" << "       Res[zeta]" << "       Res[f]    "; break;
             }
             
             if (hybrid)
@@ -5746,7 +5750,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           switch(nVar_Turb) {
             case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
             case 2: cout.width(14); cout << log10(residual_turbulent[0]);
-              cout.width(15); cout << log10(residual_turbulent[1]); break;
+                    cout.width(15); cout << log10(residual_turbulent[1]); break;
+            case 4: cout.width(14); cout << log10(residual_turbulent[0]);
+                    cout.width(15); cout << log10(residual_turbulent[1]);
+                    cout.width(16); cout << log10(residual_turbulent[2]);
+                    cout.width(17); cout << log10(residual_turbulent[3]); break;
           }
           
           if (hybrid) {
@@ -7419,7 +7427,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 #ifdef HAVE_MPI
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
-    
+    //jump
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
       Wrt_Vol = false;
@@ -7490,7 +7498,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
       SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
-      
+      //cout << "Rank:" << rank << " Wrt_Vol:" << Wrt_Vol << endl;      
       if (Wrt_Vol) {
         
         switch (FileFormat) {
@@ -10761,8 +10769,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par += 1;
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
-
-
+    
     /*--- New variables get registered here before the end of the loop. ---*/
     
   }
@@ -11006,7 +11013,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (config->GetWrt_SharpEdges()) {
           Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
         }
-
+        
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
         

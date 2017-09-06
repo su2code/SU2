@@ -462,6 +462,7 @@ private:
   unsigned short Kind_Hybrid_Aniso_Model; /*!< \brief Hybrid RANS/LES subgrid anisotropy model definition */
   su2double Hybrid_Model_Constant; /*!< \brief Model constant relating the approximate second order structure function to the unresolved turbulent kinetic energy */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
+  Kind_FreeStreamTurbOption, /*!< \brief Kind of freestream boundary condition (Only used for two-equation models) */
   Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
@@ -670,6 +671,7 @@ private:
   Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
   Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
+  TurbLength_FreeStream, /*!< \brief Freestream turbulent lengthscale */
   NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,  /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
   SecondaryFlow_ActDisk,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
@@ -1659,6 +1661,12 @@ public:
    */
   su2double GetTurb2LamViscRatio_FreeStream(void);
   
+  /*!
+   * \brief Get the freestream turbulent length scale
+   * \return Freestream turbulent length scale
+   */
+  su2double GetTurbLength_FreeStream(void);
+
   /*!
    * \brief Get the vector of free stream mass fraction values.
    * \return Ratio of species mass to mixture mass.
@@ -3710,6 +3718,12 @@ public:
    */
   unsigned short GetKind_Inlet(void);
   
+  /*!
+   * \brief Free stream option to initialize the turbulence solution
+   * \return The type of freestream turbulence specification
+   */
+  unsigned short GetKind_FreeStreamTurbOption(void);
+
   
   /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.

@@ -556,7 +556,7 @@ void CQuadrilateral::SetResolutionTensor(su2double **val_coord) {
     }
   }
 
-};
+}
 
 void CQuadrilateral::Change_Orientation(void) {
 	unsigned long jPoint, Point_3;

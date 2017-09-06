@@ -178,7 +178,6 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
 /*!
  * \brief different solver types for the CFD component
  */
-// TODO: Should we be using a different solver?
 enum ENUM_SOLVER {
   NO_SOLVER = 0,						/*!< \brief Definition of no solver. */
   EULER = 1,							/*!< \brief Definition of the Euler's solver. */
@@ -629,12 +628,14 @@ enum ENUM_TURB_MODEL {
   SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
+  KE      = 4  /*!< \brief Kind of Turbulence model (Zeta KE). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST);
+("SST", SST)
+("KE", KE);
 
 /*!
  * \brief Types of hybrid RANS/LES blending schemes.
@@ -898,6 +899,17 @@ static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
 ("MASS_FLOW", MASS_FLOW)
 ("INPUT_FILE", INPUT_FILE);
+
+/*!
+ * \brief types freestream boundary condition specification
+ */
+enum FREESTREAM_TURB_OPTION {
+  EDDY_VISC_RATIO = 1,   /*!< \brief User specifies eddy viscosity ratio and turbulence intensity */
+  TURB_LENGTHSCALE = 2   /*!< \brief User specifies turbulent lengthscale and turbulence intensity */
+};
+static const map<string, FREESTREAM_TURB_OPTION> FreeStreamTurbOption_Map = CCreateMap<string, FREESTREAM_TURB_OPTION>
+("EDDY_VISC_RATIO", EDDY_VISC_RATIO)
+("TURB_LENGTHSCALE", TURB_LENGTHSCALE);
 
 /*!
  * \brief types engine inflow boundary treatments

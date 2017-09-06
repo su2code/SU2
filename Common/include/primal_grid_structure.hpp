@@ -1055,7 +1055,7 @@ public:
 	void Change_Orientation(void);
 
   /*!
-   * \brief Sets the resolution tensor for a hexahedral element.
+   *         across the cell in the global coordinates.
    * \param[in] val_coord - Coordinates of the element.
    */
   void SetResolutionTensor(su2double **val_coord);

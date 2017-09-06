@@ -433,6 +433,8 @@ inline su2double CConfig::GetTurbulenceIntensity_FreeStream(void) { return Turbu
 
 inline su2double CConfig::GetTurb2LamViscRatio_FreeStream(void) { return Turb2LamViscRatio_FreeStream;}
 
+inline su2double CConfig::GetTurbLength_FreeStream(void) { return TurbLength_FreeStream;}
+
 inline su2double* CConfig::GetMassFrac_FreeStream(void) { return MassFrac_FreeStream; }
 
 inline su2double CConfig::GetLength_Reynolds(void) { return Length_Reynolds; }
@@ -664,6 +666,8 @@ inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel; }
 
 inline unsigned short CConfig::GetKind_FreeStreamOption(void) { return Kind_FreeStreamOption; } 
+
+inline unsigned short CConfig::GetKind_FreeStreamTurbOption(void) { return Kind_FreeStreamTurbOption; }
 
 inline unsigned short CConfig::GetKind_InitOption(void) { return Kind_InitOption; }
 

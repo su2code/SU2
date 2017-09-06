@@ -1721,6 +1721,28 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   virtual su2double GetCrossDiff(void) { return 0.0; };
+
+
+  /*!
+   * \brief Set the turbulence scales of the zeta-f KE model.
+   * \param[in] val_viscosity - Value of the vicosity.
+   * \param[in] val_dist - Value of the distance to the wall.
+   * \param[in] val_density - Value of the density.
+   */
+  virtual void SetTLFunc(su2double val_viscosity, su2double val_dist,
+                         su2double val_density, su2double val_kine, su2double val_epsi,
+                         su2double val_zeta, su2double StrainMag, su2double VelMag,
+                         su2double L_Inf, su2double solve_tol);
+
+  /*!
+   * \brief Get the first blending function.
+   */
+  virtual su2double GetTm(void);
+
+  /*!
+   * \brief Get the second blending function.
+   */
+  virtual su2double GetLm(void);
   
   /*!
    * \brief Get the value of the eddy viscosity.
@@ -3818,6 +3840,128 @@ public:
 };
 
 /*!
+ * \class CHybridVariable
+ * \brief Base class for the "hybrid parameters"; the variables defining the
+ *        hybridization of RANS/LES.
+ * \ingroup Hybrid_Parameter_Model
+ * \author C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CHybridVariable : public CVariable {
+protected:
+  su2double Resolution_Adequacy; /*!< \brief A measure of the ability of the grid to resolve the turbulence */
+  su2double RANS_Weight; /*!< \brief The weight given to the RANS solution
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CHybridVariable(void);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CHybridVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CHybridVariable(unsigned short val_nDim, unsigned short val_nvar,
+                    CConfig *config);
+
+  /*!
+   * \brief Get the value of the resolution adequacy
+   * \return the value of the resolution adequacy
+   */
+  su2double GetResolutionAdequacy();
+
+  /*!
+   * \brief Set the value of the resolution adequacy
+   * \param[in] val_r_k - The value of the resolution adequacy
+   */
+  void SetResolutionAdequacy(su2double val_r_k);
+
+  /*!
+   * \brief Get the value of the RANS weight
+   * \return the RANS weight
+   */
+  su2double GetRANSWeight();
+
+  /*!
+   * \brief Set the value of the blending coefficient.
+   * \param[in] val_w_rans - RANS weight
+   */
+  void SetRANSWeight(su2double val_w_rans);
+};
+
+/*! swh
+ * \class CTurbKEVariable
+ * \brief Main class for defining the variables of the turbulence model.
+ * \ingroup Turbulence_Model
+ * \author S. Haering
+ * \version 4.3.x "Cardinal"
+ */
+class CTurbKEVariable : public CTurbVariable {
+
+protected:
+  su2double sigma_e, sigma_k, sigma_z, C_e1o, C_e2, C1, C_2p, C_T, C_L, C_eta;
+  su2double Tm,		/*!< \brief T_m k-eps. */
+    Lm,		        /*!< \brief L_m k-eps */
+    Re_T;
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTurbKEVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_rho_kine - Turbulent variable value (initialization value).
+   * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+   * \param[in] val_muT - Turbulent variable value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] constants -
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi,
+                  su2double val_zeta, su2double val_f,
+                  su2double val_muT, su2double val_Tm, su2double val_Lm,
+                  unsigned short val_nDim, unsigned short val_nvar,
+                  su2double *constants, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurbKEVariable(void);
+
+  /*!
+   * \brief Set the turbulence scales of the zeta-f KE model.
+   * \param[in] val_viscosity - Value of the vicosity.
+   * \param[in] val_dist - Value of the distance to the wall.
+   * \param[in] val_density - Value of the density.
+   */
+  void SetTLFunc(su2double val_viscosity, su2double val_dist,
+                 su2double val_density, su2double val_kine, su2double val_epsi,
+                 su2double val_zeta, su2double StrainMag, su2double VelMag,
+                 su2double L_Inf, su2double solve_tol);
+
+  /*!
+   * \brief Get the first blending function.
+   */
+  su2double GetTm(void);
+
+  /*!
+   * \brief Get the second blending function.
+   */
+  su2double GetLm(void);
+
+};
+
+/*!
  * \class CTurbSSTVariable
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
@@ -3900,63 +4044,6 @@ public:
    * \param[in] val_turb_L - Large eddy lengthscale of the turbulence
    */
   void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
-};
-
-/*!
- * \class CHybridVariable
- * \brief Base class for the "hybrid parameters"; the variables defining the
- *        hybridization of RANS/LES.
- * \ingroup Hybrid_Parameter_Model
- * \author C. Pederson
- * \version 5.0.0 "Raven"
- */
-class CHybridVariable : public CVariable {
-protected:
-  su2double Resolution_Adequacy; /*!< \brief A measure of the ability of the grid to resolve the turbulence */
-  su2double RANS_Weight; /*!< \brief The weight given to the RANS solution
-public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CHybridVariable(void);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  virtual ~CHybridVariable(void);
-
-  /*!
-   * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CHybridVariable(unsigned short val_nDim, unsigned short val_nvar,
-                    CConfig *config);
-
-  /*!
-   * \brief Get the value of the resolution adequacy
-   * \return the value of the resolution adequacy
-   */
-  su2double GetResolutionAdequacy();
-
-  /*!
-   * \brief Set the value of the resolution adequacy
-   * \param[in] val_r_k - The value of the resolution adequacy
-   */
-  void SetResolutionAdequacy(su2double val_r_k);
-
-  /*!
-   * \brief Get the value of the RANS weight
-   * \return the RANS weight
-   */
-  su2double GetRANSWeight();
-
-  /*!
-   * \brief Set the value of the blending coefficient.
-   * \param[in] val_w_rans - RANS weight
-   */
-  void SetRANSWeight(su2double val_w_rans);
 };
 
 /*!

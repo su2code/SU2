@@ -154,7 +154,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
   F1   = 1.0;
   F2   = 0.0;
   CDkw = 0.0;
-
+  
   /*--- Initialization of eddy viscosity ---*/
   
   muT = val_muT;
@@ -204,4 +204,86 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
   arg2 = max(2.0*arg2A, arg2B);
   F2 = tanh(pow(arg2, 2.0));
   
+}
+
+
+// swh
+CTurbKEVariable::CTurbKEVariable(void) : CTurbVariable() { }
+
+CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi,
+                                 su2double val_zeta, su2double val_f,
+                                 su2double val_muT, su2double val_Tm,
+                                 su2double val_Lm, unsigned short val_nDim,
+                                 unsigned short val_nvar,
+                                 su2double *constants, CConfig *config)
+  :
+  CTurbVariable(val_nDim, val_nvar, config) {
+
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+  /*--- Initialization of variables ---*/
+  Solution[0] = val_kine; Solution_Old[0] = val_kine;
+  Solution[1] = val_epsi;	Solution_Old[1] = val_epsi;
+  Solution[2] = val_zeta; Solution_Old[2] = val_zeta;
+  Solution[3] = val_f;	Solution_Old[3] = val_f;
+  Tm  = val_Tm;
+  Lm  = val_Lm;
+
+  /*--- Initialization of eddy viscosity ---*/  
+  muT = val_muT;
+
+  /*--- Allocate and initialize solution for the dual time strategy ---*/
+  if (dual_time) {
+    Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_epsi;
+    Solution_time_n1[0] = val_kine; Solution_time_n1[1] = val_epsi;
+    Solution_time_n[2]  = val_zeta; Solution_time_n[3]  = val_f;
+    Solution_time_n1[2] = val_zeta; Solution_time_n1[3] = val_f;
+  }
+
+}
+
+CTurbKEVariable::~CTurbKEVariable(void) {
+  // necessary?  I guess so, but why isn't this in the base class dtor?
+  //if (TS_Source != NULL) delete [] TS_Source;
+
+}
+
+void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist,
+                                su2double val_density, su2double val_kine,
+                                su2double val_epsi,su2double val_zeta,
+                                su2double StrainMag, su2double VelInf,
+                                su2double L_Inf, su2double tol) {
+
+  unsigned short iDim;
+  su2double C_mu, C_T, C_L, C_eta;
+  su2double nu, temp, scalar_min;
+
+  /*--- Molecular kinematic viscosity ---*/
+  nu = val_viscosity/val_density;
+
+  // TODO: move these, already in constants...
+
+  //--- v2-f ---//
+  C_mu = 0.22;
+  C_T = 6.0;
+  C_L = 0.23;
+  C_eta = 70.0;
+
+  scalar_min = tol/(VelInf*VelInf);
+  su2double zeta = max(val_zeta/val_kine, scalar_min);
+  su2double tke = max(val_kine, scalar_min*VelInf*VelInf);
+  su2double tdr = max(val_epsi, scalar_min*VelInf*VelInf*VelInf/L_Inf);
+  su2double v2 = max(val_zeta, zeta*tke);
+  su2double S = max(StrainMag,scalar_min*VelInf/L_Inf);
+
+
+  //--- Model time scale ---//
+  temp = max(tke/tdr,C_T*sqrt(nu/tdr));
+  Tm = min(temp,0.6*tke/(sqrt(3.0)*C_mu*S*v2)); // yes, sqrt(3) b/c of S def
+
+  //--- Model length scale ---//
+  temp = min(pow(tke,1.5)/tdr, pow(tke,1.5)/(sqrt(3.0)*C_mu*S*v2));
+  Lm = C_L * max(temp,C_eta*pow(pow(nu,3.0)/tdr,0.25));
+
 }

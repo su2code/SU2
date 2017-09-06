@@ -676,6 +676,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
+
+  /*!\brief FREESTREAM_TURB_OPTION  \n DESCRIPTION: Freestream turbulence boundary condition specification. \n For two equation models, two variables are needed. This is the turbulent intensity and one more variable \n OPTIONS: see \link FreeStreamTurbOption_Map \endlink \n DEFAULT: EDDY_VISC_RATIO \ingroup Config*/
+  addEnumOption("FREESTREAM_TURB_OPTION", Kind_FreeStreamTurbOption, FreeStreamTurbOption_Map, EDDY_VISC_RATIO);
+  /*!\brief FREESTREAM_TURB_LENGTH \n DESCRIPTION: Freestream turbulent length scale (dimensional). Used to set the initial, freestream, and inlet turbulence conditions \n DEFAULT: 0.05 \ingroup Config */
+  addDoubleOption("FREESTREAM_TURB_LENGTH", TurbLength_FreeStream, 3.0e-5);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
   /* DESCRIPTION:  */
@@ -1294,7 +1299,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
   /*!\brief WRT_RESIDUALS
    *  \n DESCRIPTION: Output residual info to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
+  //  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
+  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, true);
   /*!\brief WRT_LIMITERS
    *  \n DESCRIPTION: Output limiter value information to solution/restart file  \ingroup Config*/
   addBoolOption("WRT_LIMITERS", Wrt_Limiters, false);
