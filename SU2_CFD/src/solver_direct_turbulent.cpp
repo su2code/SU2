@@ -3662,6 +3662,19 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config,
   /*--- Initialize value for model constants ---*/
   constants = new su2double[11];
 
+  /* v2-f */
+  constants[0]  = 0.22;   //C_mu
+  constants[1]  = 1.0/1.0;    //1/sigma_k
+  constants[2]  = 1.0/1.3;    //1/sigma_e
+  constants[3]  = 1.0/1.0;    //1/sigma_z
+  constants[4]  = 1.4;    //C_e1^o
+  constants[5]  = 1.9;    //C_e2
+  constants[6]  = 1.4;    //C_1
+  constants[7]  = 0.3;   //C_2p
+  constants[8]  = 6.0;    //C_T
+  constants[9]  = 0.23;   //C_L
+  constants[10] = 70.0;   //C_eta
+
   /*--- Initialize lower and upper limits---*/
   lowerlimit = new su2double[nVar];
   upperlimit = new su2double[nVar];
