@@ -1805,11 +1805,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   // NB: 1e-8 is arbitrary
   const su2double tke_lim = max(tke, 1e-8);
-  //const su2double tke_lim = max(tke, 1e-14);
-
-  // 36*nu ensures T3 <= 1 (which is arbitrary)
-  //const su2double tdr_lim = max(tdr, 36.0*Laminar_Viscosity_i/Density_i);
-  //const su2double tdr_lim = max(tdr, Laminar_Viscosity_i/Density_i);
   const su2double tdr_lim = max(tdr, 1e-4*Laminar_Viscosity_i/Density_i);
 
   // if (tke < 0.0) {
@@ -1844,12 +1839,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   // Grab other quantities for convenience/readability
   const su2double rho = Density_i;
-
-  const su2double mu  = Laminar_Viscosity_i;
   const su2double muT = Eddy_Viscosity_i;
-
-  const su2double nu  = mu/rho;
-
   const su2double S   = StrainMag_i; //*sqrt(2.0) already included
   const su2double Vol = Volume;
 
@@ -1857,83 +1847,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   for (unsigned int iDim = 0; iDim < nDim; iDim++)
     diverg += PrimVar_Grad_i[iDim+1][iDim];
 
-  // NB: We determine time and length scales here due to Jacobian branching
-  // NB: In current Jacobian approx, derivatives of T and L aren't used anyway
+  const su2double T1 = tke_lim/tdr_lim;
 
-  //--- Model time scale ---//
-  const su2double T1     = tke_lim/tdr_lim;
-  const su2double T1_rk  =  1.0/(rho*tdr);
-  const su2double T1_re  = - T1/(rho*tdr);
-  const su2double T1_rv2 = 0.0;
-
-  const su2double T2     = 0.6/(sqrt(3.0)*C_mu*S*zeta);
-  const su2double T2_rk  = 0.0;
-  const su2double T2_re  = 0.0;
-  const su2double T2_rv2 = 0.0;
-
-  const su2double T3     = C_T*sqrt(nu/tdr_lim);
-  const su2double T3_rk  = 0.0;
-  const su2double T3_re  = -0.5*T3/(rho*tdr);
-  const su2double T3_rv2 = 0.0;
-
-  // T = max(min(T1,T2),T3)
-  su2double T     = T1;
-  su2double T_rk  = T1_rk;
-  su2double T_re  = T1_re;
-  su2double T_rv2 = T1_rv2;
-
-  if (T>T2) {
-    T = T2;
-    T_rk = T2_rk; T_re = T2_re; T_rv2 = T2_rv2;
-  }
-
-  if (T<T3) {
-    T = T3;
-    T_rk = T3_rk; T_re = T3_re; T_rv2 = T3_rv2;
-  }
-
-  // Time scale w/out stagnation point anomaly fix
-  su2double Tf = T1;
-  if (T3>Tf) Tf = T3;
-
-
-  //--- Model length scale ---//
-  const su2double L1     = pow(tke_lim,1.5)/tdr_lim;
-  const su2double L1_rk  =    -L1/(rho*tke);
-  const su2double L1_re  = 1.5*L1/(rho*tdr);
-  const su2double L1_rv2 = 0.0;
-
-  const su2double L2     = sqrt(tke_lim)/(sqrt(3.0)*C_mu*S*zeta);
-  const su2double L2_rk  = 0.0;
-  const su2double L2_re  = 0.0;
-  const su2double L2_rv2 = 0.0;
-
-  const su2double L3     = C_eta*pow(pow(nu,3.0)/tdr_lim,0.25);
-  const su2double L3_rk  = 0.0;
-  const su2double L3_re  = -0.25*L3/(rho*tdr);
-  const su2double L3_rv2 = 0.0;
-
-  // L = max(min(L1,L2),L3)... mult by C_L below
-  su2double L     = L1;
-  su2double L_rk  = L1_rk;
-  su2double L_re  = L1_re;
-  su2double L_rv2 = L1_rv2;
-
-  if (L>L2) {
-    L = L2;
-    L_rk = L2_rk; L_re = L2_re; L_rv2 = L2_rv2;
-  }
-
-  if (L<L3) {
-    L = L3;
-    L_rk = L3_rk; L_re = L3_re; L_rv2 = L3_rv2;
-  }
-
-  L *= C_L;
-  L_rk *= C_L; L_re *= C_L; L_rv2 *= C_L;
-
-  const su2double Lsq = L*L;
-
+  const su2double Lsq = Lm*Lm;
 
   //--- v2-f ---//
 
@@ -1955,13 +1871,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   Pk_re  = 0.0;
   Pk_rv2 = 0.0;
 
-  // //... dissipation
-  // Dk     = rho*tdr;
-
-  // Dk_rk  = 0.0;
-  // Dk_re  = 1.0;
-  // Dk_rv2 = 0.0;
-
   //... dissipation
   Dk     = rho*tke/T1;
 
@@ -1975,21 +1884,20 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   su2double De, De_rk, De_re, De_rv2;
 
   // NB: C_e1 depends on tke and v2 in v2-f
-  //const su2double C_e1 = C_e1o*(1.0+0.045*sqrt(tke/v2));
   const su2double C_e1 = C_e1o*(1.0+0.045*sqrt(1.0/zeta));
 
   // ... production
-  Pe = C_e1*Pk/T;
+  Pe = C_e1*Pk/Tm;
 
   Pe_rk  = 0.0;
   Pe_re  = 0.0;
   Pe_rv2 = 0.0;
 
   // ... dissipation
-  De = C_e2*rho*tdr/T;
+  De = C_e2*rho*tdr/Tm;
 
   De_rk  = 0.0;
-  De_re  = C_e2/T;
+  De_re  = C_e2/Tm;
   De_rv2 = 0.0;
 
 
@@ -1998,8 +1906,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   su2double Dv2, Dv2_rk, Dv2_re, Dv2_rv2, Dv2_f;
 
   // ... production
-  //Pv2 = rho*tke*f;
-
   // Limit production of v2 based on max zeta = 2/3
   Pv2 = rho * min( tke*f, 2.0*Pk/3.0 + 5.0*v2/T1 );
 
@@ -2008,22 +1914,13 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   Pv2_rv2 = 0.0;
   Pv2_f   = 0.0;
 
-  // // ... dissipation
-  // Dv2     =  6.0*(v2/tke)*rho*tdr;
-
-  // Dv2_rk  = -6.0*(v2/tke)*(tdr/tke);
-  // Dv2_re  =  6.0*(v2/tke);
-  // Dv2_rv2 =  6.0*(tdr/tke);
-  // Dv2_f   =  0.0;
-
   // ... dissipation
-  Dv2     =  6.0*rho*v2/T1;
+  Dv2     =  6.0*rho*v2/Tm;
 
   Dv2_rk  = 0.0;
   Dv2_re  = 0.0;
   Dv2_rv2 = 6.0/T1;
   Dv2_f   = 0.0;
-
 
   // f equation...
   su2double Pf;
@@ -2032,16 +1929,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   //... production
   const su2double C1m6 = C_1 - 6.0;
   const su2double ttC1m1 = (2.0/3.0)*(C_1 - 1.0);
-  //const su2double C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(zeta-0.55)));
   const su2double C_2f = C_2p;
 
-  //Pf = (C_2f*Pk/tke - (C1m6*v2/tke - ttC1m1)*rho/T) / Lsq;
-  Pf = (C_2f*Pk/tke_lim - (C1m6*zeta - ttC1m1)/T) / Lsq;
-  //Pf = (C_2f*Pk/tke_lim + 5.0*zeta/T1 - (C1m1*zeta - ttC1m1)/T) / Lsq;
-  //Pf = (C_2f*Pk/tke_lim + 5.0*zeta/Tf - (C1m1*zeta - ttC1m1)/T) / Lsq;
-  //Pf = (C_2f*Pk/tke_lim + 5.0*zeta/T - (C1m1*zeta - ttC1m1)/T) / Lsq;
-  //Pf = (C_2f*C_mu*zeta*T*S*S - (C1m6*zeta - ttC1m1)/T) / Lsq;
-  //Pf = (C_2f*C_mu*zeta*Tf*S*S - (C1m6*zeta - ttC1m1)/Tf) / Lsq;
+  Pf = (C_2f*Pk/tke_lim - (C1m6*zeta - ttC1m1)/Tm) / Lsq;
 
   // not keeping any derivatives of Pf
 
@@ -2066,8 +1956,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   if (found_nan) {
     std::cout << "WTF!?! Found a nan at x = " << Coord_i[0] << ", " << Coord_i[1] << std::endl;
     std::cout << "turb state = " << tke << ", " << tdr << ", " << v2 << ", " << f << std::endl;
-    std::cout << "T1         = " << T1 << ", T3 " << T3 << std::endl;
-    std::cout << "T          = " << T  << ", C_e1 = " << C_e1 << std::endl;
+    std::cout << "T          = " << Tm  << ", C_e1 = " << C_e1 << std::endl;
     std::cout << "TKE eqn    = " << Pk << " - " << Dk << std::endl;
     std::cout << "TDR eqn    = " << Pe << " - " << De << std::endl;
     std::cout << "v2  eqn    = " << Pv2 << " - " << Dv2 << std::endl;

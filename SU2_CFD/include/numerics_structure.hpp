@@ -459,13 +459,17 @@ public:
    */
   virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {/* empty */};
 
-  /*! swh
-   * \brief Set the value of Tm and Lm for the zeta-f KE model.
-   * \param[in] val_Lm_i - Value of the turbulence lengthscale at point i.
-   * \param[in] val_Tm_j - Value of the turbulence timescale at point i.
-   */
-  virtual void SetLm(su2double val_Lm_i, su2double val_Lm_j) {/* empty */};
-  virtual void SetTm(su2double val_Tm_i, su2double val_Tm_j) {/* empty */};
+  /*!
+    * \brief Set the turbulent timescale
+    * \param[in] val_turb_T - Turbulent timescale at point i
+    */
+  virtual void SetTurbTimescale(su2double val_turb_T);
+
+   /*!
+    * \brief Set the turbulent timescale
+    * \param[in] val_turb_T - Turbulent lengthscale at point i
+    */
+  virtual void SetTurbLengthscale(su2double val_turb_L);
   
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -4527,10 +4531,8 @@ public:
  */
 class CSourcePieceWise_TurbKE : public CNumerics {
 private:
-  su2double Lm_i,
-  Lm_j,
-  Tm_i,
-  Tm_j;
+  su2double Lm, ///< The turbulent lengthscale
+            Tm; ///< The turbulent timescale
 
   su2double sigma_k,
   sigma_e,
@@ -4563,19 +4565,17 @@ public:
    */
   ~CSourcePieceWise_TurbKE(void);
 
-  /*!
-   * \brief Set the value of the first blending function.
-   * \param[in] val_F1_i - Value of the first blending function at point i.
-   * \param[in] val_F1_j - Value of the first blending function at point j.
+ /*!
+   * \brief Set the turbulent timescale
+   * \param[in] val_turb_T - Turbulent timescale at point i
    */
-  void SetLm(su2double val_Lm_i, su2double val_Lm_j);
+  void SetTurbTimescale(su2double val_turb_T);
 
   /*!
-   * \brief Set the value of the second blending function.
-   * \param[in] val_F2_i - Value of the second blending function at point i.
-   * \param[in] val_F2_j - Value of the second blending function at point j.
+   * \brief Set the turbulent timescale
+   * \param[in] val_turb_T - Turbulent lengthscale at point i
    */
-  void SetTm(su2double val_Tm_i, su2double val_Tm_j);
+  void SetTurbLengthscale(su2double val_turb_L);
 
   /*!
    * \brief Residual for source term integration.

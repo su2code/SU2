@@ -834,6 +834,18 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of turbulent timescale
+   */
+  virtual su2double GetTurbTimescale(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the turbulent lengthscale
+   */
+  virtual su2double GetTurbLengthscale(void);
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the flow enthalpy.
    */
   virtual su2double GetEnthalpy(void);
@@ -1005,6 +1017,14 @@ public:
    */
   virtual void SetEddyViscosity(su2double eddy_visc);
   
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_turb_T - The turbulent timescale
+   * \param[in] val_turb_L - The turbulent lengthscale
+   */
+  virtual void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
+
   /*!
    * \brief A virtual member.
    */
@@ -1654,28 +1674,6 @@ public:
    */
   virtual su2double GetCrossDiff(void) { return 0.0; };
 
-
-  /*!
-   * \brief Set the turbulence scales of the zeta-f KE model.
-   * \param[in] val_viscosity - Value of the vicosity.
-   * \param[in] val_dist - Value of the distance to the wall.
-   * \param[in] val_density - Value of the density.
-   */
-  virtual void SetTLFunc(su2double val_viscosity, su2double val_dist,
-                         su2double val_density, su2double val_kine, su2double val_epsi,
-                         su2double val_zeta, su2double StrainMag, su2double VelMag,
-                         su2double L_Inf, su2double solve_tol);
-
-  /*!
-   * \brief Get the first blending function.
-   */
-  virtual su2double GetTm(void);
-
-  /*!
-   * \brief Get the second blending function.
-   */
-  virtual su2double GetLm(void);
-  
   /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
@@ -3861,27 +3859,24 @@ public:
    */
   ~CTurbKEVariable(void);
 
-  /*!
-   * \brief Set the turbulence scales of the zeta-f KE model.
-   * \param[in] val_viscosity - Value of the vicosity.
-   * \param[in] val_dist - Value of the distance to the wall.
-   * \param[in] val_density - Value of the density.
+  /**
+   * \brief Get the large-eddy timescale of the turbulence
+   * \return The large-eddy timescale of the turbulence.
    */
-  void SetTLFunc(su2double val_viscosity, su2double val_dist,
-                 su2double val_density, su2double val_kine, su2double val_epsi,
-                 su2double val_zeta, su2double StrainMag, su2double VelMag,
-                 su2double L_Inf, su2double solve_tol);
+  su2double GetTurbTimescale(void);
 
-  /*!
-   * \brief Get the first blending function.
+  /**
+   * \brief Get the large-eddy lengthscale of the turbulence
+   * \return The large-eddy lengthscale of the turbulence
    */
-  su2double GetTm(void);
+  su2double GetTurbLengthscale(void);
 
-  /*!
-   * \brief Get the second blending function.
+  /**
+   * \brief Sets the large-eddy lengthscale and the large-eddy timescale
+   * \param[in] val_turb_T - Large eddy timescale of the turbulence
+   * \param[in] val_turb_L - Large eddy lengthscale of the turbulence
    */
-  su2double GetLm(void);
-
+  void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
 };
 
 

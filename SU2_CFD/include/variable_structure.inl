@@ -251,6 +251,10 @@ inline su2double *CVariable::GetIntBoundary_Jump(void) { return NULL; }
 
 inline su2double CVariable::GetEddyViscosity(void) { return 0; }
 
+inline su2double CVariable::GetTurbTimescale(void) { return 0; }
+
+inline su2double CVariable::GetTurbLengthscale(void) { return 0; }
+
 inline void CVariable::SetGammaEff(void) { }
 
 inline void CVariable::SetGammaSep(su2double gamma_sep) { }
@@ -427,6 +431,8 @@ inline void CVariable::SetLaminarViscosity(CConfig *config) { }
 
 inline void CVariable::SetEddyViscosity(su2double eddy_visc) { }
 
+inline void CVariable::SetTurbScales(su2double val_turb_T, su2double val_turb_L) { }
+
 inline void CVariable::SetThermalConductivity(su2double thermalConductivity) { }
 
 inline void CVariable::SetThermalConductivity(CConfig *config) { }
@@ -475,16 +481,9 @@ inline su2double *CVariable::GetLimiter_Secondary(void) { return NULL; }
 
 inline void CVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density) { }
 
-//inline void CVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag) { }
-inline void CVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double StrainMag, su2double VelMag, su2double L_Inf, su2double solve_tol) { }
-
 inline su2double CVariable::GetF1blending(void) { return 0; }
 
 inline su2double CVariable::GetF2blending(void) { return 0; }
-
-inline su2double CVariable::GetTm(void) { return 0; }
-
-inline su2double CVariable::GetLm(void) { return 0; }
 
 inline su2double CVariable::GetmuT() { return 0;}
 
@@ -1087,10 +1086,6 @@ inline su2double CTurbSSTVariable::GetF2blending() { return F2; }
 
 inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 
-inline su2double CTurbKEVariable::GetTm() { return Tm; }
-
-inline su2double CTurbKEVariable::GetLm() { return Lm; }
-
 inline void CAdjTurbVariable::SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) {
   for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) {
     EddyViscSens[iVar] = val_EddyViscSens[iVar];}
@@ -1182,4 +1177,17 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Solution_Direct[iVar] = val_solution_direct[iVar];
   }
+}
+
+inline su2double CTurbKEVariable::GetTurbTimescale() {
+  return Tm;
+}
+
+inline su2double CTurbKEVariable::GetTurbLengthscale() {
+ return Lm;
+}
+
+inline void CTurbKEVariable::SetTurbScales(su2double val_turb_T, su2double val_turb_L) {
+  Tm = val_turb_T;
+  Lm = val_turb_L;
 }

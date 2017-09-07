@@ -3951,7 +3951,7 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry,
         CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
   su2double rho = 0.0, mu = 0.0;
-  su2double dist, epsi, kine, v2, strMag, Tm, zeta, f, muT, *VelInf;
+  su2double epsi, kine, v2, strMag, zeta, f, muT, *VelInf;
   su2double VelMag;
   su2double Re_t;
   unsigned long iPoint;
@@ -3979,6 +3979,7 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry,
       rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
       mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     }
+    const su2double nu = mu/rho;
 
     /*--- Scalars ---*/
     kine = node[iPoint]->GetSolution(0);
@@ -3987,26 +3988,67 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry,
     f    = node[iPoint]->GetSolution(3);
 
     /*--- T & L ---*/
-    dist = geometry->node[iPoint]->GetWall_Distance();
     strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
     su2double L_Inf = config->GetLength_Reynolds();
     su2double scale = 1.0e-14;
     VelInf = config->GetVelocity_FreeStreamND();
+    VelMag = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       VelMag += VelInf[iDim]*VelInf[iDim];
     VelMag = sqrt(VelMag);
-    kine = max(kine,scale*VelMag*VelMag);
-    zeta = max(v2/kine,scale);
+    //kine = max(kine, scale*VelMag*VelMag);
+    //epsi = max(kine, scale*VelMag*VelMag*VelMag/L_Inf);
+    kine = max(kine, 1e-8);
+    epsi = max(epsi, 1e-4*mu/rho);
+    zeta = max(v2/kine, scale);
+    zeta = min(zeta, 10.0); // Necessary?
+    v2   = max(v2, zeta*kine);
 
-    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, v2,
-                            strMag, VelMag, L_Inf, scale);
+    /*--- T & L ---*/
+    const su2double C_mu  = constants[0];
+    const su2double C_T   = constants[8];
+    const su2double C_L   = constants[9];
+    const su2double C_eta = constants[10];
 
-    Tm = node[iPoint]->GetTm();
+    //--- Model time scale ---//
+    const su2double T1     = kine/epsi;
+    const su2double T2     = 0.6/(sqrt(3.0)*C_mu*strMag*zeta);
+    const su2double T3     = C_T*sqrt(nu/epsi);
+
+    // T = max(min(T1,T2),T3)
+    su2double T     = T1;
+
+    if (T>T2) {
+      T = T2;
+    }
+
+    if (T<T3) {
+      T = T3;
+    }
+
+    //--- Model length scale ---//
+    const su2double L1 = pow(kine,1.5)/epsi;
+    const su2double L2 = sqrt(kine)/(sqrt(3.0)*C_mu*strMag*zeta);
+    const su2double L3 = C_eta*pow(pow(nu,3.0)/epsi,0.25);
+
+    // L = max(min(L1,L2),L3)... mult by C_L below
+    su2double L     = L1;
+    if (L>L2) {
+      L = L2;
+    }
+
+    if (L<L3) {
+      L = L3;
+    }
+
+    L *= C_L;
+
+    node[iPoint]->SetTurbScales(T, L);
 
     /*--- Compute the eddy viscosity ---*/
     Re_t = rho*(kine*kine)/max(mu*epsi,1.0E-12);
 
-    muT = constants[0]*rho*zeta*kine*Tm;
+    muT = constants[0]*rho*zeta*kine*T;
 
     node[iPoint]->SetmuT(muT);
 
@@ -4045,8 +4087,8 @@ void CTurbKESolver::Source_Residual(CGeometry *geometry,
     numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
 
     /*--- RANS L & T ---*/
-    numerics->SetTm(node[iPoint]->GetTm(),0.0);
-    numerics->SetLm(node[iPoint]->GetLm(),0.0);
+    numerics->SetTurbTimescale(node[iPoint]->GetTurbTimescale());
+    numerics->SetTurbLengthscale(node[iPoint]->GetTurbLengthscale());
 
     /*--- Set vorticity and strain rate magnitude ---*/
     numerics->SetVorticity(
@@ -4511,10 +4553,6 @@ void CTurbKESolver::BC_Outlet(CGeometry *geometry,
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
       visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(),
                                         node[iPoint]->GetGradient());
-
-      /*--- Model length and time scales ---*/
-      //visc_numerics->SetTm(node[iPoint]->GetTm(), node[iPoint]->GetTm());
-      //visc_numerics->SetLm(node[iPoint]->GetLm(), node[iPoint]->GetLm());
 
       /*--- Compute residual, and Jacobians ---*/
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
