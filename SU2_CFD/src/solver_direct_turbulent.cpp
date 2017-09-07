@@ -3572,6 +3572,10 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config,
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
+  /*--- Initialize nVarGrad for deallocation ---*/
+
+  nVarGrad = nVar;
+
   /*--- Define geometry constants in the solver structure ---*/
   nDim = geometry->GetnDim();
   node = new CVariable*[nPoint];
