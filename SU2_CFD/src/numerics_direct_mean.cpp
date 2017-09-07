@@ -3986,7 +3986,9 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, unsigned short E
     for (iDim = 0; iDim< 3; iDim++){
         for (jDim = 0; jDim < 3; jDim++){
             MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta[iDim][jDim]);
-        }
+            MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
+                    0.01*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+	}
     }
 
 //  Printing matrices for debugging
