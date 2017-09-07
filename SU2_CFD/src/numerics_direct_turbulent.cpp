@@ -1839,7 +1839,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   // make sure v2 is well-behaved
   const su2double scale = 1.0e-14;
   su2double zeta = max(v20/tke_lim, scale);
-  //zeta = min(zeta,2.0/3.0); // necessary?
   zeta = min(zeta,10.0); // necessary?
   const su2double v2 = max(v20, zeta*tke);
 
@@ -1883,18 +1882,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   su2double T_re  = T1_re;
   su2double T_rv2 = T1_rv2;
 
-  // Use smooth version of maximum?
-  // // T = smooth_max(T1,T3)
-  // const su2double del  = T1 - T3;
-  // const su2double sabs = sqrt( del*del + 1.0 );
-
-  // T = 0.5*(T1 + T3 + sabs );
-
-  // T_rk  = 0.5*(T1_rk  + T3_rk  + (T1_rk  - T3_rk )*del/sabs );
-  // T_re  = 0.5*(T1_re  + T3_re  + (T1_re  - T3_re )*del/sabs );
-  // T_rv2 = 0.5*(T1_rv2 + T3_rv2 + (T1_rv2 - T3_rv2)*del/sabs );
-
-  // Use maximum?
   if (T>T2) {
     T = T2;
     T_rk = T2_rk; T_re = T2_re; T_rv2 = T2_rv2;

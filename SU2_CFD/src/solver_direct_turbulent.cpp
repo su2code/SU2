@@ -628,7 +628,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     //density = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
 
-    // for f-term, clobber unsteady part (could add -f contribution here as well?)
+    // for f-term, clobber unsteady part
        total_index = iPoint*nVar+iVar;
        if (config->GetKind_Turb_Model() == KE) {
           Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
