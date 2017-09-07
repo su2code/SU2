@@ -661,6 +661,25 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 ("BC", BC); //BAS-CAKMAKCIOGLU
 
 /*!
+ * \brief types of wall functions.
+ */
+enum ENUM_WALL_FUNCTIONS {
+  NO_WALL_FUNCTION          = 0,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
+  STANDARD_WALL_FUNCTION    = 1,   /*!< \brief Standard wall function. */
+  ADAPTIVE_WALL_FUNCTION    = 2,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
+  SCALABLE_WALL_FUNCTION    = 3,   /*!< \brief Scalable wall function. */
+  EQUILIBRIUM_WALL_MODEL    = 4,   /*!< \brief Equilibrium wall model for LES. */
+  NONEQUILIBRIUM_WALL_MODEL = 5    /*!< \brief Non-equilibrium wall model for LES. */
+};
+static const map<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = CCreateMap<string, ENUM_WALL_FUNCTIONS>
+("NO_WALL_FUNCTION",          NO_WALL_FUNCTION)
+("STANDARD_WALL_FUNCTION",    STANDARD_WALL_FUNCTION)
+("ADAPTIVE_WALL_FUNCTION",    ADAPTIVE_WALL_FUNCTION)
+("SCALABLE_WALL_FUNCTION",    SCALABLE_WALL_FUNCTION)
+("EQUILIBRIUM_WALL_MODEL",    EQUILIBRIUM_WALL_MODEL)
+("NONEQUILIBRIUM_WALL_MODEL", NONEQUILIBRIUM_WALL_MODEL);
+
+/*!
  * \brief type of time integration schemes
  */
 enum ENUM_TIME_INT {
@@ -3374,5 +3393,69 @@ public:
     this->press_jump = NULL;
     this->temp_jump = NULL;
     this->omega = NULL;
+  }
+};
+
+
+class COptionWallFunction : public COptionBase {
+  string name; // identifier for the option
+  unsigned short &nMarkers;
+  string* &markers;
+  unsigned short* &walltype;
+
+public:
+  COptionWallFunction(const string name, unsigned short &nMarker_WallFunctions, 
+                      string* &Marker_WallFunctions, unsigned short* &typeWallFunctions) :
+  nMarkers(nMarker_WallFunctions), markers(Marker_WallFunctions), walltype(typeWallFunctions) {
+    this->name = name;
+  }
+
+  ~COptionWallFunction(){}
+
+  string SetValue(vector<string> option_value) {
+    // There must be an even number of entries.
+    unsigned short totalVals = option_value.size();
+    if ((totalVals % 2) != 0) {
+      if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+        // It's okay to say its NONE
+        this->SetDefault();
+        return "";
+      }
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have an even number of entries");
+      return newstring;
+    }
+    unsigned short nVals = totalVals / 2;
+    this->nMarkers = nVals;
+    this->markers  = new string[nVals];
+    this->walltype = new unsigned short[nVals];
+
+    for (unsigned short i=0; i<nVals; i++) {
+      this->markers[i].assign(option_value[2*i]); 
+
+      map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+      it = Wall_Functions_Map.find(option_value[2*i+1]);
+      if(it == Wall_Functions_Map.end()) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": Invalid wall function type, ");
+        newstring.append(option_value[2*i+1]);
+        newstring.append(", encountered for marker ");
+        newstring.append(option_value[2*i]);
+        return newstring;
+      }
+
+      this->walltype[i] = it->second;
+    }
+
+    // Need to return something...
+    return "";
+  }
+
+  void SetDefault() {
+    this->nMarkers = 0;
+    this->markers  = NULL;
+    this->walltype = NULL;
   }
 };
