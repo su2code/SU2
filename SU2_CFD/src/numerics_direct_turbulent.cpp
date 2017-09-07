@@ -1859,9 +1859,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
     diverg += PrimVar_Grad_i[iDim+1][iDim];
 
   // NB: We determine time and length scales here due to Jacobian branching
-  // TODO: Could replace max and min with differentiable approximations
-  // TODO: Write a function that evaluates T and L along with derivatives
-
   // NB: In current Jacobian approx, derivatives of T and L aren't used anyway
 
   //--- Model time scale ---//
@@ -1996,7 +1993,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   // ... production
   Pe = C_e1*Pk/T;
-  //Pe = C_e1*C_mu*rho*v2*S*S;  // TODO: include divergence part
 
   Pe_rk  = 0.0;
   Pe_re  = 0.0;
