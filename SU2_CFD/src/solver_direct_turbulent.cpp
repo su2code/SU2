@@ -3957,7 +3957,6 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry,
   su2double rho = 0.0, mu = 0.0;
   su2double epsi, kine, v2, strMag, zeta, f, muT, *VelInf;
   su2double VelMag;
-  su2double Re_t;
   unsigned long iPoint;
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -4000,18 +3999,17 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry,
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       VelMag += VelInf[iDim]*VelInf[iDim];
     VelMag = sqrt(VelMag);
-    //kine = max(kine, scale*VelMag*VelMag);
-    //epsi = max(kine, scale*VelMag*VelMag*VelMag/L_Inf);
+//    kine = max(kine, scale*VelMag*VelMag);
+//    epsi = max(kine, scale*VelMag*VelMag*VelMag/L_Inf);
     kine = max(kine, 1e-8);
     epsi = max(epsi, 1e-4*mu/rho);
     zeta = max(v2/kine, scale);
-    zeta = min(zeta, 10.0); // Necessary?
+    zeta = min(zeta, 10.0);
     v2   = max(v2, zeta*kine);
 
     /*--- T & L ---*/
     const su2double C_mu  = constants[0];
     const su2double C_T   = constants[8];
-    const su2double C_L   = constants[9];
     const su2double C_eta = constants[10];
 
     //--- Model time scale ---//
@@ -4019,38 +4017,19 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry,
     const su2double T2     = 0.6/(sqrt(3.0)*C_mu*strMag*zeta);
     const su2double T3     = C_T*sqrt(nu/epsi);
 
-    // T = max(min(T1,T2),T3)
-    su2double T     = T1;
+    su2double T = max(min(T1,T2),T3);
 
-    if (T>T2) {
-      T = T2;
-    }
-
-    if (T<T3) {
-      T = T3;
-    }
 
     //--- Model length scale ---//
     const su2double L1 = pow(kine,1.5)/epsi;
     const su2double L2 = sqrt(kine)/(sqrt(3.0)*C_mu*strMag*zeta);
     const su2double L3 = C_eta*pow(pow(nu,3.0)/epsi,0.25);
 
-    // L = max(min(L1,L2),L3)... mult by C_L below
-    su2double L     = L1;
-    if (L>L2) {
-      L = L2;
-    }
-
-    if (L<L3) {
-      L = L3;
-    }
-
-    L *= C_L;
+    su2double L = max(min(L1,L2),L3); //... mult by C_L later
 
     node[iPoint]->SetTurbScales(T, L);
 
     /*--- Compute the eddy viscosity ---*/
-    Re_t = rho*(kine*kine)/max(mu*epsi,1.0E-12);
 
     muT = constants[0]*rho*zeta*kine*T;
 

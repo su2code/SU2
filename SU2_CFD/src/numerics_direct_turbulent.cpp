@@ -1834,7 +1834,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   // make sure v2 is well-behaved
   const su2double scale = 1.0e-14;
   su2double zeta = max(v20/tke_lim, scale);
-  zeta = min(zeta,10.0); // necessary?
+  zeta = min(zeta, 10.0);
   const su2double v2 = max(v20, zeta*tke);
 
   // Grab other quantities for convenience/readability
@@ -1849,7 +1849,8 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   const su2double T1 = tke_lim/tdr_lim;
 
-  const su2double Lsq = Lm*Lm;
+  // Multiply by C_L here, since not done before...
+  const su2double Lsq = C_L*Lm*C_L*Lm;
 
   //--- v2-f ---//
 
