@@ -19,9 +19,10 @@ SU2 is a suite of open-source software tools written in C++ for the numerical so
 The primary applications are computational fluid dynamics and aerodynamic shape optimization, but has been extended to treat more general equations such as electrodynamics and chemically reacting flows. 
 
 You will find more information and the latest news in:
-   - GitHub:    https://github.com/su2code
-   - CFD-online http://www.cfd-online.com/Forums/su2/
-   - Twitter:   https://twitter.com/su2code
+   - SU2 Home Page: https://github.com/su2code/su2code.github.io
+   - GitHub:        https://github.com/su2code
+   - CFD Online:    http://www.cfd-online.com/Forums/su2/
+   - Twitter:       https://twitter.com/su2code
 
 ---------------------------------------------------
   SU2 INSTALLATION
