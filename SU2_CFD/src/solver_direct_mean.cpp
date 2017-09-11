@@ -3666,7 +3666,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0;
-  su2double Mu_RefND, Mu_Temperature_RefND, Mu_SND;
 
   unsigned short iDim;
   
@@ -3808,6 +3807,15 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
   if (viscous) {
 
+    /*--- The dimensional viscosity is needed to determine the free-stream conditions.
+          To accomplish this, simply set the non-dimensional coefficients to the
+          dimensional ones. This will be overruled later.---*/
+    config->SetMu_RefND(config->GetMu_Ref());
+    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
+    config->SetMu_SND(config->GetMu_S());
+
+    config->SetMu_ConstantND(config->GetMu_Constant());
+
     /*--- Reynolds based initialization ---*/
 
     if (reynolds_init) {
@@ -3818,30 +3826,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       if (grid_movement) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
       else Velocity_Reynolds = ModVel_FreeStream;
 
-      /*--- Change of measurement system, hard coded value working only with STANDAR AIR model ---*/
-
-      if (standard_air) {
-        Mu_RefND = 1.716E-5;
-        Mu_Temperature_RefND = 273.15; // 273.0
-        Mu_SND = 110.4;                // 111.0
-        if (config->GetSystemMeasurements() == SI) {
-          config->SetMu_RefND(Mu_RefND);
-          config->SetMu_Temperature_RefND(Mu_Temperature_RefND);
-          config->SetMu_SND(Mu_SND);
-        }
-        if (config->GetSystemMeasurements() == US) {
-          Mu_RefND = Mu_RefND/47.88025898;
-          Mu_Temperature_RefND = (Mu_Temperature_RefND - 273.15) * 1.8 + 491.67;
-          Mu_SND = (Mu_SND - 273.15) * 1.8 + 491.67;
-          config->SetMu_RefND(Mu_RefND);
-          config->SetMu_Temperature_RefND(Mu_Temperature_RefND);
-          config->SetMu_SND(Mu_SND);
-        }
-      }
-
       /*--- For viscous flows, pressure will be computed from a density
-         that is found from the Reynolds number. The viscosity is computed
-         from the dimensional version of Sutherland's law ---*/
+            that is found from the Reynolds number. The viscosity is computed
+            from the dimensional version of Sutherland's law or the constant
+            viscosity, depending on the input option.---*/
 
       FluidModel->SetLaminarViscosityModel(config);
 
@@ -3992,16 +3980,16 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   if (viscous) {
     
     /*--- Constant viscosity model ---*/
-    config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
+    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
     
     /*--- Sutherland's model ---*/
     
-    config->SetMu_RefND(config->GetMu_RefND()/Viscosity_Ref);
-    config->SetMu_SND(config->GetMu_SND()/config->GetTemperature_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_RefND()/config->GetTemperature_Ref());
+    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
+    config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
+    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
     
     /* constant thermal conductivity model */
-    config->SetKt_ConstantND(config->GetKt_ConstantND()/Conductivity_Ref);
+    config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
     
     FluidModel->SetLaminarViscosityModel(config);
     FluidModel->SetThermalConductivityModel(config);
@@ -4081,7 +4069,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
         case CONSTANT_VISCOSITY:
           cout << "Viscosity Model: CONSTANT_VISCOSITY  "<< endl;
-          cout << "Laminar Viscosity: " << config->GetMu_ConstantND()*Viscosity_Ref;
+          cout << "Laminar Viscosity: " << config->GetMu_Constant();
           if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
           else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
           cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
@@ -4089,13 +4077,13 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
         case SUTHERLAND:
           cout << "Viscosity Model: SUTHERLAND "<< endl;
-          cout << "Ref. Laminar Viscosity: " << config->GetMu_RefND()*Viscosity_Ref;
+          cout << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
           if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
           else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-          cout << "Ref. Temperature: " << config->GetMu_Temperature_RefND()*config->GetTemperature_Ref();
+          cout << "Ref. Temperature: " << config->GetMu_Temperature_Ref();
           if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
           else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-          cout << "Sutherland Constant: "<< config->GetMu_SND()*config->GetTemperature_Ref();
+          cout << "Sutherland Constant: "<< config->GetMu_S();
           if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
           else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
           cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
@@ -4113,7 +4101,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
         case CONSTANT_CONDUCTIVITY:
           cout << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
-          cout << "Molecular Conductivity: " << config->GetKt_ConstantND()*Conductivity_Ref<< " W/m^2.K." << endl;
+          cout << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << endl;
           cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< endl;
           break;
 
@@ -4473,7 +4461,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
   bool interface        = (config->GetnMarker_InterfaceBound() != 0);
-  bool marker_analyze   = (config->GetnMarker_Analyze() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA;
 
@@ -4488,13 +4475,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute the engine properties ---*/
 
   if (engine) { GetPower_Properties(geometry, config, iMesh, Output); }
-
-  /*--- Compute the control volume properties ---*/
-
-  if (marker_analyze) {
-    GetSurface_Properties(geometry, NULL, NULL, config, iMesh, Output);
-    GetSurface_Distortion(geometry, config, iMesh, Output);
-  }
 
   /*--- Compute the actuator disk properties and distortion levels ---*/
 
@@ -7275,1227 +7255,6 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   
 }
 
-void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_numerics,
-                                               CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output) {
-  
-  unsigned short iDim, iMarker, iMarker_Analyze;
-  unsigned long iVertex, iPoint;
-  su2double Mach, Pressure, Temperature, TotalPressure, TotalTemperature, Enthalpy,
-  Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn;
-  
-  su2double Gas_Constant = config->GetGas_ConstantND();
-  su2double Gamma        = config->GetGamma();
-
-  bool axisymmetric               = config->GetAxisymmetric();
-  unsigned short nMarker_Analyze    = config->GetnMarker_Analyze();
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  su2double  *Surface_MassFlow         = new su2double[nMarker];
-  su2double  *Surface_Mach             = new su2double[nMarker];
-  su2double  *Surface_Temperature      = new su2double[nMarker];
-  su2double  *Surface_Density          = new su2double[nMarker];
-  su2double  *Surface_Enthalpy          = new su2double[nMarker];
-  su2double  *Surface_NormalVelocity   = new su2double[nMarker];
-  su2double  *Surface_Pressure         = new su2double[nMarker];
-  su2double  *Surface_TotalTemperature = new su2double[nMarker];
-  su2double  *Surface_TotalPressure    = new su2double[nMarker];
-  su2double  *Surface_VelocityIdeal    = new su2double[nMarker];
-  su2double  *Surface_Area             = new su2double[nMarker];
-  
-  /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    Surface_MassFlow[iMarker]         = 0.0;
-    Surface_Mach[iMarker]             = 0.0;
-    Surface_Temperature[iMarker]      = 0.0;
-    Surface_Density[iMarker]          = 0.0;
-    Surface_Enthalpy[iMarker]         = 0.0;
-    Surface_NormalVelocity[iMarker]   = 0.0;
-    Surface_Pressure[iMarker]         = 0.0;
-    Surface_TotalTemperature[iMarker] = 0.0;
-    Surface_TotalPressure[iMarker]    = 0.0;
-    Surface_VelocityIdeal[iMarker]    = 0.0;
-    Surface_Area[iMarker]             = 0.0;
-    
-    if (config->GetMarker_All_Analyze(iMarker) == YES) {
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-          
-          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-          
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
-          else AxiFactor = 1.0;
-
-          Density = node[iPoint]->GetDensity();
-          Enthalpy = node[iPoint]->GetEnthalpy();
-          Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0, Vn = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-            Velocity[iDim] = node[iPoint]->GetSolution(iDim+1) / Density;
-            Velocity2 += Velocity[iDim] * Velocity[iDim];
-            Vn += Velocity[iDim] * Vector[iDim];
-            MassFlow += Vector[iDim] * AxiFactor * node[iPoint]->GetSolution(iDim+1);
-          }
-          
-          Area              = sqrt (Area);
-          Vn                = Vn / Area;
-          Energy            = node[iPoint]->GetSolution(nVar-1)/Density;
-          Pressure          = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-          SoundSpeed        = sqrt(Gamma*Pressure/Density);
-          Mach              = sqrt(Velocity2)/SoundSpeed;
-          Temperature       = Pressure / (Gas_Constant * Density);
-          TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-          TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
-
-          /*--- Compute the mass Surface_MassFlow ---*/
-          
-          Surface_MassFlow[iMarker]         += MassFlow;
-          Surface_Mach[iMarker]             += Mach*MassFlow;
-          Surface_Temperature[iMarker]      += Temperature*MassFlow;
-          Surface_Density[iMarker]          += Density*MassFlow;
-          Surface_Enthalpy[iMarker]          += Enthalpy*MassFlow;
-          Surface_NormalVelocity[iMarker]   += Vn*MassFlow;
-          Surface_Pressure[iMarker]         += Pressure*MassFlow;
-          Surface_TotalTemperature[iMarker] += TotalTemperature*MassFlow;
-          Surface_TotalPressure[iMarker]    += TotalPressure*MassFlow;
-          Surface_Area[iMarker]             += Area;
-          
-        }
-      }
-      
-    }
-
-  }
-  
-  /*--- Copy to the appropriate structure ---*/
-  
-  su2double *Surface_MassFlow_Local         = new su2double [nMarker_Analyze];
-  su2double *Surface_Mach_Local             = new su2double [nMarker_Analyze];
-  su2double *Surface_Temperature_Local      = new su2double [nMarker_Analyze];
-  su2double *Surface_Density_Local          = new su2double [nMarker_Analyze];
-  su2double *Surface_Enthalpy_Local          = new su2double [nMarker_Analyze];
-  su2double *Surface_NormalVelocity_Local   = new su2double [nMarker_Analyze];
-  su2double *Surface_Pressure_Local         = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalTemperature_Local = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalPressure_Local    = new su2double [nMarker_Analyze];
-  su2double *Surface_Area_Local             = new su2double [nMarker_Analyze];
-  
-  su2double *Surface_MassFlow_Total         = new su2double [nMarker_Analyze];
-  su2double *Surface_Mach_Total             = new su2double [nMarker_Analyze];
-  su2double *Surface_Temperature_Total      = new su2double [nMarker_Analyze];
-  su2double *Surface_Density_Total          = new su2double [nMarker_Analyze];
-  su2double *Surface_Enthalpy_Total          = new su2double [nMarker_Analyze];
-  su2double *Surface_NormalVelocity_Total   = new su2double [nMarker_Analyze];
-  su2double *Surface_Pressure_Total         = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalTemperature_Total = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalPressure_Total    = new su2double [nMarker_Analyze];
-  su2double *Surface_Area_Total             = new su2double [nMarker_Analyze];
-  
-  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    Surface_MassFlow_Local[iMarker_Analyze]         = 0.0;
-    Surface_Mach_Local[iMarker_Analyze]             = 0.0;
-    Surface_Temperature_Local[iMarker_Analyze]      = 0.0;
-    Surface_Density_Local[iMarker_Analyze]          = 0.0;
-    Surface_Enthalpy_Local[iMarker_Analyze]          = 0.0;
-    Surface_NormalVelocity_Local[iMarker_Analyze]   = 0.0;
-    Surface_Pressure_Local[iMarker_Analyze]         = 0.0;
-    Surface_TotalTemperature_Local[iMarker_Analyze] = 0.0;
-    Surface_TotalPressure_Local[iMarker_Analyze]    = 0.0;
-    Surface_Area_Local[iMarker_Analyze]             = 0.0;
-    
-    Surface_MassFlow_Total[iMarker_Analyze]         = 0.0;
-    Surface_Mach_Total[iMarker_Analyze]             = 0.0;
-    Surface_Temperature_Total[iMarker_Analyze]      = 0.0;
-    Surface_Density_Total[iMarker_Analyze]          = 0.0;
-    Surface_Enthalpy_Total[iMarker_Analyze]          = 0.0;
-    Surface_NormalVelocity_Total[iMarker_Analyze]   = 0.0;
-    Surface_Pressure_Total[iMarker_Analyze]         = 0.0;
-    Surface_TotalTemperature_Total[iMarker_Analyze] = 0.0;
-    Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
-    Surface_Area_Total[iMarker_Analyze]             = 0.0;
-  }
-  
-  /*--- Compute the numerical fan face Mach number, mach number, temperature and the total area ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if (config->GetMarker_All_Analyze(iMarker) == YES)  {
-      
-      for (iMarker_Analyze= 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-        
-        /*--- Add the Surface_MassFlow, and Surface_Area to the particular boundary ---*/
-        
-        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze)) {
-          Surface_MassFlow_Local[iMarker_Analyze]         += Surface_MassFlow[iMarker];
-          Surface_Mach_Local[iMarker_Analyze]             += Surface_Mach[iMarker];
-          Surface_Temperature_Local[iMarker_Analyze]      += Surface_Temperature[iMarker];
-          Surface_Density_Local[iMarker_Analyze]          += Surface_Temperature[iMarker];
-          Surface_Enthalpy_Local[iMarker_Analyze]          += Surface_Temperature[iMarker];
-          Surface_NormalVelocity_Local[iMarker_Analyze]   += Surface_Temperature[iMarker];
-          Surface_Pressure_Local[iMarker_Analyze]         += Surface_Pressure[iMarker];
-          Surface_TotalTemperature_Local[iMarker_Analyze] += Surface_TotalTemperature[iMarker];
-          Surface_TotalPressure_Local[iMarker_Analyze]    += Surface_TotalPressure[iMarker];
-          Surface_Area_Local[iMarker_Analyze]             += Surface_Area[iMarker];
-        }
-        
-      }
-      
-    }
-    
-  }
-  
-#ifdef HAVE_MPI
-  
-  SU2_MPI::Allreduce(Surface_MassFlow_Local, Surface_MassFlow_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Mach_Local, Surface_Mach_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Temperature_Local, Surface_Temperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Density_Local, Surface_Density_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Enthalpy_Local, Surface_Enthalpy_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_NormalVelocity_Local, Surface_NormalVelocity_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Pressure_Local, Surface_Pressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_TotalTemperature_Local, Surface_TotalTemperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Area_Local, Surface_Area_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  
-#else
-  
-  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    Surface_MassFlow_Total[iMarker_Analyze]    = Surface_MassFlow_Local[iMarker_Analyze];
-    Surface_Mach_Total[iMarker_Analyze]        = Surface_Mach_Local[iMarker_Analyze];
-    Surface_Temperature_Total[iMarker_Analyze] = Surface_Temperature_Local[iMarker_Analyze];
-    Surface_Density_Total[iMarker_Analyze] = Surface_Density_Local[iMarker_Analyze];
-    Surface_Enthalpy_Total[iMarker_Analyze] = Surface_Enthalpy_Local[iMarker_Analyze];
-    Surface_NormalVelocity_Total[iMarker_Analyze] = Surface_NormalVelocity_Local[iMarker_Analyze];
-    Surface_Pressure_Total[iMarker_Analyze]    = Surface_Pressure_Local[iMarker_Analyze];
-    Surface_TotalTemperature_Total[iMarker_Analyze] = Surface_TotalTemperature_Local[iMarker_Analyze];
-    Surface_TotalPressure_Total[iMarker_Analyze]    = Surface_TotalPressure_Local[iMarker_Analyze];
-    Surface_Area_Total[iMarker_Analyze]        = Surface_Area_Local[iMarker_Analyze];
-  }
-  
-#endif
-  
-  /*--- Compute the value of Surface_Area_Total, and Surface_Pressure_Total, and
-   set the value in the config structure for future use ---*/
-  
-  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    if (Surface_MassFlow_Total[iMarker_Analyze] != 0.0) {
-      Surface_Mach_Total[iMarker_Analyze]             /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_Temperature_Total[iMarker_Analyze]      /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_Density_Total[iMarker_Analyze]          /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_Enthalpy_Total[iMarker_Analyze]          /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_NormalVelocity_Total[iMarker_Analyze]   /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_TotalTemperature_Total[iMarker_Analyze] /= Surface_MassFlow_Total[iMarker_Analyze];
-      Surface_TotalPressure_Total[iMarker_Analyze]    /= Surface_MassFlow_Total[iMarker_Analyze];
-    }
-    else {
-      Surface_Mach_Total[iMarker_Analyze]             = 0.0;
-      Surface_Temperature_Total[iMarker_Analyze]      = 0.0;
-      Surface_Density_Total[iMarker_Analyze]          = 0.0;
-      Surface_Enthalpy_Total[iMarker_Analyze]          = 0.0;
-      Surface_NormalVelocity_Total[iMarker_Analyze]   = 0.0;
-      Surface_Pressure_Total[iMarker_Analyze]         = 0.0;
-      Surface_TotalTemperature_Total[iMarker_Analyze] = 0.0;
-      Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
-    }
-  }
-  
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
-  
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output && !config->GetDiscrete_Adjoint()) {
-    
-    cout.precision(4);
-    cout.setf(ios::fixed, ios::floatfield);
-    
-    cout << endl << "--------------------------- Surface Analysis -------------------------" << endl;
-
-    for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-      cout << "Surface ("<< config->GetMarker_Analyze_TagBound(iMarker_Analyze);
-
-      su2double MassFlow = Surface_MassFlow_Total[iMarker_Analyze] * config->GetDensity_Ref() * config->GetVelocity_Ref();
-      if (config->GetSystemMeasurements() == US) MassFlow *= 32.174;
-      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): " << MassFlow;
-      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (lbs/s): " << MassFlow;
-      config->SetSurface_MassFlow(iMarker_Analyze, MassFlow);
-
-      su2double Mach = Surface_Mach_Total[iMarker_Analyze];
-      cout << ", Mach: " << Surface_Mach_Total[iMarker_Analyze];
-      config->SetSurface_Mach(iMarker_Analyze, Mach);
-
-      su2double Temperature = Surface_Temperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << ", T (K): " << Temperature;
-      else if (config->GetSystemMeasurements() == US) cout << ", T (R): " << Temperature;
-      config->SetSurface_Temperature(iMarker_Analyze, Temperature);
-
-      su2double Pressure = Surface_Pressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << ", P (Pa): " << Pressure;
-      else if (config->GetSystemMeasurements() == US) cout << ", P (psf): " << Pressure;
-      config->SetSurface_Pressure(iMarker_Analyze, Pressure);
-
-      su2double Density = Surface_Density_Total[iMarker_Analyze] * config->GetDensity_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << ", Rho (kg/m^3): " << Density;
-      else if (config->GetSystemMeasurements() == US) cout << ", Rho (lb/ft^3): " << Density;
-      config->SetSurface_Density(iMarker_Analyze, Density);
-
-      su2double NormalVelocity = Surface_NormalVelocity_Total[iMarker_Analyze] * config->GetVelocity_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << ", Vn (m/s): " << NormalVelocity;
-      else if (config->GetSystemMeasurements() == US) cout << ", Vn (ft/s): " << NormalVelocity;
-      config->SetSurface_NormalVelocity(iMarker_Analyze, NormalVelocity);
-
-      su2double TotalTemperature = Surface_TotalTemperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << ", TT (K): " << TotalTemperature;
-      else if (config->GetSystemMeasurements() == US) cout << ", TT (R): " << TotalTemperature;
-      config->SetSurface_TotalTemperature(iMarker_Analyze, TotalTemperature);
-
-      su2double TotalPressure = Surface_TotalPressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << ", PT (Pa): " << TotalPressure;
-      else if (config->GetSystemMeasurements() == US) cout << ", PT (psf): " << TotalPressure;
-      config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
-
-      if (config->GetSystemMeasurements() == SI) cout << ", Area (m^2): " << Surface_Area_Total[iMarker_Analyze] <<"."<< endl;
-      else if (config->GetSystemMeasurements() == US) cout << ", Area (ft^2): " << Surface_Area_Total[iMarker_Analyze] <<"."<< endl;
-      
-    }
-    
-  }
-  
-  delete [] Surface_MassFlow_Local;
-  delete [] Surface_Mach_Local;
-  delete [] Surface_Temperature_Local;
-  delete [] Surface_Density_Local;
-  delete [] Surface_Enthalpy_Local;
-  delete [] Surface_NormalVelocity_Local;
-  delete [] Surface_Pressure_Local;
-  delete [] Surface_TotalTemperature_Local;
-  delete [] Surface_TotalPressure_Local;
-  delete [] Surface_Area_Local;
-  
-  delete [] Surface_MassFlow_Total;
-  delete [] Surface_Mach_Total;
-  delete [] Surface_Temperature_Total;
-  delete [] Surface_Density_Total;
-  delete [] Surface_Enthalpy_Total;
-  delete [] Surface_NormalVelocity_Total;
-  delete [] Surface_Pressure_Total;
-  delete [] Surface_TotalTemperature_Total;
-  delete [] Surface_TotalPressure_Total;
-  delete [] Surface_Area_Total;
-  
-  delete [] Surface_MassFlow;
-  delete [] Surface_Mach;
-  delete [] Surface_Temperature;
-  delete [] Surface_Density;
-  delete [] Surface_Enthalpy;
-  delete [] Surface_NormalVelocity;
-  delete [] Surface_Pressure;
-  delete [] Surface_TotalTemperature;
-  delete [] Surface_TotalPressure;
-  delete [] Surface_Area;
-  
-}
-
-void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
-  
-  unsigned short iMarker, iDim;
-  unsigned long iPoint, iVertex;
-  su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, q = 0.0, PT = 0.0, Area = 0.0, *Vector, TotalArea = 0.0;
-  su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0, Distance_Mirror = 0.0;
-  su2double *r, MinDistance, xCoord_ = 0.0, yCoord_ = 0.0, zCoord_ = 0, dx = 0.0, dy = 0.0, dz = 0.0, dx_ = 0.0, dy_ = 0.0, dz_ = 0.0;
-  unsigned short iStation, iAngle, nAngle, Theta, nStation;
-  su2double *** ProbeArray, *Mach_Station, *Mach_Station_Min, *PT_Sector, *PT_Station, *PT_Station_Min,
-  PT_Sector_Min, PT_Mean, Mach_Mean, q_Mean, UpVector[3], radians, RotatedVector[3],
-//  RefDensity, RefVel, Factor,
-  DC60, IDR, IDC, IDC_Mach;
-  su2double Pressure, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf;
-//  su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0
-//  su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dPT_dMach = 0.0, Aux = 0.0;
-  
-  unsigned short iMarker_Analyze;
-  int rank, iProcessor, nProcessor;
-  rank = MASTER_NODE;
-  nProcessor = SINGLE_NODE;
-  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
-  unsigned long nVertex_Surface, nLocalVertex_Surface, MaxLocalVertex_Surface;
-  unsigned long Total_Index;
-  unsigned short nDim = geometry->GetnDim();
-  unsigned short Theta_DC60 = 60, nStation_DC60 = 5;
-  
-  bool Evaluate_Distortion = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)) || (config->GetExtIter() == 1) || (config->GetDiscrete_Adjoint()));
-  bool write_heads         = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
-  bool Engine_HalfModel    = config->GetEngine_HalfModel();
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
-  
-  if (Evaluate_Distortion) {
-    
-    for (iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++) {
-      
-      string Analyze_TagBound = config->GetMarker_Analyze_TagBound(iMarker_Analyze);
-      
-      nVertex_Surface = 0, nLocalVertex_Surface = 0; MaxLocalVertex_Surface = 0;
-      
-      /*--- Find the max number of surface vertices among all
-       partitions and set up buffers. The master node will handle the
-       writing of the CSV file after gathering all of the data. ---*/
-      
-      nLocalVertex_Surface = 0;
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        string Marker_TagBound = config->GetMarker_All_TagBound(iMarker);
-        if (Marker_TagBound == Analyze_TagBound) {
-          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            if (geometry->node[iPoint]->GetDomain()) nLocalVertex_Surface++;
-          }
-        }
-      }
-      
-      /*--- Communicate the number of local vertices on each partition
-       to the master node ---*/
-      
-      Buffer_Send_nVertex[0] = nLocalVertex_Surface;
-      if (rank == MASTER_NODE) Buffer_Recv_nVertex = new unsigned long [nProcessor];
-      
-#ifdef HAVE_MPI
-      SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-      SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-      MaxLocalVertex_Surface = nLocalVertex_Surface;
-      Buffer_Recv_nVertex[MASTER_NODE] = Buffer_Send_nVertex[MASTER_NODE];
-#endif
-      
-      /*--- Send and Recv buffers ---*/
-      
-      su2double *Buffer_Send_Coord_x = NULL, *Buffer_Recv_Coord_x = NULL;
-      Buffer_Send_Coord_x = new su2double [MaxLocalVertex_Surface];
-      
-      su2double *Buffer_Send_Coord_y = NULL, *Buffer_Recv_Coord_y = NULL;
-      Buffer_Send_Coord_y = new su2double [MaxLocalVertex_Surface];
-      
-      su2double *Buffer_Send_Coord_z = NULL, *Buffer_Recv_Coord_z = NULL;
-      if (nDim == 3)  Buffer_Send_Coord_z = new su2double [MaxLocalVertex_Surface];
-      
-      su2double *Buffer_Send_PT = NULL, *Buffer_Recv_PT = NULL;
-      Buffer_Send_PT = new su2double [MaxLocalVertex_Surface];
-      
-      //      su2double *Buffer_Send_dPT_dx = NULL, *Buffer_Recv_dPT_dx = NULL;
-      //      Buffer_Send_dPT_dx = new su2double [MaxLocalVertex_Surface];
-      
-      //      su2double *Buffer_Send_dPT_dy = NULL, *Buffer_Recv_dPT_dy = NULL;
-      //      Buffer_Send_dPT_dy = new su2double [MaxLocalVertex_Surface];
-      
-      //      su2double *Buffer_Send_dPT_dz = NULL, *Buffer_Recv_dPT_dz = NULL;
-      //      if (nDim == 3) Buffer_Send_dPT_dz = new su2double [MaxLocalVertex_Surface];
-      
-      su2double *Buffer_Send_Mach = NULL, *Buffer_Recv_Mach = NULL;
-      Buffer_Send_Mach = new su2double [MaxLocalVertex_Surface];
-      
-      //      su2double *Buffer_Send_dMach_dx = NULL, *Buffer_Recv_dMach_dx = NULL;
-      //      Buffer_Send_dMach_dx = new su2double [MaxLocalVertex_Surface];
-      
-      //      su2double *Buffer_Send_dMach_dy = NULL, *Buffer_Recv_dMach_dy = NULL;
-      //      Buffer_Send_dMach_dy = new su2double [MaxLocalVertex_Surface];
-      
-      //      su2double *Buffer_Send_dMach_dz = NULL, *Buffer_Recv_dMach_dz = NULL;
-      //      if (nDim == 3) Buffer_Send_dMach_dz = new su2double [MaxLocalVertex_Surface];
-      
-      su2double *Buffer_Send_q = NULL, *Buffer_Recv_q = NULL;
-      Buffer_Send_q = new su2double [MaxLocalVertex_Surface];
-      
-      //      su2double *Buffer_Send_dq_dx = NULL, *Buffer_Recv_dq_dx = NULL;
-      //      Buffer_Send_dq_dx = new su2double [MaxLocalVertex_Surface];
-      
-      //      su2double *Buffer_Send_dq_dy = NULL, *Buffer_Recv_dq_dy = NULL;
-      //      Buffer_Send_dq_dy = new su2double [MaxLocalVertex_Surface];
-      
-      //      su2double *Buffer_Send_dq_dz = NULL, *Buffer_Recv_dq_dz = NULL;
-      //      if (nDim == 3) Buffer_Send_dq_dz = new su2double [MaxLocalVertex_Surface];
-      
-      su2double *Buffer_Send_Area = NULL, *Buffer_Recv_Area = NULL;
-      Buffer_Send_Area = new su2double [MaxLocalVertex_Surface];
-
-      /*--- Prepare the receive buffers on the master node only. ---*/
-      
-      if (rank == MASTER_NODE) {
-        Buffer_Recv_Coord_x = new su2double [nProcessor*MaxLocalVertex_Surface];
-        Buffer_Recv_Coord_y = new su2double [nProcessor*MaxLocalVertex_Surface];
-        if (nDim == 3) Buffer_Recv_Coord_z = new su2double [nProcessor*MaxLocalVertex_Surface];
-        Buffer_Recv_PT = new su2double [nProcessor*MaxLocalVertex_Surface];
-        //        Buffer_Recv_dPT_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-        //        Buffer_Recv_dPT_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-        //        if (nDim == 3) Buffer_Recv_dPT_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
-        Buffer_Recv_Mach = new su2double [nProcessor*MaxLocalVertex_Surface];
-        //        Buffer_Recv_dMach_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-        //        Buffer_Recv_dMach_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-        //        if (nDim == 3) Buffer_Recv_dMach_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
-        Buffer_Recv_q = new su2double [nProcessor*MaxLocalVertex_Surface];
-        //        Buffer_Recv_dq_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-        //        Buffer_Recv_dq_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-        //        if (nDim == 3) Buffer_Recv_dq_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
-        Buffer_Recv_Area = new su2double [nProcessor*MaxLocalVertex_Surface];
-      }
-      
-      /*--- Loop over all vertices in this partition and load the
-       data of the specified type into the buffer to be sent to
-       the master node. ---*/
-      
-      nVertex_Surface = 0;
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        string Marker_TagBound = config->GetMarker_All_TagBound(iMarker);
-        if (Marker_TagBound == Analyze_TagBound) {
-          
-          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            
-            if (geometry->node[iPoint]->GetDomain()) {
-              
-              Buffer_Send_Coord_x[nVertex_Surface] = geometry->node[iPoint]->GetCoord(0);
-              Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
-              if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
-              
-              Pressure     = node[iPoint]->GetPressure();
-              Density      = node[iPoint]->GetDensity();
-              SoundSpeed   = node[iPoint]->GetSoundSpeed();
-              Velocity2    = node[iPoint]->GetVelocity2();
-              Mach         = sqrt(Velocity2)/SoundSpeed;
-              Gamma        = config->GetGamma();
-              Mach_Inf     = config->GetMach();
-              Pressure_Inf = config->GetPressure_FreeStreamND();
-              
-              Buffer_Send_Mach[nVertex_Surface] = Mach;
-              //              dMach_dVel_x = 0.0; dMach_dVel_y = 0.0; dMach_dVel_z = 0.0;
-              //              if ((Velocity2 != 0.0) && (Mach != 0.0)) {
-              //                  dMach_dVel_x = node[iPoint]->GetVelocity(0) / (Mach * sqrt(Velocity2));
-              //                  dMach_dVel_y = node[iPoint]->GetVelocity(1) / (Mach * sqrt(Velocity2));
-              //                  if (nDim == 3) { dMach_dVel_z = node[iPoint]->GetVelocity(2) / (Mach * sqrt(Velocity2)); }
-              //              }
-              //              Aux = Gas_Constant*Temperature;
-              //              dMach_dT = - Gas_Constant * sqrt(Velocity2) / (2.0 * sqrt(Gamma) * pow(Aux, 1.5));
-              
-              //              dMach_dx = dMach_dT*node[iPoint]->GetGradient_Primitive(0, 0) +
-              //              dMach_dVel_x*node[iPoint]->GetGradient_Primitive(1, 0) + dMach_dVel_y*node[iPoint]->GetGradient_Primitive(2, 0);
-              //              if (nDim == 3) { Buffer_Send_dMach_dx[nVertex_Surface] += dMach_dVel_z*node[iPoint]->GetGradient_Primitive(3, 0); }
-              //              Buffer_Send_dMach_dx[nVertex_Surface] = dMach_dx;
-              
-              //              dMach_dy = dMach_dT*node[iPoint]->GetGradient_Primitive(0, 1) +
-              //              dMach_dVel_x*node[iPoint]->GetGradient_Primitive(1, 1) + dMach_dVel_y*node[iPoint]->GetGradient_Primitive(2, 1);
-              //              if (nDim == 3) { Buffer_Send_dMach_dx[nVertex_Surface] += dMach_dVel_z*node[iPoint]->GetGradient_Primitive(3, 1); }
-              //              Buffer_Send_dMach_dy[nVertex_Surface] = dMach_dy;
-              
-              //              if (nDim == 3) {
-              //                dMach_dz = dMach_dT*node[iPoint]->GetGradient_Primitive(0, 2) +
-              //                dMach_dVel_x*node[iPoint]->GetGradient_Primitive(1, 2) + dMach_dVel_y*node[iPoint]->GetGradient_Primitive(2, 2) +
-              //                dMach_dVel_z*node[iPoint]->GetGradient_Primitive(3, 2);
-              //                Buffer_Send_dMach_dz[nVertex_Surface] = dMach_dz;
-              //              }
-              
-              TotalPressure      = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
-              TotalPressure_Inf  = Pressure_Inf * pow( 1.0 + Mach_Inf * Mach_Inf * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
-              
-              Buffer_Send_PT[nVertex_Surface] = TotalPressure / TotalPressure_Inf;
-              //              dPT_dP = (pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0))) / TotalPressure_Inf;
-              //              dPT_dMach = (Gamma * Mach * Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), 1.0 / (Gamma - 1.0))) / TotalPressure_Inf;
-              //              Buffer_Send_dPT_dx[nVertex_Surface] = dPT_dP*node[iPoint]->GetGradient_Primitive(nDim+1, 0) + dPT_dMach * dMach_dx;
-              //              Buffer_Send_dPT_dy[nVertex_Surface] = dPT_dP*node[iPoint]->GetGradient_Primitive(nDim+1, 1) + dPT_dMach * dMach_dy;
-              //              if (nDim == 3) { Buffer_Send_dPT_dz[nVertex_Surface] = dPT_dP*node[iPoint]->GetGradient_Primitive(nDim+1, 2) + dPT_dMach * dMach_dz; }
-              
-              Buffer_Send_q[nVertex_Surface] = 0.5*Density*Velocity2;
-              //              Buffer_Send_dq_dx[nVertex_Surface] = 0.0;
-              //              Buffer_Send_dq_dy[nVertex_Surface] = 0.0;
-              //              if (nDim == 3) { Buffer_Send_dq_dz[nVertex_Surface] = 0.0; }
-              
-              Vector = geometry->vertex[iMarker][iVertex]->GetNormal();
-              Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) { Area += Vector[iDim]*Vector[iDim]; } Area = sqrt(Area);
-              Buffer_Send_Area[nVertex_Surface] = Area;
-              
-              /*--- If US system, the output should be in inches ---*/
-              
-              if (config->GetSystemMeasurements() == US) {
-                Buffer_Send_Coord_x[nVertex_Surface] *= 12.0;
-                Buffer_Send_Coord_y[nVertex_Surface] *= 12.0;
-                if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] *= 12.0;
-                Buffer_Send_Area[nVertex_Surface] *= 144.0;
-                
-                //                Buffer_Send_dPT_dx[nVertex_Surface] /= 12.0;
-                //                Buffer_Send_dPT_dy[nVertex_Surface] /= 12.0;
-                //                if (nDim == 3) Buffer_Send_dPT_dz[nVertex_Surface] /= 12.0;
-                
-                //                Buffer_Send_dMach_dx[nVertex_Surface] /= 12.0;
-                //                Buffer_Send_dMach_dy[nVertex_Surface] /= 12.0;
-                //                if (nDim == 3) Buffer_Send_dMach_dz[nVertex_Surface] /= 12.0;
-                
-                //                Buffer_Send_dq_dx[nVertex_Surface] /= 12.0;
-                //                Buffer_Send_dq_dy[nVertex_Surface] /= 12.0;
-                //                if (nDim == 3) Buffer_Send_dq_dz[nVertex_Surface] /= 12.0;
-              }
-                            
-              nVertex_Surface++;
-              
-            }
-          }
-        }
-      }
-      
-      /*--- Send the information to the master node ---*/
-      
-#ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_PT, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_PT, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      //      SU2_MPI::Gather(Buffer_Send_dPT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dPT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      //      SU2_MPI::Gather(Buffer_Send_dPT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dPT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      //      if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dPT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dPT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      //      SU2_MPI::Gather(Buffer_Send_dMach_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dMach_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      //      SU2_MPI::Gather(Buffer_Send_dMach_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dMach_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      //      if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dMach_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dMach_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_q, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_q, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      //      SU2_MPI::Gather(Buffer_Send_dq_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dq_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      //      SU2_MPI::Gather(Buffer_Send_dq_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dq_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      //      if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dq_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dq_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Area, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Area, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#else
-      for (iVertex = 0; iVertex < MaxLocalVertex_Surface; iVertex++) {
-        Buffer_Recv_Coord_x[iVertex] = Buffer_Send_Coord_x[iVertex];
-        Buffer_Recv_Coord_y[iVertex] = Buffer_Send_Coord_y[iVertex];
-        if (nDim == 3) Buffer_Recv_Coord_z[iVertex] = Buffer_Send_Coord_z[iVertex];
-        Buffer_Recv_PT[iVertex] = Buffer_Send_PT[iVertex];
-        //        Buffer_Recv_dPT_dx[iVertex] = Buffer_Send_dPT_dx[iVertex];
-        //        Buffer_Recv_dPT_dy[iVertex] = Buffer_Send_dPT_dy[iVertex];
-        //        if (nDim == 3) Buffer_Recv_dPT_dz[iVertex] = Buffer_Send_dPT_dz[iVertex];
-        Buffer_Recv_Mach[iVertex] = Buffer_Send_Mach[iVertex];
-        //        Buffer_Recv_dMach_dx[iVertex] = Buffer_Send_dMach_dx[iVertex];
-        //        Buffer_Recv_dMach_dy[iVertex] = Buffer_Send_dMach_dy[iVertex];
-        //        if (nDim == 3) Buffer_Recv_dMach_dz[iVertex] = Buffer_Send_dMach_dz[iVertex];
-        Buffer_Recv_q[iVertex] = Buffer_Send_q[iVertex];
-        //        Buffer_Recv_dq_dx[iVertex] = Buffer_Send_dq_dx[iVertex];
-        //        Buffer_Recv_dq_dy[iVertex] = Buffer_Send_dq_dy[iVertex];
-        //        if (nDim == 3) Buffer_Recv_dq_dz[iVertex] = Buffer_Send_dq_dz[iVertex];
-        Buffer_Recv_Area[iVertex] = Buffer_Send_Area[iVertex];
-      }
-#endif
-      
-      if (rank == MASTER_NODE) {
-        
-        /*--- Compute center of gravity ---*/
-        
-        TotalArea = 0.0; xCoord_CG = 0.0; yCoord_CG = 0.0; zCoord_CG = 0.0; PT_Mean = 0.0; Mach_Mean = 0.0;  q_Mean = 0.0;
-        
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-          for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
-            
-            /*--- Current index position and global index ---*/
-            
-            Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-            
-            /*--- Retrieve the merged data for this node ---*/
-            
-            xCoord = Buffer_Recv_Coord_x[Total_Index];
-            yCoord = Buffer_Recv_Coord_y[Total_Index];
-            if (nDim == 3) zCoord = Buffer_Recv_Coord_z[Total_Index];
-            PT   = Buffer_Recv_PT[Total_Index];
-            Mach = Buffer_Recv_Mach[Total_Index];
-            q    = Buffer_Recv_q[Total_Index];
-            
-            Area       = Buffer_Recv_Area[Total_Index];
-            TotalArea += Area;
-            xCoord_CG += xCoord*Area;
-            yCoord_CG += yCoord*Area;
-            zCoord_CG += zCoord*Area;
-            PT_Mean   += PT*Area;
-            Mach_Mean += PT*Area;
-            q_Mean    += q*Area;
-            
-          }
-        }
-        
-        /*--- Evaluate the area averaged pressure and CG ---*/
-        
-        xCoord_CG /= TotalArea;
-        yCoord_CG /= TotalArea;
-        zCoord_CG /= TotalArea;
-        PT_Mean   /= TotalArea;
-        Mach_Mean /= TotalArea;
-        q_Mean    /=  TotalArea;
-        
-        /*--- If it is a half model, CGy = 0 ---*/
-        
-        if (Engine_HalfModel) { yCoord_CG = 0.0; }
-        
-        /*--- Compute hub and tip radius ---*/
-        
-        TipRadius = 1E-6; HubRadius = 1E6;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-          for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
-            
-            /*--- Current index position and global index ---*/
-            
-            Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-            
-            /*--- Retrieve the merged data for this node ---*/
-            
-            xCoord = Buffer_Recv_Coord_x[Total_Index];
-            yCoord = Buffer_Recv_Coord_y[Total_Index];
-            if (nDim == 3) zCoord = Buffer_Recv_Coord_z[Total_Index];
-            
-            if (nDim == 2)
-              Distance = sqrt((xCoord_CG-xCoord)*(xCoord_CG-xCoord) +
-                              (yCoord_CG-yCoord)*(yCoord_CG-yCoord));
-            
-            if (nDim == 3)
-              Distance = sqrt((xCoord_CG-xCoord)*(xCoord_CG-xCoord) +
-                              (yCoord_CG-yCoord)*(yCoord_CG-yCoord) +
-                              (zCoord_CG-zCoord)*(zCoord_CG-zCoord));
-            
-            if (Distance > TipRadius) TipRadius = Distance;
-            if (Distance < HubRadius) HubRadius = Distance;
-            
-          }
-        }
-        
-        if (HubRadius/TipRadius < 0.05) HubRadius = 0.0;
-        
-        /*--- Evaluate the DC60 parameter ---*/
-        
-        Theta = Theta_DC60;
-        nStation = nStation_DC60;
-        
-        nAngle = SU2_TYPE::Int(360/float(Theta));
-        r = new su2double [nStation+1];
-        
-        /*--- Allocate memory ---*/
-        
-        PT_Sector = new su2double [nAngle];
-        ProbeArray = new su2double ** [nAngle];
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          ProbeArray[iAngle] = new su2double * [nStation];
-          for (iStation = 0; iStation < nStation; iStation++) {
-            ProbeArray[iAngle][iStation] = new su2double [5];
-          }
-        }
-        
-        /*--- Define the radius for each probe ---*/
-        
-        r[0] = HubRadius;
-        r[nStation] = TipRadius;
-        
-        for (iStation = 1; iStation < nStation; iStation++) {
-          r[iStation] = sqrt(  r[iStation-1]*r[iStation-1] + (r[nStation]*r[nStation] - r[0]*r[0])/float(nStation) );
-        }
-        
-        /*--- Define the probe rack ---*/
-        
-        UpVector[0] = 0.0; UpVector[1] = 0.0; UpVector[2] = 1.0;
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          
-          radians = -iAngle*Theta*2.0*PI_NUMBER/360;
-          RotatedVector[0] =  UpVector[0];
-          RotatedVector[1] =  UpVector[1] * cos(radians) - UpVector[2] * sin(radians);
-          RotatedVector[2] =  UpVector[1] * sin(radians) + UpVector[2] * cos(radians);
-          
-          for (iStation = 1; iStation <= nStation; iStation++) {
-            ProbeArray[iAngle][iStation-1][0] = xCoord_CG+RotatedVector[0]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
-            ProbeArray[iAngle][iStation-1][1] = yCoord_CG+RotatedVector[1]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
-            ProbeArray[iAngle][iStation-1][2] = zCoord_CG+RotatedVector[2]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
-          }
-          
-        }
-        
-        /*--- Compute the Total pressure at each probe, closes grid point to the location ---*/
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            xCoord_ = ProbeArray[iAngle][iStation][0];
-            yCoord_ = ProbeArray[iAngle][iStation][1];
-            zCoord_ = ProbeArray[iAngle][iStation][2];
-            
-            MinDistance = 1E6;
-            
-            for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-              for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
-                
-                /*--- Current index position and global index ---*/
-                
-                Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-                
-                /*--- Retrieve the merged data for this node ---*/
-                
-                xCoord = Buffer_Recv_Coord_x[Total_Index];
-                yCoord = Buffer_Recv_Coord_y[Total_Index];
-                if (nDim == 3) zCoord = Buffer_Recv_Coord_z[Total_Index];
-                
-                dx = (xCoord_ - xCoord);
-                dy = (yCoord_ - yCoord);
-                if (nDim == 3) dz = (zCoord_ - zCoord);
-                
-                Distance = dx*dx + dy*dy;
-                if (nDim == 3) Distance += dz*dz;
-                Distance = sqrt(Distance);
-                                
-                if (Engine_HalfModel) {
-                  
-                  yCoord = -yCoord;
-                  
-                  dx_ = (xCoord_ - xCoord);
-                  dy_ = (yCoord_ - yCoord);
-                  if (nDim == 3) dz_ = (zCoord_ - zCoord);
-                  
-                  Distance_Mirror = dx_*dx_ + dy_*dy_;
-                  if (nDim == 3) Distance_Mirror += dz_*dz_;
-                  Distance_Mirror = sqrt(Distance_Mirror);
-                  
-                  if (Distance_Mirror < Distance) {
-                    Distance = Distance_Mirror;
-                    dx = dx_; dy = dy_;
-                    if (nDim == 3) dz = dz_;
-                  }
-                  
-                }
-                
-                if (Distance <= MinDistance) {
-                  MinDistance = Distance;
-                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index]; //+ Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy*SignFlip;
-                  //                  if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
-                  
-                  ProbeArray[iAngle][iStation][4] = Buffer_Recv_q[Total_Index]; //  + Buffer_Recv_dq_dx[Total_Index]*dx + Buffer_Recv_dq_dy[Total_Index]*dy*SignFlip;
-                  //                  if (nDim == 3) ProbeArray[iAngle][iStation][4] += Buffer_Recv_dq_dz[Total_Index]*dz;
-                  
-                }
-                
-              }
-            }
-            
-          }
-          
-        }
-        
-        /*--- Evaluate the average pressure at each sector ---*/
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          PT_Sector[iAngle] = 0.0;
-          for (iStation = 0; iStation < nStation; iStation++) {
-            PT_Sector[iAngle] += ProbeArray[iAngle][iStation][3]/float(nStation);
-          }
-        }
-        
-        /*--- Compute the total average pressure at the fan face ---*/
-        
-        PT_Mean = 0.0;
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            PT_Mean += ProbeArray[iAngle][iStation][3]/float(nStation*nAngle);
-          }
-        }
-        
-        /*--- Compute the total average dynamic pressure at the fan face ---*/
-        
-        q_Mean = 0.0;
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            q_Mean += ProbeArray[iAngle][iStation][4]/float(nStation*nAngle);
-          }
-        }
-        
-        /*--- Compute the min value of the averaged pressure at each sector ---*/
-        
-        PT_Sector_Min = PT_Sector[0];
-        for (iAngle = 1; iAngle < nAngle; iAngle++) {
-          if (PT_Sector[iAngle] <= PT_Sector_Min) PT_Sector_Min = PT_Sector[iAngle];
-        }
-
-        /*--- Set the value of the distortion, it only works for one surface ---*/
-        
-        Mach_Inf           = config->GetMach();
-        Gamma              = config->GetGamma();
-        TotalPressure_Inf  = config->GetPressure_FreeStreamND() * pow( 1.0 + Mach_Inf * Mach_Inf *
-                                                                      0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
-        
-        if (q_Mean != 0.0) DC60 = ((PT_Mean - PT_Sector_Min)*TotalPressure_Inf)/q_Mean;
-        else DC60 = 0.0;
-        
-        config->SetSurface_DC60(iMarker_Analyze, DC60);
-        
-        SetTotal_DC60(DC60);
-        
-        /*--- Deallocate the memory ---*/
-        
-        delete[] r;
-        
-        delete [] PT_Sector;
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            delete[] ProbeArray[iAngle][iStation];
-          }
-        }
-        delete[] ProbeArray;
-        
-        
-        /*--- Evaluate the IDC, and IDR parameters ---*/
-        
-        nStation = SU2_TYPE::Int(config->GetDistortionRack()[0]);
-        Theta = SU2_TYPE::Int(config->GetDistortionRack()[1]);
-        
-        nAngle = SU2_TYPE::Int(360/float(Theta));
-        
-        
-        /*--- Allocate memory ---*/
-        
-        r = new su2double [nStation+1];
-        ProbeArray = new su2double ** [nAngle];
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          ProbeArray[iAngle] = new su2double * [nStation];
-          for (iStation = 0; iStation < nStation; iStation++) {
-            ProbeArray[iAngle][iStation] = new su2double [4];
-          }
-        }
-        
-        /*--- Define the radius for each probe ---*/
-        
-        r[0] = HubRadius;
-        r[nStation] = TipRadius;
-        
-        for (iStation = 1; iStation < nStation; iStation++) {
-          r[iStation] = sqrt(  r[iStation-1]*r[iStation-1] + (r[nStation]*r[nStation] - r[0]*r[0])/float(nStation) );
-        }
-        
-        /*--- Define the probe rack ---*/
-        
-        UpVector[0] = 0.0; UpVector[1] = 0.0; UpVector[2] = 1.0;
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          
-          radians = -iAngle*Theta*2.0*PI_NUMBER/360;
-          RotatedVector[0] =  UpVector[0];
-          RotatedVector[1] =  UpVector[1] * cos(radians) - UpVector[2] * sin(radians);
-          RotatedVector[2] =  UpVector[1] * sin(radians) + UpVector[2] * cos(radians);
-          
-          for (iStation = 1; iStation <= nStation; iStation++) {
-            ProbeArray[iAngle][iStation-1][0] = xCoord_CG+RotatedVector[0]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
-            ProbeArray[iAngle][iStation-1][1] = yCoord_CG+RotatedVector[1]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
-            ProbeArray[iAngle][iStation-1][2] = zCoord_CG+RotatedVector[2]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
-          }
-          
-        }
-        
-        /*--- Compute the Total pressure at each probe, closes grid point to the location ---*/
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            xCoord_ = ProbeArray[iAngle][iStation][0];
-            yCoord_ = ProbeArray[iAngle][iStation][1];
-            zCoord_ = ProbeArray[iAngle][iStation][2];
-            
-            MinDistance = 1E6;
-            
-            for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-              for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
-                
-                /*--- Current index position and global index ---*/
-                
-                Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-                
-                /*--- Retrieve the merged data for this node ---*/
-                
-                xCoord = Buffer_Recv_Coord_x[Total_Index];
-                yCoord = Buffer_Recv_Coord_y[Total_Index];
-                if (nDim == 3) zCoord = Buffer_Recv_Coord_z[Total_Index];
-                
-                dx = (xCoord_ - xCoord);
-                dy = (yCoord_ - yCoord);
-                if (nDim == 3) dz = (zCoord_ - zCoord);
-                
-                Distance = dx*dx + dy*dy;
-                if (nDim == 3) Distance += dz*dz;
-                Distance = sqrt(Distance);
-                                
-                if (Engine_HalfModel) {
-                  
-                  yCoord = -yCoord;
-                  
-                  dx_ = (xCoord_ - xCoord);
-                  dy_ = (yCoord_ - yCoord);
-                  if (nDim == 3) dz_ = (zCoord_ - zCoord);
-                  
-                  Distance_Mirror = dx_*dx_ + dy_*dy_;
-                  if (nDim == 3) Distance_Mirror += dz_*dz_;
-                  Distance_Mirror = sqrt(Distance_Mirror);
-                  
-                  if (Distance_Mirror < Distance) {
-                    Distance = Distance_Mirror;
-                    dx = dx_; dy = dy_;
-                    if (nDim == 3) dz = dz_;
-                  }
-                  
-                }
-                
-                if (Distance <= MinDistance) {
-                  MinDistance = Distance;
-                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index]; // + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy*SignFlip;
-                  //                  if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
-                }
-                
-              }
-            }
-            
-          }
-          
-        }
-        
-        /*--- Evaluate the average and min. pressure at each station/radius  ---*/
-        
-        PT_Station = new su2double [nStation];
-        PT_Station_Min = new su2double [nStation];
-        
-        for (iStation = 0; iStation < nStation; iStation++) {
-          PT_Station[iStation] = 0.0;
-          PT_Station_Min[iStation] = ProbeArray[0][iStation][3];
-          for (iAngle = 0; iAngle < nAngle; iAngle++) {
-            PT = ProbeArray[iAngle][iStation][3];
-            PT_Station[iStation] += PT / float(nAngle);
-            if (PT <= PT_Station_Min[iStation] ) PT_Station_Min[iStation] = PT;
-          }
-        }
-        
-        /*--- Compute the total average pressure at the fan face ---*/
-        
-        PT_Mean = 0.0;
-        for (iStation = 0; iStation < nStation; iStation++) {
-          for (iAngle = 0; iAngle < nAngle; iAngle++) {
-            PT_Mean += ProbeArray[iAngle][iStation][3]/float(nStation*nAngle);
-          }
-        }
-        
-        /*--- Set the value of the distortion, it only works for one surface ---*/
-        
-        IDC = 0.0;
-        for (iStation = 0; iStation < nStation-1; iStation++) {
-          IDC = max (IDC, 0.5*((PT_Station[iStation] -PT_Station_Min[iStation])/PT_Mean
-                               + (PT_Station[iStation+1] -PT_Station_Min[iStation+1])/PT_Mean)   );
-          
-        }
-        
-        config->SetSurface_IDC(iMarker_Analyze, IDC);
-        
-        SetTotal_IDC(IDC);
-        
-        IDR = 0.0;
-        for (iStation = 0; iStation < nStation; iStation++) {
-          IDR = max (IDR, (PT_Mean-PT_Station[iStation])/PT_Mean);
-        }
-        
-        config->SetSurface_IDR(iMarker_Analyze, IDR);
-        
-        SetTotal_IDR(IDR);
-        
-        /*--- Release IDX parameters ---*/
-        
-        delete [] PT_Station_Min;
-        delete [] PT_Station;
-        
-        /*--- Evaluate the IDC Mach parameter ---*/
-        
-        /*--- Compute the Mach number at each probe, closes grid point to the location ---*/
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            xCoord_ = ProbeArray[iAngle][iStation][0];
-            yCoord_ = ProbeArray[iAngle][iStation][1];
-            zCoord_ = ProbeArray[iAngle][iStation][2];
-            
-            MinDistance = 1E6;
-            
-            for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-              for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
-                
-                /*--- Current index position and global index ---*/
-                
-                Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-                
-                /*--- Retrieve the merged data for this node ---*/
-                
-                xCoord = Buffer_Recv_Coord_x[Total_Index];
-                yCoord = Buffer_Recv_Coord_y[Total_Index];
-                if (nDim == 3) zCoord = Buffer_Recv_Coord_z[Total_Index];
-                
-                dx = (xCoord_ - xCoord);
-                dy = (yCoord_ - yCoord);
-                if (nDim == 3) dz = (zCoord_ - zCoord);
-                
-                Distance = dx*dx + dy*dy;
-                if (nDim == 3) Distance += dz*dz;
-                Distance = sqrt(Distance);
-                                
-                if (Engine_HalfModel) {
-                  
-                  yCoord = -yCoord;
-                  
-                  dx_ = (xCoord_ - xCoord);
-                  dy_ = (yCoord_ - yCoord);
-                  if (nDim == 3) dz_ = (zCoord_ - zCoord);
-                  
-                  Distance_Mirror = dx_*dx_ + dy_*dy_;
-                  if (nDim == 3) Distance_Mirror += dz_*dz_;
-                  Distance_Mirror = sqrt(Distance_Mirror);
-                  
-                  if (Distance_Mirror < Distance) {
-                    Distance = Distance_Mirror;
-                    dx = dx_; dy = dy_;
-                    if (nDim == 3) dz = dz_;
-                  }
-                  
-                }
-                
-                if (Distance <= MinDistance) {
-                  MinDistance = Distance;
-                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_Mach[Total_Index]; // + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy*SignFlip;
-                  //                  if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dMach_dz[Total_Index]*dz;
-                }
-                
-              }
-            }
-            
-          }
-          
-        }
-        
-        /*--- Evaluate the average and min. pressure at each station/radius  ---*/
-        
-        Mach_Station = new su2double [nStation];
-        Mach_Station_Min = new su2double [nStation];
-        
-        for (iStation = 0; iStation < nStation; iStation++) {
-          Mach_Station[iStation] = 0.0;
-          Mach_Station_Min[iStation] = ProbeArray[0][iStation][3];
-          for (iAngle = 0; iAngle < nAngle; iAngle++) {
-            Mach = ProbeArray[iAngle][iStation][3];
-            Mach_Station[iStation] += Mach / float(nAngle);
-            if (Mach <= Mach_Station_Min[iStation] ) Mach_Station_Min[iStation] = Mach;
-          }
-        }
-        
-        /*--- Compute the total average pressure at the fan face ---*/
-        
-        Mach_Mean = 0.0;
-        for (iStation = 0; iStation < nStation; iStation++) {
-          for (iAngle = 0; iAngle < nAngle; iAngle++) {
-            Mach_Mean += ProbeArray[iAngle][iStation][3]/float(nStation*nAngle);
-          }
-        }
-        
-        /*--- Set the value of the distortion, it only works for one surface ---*/
-        
-        IDC_Mach = 0.0;
-        for (iStation = 0; iStation < nStation-1; iStation++) {
-          if (Mach_Mean!=0)
-            IDC_Mach = max (IDC_Mach, 0.5*((Mach_Station[iStation] - Mach_Station_Min[iStation])/Mach_Mean
-                                           + (Mach_Station[iStation+1] - Mach_Station_Min[iStation+1])/Mach_Mean)   );
-          
-        }
-        
-        config->SetSurface_IDC_Mach(iMarker_Analyze, IDC_Mach);
-        
-        SetTotal_IDC_Mach(IDC_Mach);
-        
-        delete [] Mach_Station_Min;
-        delete [] Mach_Station;
-        
-        /*--- Release distortion parameters ---*/
-        
-        delete[] r;
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            delete[] ProbeArray[iAngle][iStation];
-          }
-        }
-        delete[] ProbeArray;
-        
-        /*--- Release the recv buffers on the master node ---*/
-        
-        delete [] Buffer_Recv_Coord_x;
-        delete [] Buffer_Recv_Coord_y;
-        if (nDim == 3) delete [] Buffer_Recv_Coord_z;
-        
-        delete [] Buffer_Recv_PT;
-        //        delete [] Buffer_Recv_dPT_dx;
-        //        delete [] Buffer_Recv_dPT_dy;
-        //        if (nDim == 3) delete [] Buffer_Recv_dPT_dz;
-        
-        delete [] Buffer_Recv_Mach;
-        //        delete [] Buffer_Recv_dMach_dx;
-        //        delete [] Buffer_Recv_dMach_dy;
-        //        if (nDim == 3) delete [] Buffer_Recv_dMach_dz;
-        
-        delete [] Buffer_Recv_q;
-        //        delete [] Buffer_Recv_dq_dx;
-        //        delete [] Buffer_Recv_dq_dy;
-        //        if (nDim == 3) delete [] Buffer_Recv_dq_dz;
-        
-        delete [] Buffer_Recv_Area;
-
-        delete [] Buffer_Recv_nVertex;
-        
-        
-      }
-      
-      if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output && !config->GetDiscrete_Adjoint()) {
-        
-        cout << "Surface ("<< Analyze_TagBound << "): ";
-        cout.precision(4);
-        cout.setf(ios::fixed, ios::floatfield);
-        cout << setprecision(1) << "Dist. coeff.: IDC " << 100*config->GetSurface_IDC(iMarker_Analyze)
-        << "%. IDC Mach " << 100*config->GetSurface_IDC_Mach(iMarker_Analyze)
-        << "%. IDR " << 100*config->GetSurface_IDR(iMarker_Analyze)
-        << "%. DC60 " << config->GetSurface_DC60(iMarker_Analyze) << "." << endl;
-        
-      }
-      
-      /*--- Release the memory for the remaining buffers and exit ---*/
-      
-      delete [] Buffer_Send_Coord_x;
-      delete [] Buffer_Send_Coord_y;
-      if (nDim == 3) delete [] Buffer_Send_Coord_z;
-      
-      delete [] Buffer_Send_PT;
-      //      delete [] Buffer_Send_dPT_dx;
-      //      delete [] Buffer_Send_dPT_dy;
-      //      if (nDim == 3) delete [] Buffer_Send_dPT_dz;
-      
-      delete [] Buffer_Send_q;
-      //      delete [] Buffer_Send_dq_dx;
-      //      delete [] Buffer_Send_dq_dy;
-      //      if (nDim == 3) delete [] Buffer_Send_dq_dz;
-      
-      delete [] Buffer_Send_Mach;
-      //      delete [] Buffer_Send_dMach_dx;
-      //      delete [] Buffer_Send_dMach_dy;
-      //      if (nDim == 3) delete [] Buffer_Send_dMach_dz;
-      
-      delete [] Buffer_Send_Area;
-            
-    }
-    
-  }
-  
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output && !config->GetDiscrete_Adjoint()) {
-    
-    cout << "-------------------------------------------------------------------------" << endl;
-    
-  }
-  
-}
-
 void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
   
   unsigned short iDim, iMarker, jMarker;
@@ -10270,8 +9029,7 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
         break;
         
         /*--- The following are not per-surface, and as a result will be
-         * double-counted iff multiple surfaces are specified as well as multi-objective
-         * TODO: print a warning to the user about that possibility. ---*/
+         double-counted iff multiple surfaces are specified as well as multi-objective ---*/
         
       case EQUIVALENT_AREA:
         Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
@@ -10294,14 +9052,17 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case FIGURE_OF_MERIT:
         Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
         break;
-      case AVG_TOTAL_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*OneD_TotalPress;
+      case SURFACE_TOTAL_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
         break;
-      case AVG_OUTLET_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*OneD_Pressure1D;
+      case SURFACE_STATIC_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
         break;
-      case MASS_FLOW_RATE:
-        Total_ComboObj+=Weight_ObjFunc*OneD_MassFlowRate;
+      case SURFACE_MASSFLOW:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
+        break;
+      case SURFACE_MACH:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
         break;
       case CUSTOM_OBJFUNC:
         Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
@@ -17367,7 +16128,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
   bool interface            = (config->GetnMarker_InterfaceBound() != 0);
-  bool marker_analyze       = (config->GetnMarker_Analyze() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA;
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
@@ -17381,13 +16141,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the engine properties ---*/
 
   if (engine) { GetPower_Properties(geometry, config, iMesh, Output); }
-
-  /*--- Compute the control volume properties ---*/
-
-  if (marker_analyze) {
-    GetSurface_Properties(geometry, NULL, NULL, config, iMesh, Output);
-    GetSurface_Distortion(geometry, config, iMesh, Output);
-  }
 
   /*--- Compute the actuator disk properties and distortion levels ---*/
 
@@ -17793,10 +16546,10 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefArea    = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
   su2double Gas_Constant    = config->GetGas_ConstantND();
-  su2double *Origin;
-  if (config->GetnMarker_Monitoring() != 0){
-    Origin = config->GetRefOriginMoment(0);
-  }
+  su2double *Origin = NULL;
+  
+  if (config->GetnMarker_Monitoring() != 0) { Origin = config->GetRefOriginMoment(0); }
+  
   bool grid_movement        = config->GetGrid_Movement();
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
   bool axisymmetric         = config->GetAxisymmetric();
