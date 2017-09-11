@@ -3874,9 +3874,9 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config,
 
         /*--- Instantiate the solution at this node, note that the muT_Inf should recomputed ---*/
         node[iPoint_Local] = new CTurbKEVariable(Solution[0], Solution[1],
-                                                         Solution[2], Solution[3],
-                                                         muT_Inf, Tm_Inf, Lm_Inf,
-                                                         nDim, nVar, constants, config);
+                                                 Solution[2], Solution[3],
+                                                 muT_Inf, Tm_Inf, Lm_Inf,
+                                                 nDim, nVar, constants, config);
         iPoint_Global_Local++;
       }
 
@@ -3971,10 +3971,10 @@ void CTurbKESolver::Preprocessing(CGeometry *geometry,
 }
 
 void CTurbKESolver::Postprocessing(CGeometry *geometry,
-        CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+                                   CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-  su2double rho = 0.0, mu = 0.0;
-  su2double epsi, kine, v2, strMag, zeta, f, muT, *VelInf;
+  su2double rho;
+  su2double kine, v2, zeta, muT, *VelInf;
   su2double VelMag;
   unsigned long iPoint;
 
@@ -3993,64 +3993,27 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry,
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Compute turbulence scales ---*/
-    if (compressible) {
-      rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-      mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-    }
-    if (incompressible ) {
-      rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-      mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-    }
-    const su2double nu = mu/rho;
+    rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
 
     /*--- Scalars ---*/
     kine = node[iPoint]->GetSolution(0);
-    epsi = node[iPoint]->GetSolution(1);
     v2   = node[iPoint]->GetSolution(2);
-    f    = node[iPoint]->GetSolution(3);
 
     /*--- T & L ---*/
-    strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
-    su2double L_Inf = config->GetLength_Reynolds();
     su2double scale = 1.0e-14;
     VelInf = config->GetVelocity_FreeStreamND();
-    VelMag = 0.0;
+    VelMag = 0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       VelMag += VelInf[iDim]*VelInf[iDim];
     VelMag = sqrt(VelMag);
-//    kine = max(kine, scale*VelMag*VelMag);
-//    epsi = max(kine, scale*VelMag*VelMag*VelMag/L_Inf);
-    kine = max(kine, 1e-8);
-    epsi = max(epsi, 1e-4*mu/rho);
+    kine = max(kine, scale*VelMag*VelMag);
     zeta = max(v2/kine, scale);
-    zeta = min(zeta, 10.0);
-    v2   = max(v2, zeta*kine);
 
-    /*--- T & L ---*/
-    const su2double C_mu  = constants[0];
-    const su2double C_T   = constants[8];
-    const su2double C_eta = constants[10];
-
-    //--- Model time scale ---//
-    const su2double T1     = kine/epsi;
-    const su2double T2     = 0.6/(sqrt(3.0)*C_mu*strMag*zeta);
-    const su2double T3     = C_T*sqrt(nu/epsi);
-
-    su2double T = max(min(T1,T2),T3);
-
-
-    //--- Model length scale ---//
-    const su2double L1 = pow(kine,1.5)/epsi;
-    const su2double L2 = sqrt(kine)/(sqrt(3.0)*C_mu*strMag*zeta);
-    const su2double L3 = C_eta*pow(pow(nu,3.0)/epsi,0.25);
-
-    su2double L = max(min(L1,L2),L3); //... mult by C_L later
-
-    node[iPoint]->SetTurbScales(T, L);
+    su2double Tm = node[iPoint]->GetTurbTimescale();
 
     /*--- Compute the eddy viscosity ---*/
 
-    muT = constants[0]*rho*zeta*kine*T;
+    muT = constants[0]*rho*zeta*kine*Tm;
 
     node[iPoint]->SetmuT(muT);
 
@@ -4085,12 +4048,65 @@ void CTurbKESolver::Source_Residual(CGeometry *geometry,
     /*--- Set volume ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-    /*--- Set distance to the surface ---*/
-    numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+    /*--- Compute turbulence scales ---*/
 
-    /*--- RANS L & T ---*/
-    numerics->SetTurbTimescale(node[iPoint]->GetTurbTimescale());
-    numerics->SetTurbLengthscale(node[iPoint]->GetTurbLengthscale());
+    /*--- This calculation is best left here.  In the end, we want to set
+     * T and L for each node.  The Numerics class doesn't have access to the
+     * nodes, so we calculate the turbulence scales here, and pass them into
+     * the numerics class. If this was moved post/pre-processing, it would
+     * only be executed once per timestep, despite inner iterations of implicit
+     * solvers ---*/
+
+    const su2double rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+    const su2double mu = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+
+    /*--- Scalars ---*/
+    su2double kine = node[iPoint]->GetSolution(0);
+    su2double epsi = node[iPoint]->GetSolution(1);
+    su2double v2   = node[iPoint]->GetSolution(2);
+    su2double f    = node[iPoint]->GetSolution(3);
+
+    /*--- Relevant scales ---*/
+    su2double scale = 1.0e-14;
+    su2double L_inf = config->GetLength_Reynolds();
+    su2double* VelInf = config->GetVelocity_FreeStreamND();
+    su2double VelMag = 0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      VelMag += VelInf[iDim]*VelInf[iDim];
+    VelMag = sqrt(VelMag);
+
+    /*--- Clipping to avoid nonphysical quantities ---*/
+    const su2double tke_lim = max(kine, scale*VelMag*VelMag);
+    const su2double tdr_lim = max(epsi, scale*VelMag*VelMag*VelMag/L_inf);
+    su2double zeta = max(v2/tke_lim, scale);
+    v2 = max(v2, zeta*kine);
+
+    // Grab other quantities for convenience/readability
+    const su2double C_mu    = constants[0];
+    const su2double C_T     = constants[8];
+    const su2double C_L     = constants[9];
+    const su2double C_eta   = constants[10];
+    const su2double nu      = mu/rho;
+    const su2double S       = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();; //*sqrt(2.0) already included
+
+    //--- Model time scale ---//
+    const su2double T1     = tke_lim/tdr_lim;
+    const su2double T2     = 0.6/(sqrt(3.0)*C_mu*S*zeta);
+    const su2double T3     = C_T*sqrt(nu/tdr_lim);
+    su2double T = max(min(T1,T2),T3);
+
+    //--- Model length scale ---//
+    const su2double L1     = pow(tke_lim,1.5)/tdr_lim;
+    const su2double L2     = sqrt(tke_lim)/(sqrt(3.0)*C_mu*S*zeta);
+    const su2double L3     = C_eta*pow(pow(nu,3.0)/tdr_lim,0.25);
+    su2double L = max(min(L1,L2),L3); //... mult by C_L in source numerics
+
+    /*--- Store T, L so the hybrid class can access them ---*/
+    node[iPoint]->SetTurbScales(T, L);
+
+    /*--- Pass T, L to the lengthscale ---*/
+    numerics->SetTurbLengthscale(L);
+    numerics->SetTurbTimescale(T);
 
     /*--- Set vorticity and strain rate magnitude ---*/
     numerics->SetVorticity(

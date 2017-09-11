@@ -1803,43 +1803,26 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   // clip values to avoid non-physical quantities...
 
-  // NB: 1e-8 is arbitrary
-  const su2double tke_lim = max(tke, 1e-8);
-  const su2double tdr_lim = max(tdr, 1e-4*Laminar_Viscosity_i/Density_i);
+  su2double scale = 1.0e-14;
+  su2double L_inf = config->GetLength_Reynolds();
+  su2double* VelInf = config->GetVelocity_FreeStreamND();
+  su2double VelMag = 0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    VelMag += VelInf[iDim]*VelInf[iDim];
+  VelMag = sqrt(VelMag);
 
-  // if (tke < 0.0) {
-  //   std::cout << "tke = " << tke
-  //             << " at x = " << Coord_i[0] << ", " << Coord_i[1]
-  //             << std::endl;
-  // }
-
-  // if (tdr < 0.0) {
-  //   std::cout << "tdr = " << tdr
-  //             << " at x = " << Coord_i[0] << ", " << Coord_i[1]
-  //             << std::endl;
-  // }
-
-  // if (v20 < -1e-15) {
-  //   std::cout << "v2  = " << v20
-  //             << " at x = " << Coord_i[0] << ", " << Coord_i[1]
-  //             << std::endl;
-  // }
-
-  // if (f < -1e-15) {
-  //   std::cout << "f   = " << f
-  //             << " at x = " << Coord_i[0] << ", " << Coord_i[1]
-  //             << std::endl;
-  // }
+  const su2double tke_lim = max(tke, scale*VelMag*VelMag);
+  const su2double tdr_lim = max(tdr, scale*VelMag*VelMag*VelMag/L_inf);
 
   // make sure v2 is well-behaved
-  const su2double scale = 1.0e-14;
   su2double zeta = max(v20/tke_lim, scale);
-  zeta = min(zeta, 10.0);
   const su2double v2 = max(v20, zeta*tke);
 
   // Grab other quantities for convenience/readability
   const su2double rho = Density_i;
+  const su2double mu  = Laminar_Viscosity_i;
   const su2double muT = Eddy_Viscosity_i;
+  const su2double nu  = mu/rho;
   const su2double S   = StrainMag_i; //*sqrt(2.0) already included
   const su2double Vol = Volume;
 
@@ -1847,10 +1830,10 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   for (unsigned int iDim = 0; iDim < nDim; iDim++)
     diverg += PrimVar_Grad_i[iDim+1][iDim];
 
-  const su2double T1 = tke_lim/tdr_lim;
+  /*--- Tm and Lm are passed in from the Solver class ---*/
 
-  // Multiply by C_L here, since not done before...
-  const su2double Lsq = C_L*Lm*C_L*Lm;
+  const su2double T1 = tke_lim / tdr_lim;
+  const su2double Lsq = (C_L*Lm)*(C_L*Lm); // C_L isn't used till here
 
   //--- v2-f ---//
 
@@ -1916,12 +1899,13 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   Pv2_f   = 0.0;
 
   // ... dissipation
-  Dv2     =  6.0*rho*v2/Tm;
+  Dv2     =  6.0*rho*v2/T1;
 
   Dv2_rk  = 0.0;
   Dv2_re  = 0.0;
   Dv2_rv2 = 6.0/T1;
   Dv2_f   = 0.0;
+
 
   // f equation...
   su2double Pf;
