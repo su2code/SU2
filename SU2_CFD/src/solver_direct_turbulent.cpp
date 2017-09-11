@@ -3978,9 +3978,6 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry,
   su2double VelMag;
   unsigned long iPoint;
 
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-
   /*--- Compute mean flow and turbulence gradients ---*/
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetSolution_Gradient_GG(geometry, config);
@@ -4064,7 +4061,6 @@ void CTurbKESolver::Source_Residual(CGeometry *geometry,
     su2double kine = node[iPoint]->GetSolution(0);
     su2double epsi = node[iPoint]->GetSolution(1);
     su2double v2   = node[iPoint]->GetSolution(2);
-    su2double f    = node[iPoint]->GetSolution(3);
 
     /*--- Relevant scales ---*/
     su2double scale = 1.0e-14;
@@ -4079,12 +4075,10 @@ void CTurbKESolver::Source_Residual(CGeometry *geometry,
     const su2double tke_lim = max(kine, scale*VelMag*VelMag);
     const su2double tdr_lim = max(epsi, scale*VelMag*VelMag*VelMag/L_inf);
     su2double zeta = max(v2/tke_lim, scale);
-    v2 = max(v2, zeta*kine);
 
     // Grab other quantities for convenience/readability
     const su2double C_mu    = constants[0];
     const su2double C_T     = constants[8];
-    const su2double C_L     = constants[9];
     const su2double C_eta   = constants[10];
     const su2double nu      = mu/rho;
     const su2double S       = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();; //*sqrt(2.0) already included

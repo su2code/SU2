@@ -1822,7 +1822,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
   const su2double rho = Density_i;
   const su2double mu  = Laminar_Viscosity_i;
   const su2double muT = Eddy_Viscosity_i;
-  const su2double nu  = mu/rho;
   const su2double S   = StrainMag_i; //*sqrt(2.0) already included
   const su2double Vol = Volume;
 
