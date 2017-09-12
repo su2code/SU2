@@ -252,11 +252,6 @@ inline void CNumerics::SetAdjointVarGradient(su2double **val_psivar_grad_i, su2d
   PsiVar_Grad_j = val_psivar_grad_j;
 }
 
-inline void CNumerics::SetAdjointVarLimiter(su2double *val_psivar_lim_i, su2double *val_psivar_lim_j) {
-  PsiVar_Lim_i = val_psivar_lim_i;
-  PsiVar_Lim_j = val_psivar_lim_j;
-}
-
 inline void CNumerics::SetTurbVar(su2double *val_turbvar_i, su2double *val_turbvar_j) {
   TurbVar_i = val_turbvar_i;
   TurbVar_j = val_turbvar_j;

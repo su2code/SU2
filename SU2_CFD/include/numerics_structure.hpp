@@ -161,10 +161,6 @@ public:
   **ConsVar_Grad;        /*!< \brief Gradient of conservative variables which is a scalar. */
   su2double **PrimVar_Grad_i,  /*!< \brief Gradient of primitive variables at point i. */
   **PrimVar_Grad_j;      /*!< \brief Gradient of primitive variables at point j. */
-  su2double *PrimVar_Lim_i,  /*!< \brief Limiter of primitive variables at point i. */
-  *PrimVar_Lim_j;      /*!< \brief Limiter of primitive variables at point j. */
-  su2double *PsiVar_Lim_i,    /*!< \brief Limiter of adjoint variables at point i. */
-  *PsiVar_Lim_j;      /*!< \brief Limiter of adjoint variables at point j. */
   su2double **PsiVar_Grad_i,    /*!< \brief Gradient of adjoint variables at point i. */
   **PsiVar_Grad_j;      /*!< \brief Gradient of adjoint variables at point j. */
   su2double **TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
