@@ -368,14 +368,6 @@ public:
                           su2double **val_primvar_grad_j);
   
   /*!
-   * \brief Set the Limiter of the primitive variables.
-   * \param[in] val_primvar_lim_i - Limiter of the primitive variable at point i.
-   * \param[in] val_primvar_lim_j - Limiter of the primitive variable at point j.
-   */
-  void SetPrimVarLimiter(su2double *val_primvar_lim_i,
-                         su2double *val_primvar_lim_j);
-  
-  /*!
    * \brief Set the value of the adjoint variable.
    * \param[in] val_psi_i - Value of the adjoint variable at point i.
    * \param[in] val_psi_j - Value of the adjoint variable at point j.

@@ -437,9 +437,9 @@ inline void CVariable::SetThermalConductivity(CConfig *config) { }
 
 inline void CVariable::SetSpecificHeatCp(su2double Cp) { }
 
-inline bool CVariable::SetVorticity(bool val_limiter) { return false; }
+inline bool CVariable::SetVorticity(void) { return false; }
 
-inline bool CVariable::SetStrainMag(bool val_limiter) { return false; }
+inline bool CVariable::SetStrainMag(void) { return false; }
 
 inline void CVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) { }
 
