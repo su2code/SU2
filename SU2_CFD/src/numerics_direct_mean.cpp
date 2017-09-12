@@ -3596,8 +3596,6 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
-  AD::SetPreaccIn(PrimVar_Lim_i, nDim+1);
-  AD::SetPreaccIn(PrimVar_Lim_j, nDim+1);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
 
