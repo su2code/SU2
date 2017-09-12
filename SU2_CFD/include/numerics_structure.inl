@@ -282,10 +282,6 @@ inline void CNumerics::SetPrimVarGradient(su2double **val_primvar_grad_i, su2dou
   PrimVar_Grad_j = val_primvar_grad_j;
 }
 
-inline void CNumerics::SetPrimVarLimiter(su2double *val_primvar_lim_i, su2double *val_primvar_lim_j) {
-  PrimVar_Lim_i = val_primvar_lim_i;
-  PrimVar_Lim_j = val_primvar_lim_j;
-}
 
 inline void CNumerics::SetConsVarGradient(su2double **val_consvar_grad_i, su2double **val_consvar_grad_j) {
   ConsVar_Grad_i = val_consvar_grad_i;
