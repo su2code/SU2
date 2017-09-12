@@ -1230,11 +1230,19 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     else {
         pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
     }
+
+
     pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
     pk = max(pk,0.0);
     
     zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
-    pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+
+    if (config->GetUsing_UQ()){
+        pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
+    }
+    else {
+	pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+    }
     pw = max(pw,0.0);
     
     val_residual[0] += pk*Volume;
