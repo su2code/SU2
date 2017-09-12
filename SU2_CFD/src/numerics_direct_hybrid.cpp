@@ -146,7 +146,6 @@ void CSourcePieceWise_HybridConv::ComputeResidual(su2double *val_residual,
         // This is NOT upwinded.
         udMdx += V_i[kDim+1] * Resolution_Tensor_Gradient[kDim][iDim][jDim];
       }
-      // FIXME: Max magnitude or max value?
       if (iDim == 0 and jDim == 0) max_udMdx = udMdx;
       else if (udMdx > max_udMdx) max_udMdx = udMdx;
     }

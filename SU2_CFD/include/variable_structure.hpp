@@ -1722,28 +1722,6 @@ public:
    */
   virtual su2double GetCrossDiff(void) { return 0.0; };
 
-
-  /*!
-   * \brief Set the turbulence scales of the zeta-f KE model.
-   * \param[in] val_viscosity - Value of the vicosity.
-   * \param[in] val_dist - Value of the distance to the wall.
-   * \param[in] val_density - Value of the density.
-   */
-  virtual void SetTLFunc(su2double val_viscosity, su2double val_dist,
-                         su2double val_density, su2double val_kine, su2double val_epsi,
-                         su2double val_zeta, su2double StrainMag, su2double VelMag,
-                         su2double L_Inf, su2double solve_tol);
-
-  /*!
-   * \brief Get the first blending function.
-   */
-  virtual su2double GetTm(void);
-
-  /*!
-   * \brief Get the second blending function.
-   */
-  virtual su2double GetLm(void);
-  
   /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
@@ -3840,6 +3818,91 @@ public:
 };
 
 /*!
+ * \class CTurbSSTVariable
+ * \brief Main class for defining the variables of the turbulence model.
+ * \ingroup Turbulence_Model
+ * \author A. Bueno.
+ * \version 5.0.0 "Raven"
+ */
+
+class CTurbSSTVariable : public CTurbVariable {
+protected:
+  su2double sigma_om2,
+  beta_star;
+  su2double F1,    /*!< \brief Menter blending function for blending of k-w and k-eps. */
+  F2,            /*!< \brief Menter blending function for stress limiter. */
+  CDkw,           /*!< \brief Cross-diffusion. */
+  T,              /*!< \brief Turbulent timescale */
+  L;              /*!< \brief Turbulent lengthscale */
+  
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTurbSSTVariable(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_rho_kine - Turbulent variable value (initialization value).
+   * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+   * \param[in] val_muT - Turbulent variable value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] constants -
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTurbSSTVariable(su2double val_rho_kine, su2double val_rho_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
+                   su2double *constants, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurbSSTVariable(void);
+  
+  /*!
+   * \brief Set the blending function for the blending of k-w and k-eps.
+   * \param[in] val_viscosity - Value of the vicosity.
+   * \param[in] val_dist - Value of the distance to the wall.
+   * \param[in] val_density - Value of the density.
+   */
+  void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
+  
+  /*!
+   * \brief Get the first blending function.
+   */
+  su2double GetF1blending(void);
+  
+  /*!
+   * \brief Get the second blending function.
+   */
+  su2double GetF2blending(void);
+  
+  /*!
+   * \brief Get the value of the cross diffusion of tke and omega.
+   */
+  su2double GetCrossDiff(void);
+
+  /**
+   * \brief Get the large-eddy timescale of the turbulence
+   * \return The large-eddy timescale of the turbulence.
+   */
+  su2double GetTurbTimescale(void);
+
+  /**
+   * \brief Get the large-eddy lengthscale of the turbulence
+   * \return The large-eddy lengthscale of the turbulence
+   */
+  su2double GetTurbLengthscale(void);
+
+  /**
+   * \brief Sets the large-eddy lengthscale and the large-eddy timescale
+   * \param[in] val_turb_T - Large eddy timescale of the turbulence
+   * \param[in] val_turb_L - Large eddy lengthscale of the turbulence
+   */
+  void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
+};
+
+/*!
  * \class CHybridVariable
  * \brief Base class for the "hybrid parameters"; the variables defining the
  *        hybridization of RANS/LES.
@@ -3938,94 +4001,6 @@ public:
    */
   ~CTurbKEVariable(void);
 
-  /*!
-   * \brief Set the turbulence scales of the zeta-f KE model.
-   * \param[in] val_viscosity - Value of the vicosity.
-   * \param[in] val_dist - Value of the distance to the wall.
-   * \param[in] val_density - Value of the density.
-   */
-  void SetTLFunc(su2double val_viscosity, su2double val_dist,
-                 su2double val_density, su2double val_kine, su2double val_epsi,
-                 su2double val_zeta, su2double StrainMag, su2double VelMag,
-                 su2double L_Inf, su2double solve_tol);
-
-  /*!
-   * \brief Get the first blending function.
-   */
-  su2double GetTm(void);
-
-  /*!
-   * \brief Get the second blending function.
-   */
-  su2double GetLm(void);
-
-};
-
-/*!
- * \class CTurbSSTVariable
- * \brief Main class for defining the variables of the turbulence model.
- * \ingroup Turbulence_Model
- * \author A. Bueno.
- * \version 5.0.0 "Raven"
- */
-
-class CTurbSSTVariable : public CTurbVariable {
-protected:
-  su2double sigma_om2,
-  beta_star;
-  su2double F1,    /*!< \brief Menter blending function for blending of k-w and k-eps. */
-  F2,            /*!< \brief Menter blending function for stress limiter. */
-  CDkw,           /*!< \brief Cross-diffusion. */
-  T,              /*!< \brief Turbulent timescale */
-  L;              /*!< \brief Turbulent lengthscale */
-  
-public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CTurbSSTVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_rho_kine - Turbulent variable value (initialization value).
-   * \param[in] val_rho_omega - Turbulent variable value (initialization value).
-   * \param[in] val_muT - Turbulent variable value (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] constants -
-   * \param[in] config - Definition of the particular problem.
-   */
-  CTurbSSTVariable(su2double val_rho_kine, su2double val_rho_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
-                   su2double *constants, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTurbSSTVariable(void);
-  
-  /*!
-   * \brief Set the blending function for the blending of k-w and k-eps.
-   * \param[in] val_viscosity - Value of the vicosity.
-   * \param[in] val_dist - Value of the distance to the wall.
-   * \param[in] val_density - Value of the density.
-   */
-  void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
-  
-  /*!
-   * \brief Get the first blending function.
-   */
-  su2double GetF1blending(void);
-  
-  /*!
-   * \brief Get the second blending function.
-   */
-  su2double GetF2blending(void);
-  
-  /*!
-   * \brief Get the value of the cross diffusion of tke and omega.
-   */
-  su2double GetCrossDiff(void);
-
   /**
    * \brief Get the large-eddy timescale of the turbulence
    * \return The large-eddy timescale of the turbulence.
@@ -4045,6 +4020,7 @@ public:
    */
   void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
 };
+
 
 /*!
  * \class CHybridConvVariable

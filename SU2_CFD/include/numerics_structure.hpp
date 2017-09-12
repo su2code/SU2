@@ -117,12 +117,12 @@ public:
   su2double** Resolution_Tensor_j;  /*!< \brief Resolution tensor at point j. */
   su2double*** Resolution_Tensor_Gradient; /*!< \brief Gradient of the resolution tensor at point i. */
   su2double Resolution_Adequacy; /*!< \brief Resolution adequacy parameter for a hybrid RANS/LES at point i. */
-  su2double TurbT, /*!< \brief Turbulent timescale */
-            TurbL; /*!< \brief Turbulent lengthscale */
   su2double *HybridParameter_i, /*!< \brief Vector of variables for hybrid RANS/LES "hybrid parameters" at point i. */
             *HybridParameter_j; /*!< \brief Vector of variables for hybrid RANS/LES "hybrid parameters" at point j. */
   su2double **HybridParam_Grad_i, /*!< \brief Gradient of variables for hybrid RANS/LES "hybrid parameters" at point i. */
             **HybridParam_Grad_j; /*!< \brief Gradient of variables for hybrid RANS/LES "hybrid parameters" at point j. */
+  su2double TurbL, /*!< The turbulent lengthscale */
+            TurbT; /*!< The turbulent timescale */
   su2double RANS_Weight; /*!< \brief The weight given to RANS for hybrid RANS/LES */
   su2double turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;      /*!< \brief Turbulent kinetic energy at point j. */
@@ -490,14 +490,6 @@ public:
    * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {/* empty */};
-
-  /*! swh
-   * \brief Set the value of Tm and Lm for the zeta-f KE model.
-   * \param[in] val_Lm_i - Value of the turbulence lengthscale at point i.
-   * \param[in] val_Tm_j - Value of the turbulence timescale at point i.
-   */
-  virtual void SetLm(su2double val_Lm_i, su2double val_Lm_j) {/* empty */};
-  virtual void SetTm(su2double val_Tm_i, su2double val_Tm_j) {/* empty */};
   
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -3812,9 +3804,6 @@ private:
   *Proj_Mean_GradTurbVar_Edge,          /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
   *Proj_Mean_GradTurbVar_Corrected;
 
-  su2double Lm_i, Lm_j;                    /*!< \brief model length scale */
-  su2double Tm_i, Tm_j;                    /*!< \brief model time scale */
-
   bool implicit, incompressible;
   unsigned short iVar, iDim;
 
@@ -3833,17 +3822,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CAvgGrad_TurbKE(void);
-
-  /*!
-   * \brief Sets value of tubulence time and lengthscale.
-   */
-  void SetLm(su2double val_Lm_i, su2double val_Lm_j) {
-    Lm_i = val_Lm_i; Lm_j = val_Lm_j;
-  }
-
-  void SetTm(su2double val_Tm_i, su2double val_Tm_j) {
-    Tm_i = val_Tm_i; Tm_j = val_Tm_j;
-  }
 
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients
@@ -3952,9 +3930,6 @@ private:
   *Proj_Mean_GradTurbVar_Edge,          /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
   *Proj_Mean_GradTurbVar_Corrected;
 
-  su2double Lm_i, Lm_j;                    /*!< \brief Lm */
-  su2double Tm_i, Tm_j;                    /*!< \brief Tm */
-
   bool implicit, incompressible;
   unsigned short iVar, iDim;
 
@@ -3973,17 +3948,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CAvgGradCorrected_TurbKE(void);
-
-  /*!
-   * \brief Sets value of turbulence length and timescale.
-   */
-  void SetLm(su2double val_Lm_i, su2double val_Lm_j) {
-    Lm_i = val_Lm_i; Lm_j = val_Lm_j;
-  }
-
-  void SetTm(su2double val_Tm_i, su2double val_Tm_j) {
-    Tm_i = val_Tm_i; Tm_j = val_Tm_j;
-  }
 
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients wtih correction.
@@ -4791,80 +4755,6 @@ public:
   void CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(su2double *TransVar_i, su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config);
 };
 
-
-
-/*! swh
- * \class CSourcePieceWise_TurbKE
- * \brief Compute source terms of the zeta-f KE turbulence model equations.
- * \ingroup SourceDiscr
- * \author S. Haering.
- * \version 4.1.3 "Cardinal"
- */
-class CSourcePieceWise_TurbKE : public CNumerics {
-private:
-  su2double Lm_i,
-  Lm_j,
-  Tm_i,
-  Tm_j;
-
-  su2double sigma_k,
-  sigma_e,
-  sigma_z,
-  C_L,
-  C_T,
-  C_1,
-  C_2,
-  C_mu,
-  C_2p,
-  C_eta,
-  C_e1o,
-  C_e2;
-
-  bool incompressible;
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourcePieceWise_TurbKE(unsigned short val_nDim, unsigned short val_nVar,
-                          su2double* constants, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSourcePieceWise_TurbKE(void);
-
-  /*!
-   * \brief Set the value of the first blending function.
-   * \param[in] val_F1_i - Value of the first blending function at point i.
-   * \param[in] val_F1_j - Value of the first blending function at point j.
-   */
-  void SetLm(su2double val_Lm_i, su2double val_Lm_j);
-
-  /*!
-   * \brief Set the value of the second blending function.
-   * \param[in] val_F2_i - Value of the second blending function at point i.
-   * \param[in] val_F2_j - Value of the second blending function at point j.
-   */
-  void SetTm(su2double val_Tm_i, su2double val_Tm_j);
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian wrt node i soln (for implicit).
-   * \param[out] val_Jacobian_j - Jacobian wrt node j soln (for implicit).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual,
-                       su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                       CConfig *config);
-
-};
-
 /*!
  * \class CSourcePieceWise_TurbSST
  * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
@@ -4878,7 +4768,7 @@ private:
   F1_j,
   F2_i,
   F2_j;
-  
+
   su2double alfa_1,
   alfa_2,
   beta_1,
@@ -4927,7 +4817,7 @@ public:
    * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j);
-  
+
   /*!
    * \brief Residual for source term integration.
    * \param[out] val_residual - Pointer to the total residual.
@@ -4937,6 +4827,61 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
   
+};
+
+
+
+/*! swh
+ * \class CSourcePieceWise_TurbKE
+ * \brief Compute source terms of the zeta-f KE turbulence model equations.
+ * \ingroup SourceDiscr
+ * \author S. Haering.
+ * \version 4.1.3 "Cardinal"
+ */
+class CSourcePieceWise_TurbKE : public CNumerics {
+ private:
+  su2double sigma_k,
+            sigma_e,
+            sigma_z,
+            C_L,
+            C_T,
+            C_1,
+            C_2,
+            C_mu,
+            C_2p,
+            C_eta,
+            C_e1o,
+            C_e2;
+
+  bool incompressible;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TurbKE(unsigned short val_nDim, unsigned short val_nVar,
+                          su2double* constants, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourcePieceWise_TurbKE(void);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian wrt node i soln (for implicit).
+   * \param[out] val_Jacobian_j - Jacobian wrt node j soln (for implicit).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual,
+                       su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+                       CConfig *config);
+
 };
 
 /*!

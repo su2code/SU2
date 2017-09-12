@@ -3729,7 +3729,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         switch (Kind_Turb_Model) {
           case SA:     cout << "Spalart Allmaras" << endl; break;
           case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
-          case SST:    cout << "Menter's SST"     << endl; break;
+          case SST:    cout << "Menter's SST"              << endl; break;
+          case KE:     cout << "Zeta-f KE"                 << endl; break;
         }
         if (Hybrid_Turb_Model) cout << "Hybrid LES/RANS model" << endl;
         break;
