@@ -1457,6 +1457,39 @@ public:
    * \param[in] config - Normal vector
    */
   void CreateBasis(su2double *val_Normal);
+
+  /*!
+   * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues
+   * \param A_i: symmetric matrix to be decomposed
+   * \param Eig_Vec: strores the eigenvectors
+   * \param Eig_Val: stores the eigenvalues
+   */
+  void EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val);
+
+  /*!
+   * \brief Recomposes the eigenvectors and eigenvalues into a matrix
+   * \param A_ij: recomposed matrix
+   * \param Eig_Vec: eigenvectors
+   * \param Eig_Val: eigenvalues
+   */
+  void EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val);
+
+  /*!
+   * \brief tred2
+   * \param V
+   * \param d
+   * \param e
+   */
+  void tred2(su2double **V, su2double *d, su2double *e);
+
+  /*!
+   * \brief tql2
+   * \param V
+   * \param d
+   * \param e
+   */
+  void tql2(su2double **V, su2double *d, su2double *e);
+
 };
 
 /*!
@@ -3219,38 +3252,6 @@ public:
   void GetMeanRateOfStrainMatrix(su2double **S_ij);
 
   /*!
-   * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues
-   * \param A_i: symmetric matrix to be decomposed
-   * \param Eig_Vec: strores the eigenvectors
-   * \param Eig_Val: stores the eigenvalues
-   */
-  void EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val);
-
-  /*!
-   * \brief Recomposes the eigenvectors and eigenvalues into a matrix
-   * \param A_ij: recomposed matrix
-   * \param Eig_Vec: eigenvectors
-   * \param Eig_Val: eigenvalues
-   */
-  void EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val);
-
-  /*!
-   * \brief tred2
-   * \param V
-   * \param d
-   * \param e
-   */
-  void tred2(su2double **V, su2double *d, su2double *e);
-
-  /*!
-   * \brief tql2
-   * \param V
-   * \param d
-   * \param e
-   */
-  void tql2(su2double **V, su2double *d, su2double *e);
-
-  /*!
    * \brief Setting the UQ framework usage
    * \param val_using_uq
    */
@@ -4455,6 +4456,37 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
   
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param turb_ke: turbulent kinetic energy of the noce
+   * \param Eig_Val_Comp: Defines type of eigenspace perturbation
+   * \param beta_delta: Defines the amount of eigenvalue perturbation
+   */
+  void SetPerturbedRSM(su2double turb_ke, unsigned short Eig_Val_Comp, su2double beta_delta);
+
+  /*!
+     * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
+     * \param turb_ke: turbulent kinetic energy of the node
+     */
+  void SetPerturbedStrainMag(su2double turb_ke);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
+
+  /*!
+   * \brief Setting the UQ framework usage
+   * \param val_using_uq
+   */
+  void SetUsing_uq(bool val_using_uq);
 };
 
 /*!
