@@ -378,13 +378,6 @@ public:
   void SetAdjointVarGradient(su2double **val_psivar_grad_i, su2double **val_psivar_grad_j);
   
   /*!
-   * \brief Set the limiter of the adjoint variables.
-   * \param[in] val_psivar_lim_i - Gradient of the adjoint variable at point i.
-   * \param[in] val_psivar_lim_j - Gradient of the adjoint variable at point j.
-   */
-  void SetAdjointVarLimiter(su2double *val_psivar_lim_i, su2double *val_psivar_lim_j);
-  
-  /*!
    * \brief Set the value of the turbulent variable.
    * \param[in] val_turbvar_i - Value of the turbulent variable at point i.
    * \param[in] val_turbvar_j - Value of the turbulent variable at point j.
