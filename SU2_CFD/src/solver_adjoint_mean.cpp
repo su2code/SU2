@@ -6351,7 +6351,6 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Gradient of adjoint variables ---*/
     
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), NULL);
-    numerics->SetAdjointVarLimiter(node[iPoint]->GetLimiter(), NULL);
 
     /*--- Set volume ---*/
     
