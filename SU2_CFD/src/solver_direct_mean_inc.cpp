@@ -1771,16 +1771,16 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   if (viscous) {
     
     /*--- Constant viscosity model ---*/
-    config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
+    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
     
     /*--- Sutherland's model ---*/
     
-    config->SetMu_RefND(config->GetMu_RefND()/Viscosity_Ref);
-    config->SetMu_SND(config->GetMu_SND()/config->GetTemperature_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_RefND()/config->GetTemperature_Ref());
+    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
+    config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
+    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
     
     /* constant thermal conductivity model */
-    config->SetKt_ConstantND(config->GetKt_ConstantND()/Conductivity_Ref);
+    config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
     
     FluidModel->SetLaminarViscosityModel(config);
     FluidModel->SetThermalConductivityModel(config);
