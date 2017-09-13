@@ -4226,10 +4226,11 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         
-        if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)
-          eps2 = LimK *( GlobalMaxPrimitive[iVar] - GlobalMinPrimitive[iVar] );
-        else
-          eps2 = eps1*eps1*eps1;
+        if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+          eps1 = 0.03 * (GlobalMaxPrimitive[iVar] - GlobalMinPrimitive[iVar]);
+          eps2 = eps1*eps1;
+        }
+        else { eps2 = eps1*eps1*eps1; }
 
         AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
         AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));

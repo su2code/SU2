@@ -1162,10 +1162,11 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
 
       for (iVar = 0; iVar < nVar; iVar++) {
         
-        if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)
-          eps2 = LimK *( GlobalMaxSolution[iVar] - GlobalMinSolution[iVar] );
-        else
-          eps2 = eps1*eps1*eps1;
+        if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+          eps1 = 0.03 * (GlobalMaxSolution[iVar] - GlobalMinSolution[iVar]);
+          eps2 = eps1*eps1;
+        }
+        else { eps2 = eps1*eps1*eps1; }
 
         AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
         AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));

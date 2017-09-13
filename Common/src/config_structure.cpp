@@ -4458,7 +4458,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: 0.03."<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4489,7 +4489,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: 0.03."<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4534,7 +4534,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: 0.03."<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4577,7 +4577,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: 0.03."<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
