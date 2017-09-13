@@ -1627,3 +1627,5 @@ inline bool CConfig::GetUsing_UQ(void) { return using_uq; }
 inline su2double CConfig::GetBeta_Delta(void) { return beta_delta; }
 
 inline unsigned short CConfig::GetEig_Val_Comp(void) {return eig_val_comp; }
+
+inline su2double CConfig::GetURLX(void) {return urlx; }

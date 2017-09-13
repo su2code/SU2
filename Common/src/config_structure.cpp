@@ -1895,6 +1895,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Parameter to determine kind of perturbation */
   addUnsignedShortOption("COMPONENTIALITY", eig_val_comp, 0);
+
+  /* DESCRIPTION: Parameter to perturb eigenvalues */
+  addDoubleOption("URLX", urlx, 0.0);
   
   /* END_CONFIG_OPTIONS */
 
@@ -3345,6 +3348,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       using_uq = false;
       beta_delta = 0.0;
       eig_val_comp = 0;
+      urlx = 0;
   }
 
   /*--- If there are not design variables defined in the file ---*/
