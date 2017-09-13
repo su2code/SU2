@@ -384,7 +384,7 @@ void CNumerics::GetInviscidArtCompProjJac(su2double *val_density, su2double *val
   for (iDim = 0; iDim < nDim; iDim++)
     proj_vel += val_velocity[iDim]*val_normal[iDim];
 
-    if (nDim == 2) {
+  if (nDim == 2) {
     val_Proj_Jac_Tensor[0][0] = 0.0;
     val_Proj_Jac_Tensor[0][1] = val_scale*(*val_betainc2)*val_normal[0]/(*val_density);
     val_Proj_Jac_Tensor[0][2] = val_scale*(*val_betainc2)*val_normal[1]/(*val_density);

@@ -1576,7 +1576,7 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
 
   unsigned short iMarkerInt, nMarkerInt; 
 
-  unsigned long iVertex, nVertexDonor, nVertexTarget;
+  unsigned long iVertex, nVertexTarget;
 
   int markDonor, markTarget;
 
@@ -1646,11 +1646,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
-
-    if(markDonor != -1)
-      nVertexDonor  = donor_geometry->GetnVertex(  markDonor  );
-    else
-      nVertexDonor  = 0;
 
     if(markTarget != -1)
       nVertexTarget = target_geometry->GetnVertex( markTarget );

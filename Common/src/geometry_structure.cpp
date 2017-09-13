@@ -5393,10 +5393,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           getline (mesh_file, text_line);
           text_line.erase (0,11); string::size_type position;
           for (iChar = 0; iChar < 20; iChar++) {
-            position = text_line.find( " ", 0 );
-            if (position != string::npos) text_line.erase (position,1); position = text_line.find( "\r", 0 );
-            if (position != string::npos) text_line.erase (position,1); position = text_line.find( "\n", 0 );
-            if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( " ", 0 );  if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( "\r", 0 ); if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( "\n", 0 ); if (position != string::npos) text_line.erase (position,1);
           }
           Marker_Tag = text_line.c_str();
           
@@ -14993,7 +14992,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
-  bool wrt_residuals = config->GetWrt_Residuals();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
   su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
@@ -15632,12 +15630,10 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
 su2double CPhysicalGeometry::Compute_Dihedral(su2double *LeadingEdge_im1, su2double *TrailingEdge_im1,
                                               su2double *LeadingEdge_i, su2double *TrailingEdge_i) {
 
-  su2double Dihedral = 0.0, Dihedral_Leading = 0.0, Dihedral_Trailing = 0.0;
+  // su2double Dihedral_Leading = atan((LeadingEdge_i[2] - LeadingEdge_im1[2]) / (LeadingEdge_i[1] - LeadingEdge_im1[1]))*180/PI_NUMBER;
+  su2double Dihedral_Trailing = atan((TrailingEdge_i[2] - TrailingEdge_im1[2]) / (TrailingEdge_i[1] - TrailingEdge_im1[1]))*180/PI_NUMBER;
 
-  Dihedral_Leading = atan((LeadingEdge_i[2] - LeadingEdge_im1[2]) / (LeadingEdge_i[1] - LeadingEdge_im1[1]))*180/PI_NUMBER;
-  Dihedral_Trailing = atan((TrailingEdge_i[2] - TrailingEdge_im1[2]) / (TrailingEdge_i[1] - TrailingEdge_im1[1]))*180/PI_NUMBER;
-
-  Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
+  // su2double Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
 
   return Dihedral_Trailing;
 
@@ -15647,23 +15643,21 @@ su2double CPhysicalGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2do
                                                su2double *LeadingEdge_i, su2double *TrailingEdge_i,
                                                su2double *LeadingEdge_ip1, su2double *TrailingEdge_ip1) {
 
-  su2double Curvature = 0.0, Curvature_Leading = 0.0, Curvature_Trailing = 0.0;
-
   su2double A[2], B[2], C[2], BC[2], AB[2], AC[2], BC_MOD, AB_MOD,  AC_MOD, AB_CROSS_AC;
 
-  A[0] = LeadingEdge_im1[1];     A[1] = LeadingEdge_im1[2];
-  B[0] = LeadingEdge_i[1];           B[1] = LeadingEdge_i[2];
-  C[0] = LeadingEdge_ip1[1];      C[1] = LeadingEdge_ip1[2];
+  // A[0] = LeadingEdge_im1[1];     A[1] = LeadingEdge_im1[2];
+  // B[0] = LeadingEdge_i[1];           B[1] = LeadingEdge_i[2];
+  // C[0] = LeadingEdge_ip1[1];      C[1] = LeadingEdge_ip1[2];
 
-  BC[0] = C[0] - B[0]; BC[1] = C[1] - B[1];
-  AB[0] = B[0] - A[0]; AB[1] = B[1] - A[1];
-  AC[0] = C[0] - A[0]; AC[1] = C[1] - A[1];
-  BC_MOD = sqrt(BC[0]*BC[0] + BC[1]*BC[1] );
-  AB_MOD = sqrt(AB[0]*AB[0] + AB[1]*AB[1] );
-  AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
-  AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
+  // BC[0] = C[0] - B[0]; BC[1] = C[1] - B[1];
+  // AB[0] = B[0] - A[0]; AB[1] = B[1] - A[1];
+  // AC[0] = C[0] - A[0]; AC[1] = C[1] - A[1];
+  // BC_MOD = sqrt(BC[0]*BC[0] + BC[1]*BC[1] );
+  // AB_MOD = sqrt(AB[0]*AB[0] + AB[1]*AB[1] );
+  // AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
+  // AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
 
-  Curvature_Leading = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
+  // su2double Curvature_Leading = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
 
   A[0] = TrailingEdge_im1[1];      A[1] = TrailingEdge_im1[2];
   B[0] = TrailingEdge_i[1];                B[1] = TrailingEdge_i[2];
@@ -15677,9 +15671,9 @@ su2double CPhysicalGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2do
   AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
   AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
 
-  Curvature_Trailing = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
+  su2double Curvature_Trailing = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
 
-  Curvature = 0.5*(Curvature_Leading + Curvature_Trailing);
+  // su2double Curvature = 0.5*(Curvature_Leading + Curvature_Trailing);
 
   return Curvature_Trailing;
 
