@@ -4031,7 +4031,6 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, unsigned short E
 
 }
 
-
 CGeneralAvgGradCorrected_Flow::CGeneralAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
