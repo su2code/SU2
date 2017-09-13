@@ -367,7 +367,7 @@ CIncNSVariable::CIncNSVariable(su2double *val_solution, unsigned short val_nDim,
 
 CIncNSVariable::~CIncNSVariable(void) { }
 
-bool CIncNSVariable::SetVorticity(bool val_limiter) {
+bool CIncNSVariable::SetVorticity(void) {
   
   Vorticity[0] = 0.0; Vorticity[1] = 0.0;
   
@@ -382,7 +382,7 @@ bool CIncNSVariable::SetVorticity(bool val_limiter) {
   
 }
 
-bool CIncNSVariable::SetStrainMag(bool val_limiter) {
+bool CIncNSVariable::SetStrainMag(void) {
   
   su2double Div;
   unsigned short iDim;

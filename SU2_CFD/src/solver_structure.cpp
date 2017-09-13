@@ -970,55 +970,178 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
-  su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j, *Solution_i, *Solution_j,
-  dave, LimK, eps1, eps2, dm, dp, du, ds, limiter, SharpEdge_Distance;
+  su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j,
+  *Solution, *Solution_i, *Solution_j, *LocalMinSolution, *LocalMaxSolution,
+  *GlobalMinSolution, *GlobalMaxSolution,
+  dave, LimK, eps1, eps2, dm, dp, du, ds, y, limiter, SharpEdge_Distance;
   
-  /*--- Initialize solution max and solution min in the entire domain --*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      node[iPoint]->SetSolution_Max(iVar, -EPS);
-      node[iPoint]->SetSolution_Min(iVar, EPS);
-    }
-  }
-  
-  /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  if (config->GetKind_SlopeLimit_Flow() == NO_LIMITER) {
     
-    /*--- Point identification, Normal vector and area ---*/
-    
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    
-    /*--- Get the conserved variables ---*/
-    
-    Solution_i = node[iPoint]->GetSolution();
-    Solution_j = node[jPoint]->GetSolution();
-    
-    /*--- Compute the maximum, and minimum values for nodes i & j ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      du = (Solution_j[iVar] - Solution_i[iVar]);
-      node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
-      node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
-      node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
-      node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        node[iPoint]->SetLimiter(iVar, 1.0);
+      }
     }
     
   }
   
-  /*--- Initialize the limiter --*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      node[iPoint]->SetLimiter(iVar, 2.0);
+  else {
+    
+    /*--- Initialize solution max and solution min and the limiter in the entire domain --*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint]->SetSolution_Max(iVar, -EPS);
+        node[iPoint]->SetSolution_Min(iVar, EPS);
+        node[iPoint]->SetLimiter(iVar, 2.0);
+      }
     }
+    
+    /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
+    
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      
+      /*--- Point identification, Normal vector and area ---*/
+      
+      iPoint = geometry->edge[iEdge]->GetNode(0);
+      jPoint = geometry->edge[iEdge]->GetNode(1);
+      
+      /*--- Get the conserved variables ---*/
+      
+      Solution_i = node[iPoint]->GetSolution();
+      Solution_j = node[jPoint]->GetSolution();
+      
+      /*--- Compute the maximum, and minimum values for nodes i & j ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        du = (Solution_j[iVar] - Solution_i[iVar]);
+        node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
+        node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
+        node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
+        node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+      }
+      
+    }
+    
   }
   
+  /*--- Barth-Jespersen limiter with Venkatakrishnan modification ---*/
+  
+  if (config->GetKind_SlopeLimit_Flow() == BARTH_JESPERSEN) {
+    
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      
+      iPoint     = geometry->edge[iEdge]->GetNode(0);
+      jPoint     = geometry->edge[iEdge]->GetNode(1);
+      Gradient_i = node[iPoint]->GetGradient();
+      Gradient_j = node[jPoint]->GetGradient();
+      Coord_i    = geometry->node[iPoint]->GetCoord();
+      Coord_j    = geometry->node[jPoint]->GetCoord();
+      
+      AD::StartPreacc();
+      AD::SetPreaccIn(Gradient_i, nVar, nDim);
+      AD::SetPreaccIn(Gradient_j, nVar, nDim);
+      AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
+
+        /*--- Calculate the interface left gradient, delta- (dm) ---*/
+        
+        dm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+        
+        if (dm == 0.0) { limiter = 2.0; }
+        else {
+          if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
+          else dp = node[iPoint]->GetSolution_Min(iVar);
+          limiter = dp/dm;
+        }
+        
+        if (limiter < node[iPoint]->GetLimiter(iVar)) {
+          node[iPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[iPoint]->GetLimiter()[iVar]);
+        }
+        
+        /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+        
+        dm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+        
+        if (dm == 0.0) { limiter = 2.0; }
+        else {
+          if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
+          else dp = node[jPoint]->GetSolution_Min(iVar);
+          limiter = dp/dm;
+        }
+        
+        if (limiter < node[jPoint]->GetLimiter(iVar)) {
+          node[jPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[jPoint]->GetLimiter()[iVar]);
+        }
+
+      }
+      
+      AD::EndPreacc();
+      
+    }
+
+
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        y =  node[iPoint]->GetLimiter(iVar);
+        limiter = (y*y + 2.0*y) / (y*y + y + 2.0);
+        node[iPoint]->SetLimiter(iVar, limiter);
+      }
+    }
+    
+  }
+
   /*--- Venkatakrishnan limiter ---*/
   
-  if (config->GetKind_SlopeLimit() == VENKATAKRISHNAN) {
+  if ((config->GetKind_SlopeLimit() == VENKATAKRISHNAN) || (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)) {
+    
+    /*--- Allocate memory for the max and min solution value --*/
+    
+    LocalMinSolution = new su2double [nVar]; GlobalMinSolution = new su2double [nVar];
+    LocalMaxSolution = new su2double [nVar]; GlobalMaxSolution = new su2double [nVar];
+    
+    /*--- Compute the max value and min value of the solution ---*/
+    
+    Solution = node[iPoint]->GetSolution();
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      LocalMinSolution[iVar] = Solution[iVar];
+      LocalMaxSolution[iVar] = Solution[iVar];
+    }
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Get the solution variables ---*/
+      
+      Solution = node[iPoint]->GetSolution();
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        LocalMinSolution[iVar] = min (LocalMinSolution[iVar], Solution[iVar]);
+        LocalMaxSolution[iVar] = max (LocalMaxSolution[iVar], Solution[iVar]);
+      }
+      
+    }
+    
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+    for (iVar = 0; iVar < nVar; iVar++) {
+      GlobalMinSolution[iVar] = LocalMinSolution[iVar];
+      GlobalMaxSolution[iVar] = LocalMaxSolution[iVar];
+    }
+#endif
     
     /*-- Get limiter parameters from the configuration file ---*/
     
@@ -1036,8 +1159,23 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
+      AD::StartPreacc();
+      AD::SetPreaccIn(Gradient_i, nVar, nDim);
+      AD::SetPreaccIn(Gradient_j, nVar, nDim);
+      AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+
       for (iVar = 0; iVar < nVar; iVar++) {
         
+        if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)
+          eps2 = LimK *( GlobalMaxSolution[iVar] - GlobalMinSolution[iVar] );
+        else
+          eps2 = eps1*eps1*eps1;
+
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
+
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
         dm = 0.0;
@@ -1051,8 +1189,10 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node[iPoint]->GetLimiter(iVar))
+        if (limiter < node[iPoint]->GetLimiter(iVar)) {
           node[iPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[iPoint]->GetLimiter()[iVar]);
+        }
         
         /*-- Repeat for point j on the edge ---*/
         
@@ -1065,10 +1205,19 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node[jPoint]->GetLimiter(iVar))
+        if (limiter < node[jPoint]->GetLimiter(iVar)) {
           node[jPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[jPoint]->GetLimiter()[iVar]);
+        }
       }
+      
+      AD::EndPreacc();
+
     }
+    
+    delete [] LocalMinSolution; delete [] GlobalMinSolution;
+    delete [] LocalMaxSolution; delete [] GlobalMaxSolution;
+
   }
   
   /*--- Sharp edges limiter ---*/

@@ -1408,10 +1408,6 @@ inline bool CConfig::GetFrozen_Limiter_Disc(void){ return Frozen_Limiter_Disc; }
 
 inline bool CConfig::GetSens_Remove_Sharp(void) { return Sens_Remove_Sharp; }
 
-inline bool CConfig::GetViscous_Limiter_Flow(void) { return Viscous_Limiter_Flow; }
-
-inline bool CConfig::GetViscous_Limiter_Turb(void) { return Viscous_Limiter_Turb; }
-
 inline bool CConfig::GetWrite_Conv_FSI(void) { return Write_Conv_FSI; }
 
 inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }

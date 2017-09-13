@@ -516,7 +516,7 @@ CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
 
 CNSVariable::~CNSVariable(void) { }
 
-bool CNSVariable::SetVorticity(bool val_limiter) {
+bool CNSVariable::SetVorticity(void) {
   
   Vorticity[0] = 0.0; Vorticity[1] = 0.0;
   
@@ -531,7 +531,7 @@ bool CNSVariable::SetVorticity(bool val_limiter) {
   
 }
 
-bool CNSVariable::SetStrainMag(bool val_limiter) {
+bool CNSVariable::SetStrainMag(void) {
   
   su2double Div;
   unsigned short iDim;
