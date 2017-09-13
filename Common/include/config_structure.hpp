@@ -881,8 +881,8 @@ private:
 
   bool using_uq;              /*!< \brief Using uncertainty quantification with SST model */
   su2double beta_delta;       /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
-  unsigned short eig_val_comp;             /*!< \brief Parameter used to determine type of eigenvalue perturbation */
-
+  unsigned short eig_val_comp; /*!< \brief Parameter used to determine type of eigenvalue perturbation */
+  su2double urlx;
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -7369,6 +7369,12 @@ public:
    * \return Value of the eig_val_comp
    */
   unsigned short GetEig_Val_Comp(void);
+
+  /*!
+   * \brief Get the underelaxation factor
+   * \return Value of the urlx parameter
+   */
+  su2double GetURLX(void);
   
   /*!
    * \brief Get the AD support.
