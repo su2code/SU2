@@ -287,14 +287,13 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     
   CGeometry *geom = Geometry[val_zone][MESH_0];
     
-  int nProcessor, rank, iRank;
+  int nProcessor, rank;
   unsigned long iVertex, jVertex, kVertex;
     
-  unsigned long count, iTmp, iTmp2, *uptr, tmp_index, tmp_index_2, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
+  unsigned long count, iTmp, *uptr, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
    
   unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
-    
-    
+  
   nDim = geom->GetnDim();
   
   if( val_marker != -1 )
@@ -311,7 +310,9 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   unsigned long **Aux_Send_Map                  = new unsigned long*[ nVertex ];
 
 #ifdef HAVE_MPI
-  
+  int iRank;
+  unsigned long iTmp2, tmp_index, tmp_index_2;
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 

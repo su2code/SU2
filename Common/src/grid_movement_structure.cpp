@@ -4512,7 +4512,7 @@ bool CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
     
     if (config->GetnDV_Value(iDV) == 1) {
       
-      Ampl = config->GetDV_Value(iDV);
+      Ampl = config->GetDV_Value(iDV)*Scale;
       
       movement[0] = config->GetParamDV(iDV, 4)*Ampl;
       movement[1] = config->GetParamDV(iDV, 5)*Ampl;
@@ -4666,7 +4666,7 @@ bool CSurfaceMovement::SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFor
     
     /*--- Compute deformation ---*/
     
-    Ampl = config->GetDV_Value(iDV);
+    Ampl = config->GetDV_Value(iDV)*Scale;
     
     movement[0] = 0.0;
     movement[1] = 0.0;
@@ -4723,7 +4723,7 @@ bool CSurfaceMovement::SetFFDNacelle(CGeometry *geometry, CConfig *config, CFree
     
     /*--- Compute deformation ---*/
     
-    Ampl = config->GetDV_Value(iDV);
+    Ampl = config->GetDV_Value(iDV)*Scale;
     
     movement[0] = config->GetParamDV(iDV, 4)*Ampl;
     movement[1] = 0.0;
@@ -4977,7 +4977,7 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
     
     for (kIndex = 0; kIndex < 2; kIndex++) {
 						
-      Ampl = config->GetDV_Value(iDV);
+      Ampl = config->GetDV_Value(iDV)*Scale;
 						
       index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
       index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2)); 

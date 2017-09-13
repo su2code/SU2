@@ -10035,17 +10035,19 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0, iSize;
+  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
   unsigned long iPoint, iVertex;
   long jVertex;
   int nSpan, nSpan_loc, nSpan_max;
   su2double *coord, *valueSpan, min, max, radius, delta;
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   short SendRecv;
   bool isPeriodic;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
+  
 #ifdef HAVE_MPI
+  int size = SINGLE_NODE, iSize;
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   int My_nSpan, My_MaxnSpan, *My_nSpan_loc = NULL;
@@ -10353,15 +10355,14 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
   unsigned long  iPoint, **ordered, **disordered, **oldVertex3D, iInternalVertex;
   unsigned long nVert, nVertMax;
-  unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, iSize, kSize = 0, jSize;
+  unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim;
   su2double min, minInt, max, *coord, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   bool **checkAssign;
   min    =  10.0E+06;
   minInt =  10.0E+06;
   max    = -10.0E+06;
-
+  
   su2double radius;
   long iVertex, iSpanVertex, jSpanVertex, kSpanVertex = 0;
   int *nTotVertex_gb, *nVertexSpanHalo;
@@ -10369,6 +10370,10 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   *minAngPitch, *maxAngPitch;
   int       **rank_loc;
 #ifdef HAVE_MPI
+  
+  unsigned short iSize, kSize = 0, jSize;
+  int size = SINGLE_NODE;
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   su2double MyMin,MyIntMin, MyMax;
@@ -11238,8 +11243,6 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
   unsigned long iPoint;
   su2double *TurboNormal,*coord, *Normal, turboNormal2, Normal2, *gridVel, TotalArea, TotalRadius, radius;
   su2double *TotalTurboNormal,*TotalNormal, *TotalGridVel, Area;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   long iVertex;
   /*-- Variables declaration and allocation ---*/
   TotalTurboNormal = new su2double[nDim];
@@ -11250,6 +11253,8 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 
   bool grid_movement        = config->GetGrid_Movement();
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
   su2double MyTotalArea, MyTotalRadius, *MyTotalTurboNormal= NULL, *MyTotalNormal= NULL, *MyTotalGridVel= NULL;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -11476,13 +11481,17 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){
 
   unsigned short iMarker, iMarkerTP;
-  unsigned short iSpan, i, n1, n2, n1t,n2t, iDim;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+  unsigned short iSpan, iDim;
   int markerTP;
   su2double nBlades;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
+  int rank = MASTER_NODE;
 
+
+#ifdef HAVE_MPI
+  int size = SINGLE_NODE;
+  unsigned short i, n1, n2, n1t, n2t;
+#endif
 
   su2double tangGridVelIn, tangGridVelOut;
   su2double areaIn, areaOut, pitchIn, Pitch;
@@ -14993,7 +15002,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
-  bool wrt_residuals = config->GetWrt_Residuals();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
   su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
