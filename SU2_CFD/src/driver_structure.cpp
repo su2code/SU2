@@ -41,13 +41,12 @@
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
                  unsigned short val_nDim,
-                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false) {
+                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false), fem_solver(false) {
 
 
   unsigned short jZone, iSol;
   unsigned short Kind_Grid_Movement;
   bool initStaticMovement;
-  bool fem_solver = false;
   double tick = 0.0;
 
   int rank = MASTER_NODE;
@@ -375,8 +374,8 @@ CDriver::CDriver(char* confFile,
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    if (config_container[iZone]->GetGrid_Movement() ||
-        (config_container[iZone]->GetDirectDiff() == D_DESIGN)) {
+    if (!fem_solver && (config_container[iZone]->GetGrid_Movement() ||
+                        (config_container[iZone]->GetDirectDiff() == D_DESIGN))) {
       if (rank == MASTER_NODE)
         cout << "Setting dynamic mesh structure for zone "<< iZone<<"." << endl;
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][MESH_0], config_container[iZone]);
@@ -3167,9 +3166,11 @@ void CDriver::StartSolver(){
     if (!fsi) {
 
       /*--- Perform a dynamic mesh update if required. ---*/
-      config_container[ZONE_0]->Tick(&tick);
-      DynamicMeshUpdate(ExtIter);
-      config_container[ZONE_0]->Tock(tick,"DynamicMeshUpdate",1);
+      if (!fem_solver) {
+        config_container[ZONE_0]->Tick(&tick);
+        DynamicMeshUpdate(ExtIter);
+        config_container[ZONE_0]->Tock(tick,"DynamicMeshUpdate",1);
+      }
 
       /*--- Run a single iteration of the problem (fluid, elasticty, wave, heat, ...). ---*/
       config_container[ZONE_0]->Tick(&tick);

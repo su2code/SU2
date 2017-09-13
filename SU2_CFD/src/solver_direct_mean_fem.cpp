@@ -779,7 +779,6 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   bool turbulent          = (config->GetKind_Solver() == FEM_RANS) || (config->GetKind_Solver() == FEM_LES);
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
-  bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
@@ -2451,15 +2450,6 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   const vector<vector<unsigned long> > &elementsSend = FEMGeometry->GetEntitiesSend();
   const vector<vector<unsigned long> > &elementsRecv = FEMGeometry->GetEntitiesRecv();
 
-  /* Determine the number of time DOFs that must be communicated.
-     For non-ADER schemes this is simply set to 1. */
-  unsigned short nTimeDOFs = 1;
-  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG)
-    nTimeDOFs = config->GetnTimeDOFsADER_DG();
-
-  /* Determine the number of items per DOF that must be communicated. */
-  const unsigned short nItemsPerDOF = nTimeDOFs*nVar;
-
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Create the triple vector, which contains elements to be    ---*/
   /*---         sent and received per time level. Note that when time      ---*/
@@ -2538,6 +2528,15 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   /*--- Step 3. Determine the MPI communication patterns for               ---*/
   /*---         all time levels.                                           ---*/
   /*--------------------------------------------------------------------------*/
+
+  /* Determine the number of time DOFs that must be communicated.
+     For non-ADER schemes this is simply set to 1. */
+  unsigned short nTimeDOFs = 1;
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG)
+    nTimeDOFs = config->GetnTimeDOFsADER_DG();
+
+  /* Determine the number of items per DOF that must be communicated. */
+  const unsigned short nItemsPerDOF = nTimeDOFs*nVar;
 
   /* Allocate the memory for the first index of the vectors that
      determine the MPI communication patterns. */
@@ -3292,6 +3291,11 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   unsigned long ErrorCounter = 0;
 
   /*-----------------------------------------------------------------------------*/
@@ -3363,6 +3367,35 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
       SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
       if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    }
+  }
+
+  /*-----------------------------------------------------------------------------*/
+  /*                       Check for grid motion.                                */
+  /*-----------------------------------------------------------------------------*/
+
+  const bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+  if(config->GetGrid_Movement() && !harmonic_balance) {
+
+    /*--- Determine the type of grid motion. ---*/
+    switch( config->GetKind_GridMovement(0) ) {
+
+      case RIGID_MOTION: {
+        cout << "Rigid body motion not implemented yet" << endl;
+        exit(EXIT_FAILURE);
+      }
+
+      default: {
+        if(rank == MASTER_NODE)
+          cout << "Only rigid body motion possible for DG-FEM solver at the moment." << endl;
+#ifdef HAVE_MPI
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#else
+        exit(EXIT_FAILURE);
+#endif
+      }
     }
   }
 }
