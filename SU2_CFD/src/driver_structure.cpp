@@ -4427,9 +4427,9 @@ void CDiscAdjFluidDriver::DirectRun(){
 
   unsigned short iZone, jZone;
   bool unsteady = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
-  int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
+  int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 

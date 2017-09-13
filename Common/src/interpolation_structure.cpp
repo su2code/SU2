@@ -287,10 +287,10 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     
   CGeometry *geom = Geometry[val_zone][MESH_0];
     
-  int nProcessor, rank, iRank;
+  int rank;
   unsigned long iVertex, jVertex, kVertex;
     
-  unsigned long count, iTmp, iTmp2, *uptr, tmp_index, tmp_index_2, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
+  unsigned long count, iTmp, *uptr, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
    
   unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
     
@@ -311,13 +311,13 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   unsigned long **Aux_Send_Map                  = new unsigned long*[ nVertex ];
 
 #ifdef HAVE_MPI
-  
+  int nProcessor, iRank;
+  unsigned long iTmp2, tmp_index, tmp_index_2;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 
 #else
 
-  nProcessor = SINGLE_NODE;
   rank = MASTER_NODE;
 
 #endif
@@ -1550,7 +1550,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   /* --- General variables --- */
 
   bool check;
-  int rank, nProcessor;
   
   unsigned short iDim, nDim;
   
@@ -1606,11 +1605,9 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   /*  1 - Variable pre-processing - */
 
 #ifdef HAVE_MPI
+  int rank, nProcessor;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = SINGLE_NODE;
-  rank = MASTER_NODE;
 #endif
 
   nDim = donor_geometry->GetnDim();

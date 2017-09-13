@@ -10034,17 +10034,18 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0, iSize;
+  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
   unsigned long iPoint, iVertex;
   long jVertex;
-  int nSpan, nSpan_loc, nSpan_max;
+  int nSpan, nSpan_loc;
   su2double *coord, *valueSpan, min, max, radius, delta;
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   short SendRecv;
   bool isPeriodic;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
 #ifdef HAVE_MPI
+  unsigned short iSize;
+  int size, nSpan_max;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   int My_nSpan, My_MaxnSpan, *My_nSpan_loc = NULL;
@@ -10097,9 +10098,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
       /*--- storing the local number of span---*/
       nSpan_loc = nSpan;
-      nSpan_max = nSpan;
       /*--- if parallel computing the global number of span---*/
 #ifdef HAVE_MPI
+      nSpan_max = nSpan;
       My_nSpan						 = nSpan;											nSpan								 = 0;
       My_MaxnSpan          = nSpan_max;                     nSpan_max            = 0;
       SU2_MPI::Allreduce(&My_nSpan, &nSpan, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -10352,10 +10353,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
   unsigned long  iPoint, **ordered, **disordered, **oldVertex3D, iInternalVertex;
   unsigned long nVert, nVertMax;
-  unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, iSize, kSize = 0, jSize;
+  unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim;
   su2double min, minInt, max, *coord, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   bool **checkAssign;
   min    =  10.0E+06;
   minInt =  10.0E+06;
@@ -10368,6 +10368,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   *minAngPitch, *maxAngPitch;
   int       **rank_loc;
 #ifdef HAVE_MPI
+  unsigned short iSize, kSize = 0, jSize;
+  int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   su2double MyMin,MyIntMin, MyMax;
@@ -11237,8 +11239,6 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
   unsigned long iPoint;
   su2double *TurboNormal,*coord, *Normal, turboNormal2, Normal2, *gridVel, TotalArea, TotalRadius, radius;
   su2double *TotalTurboNormal,*TotalNormal, *TotalGridVel, Area;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   long iVertex;
   /*-- Variables declaration and allocation ---*/
   TotalTurboNormal = new su2double[nDim];
@@ -11249,6 +11249,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 
   bool grid_movement        = config->GetGrid_Movement();
 #ifdef HAVE_MPI
+  int rank, size;
   su2double MyTotalArea, MyTotalRadius, *MyTotalTurboNormal= NULL, *MyTotalNormal= NULL, *MyTotalGridVel= NULL;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -11475,9 +11476,8 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){
 
   unsigned short iMarker, iMarkerTP;
-  unsigned short iSpan, i, n1, n2, n1t,n2t, iDim;
+  unsigned short iSpan, iDim;
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   int markerTP;
   su2double nBlades;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
@@ -11514,11 +11514,14 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
   for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
 #ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    unsigned short i, n1, n2, n1t,n2t;
+    int size;
     su2double *TurbGeoIn= NULL,*TurbGeoOut= NULL;
     su2double *TotTurbGeoIn = NULL,*TotTurbGeoOut = NULL;
     int *TotMarkerTP;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     n1          = 6;
     n2          = 3;

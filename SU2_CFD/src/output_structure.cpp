@@ -7604,9 +7604,9 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
                                       unsigned long iExtIter, unsigned short val_nZone) {
   
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
+  int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
