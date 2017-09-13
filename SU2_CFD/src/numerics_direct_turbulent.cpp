@@ -1222,7 +1222,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     
     if (config->GetUsing_UQ()){
       SetReynoldsStressMatrix(TurbVar_i[0]);
-      SetPerturbedRSM(TurbVar_i[0], config->GetEig_Val_Comp(),config->GetBeta_Delta());
+      SetPerturbedRSM(TurbVar_i[0], config->GetEig_Val_Comp(),config->GetBeta_Delta(),config->GetURLX());
       SetPerturbedStrainMag(TurbVar_i[0]);
       pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
               - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
@@ -1326,7 +1326,9 @@ void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
     delete [] S_ij;
 }
 
-void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, unsigned short Eig_Val_Comp, su2double beta_delta){
+void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke,
+                                               unsigned short Eig_Val_Comp,
+                                               su2double beta_delta, su2double urlx){
 
     unsigned short iDim,jDim;
     su2double **A_ij;
@@ -1419,7 +1421,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, unsigned short
         for (jDim = 0; jDim < 3; jDim++){
             MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta[iDim][jDim]);
             MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-                    0.01*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+                    urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
         }
     }
 

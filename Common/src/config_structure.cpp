@@ -1891,13 +1891,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("USING_UQ", using_uq, false);
 
   /* DESCRIPTION: Parameter to perturb eigenvalues */
-  addDoubleOption("BETA_DELTA", beta_delta, 0.0);
+  addDoubleOption("BETA_DELTA", beta_delta, 0.5);
 
   /* DESCRIPTION: Parameter to determine kind of perturbation */
-  addUnsignedShortOption("COMPONENTIALITY", eig_val_comp, 0);
+  addUnsignedShortOption("COMPONENTIALITY", eig_val_comp, 1);
 
   /* DESCRIPTION: Parameter to perturb eigenvalues */
-  addDoubleOption("URLX", urlx, 0.0);
+  addDoubleOption("URLX", urlx, 0.01);
   
   /* END_CONFIG_OPTIONS */
 
