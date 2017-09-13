@@ -1518,12 +1518,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual bool SetVorticity(bool val_limiter);
+  virtual bool SetVorticity(void);
   
   /*!
    * \brief A virtual member.
    */
-  virtual bool SetStrainMag(bool val_limiter);
+  virtual bool SetStrainMag(void);
   
   /*!
    * \brief A virtual member.
@@ -3398,12 +3398,12 @@ public:
   /*!
    * \brief Set the vorticity value.
    */
-  bool SetVorticity(bool val_limiter);
+  bool SetVorticity(void);
   
   /*!
    * \brief Set the rate of strain magnitude.
    */
-  bool SetStrainMag(bool val_limiter);
+  bool SetStrainMag(void);
   
   /*!
    * \overload
@@ -3550,12 +3550,12 @@ public:
   /*!
    * \brief Set the vorticity value.
    */
-  bool SetVorticity(bool val_limiter);
+  bool SetVorticity(void);
   
   /*!
    * \brief Set the rate of strain magnitude.
    */
-  bool SetStrainMag(bool val_limiter);
+  bool SetStrainMag(void);
   
   /*!
    * \overload
