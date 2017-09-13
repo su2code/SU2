@@ -801,7 +801,6 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   bool turbulent          = (config->GetKind_Solver() == FEM_RANS) || (config->GetKind_Solver() == FEM_LES);
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
-  bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/

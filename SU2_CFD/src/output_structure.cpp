@@ -7290,7 +7290,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
   
   if ((rank == MASTER_NODE) && (flow)) {
     
-    cout << "Writing the forces breakdown file." << endl;
+    cout << endl << "Writing the forces breakdown file." << endl;
     
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     
