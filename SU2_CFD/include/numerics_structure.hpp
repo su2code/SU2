@@ -3237,13 +3237,8 @@ public:
    * \param Eig_Val_Comp: Defines type of eigenspace perturbation
    * \param beta_delta: Defines the amount of eigenvalue perturbation
    */
-  void SetPerturbedRSM(su2double turb_ke, unsigned short Eig_Val_Comp, su2double beta_delta);
-
-  /*!
-     * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
-     * \param turb_ke: turbulent kinetic energy of the node
-     */
-  void SetPerturbedStrainMag(su2double turb_ke);
+  void SetPerturbedRSM(su2double turb_ke, unsigned short Eig_Val_Comp,
+                       su2double beta_delta, su2double urlx);
 
   /*!
    * \brief Get the mean rate of strain matrix based on velocity gradients
@@ -4468,7 +4463,7 @@ public:
    * \param Eig_Val_Comp: Defines type of eigenspace perturbation
    * \param beta_delta: Defines the amount of eigenvalue perturbation
    */
-  void SetPerturbedRSM(su2double turb_ke, unsigned short Eig_Val_Comp, su2double beta_delta);
+  void SetPerturbedRSM(su2double turb_ke, unsigned short Eig_Val_Comp, su2double beta_delta, su2double urlx);
 
   /*!
      * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix

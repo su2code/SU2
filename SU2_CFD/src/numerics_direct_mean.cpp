@@ -3668,8 +3668,11 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
 
   if (config->GetUsing_UQ()){
     SetReynoldsStressMatrix(Mean_turb_ke);
-    SetPerturbedRSM(Mean_turb_ke, config->GetEig_Val_Comp(),config->GetBeta_Delta());
-    GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, MeanReynoldsStress, MeanPerturbedRSM);
+    SetPerturbedRSM(Mean_turb_ke, config->GetEig_Val_Comp(),config->GetBeta_Delta(),
+                    config->GetURLX());
+    GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal,
+                       Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
+                       MeanReynoldsStress, MeanPerturbedRSM);
   }
 
   else {
@@ -3894,7 +3897,9 @@ void CAvgGradCorrected_Flow::SetReynoldsStressMatrix(su2double turb_ke){
     delete [] S_ij;
 }
 
-void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, unsigned short Eig_Val_Comp, su2double beta_delta){
+void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke,
+                                             unsigned short Eig_Val_Comp,
+                                             su2double beta_delta, su2double urlx){
 
     unsigned short iDim,jDim;
     su2double **A_ij;
@@ -3987,8 +3992,8 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, unsigned short E
         for (jDim = 0; jDim < 3; jDim++){
             MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta[iDim][jDim]);
             MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-                    0.01*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
-	}
+                    urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+        }
     }
 
 //  Printing matrices for debugging
