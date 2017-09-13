@@ -108,7 +108,6 @@ private:
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
-  bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
@@ -3753,18 +3752,6 @@ public:
    * \return <code>FALSE</code> means that the limiter computation is included.
    */
   bool GetFrozen_Limiter_Disc(void);
-
-  /*!
-   * \brief Viscous limiter mean flow.
-   * \return <code>FALSE</code> means no viscous limiter turb equations.
-   */
-  bool GetViscous_Limiter_Flow(void);
-
-  /*!
-   * \brief Viscous limiter turb equations.
-   * \return <code>FALSE</code> means no viscous limiter turb equations.
-   */
-  bool GetViscous_Limiter_Turb(void);
   
   /*!
    * \brief Write convergence file for FSI problems

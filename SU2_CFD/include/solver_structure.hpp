@@ -438,13 +438,6 @@ public:
    */
   virtual void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief Compute the pressure laplacian using in a incompressible solver.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1224,20 +1217,6 @@ public:
    */
   virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1245,26 +1224,12 @@ public:
    */
   virtual void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Limiter_MPI(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -4199,22 +4164,6 @@ public:
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -4229,21 +4178,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief Compute the limiter of the primitive variables.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
@@ -6492,22 +6426,6 @@ public:
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -6523,21 +6441,6 @@ public:
    */
   void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief Compute the limiter of the primitive variables.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
-
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.
    * \param[in] geometry - Geometrical definition of the problem.
