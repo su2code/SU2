@@ -1185,11 +1185,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONV_NUM_METHOD_ADJTURB\n DESCRIPTION: Convective numerical method for the adjoint/turbulent problem \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
 
-  /* DESCRIPTION: Viscous limiter mean flow equations */
-  addBoolOption("VISCOUS_LIMITER_FLOW", Viscous_Limiter_Flow, false);
-  /* DESCRIPTION: Viscous limiter turbulent equations */
-  addBoolOption("VISCOUS_LIMITER_TURB", Viscous_Limiter_Turb, false);
-  
   /*!\par CONFIG_CATEGORY: Adjoint and Gradient \ingroup Config*/
   /*--- Options related to the adjoint and gradient ---*/
 
@@ -4461,12 +4456,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SECOND_ORDER: cout << "Second order integration in space, without slope limiter." << endl; break;
           case SECOND_ORDER_LIMITER: cout << "Second order integration in space, with slope limiter." << endl;
             switch (Kind_SlopeLimit_Flow) {
+              case NO_LIMITER:
+                cout << "No slope-limiting method. "<< endl;
+                break;
               case VENKATAKRISHNAN:
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
+              case VENKATAKRISHNAN_WANG:
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
+                break;
+              case VAN_ALBADA_EDGE:
+                cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
             }
             break;
@@ -4483,12 +4487,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SECOND_ORDER: cout << "Second order integration in space without slope limiter." << endl; break;
           case SECOND_ORDER_LIMITER: cout << "Second order integration in space with slope limiter." << endl;
             switch (Kind_SlopeLimit_Turb) {
+              case NO_LIMITER:
+                cout << "No slope-limiting method. "<< endl;
+                break;
               case VENKATAKRISHNAN:
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
+              case VENKATAKRISHNAN_WANG:
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
+                break;
+              case VAN_ALBADA_EDGE:
+                cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
             }
             break;
@@ -4519,9 +4532,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SECOND_ORDER: cout << "Second order integration." << endl; break;
           case SECOND_ORDER_LIMITER: cout << "Second order integration with slope limiter." << endl;
             switch (Kind_SlopeLimit_AdjFlow) {
+              case NO_LIMITER:
+                cout << "No slope-limiting method. "<< endl;
+                break;
               case VENKATAKRISHNAN:
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                break;
+              case VENKATAKRISHNAN_WANG:
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                break;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
+                break;
+              case VAN_ALBADA_EDGE:
+                cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
               case SHARP_EDGES:
                 cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
@@ -4532,9 +4557,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -4553,9 +4575,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SECOND_ORDER: cout << "Second order integration." << endl; break;
           case SECOND_ORDER_LIMITER: cout << "Second order integration with slope limiter." << endl;
             switch (Kind_SlopeLimit_AdjTurb) {
+              case NO_LIMITER:
+                cout << "No slope-limiting method. "<< endl;
+                break;
               case VENKATAKRISHNAN:
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                break;
+              case VENKATAKRISHNAN_WANG:
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                break;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
+                break;
+              case VAN_ALBADA_EDGE:
+                cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
               case SHARP_EDGES:
                 cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
@@ -4566,9 +4600,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
