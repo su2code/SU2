@@ -3482,7 +3482,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
-  bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool aeroelastic        = config->GetAeroelastic_Simulation();
   
@@ -8283,7 +8282,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
-  su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3], AoA_inc = 0.0, Vel_Infty_Mag, Delta_AoA, Old_AoA,
+  su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3], AoA_inc = 0.0, Vel_Infty_Mag, Old_AoA,
   dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
   
   unsigned short iDim;
@@ -8396,7 +8395,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && !config->GetDiscrete_Adjoint()) {
       Old_AoA = config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
-      Delta_AoA = Old_AoA - AoA_Prev;
       
       cout.precision(7);
       cout.setf(ios::fixed, ios::floatfield);
@@ -10079,7 +10077,6 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
   long iVertex, freq;
   unsigned short  iZone     = config->GetiZone();
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(marker_flag);
-  int rank = MASTER_NODE;
   turboNormal 	= new su2double[nDim];
   turboVelocity = new su2double[nDim];
   Velocity_i 		= new su2double[nDim];
@@ -10089,6 +10086,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
   I = complex<su2double>(0.0,1.0);
 
 #ifdef HAVE_MPI
+  int rank;
   su2double MyIm_inf, MyRe_inf, Im_inf, Re_inf, MyIm_out1, MyRe_out1, Im_out1, Re_out1, MyIm_out2, MyRe_out2, Im_out2, Re_out2;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -13771,14 +13769,13 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
   ComputeBackVelocity(turboVelocity, turboNormal, cartVelocity, INFLOW, config->GetKind_TurboMachinery(iZone));
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    bool RightSol = false;
     node[iPoint]->SetSolution(0, Density_Inf);
     for (iDim = 0; iDim < nDim; iDim++) {
       node[iPoint]->SetSolution(iDim+1, Density_Inf*cartVelocity[iDim]);
     }
     node[iPoint]->SetSolution(nVar-1, Density_Inf*Energy_Inf);
 
-    RightSol = node[iPoint]->SetPrimVar(FluidModel);
+    node[iPoint]->SetPrimVar(FluidModel);
     node[iPoint]->SetSecondaryVar(FluidModel);
   }
 
@@ -13800,9 +13797,6 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
   unsigned short  iZone     = config->GetiZone();
   su2double  *AverageTurboNormal, VelSq;
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-
   /*-- Variables declaration and allocation ---*/
   Velocity           = new su2double[nDim];
   UnitNormal         = new su2double[nDim];
@@ -13811,6 +13805,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
   TotalAreaVelocity  = new su2double[nDim];
 
 #ifdef HAVE_MPI
+  int rank, size;
   su2double MyTotalAreaDensity, MyTotalAreaPressure;
   su2double *MyTotalAreaVelocity = NULL;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -13988,8 +13983,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
   bool menter_sst       = (config->GetKind_Turb_Model() == SST);
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 
   /*-- Variables declaration and allocation ---*/
   Velocity            = new su2double[nDim];
@@ -14013,6 +14006,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
 
 #ifdef HAVE_MPI
+  int rank, size;
   su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassPressure, MyTotalMassDensity, *MyTotalFluxes = NULL;
   su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
   su2double MyTotalNu, MyTotalKine, MyTotalOmega, MyTotalAreaNu, MyTotalAreaKine, MyTotalAreaOmega, MyTotalMassNu, MyTotalMassKine, MyTotalMassOmega;
@@ -14627,7 +14621,6 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
     su2double& pressure_mix, su2double& density_mix) {
 
 
-  int rank = MASTER_NODE;
   su2double dx, f, df, resdl = 1.0E+05;
   unsigned short iter = 0, iDim;
   su2double relax_factor = config->GetMixedout_Coeff(0);
@@ -14639,6 +14632,7 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
   vel = new su2double[nDim];
 
 #ifdef HAVE_MPI
+  int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
@@ -14688,9 +14682,8 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
 void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry){
 
   unsigned short iMarker, iMarkerTP;
-  unsigned short iSpan, i, n1, n2, n1t,n2t;
+  unsigned short iSpan;
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   int markerTP;
   su2double     densityIn, pressureIn, normalVelocityIn, tangVelocityIn, radialVelocityIn;
   su2double     densityOut, pressureOut, normalVelocityOut, tangVelocityOut, radialVelocityOut;
@@ -14699,11 +14692,14 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
 
   for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
 #ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    unsigned short i, n1, n2, n1t,n2t;
+    int size;
     su2double *TurbPerfIn= NULL,*TurbPerfOut= NULL;
     su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
     int *TotMarkerTP = NULL;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     n1          = 8;
     n2          = 8;
