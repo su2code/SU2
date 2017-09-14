@@ -5706,9 +5706,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_surface) ConvHist_file[0] << surface_outputs;
       if (direct_diff != NO_DERIVATIVE) {
-      if (!turbo) ConvHist_file[0] << d_flow_coeff;
-      else
-        ConvHist_file[0] << d_turbo_coeff;
+        if (!turbo) ConvHist_file[0] << d_flow_coeff;
+        else        ConvHist_file[0] << d_turbo_coeff;
         if (engine || actuator_disk) ConvHist_file[0] << d_engine;
       }
       if (output_comboObj) ConvHist_file[0] << combo_obj;
@@ -8910,6 +8909,7 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
   int rank = MASTER_NODE;
   
 #ifdef HAVE_MPI
+  int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
