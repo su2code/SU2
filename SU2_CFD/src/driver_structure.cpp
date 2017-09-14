@@ -2261,53 +2261,53 @@ void CDriver::Iteration_Preprocessing() {
 
     case EULER: case NAVIER_STOKES: case RANS:
 
-    if(config_container[iZone]->GetBoolTurbomachinery()){
-      if (rank == MASTER_NODE)
-        cout << ": Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
+      if(config_container[iZone]->GetBoolTurbomachinery()){
+        if (rank == MASTER_NODE)
+          cout << ": Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
       iteration_container[iZone] = new CTurboIteration(config_container[iZone]);
 
-    }
-    else{
-      if (rank == MASTER_NODE)
-        cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      }
+      else{
+        if (rank == MASTER_NODE)
+          cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration_container[iZone] = new CFluidIteration(config_container[iZone]);
-    }
-    break;
+      }
+      break;
 
-  case WAVE_EQUATION:
-    if (rank == MASTER_NODE)
-      cout << ": wave iteration." << endl;
-    iteration_container[iZone] = new CWaveIteration(config_container[iZone]);
-    break;
+    case WAVE_EQUATION:
+      if (rank == MASTER_NODE)
+        cout << ": wave iteration." << endl;
+      iteration_container[iZone] = new CWaveIteration(config_container[iZone]);
+      break;
 
-  case HEAT_EQUATION:
-    if (rank == MASTER_NODE)
-      cout << ": heat iteration." << endl;
-    iteration_container[iZone] = new CHeatIteration(config_container[iZone]);
-    break;
+    case HEAT_EQUATION:
+      if (rank == MASTER_NODE)
+        cout << ": heat iteration." << endl;
+      iteration_container[iZone] = new CHeatIteration(config_container[iZone]);
+      break;
 
-  case POISSON_EQUATION:
-    if (rank == MASTER_NODE)
-      cout << ": poisson iteration." << endl;
-    iteration_container[iZone] = new CPoissonIteration(config_container[iZone]);
-    break;
+    case POISSON_EQUATION:
+      if (rank == MASTER_NODE)
+        cout << ": poisson iteration." << endl;
+      iteration_container[iZone] = new CPoissonIteration(config_container[iZone]);
+      break;
 
-  case FEM_ELASTICITY:
-    if (rank == MASTER_NODE)
-      cout << ": FEM iteration." << endl;
+    case FEM_ELASTICITY:
+      if (rank == MASTER_NODE)
+        cout << ": FEM iteration." << endl;
       iteration_container[iZone] = new CFEM_StructuralAnalysis(config_container[iZone]);
-    break;
+      break;
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-    if (rank == MASTER_NODE)
-      cout << ": adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      if (rank == MASTER_NODE)
+        cout << ": adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration_container[iZone] = new CAdjFluidIteration(config_container[iZone]);
-    break;
+      break;
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE)
         cout << ": discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration_container[iZone] = new CDiscAdjFluidIteration(config_container[iZone]);
-    break;
+      break;
   }
 
 }
@@ -4427,10 +4427,9 @@ void CDiscAdjFluidDriver::DirectRun(){
 
   unsigned short iZone, jZone;
   bool unsteady = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
-  int rank = MASTER_NODE;
-  bool turbulent = config_container[ZONE_0]->GetKind_Turb_Model() != NONE;
 
 #ifdef HAVE_MPI
+  int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
@@ -4489,8 +4488,6 @@ CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
 void CDiscAdjTurbomachineryDriver::DirectRun(){
 
   int rank = MASTER_NODE;
-  unsigned short unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                            (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
