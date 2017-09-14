@@ -1456,10 +1456,10 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
   int size = SINGLE_NODE, iSize;
+  int *BuffMarkerDonor, *BuffDonorFlag;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  int *BuffMarkerDonor, *BuffDonorFlag;
 #endif
 
 
@@ -1599,7 +1599,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  int size = SINGLE_NODE, iSize;
+  int size, iSize;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL, *BuffAvg3DVelDonor = NULL,
