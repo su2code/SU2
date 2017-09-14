@@ -3488,7 +3488,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed*SoundSpeed-Vn*Vn)/(Vn*Gamma_Minus_One);
             if (config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE)
               Sens_BPress[iMarker]+=1;
-              if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE) {
+            if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE) {
               for (iDim=0; iDim<nDim; iDim++)
                 Sens_BPress[iMarker]+=0.5*Velocity[iDim]*Velocity[iDim]/(Vn*Vn);
             }
