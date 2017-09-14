@@ -5393,10 +5393,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           getline (mesh_file, text_line);
           text_line.erase (0,11); string::size_type position;
           for (iChar = 0; iChar < 20; iChar++) {
-            position = text_line.find( " ", 0 );
-            if (position != string::npos) text_line.erase (position,1); position = text_line.find( "\r", 0 );
-            if (position != string::npos) text_line.erase (position,1); position = text_line.find( "\n", 0 );
-            if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( " ", 0 );  if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( "\r", 0 ); if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( "\n", 0 ); if (position != string::npos) text_line.erase (position,1);
           }
           Marker_Tag = text_line.c_str();
           
@@ -10035,17 +10034,18 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0, iSize;
+  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
   unsigned long iPoint, iVertex;
   long jVertex;
-  int nSpan, nSpan_loc, nSpan_max;
+  int nSpan, nSpan_loc;
   su2double *coord, *valueSpan, min, max, radius, delta;
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   short SendRecv;
   bool isPeriodic;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
 #ifdef HAVE_MPI
+  unsigned short iSize;
+  int size, nSpan_max;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   int My_nSpan, My_MaxnSpan, *My_nSpan_loc = NULL;
@@ -10098,9 +10098,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
       /*--- storing the local number of span---*/
       nSpan_loc = nSpan;
-      nSpan_max = nSpan;
       /*--- if parallel computing the global number of span---*/
 #ifdef HAVE_MPI
+      nSpan_max = nSpan;
       My_nSpan						 = nSpan;											nSpan								 = 0;
       My_MaxnSpan          = nSpan_max;                     nSpan_max            = 0;
       SU2_MPI::Allreduce(&My_nSpan, &nSpan, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -10353,10 +10353,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
   unsigned long  iPoint, **ordered, **disordered, **oldVertex3D, iInternalVertex;
   unsigned long nVert, nVertMax;
-  unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, iSize, kSize = 0, jSize;
+  unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim;
   su2double min, minInt, max, *coord, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   bool **checkAssign;
   min    =  10.0E+06;
   minInt =  10.0E+06;
@@ -10369,6 +10368,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   *minAngPitch, *maxAngPitch;
   int       **rank_loc;
 #ifdef HAVE_MPI
+  unsigned short iSize, kSize = 0, jSize;
+  int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   su2double MyMin,MyIntMin, MyMax;
@@ -11238,8 +11239,6 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
   unsigned long iPoint;
   su2double *TurboNormal,*coord, *Normal, turboNormal2, Normal2, *gridVel, TotalArea, TotalRadius, radius;
   su2double *TotalTurboNormal,*TotalNormal, *TotalGridVel, Area;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   long iVertex;
   /*-- Variables declaration and allocation ---*/
   TotalTurboNormal = new su2double[nDim];
@@ -11250,6 +11249,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 
   bool grid_movement        = config->GetGrid_Movement();
 #ifdef HAVE_MPI
+  int rank, size;
   su2double MyTotalArea, MyTotalRadius, *MyTotalTurboNormal= NULL, *MyTotalNormal= NULL, *MyTotalGridVel= NULL;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -11476,9 +11476,8 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){
 
   unsigned short iMarker, iMarkerTP;
-  unsigned short iSpan, i, n1, n2, n1t,n2t, iDim;
+  unsigned short iSpan, iDim;
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   int markerTP;
   su2double nBlades;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
@@ -11515,11 +11514,14 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
   for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
 #ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    unsigned short i, n1, n2, n1t,n2t;
+    int size;
     su2double *TurbGeoIn= NULL,*TurbGeoOut= NULL;
     su2double *TotTurbGeoIn = NULL,*TotTurbGeoOut = NULL;
     int *TotMarkerTP;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     n1          = 6;
     n2          = 3;
@@ -14993,7 +14995,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
-  bool wrt_residuals = config->GetWrt_Residuals();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
   su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
@@ -15632,12 +15633,10 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
 su2double CPhysicalGeometry::Compute_Dihedral(su2double *LeadingEdge_im1, su2double *TrailingEdge_im1,
                                               su2double *LeadingEdge_i, su2double *TrailingEdge_i) {
 
-  su2double Dihedral = 0.0, Dihedral_Leading = 0.0, Dihedral_Trailing = 0.0;
+  // su2double Dihedral_Leading = atan((LeadingEdge_i[2] - LeadingEdge_im1[2]) / (LeadingEdge_i[1] - LeadingEdge_im1[1]))*180/PI_NUMBER;
+  su2double Dihedral_Trailing = atan((TrailingEdge_i[2] - TrailingEdge_im1[2]) / (TrailingEdge_i[1] - TrailingEdge_im1[1]))*180/PI_NUMBER;
 
-  Dihedral_Leading = atan((LeadingEdge_i[2] - LeadingEdge_im1[2]) / (LeadingEdge_i[1] - LeadingEdge_im1[1]))*180/PI_NUMBER;
-  Dihedral_Trailing = atan((TrailingEdge_i[2] - TrailingEdge_im1[2]) / (TrailingEdge_i[1] - TrailingEdge_im1[1]))*180/PI_NUMBER;
-
-  Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
+  // su2double Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
 
   return Dihedral_Trailing;
 
@@ -15647,23 +15646,21 @@ su2double CPhysicalGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2do
                                                su2double *LeadingEdge_i, su2double *TrailingEdge_i,
                                                su2double *LeadingEdge_ip1, su2double *TrailingEdge_ip1) {
 
-  su2double Curvature = 0.0, Curvature_Leading = 0.0, Curvature_Trailing = 0.0;
-
   su2double A[2], B[2], C[2], BC[2], AB[2], AC[2], BC_MOD, AB_MOD,  AC_MOD, AB_CROSS_AC;
 
-  A[0] = LeadingEdge_im1[1];     A[1] = LeadingEdge_im1[2];
-  B[0] = LeadingEdge_i[1];           B[1] = LeadingEdge_i[2];
-  C[0] = LeadingEdge_ip1[1];      C[1] = LeadingEdge_ip1[2];
+  // A[0] = LeadingEdge_im1[1];     A[1] = LeadingEdge_im1[2];
+  // B[0] = LeadingEdge_i[1];           B[1] = LeadingEdge_i[2];
+  // C[0] = LeadingEdge_ip1[1];      C[1] = LeadingEdge_ip1[2];
 
-  BC[0] = C[0] - B[0]; BC[1] = C[1] - B[1];
-  AB[0] = B[0] - A[0]; AB[1] = B[1] - A[1];
-  AC[0] = C[0] - A[0]; AC[1] = C[1] - A[1];
-  BC_MOD = sqrt(BC[0]*BC[0] + BC[1]*BC[1] );
-  AB_MOD = sqrt(AB[0]*AB[0] + AB[1]*AB[1] );
-  AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
-  AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
+  // BC[0] = C[0] - B[0]; BC[1] = C[1] - B[1];
+  // AB[0] = B[0] - A[0]; AB[1] = B[1] - A[1];
+  // AC[0] = C[0] - A[0]; AC[1] = C[1] - A[1];
+  // BC_MOD = sqrt(BC[0]*BC[0] + BC[1]*BC[1] );
+  // AB_MOD = sqrt(AB[0]*AB[0] + AB[1]*AB[1] );
+  // AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
+  // AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
 
-  Curvature_Leading = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
+  // su2double Curvature_Leading = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
 
   A[0] = TrailingEdge_im1[1];      A[1] = TrailingEdge_im1[2];
   B[0] = TrailingEdge_i[1];                B[1] = TrailingEdge_i[2];
@@ -15677,9 +15674,9 @@ su2double CPhysicalGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2do
   AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
   AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
 
-  Curvature_Trailing = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
+  su2double Curvature_Trailing = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
 
-  Curvature = 0.5*(Curvature_Leading + Curvature_Trailing);
+  // su2double Curvature = 0.5*(Curvature_Leading + Curvature_Trailing);
 
   return Curvature_Trailing;
 
