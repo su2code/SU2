@@ -1614,8 +1614,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   unsigned short iMesh;
   int Direct_Iter;
 
-  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
+  int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
