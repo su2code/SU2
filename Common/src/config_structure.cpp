@@ -4957,7 +4957,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
               break;
-            case FGMRES || RESTARTED_FGMRES:
+	    case FGMRES:
+            case RESTARTED_FGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
