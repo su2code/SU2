@@ -971,6 +971,9 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   *GlobalMinSolution, *GlobalMaxSolution,
   dave, LimK, eps1, eps2, dm, dp, du, ds, y, limiter, SharpEdge_Distance;
   
+  dave = config->GetRefElemLength();
+  LimK = config->GetLimiterCoeff();
+  
   if (config->GetKind_SlopeLimit_Flow() == NO_LIMITER) {
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -1139,13 +1142,6 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
     }
 #endif
     
-    /*-- Get limiter parameters from the configuration file ---*/
-    
-    dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
-    eps1 = LimK*dave;
-    eps2 = eps1*eps1*eps1;
-    
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
@@ -1163,11 +1159,14 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       for (iVar = 0; iVar < nVar; iVar++) {
         
         if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
-          eps1 = 0.03 * (GlobalMaxSolution[iVar] - GlobalMinSolution[iVar]);
+          eps1 = LimK * (GlobalMaxSolution[iVar] - GlobalMinSolution[iVar]);
           eps2 = eps1*eps1;
         }
-        else { eps2 = eps1*eps1*eps1; }
-
+        else {
+          eps1 = LimK*dave;
+          eps2 = eps1*eps1*eps1;
+        }
+        
         AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
         AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
         AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
