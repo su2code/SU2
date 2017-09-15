@@ -10076,6 +10076,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   short SendRecv;
   bool isPeriodic;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
+  
 #ifdef HAVE_MPI
   unsigned short iSize;
   int size, nSpan_max;
@@ -10393,7 +10394,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   min    =  10.0E+06;
   minInt =  10.0E+06;
   max    = -10.0E+06;
-
+  
   su2double radius;
   long iVertex, iSpanVertex, jSpanVertex, kSpanVertex = 0;
   int *nTotVertex_gb, *nVertexSpanHalo;
@@ -11515,6 +11516,10 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
   su2double nBlades;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
 
+#ifdef HAVE_MPI
+  int size = SINGLE_NODE;
+  unsigned short i, n1, n2, n1t, n2t;
+#endif
 
   su2double tangGridVelIn, tangGridVelOut;
   su2double areaIn, areaOut, pitchIn, Pitch;
