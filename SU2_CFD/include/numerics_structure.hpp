@@ -1540,7 +1540,7 @@ private:
 
 
   su2double StaticEnthalpy_i, StaticEnergy_i, StaticEnthalpy_j, StaticEnergy_j, Kappa_i, Kappa_j, Chi_i, Chi_j, Velocity2_i, Velocity2_j;
-  su2double RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
+  su2double RoeKappa, RoeChi;
 
 public:
   
@@ -3186,7 +3186,6 @@ private:
   Mean_turb_ke,         /*!< \brief Mean value of the turbulent kinetic energy. */
   dist_ij_2;           /*!< \brief Length of the edge and face. */
   bool implicit;      /*!< \brief Implicit calculus. */
-  bool limiter;      /*!< \brief Viscous limiter. */
   
 public:
   

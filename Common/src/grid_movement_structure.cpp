@@ -4520,6 +4520,7 @@ bool CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
   unsigned short index[3], i, j, k, iPlane, iFFDBox;
   bool CheckIndex;
   string design_FFDBox;
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4541,7 +4542,7 @@ bool CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
     
     if (config->GetnDV_Value(iDV) == 1) {
       
-      Ampl = config->GetDV_Value(iDV);
+      Ampl = config->GetDV_Value(iDV)*Scale;
       
       movement[0] = config->GetParamDV(iDV, 4)*Ampl;
       movement[1] = config->GetParamDV(iDV, 5)*Ampl;
@@ -4678,6 +4679,7 @@ bool CSurfaceMovement::SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFor
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, k, iPlane, iFFDBox;
   string design_FFDBox;
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4694,7 +4696,7 @@ bool CSurfaceMovement::SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFor
     
     /*--- Compute deformation ---*/
     
-    Ampl = config->GetDV_Value(iDV);
+    Ampl = config->GetDV_Value(iDV)*Scale;
     
     movement[0] = 0.0;
     movement[1] = 0.0;
@@ -4734,6 +4736,7 @@ bool CSurfaceMovement::SetFFDNacelle(CGeometry *geometry, CConfig *config, CFree
   unsigned short index[3], i, j, k, iPlane, iFFDBox, Theta, ThetaMax;
   string design_FFDBox;
   bool SameCP = false;
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -4750,7 +4753,7 @@ bool CSurfaceMovement::SetFFDNacelle(CGeometry *geometry, CConfig *config, CFree
     
     /*--- Compute deformation ---*/
     
-    Ampl = config->GetDV_Value(iDV);
+    Ampl = config->GetDV_Value(iDV)*Scale;
     
     movement[0] = config->GetParamDV(iDV, 4)*Ampl;
     movement[1] = 0.0;
@@ -4966,6 +4969,7 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
   su2double Ampl, movement[3] = {0.0,0.0,0.0};
   unsigned short index[3], kIndex, iPlane, iFFDBox;
   string design_FFDBox;
+  su2double Scale = config->GetOpt_RelaxFactor();
   
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
@@ -5003,7 +5007,7 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
     
     for (kIndex = 0; kIndex < 2; kIndex++) {
 						
-      Ampl = config->GetDV_Value(iDV);
+      Ampl = config->GetDV_Value(iDV)*Scale;
 						
       index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
       index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2)); 
