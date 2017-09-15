@@ -1535,9 +1535,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     }
 
 		/*--- Check if the combination of hybridization and RANS model are valid ---*/
-    if (hybrid && not(menter_sst)) {
+    if (hybrid && not(menter_sst || zetaf_ke)) {
       cout << "Specified RANS model has not been implemented for hybrid RANS/LES." << endl;
-      cout << "Currently supported RANS models: SST, k-epsilon-" << endl;
+      cout << "Currently supported RANS models: SST, k-epsilon-v2-f" << endl;
       exit(EXIT_FAILURE);
     }
 

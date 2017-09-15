@@ -4013,6 +4013,12 @@ public:
    */
   su2double GetTurbLengthscale(void);
 
+  /*!
+   * \brief Get the component anisotropy ratio (max-to-min)
+   * \return The Reynolds stress component anisotropy ratio (max-to-min)
+   */
+  su2double GetAnisoRatio(void);
+
   /**
    * \brief Sets the large-eddy lengthscale and the large-eddy timescale
    * \param[in] val_turb_T - Large eddy timescale of the turbulence

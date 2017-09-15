@@ -206,7 +206,6 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
   
 }
 
-
 // swh
 CTurbKEVariable::CTurbKEVariable(void) : CTurbVariable() { }
 
@@ -244,4 +243,8 @@ CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi,
 }
 
 CTurbKEVariable::~CTurbKEVariable(void) {
+}
+
+su2double CTurbKEVariable::GetAnisoRatio(void) {
+  return TWO3*Solution[0]/Solution[2];
 }

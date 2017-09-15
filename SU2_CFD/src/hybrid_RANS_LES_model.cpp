@@ -265,7 +265,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
   }
 
   su2double k = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-  const su2double MIN_VEL_DIFF = fmax(EPS, 1e-7*k);
+  const su2double MIN_VEL_DIFF = fmax(EPS, EPS*k);
   if (total_vel_differences > MIN_VEL_DIFF) {
     /*--- Only calculate r_k, w_rans if there are resolved velocity differences
      * at resolution scale.  Otherwise, eigenvector calculation is arbitrary */
@@ -280,7 +280,6 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     vector<su2double> max_eigenvalue_direction = eigvectors_zQz[max_index];
 
     /*---Find the largest product of resolved fluctuations at the cutoff---*/
-    // TODO: Incorporate anisotropy ratio here (max-to-min)
     su2double aniso_ratio = solver_container[TURB_SOL]->node[iPoint]->GetAnisoRatio(); 
     su2double C_kQ = 16.0;
     su2double max_resolved = aniso_ratio*C_kQ*C_sf*TWO3*eigvalues_zQz[max_index];
@@ -295,6 +294,10 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
         min_unresolved = TurbT*k*omega/C_mu;
         break;
       }
+      case KE: {
+        min_unresolved = solver_container[TURB_SOL]->node[iPoint]->GetSolution(2);
+        break;
+      }
       default: {
         cout << "ERROR: The hybrid mediator is not set up for your turb. model!" << endl;
         exit(EXIT_FAILURE);
@@ -302,7 +305,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     }
 
     /*--- Calculate the resolution adequacy parameter ---*/
-    r_k = fmax(max_resolved, TKE_MIN) / fmax(min_unresolved, TKE_MIN);
+    r_k = fmax(max_resolved, 0.0) / fmax(min_unresolved, TKE_MIN);
 
 
     /*--- Find the dissipation ratio ---*/
@@ -364,9 +367,17 @@ void CHybrid_Mediator::SetupHybridParamNumerics(CGeometry* geometry,
                                                 unsigned short jPoint) {
 
   /*--- Find and store turbulent length and timescales ---*/
-
-  su2double turb_T =
-      solver_container[TURB_SOL]->node[iPoint]->GetTurbTimescale();
+  su2double turb_T;
+  if (config->GetKind_Turb_Model() == KE) {
+    // Recompute the turbulence timescale **without** the stag. point anomaly
+    const su2double k = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+    const su2double eps = solver_container[TURB_SOL]->node[iPoint]->GetSolution(1);
+    const su2double nu = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+    const su2double C_T = 6;
+    turb_T = max(k/eps, C_T*sqrt(nu/eps));
+  } else {
+    turb_T = solver_container[TURB_SOL]->node[iPoint]->GetTurbTimescale();
+  }
   su2double turb_L =
       solver_container[TURB_SOL]->node[iPoint]->GetTurbLengthscale();
 
