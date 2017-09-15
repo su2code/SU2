@@ -3381,8 +3381,45 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
     switch( config->GetKind_GridMovement(0) ) {
 
       case RIGID_MOTION: {
-        cout << "Rigid body motion not implemented yet" << endl;
-        exit(EXIT_FAILURE);
+
+        /* Rigid body motion described. At the moment this is only
+           possible for the Classical Runge Kutta scheme. */
+        if(config->GetKind_TimeIntScheme() != CLASSICAL_RK4_EXPLICIT) {
+          if(rank == MASTER_NODE)
+            cout << "Rigid body motion only possible for CLASSICAL_RK4_EXPLICIT." << endl;
+
+#ifdef HAVE_MPI
+          MPI_Barrier(MPI_COMM_WORLD);
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
+#else
+          exit(EXIT_FAILURE);
+#endif
+        }
+
+        /* Determine whether or not it is needed to compute the motion data. */
+        const unsigned long ExtIter = config->GetExtIter();
+
+        bool computeMotion = false, firstTime = false;
+        if(ExtIter == 0 && iStep == 0) computeMotion = firstTime = true;
+        if(iStep == 1 || iStep == 3)   computeMotion = true;
+
+        if( computeMotion ) {
+
+          /* Determine the time for which the motion data must be determined. */
+          const su2double deltaT = config->GetDelta_UnstTimeND();
+
+          su2double tNew = ExtIter*deltaT;
+          if( iStep ) tNew += 0.25*(iStep+1)*deltaT;
+
+          cout << "ExtIter: " << ExtIter << endl;
+          cout << "deltaT:  " << deltaT  << endl;
+          cout << "tNew:    " << tNew    << endl;
+          cout << "Rigid body motion not implemented yet" << endl;
+          exit(EXIT_FAILURE);
+        }
+
+        break;
       }
 
       default: {
