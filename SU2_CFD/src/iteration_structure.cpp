@@ -1678,6 +1678,7 @@ CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(con
 }
 
 CDiscAdjFluidIteration::~CDiscAdjFluidIteration(void) { }
+
 void CDiscAdjFluidIteration::Preprocess(COutput *output,
                                            CIntegration ***integration_container,
                                            CGeometry ***geometry_container,
@@ -1895,7 +1896,7 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
   
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   unsigned short Kind_Solver = config_container[val_iZone]->GetKind_Solver();
-  unsigned IntIter = 0;
+  unsigned long IntIter = 0;
   bool unsteady = config_container[val_iZone]->GetUnsteady_Simulation() != STEADY;
   bool frozen_visc = config_container[val_iZone]->GetFrozen_Visc_Disc();
 

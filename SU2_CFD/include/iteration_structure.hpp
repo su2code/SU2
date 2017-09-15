@@ -981,8 +981,6 @@ class CDiscAdjFluidIteration : public CIteration {
 
 private:
 
-  CFluidIteration* fluid_iteration; /*!< \brief Pointer to the fluid iteration class. */
-  unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
   bool turbulent;       /*!< \brief Stores the turbulent flag. */
 
 public:
