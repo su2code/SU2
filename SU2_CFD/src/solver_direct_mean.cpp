@@ -5279,7 +5279,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefArea    = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
   su2double Gas_Constant    = config->GetGas_ConstantND();
-  su2double *Origin;
+  su2double *Origin = NULL;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
   }
@@ -5683,7 +5683,7 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefArea     = config->GetRefArea();
   su2double RefLength  = config->GetRefLength();
   su2double Gas_Constant     = config->GetGas_ConstantND();
-  su2double *Origin;
+  su2double *Origin = NULL;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
   }
@@ -6511,6 +6511,9 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
   *GlobalMinPrimitive, *GlobalMaxPrimitive,
   dave, LimK, eps2, eps1, dm, dp, du, y, limiter;
   
+  dave = config->GetRefElemLength();
+  LimK = config->GetLimiterCoeff();
+
   if (config->GetKind_SlopeLimit_Flow() == NO_LIMITER) {
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -6678,13 +6681,6 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
       GlobalMaxPrimitive[iVar] = LocalMaxPrimitive[iVar];
     }
 #endif
-
-    /*-- Get limiter parameters from the configuration file ---*/
-    
-    dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
-    eps1 = LimK*dave;
-    eps2 = eps1*eps1*eps1;
     
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
       
@@ -6702,10 +6698,14 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         
-        if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)
-          eps2 = LimK *( GlobalMaxPrimitive[iVar] - GlobalMinPrimitive[iVar] );
-        else
+        if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+          eps1 = LimK * (GlobalMaxPrimitive[iVar] - GlobalMinPrimitive[iVar]);
+          eps2 = eps1*eps1;
+        }
+        else {
+          eps1 = LimK*dave;
           eps2 = eps1*eps1*eps1;
+        }
 
         AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
         AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
@@ -10089,7 +10089,6 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
   int rank;
   su2double MyIm_inf, MyRe_inf, Im_inf, Re_inf, MyIm_out1, MyRe_out1, Im_out1, Re_out1, MyIm_out2, MyRe_out2, Im_out2, Re_out2;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
 #endif
 
   kend_max = geometry->GetnFreqSpanMax(marker_flag);
@@ -14690,7 +14689,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
   su2double     kineIn, omegaIn, nuIn, kineOut, omegaOut, nuOut;
   //TODO (turbo) implement interpolation so that Inflow and Outflow spanwise section can be different
 
-  for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
+  for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++) {
+    
 #ifdef HAVE_MPI
     unsigned short i, n1, n2, n1t,n2t;
     int size;
