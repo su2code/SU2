@@ -1894,7 +1894,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("BETA_DELTA", beta_delta, 0.5);
 
   /* DESCRIPTION: Parameter to determine kind of perturbation */
-  addUnsignedShortOption("COMPONENTIALITY", eig_val_comp, 1);
+  addUnsignedShortOption("COMPONENTALITY", eig_val_comp, 1);
 
   /* DESCRIPTION: Parameter to perturb eigenvalues */
   addDoubleOption("URLX", urlx, 0.01);
@@ -3351,6 +3351,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       urlx = 0;
   }
 
+  if (using_uq && (eig_val_comp > 3 || eig_val_comp < 1)){
+      cout << "Componentality should be either 1, 2, or 3!" << endl;
+      exit(EXIT_FAILURE);
+  }
+
   /*--- If there are not design variables defined in the file ---*/
 
   if (nDV == 0) {
@@ -3992,7 +3997,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA:     cout << "Spalart Allmaras" << endl; break;
           case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
           case SST:    cout << "Menter's SST"     << endl; break;
+
         }
+        if (using_uq) cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
+
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
