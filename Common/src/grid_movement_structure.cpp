@@ -696,7 +696,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
     dist = 1E20;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
       for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        dist2 = EPS*EPS;
+        dist2 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_SolidWall+iVertex)*nDim+iDim])*
           (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_SolidWall+iVertex)*nDim+iDim]);
@@ -705,7 +705,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
       }
 
     MaxDistance = max(MaxDistance, sqrt(dist));
-    if (sqrt(dist)> EPS)  MinDistance = min(MinDistance, sqrt(dist));
+    if (sqrt(dist) > 0.0) MinDistance = min(MinDistance, sqrt(dist));
 
     geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
 
@@ -1772,8 +1772,8 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     }
     
     Nu = config->GetDeform_Coeff();
-    Mu = E / (2.0*(1.0 + Nu));
-    Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+    Mu = E; //E / (2.0*(1.0 + Nu)+EPS);
+    Lambda = -E; //Nu*E/((1.0+Nu)*(1.0-2.0*Nu)+EPS);
     
     /*--- Compute the D Matrix (for plane strain and 3-D)---*/
     
