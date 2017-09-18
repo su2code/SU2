@@ -215,6 +215,13 @@ public:
 #endif
 
 #else //HAVE_MPI
-typedef unsigned short SU2_Comm;
+class CMPIWrapper {
+  
+public:
+  typedef double Comm;
+  
+};
+typedef CMPIWrapper SU2_MPI;
+
 #endif
 #include "mpi_structure.inl"
