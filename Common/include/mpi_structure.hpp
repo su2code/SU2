@@ -97,7 +97,7 @@ public:
 
   static inline MPI_Request* convertRequest(Request* request);
 
-  static void Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count);
+  static void Get_count(MPI_Status *status, MPI_Datatype datatype, int *count);
 
   static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
                     int tag, MPI_Comm comm, Request* request);
@@ -164,7 +164,7 @@ public:
 
   static AMPI_Op convertOp(MPI_Op op);
 
-  static void Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count);
+  static void Get_count(MPI_Status *status, MPI_Datatype datatype, int *count);
 
   static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
                     int tag, MPI_Comm comm, Request* request);

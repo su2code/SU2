@@ -46,7 +46,7 @@ inline MPI_Request* CMPIWrapper::convertRequest(SU2_MPI::Request* request) {
 #endif
 }
 
-inline void CMPIWrapper::Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count) {
+inline void CMPIWrapper::Get_count(MPI_Status *status, MPI_Datatype datatype, int *count) {
   MPI_Get_count(status, datatype, count);
 }
 
@@ -172,7 +172,7 @@ inline AMPI_Op CMediMPIWrapper::convertOp(MPI_Op op) {
   }
 }
 
-inline void CMediMPIWrapper::Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count) {
+inline void CMediMPIWrapper::Get_count(MPI_Status *status, MPI_Datatype datatype, int *count) {
   if (datatype != MPI_DOUBLE) {
     MPI_Get_count(status, datatype, count);
   } else {
