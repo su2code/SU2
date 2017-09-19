@@ -38,6 +38,34 @@ inline void CMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Init(argc,argv);
 }
 
+inline void CMPIWrapper::Buffer_attach(void *buffer, int size){
+  MPI_Buffer_attach(buffer, size);
+}
+
+inline void CMPIWrapper::Buffer_detach(void *buffer, int *size){
+  MPI_Buffer_detach(buffer, size);
+}
+
+inline void CMPIWrapper::Comm_rank(Comm comm, int *rank){
+  MPI_Comm_rank(comm, rank);
+}
+
+inline void CMPIWrapper::Comm_size(Comm comm, int *size){
+  MPI_Comm_size(comm, size);
+}
+
+inline void CMPIWrapper::Finalize(){
+  MPI_Finalize();
+}
+
+inline void CMPIWrapper::Barrier(Comm comm) {
+  MPI_Barrier(comm);
+}
+
+inline void CMPIWrapper::Abort(Comm comm, int error) {
+  MPI_Abort(comm, error);
+}
+
 inline MPI_Request* CMPIWrapper::convertRequest(SU2_MPI::Request* request) {
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
   return &request->request;
@@ -291,4 +319,132 @@ inline void CMediMPIWrapper::Waitany(int nrequests, SU2_MPI::Request *request,
   AMPI_Waitany(nrequests, request, index, convertStatus(status));
 }
 #endif
+#else
+inline void CMPIWrapper::Init(int *argc, char ***argv) {}
+
+inline void CMPIWrapper::Buffer_attach(void *buffer, int size) {}
+
+inline void CMPIWrapper::Buffer_detach(void *buffer, int *size) {}
+
+inline void CMPIWrapper::Barrier(Comm comm) {}
+
+inline void CMPIWrapper::Abort(Comm comm, int error) {exit(EXIT_FAILURE);}
+
+inline void CMPIWrapper::Comm_rank(Comm comm, int *rank) {*rank = 0;}
+
+inline void CMPIWrapper::Comm_size(Comm comm, int *size) {*size = 1;}
+
+inline void CMPIWrapper::Finalize(){}
+
+inline void CMPIWrapper::Isend(void *buf, int count, Datatype datatype, int dest,
+                               int tag, Comm comm, Request* request) {}
+
+inline void CMPIWrapper::Irecv(void *buf, int count, Datatype datatype, int source,
+                               int tag, Comm comm, Request* request) {}
+
+inline void CMPIWrapper::Wait(Request *request, Status *status) {}
+
+inline void CMPIWrapper::Waitall(int nrequests, Request *request, Status *status) {}
+
+inline void CMPIWrapper::Waitany(int nrequests, Request *request,
+                                 int *index, Status *status) {}
+
+inline void CMPIWrapper::Send(void *buf, int count, Datatype datatype, int dest,
+                              int tag, Comm comm) {}
+
+inline void CMPIWrapper::Recv(void *buf, int count, Datatype datatype, int dest,
+                              int tag, Comm comm, Status *status) {}
+
+inline void CMPIWrapper::Bcast(void *buf, int count, Datatype datatype, int root,
+                               Comm comm) {}
+
+inline void CMPIWrapper::Bsend(void *buf, int count, Datatype datatype, int dest,
+                               int tag, Comm comm){}
+
+inline void  CMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
+                                 Datatype datatype, Op op, int root, Comm comm){
+   CopyData(sendbuf, recvbuf, count, datatype);
+}
+
+inline void  CMPIWrapper::Allreduce(void *sendbuf, void *recvbuf, int count,
+                                    Datatype datatype, Op op, Comm comm){
+   CopyData(sendbuf, recvbuf, count, datatype);
+}
+
+inline void CMPIWrapper::Gather(void *sendbuf, int sendcnt, Datatype sendtype,
+                   void *recvbuf, int recvcnt, Datatype recvtype, int root, Comm comm){
+  CopyData(sendbuf, recvbuf, sendcnt, sendtype);
+
+}
+
+inline void CMPIWrapper::Scatter(void *sendbuf, int sendcnt, Datatype sendtype,
+                    void *recvbuf, int recvcnt, Datatype recvtype, int root, Comm comm){
+  CopyData(sendbuf, recvbuf, sendcnt, sendtype);
+
+}
+
+inline void CMPIWrapper::Allgather(void *sendbuf, int sendcnt, Datatype sendtype,
+                                   void *recvbuf, int recvcnt, Datatype recvtype, Comm comm){
+  CopyData(sendbuf, recvbuf, sendcnt, sendtype);
+
+}
+
+inline void CMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
+                                  int dest, int sendtag, void *recvbuf, int recvcnt,
+                                  Datatype recvtype,int source, int recvtag,
+                                  Comm comm, Status *status){
+  CopyData(sendbuf, recvbuf, sendcnt, sendtype);
+
+}
+
+inline void CMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sendtype,
+                                  void *recvbuf, int recvcount, Datatype recvtype,
+                                  Comm comm){
+  CopyData(sendbuf, recvbuf, recvcount, sendtype);
+}
+
+inline int CMPIWrapper::Probe(int source, int tag, Comm comm, Status *status){return 0;}
+
+
+inline void CMPIWrapper::CopyData(void *sendbuf, void *recvbuf, int size, Datatype datatype){
+  switch (datatype) {
+    case MPI_DOUBLE:
+      for (int i = 0; i < size; i++){
+        static_cast<su2double*>(recvbuf)[i] = static_cast<su2double*>(sendbuf)[i];
+      }
+      break;
+    case MPI_UNSIGNED_LONG:
+      for (int i = 0; i < size; i++){
+        static_cast<unsigned long*>(recvbuf)[i] = static_cast<unsigned long*>(sendbuf)[i];
+      }
+      break;
+    case MPI_LONG:
+      for (int i = 0; i < size; i++){
+        static_cast<long*>(recvbuf)[i] = static_cast<long*>(sendbuf)[i];
+      }
+      break;
+    case MPI_UNSIGNED_SHORT:
+      for (int i = 0; i < size; i++){
+        static_cast<unsigned short*>(recvbuf)[i] = static_cast<unsigned short*>(sendbuf)[i];
+      }
+      break;
+    case MPI_CHAR:
+      for (int i = 0; i < size; i++){
+        static_cast<char*>(recvbuf)[i] = static_cast<char*>(sendbuf)[i];
+      }
+      break;
+    case MPI_SHORT:
+      for (int i = 0; i < size; i++){
+        static_cast<short*>(recvbuf)[i] = static_cast<short*>(sendbuf)[i];
+      }
+      break;
+    case MPI_INT:
+      for (int i = 0; i < size; i++){
+        static_cast<int*>(recvbuf)[i] = static_cast<int*>(sendbuf)[i];
+      }
+      break;
+    default:
+      break;
+  }
+}
 #endif

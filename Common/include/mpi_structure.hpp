@@ -86,6 +86,8 @@ class CMPIWrapper {
 public:
 
   typedef MPI_Comm Comm;
+  
+  typedef MPI_Status Status;
 
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
   typedef AMPI_Request Request;
@@ -94,7 +96,21 @@ public:
 #endif
 
   static void Init(int *argc, char***argv);
-
+  
+  static void Buffer_attach(void *buffer, int size);
+  
+  static void Buffer_detach(void *buffer, int *size);
+  
+  static void Finalize();
+  
+  static void Comm_rank(Comm comm, int* rank);
+  
+  static void Comm_size(Comm comm, int* size);
+  
+  static void Barrier(Comm comm);
+  
+  static void Abort(Comm comm, int error);
+  
   static inline MPI_Request* convertRequest(Request* request);
 
   static void Get_count(MPI_Status *status, MPI_Datatype datatype, int *count);
@@ -215,13 +231,107 @@ public:
 #endif
 
 #else //HAVE_MPI
+
+#define MPI_COMM_WORLD 0
+#define MPI_UNSIGNED_LONG 1
+#define MPI_LONG 2
+#define MPI_UNSIGNED_SHORT 3
+#define MPI_DOUBLE 4
+#define MPI_ANY_SOURCE 5
+#define MPI_SUM 6
+#define MPI_CHAR 7
+#define MPI_SHORT 8
+#define MPI_MIN 9
+#define MPI_MAX 10
+#define MPI_INT 11
 class CMPIWrapper {
   
 public:
   typedef double Comm;
+  typedef int Datatype;
+  typedef int Request;
+  typedef int Op;
+  
+  struct Status {
+    int MPI_TAG;
+    int MPI_SOURCE;
+    Status(): MPI_TAG(0), MPI_SOURCE(0){}
+  };
+    
+  static void Init(int *argc, char***argv);
+  
+  static void Buffer_attach(void *buffer, int size);
+  
+  static void Buffer_detach(void *buffer, int *size);
+  
+  static void Finalize();
+  
+  static void Comm_rank(Comm comm, int* rank);
+  
+  static void Comm_size(Comm comm, int* size);
+  
+  static void Barrier(Comm comm);
+  
+  static void Abort(Comm comm, int error);
+  
+  static void Get_count(Status *status, Datatype datatype, int *count);
+
+  static void Isend(void *buf, int count, Datatype datatype, int dest,
+                    int tag, Comm comm, Request* request);
+
+  static void Irecv(void *buf, int count, Datatype datatype, int source,
+                    int tag, Comm comm, Request* request);
+
+  static void Wait(Request *request, Status *status);
+
+  static void Waitall(int nrequests, Request *request, Status *status);
+
+  static void Waitany(int nrequests, Request *request,
+                      int *index, Status *status);
+
+  static void Send(void *buf, int count, Datatype datatype, int dest,
+                   int tag, Comm comm);
+
+  static void Recv(void *buf, int count, Datatype datatype, int dest,
+                   int tag, Comm comm, Status *status);
+
+  static void Bcast(void *buf, int count, Datatype datatype, int root,
+                    Comm comm);
+
+  static void Bsend(void *buf, int count, Datatype datatype, int dest,
+                    int tag, Comm comm);
+
+  static void Reduce(void *sendbuf, void *recvbuf, int count,
+                     Datatype datatype, Op op, int root, Comm comm);
+
+  static void Allreduce(void *sendbuf, void *recvbuf, int count,
+                        Datatype datatype, Op op, Comm comm);
+
+  static void Gather(void *sendbuf, int sendcnt, Datatype sendtype,
+                     void *recvbuf, int recvcnt, Datatype recvtype, int root, Comm comm);
+
+  static void Scatter(void *sendbuf, int sendcnt, Datatype sendtype,
+                      void *recvbuf, int recvcnt, Datatype recvtype, int root, Comm comm);
+
+  static void Allgather(void *sendbuf, int sendcnt, Datatype sendtype,
+                        void *recvbuf, int recvcnt, Datatype recvtype, Comm comm);
+
+  static void Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
+                       int dest, int sendtag, void *recvbuf, int recvcnt,
+                       Datatype recvtype,int source, int recvtag,
+                       Comm comm, Status *status);
+  
+  static void Alltoall(void *sendbuf, int sendcount, Datatype sendtype,
+                           void *recvbuf, int recvcount, Datatype recvtype,
+                           Comm comm);
+  
+  static int Probe(int source, int tag, Comm comm, Status *status);
+  
+  static void CopyData(void *sendbuf, void *recvbuf, int size, Datatype datatype);
   
 };
 typedef CMPIWrapper SU2_MPI;
+extern CMPIWrapper::Status* MPI_STATUS_IGNORE;
 
 #endif
 #include "mpi_structure.inl"
