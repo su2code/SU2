@@ -509,6 +509,10 @@ inline su2double CVariable::GetGeometry_CrossTerm_Derivative(unsigned short val_
 
 inline void CVariable::SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der) { }
 
+inline su2double CVariable::GetGeometry_CrossTerm_Derivative_Flow(unsigned short val_var) { return 0.0;}
+
+inline void CVariable::SetGeometry_CrossTerm_Derivative_Flow(unsigned short iDim, su2double der) { }
+
 inline void CVariable::Set_OldSolution_Geometry(void) { }
 
 inline su2double CVariable::Get_OldSolution_Geometry(unsigned short iDim) { return 0.0;}
@@ -1365,6 +1369,10 @@ inline void CDiscAdjVariable::Set_OldSolution_Geometry(void) {
 inline su2double CDiscAdjVariable::GetGeometry_CrossTerm_Derivative(unsigned short val_var) { return Geometry_CrossTerm_Derivative[val_var];}
 
 inline void CDiscAdjVariable::SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der) { Geometry_CrossTerm_Derivative[iDim] = der;}
+
+inline su2double CDiscAdjVariable::GetGeometry_CrossTerm_Derivative_Flow(unsigned short val_var) { return Geometry_CrossTerm_Derivative_Flow[val_var];}
+
+inline void CDiscAdjVariable::SetGeometry_CrossTerm_Derivative_Flow(unsigned short iDim, su2double der) { Geometry_CrossTerm_Derivative_Flow[iDim] = der;}
 
 inline su2double CDiscAdjFEAVariable::GetGeometry_CrossTerm_Derivative(unsigned short val_var) { return Geometry_CrossTerm_Derivative[val_var];}
 

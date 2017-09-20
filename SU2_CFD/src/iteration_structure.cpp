@@ -2631,7 +2631,8 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
 
 void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording) {
 
-  if ((kind_recording == GEOMETRY_VARIABLES) || (kind_recording == ALL_VARIABLES)) {
+  if ((kind_recording == GEOMETRY_VARIABLES) || (kind_recording == ALL_VARIABLES) ||
+      (kind_recording == GEOMETRY_CROSS_TERM)) {
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
     
@@ -3303,8 +3304,7 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver ****solver_container, CGeometry
 
   }
 
-  if ((kind_recording == FEM_CROSS_TERM_GEOMETRY) ||
-      (kind_recording == FEM_CROSS_TERM_FLOW)){
+  if (kind_recording == FEM_CROSS_TERM_GEOMETRY){
 
     /*--- Register only structural displacements as input ---*/
 
