@@ -1793,6 +1793,19 @@ public:
   virtual void SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der);
 
   /*!
+   * \brief A virtual member. Get the geometry solution.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  virtual su2double GetGeometry_CrossTerm_Derivative_Flow(unsigned short val_var);
+
+  /*!
+   * \brief A virtual member. Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  virtual void SetGeometry_CrossTerm_Derivative_Flow(unsigned short iDim, su2double der);
+
+  /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
    */
   virtual void Set_OldSolution_Geometry(void);
@@ -4784,6 +4797,7 @@ private:
 
     su2double* Cross_Term_Derivative;
     su2double* Geometry_CrossTerm_Derivative;
+    su2double* Geometry_CrossTerm_Derivative_Flow;
 
     su2double* Solution_Geometry;
     su2double* Solution_Geometry_Old;
@@ -4889,6 +4903,19 @@ public:
      * \param[in] der - cross term derivative.
      */
     void SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der);
+
+    /*!
+     * \brief Get the mesh cross term derivative from the flow solution.
+     * \param[in] val_var - Index of the variable.
+     * \return Value of the solution for the index <i>val_var</i>.
+     */
+    su2double GetGeometry_CrossTerm_Derivative_Flow(unsigned short val_var);
+
+    /*!
+     * \brief Set the value of the mesh cross term derivative from the flow solution (adjoint).
+     * \param[in] der - cross term derivative.
+     */
+    void SetGeometry_CrossTerm_Derivative_Flow(unsigned short iDim, su2double der);
 
     /*!
      * \brief Set the value of the mesh solution (adjoint).

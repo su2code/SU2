@@ -820,12 +820,9 @@ class CDiscAdjFSIStatDriver : public CFSIStatDriver {
     FEM_CROSS_TERM_GEOMETRY = 6,      /*!< \brief Indicates that the current recording can
                                         be used to compute the gradients of the mesh problem
                                         with respect to the structural displacements. */
-    GEOMETRY_CROSS_TERM = 7,   /*!< \brief Indicates that the current recording can
+    GEOMETRY_CROSS_TERM = 7   /*!< \brief Indicates that the current recording can
                                         be used to compute the gradients of the structural problem
                                         with respect to the geometry variables. */
-    FEM_CROSS_TERM_FLOW = 8   /*!< \brief Indicates that the current recording can
-                                        be used to compute the gradients of the structural problem
-                                        with respect to the flow variables. */
   };
 
   enum OF_KIND{

@@ -2972,12 +2972,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
 }
 
-void CDiscAdjFEASolver::AddAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){
-
-
-
-}
-
 
 void CDiscAdjFEASolver::SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig *config){
 

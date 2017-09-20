@@ -1172,16 +1172,23 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CCon
 
   }
 
-//  Set_MPI_CrossTerm_Geometry(geometry, config);
-
 }
 
-void CDiscAdjSolver::AddAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){
+void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry, CConfig *config){
 
-}
+  unsigned short iDim;
+  unsigned long iPoint;
 
-void CDiscAdjSolver::AddAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) {
 
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+
+    for (iDim = 0; iDim < nDim; iDim++) node[iPoint]->SetGeometry_CrossTerm_Derivative_Flow(iDim, Solution_Geometry[iDim]);
+
+  }
 
 }
 
@@ -1226,11 +1233,14 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iDim = 0; iDim < nDim; iDim++){
-      Solution_Geometry[iDim] = node[iPoint]->GetSolution_Geometry(iDim);
+      Solution_Geometry[iDim] = 0.0;
     }
     if (fsi){
       for (iDim = 0; iDim < nDim; iDim++){
         Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative(iDim);
+      }
+      for (iDim = 0; iDim < nDim; iDim++){
+        Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative_Flow(iDim);
       }
     }
 //    if (dual_time){

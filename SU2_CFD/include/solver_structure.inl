@@ -2018,9 +2018,7 @@ inline void CSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) {}
 
-inline void CSolver::AddAdjoint_CrossTerm(CGeometry *geometry, CConfig *config) {}
-
-inline void CSolver::AddAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) {}
+inline void CSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry, CConfig *config) {}
 
 inline void CSolver::SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig *config){}
 
