@@ -629,7 +629,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   if (rank == MASTER_NODE)
     cout << "Computing distances to the nearest solid surface (except internal surfaces)." << endl;
 
-  unsigned long nLocalVertex_SolidWall = 0, nGlobalVertex_SolidWall = 0, MaxLocalVertex_SolidWall = 0;
+  unsigned long nLocalVertex_SolidWall = 0, MaxLocalVertex_SolidWall = 0;
   unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
   unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
 
@@ -641,17 +641,14 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
     		config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
     	nLocalVertex_SolidWall += geometry->GetnVertex(iMarker);
 
-  /*--- Communicate to all processors the total number of deforming boundary
-   nodes, the maximum number of deforming boundary nodes on any single
-   partition, and the number of deforming nodes on each partition. ---*/
+  /*--- Communicate to all processors the maximum number of deforming boundary nodes
+         on any single partition, and the number of deforming nodes on each partition. ---*/
 
   Buffer_Send_nVertex[0] = nLocalVertex_SolidWall;
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalVertex_SolidWall, &nGlobalVertex_SolidWall,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&nLocalVertex_SolidWall, &MaxLocalVertex_SolidWall, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 #else
-  nGlobalVertex_SolidWall = nLocalVertex_SolidWall;
   MaxLocalVertex_SolidWall = nLocalVertex_SolidWall;
   Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
 #endif
@@ -4512,7 +4509,7 @@ bool CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
     
     if (config->GetnDV_Value(iDV) == 1) {
       
-      Ampl = config->GetDV_Value(iDV);
+      Ampl = config->GetDV_Value(iDV)*Scale;
       
       movement[0] = config->GetParamDV(iDV, 4)*Ampl;
       movement[1] = config->GetParamDV(iDV, 5)*Ampl;
@@ -4666,7 +4663,7 @@ bool CSurfaceMovement::SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFor
     
     /*--- Compute deformation ---*/
     
-    Ampl = config->GetDV_Value(iDV);
+    Ampl = config->GetDV_Value(iDV)*Scale;
     
     movement[0] = 0.0;
     movement[1] = 0.0;
@@ -4723,7 +4720,7 @@ bool CSurfaceMovement::SetFFDNacelle(CGeometry *geometry, CConfig *config, CFree
     
     /*--- Compute deformation ---*/
     
-    Ampl = config->GetDV_Value(iDV);
+    Ampl = config->GetDV_Value(iDV)*Scale;
     
     movement[0] = config->GetParamDV(iDV, 4)*Ampl;
     movement[1] = 0.0;
@@ -4977,7 +4974,7 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
     
     for (kIndex = 0; kIndex < 2; kIndex++) {
 						
-      Ampl = config->GetDV_Value(iDV);
+      Ampl = config->GetDV_Value(iDV)*Scale;
 						
       index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
       index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2)); 
