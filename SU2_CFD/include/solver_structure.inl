@@ -2000,12 +2000,6 @@ inline su2double CFEM_ElasticitySolver::GetTotal_OFRefNode(void){ return Total_O
 
 inline bool CFEM_ElasticitySolver::IsElementBased(void){ return element_based; }
 
-inline void CFEM_ElasticitySolver_Adj::Set_DV_Val(su2double val_EField, unsigned short i_DV){ DV_Val[i_DV] = val_EField;}
-
-inline su2double CFEM_ElasticitySolver_Adj::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
-
-inline su2double CFEM_ElasticitySolver_Adj::Get_val_I(void){ return val_I; }
-
 inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
 inline su2double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
