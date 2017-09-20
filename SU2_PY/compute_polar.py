@@ -35,10 +35,11 @@ from __future__ import print_function
 # imports
 import numpy as np
 from optparse import OptionParser
-import os, sys, shutil, copy, os.path
+import os, sys, shutil, os.path
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
 from SU2.util.polarSweepLib import *
+import copy
 
 def main():
 
