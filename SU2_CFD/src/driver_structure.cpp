@@ -193,7 +193,6 @@ CDriver::CDriver(char* confFile,
   bool disc_adj_fsi = (config_container[ZONE_0]->GetDiscrete_Adjoint());
 
   if ( (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY ||
-        config_container[ZONE_0]->GetKind_Solver() == ADJ_ELASTICITY ||
         config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM ||
         config_container[ZONE_0]->GetKind_Solver() == POISSON_EQUATION || 
         config_container[ZONE_0]->GetKind_Solver() == WAVE_EQUATION || 
@@ -374,8 +373,7 @@ CDriver::CDriver(char* confFile,
     ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
 
   /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
-  if ((config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY 
-      || config_container[ZONE_0]->GetKind_Solver() == ADJ_ELASTICITY)
+  if ((config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY)
       && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
     ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
 
@@ -719,7 +717,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat,
-  fem, adj_fem,
+  fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_fem;
   
@@ -730,7 +728,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   spalart_allmaras = false;  menter_sst      = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;	 disc_adj         = false;
-  fem              = false;  adj_fem		     = false;  disc_adj_fem        = false;
+  fem              = false;  disc_adj_fem     = false;
   heat             = false;
   transition       = false;
   template_solver  = false;
@@ -749,7 +747,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
-    case ADJ_ELASTICITY: fem = true; adj_fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
@@ -854,9 +851,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
     if (adj_turb) {
       solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
-    }
-    if (adj_fem) {
-      solver_container[iMGlevel][ADJFEA_SOL]  = new CFEM_ElasticitySolver_Adj(geometry[iMGlevel], config, solver_container[iMGlevel][FEA_SOL]);
     }
     
     if (disc_adj) {
@@ -980,7 +974,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
 void CDriver::Integration_Preprocessing(CIntegration **integration_container,
                                         CGeometry **geometry, CConfig *config) {
   
-  bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem, adj_fem,
+  bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
       heat, template_solver, transition, disc_adj, disc_adj_fem;
   
   /*--- Initialize some useful booleans ---*/
@@ -990,7 +984,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   poisson          = false; disc_adj         = false;
   wave             = false;
   heat             = false;
-  fem 			       = false; adj_fem          = false; disc_adj_fem          = false;
+  fem 			       = false; disc_adj_fem     = false;
   transition       = false;
   template_solver  = false;
   
@@ -1004,7 +998,6 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
-    case ADJ_ELASTICITY: fem = true; adj_fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
@@ -1031,7 +1024,6 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (adj_euler) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
   if (adj_ns) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
   if (adj_turb) integration_container[ADJTURB_SOL] = new CSingleGridIntegration(config);
-  if (adj_fem) integration_container[ADJFEA_SOL] = new CStructuralIntegration(config);
   
   if (disc_adj) integration_container[ADJFLOW_SOL] = new CIntegration(config);
   if (disc_adj_fem) integration_container[ADJFEA_SOL] = new CIntegration(config);
@@ -1107,7 +1099,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   nVar_Adj_Turb         = 0,
   nVar_Poisson          = 0,
   nVar_FEM				= 0,
-  nVar_Adj_FEM			= 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0;
   
@@ -1120,7 +1111,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
   wave,
-  fem, adj_fem,
+  fem,
   heat,
   transition,
   template_solver;
@@ -1134,7 +1125,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   poisson          = false;
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   wave             = false;   heat             = false;
-  fem			   = false;   adj_fem			  = false;
+  fem			   = false;
   spalart_allmaras = false; neg_spalart_allmaras = false;	menter_sst       = false;
   transition       = false;
   template_solver  = false;
@@ -1149,7 +1140,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: case DISC_ADJ_FEM: fem = true; break;
-    case ADJ_ELASTICITY: fem = true; adj_fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
@@ -1186,7 +1176,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (adj_euler)        nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_ns)           nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_turb)         nVar_Adj_Turb = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
-  if (adj_fem)          nVar_Adj_FEM  = solver_container[MESH_0][ADJFEA_SOL]->GetnVar();
   
   /*--- Number of dimensions ---*/
   
@@ -1845,66 +1834,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 
   }
 
-  /*--- Solver definition for the FEM problem ---*/
-  if (adj_fem) {
-	switch (config->GetGeometricConditions()) {
-    	case SMALL_DEFORMATIONS :
-    		switch (config->GetMaterialModel()) {
-    			case LINEAR_ELASTIC:
-    			  numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_LinearElasticity_Adj(nDim, nVar_FEM, config);
-    			  break;
-    			case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
-    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-    		}
-    		break;
-    	case LARGE_DEFORMATIONS :
-    		switch (config->GetMaterialModel()) {
-				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
-    			case NEO_HOOKEAN :
-    				switch (config->GetMaterialCompressibility()) {
-    					case COMPRESSIBLE_MAT:
-    					  numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
-    					  numerics_container[MESH_0][ADJFEA_SOL][FEA_ADJ] = new CFEM_NeoHookean_Comp_Adj(nDim, nVar_FEM, config);
-    					  break;
-    					case INCOMPRESSIBLE_MAT :
-    					  numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config);
-    					  numerics_container[MESH_0][ADJFEA_SOL][FEA_ADJ] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config);
-    					  break;
-    					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-    				}
-    				break;
-        			case KNOWLES:
-        				switch (config->GetMaterialCompressibility()) {
-        					case NEARLY_INCOMPRESSIBLE_MAT :
-        					  numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
-        					  numerics_container[MESH_0][ADJFEA_SOL][FEA_ADJ] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
-        					  break;
-        					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-        				}
-        				break;
-        			case IDEAL_DE:
-        				switch (config->GetMaterialCompressibility()) {
-        					case NEARLY_INCOMPRESSIBLE_MAT :
-        					  numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_IdealDE(nDim, nVar_FEM, config);
-        					  numerics_container[MESH_0][ADJFEA_SOL][FEA_ADJ] = new CFEM_IdealDE(nDim, nVar_FEM, config);
-        					  break;
-        					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-        				}
-        				break;
-
-    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-    		}
-    		break;
-    	default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
-	}
-
-	bool de_effects = config->GetDE_Effects();
-
-	if (de_effects){
-	  numerics_container[MESH_0][ADJFEA_SOL][DE_TERM] = new CFEM_DielectricElastomer(nDim, nVar_FEM, config);
-	  numerics_container[MESH_0][ADJFEA_SOL][DE_ADJ] = new CFEM_DielectricElastomer_Adj(nDim, nVar_FEM, config);
-	}
-  }
   
 }
 
@@ -2330,12 +2259,6 @@ void CDriver::Iteration_Preprocessing() {
       iteration_container[iZone] = new CFEM_StructuralAnalysis(config_container[iZone]);
       break;
 
-    case ADJ_ELASTICITY:
-      if (rank == MASTER_NODE)
-        cout << ": adjoint FEM iteration." << endl;
-      iteration_container[iZone] = new CFEAIteration_Adj(config_container[iZone]);
-      break;
-
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
@@ -2493,7 +2416,7 @@ void CDriver::Interface_Preprocessing() {
             		
           break;
 
-        case FEM_ELASTICITY: case ADJ_ELASTICITY: case DISC_ADJ_FEM:
+        case FEM_ELASTICITY: case DISC_ADJ_FEM:
           structural_target = true;   
           
           break;
@@ -2508,7 +2431,7 @@ void CDriver::Interface_Preprocessing() {
          
         break;
 
-      case FEM_ELASTICITY: case ADJ_ELASTICITY: case DISC_ADJ_FEM:
+      case FEM_ELASTICITY: case DISC_ADJ_FEM:
         structural_donor = true;  
         
         break;
@@ -2774,8 +2697,6 @@ bool CDriver::Monitor(unsigned long ExtIter) {
       StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:
       StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
-	  case ADJ_ELASTICITY:
-	    StopCalc = integration_container[ZONE_0][ADJFEA_SOL]->GetConvergence(); break;
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
@@ -3389,8 +3310,7 @@ void CGeneralDriver::Update() {
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, iZone);
 
-  if ((config_container[ZONE_0]->GetKind_Solver() == ADJ_ELASTICITY) ||
-      (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM)){
+  if (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM){
       iteration_container[ZONE_0]->Postprocess(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, ZONE_0);
@@ -3419,7 +3339,7 @@ void CGeneralDriver::ResetConvergence() {
     case POISSON_EQUATION:
       break;
 
-    case FEM_ELASTICITY: case ADJ_ELASTICITY:
+    case FEM_ELASTICITY:
       integration_container[ZONE_0][FEA_SOL]->SetConvergence(false);
       break;
 
@@ -4297,18 +4217,6 @@ void CFSIDriver::Run() {
 
   }
 
-  // TODO: Temporary, for running the classic adjoint for FSIs
-
-  if (stat_fsi && (config_container[ZONE_STRUCT]->GetKind_Solver() == ADJ_ELASTICITY)){
-    /*-----------------------------------------------------------------*/
-    /*-------------- Structural adjoint subiteration ------------------*/
-    /*-----------------------------------------------------------------*/
-
-    iteration_container[ZONE_STRUCT]->Postprocess(output, integration_container, geometry_container,
-        solver_container, numerics_container, config_container,
-        surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
-  }
-
   /*-----------------------------------------------------------------*/
   /*------------------ Update coupled solver ------------------------*/
   /*-----------------------------------------------------------------*/
@@ -4758,18 +4666,6 @@ void CFSIStatDriver::Run() {
 
     FSIIter++; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
 
-  }
-
-  // TODO: Temporary, for running the classic adjoint for FSIs
-
-  if (config_container[ZONE_STRUCT]->GetKind_Solver() == ADJ_ELASTICITY){
-    /*-----------------------------------------------------------------*/
-    /*-------------- Structural adjoint subiteration ------------------*/
-    /*-----------------------------------------------------------------*/
-
-    iteration_container[ZONE_STRUCT]->Postprocess(output, integration_container, geometry_container,
-                                                 solver_container, numerics_container, config_container,
-                                                 surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
   }
 
   /*-----------------------------------------------------------------*/
