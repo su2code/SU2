@@ -4207,11 +4207,11 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
     }
     else {
       if (nGlobal_Tria > 0 && Conn_Tria != NULL) delete [] Conn_Tria;
-      if (Conn_Quad != NULL) delete [] Conn_Quad;
-      if (Conn_Tetr != NULL) delete [] Conn_Tetr;
-      if (Conn_Hexa != NULL) delete [] Conn_Hexa;
-      if (Conn_Pris != NULL) delete [] Conn_Pris;
-      if (Conn_Pyra != NULL) delete [] Conn_Pyra;
+      if (nGlobal_Quad > 0 && Conn_Quad != NULL) delete [] Conn_Quad;
+      if (nGlobal_Tetr > 0 && Conn_Tetr != NULL) delete [] Conn_Tetr;
+      if (nGlobal_Hexa > 0 && Conn_Hexa != NULL) delete [] Conn_Hexa;
+      if (nGlobal_Pris > 0 && Conn_Pris != NULL) delete [] Conn_Pris;
+      if (nGlobal_Pyra > 0 && Conn_Pyra != NULL) delete [] Conn_Pyra;
       
     }
     
