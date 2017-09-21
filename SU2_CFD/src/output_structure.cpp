@@ -16041,11 +16041,11 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   }
   else {
     if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+    if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+    if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+    if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+    if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+    if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
   }
   
 }
