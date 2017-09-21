@@ -236,7 +236,7 @@ class State(ordered_bunch):
         special_cases = get_specialCases(config)
         
         def register_file(label,filename):
-            if not files.has_key(label):
+            if not label in files:
                 if label.split('_')[0] in ['DIRECT', 'ADJOINT']:
                   names = expand_zones(filename, config)
                   found = False
