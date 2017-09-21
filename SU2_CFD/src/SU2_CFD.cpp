@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi;
+  bool fsi, turbo;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -72,17 +72,21 @@ int main(int argc, char *argv[]) {
 
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  fsi = config->GetFSI_Simulation();
+  fsi   = config->GetFSI_Simulation();
+  turbo = config->GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
-  if ( (config->GetKind_Solver() == FEM_ELASTICITY || config->GetKind_Solver() == POISSON_EQUATION || config->GetKind_Solver() == WAVE_EQUATION || config->GetKind_Solver() == HEAT_EQUATION) ) {
+  if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
+        config->GetKind_Solver() == POISSON_EQUATION ||
+        config->GetKind_Solver() == WAVE_EQUATION ||
+        config->GetKind_Solver() == HEAT_EQUATION) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     
-    if(nZone > 1 ) {
+    if (nZone > 1 ) {
       cout << "The required solver doesn't support multizone simulations" << endl; 
       exit(EXIT_FAILURE);
     }
@@ -91,7 +95,7 @@ int main(int argc, char *argv[]) {
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
-    /*--- Use the Harmonic Balance driver. ---*/
+    /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
 
     driver = new CHBDriver(config_file_name, nZone, nDim, MPICommunicator);
 
@@ -106,8 +110,30 @@ int main(int argc, char *argv[]) {
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-    driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+    if (config->GetDiscrete_Adjoint()) {
 
+      if (turbo) {
+
+        driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+
+      } else {
+
+        driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+        
+      }
+
+    } else if (turbo) {
+
+      driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+
+    } else {
+
+      /*--- Instantiate the class for external aerodynamics ---*/
+
+      driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+      
+    }
+    
   }
 
   delete config;

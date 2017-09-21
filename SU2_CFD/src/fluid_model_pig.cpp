@@ -4,8 +4,8 @@
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -110,6 +110,23 @@ void CIdealGas::SetTDState_rhoT (su2double rho, su2double T ) {
 
   su2double e = T*Gas_Constant/Gamma_Minus_One;
   SetTDState_rhoe(rho, e);
+
+}
+
+void CIdealGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho ){
+
+	su2double dPdT_rho,dPdrho_T, dPds_rho;
+
+	SetTDState_Prho(P, rho);
+
+	dPdT_rho= Gas_Constant*rho;
+	dPdrho_T= Gas_Constant*Temperature;
+
+	dhdrho_P= -dPdrho_e/dPde_rho -P/rho/rho;
+  dhdP_rho= 1.0/dPde_rho +1.0/rho;
+  dPds_rho= rho*rho*(SoundSpeed2 - dPdrho_T)/dPdT_rho;
+  dsdP_rho= 1.0/dPds_rho;
+  dsdrho_P= -SoundSpeed2/dPds_rho;
 
 }
 

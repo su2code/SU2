@@ -5,8 +5,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -118,8 +118,28 @@ public:
 	CPoint** node;			/*!< \brief Node vector (dual grid information). */
 	CEdge** edge;			/*!< \brief Edge vector (dual grid information). */
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
-	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-	unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
+  CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
+  unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
+  unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker. */
+  unsigned short nTurboPerf; /*!< \brief Number of Span wise section for each turbo marker. */
+  su2double **SpanWiseValue; /*!< \brief Span wise values for each turbo marker. */
+  long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
+  unsigned long **nTotVertexSpan; /*! <\brief number of vertexes at each span wise section for each marker.  */
+  unsigned long nVertexSpanMax[3]; /*! <\brief max number of vertexes for each span section for each marker flag.  */
+  su2double ***AverageTurboNormal; /*! <\brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
+  su2double ***AverageNormal; /*! <\brief Average boundary normal at each span wise section for each marker.*/
+  su2double ***AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
+  su2double **AverageTangGridVel; /*! <\brief Average tangential rotational speed at each span wise section for each marker.*/
+  su2double **SpanArea; /*! <\brief Area at each span wise section for each marker.*/
+  su2double **MaxAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+  su2double **MinAngularCoord; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+  su2double **MinRelAngularCoord; /*! <\brief Min relative angular coord at each span wise section for each marker.*/
+  su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
+  su2double **TangGridVelIn, **TangGridVelOut; /*! <\brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
+  su2double **SpanAreaIn, **SpanAreaOut; /*! <\brief Area at each span wise section for each turbomachinery marker.*/
+  su2double **TurboRadiusIn, **TurboRadiusOut; /*! <\brief Radius at each span wise section for each turbomachinery marker*/
+
+  unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
 	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that
 																			 must be sent [0], and the image point in the periodic bc[1]. */
 	vector<unsigned long> PeriodicElem[MAX_NUMBER_PERIODIC];				/*!< \brief PeriodicElem[Periodic bc] and return the elements that 
@@ -211,12 +231,61 @@ public:
 	 */
 	unsigned short GetnMarker(void);
 
+	/*!
+	 * \brief Get number of vertices.
+	 * \param[in] val_marker - Marker of the boundary.
+	 * \return Number of vertices.
+	 */
+	su2double* GetSpanWiseValue(unsigned short val_marker);
+
 	/*! 
 	 * \brief Get number of vertices.
 	 * \param[in] val_marker - Marker of the boundary.
 	 * \return Number of vertices.
 	 */
 	unsigned long GetnVertex(unsigned short val_marker);
+
+	/*!
+	 * \brief Get number of span wise section.
+	 * \param[in] marker_flag - flag of the turbomachinery boundary.
+	 * \return Number of span wise section.
+	 */
+	unsigned short GetnSpanWiseSections(unsigned short marker_flag);
+
+	/*!
+	 * \brief Get number of vertices.
+	 * \param[in] val_marker - Marker of the boundary.
+	 * \return Number of vertices.
+	 */
+	unsigned long GetnVertexSpan(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get number of frequencies per span for NRBC.
+	 * \param[in] val_marker - Marker of the boundary.
+	 * \return Number of frequencies for NRBC.
+	 */
+	unsigned long GetnFreqSpan(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get number of vertices.
+	 * \param[in] val_marker - Marker of the boundary.
+	 * \return Number of vertices.
+	 */
+	unsigned long GetnVertexSpanMax(unsigned short marker_flag);
+
+	/*!
+	 * \brief Get number of max frequencies for initializing the Fourier Coefficient for NR BC.
+	 * \param[in] marker_flag - Marker of the boundary.
+	 * \return Number of frequencies.
+	 */
+	unsigned long GetnFreqSpanMax(unsigned short marker_flag);
+
+	/*!
+	 * \brief Get number of vertices.
+	 * \param[in] val_marker - Marker of the boundary.
+	 * \return Number of vertices.
+	 */
+	void SetnVertexSpanMax(unsigned short marker_flag, unsigned long nVertMax);
 
 	/*! 
 	 * \brief Get the edge index from using the nodes of the edge.
@@ -370,28 +439,58 @@ public:
 	 */
 	virtual void SetVertex(CConfig *config);
 
-	/*! 
-	 * \brief A virtual member.
-	 */
-	virtual void SetVertex(void);
-
-	/*! 
-	 * \brief A virtual member.
-	 */		
-	virtual void SetCoord_CG(void);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] action - Allocate or not the new elements.		 
-	 */
-	virtual void SetControlVolume(CConfig *config, unsigned short action);
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
 
   /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] action - Allocate or not the new elements.
-	 */
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void GatherInOutAverageValues(CConfig *config, bool allocate);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetVertex(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetCoord_CG(void);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] action - Allocate or not the new elements.
+   */
+  virtual void SetControlVolume(CConfig *config, unsigned short action);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] action - Allocate or not the new elements.
+   */
   virtual void VisualizeControlVolume(CConfig *config, unsigned short action);
   
 	/*! 
@@ -441,15 +540,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-
-  /*!
-	 * \brief A virtual member.
-   * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
-   * \param[in] new_file - Boolean to decide if aopen a new file or add to a old one
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-
   
 	/*! 
 	 * \brief A virtual member.
@@ -578,37 +668,43 @@ public:
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
 	 */
-	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
-
-    /*!
-     * \brief A virtual member.
-     * \param[in] config - Definition of the particular problem.
-     */
-    virtual void SetTranslationalVelocity(CConfig *config);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iter - Current physical time step.
-	 */
-	virtual void SetGridVelocity(CConfig *config, unsigned long iter);
+	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
   /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  virtual void Set_MPI_Coord(CConfig *config);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  virtual void Set_MPI_GridVel(CConfig *config);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+   virtual void SetShroudVelocity(CConfig *config);
+
+   /*!
+    * \brief A virtual member.
+    * \param[in] config - Definition of the particular problem.
+    */
+   virtual void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
+
+   /*!
+    * \brief A virtual member.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] iter - Current physical time step.
+    */
+   virtual void SetGridVelocity(CConfig *config, unsigned long iter);
+
+   /*!
+    * \brief A virtual member.
+    * \param[in] config - Definition of the particular problem.
+    */
+   virtual void Set_MPI_Coord(CConfig *config);
+
+   /*!
+    * \brief A virtual member.
+    * \param[in] config - Definition of the particular problem.
+    */
+   virtual void Set_MPI_GridVel(CConfig *config);
+
+   /*!
+    * \brief A virtual member.
+    * \param[in] config - Definition of the particular problem.
+    */
   virtual void Set_MPI_OldCoord(CConfig *config);
 
 	/*!
@@ -637,32 +733,63 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
  
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual su2double Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual su2double Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, su2double &ZLoc);
 	
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+	virtual su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
   
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
   /*!
    * \brief A virtual member.
    */
-  virtual void Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double>
+  virtual void Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double>
+	                                       &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double>
 	                                       &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
@@ -682,21 +809,38 @@ public:
    * \brief A virtual member.
    */
   virtual void Compute_Wing(CConfig *config, bool original_surface,
-                            su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC,
-                            su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
+                            su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                            su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                            su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                            su2double &Wing_MaxDihedral);
   
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Fuselage(CConfig *config, bool original_surface,
+  		su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+  		su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+  		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+  		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+  		su2double &Fuselage_MaxCurvature);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void FindNormal_Neighbor(CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetGlobal_to_Local_Point();
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_ipoint - Global point.
 	 * \returns Local index that correspond with the global index.
 	 */
-	virtual long GetGlobal_to_Local_Point(long val_ipoint);
+	virtual long GetGlobal_to_Local_Point(unsigned long val_ipoint);
 
 	/*!
 	 * \brief A virtual member.
@@ -926,7 +1070,166 @@ public:
    * \param val - Value of the sensitivity
    */
   virtual void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
-  
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+  virtual su2double* GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+  virtual su2double* GetAverageNormal(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	virtual su2double GetSpanArea(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	virtual su2double GetTurboRadius(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	virtual su2double GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise inflow tangential velocity.
+	 */
+	virtual su2double GetTangGridVelIn(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise outflow tangential velocity.
+	 */
+	virtual su2double GetTangGridVelOut(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise inflow area.
+	 */
+	virtual su2double GetSpanAreaIn(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+	 * \return The span-wise outflow area.
+	 */
+	virtual su2double GetSpanAreaOut(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise inflow radius.
+	 */
+	virtual su2double GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise outflow radius.
+	 */
+	virtual su2double GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	virtual void SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	virtual void SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	virtual void SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	virtual void SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	virtual void SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	virtual void SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	virtual unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span);
+
+/*!
+ * \brief A virtual member.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  virtual su2double GetMinAngularCoord(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - marker value.
+   * \param[in] val_span - span value.
+   */
+  virtual su2double GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - marker value.
+   * \param[in] val_span - span value.
+   */
+  virtual su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span);
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - marker value.
+   * \param[in] val_span - span value.
+   */
+  virtual su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span);
+
   /*!
    * \brief A virtual member.
    * \param config - Config
@@ -944,7 +1247,7 @@ public:
  */
 class CPhysicalGeometry : public CGeometry {
 
-  map<long,long> Global_to_Local_Point; /*!< \brief Global-local indexation for the points. */
+  map<unsigned long, unsigned long> Global_to_Local_Point; /*!< \brief Global-local indexation for the points. */
   long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
   unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
   unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
@@ -980,7 +1283,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   CPhysicalGeometry(CGeometry *geometry, CConfig *config);
-  
+
 	/*!
 	 * \brief Destructor of the class.
 	 */
@@ -1001,13 +1304,18 @@ public:
 	 * \param[in] val_domain - Number of domains for parallelization purposes.
 	 */
 	void SetBoundaries(CConfig *config);
-  
+
+  /*!
+   * \brief Set the local index that correspond with the global numbering index.
+   */
+  void SetGlobal_to_Local_Point();
+
 	/*!
 	 * \brief Get the local index that correspond with the global numbering index.
 	 * \param[in] val_ipoint - Global point.
-	 * \returns Local index that correspond with the global index.
+	 * \returns Local index that correspond with the global index, -1 if not found on the current rank (process).
 	 */
-	long GetGlobal_to_Local_Point(long val_ipoint);
+	long GetGlobal_to_Local_Point(unsigned long val_ipoint);
   
 	/*!
 	 * \brief Get the local marker that correspond with the global marker.
@@ -1095,6 +1403,36 @@ public:
 	 */
 	void SetVertex(CConfig *config);
 
+	/*!
+	 * \brief Set number of span wise level for turbomachinery computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
+
+	/*!
+	 * \brief Set turbo boundary vertex.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate);
+
+/*!
+ * \brief update turbo boundary vertex.
+ * \param[in] config - Definition of the particular problem.
+ */
+void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag);
+
+	/*!
+	 * \brief Set turbo boundary vertex.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
+
+	/*!
+	 * \brief Set turbo boundary vertex.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void GatherInOutAverageValues(CConfig *config, bool allocate);
+
 	/*! 
 	 * \brief Set the center of gravity of the face, elements and edges.
 	 */
@@ -1166,15 +1504,6 @@ public:
 	void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
 
 	/*! 
-	 * \brief Set the output file for boundaries in STL CAD format
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the STL 
-	 *            information is going to be stored.
-   * \param[in] new_file - Create a new file.
-	 */
-	void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) ;
-
-	/*! 
 	 * \brief Check the volume element orientation.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
@@ -1198,49 +1527,55 @@ public:
    */
   void SetColorGrid_Parallel(CConfig *config);
   
-	/*!
-	 * \brief Set the rotational velocity at each node.
-	 * \param[in] config - Definition of the particular problem.
+  /*!
+   * \brief Set the rotational velocity at each node.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
-	 */
-	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
-    
-    /*!
-     * \brief Set the translational velocity at each node.
-     * \param[in] config - Definition of the particular problem.
-     */
-    void SetTranslationalVelocity(CConfig *config);
+   */
+  void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
-	/*! 
-	 * \brief Set the grid velocity via finite differencing at each node.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetGridVelocity(CConfig *config, unsigned long iter);
+  /*!
+   * \brief Set the rotational velocity of the points on the shroud markers to 0.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetShroudVelocity(CConfig *config);
+
+  /*!
+   * \brief Set the translational velocity at each node.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
+
+  /*!
+   * \brief Set the grid velocity via finite differencing at each node.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetGridVelocity(CConfig *config, unsigned long iter);
   
   /*!
-	 * \brief Perform the MPI communication for the grid coordinates (dynamic meshes).
-	 * \param[in] config - Definition of the particular problem.
-	 */
+   * \brief Perform the MPI communication for the grid coordinates (dynamic meshes).
+   * \param[in] config - Definition of the particular problem.
+   */
   void Set_MPI_Coord(CConfig *config);
   
   /*!
-	 * \brief Perform the MPI communication for the grid velocities.
-	 * \param[in] config - Definition of the particular problem.
-	 */
+   * \brief Perform the MPI communication for the grid velocities.
+   * \param[in] config - Definition of the particular problem.
+   */
   void Set_MPI_GridVel(CConfig *config);
   
   /*!
-	 * \brief Perform the MPI communication for the grid coordinates (dynamic meshes) for restart purposes.
-	 * \param[in] config - Definition of the particular problem.
-	 */
+   * \brief Perform the MPI communication for the grid coordinates (dynamic meshes) for restart purposes.
+   * \param[in] config - Definition of the particular problem.
+   */
   void Set_MPI_OldCoord(CConfig *config);
-
-	/*! 
-	 * \brief Set the periodic boundary conditions.
-	 * \param[in] config - Definition of the particular problem.		 
-	 */
-	void SetPeriodicBoundary(CConfig *config);
   
+  /*!
+   * \brief Set the periodic boundary conditions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPeriodicBoundary(CConfig *config);
+
 	/*! 
 	 * \brief Do an implicit smoothing of the grid coordinates.
 	 * \param[in] val_nSmooth - Number of smoothing iterations.
@@ -1422,36 +1757,72 @@ public:
    * \brief Compute the maximum thickness of an airfoil.
    * \returns Maximum thickness at a particular seccion.
    */
-  su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
   
   /*!
    * \brief Compute the twist of an airfoil.
    * \returns Twist at a particular seccion.
    */
-  su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the leading/trailing edge location of an airfoil.
    */
-  void Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil,
+  void Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil,
                                vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+    * \brief Compute the leading/trailing edge location of a fuselage.
+    */
+   void Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil,
+                                vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the chord of an airfoil.
    * \returns Chord of an airfoil.
    */
-  su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the thickness of an airfoil.
    */
-  su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, su2double &ZLoc);
 
   /*!
    * \brief Compute the area of an airfoil.
    * \returns Area of an airfoil.
    */
-  su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the length of an airfoil.
+   * \returns Area of an airfoil.
+   */
+  su2double Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the dihedral of a wing.
@@ -1471,8 +1842,20 @@ public:
    * \brief Evaluate geometrical parameters of a wing.
    */
   void Compute_Wing(CConfig *config, bool original_surface,
-                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC,
-                    su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
+                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                    su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                    su2double &Wing_MaxDihedral);
+
+  /*!
+   * \brief Evaluate geometrical parameters of a wing.
+   */
+  void Compute_Fuselage(CConfig *config, bool original_surface,
+  		su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+  		su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+  		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+  		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+  		su2double &Fuselage_MaxCurvature);
 
   /*!
    * \brief Read the sensitivity from adjoint solution file and store it.
@@ -1501,6 +1884,171 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Check_Periodicity(CConfig *config);
+
+  /*!
+	 * \brief Get the average normal at a specific span for a given marker in the turbomachinery reference of frame.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise averaged turbo normal.
+	 */
+  su2double* GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief Get the average normal at a specific span for a given marker.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise averaged normal.
+	 */
+  su2double* GetAverageNormal(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief Get the value of the total area for each span.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise area.
+	 */
+	su2double GetSpanArea(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief Get the value of the total area for each span.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise averaged turbo normal.
+	 */
+	su2double GetTurboRadius(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get the value of the average tangential rotational velocity for each span.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise averaged tangential velocity.
+	 */
+	su2double GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get the value of the inflow tangential velocity at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise inflow tangential velocity.
+	 */
+	su2double GetTangGridVelIn(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get the value of the outflow tangential velocity at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise outflow tangential velocity.
+	 */
+	su2double GetTangGridVelOut(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get the value of the inflow area at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise inflow area.
+	 */
+	su2double GetSpanAreaIn(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get the value of the outflow area at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+	 * \return The span-wise outflow area.
+	 */
+	su2double GetSpanAreaOut(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get the value of the inflow radius at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise inflow radius.
+	 */
+	su2double GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get the value of the outflow radius at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   * \return The span-wise outflow radius.
+	 */
+	su2double GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Set the value of the inflow tangential velocity at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	void SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Set the value of the outflow tangential velocity at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	void SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get the value of the inflow area at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	void SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Set the value of the outflow area at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	void SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Set the value of the inflow radius at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	void SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Set the value of the outflow radius at each span.
+	 * \param[in] val_marker - marker turbo-performance value.
+	 * \param[in] val_span - span value.
+   */
+	void SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A total number of vertex independently from the MPI partions.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span);
+
+/*!
+ * \brief min angular pitch independently from the MPI partions.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  su2double GetMinAngularCoord(unsigned short val_marker, unsigned short val_span);
+
+/*!
+ * \brief max angular pitch independently from the MPI partions.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  su2double GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span);
+
+/*!
+ * \brief min Relatice angular coord independently from the MPI partions.
+ * \param[in] val_marker - marker value.
+ * \param[in] val_span - span value.
+ */
+  su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief Get the average grid velocity at a specific span for a given marker.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+  su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span);
 
 };
 
@@ -1620,13 +2168,19 @@ public:
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
 	 */
-	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
-    
-    /*!
-     * \brief Set the translational velocity at each grid point on a coarse mesh.
-     * \param[in] config - Definition of the particular problem.
-     */
-    void SetTranslationalVelocity(CConfig *config);
+	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
+
+/*!
+ * \brief Set the rotational velocity of the points on the shroud markers to 0.0.
+ * \param[in] config - Definition of the particular problem.
+ */
+void SetShroudVelocity(CConfig *config);
+
+/*!
+ * \brief Set the translational velocity at each grid point on a coarse mesh.
+ * \param[in] config - Definition of the particular problem.
+ */
+void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
 	/*!
 	 * \brief Set the grid velocity at each node in the coarse mesh level.

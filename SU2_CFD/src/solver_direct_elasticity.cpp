@@ -4,8 +4,8 @@
  * \author R. Sanchez
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -87,10 +87,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   unsigned long iPoint;
   unsigned short iVar, jVar, iDim, jDim;
   unsigned short iTerm, iKind;
-  
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
-  
+
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool fsi = config->GetFSI_Simulation();                        // FSI simulation
@@ -189,146 +186,23 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   /*--- The length of the solution vector depends on whether the problem is static or dynamic ---*/
   
   unsigned short nSolVar;
-  unsigned long index;
   string text_line, filename;
   ifstream restart_file;
-  su2double dull_val;
-  long Dyn_RestartIter;
-  
+
   if (dynamic) nSolVar = 3 * nVar;
   else nSolVar = nVar;
   
   SolRest = new su2double[nSolVar];
-  
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  
-  /*--- Check for a restart, initialize from zero otherwise ---*/
-  
-  if (!restart) {
-    for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
-    }
-  }
-  else {
-    
-    /*--- Restart the solution from file information ---*/
-    
-    filename = config->GetSolution_FEMFileName();
-    
-    /*--- If multizone, append zone name ---*/
-    if (nZone > 1)
-      filename = config->GetMultizone_FileName(filename, iZone);
-    
-    if (dynamic) {
-      
-      Dyn_RestartIter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
-      
-      filename = config->GetUnsteady_FileName(filename, (int)Dyn_RestartIter);
-    }
-    
-    restart_file.open(filename.data(), ios::in);
-    
-    /*--- In case there is no file ---*/
-    
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no FEM restart file!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    
-    /*--- Read all lines in the restart file ---*/
-    
-    long iPoint_Local;
-    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-    
-    /*--- The first line is the header ---*/
-    
-    getline (restart_file, text_line);
-    
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
-      getline (restart_file, text_line);
-      
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        if (dynamic) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5] >> SolRest[6] >> SolRest[7] >> SolRest[8];
-        }
-        else {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2];
-        }
-        
-        node[iPoint_Local] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
-        iPoint_Global_Local++;
-      }
 
-    }
-    
-    /*--- Detect a wrong solution file ---*/
-    
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-    
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver (Set_MPI_Solution()). ---*/
-    
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
-    }
-    
-    
-    /*--- Close the restart file ---*/
-    
-    restart_file.close();
-    
+  /*--- Initialize from zero everywhere. ---*/
+
+  for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
   }
-  
-  
+
   bool prestretch_fem = config->GetPrestretch();
-  if (prestretch_fem) Set_Prestretch(geometry, config);
-  
+  if (prestretch_fem) Set_Prestretch(geometry, config);  
   
   /*--- Term ij of the Jacobian ---*/
   
@@ -972,7 +846,6 @@ void CFEM_ElasticitySolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConf
 
 void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   
-  unsigned long iPoint;
   unsigned long index;
   
   unsigned short iVar;
@@ -1007,16 +880,6 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
       cout << "There is no FEM prestretch reference file!!" << endl;
     exit(EXIT_FAILURE);
   }
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-  
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
   
   /*--- Read all lines in the restart file ---*/
   
@@ -1033,11 +896,10 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
     
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
-    
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
-      
-      iPoint_Local = Global2Local[iPoint_Global];
+
+    iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
       
       if (nDim == 2) point_line >> Solution[0] >> Solution[1] >> index;
       if (nDim == 3) point_line >> Solution[0] >> Solution[1] >> Solution[2] >> index;
@@ -3336,7 +3198,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerFSI = (fea_config->GetMarker_n_FSIinterface())/2;
+  nMarkerFSI = (fea_config->GetMarker_n_ZoneInterface())/2;
   nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();    // Retrieve total number of markers on Fluid side
   
   // Parameters for the calculations
@@ -3371,7 +3233,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
     
     /*--- Current fluid marker ---*/
     for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++) {
-      if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSI+1)) {
+      if (flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == (iMarkerFSI+1)) {
         Marker_Flow = iMarkerFlow;
       }
     }
@@ -3482,7 +3344,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
+  nMarkerFSI     = (flow_config->GetMarker_n_ZoneInterface())/2;
   nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
   nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
   
@@ -3512,8 +3374,8 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
     /*--- On the structural side ---*/
     
     for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerStruct) equals the index we are looping at ---*/
-      if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerStruct) equals the index we are looping at ---*/
+      if ( fea_config->GetMarker_All_ZoneInterface(iMarkerStruct) == iMarkerFSI ) {
         /*--- We have identified the local index of the FEA marker ---*/
         /*--- Store the number of local points that belong to Marker_Struct on each processor ---*/
         /*--- This includes the halo nodes ---*/
@@ -3533,8 +3395,8 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
     /*--- On the fluid side ---*/
     
     for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == iMarkerFSI ) {
         /*--- We have identified the local index of the Flow marker ---*/
         /*--- Store the number of local points that belong to Marker_Flow on each processor ---*/
         /*--- This includes the halo nodes ---*/
@@ -4152,3 +4014,133 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
   
 }
 
+void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  unsigned short iVar, nSolVar;
+  unsigned long index;
+
+  ifstream restart_file;
+  string restart_filename, filename, text_line;
+
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry[MESH_0]->GetnZone();
+
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
+  if (dynamic) nSolVar = 3 * nVar;
+  else nSolVar = nVar;
+
+  su2double *Sol = new su2double[nSolVar];
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Restart the solution from file information ---*/
+
+  filename = config->GetSolution_FEMFileName();
+
+  /*--- If multizone, append zone name ---*/
+
+  if (nZone > 1)
+    filename = config->GetMultizone_FileName(filename, iZone);
+
+  if (dynamic) {
+    filename = config->GetUnsteady_FileName(filename, val_iter);
+  }
+
+  /*--- Read all lines in the restart file ---*/
+
+  int counter = 0;
+  long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nSolVar; iVar++) Sol[iVar] = Restart_Data[index+iVar];
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint_Local]->SetSolution(iVar, Sol[iVar]);
+        if (dynamic) {
+          node[iPoint_Local]->SetSolution_time_n(iVar, Sol[iVar]);
+          node[iPoint_Local]->SetSolution_Vel(iVar, Sol[iVar+nVar]);
+          node[iPoint_Local]->SetSolution_Vel_time_n(iVar, Sol[iVar+nVar]);
+          node[iPoint_Local]->SetSolution_Accel(iVar, Sol[iVar+2*nVar]);
+          node[iPoint_Local]->SetSolution_Accel_time_n(iVar, Sol[iVar+2*nVar]);
+          if (config->GetFSI_Simulation()) {
+            node[iPoint_Local]->SetSolution_Pred(iVar, Sol[iVar]);
+            node[iPoint_Local]->SetSolution_Pred_Old(iVar, Sol[iVar]);
+          }
+        }
+      }
+      iPoint_Global_Local++;
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+    }
+    
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- MPI. If dynamic, we also need to communicate the old solution ---*/
+
+  solver[MESH_0][FEA_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  if (dynamic) solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Old(geometry[MESH_0], config);
+
+  delete [] Sol;
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+  
+}
