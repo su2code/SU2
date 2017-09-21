@@ -882,7 +882,8 @@ private:
   bool using_uq;              /*!< \brief Using uncertainty quantification with SST model */
   su2double beta_delta;       /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp; /*!< \brief Parameter used to determine type of eigenvalue perturbation */
-  su2double urlx;
+  su2double urlx;             /*!< \brief Under-relaxation factor */
+  bool permute;               /*!< \brief Permutation of eigenvectors */
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -7375,6 +7376,12 @@ public:
    * \return Value of the urlx parameter
    */
   su2double GetURLX(void);
+
+  /*!
+   * \brief Get information about eigenspace perturbation
+   * \return <code>TRUE</code> means eigenspace perterturbation will be used
+   */
+  bool GetPermute(void);
   
   /*!
    * \brief Get the AD support.

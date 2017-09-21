@@ -3668,8 +3668,7 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
 
   if (config->GetUsing_UQ()){
     SetReynoldsStressMatrix(Mean_turb_ke);
-    SetPerturbedRSM(Mean_turb_ke, config->GetEig_Val_Comp(),config->GetBeta_Delta(),
-                    config->GetURLX());
+    SetPerturbedRSM(Mean_turb_ke, config);
     GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal,
                        Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                        MeanReynoldsStress, MeanPerturbedRSM);
@@ -3897,22 +3896,27 @@ void CAvgGradCorrected_Flow::SetReynoldsStressMatrix(su2double turb_ke){
     delete [] S_ij;
 }
 
-void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke,
-                                             unsigned short Eig_Val_Comp,
-                                             su2double beta_delta, su2double urlx){
+void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
 
     unsigned short iDim,jDim;
     su2double **A_ij;
     su2double **Eig_Vec;
+    su2double **New_Eig_Vec;
     su2double **newA_ij;
     su2double **Corners;
     su2double *Eig_Val;
     su2double *Barycentric_Coord;
     su2double *New_Coord;
 
+    unsigned short Eig_Val_Comp = config->GetEig_Val_Comp();
+    bool beta_delta = config->GetBeta_Delta();
+    su2double urlx = config->GetURLX();
+    bool permute = config->GetPermute();
+
     A_ij = new su2double* [3];
     newA_ij = new su2double* [3];
     Eig_Vec = new su2double* [3];
+    New_Eig_Vec = new su2double* [3];
     Corners = new su2double* [3];
     Eig_Val = new su2double [3];
     Barycentric_Coord = new su2double [2];
@@ -3922,6 +3926,7 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke,
         A_ij[iDim] = new su2double [3];
         newA_ij[iDim] = new su2double [3];
         Eig_Vec[iDim] = new su2double [3];
+        New_Eig_Vec[iDim] = new su2double [3];
         Corners[iDim] = new su2double [2];
         Eig_Val[iDim] = 0;
     }
@@ -3957,7 +3962,7 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke,
         New_Coord[0] = Corners[0][0];
         New_Coord[1] = Corners[0][1];
     }
-    else if (Eig_Val_Comp == 2) {
+    else if (Eig_Val_Comp== 2) {
         /* 2C turbulence */
         New_Coord[0] = Corners[1][0];
         New_Coord[1] = Corners[1][1];
@@ -3986,7 +3991,15 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke,
     Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
     Eig_Val[2] = c1c + Eig_Val[1];
 
-    EigenRecomposition(newA_ij, Eig_Vec, Eig_Val);
+    if (permute) {
+        for (iDim=0; iDim<3; iDim++) {
+            for (jDim=0; jDim<3; jDim++) {
+                New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
+            }
+        }
+    }
+
+    EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val);
 
     for (iDim = 0; iDim< 3; iDim++){
         for (jDim = 0; jDim < 3; jDim++){
