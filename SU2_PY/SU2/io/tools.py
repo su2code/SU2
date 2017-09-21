@@ -439,14 +439,14 @@ def update_persurface(config, state):
     for base in per_surface_map:
         base2 = per_surface_map[base]
         for marker in config['MARKER_MONITORING']:
-            if not header_map.has_key(base2+'_'+marker):
+            if not (base2+'_'+marker) in header_map:
                 header_map[base2+'_'+marker] = base2+'_'+marker
     # Update the function values in state to include the per-surface quantities
-    if state['HISTORY'].has_key('DIRECT'):
+    if 'DIRECT' in state['HISTORY']:
         for base in per_surface_map:
             base2 = per_surface_map[base]
             for marker in config['MARKER_MONITORING']:
-                if state['HISTORY']['DIRECT'].has_key(base2+'_'+marker):
+                if (base2+'_'+marker) in state['HISTORY']['DIRECT']:
                     state['FUNCTIONS'][base2+'_'+marker] = state['HISTORY']['DIRECT'][base2+'_'+marker][-1]
                     
 # -------------------------------------------------------------------
@@ -472,12 +472,12 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
     # pull only these functions
     Func_Values = ordered_bunch()
     for this_objfun in func_names:
-        if history_data.has_key(this_objfun):
+        if this_objfun in history_data:
             Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
     if 'UNSTEADY_SIMULATION' in special_cases and not final_avg:
-        for key,value in Func_Values.iteritems():
+        for key,value in Func_Values.items():
             Func_Values[key] = sum(value)/len(value)
          
     # average the final iterations   
@@ -607,7 +607,7 @@ def get_adjointSuffix(objective_function=None):
         nObj = len(objective)
         if (nObj>1):
             return "combo"
-        if name_map.has_key(objective[0]):
+        if objective[0] in name_map:
             return name_map[objective[0]]
     
         # otherwise...
@@ -876,7 +876,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     header_vars = []
     map_dict = get_headerMap(nZones)
     for variable in header_list:
-        assert map_dict.has_key(variable) , 'unrecognized header variable'
+        assert variable in map_dict, 'unrecognized header variable'
         header_vars.append(map_dict[variable])
     
     # done
@@ -922,9 +922,9 @@ def get_specialCases(config):
     
     special_cases = []
     for key in all_special_cases:
-        if config.has_key(key) and config[key] == 'YES':
+        if key in config and config[key] == 'YES':
             special_cases.append(key)
-        if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
+        if 'PHYSICAL_PROBLEM' in config and config['PHYSICAL_PROBLEM'] == key:
             special_cases.append(key)
             
     if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
@@ -939,11 +939,11 @@ def get_specialCases(config):
         raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
   
     # Special case for harmonic balance
-    if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'HARMONIC_BALANCE':
+    if 'UNSTEADY_SIMULATION' in config and config['UNSTEADY_SIMULATION'] == 'HARMONIC_BALANCE':
         special_cases.append('HARMONIC_BALANCE')
 
     # Special case for rotating frame
-    if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
+    if 'GRID_MOVEMENT_KIND' in config and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
         special_cases.append('ROTATING_FRAME')
         
     return special_cases
@@ -962,7 +962,7 @@ def get_multizone(config):
     
     multizone = []
     for key in all_multizone_problems:
-        if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
+        if 'PHYSICAL_PROBLEM' in config and config['PHYSICAL_PROBLEM'] == key:
             multizone.append(key)
             
     return multizone
