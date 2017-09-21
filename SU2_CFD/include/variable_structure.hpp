@@ -6,8 +6,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -160,13 +160,13 @@ public:
    * \return Pointer to the old solution vector.
    */
   su2double GetSolution_Old(unsigned short val_var);
-  
+
   /*!
    * \brief Set the value of the old solution.
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
   void SetSolution_Old(su2double *val_solution_old);
-  
+
   /*!
    * \overload
    * \param[in] val_var - Index of the variable.
@@ -178,12 +178,12 @@ public:
    * \brief Set old variables to the value of the current variables.
    */
   void Set_OldSolution(void);
-  
+
   /*!
    * \brief Set variables to the value of the old variables.
    */
   void Set_Solution(void);
-  
+
   /*!
    * \brief Set the variable solution at time n.
    */
@@ -242,7 +242,26 @@ public:
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   void AddSolution(unsigned short val_var, su2double val_solution);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  virtual su2double GetSolution_New(unsigned short val_var);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetSolution_New(void);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  virtual void AddSolution_New(unsigned short val_var, su2double val_solution);
+
   /*!
    * \brief Add a value to the solution, clipping the values.
    * \param[in] val_var - Index of the variable.
@@ -1001,6 +1020,17 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of the gamma_BC of B-C transition model.
+   */
+  virtual su2double GetGammaBC(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetGammaBC(su2double val_gamma);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
   virtual void SetEddyViscosity(su2double eddy_visc);
@@ -1488,12 +1518,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual bool SetVorticity(bool val_limiter);
+  virtual bool SetVorticity(void);
   
   /*!
    * \brief A virtual member.
    */
-  virtual bool SetStrainMag(bool val_limiter);
+  virtual bool SetStrainMag(void);
   
   /*!
    * \brief A virtual member.
@@ -2656,6 +2686,10 @@ protected:
   su2double *Secondary;            /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   su2double **Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Secondary;   /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+
+  /*--- New solution container for Classical RK4 ---*/
+
+  su2double *Solution_New;
   
 public:
   
@@ -2689,7 +2723,26 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CEulerVariable(void);
-  
+
+  /*!
+   * \brief Get the new solution of the problem (Classical RK4).
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  su2double GetSolution_New(unsigned short val_var);
+
+  /*!
+   * \brief Set the new solution container for Classical RK4.
+   */
+  void SetSolution_New(void);
+
+  /*!
+   * \brief Add a value to the new solution container for Classical RK4.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  void AddSolution_New(unsigned short val_var, su2double val_solution);
+
   /*!
    * \brief Set to zero the gradient of the primitive variables.
    */
@@ -3345,12 +3398,12 @@ public:
   /*!
    * \brief Set the vorticity value.
    */
-  bool SetVorticity(bool val_limiter);
+  bool SetVorticity(void);
   
   /*!
    * \brief Set the rate of strain magnitude.
    */
-  bool SetStrainMag(bool val_limiter);
+  bool SetStrainMag(void);
   
   /*!
    * \overload
@@ -3497,12 +3550,12 @@ public:
   /*!
    * \brief Set the vorticity value.
    */
-  bool SetVorticity(bool val_limiter);
+  bool SetVorticity(void);
   
   /*!
    * \brief Set the rate of strain magnitude.
    */
-  bool SetStrainMag(bool val_limiter);
+  bool SetStrainMag(void);
   
   /*!
    * \overload
@@ -3596,6 +3649,10 @@ public:
  */
 
 class CTurbSAVariable : public CTurbVariable {
+
+private:
+  su2double gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -3630,53 +3687,18 @@ public:
    * \return Value of the harmonic balance source term for the index <i>val_var</i>.
    */
   su2double GetHarmonicBalance_Source(unsigned short val_var);
-  
-};
 
+  /*!
+   * \brief Get the intermittency of the BC transition model.
+   * \return Value of the intermittency of the BC transition model.
+   */
+  su2double GetGammaBC(void);
 
-/*!
- * \class CTurbMLVariable
- * \brief Main class for defining the variables of the turbulence model.
- * \ingroup Turbulence_Model
- * \author A. Bueno.
- * \version 5.0.0 "Raven"
- */
-
-class CTurbMLVariable : public CTurbVariable {
-public:
   /*!
-   * \brief Constructor of the class.
+   * \brief Set the intermittency of the BC transition model.
+   * \param[in] val_gamma - New value of the intermittency.
    */
-  CTurbMLVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
-   * \param[in] val_muT  - The eddy viscosity
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CTurbMLVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTurbMLVariable(void);
-  
-  /*!
-   * \brief Set the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
-   */
-  void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
-  
-  /*!
-   * \brief Get the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the harmonic balance source term for the index <i>val_var</i>.
-   */
-  su2double GetHarmonicBalance_Source(unsigned short val_var);
+  void SetGammaBC(su2double val_gamma);
   
 };
 

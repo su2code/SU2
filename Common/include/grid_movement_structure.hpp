@@ -7,8 +7,8 @@
  * \author F. Palacios, T. Economon, S. Padron
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -1149,14 +1149,20 @@ public:
 	 */
   void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume);
   
-  
   /*!
 	 * \brief Compute the minimum distance to the nearest deforming surface.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
 	 */
   void ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance);
-    
+
+  /*!
+	 * \brief Compute the minimum distance to the nearest solid surface.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+	 */
+  void ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance);
+
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1490,14 +1496,14 @@ protected:
 	unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxes. */
 	unsigned short nLevel;	/*!< \brief Level of the FFD FFDBoxes (parent/child). */
 	bool FFDBoxDefinition;	/*!< \brief If the FFD FFDBox has been defined in the input file. */
+
+public:
   vector<su2double> GlobalCoordX[MAX_NUMBER_FFD];
   vector<su2double> GlobalCoordY[MAX_NUMBER_FFD];
   vector<su2double> GlobalCoordZ[MAX_NUMBER_FFD];
   vector<string> GlobalTag[MAX_NUMBER_FFD];
   vector<unsigned long> GlobalPoint[MAX_NUMBER_FFD];
 
-public:
-	
 	/*! 
 	 * \brief Constructor of the class.
 	 */
@@ -1764,7 +1770,7 @@ public:
 	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] iFFDBox - _____________________.
 	 */		
-  void SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, bool ResetDef);
+  su2double SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, bool ResetDef);
   	
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -1931,7 +1937,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config);
+  void WriteFFDInfo(CSurfaceMovement **surface_movement, CGeometry **geometry, CConfig **config);
 	
 	/*! 
 	 * \brief Get information about if there is a complete FFDBox definition, or it is necessary to 

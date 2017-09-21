@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon, M. Colonno
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -738,7 +738,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
   
 }
 
-void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file) {
+void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool surf_sol, bool new_file) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iElem, iNode;
@@ -747,9 +747,17 @@ void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool su
   char cstr[200];
   ofstream Tecplot_File;
 
-  if (surf_sol) strcpy(cstr, "surface_grid.dat");
-  else strcpy(cstr, "volumetric_grid.dat");
+  if (surf_sol) strcpy(cstr, "surface_grid");
+  else strcpy(cstr, "volumetric_grid");
   
+  if (config->GetnZone() > 1){
+    char appstr[200];
+    SPRINTF(appstr, "_%u", val_iZone);
+    strcat(cstr, appstr);
+  }
+
+  strcat(cstr,".dat");
+
   /*--- Open Tecplot ASCII file and write the header. ---*/
   
   if (new_file) {
@@ -925,11 +933,201 @@ void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool su
   
   Tecplot_File.close();
   
-  if (surf_sol) delete [] LocalIndex;
+  if (surf_sol) {
+  	delete [] LocalIndex;
+  	delete [] SurfacePoint;
+  }
   
 }
 
-void COutput::SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+void COutput::SetSTL_MeshASCII(CConfig *config, CGeometry *geometry) {
+  
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned long iElem, iNode;
+  char cstr[200];
+  ofstream STL_File;
+  su2double p[3] = {0.0,0.0,0.0}, u[3] = {0.0,0.0,0.0}, v[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, a;
+  unsigned long Point_0, Point_1, Point_2;
+  
+  /*---	STL format:
+   solid NAME
+   ...
+   facet normal 0.00 0.00 1.00
+   outer loop
+   vertex  2.00  2.00  0.00
+   vertex -1.00  1.00  0.00
+   vertex  0.00 -1.00  0.00
+   endloop
+   endfacet
+   ...
+   end solid
+   ---*/
+  
+  if (nDim == 3) {
+    
+    strcpy(cstr, "surface_grid.stl");
+    
+    /*--- Open STL ASCII file and write the header. ---*/
+    
+    STL_File.open(cstr, ios::out);
+    STL_File.precision(6);
+    STL_File << "solid surface_mesh" << endl;
+    
+    for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+      
+      iNode = iElem*N_POINTS_TRIANGLE;
+      
+      /*--- Compute Normal vectors ---*/
+      
+      Point_0 = Conn_BoundTria[iNode+0]-1;
+      Point_1 = Conn_BoundTria[iNode+1]-1;
+      Point_2 = Conn_BoundTria[iNode+2]-1;
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        p[0] = Coords[iDim][Point_0];
+        p[1] = Coords[iDim][Point_1];
+        p[2] = Coords[iDim][Point_2];
+        u[iDim] = p[1]-p[0];
+        v[iDim] = p[2]-p[0];
+      }
+      
+      n[0] = u[1]*v[2]-u[2]*v[1];
+      n[1] = u[2]*v[0]-u[0]*v[2];
+      n[2] = u[0]*v[1]-u[1]*v[0];
+      a = sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
+      
+      /*--- Print normal vector ---*/
+      
+      STL_File << "  facet normal ";
+      for (iDim = 0; iDim < nDim; iDim++) {
+        STL_File << n[iDim]/a << " ";
+      }
+      STL_File << endl;
+      
+      /*--- Print nodes for facet ---*/
+      STL_File << "    outer loop" << endl;
+      
+      STL_File << "      vertex ";
+      for (iDim = 0; iDim < nDim; iDim++) STL_File << Coords[iDim][Point_0] << " ";
+      STL_File <<  endl;
+      
+      STL_File << "      vertex ";
+      for (iDim = 0; iDim < nDim; iDim++) STL_File << Coords[iDim][Point_1] << " ";
+      STL_File <<  endl;
+      
+      STL_File << "      vertex ";
+      for (iDim = 0; iDim < nDim; iDim++) STL_File << Coords[iDim][Point_2] << " ";
+      STL_File <<  endl;
+      
+      STL_File << "    endloop" << endl;
+      STL_File << "  endfacet" << endl;
+      
+    }
+    
+    //  for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+    //      iNode = iElem*N_POINTS_QUADRILATERAL;
+    //      STL_File << LocalIndex[Conn_BoundQuad[iNode+0]] << "\t";
+    //      STL_File << LocalIndex[Conn_BoundQuad[iNode+1]] << "\t";
+    //      STL_File << LocalIndex[Conn_BoundQuad[iNode+2]] << "\t";
+    //      STL_File << LocalIndex[Conn_BoundQuad[iNode+3]] << "\n";
+    //    }
+    
+    /*--- Done with Surface Mesh ---*/
+    
+    STL_File << "endsolid" << endl;
+    
+    STL_File.close();
+    
+    
+  }
+  
+}
+
+void COutput::SetCSV_MeshASCII(CConfig *config, CGeometry *geometry) {
+
+	short iStation, nStation;
+	unsigned short nDim = geometry->GetnDim();
+	unsigned long iVertex;
+	su2double *Plane_P0, *Plane_Normal;
+	vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Variable_Airfoil;
+	ofstream csv_File;
+
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+	if (nDim == 3) {
+
+		Plane_P0 = new su2double[3];
+		Plane_Normal = new su2double[3];
+
+		if (geometry->GetnDim() == 3) {
+
+			nStation = config->GetnLocationStations();
+
+			for (iStation = 0; iStation < nStation; iStation++) {
+
+				/*--- Read the values from the config file ---*/
+
+				Plane_Normal[0] = 0.0; Plane_P0[0] = 0.0;
+				Plane_Normal[1] = 0.0; Plane_P0[1] = 0.0;
+				Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
+
+				if (config->GetGeo_Description() == FUSELAGE) {
+					Plane_Normal[0] = 1.0;
+					Plane_P0[0] = config->GetLocationStations(iStation);
+				}
+
+				if (config->GetGeo_Description() == WING) {
+					Plane_Normal[1] = 1.0;
+					Plane_P0[1] = config->GetLocationStations(iStation);
+				}
+
+				/*--- Compute the airfoil Stations (note that we feed in the Cp) ---*/
+
+				geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6,
+						1E6, NULL, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+						Variable_Airfoil, true, config);
+
+				if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
+					cout << "Please check the config file, the station (" << Plane_P0[0] << ", " << Plane_P0[1] << ", " << Plane_P0[2] << ") has not been detected." << endl;
+				}
+
+				/*--- Write Cp at each Station (csv format) ---*/
+
+				if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() != 0)) {
+
+					if (iStation == 0) csv_File.open("surface_grid.csv", ios::out);
+					else csv_File.open("surface_grid.csv", ios::app);
+
+					/*--- Coordinates value ---*/
+
+					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+						csv_File << Xcoord_Airfoil[iVertex] << " ," << Ycoord_Airfoil[iVertex] << " ," << Zcoord_Airfoil[iVertex];
+						if (iVertex == 0) { if (iStation == 0) csv_File << ", 2"; else csv_File << ", 1"; }
+						else csv_File << ", 0";
+						csv_File << endl;
+					}
+
+					csv_File.close();
+
+				}
+
+			}
+
+		}
+
+		/*--- Delete dynamically allocated memory ---*/
+
+		delete[] Plane_P0;
+		delete[] Plane_Normal;
+
+	}
+
+}
+
+void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
   unsigned short iVar, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
@@ -1029,7 +1227,14 @@ void COutput::SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSo
     /*--- Write the header ---*/
     
     Tecplot_File << "ZONE ";
-    
+    if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
+    } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+      /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
+      su2double period = config->GetHarmonicBalance_Period();
+      su2double deltaT = period/(su2double)(config->GetnTimeInstances());
+      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(val_iZone+1)<<", SOLUTIONTIME="<<deltaT*val_iZone<<", ";
+    }
     if (nDim == 2) {
       if (surf_sol) Tecplot_File << "NODES= "<< nGlobal_Surf_Poin <<", ELEMENTS= "<< nSurf_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
       else Tecplot_File << "NODES= "<< nGlobal_Poin_Par <<", ELEMENTS= "<< nGlobal_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
@@ -1181,6 +1386,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
   string buffer, variables;
   stringstream file;
   bool first_zone = true;
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   unsigned short dims = geometry->GetnDim();
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
@@ -1207,7 +1413,11 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
   if (!wrote_base_file) {
     
     file.str(string());
-    buffer = config->GetFlow_FileName();
+
+    if (adjoint)
+      buffer = config->GetAdj_FileName();
+    else buffer = config->GetFlow_FileName();
+
     if (config->GetKind_SU2() == SU2_DOT) {
       buffer = config->GetVolSens_FileName();
     }
@@ -1738,6 +1948,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
     }
     
     delete [] ShareFromZone;
+
     wrote_base_file = true;
     
     err = TECEND112();
@@ -1766,6 +1977,9 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint(); 
+  unsigned short Kind_Solver = config->GetKind_Solver();
+  
   /*--- Consistent data for Tecplot zones ---*/
   Debug            = 0;
   IsDouble          = 1;
@@ -1783,11 +1997,32 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   ShareConnectivityFromZone  = 0;
   
   file.str(string());
-  buffer = config->GetFlow_FileName();
+
+  /*--- Write file name with extension ---*/
+  
+  if (adjoint)
+    buffer = config->GetAdj_FileName();
+  else buffer = config->GetFlow_FileName();
+  
+  if (Kind_Solver == FEM_ELASTICITY) {
+    buffer = config->GetStructure_FileName().c_str();
+  }
+  
+  if (Kind_Solver == WAVE_EQUATION) {
+    buffer = config->GetWave_FileName().c_str();
+  }
+  
+  if (Kind_Solver == HEAT_EQUATION) {
+    buffer = config->GetHeat_FileName().c_str();
+  }
+  
+  if (Kind_Solver == POISSON_EQUATION) {
+    buffer = config->GetStructure_FileName().c_str();
+  }
+  
   if (config->GetKind_SU2() == SU2_DOT) {
     buffer = config->GetVolSens_FileName();
   }
-
   file << buffer;
   
   if (unsteady) {
@@ -2656,6 +2891,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     delete [] ShareFromZone;
     delete [] LocalIndex;
     delete [] SurfacePoint;
+    
     wrote_surf_file = true;
     
     err = TECEND112();
@@ -2684,9 +2920,32 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  unsigned short Kind_Solver = config->GetKind_Solver();
   
   file.str(string());
-  buffer = config->GetSurfFlowCoeff_FileName();
+  
+  /*--- Write file name with extension ---*/
+  
+  if (adjoint) buffer = config->GetSurfAdjCoeff_FileName();
+  else buffer = config->GetSurfFlowCoeff_FileName();
+  
+  if (Kind_Solver == FEM_ELASTICITY) {
+    buffer = config->GetSurfStructure_FileName().c_str();
+  }
+  
+  if (Kind_Solver == WAVE_EQUATION) {
+    buffer = config->GetSurfWave_FileName().c_str();
+  }
+  
+  if (Kind_Solver == HEAT_EQUATION) {
+    buffer = config->GetSurfHeat_FileName().c_str();
+  }
+  
+  if (Kind_Solver == POISSON_EQUATION) {
+    buffer = config->GetSurfStructure_FileName().c_str();
+  }
+  
   if (config->GetKind_SU2() == SU2_DOT) {
     buffer = config->GetSurfSens_FileName();
   }

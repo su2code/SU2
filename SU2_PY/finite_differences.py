@@ -5,8 +5,8 @@
 #  \author F. Palacios
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -48,15 +48,19 @@ def main():
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-q", "--quiet",      dest="quiet",      default='False',
-                      help="output QUIET to log files", metavar="QUIET")    
-    
+                      help="output QUIET to log files", metavar="QUIET")
+    parser.add_option("-z", "--zones", dest="nzones", default="1",
+                        help="Number of Zones", metavar="ZONES")
+
     (options, args)=parser.parse_args()
     options.partitions = int( options.partitions )
     options.quiet      = options.quiet.upper() == 'TRUE'
-        
+    options.nzones     = int( options.nzones )
+
     finite_differences( options.filename   ,
                         options.partitions ,
-                        options.quiet       )
+                        options.quiet      ,
+                        options.nzones      )
 #: def main()
 
 
@@ -66,11 +70,13 @@ def main():
 
 def finite_differences( filename           , 
                         partitions = 0     , 
-                        quiet      = False  ):
+                        quiet      = False ,
+                        nzones     = 1      ):
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    
+    config.NZONES      = int( nzones )
+
     if quiet: 
         config.CONSOLE = 'CONCISE'
     

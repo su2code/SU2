@@ -4,8 +4,8 @@
  * \author F. Palacios, A. Bueno
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -476,7 +476,7 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2doubl
     
     /*---SECOND PART: \partial_nu_hat mu^k F^{vk} cdot \grad Psi ---*/
     su2double dEddyVisc_nuhat;
-    if (!config->GetFrozen_Visc())
+    if (!config->GetFrozen_Visc_Cont())
       dEddyVisc_nuhat = U_i[0]*fv1*(1.0 + 3.0*cv1_3/(Ji_3+cv1_3));
     else
       dEddyVisc_nuhat = 0;
