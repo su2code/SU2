@@ -1898,6 +1898,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Parameter to perturb eigenvalues */
   addDoubleOption("URLX", urlx, 0.01);
+
+  /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
+  addBoolOption("PERMUTE", permute, false);
   
   /* END_CONFIG_OPTIONS */
 
@@ -3349,6 +3352,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       beta_delta = 0.0;
       eig_val_comp = 0;
       urlx = 0;
+      permute = false;
   }
 
   if (using_uq && (eig_val_comp > 3 || eig_val_comp < 1)){
