@@ -4464,6 +4464,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   
   bool output_surface  = (config[val_iZone]->GetnMarker_Analyze() != 0);
   bool output_comboObj = (config[val_iZone]->GetnObj() > 1);
+  bool fluid_structure = (config[val_iZone]->GetFSI_Simulation());
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nZone       = config[val_iZone]->GetnZone();
   int rank;
@@ -5202,7 +5203,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
         }
       }
-      if (val_iZone == 0){
+      if (val_iZone == 0 || fluid_structure){
         /*--- Write the screen header---*/
         if (  (!fem && ((write_heads) && !(!DualTime_Iteration && Unsteady))) ||
             (fem && ((write_heads_FEM) && !(!DualTime_Iteration && nonlinear_analysis)))
@@ -5539,7 +5540,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       }
 
       /*--- Write the solution on the screen and history file ---*/
-      if (val_iZone == 0){
+      if (val_iZone == 0 || fluid_structure){
         cout.precision(6);
         cout.setf(ios::fixed, ios::floatfield);
         if (!fem) {
@@ -5580,7 +5581,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
 
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
@@ -5646,7 +5647,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -5714,7 +5715,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << wave_coeff << wave_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_wave[0]);
@@ -5729,7 +5730,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_heat[0]);
@@ -5771,7 +5772,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             if (DualTime_Iteration || !Unsteady){
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -5815,7 +5816,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             if (DualTime_Iteration || !Unsteady){
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
