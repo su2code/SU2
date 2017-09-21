@@ -556,7 +556,7 @@ def read_config(filename):
                 # sort constraints by type
                 this_sort = { 'EQUALITY'   : OrderedDict() ,
                               'INEQUALITY' : OrderedDict()  }
-                for key,value in this_def.iteritems():
+                for key,value in this_def.items():
                     if value['SIGN'] == '=':
                         this_sort['EQUALITY'][key]   = value
                     else:
@@ -884,7 +884,7 @@ def write_config(filename,param_dict):
             
             if case("OPT_OBJECTIVE"):
                 n_obj = 0
-                for name,value in new_value.iteritems():
+                for name,value in new_value.items():
                     if n_obj>0: output_file.write("; ")
                     if value['OBJTYPE']=='DEFAULT':
                         output_file.write( "%s * %s " % (name,value['SCALE']) )
@@ -898,7 +898,7 @@ def write_config(filename,param_dict):
                 i_con = 0
                 for con_type in ['EQUALITY','INEQUALITY']:
                     this_con = new_value[con_type]
-                    for name,value in this_con.iteritems():
+                    for name,value in this_con.items():
                         if i_con>0: output_file.write("; ")
                         output_file.write( "( %s %s %s ) * %s" 
                                           % (name, value['SIGN'], value['VALUE'], value['SCALE']) ) 
