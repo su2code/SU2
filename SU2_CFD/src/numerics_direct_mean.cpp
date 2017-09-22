@@ -3999,6 +3999,14 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config)
         }
     }
 
+    else {
+        for (iDim=0; iDim<3; iDim++) {
+            for (jDim=0; jDim<3; jDim++) {
+                New_Eig_Vec[iDim][jDim] = Eig_Vec[iDim][jDim];
+            }
+        }
+    }
+
     EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val);
 
     for (iDim = 0; iDim< 3; iDim++){

@@ -4004,7 +4004,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
         }
         if (using_uq) cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
-
+        if (permute) cout << "Permuting eigenvectors" << endl;
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
