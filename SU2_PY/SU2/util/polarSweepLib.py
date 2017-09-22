@@ -113,7 +113,7 @@ def readList(dataFile,iLine,verbose):
     if verbose:
         print('readList nData = '+str(nData))
     fData=map(float,lData)
-    return fData,nData
+    return list(fData), nData
 
 def readParameter(dataFile,nLines,keyWord,iDoNot,verbose):
 
