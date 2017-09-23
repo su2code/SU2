@@ -4207,11 +4207,11 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
     }
     else {
       if (nGlobal_Tria > 0 && Conn_Tria != NULL) delete [] Conn_Tria;
-      if (Conn_Quad != NULL) delete [] Conn_Quad;
-      if (Conn_Tetr != NULL) delete [] Conn_Tetr;
-      if (Conn_Hexa != NULL) delete [] Conn_Hexa;
-      if (Conn_Pris != NULL) delete [] Conn_Pris;
-      if (Conn_Pyra != NULL) delete [] Conn_Pyra;
+      if (nGlobal_Quad > 0 && Conn_Quad != NULL) delete [] Conn_Quad;
+      if (nGlobal_Tetr > 0 && Conn_Tetr != NULL) delete [] Conn_Tetr;
+      if (nGlobal_Hexa > 0 && Conn_Hexa != NULL) delete [] Conn_Hexa;
+      if (nGlobal_Pris > 0 && Conn_Pris != NULL) delete [] Conn_Pris;
+      if (nGlobal_Pyra > 0 && Conn_Pyra != NULL) delete [] Conn_Pyra;
       
     }
     
@@ -4409,9 +4409,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_surface) ConvHist_file[0] << surface_outputs;
       if (direct_diff != NO_DERIVATIVE) {
-      if (!turbo) ConvHist_file[0] << d_flow_coeff;
-      else
-        ConvHist_file[0] << d_turbo_coeff;
+        if (!turbo) ConvHist_file[0] << d_flow_coeff;
+        else        ConvHist_file[0] << d_turbo_coeff;
         if (engine || actuator_disk) ConvHist_file[0] << d_engine;
       }
       if (output_comboObj) ConvHist_file[0] << combo_obj;
@@ -5988,7 +5987,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
   
   if ((rank == MASTER_NODE) && (flow)) {
     
-    cout << "Writing the forces breakdown file." << endl;
+    cout << endl << "Writing the forces breakdown file." << endl;
     
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     
@@ -7605,9 +7604,9 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
                                       unsigned long iExtIter, unsigned short val_nZone) {
   
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
+  int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -16042,11 +16041,11 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   }
   else {
     if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+    if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+    if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+    if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+    if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+    if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
   }
   
 }
