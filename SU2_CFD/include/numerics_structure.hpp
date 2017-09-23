@@ -161,10 +161,6 @@ public:
   **ConsVar_Grad;        /*!< \brief Gradient of conservative variables which is a scalar. */
   su2double **PrimVar_Grad_i,  /*!< \brief Gradient of primitive variables at point i. */
   **PrimVar_Grad_j;      /*!< \brief Gradient of primitive variables at point j. */
-  su2double *PrimVar_Lim_i,  /*!< \brief Limiter of primitive variables at point i. */
-  *PrimVar_Lim_j;      /*!< \brief Limiter of primitive variables at point j. */
-  su2double *PsiVar_Lim_i,    /*!< \brief Limiter of adjoint variables at point i. */
-  *PsiVar_Lim_j;      /*!< \brief Limiter of adjoint variables at point j. */
   su2double **PsiVar_Grad_i,    /*!< \brief Gradient of adjoint variables at point i. */
   **PsiVar_Grad_j;      /*!< \brief Gradient of adjoint variables at point j. */
   su2double **TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
@@ -368,14 +364,6 @@ public:
                           su2double **val_primvar_grad_j);
   
   /*!
-   * \brief Set the Limiter of the primitive variables.
-   * \param[in] val_primvar_lim_i - Limiter of the primitive variable at point i.
-   * \param[in] val_primvar_lim_j - Limiter of the primitive variable at point j.
-   */
-  void SetPrimVarLimiter(su2double *val_primvar_lim_i,
-                         su2double *val_primvar_lim_j);
-  
-  /*!
    * \brief Set the value of the adjoint variable.
    * \param[in] val_psi_i - Value of the adjoint variable at point i.
    * \param[in] val_psi_j - Value of the adjoint variable at point j.
@@ -388,13 +376,6 @@ public:
    * \param[in] val_psivar_grad_j - Gradient of the adjoint variable at point j.
    */
   void SetAdjointVarGradient(su2double **val_psivar_grad_i, su2double **val_psivar_grad_j);
-  
-  /*!
-   * \brief Set the limiter of the adjoint variables.
-   * \param[in] val_psivar_lim_i - Gradient of the adjoint variable at point i.
-   * \param[in] val_psivar_lim_j - Gradient of the adjoint variable at point j.
-   */
-  void SetAdjointVarLimiter(su2double *val_psivar_lim_i, su2double *val_psivar_lim_j);
   
   /*!
    * \brief Set the value of the turbulent variable.
@@ -1559,7 +1540,7 @@ private:
 
 
   su2double StaticEnthalpy_i, StaticEnergy_i, StaticEnthalpy_j, StaticEnergy_j, Kappa_i, Kappa_j, Chi_i, Chi_j, Velocity2_i, Velocity2_j;
-  su2double RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
+  su2double RoeKappa, RoeChi;
 
 public:
   
@@ -3205,7 +3186,6 @@ private:
   Mean_turb_ke,         /*!< \brief Mean value of the turbulent kinetic energy. */
   dist_ij_2;           /*!< \brief Length of the edge and face. */
   bool implicit;      /*!< \brief Implicit calculus. */
-  bool limiter;      /*!< \brief Viscous limiter. */
   
 public:
   

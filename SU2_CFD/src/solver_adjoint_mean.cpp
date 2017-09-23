@@ -3121,60 +3121,6 @@ void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config
     
   }
   
-  //  su2double dx = 0.1;
-  //  su2double LimK = 0.03;
-  //  su2double eps2 =  pow((LimK*dx),3);
-  //
-  //  unsigned long iPoint, jPoint;
-  //  unsigned short iNeigh, nNeigh, iDim;
-  //  su2double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij,
-  //  du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
-  //
-  //
-  //  for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //
-  //    if (geometry->node[iPoint]->GetDomain()) {
-  //
-  //      Solution_i = node[iPoint]->GetSolution();
-  //      Gradient_i = node[iPoint]->GetGradient();
-  //      Coord_i = geometry->node[iPoint]->GetCoord();
-  //      nNeigh = geometry->node[iPoint]->GetnPoint();
-  //
-  //      /*--- Find max and min value of the variable in the control volume around the mesh point ---*/
-  //      du_max = 1.0E-8; du_min = -1.0E-8;
-  //      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-  //        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-  //        Solution_j = node[jPoint]->GetSolution();
-  //        du_max = max(du_max, Solution_j[0] - Solution_i[0]);
-  //        du_min = min(du_min, Solution_j[0] - Solution_i[0]);
-  //      }
-  //
-  //      r_u = 1.0;
-  //      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-  //
-  //        /*--- Unconstrained reconstructed solution ---*/
-  //        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-  //        Solution_j = node[jPoint]->GetSolution();
-  //        Coord_j = geometry->node[jPoint]->GetCoord();
-  //        u_ij = Solution_i[0]; dist_ij = 0;
-  //        for (iDim = 0; iDim < nDim; iDim++) {
-  //          diff_coord = Coord_j[iDim]-Coord_i[iDim];
-  //          u_ij += 0.5*diff_coord*Gradient_i[0][iDim];
-  //        }
-  //
-  //        /*--- Venkatakrishnan limiter ---*/
-  //        if ((u_ij - Solution_i[0]) >= 0.0) dp = du_max;
-  //        else  dp = du_min;
-  //        dm = u_ij - Solution_i[0];
-  //        r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
-  //
-  //        /*--- Take the smallest value of the limiter ---*/
-  //        r_u = min(r_u, r_u_ij);
-  //
-  //      }
-  //      node[iPoint]->SetSensor(1.0-r_u);
-  //    }
-  
   /*--- MPI parallelization ---*/
   Set_MPI_Dissipation_Switch(geometry, config);
   
@@ -3542,7 +3488,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed*SoundSpeed-Vn*Vn)/(Vn*Gamma_Minus_One);
             if (config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE)
               Sens_BPress[iMarker]+=1;
-              if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE) {
+            if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE) {
               for (iDim=0; iDim<nDim; iDim++)
                 Sens_BPress[iMarker]+=0.5*Velocity[iDim]*Velocity[iDim]/(Vn*Vn);
             }
@@ -6405,7 +6351,6 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Gradient of adjoint variables ---*/
     
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), NULL);
-    numerics->SetAdjointVarLimiter(node[iPoint]->GetLimiter(), NULL);
 
     /*--- Set volume ---*/
     
