@@ -907,7 +907,7 @@ def main():
     brick_prism_rans_def.cfg_dir   = "deformation/brick_prism_rans"
     brick_prism_rans_def.cfg_file  = "def_brick_prism_rans.cfg"
     brick_prism_rans_def.test_iter = 10
-    brick_prism_rans_def.test_vals = [2.760440e-07] #residual
+    brick_prism_rans_def.test_vals = [2.762780e-07] #residual
     brick_prism_rans_def.su2_exec  = "SU2_DEF"
     brick_prism_rans_def.timeout   = 1600
     brick_prism_rans_def.tol       = 1e-12
