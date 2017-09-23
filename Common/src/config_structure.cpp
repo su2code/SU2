@@ -1562,8 +1562,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 1E-6);
   /* DESCRIPTION: Deform coefficient (-1.0 to 0.5) */
   addDoubleOption("DEFORM_COEFF", Deform_Coeff, 1E6);
-  /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, DEF_WALL_DISTANCE, WALL_DISTANCE, CONSTANT_STIFFNESS) */
-  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, BOUNDARY_DISTANCE);
+  /* DESCRIPTION: Deform limit in m or inches */
+  addDoubleOption("DEFORM_LIMIT", Deform_Limit, 1E6);
+  /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
+  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, SOLID_WALL_DISTANCE);
   /* DESCRIPTION: Poisson's ratio for constant stiffness FEA method of grid deformation*/
   addDoubleOption("DEFORM_ELASTICITY_MODULUS", Deform_ElasticityMod, 2E11);
   /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation*/
@@ -4939,10 +4941,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
         break;
-      case DEF_WALL_DISTANCE:
-        cout << "Cell stiffness scaled by distance to nearest deforming surface." << endl;
-        break;
-      case BOUNDARY_DISTANCE:
+      case SOLID_WALL_DISTANCE:
         cout << "Cell stiffness scaled by distance to nearest solid surface." << endl;
         break;
       case CONSTANT_STIFFNESS:
