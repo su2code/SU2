@@ -4207,11 +4207,11 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
     }
     else {
       if (nGlobal_Tria > 0 && Conn_Tria != NULL) delete [] Conn_Tria;
-      if (Conn_Quad != NULL) delete [] Conn_Quad;
-      if (Conn_Tetr != NULL) delete [] Conn_Tetr;
-      if (Conn_Hexa != NULL) delete [] Conn_Hexa;
-      if (Conn_Pris != NULL) delete [] Conn_Pris;
-      if (Conn_Pyra != NULL) delete [] Conn_Pyra;
+      if (nGlobal_Quad > 0 && Conn_Quad != NULL) delete [] Conn_Quad;
+      if (nGlobal_Tetr > 0 && Conn_Tetr != NULL) delete [] Conn_Tetr;
+      if (nGlobal_Hexa > 0 && Conn_Hexa != NULL) delete [] Conn_Hexa;
+      if (nGlobal_Pris > 0 && Conn_Pris != NULL) delete [] Conn_Pris;
+      if (nGlobal_Pyra > 0 && Conn_Pyra != NULL) delete [] Conn_Pyra;
       
     }
     
@@ -16039,11 +16039,11 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   }
   else {
     if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+    if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+    if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+    if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+    if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+    if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
   }
   
 }
