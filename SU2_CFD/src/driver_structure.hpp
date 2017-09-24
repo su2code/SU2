@@ -5,8 +5,8 @@
  * \author T. Economon, H. Kline, R. Sanchez
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -62,12 +62,13 @@ protected:
             StopTime,                           /*!< \brief Stop point of the timer for performance benchmarking.*/
             UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
   unsigned long ExtIter;                        /*!< \brief External iteration.*/
-  ofstream ConvHist_file;                       /*!< \brief Convergence history file.*/
+  ofstream *ConvHist_file;                       /*!< \brief Convergence history file.*/
   unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
                 iZone,                          /*!< \brief Iterator on zones.*/
                 nZone,                          /*!< \brief Total number of zones in the problem. */
                 nDim;                           /*!< \brief Number of dimensions.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
+       mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
        fsi;                                     /*!< \brief FSI simulation flag.*/
   CIteration **iteration_container;             /*!< \brief Container vector with all the iteration methods. */
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
@@ -183,6 +184,16 @@ public:
   void Postprocessing();
 
   /*!
+   * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
+   */
+  void InitStaticMeshMovement();
+
+  /*!
+   * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
+   */
+  void TurbomachineryPreprocessing(void);
+
+  /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.
@@ -249,7 +260,7 @@ public:
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor(unsigned long ExtIter);
+  virtual bool Monitor(unsigned long ExtIter);
 
   /*!
    * \brief Output the solution in solution file.
@@ -590,6 +601,164 @@ public:
 };
 
 
+/*!
+ * \class CTurbomachineryDriver
+ * \brief Class for driving an iteration for turbomachinery flow analysis.
+ * \author S. Vitale
+ * \version 5.0.0 "Raven"
+ */
+class CTurbomachineryDriver : public CFluidDriver {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.
+   */
+  CTurbomachineryDriver(char* confFile,
+                        unsigned short val_nZone,
+                        unsigned short val_nDim,
+                        SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurbomachineryDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the physics within multiple zones.
+   */
+
+  void Run();
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetMixingPlane(unsigned short iZone);
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetTurboPerformance(unsigned short targetZone);
+
+  /*!
+   * \brief Monitor the computation.
+   */
+  bool Monitor(unsigned long ExtIter);
+
+
+
+};
+
+
+/*!
+ * \class CDiscAdjMultiZoneDriver
+ * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
+ * \author T. Albring
+ * \version 5.0.0 "Raven"
+ */
+class CDiscAdjFluidDriver : public CFluidDriver {
+
+protected:
+  unsigned short RecordingState; /*!< \brief The kind of recording the tape currently holds.*/
+  su2double ObjFunc;             /*!< \brief The value of the objective function.*/
+  CIteration** direct_iteration; /*!< \brief A pointer to the direct iteration.*/
+
+public:
+
+  /*!
+    * \brief Constructor of the class.
+    * \param[in] confFile - Configuration file name.
+    * \param[in] val_nZone - Total number of zones.
+    * \param[in] val_nDim - Number of dimensions.
+    */
+  CDiscAdjFluidDriver(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim,
+                   SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjFluidDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the discrete adjoint solver within multiple zones.
+   */
+
+  void Run();
+
+  /*!
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (either CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   */
+
+  void SetRecording(unsigned short kind_recording);
+
+  /*!
+   * \brief Run one iteration of the solver. It is virtual because it depends on the kind of physics.
+   */
+  virtual void DirectRun();
+
+  /*!
+   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
+   */
+  virtual void SetObjFunction();
+
+  /*!
+   * \brief Initialize the adjoint value of the objective function.
+   */
+  void SetAdj_ObjFunction();
+};
+
+/*!
+ * \class CDiscAdjTurbomachineryDriver
+ * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
+ * \author S. Vitale, T. Albring
+ * \version 5.0.0 "Raven"
+ */
+class CDiscAdjTurbomachineryDriver : public  CDiscAdjFluidDriver {
+
+public:
+
+	 /*!
+	   * \brief Constructor of the class.
+	   * \param[in] confFile - Configuration file name.
+	   * \param[in] val_nZone - Total number of zones.
+	   * \param[in] val_nDim - Number of dimensions.
+	   */
+  CDiscAdjTurbomachineryDriver(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim, SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjTurbomachineryDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the direct solver.
+   */
+  void DirectRun();
+
+  /*!
+   * \brief Set Obj.Function for turbomachinery design.
+   */
+  void SetObjFunction();
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetMixingPlane(unsigned short iZone);
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetTurboPerformance(unsigned short targetZone);
+
+
+};
 /*!
  * \class CHBDriver
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
