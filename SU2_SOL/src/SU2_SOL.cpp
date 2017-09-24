@@ -170,6 +170,10 @@ int main(int argc, char *argv[]) {
       
   }
 
+  /* Container to store the elements in which each of interpoalted mesh points are located in the reference mesh */
+  su2double *MeshInterp_Location = NULL;
+  MeshInterp_Location = new su2double[4*geometry_container_interp[ZONE_0]->GetnPoint()];
+    
   /*--- Determine whether the simulation is a FSI simulation ---*/
 
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
@@ -342,7 +346,7 @@ int main(int argc, char *argv[]) {
                     
                   SolutionInstantiated[iZone] = true;
                     
-                    /* For IUnterpoalted solution */
+                    /* For Interpoalted solution */
                     solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
                     
                     solver_container_interp[iZone] = new CBaselineSolver(geometry_container_interp[iZone], config_container_interp[iZone],solver_container[iZone]->GetnVar(),config_container[iZone]->fields);
@@ -366,7 +370,7 @@ int main(int argc, char *argv[]) {
                 StartTime_interp = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
                 
-                output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0]);
+                output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0],MeshInterp_Location);
                 
 #ifdef HAVE_MPI
                 {
@@ -503,7 +507,7 @@ int main(int argc, char *argv[]) {
         StartTime_interp = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
         
-      output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0]);
+      output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0], MeshInterp_Location);
 
 #ifdef HAVE_MPI
     {
@@ -550,6 +554,8 @@ int main(int argc, char *argv[]) {
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
+  delete MeshInterp_Location;
+    
   /*--- Compute/print the total time for performance benchmarking. ---*/
   
   UsedTime = StopTime-StartTime;

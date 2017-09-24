@@ -15642,7 +15642,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
 void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                                      CConfig *config,CSolver **solver_interp,
-                                     CGeometry *geometry_interp, CConfig *config_interp){
+                                     CGeometry *geometry_interp, CConfig *config_interp, su2double *MeshInterp_Location){
     unsigned short nDim = 2;
     su2double *probe_loc;
     probe_loc = new su2double[2];
@@ -15759,6 +15759,53 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         probe_loc[1] = geometry_interp->node[iPoint]->GetCoord(1);
             
         NodesADT.DetermineNearestNode(probe_loc, dist_probe,pointID, rankID);
+        
+        /* NOTE: Works only for single node */
+        su2double NN[2];
+        NN[0] = geometry->node[pointID]->GetCoord(0); NN[1] = geometry->node[pointID]->GetCoord(1);
+    
+        //if (abs(probe_loc[0] - 0.1)<1e-5 && abs(probe_loc[1]) < 1e-4)
+          //  cout << "for porbe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", NN[0] = " << NN[0] << ", NN[1] = " << NN[1] << endl;
+        if (((abs(NN[0])/abs(probe_loc[0])>1000) || (abs(NN[1])/abs(probe_loc[1]) > 1000)) && (NN[0]==-0.6 && NN[1] ==-0.3)){
+            /* Possibility for Nearest Node from ADT is wrong - happens for coner cases where one or both of the probel location x and y coords are very small <<1e-3) */
+            
+            su2double *probe_loc_tmp;
+            probe_loc_tmp = new su2double[2];
+            probe_loc_tmp[0] =probe_loc[0]; probe_loc_tmp[1] =probe_loc[1];
+            su2double eps_mult = 0.01, mult_factor=1.1;
+            int iter = 0;
+            cout << "WARNING: Works only for single processor " << endl;
+            while (iter < 100)
+            {
+
+                if(abs(probe_loc[0]) < 1e-4 && abs(probe_loc[1]) > 1e-4)    probe_loc_tmp[0] = probe_loc_tmp[0] *mult_factor;
+                if(abs(probe_loc[1]) < 1e-4 && abs(probe_loc[0]) > 1e-4)    probe_loc_tmp[1] = probe_loc_tmp[1] *mult_factor;
+                if(abs(probe_loc[0]) < 1e-3 && abs(probe_loc[1]) < 1e-3)
+                {
+                    probe_loc_tmp[0] = probe_loc_tmp[0] * mult_factor;
+                    probe_loc_tmp[1] = probe_loc_tmp[1] * mult_factor;
+                }
+                
+                NodesADT.DetermineNearestNode(probe_loc_tmp, dist_probe,pointID, rankID);
+                NN[0] = geometry->node[pointID]->GetCoord(0); NN[1] = geometry->node[pointID]->GetCoord(1);
+                
+                
+                    //cout << "Still no change, now NearestNode[0] = " << NN[0] << "NearestNode[1] = " << NN[1] << endl;
+                if ((abs(NN[0])/abs(probe_loc[0])<10) || (abs(NN[1])/abs(probe_loc[1]) < 10) || (NN[0]!=-0.6 && NN[1] !=-0.3))
+                {
+                    //cout << " ----- May be correct NN - now NearestNode[0] = " << NN[0] << "NearestNode[1] = " << NN[1] << endl;
+                    break;
+                }
+                
+                mult_factor += eps_mult;
+                iter += 1;
+                if (iter == 100)
+                    cout << "********** Even after 100 iters, couldn't find correct NN " << endl;
+            }
+            delete [] probe_loc_tmp;
+        }
+                                                                           
+        
         //cout << "rankID = " << rankID  << " for node in rank " << rank << endl;
         Buffer_send_pointIDs[rankID].push_back(pointID);
         
@@ -15933,7 +15980,9 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         //cout << " NUmber of variables being received = " << nPointIDs_proc_send[iProc_send[iProc]]*nVar << " by rank " << rank << " from rank " << iProc_send[iProc] << " with tag " << iProc_send[iProc] +1 << endl;
     }
     
+    unsigned long i_count=0;
     for (int iProc=0; iProc < nProcs_recv; iProc++) {
+        
         /* Number of pointiDs to locate the nodes of interp mesh sent from iProc */
         unsigned long nPointIDs = nPointIDs_proc_recv[iProc_recv[iProc]];
         cout << "nPointIDs received by rank " << rank << " from proc " <<  iProc_recv[iProc] << "= " << nPointIDs << endl;
@@ -15949,8 +15998,9 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             Buffer_send_InterpSolution[iProc][iNode_proc*nVar+1] = probe_loc[1];
             
             su2double dist_probe = sqrt((probe_loc[0] - geometry->node[pointID]->GetCoord(0))*(probe_loc[0] - geometry->node[pointID]->GetCoord(0)) + (probe_loc[1] - geometry->node[pointID]->GetCoord(1))*(probe_loc[1] - geometry->node[pointID]->GetCoord(1)));
-            if (dist_probe < 1e-12) {
-                //cout << "Rank " << rank << " LOCATECD probe with XCoord = " << probe_loc[0] << ", YCoord = " << probe_loc[1] << " intersects with reference mesh node number " << geometry->node[pointID]->GetGlobalIndex() << endl;
+            
+            if (dist_probe < 1e-8) {
+                //cout << "Rank " << rank << " LOCATED probe with XCoord = " << probe_loc[0] << ", YCoord = " << probe_loc[1] << " intersects with reference mesh node number " << geometry->node[pointID]->GetGlobalIndex() << endl;
                 
                 for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
                     Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] = solver[FLOW_SOL]->node[pointID]->GetSolution(iVar);
@@ -15961,9 +16011,20 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 }*/
                 continue;
             }
-            
-            /* local element number inside which the probe is located */
-            probe_elem = FindProbeLocElement_fromNearestNodeElem(geometry, pointID, probe_loc);
+            if (config->GetExtIter()-config->GetUnst_RestartIter() == 0)
+            {
+                
+                // local element number inside which the probe is located
+                probe_elem = FindProbeLocElement_fromNearestNodeElem(geometry, pointID, probe_loc);
+                MeshInterp_Location[i_count] = probe_elem;
+                /*if (i_count == 202)
+                    cout << "#Ext iter number = " << config->GetExtIter() << ", elem = " << probe_elem << endl;*/
+            }
+            else{
+                probe_elem = MeshInterp_Location[i_count];
+                /*if (i_count == 202)
+                    cout << "*Ext iter number = " << config->GetExtIter() << ", elem = " << probe_elem << endl;*/
+            }
             
             nNodes_elem = geometry->elem[probe_elem]->GetnNodes();
             
@@ -15998,7 +16059,8 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                     Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] += solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar)*isoparams[iNode];
                 }
             }
-            
+            /* counter for mesh location container */
+            i_count += 1;
 
         }
 
@@ -16193,13 +16255,16 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
     unsigned short iFace;
     
     vector<unsigned long> ElemIntersectProbeSeg;
-    //if (probe_loc[0]>0.009 && probe_loc[0] < 0.1001)
-      //  cout << "Nearest node found Xcoord = " << geometry->node[pointID]->GetCoord(0) << ", YCoord = " << geometry->node[pointID]->GetCoord(1) << endl;
+    
+    //if (abs(probe_loc[0] - 0.1)<1e-5 && abs(probe_loc[1]) < 1e-4)
+    //cout << "IFor probe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", NN[0] = " <<  geometry->node[pointID]->GetCoord(0) << ", NN[1] = " << geometry->node[pointID]->GetCoord(1) << endl;
+    
     for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
         jElem = geometry->node[pointID]->GetElem(iElem);
         /*--- Determine whether the probe point is inside the element ---*/
         //Inside = IsPointInsideElement(geometry, probe_loc,jElem);
         Inside = IsPointInsideQuad(geometry, probe_loc,jElem);
+        
         if (Inside) {
             probe_elem = jElem;
             return probe_elem;
@@ -16257,7 +16322,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
         Inside = IsPointInsideQuad(geometry, probe_loc,newElem);
         if (Inside)
         {
-           // cout << "----------------Found inside elem " <<  newElem << endl;
+            //cout << "----------------Found inside elem " <<  newElem << endl;
             return newElem;
         }
 
@@ -16299,7 +16364,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
                 if (neighbor_elem != ElemIntersectProbeSeg.back())  {
                     ElemIntersectProbeSeg.push_back(newElem);
                     newElem = neighbor_elem;
-                      //cout << "NewElem --------- ====== " << newElem << endl;
+                    //cout << "NewElem --------- ====== " << newElem << endl;
                     count += 1;
                 }
             }
@@ -16309,6 +16374,8 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
 
         iter += 1;
         if (iter>48){
+            cout << " Did 48 iters to locate the poitn probe_loc[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << endl;
+            cout << " NN[0] = " << geometry->node[pointID]->GetCoord(0) << ", NN[1] = " << geometry->node[pointID]->GetCoord(1) << endl;
             Inside = true;
             return newElem;
         }
@@ -16382,7 +16449,6 @@ bool COutput::IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,uns
 
 bool COutput::IsPointInsideQuad(CGeometry *geometry, su2double *probe_loc,unsigned long jElem){
     
-    
     bool Inside = true;
     unsigned long iPoint;
     unsigned short nDim = 2;
@@ -16426,6 +16492,14 @@ bool COutput::IsPointInsideQuad(CGeometry *geometry, su2double *probe_loc,unsign
     su2double det = sqrt(bb*bb - 4*aa*cc);
     su2double m = (-bb+det)/(2*aa);
     su2double l = (xj[0]-a[0]-a[2]*m)/(a[1]+a[3]*m);
+
+    if (abs(a[1]+a[3]*m) < 1e-12)
+    {
+        //cout << " Degenrate parallelogram " << endl;
+        m = (xj[0] - a[0])/a[2];
+        l = (xj[1] - b[0] - b[2]*m)/(b[1]+b[3]*m);
+        //cout << "m = " << m << ", l = " << l << endl;
+    }
     
     su2double dx,dy;
     if (aa == 0){
@@ -16449,6 +16523,7 @@ bool COutput::IsPointInsideQuad(CGeometry *geometry, su2double *probe_loc,unsign
         Inside = false;
         //exit(EXIT_FAILURE);
     }
+    
     return Inside;
     
 }
@@ -16480,7 +16555,15 @@ void COutput::Isoparameters_1(unsigned short nDim, unsigned short nDonor,
     su2double det = sqrt(bb*bb - 4*aa*cc);
     su2double m = (-bb+det)/(2*aa);
     su2double l = (xj[0]-a[0]-a[2]*m)/(a[1]+a[3]*m);
-        
+    
+    if (abs(a[1]+a[3]*m) < 1e-12)
+    {
+        //cout << " Degenrate parallelogram " << endl;
+        m = (xj[0] - a[0])/a[2];
+        l = (xj[1] - b[0] - b[2]*m)/(b[1]+b[3]*m);
+        //cout << "m = " << m << ", l = " << l << endl;
+    }
+    
     if (l < -0.1 || m < -0.1 || l>1.1 || m>1.1) {
         cout << "l = " << l << endl;
         cout << "m = " << m << endl;
@@ -16495,6 +16578,8 @@ void COutput::Isoparameters_1(unsigned short nDim, unsigned short nDonor,
     if (m>1 && m < 1.01) m=1;
     if (l<0 && l > -0.01) l=0;
     if (m<0 && m > -0.01) m=0;
+    
+    
     
     isoparams[0] = (1-l)*(1-m);
     isoparams[1] = l*(1-m);

@@ -434,9 +434,9 @@ bool CGeometry::SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment
   
 }
 
-bool CGeometry::RayIntersectsTriangle(su2double orig[3], su2double dir[3],
-                                      su2double vert0[3], su2double vert1[3], su2double vert2[3],
-                                      su2double *intersect) {
+
+bool CGeometry::RayIntersectsTriangle(su2double orig[3],su2double dir[3],
+                                      su2double vert0[3], su2double vert1[3], su2double vert2[3], su2double *intersect) {
   
   su2double edge1[3], edge2[3], tvec[3], pvec[3], qvec[3];
   su2double det, inv_det, t, u, v;

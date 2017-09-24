@@ -708,7 +708,7 @@ public:
    * \param[in] solver_interp - Solver container of the interpolated solution.
    */
    void Solution_Interpolation(CSolver **solver, CGeometry *geometry, CConfig *config,
-                   CSolver **solver_interp, CGeometry *geometry_interp, CConfig *config_interp);
+                   CSolver **solver_interp, CGeometry *geometry_interp, CConfig *config_interp, su2double *MeshInterp_Location);
     
    /*!
     * \brief To find the element in which the probe is located given the nearest node

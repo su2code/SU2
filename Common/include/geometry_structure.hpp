@@ -879,7 +879,7 @@ public:
    */
   bool SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
                               su2double *Plane_P0, su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp);
-  
+
   /*!
    * \brief Ray Intersects Triangle (Moller and Trumbore algorithm)
    */
