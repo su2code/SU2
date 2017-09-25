@@ -140,6 +140,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     
     switch (config[iZone]->GetKind_TimeIntScheme()) {
       case RUNGE_KUTTA_EXPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
+      case RUNGE_KUTTA_IMPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
       case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break; }
     
     /*--- Time and space integration ---*/

@@ -120,7 +120,14 @@ public:
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
+
+  CSysVector *LinSysKexp;    /*!< \brief vectors to store explicit part of IMEX substep residual. */
+  CSysVector *LinSysKimp;    /*!< \brief vectors to store implicit part of IMEX substep residual. */
+
+  CSysVector LinSysDeltaU;  /*!< \brief vector to store solution update for IMEX. */
+
   CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysMatrix Jacobian0; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   
   CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
   
@@ -3832,6 +3839,7 @@ protected:
   *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
   euler_implicit,      /*!< \brief True if euler implicit scheme used. */
+  rk_implicit,      /*!< \brief True if IMEX scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */
   su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */

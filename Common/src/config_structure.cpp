@@ -2997,8 +2997,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   // TODO: This sets default number of steps if we don't set
   // RK_ALPHA_COEFF in the config file...  make it default to 4.
   if (nRKStep == 0) {
-    nRKStep = 4;  // For RK4
+    //nRKStep = 4;  // For RK4
+    nRKStep = 3;  // For testing ImplicitRK
     //nRKStep = 2;  // For RK2
+    //nRKStep = 1;
     RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
   }
   
