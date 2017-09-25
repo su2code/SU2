@@ -3736,46 +3736,49 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
 void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iRKStep) {
+
+  std::cout << "CIncEulerSolver::ExplicitRK_Iteration is not currently working!" << std::endl;
+  exit(EXIT_FAILURE);
   
-  su2double *Residual, *Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar;
-  unsigned long iPoint;
+  // su2double *Residual, *Res_TruncError, Vol, Delta, Res;
+  // unsigned short iVar;
+  // unsigned long iPoint;
   
-  su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-  bool adjoint = config->GetContinuous_Adjoint();
+  // su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+  // bool adjoint = config->GetContinuous_Adjoint();
   
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  // for (iVar = 0; iVar < nVar; iVar++) {
+  //   SetRes_RMS(iVar, 0.0);
+  //   SetRes_Max(iVar, 0.0, 0);
+  // }
   
-  /*--- Update the solution ---*/
+  // /*--- Update the solution ---*/
   
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
-    Delta = node[iPoint]->GetDelta_Time() / Vol;
+  // for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //   Vol = geometry->node[iPoint]->GetVolume();
+  //   Delta = node[iPoint]->GetDelta_Time() / Vol;
     
-    Res_TruncError = node[iPoint]->GetResTruncError();
-    Residual = LinSysRes.GetBlock(iPoint);
+  //   Res_TruncError = node[iPoint]->GetResTruncError();
+  //   Residual = LinSysRes.GetBlock(iPoint);
     
-    if (!adjoint) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res = Residual[iVar] + Res_TruncError[iVar];
-        node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
-        AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-      }
-    }
+  //   if (!adjoint) {
+  //     for (iVar = 0; iVar < nVar; iVar++) {
+  //       Res = Residual[iVar] + Res_TruncError[iVar];
+  //       node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
+  //       AddRes_RMS(iVar, Res*Res);
+  //       AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+  //     }
+  //   }
     
-  }
+  // }
   
-  /*--- MPI solution ---*/
+  // /*--- MPI solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  // Set_MPI_Solution(geometry, config);
   
-  /*--- Compute the root mean square residual ---*/
+  // /*--- Compute the root mean square residual ---*/
   
-  SetResidual_RMS(geometry, config);
+  // SetResidual_RMS(geometry, config);
   
 }
 

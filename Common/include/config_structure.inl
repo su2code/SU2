@@ -610,8 +610,6 @@ inline unsigned short CConfig::GetFFD_CoordSystem(void) { return FFD_CoordSystem
 
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
-inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
-
 inline const su2double* CConfig::Get_RK_aMat_row(unsigned short val_step){
   assert(RK_aMat!=NULL);
   assert(val_step < nRKStep-1);

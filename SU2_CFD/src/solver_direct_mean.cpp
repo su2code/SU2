@@ -6296,8 +6296,7 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   su2double *Residual, *Res_TruncError, Vol, Delta, Res, ktmp, du;
   unsigned short iVar, iStep;
   unsigned long iPoint;
-  
-  su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+
   const su2double *RK_coeff_vec;
   su2double  RK_cVec_val;
   bool adjoint = config->GetContinuous_Adjoint();
