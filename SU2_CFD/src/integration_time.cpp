@@ -140,7 +140,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     
     switch (config[iZone]->GetKind_TimeIntScheme()) {
       case RUNGE_KUTTA_EXPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
-      case RUNGE_KUTTA_IMPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
+      case RUNGE_KUTTA_LIMEX_SMR91: iRKLimit = config[iZone]->GetnRKStep(); break;
       case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break; }
     
     /*--- Time and space integration ---*/
@@ -224,6 +224,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
       
       switch (config[iZone]->GetKind_TimeIntScheme()) {
         case RUNGE_KUTTA_EXPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
+        case RUNGE_KUTTA_LIMEX_SMR91: iRKLimit = config[iZone]->GetnRKStep(); break;
         case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break; }
       
       for (iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {

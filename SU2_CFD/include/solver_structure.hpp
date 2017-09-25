@@ -1319,8 +1319,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  virtual void ImplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                    unsigned short iRKStep);
+  virtual void LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                        unsigned short iRKStep);
   
   /*!
    * \brief A virtual member.
@@ -4859,7 +4859,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void ImplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+  void LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep);
   
   /*!
