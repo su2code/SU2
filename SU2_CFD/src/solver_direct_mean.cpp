@@ -6513,20 +6513,12 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
 
 void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solver_container,
-                                              CConfig *config, unsigned short iRKStep) {
-  // Die on entry... not fully implemented yet.
-  //std::cout << "ERROR: CEulerSolver::ImplicitRK_Iteration is not implemented!" << std::endl;
-  //exit(EXIT_FAILURE);
+                                            CConfig *config, unsigned short iRKStep) {
 
   su2double *Residual, *local_Res_TruncError, Vol, Delta, Res, ktmp, du, dt;
   unsigned short iVar, iStep, IterLinSol=0;
   unsigned long iPoint, total_index, jPoint;
-  
-  //const su2double *RK_coeff_vec_exp, *RK_coeff_vec_imp;
-  //su2double RK_coeff_vec_exp[4], RK_coeff_vec_imp[3]; // for RK4 testing
-  su2double RK_coeff_vec_exp[3], RK_coeff_vec_imp[2]; // for RK3 testing
-  //su2double RK_coeff_vec_exp[1], RK_coeff_vec_imp[2];
-  su2double  RK_cVec_val_exp, RK_cVec_val_imp;
+
   bool adjoint = config->GetContinuous_Adjoint();
 
   const bool final_step = (iRKStep+1 == nRKStep);
@@ -6539,8 +6531,7 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
   // By assumption, we are using 'TIME_STEPPING' for these
   // simulations, such that dt is the same for each node and we can
   // just grab it off the first node.
-  //
-  // TODO: This should be asserted somewhere.
+  assert(config->GetUnsteady_Simulation() == TIME_STEPPING);
   dt = node[0]->GetDelta_Time();
 
   // FIXME: Massive hackery here....  Don't yet have control over
@@ -6568,7 +6559,8 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
   }
 
 
-  // SMR91
+  // SMR91 coefficients are hardcoded for now
+  // TODO: Let user set these through the input file
   su2double beta[3], alpha[3], gamma[3], zeta[2]; //, eta[4];
 
   beta[0] = 37.0/160.0; beta[1] = 5.0/24.0; beta[2] = 1.0/6.0;
@@ -6576,19 +6568,6 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
   gamma[0] = 8.0/15.0; gamma[1] = 5.0/12.0; gamma[2] = 3.0/4.0;
   zeta[0] = -17.0/60.0; zeta[1] = -5.0/12.0;
   //eta[0] = 0.0; eta[1] = 0.0; eta[2] = 8.0/15.0; eta[3] = 2.0/3.0;
-
-  // beta[0] = 1.0;
-  // alpha[0] = 1.0;
-  // gamma[0] = 1.0;
-
-
-  // if (iRKStep==0) {
-  //   LinSysDeltaU.SetValZero();
-  // }
-
-  // // FOR TESTING ONLY
-  // // If we set Jacobian = 0, should get just the explicit part of the scheme
-  // Jacobian.SetValZero();
 
   // Step 0: Initialize residual
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -6617,18 +6596,15 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
   // L*dU (where L = the jacobian).  NB: Can skip this step for
   // iRKStep=0 b/c dU = 0.
   if (iRKStep > 0) {
-    //std::cout << "Pre: LinSysRes.norm() = " << LinSysRes.norm() << std::endl;
     Jacobian.MatrixVectorProduct(LinSysDeltaU, LinSysAux, geometry, config);
     LinSysRes -= LinSysAux;
-    //std::cout << "Post: LinSysRes.norm() = " << LinSysRes.norm() << std::endl;
   }
 
 
   // Step 2: Save explicit piece of residual
   LinSysKexp[iRKStep] = LinSysRes;
 
-
-  // Form M*v^i/dt
+  // Step 3: Form M*v^i/dt
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
 
@@ -6638,34 +6614,27 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
     }
   }
 
-  // Form alpha_i*J*v^i
-  // FOR BE, don't do this
+  // Step 4: Form alpha_i*J*v^i
   Jacobian.MatrixVectorProduct(LinSysDeltaU, LinSysKimp[1], geometry, config);
 
-  // Form RHS for linear solve
+  // Step 5: Form RHS for linear solve
   LinSysAux = LinSysKimp[0];
-  std::cout << "iRKStep = " << iRKStep << ": a) LinSysKimp[0].norm() = " << LinSysKimp[0].norm() << std::endl;
-
-  // FOR BE, don't do this
   LinSysAux.Plus_AX(-alpha[iRKStep], LinSysKimp[1]);
-  std::cout << "iRKStep = " << iRKStep << ": b) LinSysAuxKimp[1].norm() = " << LinSysKimp[1].norm() << std::endl;
-
   LinSysAux.Plus_AX(-gamma[iRKStep], LinSysKexp[iRKStep]);
-  std::cout << "iRKStep = " << iRKStep << ": c) LinSysKexp[iRKStep].norm() = " << LinSysKexp[iRKStep].norm() << std::endl;
+
   if (iRKStep>0) {
     LinSysAux.Plus_AX(-zeta[iRKStep-1], LinSysKexp[iRKStep-1]);
-    std::cout << "iRKStep = " << iRKStep << ": d) LinSysKexp[i-1].norm() = " << LinSysKexp[iRKStep-1].norm() << std::endl;
   }
 
 
-  // form M/(beta_i*dt) + J
+  // Step 6: Form M/(beta_i*dt) + J
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
     Jacobian.AddVal2Diag(iPoint, Vol/(beta[iRKStep]*dt));
   }
 
 
-  // Solve system
+  // Step 7: Solve system
   LinSysDeltaU.SetValZero();
 
   CSysSolve system;
@@ -6674,7 +6643,7 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
 
   LinSysDeltaU *= (1.0/beta[iRKStep]);
 
-  // Step 7: Update solution in preparation for next substep (or to complete step)
+  // Step 8: Update solution in preparation for next substep (or to complete step)
   if (!adjoint) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {

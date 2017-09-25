@@ -38,6 +38,7 @@
 
 #include "../../Common/include/mpi_structure.hpp"
 
+#include <cassert>
 #include <cmath>
 #include <string>
 #include <fstream>
