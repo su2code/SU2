@@ -4647,12 +4647,9 @@ void CHBDriver::Update() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    /*--- Update the harmonic balance terms across all zones ---*/
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
-                                       solver_container, numerics_container, config_container,
-                                       surface_movement, grid_movement, FFDBox, iZone);
-
-    output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone);
 
   }
 
