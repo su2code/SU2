@@ -851,6 +851,12 @@ void CDriver::Geometrical_Preprocessing_DGFEM() {
     if (rank == MASTER_NODE) cout << "Computing coordinates of the integration points." << endl;
     DGMesh->CoordinatesIntegrationPoints();
 
+    /*--- Compute the coordinates of the location of the solution DOFs. This is different
+          from the grid points when a different polynomial degree is used to represent the
+          geometry and solution. ---*/
+    if (rank == MASTER_NODE) cout << "Computing coordinates of the solution DOFs." << endl;
+    DGMesh->CoordinatesSolDOFs();
+
     /*--- Store the global to local mapping. ---*/
     if (rank == MASTER_NODE) cout << "Storing a mapping from global to local DOF index." << endl;
     geometry_container[iZone][MESH_0]->SetGlobal_to_Local_Point();

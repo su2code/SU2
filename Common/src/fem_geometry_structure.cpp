@@ -226,9 +226,15 @@ void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
   boundElemIDGlobal  = other.boundElemIDGlobal;
   nodeIDsGrid        = other.nodeIDsGrid;
 
+  DOFsGridFace    = other.DOFsGridFace;
+  DOFsSolFace     = other.DOFsSolFace;
+  DOFsGridElement = other.DOFsGridElement;
+  DOFsSolElement  = other.DOFsSolElement;
+
   metricNormalsFace     = other.metricNormalsFace;
   metricCoorDerivFace   = other.metricCoorDerivFace;
   coorIntegrationPoints = other.coorIntegrationPoints;
+  gridVelocities        = other.gridVelocities;
   wallDistance          = other.wallDistance;
 }
 
@@ -2103,6 +2109,7 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
     /*---         Depending on the case, not all of this memory is needed.   ---*/
     /*---         - Unit normals + area (nDim+1 per integration point)       ---*/
     /*---         - drdx, dsdx, etc. (nDim*nDim per integration point)       ---*/
+    /*---         - grid velocities in the integration points.               ---*/
     /*--------------------------------------------------------------------------*/
 
     /* Determine the corresponding standard face element and get the
@@ -2115,6 +2122,10 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
 
     if( viscousTerms )
       boundary->surfElem[i].metricCoorDerivFace.resize(nInt*nDim*nDim);
+
+    /* Allocate the memory for the grid velocities and initialize them to the
+       default value of zero. */
+    boundary->surfElem[i].gridVelocities.assign(nInt*nDim, 0.0);
 
     /*--------------------------------------------------------------------------*/
     /*--- Step 2: Determine the actual metric data in the integration points ---*/
@@ -2334,6 +2345,41 @@ void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
               coor[j] += lag[jj+k]*meshPoints[DOFs[k]].coor[j];
           }
         }
+      }
+    }
+  }
+}
+
+void CMeshFEM_DG::CoordinatesSolDOFs(void) {
+
+  /*--- Loop over the owned elements to compute the coordinates
+        of the solution DOFs. ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Store the grid DOFs and the number of solDOFS a bit easier. */
+    const unsigned short nDOFsGrid = volElem[l].nDOFsGrid;
+    const unsigned short nDOFsSol  = volElem[l].nDOFsSol;
+    const unsigned long  *DOFsGrid = volElem[l].nodeIDsGrid.data();
+
+    /* Get the required data from the corresponding standard element. */
+    const unsigned short ind = volElem[l].indStandardElement;
+    const su2double     *lag = standardElementsGrid[ind].GetBasisFunctionsSolDOFs();
+
+    /* Allocate the memory for the coordinates of the solution DOFs. */
+    volElem[l].coorSolDOFs.resize(nDim*nDOFsSol);
+
+    /*--- Loop over the solution DOFs of this element and compute the
+          coordinates. Note that in case the polynomial degree of the grid
+          and solution is the same the grid DOFs and solution DOFs coincide
+          and the interpolation boils down to a copy of the coordinates. ---*/
+    for(unsigned short i=0; i<nDOFsSol; ++i) {
+
+      su2double *coor = volElem[l].coorSolDOFs.data() + i*nDim;
+      const unsigned short jj = i*nDOFsGrid;
+      for(unsigned short j=0; j<nDim; ++j) {
+        coor[j] = 0.0;
+        for(unsigned short k=0; k<nDOFsGrid; ++k)
+          coor[j] += lag[jj+k]*meshPoints[DOFsGrid[k]].coor[j];
       }
     }
   }
@@ -4814,6 +4860,7 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
     /*---         - Unit normals + area (nDim+1 per integration point)       ---*/
     /*---         - drdx, dsdx, etc. for both sides (nDim*nDim per           ---*/
     /*---                                            integration point)      ---*/
+    /*---         - grid velocities in the integration points.               ---*/
     /*--------------------------------------------------------------------------*/
 
     /* Determine the corresponding standard face element and get the
@@ -4829,6 +4876,10 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
       matchingFaces[i].metricCoorDerivFace0.resize(nInt*nDim*nDim);
       matchingFaces[i].metricCoorDerivFace1.resize(nInt*nDim*nDim);
     }
+
+    /* Allocate the memory for the grid velocities and initialize them to the
+       default value of zero. */
+    matchingFaces[i].gridVelocities.assign(nInt*nDim, 0.0);
 
     /*--------------------------------------------------------------------------*/
     /*--- Step 2: Determine the actual metric data in the integration points ---*/
@@ -5210,6 +5261,11 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     const unsigned short nInt      = standardElementsGrid[ind].GetNIntegration();
     const unsigned short nDOFsGrid = volElem[i].nDOFsGrid;
     const unsigned short nDOFsSol  = volElem[i].nDOFsSol;
+
+    /* Allocate the memory for the grid velocities. They are initialized to
+       zero as default value, i.e. not moving. */
+    volElem[i].gridVelocities.assign(nDim*nInt, 0.0);
+    volElem[i].gridVelocitiesSolDOFs.assign(nDim*nDOFsSol, 0.0);
 
     /* Allocate the memory for the metric terms of this element. */
     volElem[i].metricTerms.resize(nMetricPerPoint*nInt);
