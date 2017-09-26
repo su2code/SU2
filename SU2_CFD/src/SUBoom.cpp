@@ -209,7 +209,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   /*---Now write to file---*/
   if(rank == MASTER_NODE){
-    nPanel_tot = 0;
+    unsigned long nPanel_tot = 0;
     ofstream sigFile;
     sigFile.precision(15);
     sigFile.open("signal_original.dat");
