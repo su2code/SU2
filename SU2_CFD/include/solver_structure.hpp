@@ -1322,6 +1322,16 @@ public:
    */
   virtual void LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                         unsigned short iRKStep);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  virtual void LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                        unsigned short iRKStep);
   
   /*!
    * \brief A virtual member.
@@ -4861,7 +4871,17 @@ public:
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep);
+                                unsigned short iRKStep);
+
+  /*!
+   * \brief Update the solution using a Runge-Kutta scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                unsigned short iRKStep);
   
   /*!
    * \brief Compute the pressure forces and all the adimensional coefficients.

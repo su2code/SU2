@@ -331,6 +331,9 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
     case (RUNGE_KUTTA_LIMEX_SMR91):
       solver_container[MainSolver]->LIMEX_RK_SMR91_Iteration(geometry, solver_container, config, iRKStep);
       break;
+    case (RUNGE_KUTTA_LIMEX_EDIRK):
+      solver_container[MainSolver]->LIMEX_RK_EDIRK_Iteration(geometry, solver_container, config, iRKStep);
+      break;
     case (EULER_EXPLICIT):
       solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
       break;
