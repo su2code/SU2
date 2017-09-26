@@ -564,6 +564,7 @@ geometry_container[ZONE_0]->SetCoord_CG();
                 cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << "." << endl;
                 boom.PropagateSignal(iPhi);
               }
+              cout << "Propagation complete." << endl;
             }
             
             if (rank == MASTER_NODE){
@@ -631,6 +632,7 @@ geometry_container[ZONE_0]->SetCoord_CG();
                 cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << "." << endl;
                 boom.PropagateSignal(iPhi);
               }
+              cout << "Propagation complete." << endl;
             }
           }
        }

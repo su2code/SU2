@@ -209,7 +209,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   /*---Now write to file---*/
   if(rank == MASTER_NODE){
-    nPointID_tot = 0;
+    nPanel_tot = 0;
     ofstream sigFile;
     sigFile.precision(15);
     sigFile.open("signal_original.dat");
@@ -221,10 +221,10 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
         sigFile << scientific << signal.original_p[iPhi][iPanel]   << "\t";
         sigFile << endl;
       }
-      nPointID_tot += nPointID[iPhi];
+      nPanel_tot += nPanel[iPhi];
     }
     sigFile.close();
-    cout << "Signal written. Total nPanel = " << nPointID_tot << "." << endl;
+    cout << "Signal written. Total nPanel = " << nPanel_tot << "." << endl;
 
   }
 
@@ -689,7 +689,6 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
       end = true;
     }
   }
-  cout << "phi(" << iPhi << "), nPanel extracted = " << nPanel[iPhi] << endl;
 
 }
 
@@ -1646,8 +1645,6 @@ void SUBoom::RayTracer(unsigned short iPhi){
     dydt[3][ik] = ky[ik];
   }
 
-  cout << "Clearing up ray tracer memory" << endl;
-
   /*---Clear up memory---*/
   delete [] f;
   delete [] x;
@@ -2196,7 +2193,7 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     p_rise[iPhi] = signal.final_p[iPhi][0];
     if(signal.final_p[iPhi][0] > -signal.final_p[iPhi][Msig-1]) p_rise2[iPhi] = signal.final_p[iPhi][0];
     else p_rise2[iPhi] = signal.final_p[iPhi][Msig-1];
-    cout << "p_rise = " << p_rise[iPhi] << ", p_max = " << p_max[iPhi] << ", p_int2 = " << p_int2[iPhi] << endl;
+    cout << "p_rise = " << p_rise[iPhi] << ", p_max = " << p_max[iPhi] << ", p_int2 = " << p_int2[iPhi] << "." << endl;
 
     /*---Write boom strength metrics to file---*/
     sigFile.open("pboomSU2", ios::out);

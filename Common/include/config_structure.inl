@@ -1505,12 +1505,22 @@ inline bool CConfig::GetZonal_DES(void) {return Zonal_DES;}
 inline bool CConfig::GetQCR(void) {return QCR;}
 
 inline bool CConfig::GetBoom_flag(void) {return Boom_flag;}
+
 inline unsigned long CConfig::GetBoom_N_prof(void) {return Boom_N_prof;}
+
 inline unsigned short CConfig::GetBoom_N_phi(void) {return Boom_N_phi;}
+
 inline su2double *CConfig::GetBoom_phi(void) {return Boom_phi;}
+
 inline su2double CConfig::GetBoom_r0(void) {return Boom_r0;}
+
 inline su2double CConfig::GetBoom_Tol_dphi(void) {return Boom_Tol_dphi;}
+
 inline su2double CConfig::GetBoom_Tol_dr(void) {return Boom_Tol_dr;}
+
 inline su2double CConfig::GetBoom_Tol_m(void) {return Boom_Tol_m;}
+
 inline su2double CConfig::GetBoom_Tol_dp(void) {return Boom_Tol_dp;}
+
 inline su2double CConfig::GetBoom_Tol_l(void) {return Boom_Tol_l;}
+
