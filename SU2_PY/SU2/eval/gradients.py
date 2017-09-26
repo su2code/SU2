@@ -274,7 +274,6 @@ def adjoint( func_name, config, state=None ):
         pull.append("Observer_Locations.dat")
 
     if config['OBJECTIVE_FUNCTION'] == "BOOM":
-        pull.append("boom.in")
         pull.append("DIRECT/Adj_Boom.dat")
 
     # output redirection
