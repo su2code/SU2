@@ -40,43 +40,28 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   /*---Scale factors---*/
   scale_L = config->GetRefLengthMoment();
 
-  /*---Ray variables---*/
-  if(nDim == 2) ray_N_phi = 1;
-  else ray_N_phi = 1; // TODO: read in for 3D
-  ray_phi = new su2double[ray_N_phi];
-  for(unsigned int i = 0; i < ray_N_phi; i++){
-    //ray_phi[i] = phi[i];
-    ray_phi[i] = 0.0;
-  }
-
-  /*---Tolerance variables---*/
-//  char cstr [200];
-  string str;
-  ifstream tolfile;
-
-  tolfile.open("boom.in", ios::in);
-  if (tolfile.fail()) {
-    if(rank == MASTER_NODE)
-      cout << "There is no boom.in file. Using default tolerances for boom propagation. " << endl;
-    ray_r0 = 1.0;
-    n_prof = 100001;
-    tol_dphi = 1.0E-3;
-    tol_dr = 1.0E-3;
-    tol_m = 1.0E6;
-
-    tol_dp = 1.0E-6;
-    tol_l = 1.0E-4;
+  /*---Values from config file---*/
+  n_prof = config->GetBoom_N_prof();
+  if(nDim == 2){
+    ray_N_phi = 1;
+    ray_phi = new su2double[1];
+    ray_phi[0] = 0.0;
   }
   else{
-    tolfile >> str >> ray_r0;
-    tolfile >> str >> n_prof;
-    tolfile >> str >> tol_dphi;
-    tolfile >> str >> tol_dr;
-    tolfile >> str >> tol_m;
-    tolfile >> str >> tol_dp;
-    tolfile >> str >> tol_l;
+    ray_N_phi = config->GetBoom_N_phi();
+    ray_phi = config->GetBoom_phi();
+    if(ray_phi == NULL){
+      ray_N_phi = 1;
+      ray_phi = new su2double[1];
+      ray_phi[0] = 0.0;
+    }
   }
-////  }
+  ray_r0 = config->GetBoom_r0();
+  tol_dphi = config->GetBoom_Tol_dphi();
+  tol_dr = config->GetBoom_Tol_dr();
+  tol_m = config->GetBoom_Tol_m();
+  tol_dp = config->GetBoom_Tol_dp();
+  tol_l = config->GetBoom_Tol_l();
 
   /*---Set reference pressure, make sure signal is dimensional---*/
   su2double Pressure_FreeStream=config->GetPressure_FreeStream();

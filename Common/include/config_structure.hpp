@@ -837,6 +837,17 @@ private:
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
 
+  bool Boom_flag;             /*!< \brief Evaluate sonic boom. */
+  unsigned long Boom_N_prof;  /*!< \brief Number of points used in atmospheric profile for RK4 integration. */
+  unsigned short Boom_N_phi;  /*!< \brief Number of azimuth angles to evaluate boom. */
+  su2double *Boom_phi,        /*!< \brief Azimuth angles to evaluate boom. */
+  Boom_r0,                    /*!< \brief Radius from aircraft to begin boom propagation. */
+  Boom_Tol_dphi,              /*!< \brief Tolerance for azimuth angle in boom propagation. */
+  Boom_Tol_dr,                /*!< \brief Tolerance for radius in boom propagation. */
+  Boom_Tol_m,                 /*!< \brief Tolerance for signal slope in boom propagation. */
+  Boom_Tol_dp,                /*!< \brief Tolerance for pressure jump in boom propagation. */
+  Boom_Tol_l;                 /*!< \brief Tolerance for segment length in boom propagation. */
+
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -6857,6 +6868,17 @@ public:
    * \return Verbosity level for the console output 
    */
   bool GetQCR(void);
+
+  bool GetBoom_flag(void);
+  unsigned long GetBoom_N_prof(void);
+  unsigned short GetBoom_N_phi(void);
+  su2double *GetBoom_phi(void);
+  su2double GetBoom_r0(void);
+  su2double GetBoom_Tol_dphi(void);
+  su2double GetBoom_Tol_dr(void);
+  su2double GetBoom_Tol_m(void);
+  su2double GetBoom_Tol_dp(void);
+  su2double GetBoom_Tol_l(void);
 
 };
 

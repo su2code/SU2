@@ -496,7 +496,7 @@ geometry_container[ZONE_0]->SetCoord_CG();
           cout<<"Type= "<<   config_container[ZONE_0]->GetDiscrete_Adjoint() <<endl;  //  <--- returns 1! (cont adj)
 
 
-        if (config->GetKind_ObjFunc()==BOOM){
+        if (config->GetBoom_flag() || config->GetKind_ObjFunc()==BOOM){
           if (config_container[ZONE_0]->GetAD_Mode()){
 /*             if (rank == MASTER_NODE)
                cout << endl <<"------------------------- Computing Far Field Noise (Primal+Adjoint) -----------------------" << endl;
